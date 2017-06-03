@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.endeavourhealth.common</groupId>
+    <artifactId>transforms</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <java.version>1.8</java.version>
+        <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+
+        <eds-cache.version>1.0-SNAPSHOT</eds-cache.version>
+        <eds-core.version>1.0-SNAPSHOT</eds-core.version>
+        <eds-fhir.version>1.0-SNAPSHOT</eds-fhir.version>
+
+        <commons-csv.version>1.3</commons-csv.version>
+        <crypto-lib.version>0.9.7</crypto-lib.version>
+        <fhir-dstu2.version>1.0.1.7108</fhir-dstu2.version>
+        <jackson.version>2.5.4</jackson.version>
+        <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
+        <jcs.version>1.3</jcs.version>
+        <jersey.version>2.22.1</jersey.version>
+
+    </properties>
+
+    <dependencies>
+
+        <!-- dependent on EDS modules -->
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>core</artifactId>
+            <version>${eds-core.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>cache</artifactId>
+            <version>${eds-cache.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.endeavourhealth.common</groupId>
+            <artifactId>fhir</artifactId>
+            <version>${eds-fhir.version}</version>
+        </dependency>
+
+        <!-- base FHIR resources (to be replaced with Endeavour extensions -->
+        <dependency>
+            <groupId>me.fhir</groupId>
+            <artifactId>fhir-dstu2</artifactId>
+            <version>${fhir-dstu2.version}</version>
+        </dependency>
+
+        <!-- Apache CSV library -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+        </dependency>
+
+        <!-- http://mvnrepository.com/artifact/javax.ws.rs/javax.ws.rs-api -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>${javax.ws.rs-api.version}</version>
+        </dependency>
+
+        <!-- http://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <!-- End Jersey -->
+
+        <!-- https://mvnrepository.com/artifact/org.apache.jcs/jcs -->
+        <dependency>
+            <groupId>org.apache.jcs</groupId>
+            <artifactId>jcs</artifactId>
+            <version>${jcs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!--open pseudonomiser -->
+        <dependency>
+            <groupId>org.openpseudonymiser</groupId>
+            <artifactId>cryptolib</artifactId>
+            <version>${crypto-lib.version}</version>
+        </dependency>
+
+        <!-- eCache caching framework -->
+        <!--<dependency>-->
+        <!--<groupId>javax.cache</groupId>-->
+        <!--<artifactId>cache-api</artifactId>-->
+        <!--<version>1.0.0</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.ehcache</groupId>-->
+        <!--<artifactId>ehcache</artifactId>-->
+        <!--<version>3.0.2</version>-->
+        <!--</dependency>-->
+
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <snapshots />
+            <id>snapshots</id>
+            <name>libs-snapshot</name>
+            <url>http://maven.endeavourhealth.net:8081/artifactory/libs-snapshot</url>
+        </repository>
+        <repository>
+            <id>project.local</id>
+            <name>project</name>
+            <url>file:${project.basedir}/repo</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>maven.endeavourhealth.org-snapshots</name>
+            <url>http://maven.endeavourhealth.net:8081/artifactory/libs-snapshot-local</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*DevTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
