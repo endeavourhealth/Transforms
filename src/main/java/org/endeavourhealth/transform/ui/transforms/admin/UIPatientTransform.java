@@ -91,7 +91,10 @@ public class UIPatientTransform {
 	}
 
 	private static String getLocalPatientIdentifer(List<Identifier> identifiers) {
-		String identifierUris[] = {FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID};
+		String identifierUris[] = {
+				FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
+				FhirUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID
+		};
 
 		for (String uri : identifierUris) {
 			String result = IdentifierHelper.getIdentifierBySystem(identifiers, uri);
