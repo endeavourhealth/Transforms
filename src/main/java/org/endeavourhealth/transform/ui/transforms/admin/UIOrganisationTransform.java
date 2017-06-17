@@ -1,14 +1,24 @@
 package org.endeavourhealth.transform.ui.transforms.admin;
 
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.transform.ui.helpers.AddressHelper;
+import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
+import org.endeavourhealth.transform.ui.models.types.UIAddress;
+import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Organization;
+
+import java.util.List;
 
 public class UIOrganisationTransform {
     public static UIOrganisation transform(Organization organization) {
         return new UIOrganisation()
                 .setId(organization.getId())
                 .setName(organization.getName())
-                .setType(getOrganizationType(organization));
+                .setType(getOrganizationType(organization))
+								.setAddress(getAddress(organization.getAddress()))
+								.setOdsCode(getOdsCode(organization));
     }
 
     public static String getOrganizationType(Organization organization) {
@@ -22,5 +32,16 @@ public class UIOrganisationTransform {
     		return null;
 
     	return organization.getType().getCoding().get(0).getCode();
+		}
+
+		private static UIAddress getAddress(List<Address> address) {
+    	if (address != null && address.size() > 0)
+    		return AddressHelper.transform(address.get(0));
+
+    	return null;
+		}
+
+		private static String getOdsCode(Organization organization) {
+			return IdentifierHelper.getIdentifierBySystem(organization.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
 		}
 }
