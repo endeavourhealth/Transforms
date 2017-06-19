@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.ui.models.types.UIHumanName;
 public class UIPractitioner extends UIResource<UIPractitioner> {
     private UIHumanName name;
     private Boolean active;
+    private String gpCode;
 
     public UIHumanName getName() {
         return name;
@@ -26,4 +27,13 @@ public class UIPractitioner extends UIResource<UIPractitioner> {
         this.active = active;
         return this;
     }
+
+	public String getGpCode() {
+		return gpCode;
+	}
+
+	public UIPractitioner setGpCode(String gpCode) {
+		this.gpCode = gpCode;
+		return this;
+	}
 }

@@ -10,6 +10,8 @@ public class UIAddress {
     private String city;
     private String district;
     private String postalCode;
+    private String country;
+    private String use;
 
     public String getLine1() {
         return line1;
@@ -64,4 +66,22 @@ public class UIAddress {
         this.postalCode = postalCode;
         return this;
     }
+
+	public String getCountry() {
+		return country;
+	}
+
+	public UIAddress setCountry(String country) {
+		this.country = country;
+		return this;
+	}
+
+	public String getUse() {
+		return use;
+	}
+
+	public UIAddress setUse(String use) {
+		this.use = use;
+		return this;
+	}
 }

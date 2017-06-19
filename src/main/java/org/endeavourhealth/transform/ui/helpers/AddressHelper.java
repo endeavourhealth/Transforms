@@ -40,7 +40,9 @@ public class AddressHelper {
 				.setLine3(getLine(homeAddress.getLine(), 2))
 				.setDistrict(homeAddress.getDistrict())
 				.setCity(homeAddress.getCity())
-				.setPostalCode(homeAddress.getPostalCode());
+				.setPostalCode(homeAddress.getPostalCode())
+				.setCountry(homeAddress.getCountry())
+				.setUse(getUse(homeAddress.getUse()));
 	}
 
 	private static String getLine(List<StringType> lines, int lineNumber) {
@@ -51,5 +53,12 @@ public class AddressHelper {
 			return "";
 
 		return lines.get(lineNumber).getValueNotNull();
+	}
+
+	private static String getUse(Address.AddressUse addressUse) {
+		if (addressUse != null)
+			return addressUse.getDisplay();
+
+		return null;
 	}
 }
