@@ -22,7 +22,9 @@ public class NameHelper {
         return new UIHumanName()
                 .setFamilyName(NameHelper.getFirst(name.getFamily()))
                 .setGivenNames(NameHelper.getAll(name.getGiven()))
-                .setPrefix(NameHelper.getFirst(name.getPrefix()));
+                .setPrefix(NameHelper.getFirst(name.getPrefix()))
+								.setText(name.getText())
+								.setUse(name.getUse().getDisplay());
     }
 
     private static HumanName getNameByUse(List<HumanName> names, HumanName.NameUse nameUse) {

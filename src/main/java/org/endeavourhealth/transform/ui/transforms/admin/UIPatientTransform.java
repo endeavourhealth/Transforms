@@ -9,11 +9,13 @@ import org.endeavourhealth.transform.ui.models.resources.admin.*;
 import org.endeavourhealth.transform.ui.models.types.*;
 import org.hl7.fhir.instance.model.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class UIPatientTransform {
+
+	private static Set<String> identifierUris = new HashSet<>(Arrays.asList(
+			FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
+			FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID));
 
 	public static UIPatient transform(Patient patient, ReferencedResources referencedResources) {
 
@@ -24,6 +26,7 @@ public class UIPatientTransform {
 				.setId(patient.getId())
 				.setNhsNumber(getNhsNumber(patient.getIdentifier()))
 				.setName(name)
+				.setOtherNames(getAllNames(patient.getName()))
 				.setDateOfBirth(getBirthDate(patient))
 				.setDateOfDeath(getDeathDate(patient))
 				.setGender(patient.getGender().toCode())
@@ -31,13 +34,22 @@ public class UIPatientTransform {
 				.setEthnicity(getEthnicity(patient))
 				.setContacts(getContacts(patient.getContact()))
 				.setTelecoms(getTelecoms(patient.getTelecom()))
-				.setLocalPatientIdentifier(getLocalPatientIdentifer(patient.getIdentifier()))
+				.setLocalPatientIdentifiers(getLocalPatientIdentifers(patient.getIdentifier()))
 				.setManagingOrganisation(getManagingOrganisation(patient.getManagingOrganization(), referencedResources))
 				.setMaritalStatus(CodeHelper.convert(patient.getMaritalStatus()))
 				.setLanguage(getLanguage(patient.getCommunication()))
 				.setReligion(getReligion(patient))
 				.setCarerOrganisations(getCarerOrganisations(patient.getCareProvider(), referencedResources))
 				.setCarerPractitioners(getCarerPractitioners(patient.getCareProvider(), referencedResources));
+	}
+
+	private static List<UIHumanName> getAllNames(List<HumanName> names) {
+		List<UIHumanName> result = new ArrayList<>();
+		for (HumanName name : names) {
+			result.add(NameHelper.transform(name));
+		}
+
+		return result;
 	}
 
 	private static List<UIOrganisation> getCarerOrganisations(List<Reference> careProviders, ReferencedResources referencedResources) {
@@ -90,19 +102,18 @@ public class UIPatientTransform {
 		return referencedResources.getUIOrganisation(managingOrganization);
 	}
 
-	private static String getLocalPatientIdentifer(List<Identifier> identifiers) {
-		String identifierUris[] = {
-				FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
-				FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID
-		};
+	private static List<String> getLocalPatientIdentifers(List<Identifier> identifiers) {
 
-		for (String uri : identifierUris) {
-			String result = IdentifierHelper.getIdentifierBySystem(identifiers, uri);
-			if (result != null)
-				return result;
+
+		List<String> localIds = new ArrayList<>();
+
+		for (Identifier identifier : identifiers) {
+			if (identifier.getSystem() != null && identifierUris.contains(identifier.getSystem())) {
+				localIds.add(identifier.getValue());
+			}
 		}
 
-		return null;
+		return localIds;
 	}
 
 	private static UIDate getBirthDate(Patient patient) {

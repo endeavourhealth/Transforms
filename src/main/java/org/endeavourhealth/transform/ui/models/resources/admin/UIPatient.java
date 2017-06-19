@@ -12,6 +12,7 @@ public class UIPatient extends UIResource<UIPatient> {
 	private UIInternalIdentifier patientId;
 	private String nhsNumber;
 	private UIHumanName name;
+	private List<UIHumanName> otherNames;
 	private UIDate dateOfBirth;
 	private UIDate dateOfDeath;
 	private String gender;
@@ -19,7 +20,7 @@ public class UIPatient extends UIResource<UIPatient> {
 	private UICodeableConcept ethnicity;
 	private List<UIContact> contacts;
 	private List<UIContactPoint> telecoms;
-	private String localPatientIdentifier;
+	private List<String> localPatientIdentifiers;
 	private UIOrganisation managingOrganisation;
 	private UICodeableConcept religion;
 	private UICodeableConcept maritalStatus;
@@ -117,12 +118,12 @@ public class UIPatient extends UIResource<UIPatient> {
 		return this;
 	}
 
-	public String getLocalPatientIdentifier() {
-		return localPatientIdentifier;
+	public List<String> getLocalPatientIdentifiers() {
+		return localPatientIdentifiers;
 	}
 
-	public UIPatient setLocalPatientIdentifier(String localPatientIdentifier) {
-		this.localPatientIdentifier = localPatientIdentifier;
+	public UIPatient setLocalPatientIdentifiers(List<String> localPatientIdentifiers) {
+		this.localPatientIdentifiers = localPatientIdentifiers;
 		return this;
 	}
 
@@ -177,6 +178,15 @@ public class UIPatient extends UIResource<UIPatient> {
 
 	public UIPatient setCarerPractitioners(List<UIPractitioner> carerPractitioners) {
 		this.carerPractitioners = carerPractitioners;
+		return this;
+	}
+
+	public List<UIHumanName> getOtherNames() {
+		return otherNames;
+	}
+
+	public UIPatient setOtherNames(List<UIHumanName> otherNames) {
+		this.otherNames = otherNames;
 		return this;
 	}
 }

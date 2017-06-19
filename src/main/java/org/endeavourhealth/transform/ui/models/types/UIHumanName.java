@@ -9,6 +9,8 @@ public class UIHumanName {
     private String familyName;
     private String[] givenNames;
     private String prefix;
+    private String text;
+    private String use;
 
     public String getFamilyName() {
         return familyName;
@@ -36,4 +38,22 @@ public class UIHumanName {
         this.prefix = prefix;
         return this;
     }
+
+	public String getText() {
+		return text;
+	}
+
+	public UIHumanName setText(String text) {
+		this.text = text;
+		return this;
+	}
+
+	public String getUse() {
+		return use;
+	}
+
+	public UIHumanName setUse(String use) {
+		this.use = use;
+		return this;
+	}
 }
