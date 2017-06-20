@@ -29,6 +29,7 @@ public class CodeHelper {
         return new UICode()
                 .setCode(coding.getCode())
                 .setDisplay(coding.getDisplay())
-                .setSystem(coding.getSystem());
+                .setSystem(coding.getSystem())
+								.setUserSelected(coding.getUserSelected());
     }
 }

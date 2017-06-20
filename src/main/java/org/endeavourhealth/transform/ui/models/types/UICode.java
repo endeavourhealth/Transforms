@@ -7,6 +7,7 @@ public class UICode {
     private String system;
     private String code;
     private String display;
+    private boolean userSelected;
 
     public String getSystem() {
         return system;
@@ -34,4 +35,13 @@ public class UICode {
         this.display = display;
         return this;
     }
+
+	public boolean isUserSelected() {
+		return userSelected;
+	}
+
+	public UICode setUserSelected(boolean userSelected) {
+		this.userSelected = userSelected;
+		return this;
+	}
 }
