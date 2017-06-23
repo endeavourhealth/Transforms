@@ -36,12 +36,13 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 								.setTypes(getTypes(encounter))
                 .setPerformedBy(getPerformedBy(encounter, referencedResources))
                 .setRecordedBy(getRecordedBy(encounter, referencedResources))
+								.setReferredBy(getReferredBy(encounter, referencedResources))
                 .setPeriod(getPeriod(encounter.getPeriod()))
                 .setServiceProvider(getServiceProvider(encounter, referencedResources))
                 .setRecordedDate(getRecordedDateExtensionValue(encounter))
                 .setEncounterSource(getEncounterSource(encounter))
                 .setReason(getEncounterReasons(encounter))
-								.setLocation(getActiveLocation(encounter));
+								.setLocation(getActiveLocation(encounter, referencedResources));
     }
 
     private static UICodeableConcept getEncounterSource(Encounter encounter) {
@@ -104,6 +105,16 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 			return null;
 		}
 
+	private static UIPractitioner getReferredBy(Encounter encounter, ReferencedResources referencedResources) {
+		for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
+			if (component.getType().size() > 0)
+				if (component.getType().get(0).getCoding().size() > 0)
+					if (component.getType().get(0).getCoding().get(0).getCode().equals("REF"))
+						return referencedResources.getUIPractitioner(component.getIndividual());
+
+		return null;
+	}
+
     private static UIPractitioner getRecordedBy(Encounter encounter, ReferencedResources referencedResources) {
         for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
             if (component.getType().size() > 0)
@@ -123,11 +134,11 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
         return reasons;
     }
 
-    private static UILocation getActiveLocation(Encounter encounter) {
+    private static UILocation getActiveLocation(Encounter encounter, ReferencedResources referencedResources) {
 
     	for(Encounter.EncounterLocationComponent location : encounter.getLocation()) {
     		if (location.hasLocation() && location.hasStatus() && location.getStatus() == Encounter.EncounterLocationStatus.ACTIVE)
-    			return UILocationTransform.transform(location.getLocationTarget());
+    			return referencedResources.getUILocation(location.getLocation());
 			}
 
 			return null;

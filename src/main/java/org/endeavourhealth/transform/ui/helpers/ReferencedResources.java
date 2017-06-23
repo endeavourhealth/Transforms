@@ -79,6 +79,19 @@ public class ReferencedResources {
 				.collect(Collectors.toList());
 	}
 
+	public UILocation getUILocation(Reference reference) {
+		String referenceId = ReferenceHelper.getReferenceId(reference, ResourceType.Location);
+
+		if (StringUtils.isEmpty(referenceId))
+			return null;
+
+		return this
+				.uiLocations
+				.stream()
+				.filter(t -> t.getId().equals(referenceId))
+				.collect(StreamExtension.firstOrNullCollector());
+	}
+
 	public void setLocations(List<Location> locations) {
 		this.locations = locations;
 
