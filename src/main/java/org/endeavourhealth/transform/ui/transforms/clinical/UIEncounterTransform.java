@@ -42,7 +42,8 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
                 .setRecordedDate(getRecordedDateExtensionValue(encounter))
                 .setEncounterSource(getEncounterSource(encounter))
                 .setReason(getEncounterReasons(encounter))
-								.setLocation(getActiveLocation(encounter, referencedResources));
+								.setLocation(getActiveLocation(encounter, referencedResources))
+								.setMessageType(getMessageType(encounter));
     }
 
     private static UICodeableConcept getEncounterSource(Encounter encounter) {
@@ -144,7 +145,13 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 			return null;
 		}
 
-    public List<Reference> getReferences(List<Encounter> encounters) {
+	private static UICodeableConcept getMessageType(Encounter encounter) {
+		CodeableConcept encounterSource = ExtensionHelper.getExtensionValue(encounter, FhirExtensionUri.HL7_MESSAGE_TYPE, CodeableConcept.class);
+		return CodeHelper.convert(encounterSource);
+	}
+
+
+	public List<Reference> getReferences(List<Encounter> encounters) {
         return StreamExtension.concat(
                 encounters
                         .stream()

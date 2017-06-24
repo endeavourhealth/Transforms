@@ -27,6 +27,7 @@ public class UIEncounter extends UIResource<UIEncounter> {
     private List<UICodeableConcept> reason;
     private UILocation location;
     private UIPractitioner referredBy;
+    private UICodeableConcept messageType;
 
     public UIAppointment getAppointment() {
         return appointment;
@@ -140,6 +141,15 @@ public class UIEncounter extends UIResource<UIEncounter> {
 
 	public UIEncounter setReferredBy(UIPractitioner referredBy) {
 		this.referredBy = referredBy;
+		return this;
+	}
+
+	public UICodeableConcept getMessageType() {
+		return messageType;
+	}
+
+	public UIEncounter setMessageType(UICodeableConcept messageType) {
+		this.messageType = messageType;
 		return this;
 	}
 }
