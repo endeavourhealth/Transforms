@@ -28,6 +28,7 @@ public class UIEncounter extends UIResource<UIEncounter> {
     private UILocation location;
     private UIPractitioner referredBy;
     private UICodeableConcept messageType;
+    private String episodeOfCare;
 
     public UIAppointment getAppointment() {
         return appointment;
@@ -150,6 +151,15 @@ public class UIEncounter extends UIResource<UIEncounter> {
 
 	public UIEncounter setMessageType(UICodeableConcept messageType) {
 		this.messageType = messageType;
+		return this;
+	}
+
+	public String getEpisodeOfCare() {
+		return episodeOfCare;
+	}
+
+	public UIEncounter setEpisodeOfCare(String episodeOfCare) {
+		this.episodeOfCare = episodeOfCare;
 		return this;
 	}
 }

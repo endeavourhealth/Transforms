@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.ui.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
@@ -43,7 +44,8 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
                 .setEncounterSource(getEncounterSource(encounter))
                 .setReason(getEncounterReasons(encounter))
 								.setLocation(getActiveLocation(encounter, referencedResources))
-								.setMessageType(getMessageType(encounter));
+								.setMessageType(getMessageType(encounter))
+								.setEpisodeOfCare(getEpisodeOfCare(encounter.getEpisodeOfCare()));
     }
 
     private static UICodeableConcept getEncounterSource(Encounter encounter) {
@@ -150,6 +152,12 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 		return CodeHelper.convert(encounterSource);
 	}
 
+	private static String getEpisodeOfCare(List<Reference> episodesOfCare) {
+    	if (episodesOfCare == null || episodesOfCare.size() == 0)
+    		return null;
+
+    	return ReferenceHelper.getReferenceId(episodesOfCare.get(0), ResourceType.EpisodeOfCare);
+	}
 
 	public List<Reference> getReferences(List<Encounter> encounters) {
         return StreamExtension.concat(
