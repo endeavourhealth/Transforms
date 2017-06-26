@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
+import org.endeavourhealth.transform.ui.helpers.PeriodHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
 import org.endeavourhealth.transform.ui.models.resources.admin.UILocation;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
@@ -12,11 +13,11 @@ import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIEncounter;
 import org.endeavourhealth.transform.ui.models.types.UICodeableConcept;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
-import org.endeavourhealth.transform.ui.transforms.admin.UILocationTransform;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncounter> {
@@ -45,10 +46,51 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
                 .setReason(getEncounterReasons(encounter))
 								.setLocation(getActiveLocation(encounter, referencedResources))
 								.setMessageType(getMessageType(encounter))
-								.setEpisodeOfCare(getEpisodeOfCare(encounter.getEpisodeOfCare()));
+								.setEpisodeOfCare(getEpisodeOfCare(encounter.getEpisodeOfCare()))
+								.setAdmitted(getAdmittedDate(encounter.getStatusHistory()))
+								.setDischarged(getDischargedDate(encounter.getStatusHistory()))
+								.setDischargeLocation(getDischargeLocation(encounter.getHospitalization(), referencedResources))
+								.setDischargeDisposition(getDischargeDisposition(encounter.getHospitalization()));
     }
 
-    private static UICodeableConcept getEncounterSource(Encounter encounter) {
+	private static UILocation getDischargeLocation(Encounter.EncounterHospitalizationComponent hospitalization, ReferencedResources referencedResources) {
+		if (hospitalization == null || hospitalization.getDestination() == null)
+			return null;
+
+		return referencedResources.getUILocation(hospitalization.getDestination());
+	}
+
+	private static UICodeableConcept getDischargeDisposition(Encounter.EncounterHospitalizationComponent hospitalization) {
+		if (hospitalization == null || hospitalization.getDischargeDisposition() == null)
+			return null;
+
+		return CodeHelper.convert(hospitalization.getDischargeDisposition());
+	}
+
+	private static UIPeriod getAdmittedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
+		Optional<Encounter.EncounterStatusHistoryComponent> admission = statusHistory.stream()
+				.filter(sh -> sh.hasStatus() && sh.getStatus() == Encounter.EncounterState.ARRIVED)
+				.findFirst();
+
+		if (admission.isPresent())
+			return PeriodHelper.convert(admission.get().getPeriod());
+
+		return null;
+	}
+
+	private static UIPeriod getDischargedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
+		Optional<Encounter.EncounterStatusHistoryComponent> discharge = statusHistory.stream()
+				.filter(sh -> sh.hasStatus() && sh.getStatus() == Encounter.EncounterState.FINISHED)
+				.findFirst();
+
+		if (discharge.isPresent())
+			return PeriodHelper.convert(discharge.get().getPeriod());
+
+		return null;
+	}
+
+
+	private static UICodeableConcept getEncounterSource(Encounter encounter) {
         CodeableConcept encounterSource = ExtensionHelper.getExtensionValue(encounter, FhirExtensionUri.ENCOUNTER_SOURCE, CodeableConcept.class);
         return CodeHelper.convert(encounterSource);
     }

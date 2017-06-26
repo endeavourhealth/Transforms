@@ -29,6 +29,11 @@ public class UIEncounter extends UIResource<UIEncounter> {
     private UIPractitioner referredBy;
     private UICodeableConcept messageType;
     private String episodeOfCare;
+    private UIPeriod admitted;
+    private UIPeriod discharged;
+    private UILocation dischargeLocation;
+    private UICodeableConcept dischargeDisposition;
+
 
     public UIAppointment getAppointment() {
         return appointment;
@@ -160,6 +165,42 @@ public class UIEncounter extends UIResource<UIEncounter> {
 
 	public UIEncounter setEpisodeOfCare(String episodeOfCare) {
 		this.episodeOfCare = episodeOfCare;
+		return this;
+	}
+
+	public UIPeriod getAdmitted() {
+		return admitted;
+	}
+
+	public UIEncounter setAdmitted(UIPeriod admitted) {
+		this.admitted = admitted;
+		return this;
+	}
+
+	public UIPeriod getDischarged() {
+		return discharged;
+	}
+
+	public UIEncounter setDischarged(UIPeriod discharged) {
+		this.discharged = discharged;
+		return this;
+	}
+
+	public UILocation getDischargeLocation() {
+		return dischargeLocation;
+	}
+
+	public UIEncounter setDischargeLocation(UILocation dischargeLocation) {
+		this.dischargeLocation = dischargeLocation;
+		return this;
+	}
+
+	public UICodeableConcept getDischargeDisposition() {
+		return dischargeDisposition;
+	}
+
+	public UIEncounter setDischargeDisposition(UICodeableConcept dischargeDisposition) {
+		this.dischargeDisposition = dischargeDisposition;
 		return this;
 	}
 }
