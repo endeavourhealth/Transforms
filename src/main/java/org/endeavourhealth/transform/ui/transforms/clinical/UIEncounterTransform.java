@@ -3,15 +3,14 @@ package org.endeavourhealth.transform.ui.transforms.clinical;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
-import org.endeavourhealth.transform.ui.helpers.CodeHelper;
+import org.endeavourhealth.transform.ui.helpers.*;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
-import org.endeavourhealth.transform.ui.helpers.PeriodHelper;
-import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
 import org.endeavourhealth.transform.ui.models.resources.admin.UILocation;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIEncounter;
 import org.endeavourhealth.transform.ui.models.types.UICodeableConcept;
+import org.endeavourhealth.transform.ui.models.types.UIDate;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
 import org.hl7.fhir.instance.model.*;
 
@@ -67,24 +66,24 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 		return CodeHelper.convert(hospitalization.getDischargeDisposition());
 	}
 
-	private static UIPeriod getAdmittedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
+	private static UIDate getAdmittedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
 		Optional<Encounter.EncounterStatusHistoryComponent> admission = statusHistory.stream()
 				.filter(sh -> sh.hasStatus() && sh.getStatus() == Encounter.EncounterState.ARRIVED)
 				.findFirst();
 
 		if (admission.isPresent())
-			return PeriodHelper.convert(admission.get().getPeriod());
+			return DateHelper.convert(admission.get().getPeriod().getStart());
 
 		return null;
 	}
 
-	private static UIPeriod getDischargedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
+	private static UIDate getDischargedDate(List<Encounter.EncounterStatusHistoryComponent> statusHistory) {
 		Optional<Encounter.EncounterStatusHistoryComponent> discharge = statusHistory.stream()
 				.filter(sh -> sh.hasStatus() && sh.getStatus() == Encounter.EncounterState.FINISHED)
 				.findFirst();
 
 		if (discharge.isPresent())
-			return PeriodHelper.convert(discharge.get().getPeriod());
+			return DateHelper.convert(discharge.get().getPeriod().getEnd());
 
 		return null;
 	}
