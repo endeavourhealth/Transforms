@@ -308,8 +308,9 @@ public class FhirHl7v2Filer {
         ExchangeBatchRepository exchangeBatchRepository = new ExchangeBatchRepository();
         List<ExchangeBatch> batches = exchangeBatchRepository.retrieveForExchangeId(exchangeId);
         for (ExchangeBatch batch: batches) {
-            String batchPatientId = batch.getEdsPatientId().toString();
-            if (batchPatientId.equals(patientId)) {
+            UUID batchPatientUuid = batch.getEdsPatientId();
+            if (batchPatientUuid != null
+                    && batchPatientUuid.toString().equals(patientId)) {
                 return batch.getBatchId();
             }
         }
