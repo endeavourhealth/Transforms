@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperEpisodeOfCare extends BaseIdMapper {
@@ -50,5 +51,38 @@ public class IdMapperEpisodeOfCare extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(episodeOfCare.getPatient(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
+
+        if (episodeOfCare.hasIdentifier()) {
+            super.remapIdentifiers(episodeOfCare.getIdentifier(), idMappings);
+        }
+        if (episodeOfCare.hasCondition()) {
+            super.remapReferences(episodeOfCare.getCondition(), idMappings);
+        }
+        if (episodeOfCare.hasPatient()) {
+            super.remapReference(episodeOfCare.getPatient(), idMappings);
+        }
+        if (episodeOfCare.hasManagingOrganization()) {
+            super.remapReference(episodeOfCare.getManagingOrganization(), idMappings);
+        }
+        if (episodeOfCare.hasReferralRequest()) {
+            super.remapReferences(episodeOfCare.getReferralRequest(), idMappings);
+        }
+        if (episodeOfCare.hasCareManager()) {
+            super.remapReference(episodeOfCare.getCareManager(), idMappings);
+        }
+        if (episodeOfCare.hasCareTeam()) {
+            for (EpisodeOfCare.EpisodeOfCareCareTeamComponent careTeam: episodeOfCare.getCareTeam()) {
+                if (careTeam.hasMember()) {
+                    super.remapReference(careTeam.getMember(), idMappings);
+                }
+            }
+        }
+
+        super.remapCommonResourceFields(episodeOfCare, idMappings);
     }
 }

@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperEncounter extends BaseIdMapper {
@@ -61,5 +62,48 @@ public class IdMapperEncounter extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(encounter.getPatient(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        Encounter encounter = (Encounter)resource;
+
+        if (encounter.hasIdentifier()) {
+            super.remapIdentifiers(encounter.getIdentifier(), idMappings);
+        }
+        if (encounter.hasPatient()) {
+            super.remapReference(encounter.getPatient(), idMappings);
+        }
+        if (encounter.hasEpisodeOfCare()) {
+            super.remapReferences(encounter.getEpisodeOfCare(), idMappings);
+        }
+        if (encounter.hasIncomingReferral()) {
+            super.remapReferences(encounter.getIncomingReferral(), idMappings);
+        }
+        if (encounter.hasParticipant()) {
+            for (Encounter.EncounterParticipantComponent participant: encounter.getParticipant()) {
+                if (participant.hasIndividual()) {
+                    super.remapReference(participant.getIndividual(), idMappings);
+                }
+            }
+        }
+        if (encounter.hasAppointment()) {
+            super.remapReference(encounter.getAppointment(), idMappings);
+        }
+        if (encounter.hasIndication()) {
+            super.remapReferences(encounter.getIndication(), idMappings);
+        }
+        if (encounter.hasLocation()) {
+            for (Encounter.EncounterLocationComponent location: encounter.getLocation()) {
+                if (location.hasLocation()) {
+                    super.remapReference(location.getLocation(), idMappings);
+                }
+            }
+        }
+        if (encounter.hasServiceProvider()) {
+            super.remapReference(encounter.getServiceProvider(), idMappings);
+        }
+
+        super.remapCommonResourceFields(encounter, idMappings);
     }
 }

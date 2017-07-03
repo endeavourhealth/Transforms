@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.Immunization;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperImmunization extends BaseIdMapper {
@@ -60,5 +61,10 @@ public class IdMapperImmunization extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(immunization.getPatient(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        throw new Exception("Resource type not supported for remapping");
     }
 }

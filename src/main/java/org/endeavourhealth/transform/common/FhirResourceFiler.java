@@ -158,11 +158,16 @@ public class FhirResourceFiler {
         return patientBatch;
     }
 
-    private ExchangeBatch createExchangeBatch() {
+    public static ExchangeBatch createExchangeBatch(UUID exchangeId) {
         ExchangeBatch exchangeBatch = new ExchangeBatch();
         exchangeBatch.setBatchId(UUIDs.timeBased());
         exchangeBatch.setExchangeId(exchangeId);
         exchangeBatch.setInsertedAt(new Date());
+        return exchangeBatch;
+    }
+
+    private ExchangeBatch createExchangeBatch() {
+        ExchangeBatch exchangeBatch = createExchangeBatch(exchangeId);
         exchangeBatchRepository.save(exchangeBatch);
 
         UUID batchId = exchangeBatch.getBatchId();

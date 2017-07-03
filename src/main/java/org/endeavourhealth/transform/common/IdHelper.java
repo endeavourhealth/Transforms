@@ -222,4 +222,7 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, emisId);
     }
 
+    public static void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        getIdMapper(resource).remapIds(resource, idMappings);
+    }
 }

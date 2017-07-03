@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.idmappers;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public abstract class BaseIdMapper {
@@ -18,6 +20,8 @@ public abstract class BaseIdMapper {
     public abstract boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception;
 
     public abstract String getPatientId(Resource resource) throws PatientResourceException;
+
+    public abstract void remapIds(Resource resource, Map<String, String> idMappings) throws Exception;
 
     /**
      * maps the ID, extensions and contained resources in a FHIR resource
@@ -89,6 +93,55 @@ public abstract class BaseIdMapper {
         }
     }
 
+    protected void remapCommonResourceFields(DomainResource resource, Map<String, String> idMappings) throws Exception {
+        remapResourceId(resource, idMappings);
+        remapExtensions(resource, idMappings);
+        remapContainedResources(resource, idMappings);
+    }
+
+    private void remapResourceId(Resource resource, Map<String, String> idMappings) {
+
+        if (!resource.hasId()) {
+            return;
+        }
+
+        String referenceValue = ReferenceHelper.createResourceReference(resource.getResourceType(), resource.getId());
+        String newReferenceValue = idMappings.get(referenceValue);
+        if (Strings.isNullOrEmpty(newReferenceValue)) {
+            return;
+        }
+
+        Reference newReference = new Reference().setReference(newReferenceValue);
+        String newId = ReferenceHelper.getReferenceId(newReference);
+
+        resource.setId(newId);
+    }
+
+    private void remapExtensions(DomainResource resource, Map<String, String> idMappings) throws Exception {
+
+        if (!resource.hasExtension()) {
+            return;
+        }
+
+        for (Extension extension: resource.getExtension()) {
+            if (extension.hasValue()
+                    && extension.getValue() instanceof Reference) {
+                remapReference((Reference)extension.getValue(), idMappings);
+            }
+        }
+    }
+
+    private void remapContainedResources(DomainResource resource, Map<String, String> idMappings) throws Exception {
+
+        if (!resource.hasContained()) {
+            return;
+        }
+
+        for (Resource contained: resource.getContained()) {
+            //pass in false so we don't map the ID of the contained resource, since it's not supposed to be a global ID
+            IdHelper.remapIds(contained, idMappings);
+        }
+    }
 
     /**
      * maps the IDs in any identifiers of a resource
@@ -97,6 +150,14 @@ public abstract class BaseIdMapper {
         for (Identifier identifier: identifiers) {
             if (identifier.hasAssigner()) {
                 mapReference(identifier.getAssigner(), resource, serviceId, systemId);
+            }
+        }
+    }
+
+    protected void remapIdentifiers(List<Identifier> identifiers, Map<String, String> idMappings) throws Exception {
+        for (Identifier identifier: identifiers) {
+            if (identifier.hasAssigner()) {
+                remapReference(identifier.getAssigner(), idMappings);
             }
         }
     }
@@ -143,6 +204,35 @@ public abstract class BaseIdMapper {
     }
 
 
+    protected void remapReference(Reference reference, Map<String, String> idMappings) throws Exception {
+        if (reference == null) {
+            return;
+        }
 
+        if (reference.hasReference()) {
 
+            String referenceValue = reference.getReference();
+            String newReferenceValue = idMappings.get(referenceValue);
+            if (!Strings.isNullOrEmpty(newReferenceValue)) {
+                reference.setReference(newReferenceValue);
+            }
+
+        } else {
+
+            //if the reference doesn't have an actual reference, it will have an inline resource
+            Resource referredResource = (Resource)reference.getResource();
+            IdHelper.remapIds(referredResource, idMappings);
+        }
+    }
+
+    protected void remapReferences(List<Reference> references, Map<String, String> idMappings) throws Exception {
+        if (references == null
+                || references.isEmpty()) {
+            return;
+        }
+
+        for (Reference reference: references) {
+            remapReference(reference, idMappings);
+        }
+    }
 }

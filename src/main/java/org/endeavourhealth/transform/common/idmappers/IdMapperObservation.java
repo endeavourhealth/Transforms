@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.Observation;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperObservation extends BaseIdMapper {
@@ -50,5 +51,10 @@ public class IdMapperObservation extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(observation.getSubject(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        throw new Exception("Resource type not supported for remapping");
     }
 }

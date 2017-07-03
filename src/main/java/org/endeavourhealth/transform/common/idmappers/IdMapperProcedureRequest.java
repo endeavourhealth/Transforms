@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.ProcedureRequest;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperProcedureRequest extends BaseIdMapper {
@@ -48,5 +49,10 @@ public class IdMapperProcedureRequest extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(procedureRequest.getSubject(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        throw new Exception("Resource type not supported for remapping");
     }
 }

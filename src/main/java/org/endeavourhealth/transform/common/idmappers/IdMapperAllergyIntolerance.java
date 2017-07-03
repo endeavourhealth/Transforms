@@ -6,6 +6,7 @@ import org.hl7.fhir.instance.model.AllergyIntolerance;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperAllergyIntolerance extends BaseIdMapper {
@@ -35,5 +36,10 @@ public class IdMapperAllergyIntolerance extends BaseIdMapper {
             return ReferenceHelper.getReferenceId(allergyIntolerance.getPatient(), ResourceType.Patient);
         }
         return null;
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        throw new Exception("Resource type not supported for remapping");
     }
 }

@@ -4,6 +4,7 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Resource;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperPatient extends BaseIdMapper {
@@ -43,5 +44,10 @@ public class IdMapperPatient extends BaseIdMapper {
 
         Patient patient = (Patient)resource;
         return patient.getId();
+    }
+
+    @Override
+    public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
+        throw new Exception("Resource type not supported for remapping");
     }
 }
