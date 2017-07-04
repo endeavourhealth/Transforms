@@ -111,6 +111,8 @@ public class FhirHl7v2Filer {
 
             //copy and remap the resource, then save
             Resource fhirAmended = fhirOriginal.copy();
+            fhirAmended.setId(fhirOriginal.getId()); //NOTE; copy() doesn't carry over the ID
+
             IdHelper.remapIds(fhirAmended, idMappings);
             storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
@@ -221,6 +223,7 @@ public class FhirHl7v2Filer {
             String json = minorPatientResource.getResourceData();
             Resource fhirOriginal = ParserPool.getInstance().parse(json);
             Resource fhirAmended = fhirOriginal.copy();
+            fhirAmended.setId(fhirOriginal.getId()); //NOTE; copy() doesn't carry over the ID
 
             if (fhirAmended instanceof Patient) {
                 //we don't want to move patient resources, so do nothing and let the delete happen
