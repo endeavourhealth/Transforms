@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.fhirhl7v2;
 import com.google.common.base.Strings;
 import org.apache.commons.codec.binary.StringUtils;
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
@@ -16,6 +18,7 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.transform.ui.helpers.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +81,15 @@ public class FhirHl7v2Filer {
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
         String majorPatientId = findParameterValue(parameters, "MajorPatientUuid");
 
+        LOG.debug("Doing A44 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
+
         Map<String, String> idMappings = createIdMappings(parameters);
+
+        LOG.debug("Id mappings are");
+        for (String key: idMappings.keySet()) {
+            String value = idMappings.get(key);
+            LOG.debug(key + " -> " + value);
+        }
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
         String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId.toString());
@@ -102,6 +113,7 @@ public class FhirHl7v2Filer {
             //the patient resource, as we've manually added its ID into the map)
             if (resourceType == ResourceType.Patient
                     || !idMappings.containsKey(resourceReference)) {
+                LOG.debug("Skipping " + resourceType + " " + minorPatientResource.getResourceId());
                 continue;
             }
 
@@ -112,12 +124,14 @@ public class FhirHl7v2Filer {
             //copy and remap the resource, then save
             //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
             Resource fhirAmended = ParserPool.getInstance().parse(json);
-
             IdHelper.remapIds(fhirAmended, idMappings);
+
             storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
             //finally delete the resource from the old patient
             storageService.exchangeBatchDelete(exchangeId, minorBatchId, fhirOriginal);
+
+            LOG.debug("Moved " + resourceType + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
     }
 
@@ -129,6 +143,8 @@ public class FhirHl7v2Filer {
 
         String minorEpisodeOfCareId = findParameterValue(parameters, "MinorEpisodeOfCareUuid");
         String majorEpisodeOfCareId = findParameterValue(parameters, "MajorEpisodeOfCareUuid");
+
+        LOG.debug("Doing A35 merge for patient " + patientId + " and minor episode " + minorEpisodeOfCareId + " to major episode " + majorEpisodeOfCareId);
 
         String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorEpisodeOfCareId);
         String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorEpisodeOfCareId);
@@ -150,8 +166,11 @@ public class FhirHl7v2Filer {
 
             } else if (resourceType == ResourceType.EpisodeOfCare) {
                 //we want to delete the old episode of care
-                Resource resource = ParserPool.getInstance().parse(json);
-                storageService.exchangeBatchDelete(exchangeId, batchId, resource);
+                EpisodeOfCare episodeOfCare = (EpisodeOfCare)ParserPool.getInstance().parse(json);
+                if (episodeOfCare.getId().equals(minorEpisodeOfCareId)) {
+                    storageService.exchangeBatchDelete(exchangeId, batchId, episodeOfCare);
+                    LOG.debug("Deleting episode " + episodeOfCare.getId());
+                }
 
             } else if (resourceType == ResourceType.Encounter) {
                 //we want to point encounters at the new episode of care
@@ -168,6 +187,7 @@ public class FhirHl7v2Filer {
 
                 if (changed) {
                     storageService.exchangeBatchUpdate(exchangeId, batchId, encounter, false);
+                    LOG.debug("Moved Encounter " + encounter.getId() + " to point at " + majorEpisodeReference);
                 }
 
             } else {
@@ -185,7 +205,7 @@ public class FhirHl7v2Filer {
         String majorPatientId = findParameterValue(parameters, "MajorPatientUuid");
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
 
-        LOG.debug("Doing A34 merge for major patient " + majorPatientId + " to minor patient " + minorPatientId);
+        LOG.debug("Doing A34 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
         Map<String, String> idMappings = createIdMappings(parameters);
 
@@ -242,6 +262,8 @@ public class FhirHl7v2Filer {
 
             //finally delete the resource from the old patient
             storageService.exchangeBatchDelete(exchangeId, minorBatchId, fhirOriginal);
+
+            LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
     }
 
@@ -367,6 +389,13 @@ public class FhirHl7v2Filer {
             Resource resource = entry.getResource();
             if (resource.getResourceType() == ResourceType.MessageHeader) {
                 MessageHeader header = (MessageHeader)resource;
+
+                //log out the control ID for now, so we can cross-reference back to the HL7 Receiver
+                Extension extension = ExtensionConverter.findExtension(header, FhirExtensionUri.EXTENSION_HL7V2_MESSAGE_CONTROL_ID);
+                if (extension != null) {
+                    LOG.debug("Received ADT message with control ID " + extension.getValue().toString());
+                }
+
                 Coding event = header.getEvent();
                 if (event.getSystem().equals(FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE)) {
                     return event.getCode();
