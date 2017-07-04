@@ -17,6 +17,8 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class FhirHl7v2Filer {
+    private static final Logger LOG = LoggerFactory.getLogger(FhirHl7v2Filer.class);
 
     private static final String ADT_A34 = "ADT^A34";
     private static final String ADT_A35 = "ADT^A35";
@@ -50,13 +53,17 @@ public class FhirHl7v2Filer {
 
         //see if there's any special work we need to do for merging/moving
         String adtMessageType = findAdtMessageType(bundle);
+        LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
         if (adtMessageType.equals(ADT_A34)) {
+            LOG.debug("Processing A34");
             performA34PatientMerge(exchangeId, serviceId, systemId, batchIds, bundle);
 
         } else if (adtMessageType.equals(ADT_A35)) {
+            LOG.debug("Processing A35");
             performA35EpisodeMerge(exchangeId, serviceId, systemId, batchIds, bundle);
 
         } else if (adtMessageType.equals(ADT_A44)) {
+            LOG.debug("Processing A44");
             performA44EpisodeMove(exchangeId, serviceId, systemId, batchIds, bundle);
 
         } else {
@@ -176,7 +183,15 @@ public class FhirHl7v2Filer {
         String majorPatientId = findParameterValue(parameters, "MajorPatientUuid");
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
 
+        LOG.debug("Doing A34 merge for major patient " + majorPatientId + " to minor patient " + minorPatientId);
+
         Map<String, String> idMappings = createIdMappings(parameters);
+
+        LOG.debug("Id mappings are");
+        for (String key: idMappings.keySet()) {
+            String value = idMappings.get(key);
+            LOG.debug(key + " -> " + value);
+        }
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);
@@ -212,8 +227,13 @@ public class FhirHl7v2Filer {
 
             } else {
                 //for all other resources, re-map the IDs and save to the DB
-                IdHelper.remapIds(fhirAmended, idMappings);
-                storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
+                try {
+                    IdHelper.remapIds(fhirAmended, idMappings);
+                    storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
+
+                } catch (Exception ex) {
+                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + fhirOriginal.getId() + " and now has " + fhirAmended.getId());
+                }
             }
 
             //finally delete the resource from the old patient
