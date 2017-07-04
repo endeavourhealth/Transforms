@@ -5,11 +5,15 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
 
 public class IdMapperEncounter extends BaseIdMapper {
+    private static final Logger LOG = LoggerFactory.getLogger(IdMapperEncounter.class);
+
     @Override
     public boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception {
         Encounter encounter = (Encounter)resource;
@@ -67,6 +71,7 @@ public class IdMapperEncounter extends BaseIdMapper {
     @Override
     public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
         Encounter encounter = (Encounter)resource;
+        LOG.debug("Remapping ID for Encounter " + encounter.getId() + " from ID map sized " + idMappings.size());
 
         if (encounter.hasIdentifier()) {
             super.remapIdentifiers(encounter.getIdentifier(), idMappings);
@@ -105,5 +110,6 @@ public class IdMapperEncounter extends BaseIdMapper {
         }
 
         super.remapCommonResourceFields(encounter, idMappings);
+        LOG.debug("Encounter ID now " + encounter.getId());
     }
 }

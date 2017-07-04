@@ -102,17 +102,20 @@ public abstract class BaseIdMapper {
     private void remapResourceId(Resource resource, Map<String, String> idMappings) {
 
         if (!resource.hasId()) {
+            LOG.debug("" + resource.getResourceType() + " " + resource.getId() + " doesn't have an ID to remap");
             return;
         }
 
         String referenceValue = ReferenceHelper.createResourceReference(resource.getResourceType(), resource.getId());
         String newReferenceValue = idMappings.get(referenceValue);
         if (Strings.isNullOrEmpty(newReferenceValue)) {
+            LOG.debug("" + resource.getResourceType() + " " + resource.getId() + " maps to [" + newReferenceValue + "] new ID so not remapping");
             return;
         }
 
         Reference newReference = new Reference().setReference(newReferenceValue);
         String newId = ReferenceHelper.getReferenceId(newReference);
+        LOG.debug("" + resource.getResourceType() + " " + resource.getId() + " maps to [" + newReferenceValue + "] so new ID is [" + newId + "]");
 
         resource.setId(newId);
     }
