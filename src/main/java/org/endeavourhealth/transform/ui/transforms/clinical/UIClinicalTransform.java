@@ -1,8 +1,11 @@
 package org.endeavourhealth.transform.ui.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
@@ -24,9 +27,20 @@ public abstract class UIClinicalTransform<T extends Resource, U extends UIResour
     	if (reference == null)
     		return null;
 
-    	String referenceId = ReferenceHelper.getReferenceId(reference, ResourceType.Practitioner)
-					.replace("{", "")
-					.replace("}","");			// Work-around for {} transform issue
+        //work around for failing to transform some references in nested extensions
+        String referenceId = null;
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+        if (comps != null) {
+            referenceId = comps.getId();
+
+            //if the reference value has the starting and ending curly braces, it's an Emis GUID so manually convert it
+            if (!Strings.isNullOrEmpty(referenceId)
+                    && referenceId.startsWith("{")
+                    && referenceId.endsWith("}")) {
+                ResourceType resourceType = comps.getResourceType();
+                referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, resourceType, referenceId);
+            }
+        }
 
     	if (referenceId == null)
     		return null;
