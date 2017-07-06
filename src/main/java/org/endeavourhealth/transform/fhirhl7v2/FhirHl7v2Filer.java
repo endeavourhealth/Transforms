@@ -54,6 +54,14 @@ public class FhirHl7v2Filer {
 
         fhirResourceFiler.waitToFinish();
 
+        //need to handle the parameters object being null since we're not receiving it yet in AIMES
+        try {
+            Parameters parameters = findParameters(bundle);
+        } catch (TransformException ex) {
+            //if we get an exception, there are no parameter, so just return out
+            return;
+        }
+
         //see if there's any special work we need to do for merging/moving
         String adtMessageType = findAdtMessageType(bundle);
         LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
