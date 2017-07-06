@@ -10,24 +10,25 @@ import org.hl7.fhir.instance.model.FamilyMemberHistory;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIFamilyMemberHistoryTransform extends UIClinicalTransform<FamilyMemberHistory, UIFamilyMemberHistory> {
 
     @Override
-    public List<UIFamilyMemberHistory> transform(List<FamilyMemberHistory> resources, ReferencedResources referencedResources) {
+    public List<UIFamilyMemberHistory> transform(UUID serviceId, UUID systemId, List<FamilyMemberHistory> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIFamilyMemberHistory transform(FamilyMemberHistory familyMemberHistory, ReferencedResources referencedResources) {
+    private static UIFamilyMemberHistory transform(UUID serviceId, UUID systemId, FamilyMemberHistory familyMemberHistory, ReferencedResources referencedResources) {
 
         return new UIFamilyMemberHistory()
                 .setId(familyMemberHistory.getId())
                 .setCode(CodeHelper.convert(familyMemberHistory.getRelationship()))
-                .setRecordingPractitioner(getRecordedByExtensionValue(familyMemberHistory, referencedResources))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(familyMemberHistory)))
                 .setRecordedDate(getRecordedDate(familyMemberHistory))
                 .setNotes(getNotes(familyMemberHistory.getNote()))
                 .setConditions(getConditions(familyMemberHistory.getCondition()));

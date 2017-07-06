@@ -5,58 +5,60 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.ui.helpers.*;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
-import org.endeavourhealth.transform.ui.models.resources.admin.UILocation;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIEncounter;
 import org.endeavourhealth.transform.ui.models.types.UICodeableConcept;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncounter> {
 
-    public List<UIEncounter> transform(List<Encounter> encounters, ReferencedResources referencedResources) {
+    public List<UIEncounter> transform(UUID serviceId, UUID systemId, List<Encounter> encounters, ReferencedResources referencedResources) {
         return encounters
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIEncounter transform(Encounter encounter, ReferencedResources referencedResources) {
+    private static UIEncounter transform(UUID serviceId, UUID systemId, Encounter encounter, ReferencedResources referencedResources) {
 
         return new UIEncounter()
                 .setId(encounter.getId())
                 .setStatus(getStatus(encounter))
 								.setClass_(getClass(encounter))
 								.setTypes(getTypes(encounter))
-                .setPerformedBy(getPerformedBy(encounter, referencedResources))
-                .setRecordedBy(getRecordedBy(encounter, referencedResources))
-								.setReferredBy(getReferredBy(encounter, referencedResources))
+                .setPerformedBy(getPerformedBy(serviceId, systemId, encounter))
+                .setRecordedBy(getRecordedBy(serviceId, systemId, encounter))
+								.setReferredBy(getReferredBy(serviceId, systemId, encounter))
                 .setPeriod(getPeriod(encounter.getPeriod()))
-                .setServiceProvider(getServiceProvider(encounter, referencedResources))
+                .setServiceProvider(getServiceProvider(serviceId, systemId, encounter))
                 .setRecordedDate(getRecordedDateExtensionValue(encounter))
                 .setEncounterSource(getEncounterSource(encounter))
                 .setReason(getEncounterReasons(encounter))
-								.setLocation(getActiveLocation(encounter, referencedResources))
+								.setLocation(getActiveLocation(serviceId, systemId, encounter))
 								.setMessageType(getMessageType(encounter))
 								.setEpisodeOfCare(getEpisodeOfCare(encounter.getEpisodeOfCare()))
 								.setAdmitted(getAdmittedDate(encounter.getStatusHistory()))
 								.setDischarged(getDischargedDate(encounter.getStatusHistory()))
-								.setDischargeLocation(getDischargeLocation(encounter.getHospitalization(), referencedResources))
+								.setDischargeLocation(getDischargeLocation(serviceId, systemId, encounter.getHospitalization()))
 								.setDischargeDisposition(getDischargeDisposition(encounter.getHospitalization()));
     }
 
-	private static UILocation getDischargeLocation(Encounter.EncounterHospitalizationComponent hospitalization, ReferencedResources referencedResources) {
-		if (hospitalization == null || hospitalization.getDestination() == null)
+	private static UIInternalIdentifier getDischargeLocation(UUID serviceId, UUID systemId, Encounter.EncounterHospitalizationComponent hospitalization) {
+		if (hospitalization == null || hospitalization.getDestination() == null || hospitalization.getDestination().getReference() == null)
 			return null;
 
-		return referencedResources.getUILocation(hospitalization.getDestination());
+		return new UIInternalIdentifier()
+				.setServiceId(serviceId)
+				.setSystemId(systemId)
+				.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(hospitalization.getDestination(), ResourceType.Location)));
 	}
 
 	private static UICodeableConcept getDischargeDisposition(Encounter.EncounterHospitalizationComponent hospitalization) {
@@ -94,12 +96,16 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
         return CodeHelper.convert(encounterSource);
     }
 
-    private static UIOrganisation getServiceProvider(Encounter encounter, ReferencedResources referencedResources) {
+    private static UIInternalIdentifier getServiceProvider(UUID serviceId, UUID systemId, Encounter encounter) {
         if (!encounter.hasServiceProvider())
             return null;
 
-        return referencedResources.getUIOrganisation(encounter.getServiceProvider());
-    }
+        return new UIInternalIdentifier()
+						.setServiceId(serviceId)
+						.setSystemId(systemId)
+						.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(encounter.getServiceProvider(), ResourceType.Organization)));
+
+		}
 
     private static UIPeriod getPeriod(Period period) {
         return new UIPeriod().setStart(period.getStart());
@@ -132,40 +138,52 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
 			return types;
 		}
 
-    private static UIPractitioner getPerformedBy(Encounter encounter, ReferencedResources referencedResources) {
+    private static UIInternalIdentifier getPerformedBy(UUID serviceId, UUID systemId, Encounter encounter) {
 			for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
 				if (component.getType().size() > 0)
 					if (component.getType().get(0).getCoding().size() > 0)
 						if (component.getType().get(0).getCoding().get(0).getCode().equals("PPRF"))
-							return referencedResources.getUIPractitioner(component.getIndividual());
+							return new UIInternalIdentifier()
+								.setServiceId(serviceId)
+								.setSystemId(systemId)
+								.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(component.getIndividual(), ResourceType.Practitioner)));
 
 			// If no primary performer, look for attender
 			for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
 				if (component.getType().size() > 0)
 					if (component.getType().get(0).getCoding().size() > 0)
 						if (component.getType().get(0).getCoding().get(0).getCode().equals("ATND"))
-							return referencedResources.getUIPractitioner(component.getIndividual());
+							return new UIInternalIdentifier()
+									.setServiceId(serviceId)
+									.setSystemId(systemId)
+									.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(component.getIndividual(), ResourceType.Practitioner)));
 
 			return null;
 		}
 
-	private static UIPractitioner getReferredBy(Encounter encounter, ReferencedResources referencedResources) {
+	private static UIInternalIdentifier getReferredBy(UUID serviceId, UUID systemId, Encounter encounter) {
 		for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
 			if (component.getType().size() > 0)
 				if (component.getType().get(0).getCoding().size() > 0)
 					if (component.getType().get(0).getCoding().get(0).getCode().equals("REF"))
-						return referencedResources.getUIPractitioner(component.getIndividual());
+						return new UIInternalIdentifier()
+								.setServiceId(serviceId)
+								.setSystemId(systemId)
+								.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(component.getIndividual(), ResourceType.Practitioner)));
 
 		return null;
 	}
 
-    private static UIPractitioner getRecordedBy(Encounter encounter, ReferencedResources referencedResources) {
+    private static UIInternalIdentifier getRecordedBy(UUID serviceId, UUID systemId, Encounter encounter) {
         for (Encounter.EncounterParticipantComponent component : encounter.getParticipant())
             if (component.getType().size() > 0)
                 if (component.getType().get(0).getText() == ("Entered by"))
-                    return referencedResources.getUIPractitioner(component.getIndividual());
+                    return new UIInternalIdentifier()
+												.setServiceId(serviceId)
+												.setSystemId(systemId)
+												.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(component.getIndividual(), ResourceType.Practitioner)));
 
-        return null;
+			return null;
     }
 
     private static List<UICodeableConcept> getEncounterReasons(Encounter encounter) {
@@ -178,11 +196,15 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
         return reasons;
     }
 
-    private static UILocation getActiveLocation(Encounter encounter, ReferencedResources referencedResources) {
+    private static UIInternalIdentifier getActiveLocation(UUID serviceId, UUID systemId, Encounter encounter) {
 
     	for(Encounter.EncounterLocationComponent location : encounter.getLocation()) {
     		if (location.hasLocation() && location.hasStatus() && location.getStatus() == Encounter.EncounterLocationStatus.ACTIVE)
-    			return referencedResources.getUILocation(location.getLocation());
+    			return new UIInternalIdentifier()
+							.setServiceId(serviceId)
+							.setSystemId(systemId)
+							.setResourceId(UUID.fromString(ReferenceHelper.getReferenceId(location.getLocation(), ResourceType.Location)));
+
 			}
 
 			return null;
@@ -214,12 +236,6 @@ public class UIEncounterTransform extends UIClinicalTransform<Encounter, UIEncou
                         .stream()
                         .filter(t -> t.hasIncomingReferral())
                         .flatMap(t -> t.getIncomingReferral().stream()),
-                encounters
-                        .stream()
-                        .filter(t -> t.hasParticipant())
-                        .flatMap(t -> t.getParticipant().stream())
-                        .filter(t -> t.hasIndividual())
-                        .map(t -> t.getIndividual()),
                 encounters
                         .stream()
                         .filter(t -> t.hasAppointment())

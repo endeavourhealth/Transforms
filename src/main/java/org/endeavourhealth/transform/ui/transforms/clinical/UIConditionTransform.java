@@ -6,7 +6,6 @@ import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UICondition;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIProblem;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
@@ -14,20 +13,21 @@ import org.hl7.fhir.instance.model.Condition;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIConditionTransform extends UIClinicalTransform<Condition, UICondition> {
 
     @Override
-    public List<UICondition> transform(List<Condition> resources, ReferencedResources referencedResources) {
+    public List<UICondition> transform(UUID serviceId, UUID systemId, List<Condition> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
                 .filter(t -> (!t.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM)))
-                .map(t -> transform(t, referencedResources, false))
+                .map(t -> transform(serviceId, systemId, t, referencedResources, false))
                 .collect(Collectors.toList());
     }
 
-    static UICondition transform(Condition condition, ReferencedResources referencedResources, boolean createProblem) {
+    static UICondition transform(UUID serviceId, UUID systemId, Condition condition, ReferencedResources referencedResources, boolean createProblem) {
         try {
             UICondition uiCondition = new UICondition();
 
@@ -37,9 +37,9 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
             return uiCondition
                     .setId(condition.getId())
                     .setCode(CodeHelper.convert(condition.getCode()))
-                    .setEffectivePractitioner(getAsserter(condition, referencedResources))
+                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, condition.getAsserter()))
                     .setEffectiveDate(getOnsetDateTime(condition))
-                    .setRecordingPractitioner(getRecordedByExtensionValue(condition, referencedResources))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(condition)))
                     .setRecordedDate(getDateRecorded(condition))
                     .setClinicalStatus(condition.getClinicalStatus())
                     .setVerificationStatus(getConditionVerificationStatus(condition))
@@ -76,13 +76,6 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
         return condition.getVerificationStatus().toCode();
     }
 
-    private static UIPractitioner getAsserter(Condition condition, ReferencedResources referencedResources) {
-        if (!condition.hasAsserter())
-            return null;
-
-        return referencedResources.getUIPractitioner(condition.getAsserter());
-    }
-
     private static UIDate getOnsetDateTime(Condition condition) throws Exception {
         if (!condition.hasOnsetDateTimeType())
             return DateHelper.getUnknownDate();
@@ -112,19 +105,8 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
         return StreamExtension.concat(
                 resources
                         .stream()
-                        .map(t -> t.getPatient()),
-                resources
-                        .stream()
                         .filter(t -> t.hasEncounter())
                         .map(t -> t.getEncounter()),
-                resources
-                        .stream()
-                        .filter(t -> t.hasAsserter())
-                        .map(t -> t.getAsserter()),
-                resources
-                        .stream()
-                        .map(t -> getRecordedByExtensionValue(t))
-                        .filter(t -> (t != null)),
                 resources
                         .stream()
                         .filter(t -> t.hasStage())

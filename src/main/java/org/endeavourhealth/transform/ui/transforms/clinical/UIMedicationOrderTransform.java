@@ -11,14 +11,15 @@ import org.endeavourhealth.transform.ui.models.types.UIQuantity;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOrder, UIMedicationOrder> {
 		@Override
-		public List<UIMedicationOrder> transform (List <MedicationOrder> resources, ReferencedResources referencedResources){
+		public List<UIMedicationOrder> transform (UUID serviceId, UUID systemId, List <MedicationOrder> resources, ReferencedResources referencedResources){
 		return resources
 				.stream()
-				.map(t -> transform(t, referencedResources))
+				.map(t -> transform(serviceId, systemId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 
@@ -26,12 +27,12 @@ public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOr
 		return ExtensionHelper.getExtensionValue(resource, FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, Reference.class);
 	}
 
-	private UIMedicationOrder transform(MedicationOrder medicationOrder, ReferencedResources referencedResources) {
+	private UIMedicationOrder transform(UUID serviceId, UUID systemId, MedicationOrder medicationOrder, ReferencedResources referencedResources) {
 		return new UIMedicationOrder()
 				.setId(medicationOrder.getId())
 				.setMedicationStatement(getMedicationStatement(medicationOrder, referencedResources))
 				.setDate(medicationOrder.getDateWritten())
-				.setPrescriber(referencedResources.getUIPractitioner(medicationOrder.getPrescriber()))
+				.setPrescriber(getPractitionerInternalIdentifer(serviceId, systemId, medicationOrder.getPrescriber()))
 				.setQuantity(getQuantity(medicationOrder.getDispenseRequest()))
 				.setExpectedDuration(getExpectedDuration(medicationOrder.getDispenseRequest()));
 	}
@@ -62,10 +63,6 @@ public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOr
 						.stream()
 						.filter(t -> t.hasPatient())
 						.map(t -> t.getPatient()),
-				resources
-						.stream()
-						.filter(t -> t.hasPrescriber())
-						.map(t -> t.getPrescriber()),
 				resources
 					.stream()
 						.map(t -> getMedicationStatementExtensionValue(t))

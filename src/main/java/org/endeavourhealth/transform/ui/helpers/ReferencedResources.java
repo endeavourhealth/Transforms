@@ -19,11 +19,10 @@ import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ReferencedResources {
-	private List<Practitioner> practitioners = new ArrayList<>();
-	private List<UIPractitioner> uiPractitioners = new ArrayList<>();
 	private List<Organization> organisations = new ArrayList<>();
 	private List<UIOrganisation> uiOrganisations = new ArrayList<>();
 	private List<Location> locations = new ArrayList<>();
@@ -34,28 +33,6 @@ public class ReferencedResources {
 	private List<UIMedicationStatement> uiMedicationStatements = new ArrayList<>();
 	private List<Observation> observations = new ArrayList<>();
 	private List<UIObservation> uiObservations = new ArrayList<>();
-
-	public void setPractitioners(List<Practitioner> practitioners) {
-		this.practitioners = practitioners;
-
-		this.uiPractitioners = practitioners
-				.stream()
-				.map(t -> UIPractitionerTransform.transform(t))
-				.collect(Collectors.toList());
-	}
-
-	public UIPractitioner getUIPractitioner(Reference reference) {
-		String referenceId = ReferenceHelper.getReferenceId(reference, ResourceType.Practitioner);
-
-		if (StringUtils.isEmpty(referenceId))
-			return null;
-
-		return this
-				.uiPractitioners
-				.stream()
-				.filter(t -> referenceId.equals(t.getId()))
-				.collect(StreamExtension.firstOrNullCollector());
-	}
 
 	public UIOrganisation getUIOrganisation(Reference reference) {
 		String referenceId = ReferenceHelper.getReferenceId(reference, ResourceType.Organization);
@@ -123,12 +100,12 @@ public class ReferencedResources {
 				.collect(StreamExtension.firstOrNullCollector());
 	}
 
-	public void setMedicationStatements(List<MedicationStatement> medicationStatements, ReferencedResources referencedResources) {
+	public void setMedicationStatements(UUID serviceId, UUID systemId, List<MedicationStatement> medicationStatements, ReferencedResources referencedResources) {
 		this.medicationStatements = medicationStatements;
 
 		this.uiMedicationStatements = medicationStatements
 				.stream()
-				.map(t -> UIMedicationStatementTransform.transform(t, referencedResources))
+				.map(t -> UIMedicationStatementTransform.transform(serviceId, systemId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 
@@ -145,11 +122,11 @@ public class ReferencedResources {
 				.collect(StreamExtension.firstOrNullCollector());
 	}
 
-	public void setObservations(List<Observation> observations, ReferencedResources referencedResources) {
+	public void setObservations(UUID serviceId, UUID systemId, List<Observation> observations, ReferencedResources referencedResources) {
 		this.observations = observations;
 		this.uiObservations = observations
 				.stream()
-				.map(t -> UIObservationTransform.transform(t, referencedResources))
+				.map(t -> UIObservationTransform.transform(serviceId, systemId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 

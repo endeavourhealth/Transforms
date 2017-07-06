@@ -11,18 +11,19 @@ import org.hl7.fhir.instance.model.Reference;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIDiaryTransform extends UIClinicalTransform<ProcedureRequest, UIDiary> {
     @Override
-    public List<UIDiary> transform(List<ProcedureRequest> resources, ReferencedResources referencedResources) {
+    public List<UIDiary> transform(UUID serviceId, UUID systemId, List<ProcedureRequest> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private UIDiary transform(ProcedureRequest procedureRequest, ReferencedResources referencedResources) {
+    private UIDiary transform(UUID serviceId, UUID systemId, ProcedureRequest procedureRequest, ReferencedResources referencedResources) {
         return new UIDiary()
                 .setId(procedureRequest.getId())
                 .setCode(CodeHelper.convert(procedureRequest.getCode()))

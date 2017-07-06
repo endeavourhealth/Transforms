@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.ui.models.resources.clinicial;
 
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 import org.endeavourhealth.transform.ui.models.types.UIQuantity;
 
 import java.util.Date;
@@ -9,7 +9,7 @@ import java.util.Date;
 public class UIMedicationOrder extends UIResource<UIMedicationOrder> {
 	private UIMedicationStatement medicationStatement;
 	private Date date;
-	private UIPractitioner prescriber;
+	private UIInternalIdentifier prescriber;
 	private UIQuantity quantity;
 	private String expectedDuration;
 
@@ -31,11 +31,11 @@ public class UIMedicationOrder extends UIResource<UIMedicationOrder> {
 		return this;
 	}
 
-	public UIPractitioner getPrescriber() {
+	public UIInternalIdentifier getPrescriber() {
 		return prescriber;
 	}
 
-	public UIMedicationOrder setPrescriber(UIPractitioner prescriber) {
+	public UIMedicationOrder setPrescriber(UIInternalIdentifier prescriber) {
 		this.prescriber = prescriber;
 		return this;
 	}

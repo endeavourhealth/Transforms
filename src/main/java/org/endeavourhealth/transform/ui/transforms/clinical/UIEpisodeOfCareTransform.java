@@ -3,31 +3,31 @@ package org.endeavourhealth.transform.ui.transforms.clinical;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIEpisodeOfCare;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIEpisodeOfCareTransform extends UIClinicalTransform<EpisodeOfCare, UIEpisodeOfCare> {
 
-    public List<UIEpisodeOfCare> transform(List<EpisodeOfCare> episodesOfCare, ReferencedResources referencedResources) {
+    public List<UIEpisodeOfCare> transform(UUID serviceId, UUID systemId, List<EpisodeOfCare> episodesOfCare, ReferencedResources referencedResources) {
         return episodesOfCare
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIEpisodeOfCare transform(EpisodeOfCare episodeOfCare, ReferencedResources referencedResources) {
+    private static UIEpisodeOfCare transform(UUID serviceId, UUID systemId, EpisodeOfCare episodeOfCare, ReferencedResources referencedResources) {
 
         return new UIEpisodeOfCare()
                 .setId(episodeOfCare.getId())
                 .setStatus(getStatus(episodeOfCare))
                 .setManagingOrganisation(getManagingOrganisation(episodeOfCare, referencedResources))
                 .setPeriod(getPeriod(episodeOfCare.getPeriod()))
-                .setCareManager(getCareManager(episodeOfCare, referencedResources));
+                .setCareManager(getPractitionerInternalIdentifer(serviceId, systemId, episodeOfCare.getCareManager()));
     }
 
     private static String getStatus(EpisodeOfCare episodeOfCare) {
@@ -55,13 +55,6 @@ public class UIEpisodeOfCareTransform extends UIClinicalTransform<EpisodeOfCare,
         return uiPeriod;
     }
 
-    private static UIPractitioner getCareManager(EpisodeOfCare episodeOfCare, ReferencedResources referencedResources) {
-        if (!episodeOfCare.hasCareManager())
-            return null;
-
-        return referencedResources.getUIPractitioner(episodeOfCare.getCareManager());
-    }
-
     public List<Reference> getReferences(List<EpisodeOfCare> episodesOfCare) {
         return StreamExtension.concat(
             episodesOfCare
@@ -71,11 +64,7 @@ public class UIEpisodeOfCareTransform extends UIClinicalTransform<EpisodeOfCare,
             episodesOfCare
                         .stream()
                         .filter(EpisodeOfCare::hasManagingOrganization)
-                        .map(EpisodeOfCare::getManagingOrganization),
-            episodesOfCare
-                        .stream()
-                        .filter(EpisodeOfCare::hasCareManager)
-                        .map(EpisodeOfCare::getCareManager))
+                        .map(EpisodeOfCare::getManagingOrganization))
             .collect(Collectors.toList());
     }
 }

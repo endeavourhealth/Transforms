@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.types.UICode;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UIProblem extends UICondition {
     private Integer expectedDuration;
     private UIDate lastReviewDate;
-    private UIPractitioner lastReviewer;
+    private UIInternalIdentifier lastReviewer;
     private UICode significance;
     private UIProblem relatedProblem;
     private String relationshipType;
@@ -41,11 +42,11 @@ public class UIProblem extends UICondition {
         return this;
     }
 
-    public UIPractitioner getLastReviewer() {
+    public UIInternalIdentifier getLastReviewer() {
         return lastReviewer;
     }
 
-    public UIProblem setLastReviewer(UIPractitioner lastReviewer) {
+    public UIProblem setLastReviewer(UIInternalIdentifier lastReviewer) {
         this.lastReviewer = lastReviewer;
         return this;
     }

@@ -6,34 +6,34 @@ import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
+import org.endeavourhealth.transform.ui.models.resources.clinicial.UIProblem;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIProblem;
 import org.endeavourhealth.transform.ui.models.types.UICode;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem> {
 
     @Override
-    public List<UIProblem> transform(List<Condition> resources, ReferencedResources referencedResources) {
+    public List<UIProblem> transform(UUID serviceId, UUID systemId, List<Condition> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
                 .filter(t -> t.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM))
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private UIProblem transform(Condition condition, ReferencedResources referencedResources) {
-        UIProblem uiProblem = (UIProblem) UIConditionTransform.transform(condition, referencedResources, true);
+    private UIProblem transform(UUID serviceId, UUID systemId, Condition condition, ReferencedResources referencedResources) {
+        UIProblem uiProblem = (UIProblem) UIConditionTransform.transform(serviceId, systemId, condition, referencedResources, true);
 
         return uiProblem
                 .setExpectedDuration(getExpectedDuration(condition))
                 .setLastReviewDate(getLastReviewDate(condition))
-                .setLastReviewer(getLastReviewer(condition, referencedResources))
+                .setLastReviewer(getPractitionerInternalIdentifer(serviceId, systemId, getLastReviewerReference(condition)))
                 .setSignificance(getSignificance(condition));
 
 //        UICondition fields plus
@@ -76,24 +76,10 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
         return ExtensionHelper.getExtensionValue(extension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__PERFORMER, Reference.class);
     }
 
-    private static UIPractitioner getLastReviewer(Condition condition, ReferencedResources referencedResources) {
-        Reference reference = getLastReviewerReference(condition);
-
-        if (reference != null)
-            return null;
-
-        return referencedResources.getUIPractitioner(reference);
-    }
-
     @Override
     public List<Reference> getReferences(List<Condition> resources) {
-        return Stream.concat(new UIConditionTransform()
-                        .getReferences(resources)
-                        .stream(),
-                resources
-                        .stream()
-                        .map(t -> getLastReviewerReference(t))
-                        .filter(t -> (t != null)))
-                .collect(Collectors.toList());
+        return
+        		new UIConditionTransform()
+                        .getReferences(resources);
     }
 }

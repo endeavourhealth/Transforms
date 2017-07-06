@@ -1,14 +1,14 @@
 package org.endeavourhealth.transform.ui.models.resources.clinicial;
 
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.types.UICode;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 import org.endeavourhealth.transform.ui.models.types.UIQuantity;
 
 public class UIMedicationStatement extends UIResource<UIMedicationStatement> {
 	private UIDate dateAuthorised;
-	private UIPractitioner prescriber;
+	private UIInternalIdentifier prescriber;
 	private UIMedication medication;
 	private String dosage;
 	private String status;
@@ -27,11 +27,11 @@ public class UIMedicationStatement extends UIResource<UIMedicationStatement> {
 		return this;
 	}
 
-	public UIPractitioner getPrescriber() {
+	public UIInternalIdentifier getPrescriber() {
 		return prescriber;
 	}
 
-	public UIMedicationStatement setPrescriber(UIPractitioner prescriber) {
+	public UIMedicationStatement setPrescriber(UIInternalIdentifier prescriber) {
 		this.prescriber = prescriber;
 		return this;
 	}

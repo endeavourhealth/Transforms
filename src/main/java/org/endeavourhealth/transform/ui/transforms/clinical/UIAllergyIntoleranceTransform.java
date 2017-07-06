@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.ui.transforms.clinical;
 
-import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
@@ -10,26 +9,27 @@ import org.hl7.fhir.instance.model.AllergyIntolerance;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIAllergyIntoleranceTransform extends UIClinicalTransform<AllergyIntolerance, UIAllergyIntolerance> {
 
     @Override
-    public List<UIAllergyIntolerance> transform(List<AllergyIntolerance> resources, ReferencedResources referencedResources) {
+    public List<UIAllergyIntolerance> transform(UUID serviceId, UUID systemId, List<AllergyIntolerance> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIAllergyIntolerance transform(AllergyIntolerance allergyIntolerance, ReferencedResources referencedResources) {
+    private static UIAllergyIntolerance transform(UUID serviceId, UUID systemId, AllergyIntolerance allergyIntolerance, ReferencedResources referencedResources) {
 
         return new UIAllergyIntolerance()
                 .setId(allergyIntolerance.getId())
                 .setCode(CodeHelper.convert(allergyIntolerance.getSubstance()))
-                .setEffectivePractitioner(referencedResources.getUIPractitioner(allergyIntolerance.getRecorder()))
+                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, allergyIntolerance.getRecorder()))
                 .setEffectiveDate(getOnsetDate(allergyIntolerance))
-                .setRecordingPractitioner(getRecordedByExtensionValue(allergyIntolerance, referencedResources))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(allergyIntolerance)))
                 .setRecordedDate(getRecordedDate(allergyIntolerance))
                 .setNotes(getNotes(allergyIntolerance.getNote()));
     }
@@ -51,23 +51,10 @@ public class UIAllergyIntoleranceTransform extends UIClinicalTransform<AllergyIn
 
     @Override
     public List<Reference> getReferences(List<AllergyIntolerance> resources) {
-        return StreamExtension.concat(
-                resources
-                        .stream()
-                        .filter(t -> t.hasRecorder())
-                        .map(t -> t.getRecorder()),
-                resources
-                        .stream()
-                        .filter(t -> t.hasPatient())
-                        .map(t -> t.getPatient()),
-                resources
-                        .stream()
-                        .filter(t -> t.hasReporter())
-                        .map(t -> t.getReporter()),
-                resources
-                        .stream()
-                        .map(t -> getRecordedByExtensionValue(t))
-                        .filter(t -> (t != null)))
-                .collect(Collectors.toList());
-    }
+			return resources
+					.stream()
+					.filter(t -> t.hasPatient())
+					.map(t -> t.getPatient())
+					.collect(Collectors.toList());
+		}
 }

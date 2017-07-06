@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class UITransform {
-    public static UIPatient transformPatient(Patient patient, ReferencedResources referencedResources) {
-        return UIPatientTransform.transform(patient, referencedResources);
+    public static UIPatient transformPatient(UUID serviceId, UUID systemId, Patient patient, ReferencedResources referencedResources) {
+        return UIPatientTransform.transform(serviceId, systemId, patient, referencedResources);
     }
 
     public static <T extends UIResource> UIClinicalTransform getClinicalTransformer(Class<T> resourceType) {

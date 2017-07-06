@@ -26,7 +26,7 @@ public class UIPatient extends UIResource<UIPatient> {
 	private UICodeableConcept maritalStatus;
 	private UICodeableConcept language;
 	private List<UIOrganisation> carerOrganisations;
-	private List<UIPractitioner> carerPractitioners;
+	private List<UIInternalIdentifier> carerPractitioners;
 
 	public UIInternalIdentifier getPatientId() {
 		return patientId;
@@ -172,11 +172,11 @@ public class UIPatient extends UIResource<UIPatient> {
 		return this;
 	}
 
-	public List<UIPractitioner> getCarerPractitioners() {
+	public List<UIInternalIdentifier> getCarerPractitioners() {
 		return carerPractitioners;
 	}
 
-	public UIPatient setCarerPractitioners(List<UIPractitioner> carerPractitioners) {
+	public UIPatient setCarerPractitioners(List<UIInternalIdentifier> carerPractitioners) {
 		this.carerPractitioners = carerPractitioners;
 		return this;
 	}

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPatient;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -13,7 +13,7 @@ public class UIEpisodeOfCare extends UIResource<UIEpisodeOfCare> {
 	private UIPatient patient;
 	private UIOrganisation managingOrganisation;
 	private UIPeriod period;
-	private UIPractitioner careManager;
+	private UIInternalIdentifier careManager;
 
 	public String getStatus() {
 		return status;
@@ -51,11 +51,11 @@ public class UIEpisodeOfCare extends UIResource<UIEpisodeOfCare> {
 		return this;
 	}
 
-	public UIPractitioner getCareManager() {
+	public UIInternalIdentifier getCareManager() {
 		return careManager;
 	}
 
-	public UIEpisodeOfCare setCareManager(UIPractitioner careManager) {
+	public UIEpisodeOfCare setCareManager(UIInternalIdentifier careManager) {
 		this.careManager = careManager;
 		return this;
 	}

@@ -10,26 +10,27 @@ import org.hl7.fhir.instance.model.Immunization;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIImmunisationTransform extends UIClinicalTransform<Immunization, UIImmunisation> {
 
     @Override
-    public List<UIImmunisation> transform(List<Immunization> resources, ReferencedResources referencedResources) {
+    public List<UIImmunisation> transform(UUID serviceId, UUID systemId, List<Immunization> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIImmunisation transform(Immunization immunization, ReferencedResources referencedResources) {
+    private static UIImmunisation transform(UUID serviceId, UUID systemId, Immunization immunization, ReferencedResources referencedResources) {
         return new UIImmunisation()
                 .setId(immunization.getId())
                 .setCode(CodeHelper.convert(immunization.getVaccineCode()))
                 .setEffectiveDate(getDate(immunization))
-                .setEffectivePractitioner(referencedResources.getUIPractitioner(immunization.getPerformer()))
+                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, immunization.getPerformer()))
                 .setRecordedDate(getRecordedDateExtensionValue(immunization))
-                .setRecordingPractitioner(getRecordedByExtensionValue(immunization, referencedResources))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(immunization)))
                 .setNotes(getNotes(immunization.getNote()));
     }
 
@@ -49,14 +50,6 @@ public class UIImmunisationTransform extends UIClinicalTransform<Immunization, U
                         .map(t -> t.getPatient()),
                 resources
                         .stream()
-                        .filter(t -> t.hasPerformer())
-                        .map(t -> t.getPerformer()),
-                resources
-                        .stream()
-                        .filter(t -> t.hasRequester())
-                        .map(t -> t.getRequester()),
-                resources
-                        .stream()
                         .filter(t -> t.hasEncounter())
                         .map(t -> t.getEncounter()),
                 resources
@@ -66,11 +59,7 @@ public class UIImmunisationTransform extends UIClinicalTransform<Immunization, U
                 resources
                         .stream()
                         .filter(t -> t.hasLocation())
-                        .map(t -> t.getLocation()),
-                resources
-                        .stream()
-                        .map(t -> getRecordedByExtensionValue(t))
-                        .filter(t -> (t != null)))
+                        .map(t -> t.getLocation()))
                 .collect(Collectors.toList());
     }
 }

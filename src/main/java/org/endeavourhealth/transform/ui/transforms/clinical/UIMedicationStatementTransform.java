@@ -14,23 +14,24 @@ import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UIMedicationStatementTransform extends UIClinicalTransform<MedicationStatement, UIMedicationStatement> {
     @Override
-    public List<UIMedicationStatement> transform(List<MedicationStatement> resources, ReferencedResources referencedResources) {
+    public List<UIMedicationStatement> transform(UUID serviceId, UUID systemId, List<MedicationStatement> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(t, referencedResources))
+                .map(t -> transform(serviceId, systemId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    public static UIMedicationStatement transform(MedicationStatement medicationStatement, ReferencedResources referencedResources) {
+    public static UIMedicationStatement transform(UUID serviceId, UUID systemId, MedicationStatement medicationStatement, ReferencedResources referencedResources) {
         return new UIMedicationStatement()
             .setId(medicationStatement.getId())
 			.setDateAuthorised(getDateAsserted(medicationStatement)) //the asserted date is more relevant
             //.setDateAuthorised(getRecordedDateExtensionValue(medicationStatement))
-            .setPrescriber(getRecordedByExtensionValue(medicationStatement, referencedResources))
+            .setPrescriber(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(medicationStatement)))
             .setMedication(getMedication(medicationStatement, referencedResources))
 						.setDosage(getDosage(medicationStatement))
 						.setStatus(medicationStatement.getStatus().getDisplay())
@@ -49,15 +50,11 @@ public class UIMedicationStatementTransform extends UIClinicalTransform<Medicati
 	@Override
     public List<Reference> getReferences(List<MedicationStatement> resources) {
         try {
-					return StreamExtension.concat(
+					return
 							resources
 									.stream()
 									.filter(t -> hasMedicationReference(t))
-									.map(t -> getMedicationReference(t)),
-							resources
-									.stream()
-									.map(t -> getRecordedByExtensionValue(t))
-									.filter(t -> (t != null)))
+									.map(t -> getMedicationReference(t))
 							.collect(Collectors.toList());
 				} catch (Exception e) {
             throw new TransformRuntimeException(e);

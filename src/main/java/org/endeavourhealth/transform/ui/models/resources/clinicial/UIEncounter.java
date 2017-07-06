@@ -3,11 +3,9 @@ package org.endeavourhealth.transform.ui.models.resources.clinicial;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIAppointment;
-import org.endeavourhealth.transform.ui.models.resources.admin.UILocation;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.types.UICodeableConcept;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 import org.endeavourhealth.transform.ui.models.types.UIPeriod;
 
 import java.util.List;
@@ -18,20 +16,20 @@ public class UIEncounter extends UIResource<UIEncounter> {
     private String class_;
     private List<UICodeableConcept> types;
     private UIAppointment appointment;
-    private UIPractitioner performedBy;
+    private UIInternalIdentifier performedBy;
     private UIPeriod period;
-    private UIOrganisation serviceProvider;
+    private UIInternalIdentifier serviceProvider;
     private UICodeableConcept encounterSource;
-    private UIPractitioner recordedBy;
+    private UIInternalIdentifier recordedBy;
     private UIDate recordedDate;
     private List<UICodeableConcept> reason;
-    private UILocation location;
-    private UIPractitioner referredBy;
+    private UIInternalIdentifier location;
+    private UIInternalIdentifier referredBy;
     private UICodeableConcept messageType;
     private String episodeOfCare;
     private UIDate admitted;
     private UIDate discharged;
-    private UILocation dischargeLocation;
+    private UIInternalIdentifier dischargeLocation;
     private UICodeableConcept dischargeDisposition;
 
 
@@ -44,11 +42,11 @@ public class UIEncounter extends UIResource<UIEncounter> {
         return this;
     }
 
-    public UIOrganisation getServiceProvider() {
+    public UIInternalIdentifier getServiceProvider() {
         return serviceProvider;
     }
 
-    public UIEncounter setServiceProvider(UIOrganisation serviceProvider) {
+    public UIEncounter setServiceProvider(UIInternalIdentifier serviceProvider) {
         this.serviceProvider = serviceProvider;
         return this;
     }
@@ -78,11 +76,11 @@ public class UIEncounter extends UIResource<UIEncounter> {
     	return this;
 		}
 
-    public UIPractitioner getPerformedBy() {
+    public UIInternalIdentifier getPerformedBy() {
         return performedBy;
     }
 
-    public UIEncounter setPerformedBy(UIPractitioner performedBy) {
+    public UIEncounter setPerformedBy(UIInternalIdentifier performedBy) {
         this.performedBy = performedBy;
         return this;
     }
@@ -96,11 +94,11 @@ public class UIEncounter extends UIResource<UIEncounter> {
         return this;
     }
 
-    public UIPractitioner getRecordedBy() {
+    public UIInternalIdentifier getRecordedBy() {
         return recordedBy;
     }
 
-    public UIEncounter setRecordedBy(UIPractitioner recordedBy) {
+    public UIEncounter setRecordedBy(UIInternalIdentifier recordedBy) {
         this.recordedBy = recordedBy;
         return this;
     }
@@ -132,20 +130,20 @@ public class UIEncounter extends UIResource<UIEncounter> {
 		return this;
 	}
 
-	public UILocation getLocation() {
+	public UIInternalIdentifier getLocation() {
 		return location;
 	}
 
-	public UIEncounter setLocation(UILocation location) {
+	public UIEncounter setLocation(UIInternalIdentifier location) {
 		this.location = location;
 		return this;
 	}
 
-	public UIPractitioner getReferredBy() {
+	public UIInternalIdentifier getReferredBy() {
 		return referredBy;
 	}
 
-	public UIEncounter setReferredBy(UIPractitioner referredBy) {
+	public UIEncounter setReferredBy(UIInternalIdentifier referredBy) {
 		this.referredBy = referredBy;
 		return this;
 	}
@@ -186,11 +184,11 @@ public class UIEncounter extends UIResource<UIEncounter> {
 		return this;
 	}
 
-	public UILocation getDischargeLocation() {
+	public UIInternalIdentifier getDischargeLocation() {
 		return dischargeLocation;
 	}
 
-	public UIEncounter setDischargeLocation(UILocation dischargeLocation) {
+	public UIEncounter setDischargeLocation(UIInternalIdentifier dischargeLocation) {
 		this.dischargeLocation = dischargeLocation;
 		return this;
 	}

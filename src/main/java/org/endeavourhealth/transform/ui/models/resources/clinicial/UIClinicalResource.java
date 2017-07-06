@@ -2,16 +2,16 @@ package org.endeavourhealth.transform.ui.models.resources.clinicial;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
-import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.endeavourhealth.transform.ui.models.types.UICodeableConcept;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
+import org.endeavourhealth.transform.ui.models.types.UIInternalIdentifier;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class UIClinicalResource<T extends UIClinicalResource> extends UIResource<T> {
     private UICodeableConcept code;
-    private UIPractitioner effectivePractitioner;
+    private UIInternalIdentifier effectivePractitioner;
     private UIDate effectiveDate;
-    private UIPractitioner recordingPractitioner;
+    private UIInternalIdentifier recordingPractitioner;
     private UIDate recordedDate;
     private String notes;
 
@@ -24,11 +24,11 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return (T)this;
     }
 
-    public UIPractitioner getEffectivePractitioner() {
+    public UIInternalIdentifier getEffectivePractitioner() {
         return effectivePractitioner;
     }
 
-    public T setEffectivePractitioner(UIPractitioner effectivePractitioner) {
+    public T setEffectivePractitioner(UIInternalIdentifier effectivePractitioner) {
         this.effectivePractitioner = effectivePractitioner;
         return (T)this;
     }
@@ -42,11 +42,11 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return (T)this;
     }
 
-    public UIPractitioner getRecordingPractitioner() {
+    public UIInternalIdentifier getRecordingPractitioner() {
         return recordingPractitioner;
     }
 
-    public T setRecordingPractitioner(UIPractitioner recordingPractitioner) {
+    public T setRecordingPractitioner(UIInternalIdentifier recordingPractitioner) {
         this.recordingPractitioner = recordingPractitioner;
         return (T)this;
     }
