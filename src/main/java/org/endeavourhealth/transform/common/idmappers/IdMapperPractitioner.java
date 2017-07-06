@@ -13,18 +13,18 @@ public class IdMapperPractitioner extends BaseIdMapper {
         Practitioner practitioner = (Practitioner)resource;
 
         if (practitioner.hasIdentifier()) {
-            super.mapIdentifiers(practitioner.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(practitioner.getIdentifier(), serviceId, systemId);
         }
         if (practitioner.hasPractitionerRole()) {
             for (Practitioner.PractitionerPractitionerRoleComponent role: practitioner.getPractitionerRole()) {
                 if (role.hasManagingOrganization()) {
-                    super.mapReference(role.getManagingOrganization(), resource, serviceId, systemId);
+                    super.mapReference(role.getManagingOrganization(), serviceId, systemId);
                 }
                 if (role.hasLocation()) {
-                    super.mapReferences(role.getLocation(), resource, serviceId, systemId);
+                    super.mapReferences(role.getLocation(), serviceId, systemId);
                 }
                 if (role.hasHealthcareService()) {
-                    super.mapReferences(role.getHealthcareService(), resource, serviceId, systemId);
+                    super.mapReferences(role.getHealthcareService(), serviceId, systemId);
                 }
             }
         }

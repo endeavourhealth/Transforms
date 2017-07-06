@@ -15,10 +15,10 @@ public class IdMapperFamilyMemberHistory extends BaseIdMapper {
         FamilyMemberHistory familyHistory = (FamilyMemberHistory)resource;
 
         if (familyHistory.hasIdentifier()) {
-            super.mapIdentifiers(familyHistory.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(familyHistory.getIdentifier(), serviceId, systemId);
         }
         if (familyHistory.hasPatient()) {
-            super.mapReference(familyHistory.getPatient(), resource, serviceId, systemId);
+            super.mapReference(familyHistory.getPatient(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(familyHistory, serviceId, systemId, mapResourceId);

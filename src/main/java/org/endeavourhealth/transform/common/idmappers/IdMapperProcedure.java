@@ -15,23 +15,23 @@ public class IdMapperProcedure extends BaseIdMapper {
         Procedure procedure = (Procedure)resource;
 
         if (procedure.hasIdentifier()) {
-            super.mapIdentifiers(procedure.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(procedure.getIdentifier(), serviceId, systemId);
         }
         if (procedure.hasSubject()) {
-            super.mapReference(procedure.getSubject(), resource, serviceId, systemId);
+            super.mapReference(procedure.getSubject(), serviceId, systemId);
         }
         if (procedure.hasPerformer()) {
             for (Procedure.ProcedurePerformerComponent performer: procedure.getPerformer()) {
                 if (performer.hasActor()) {
-                    super.mapReference(performer.getActor(), resource, serviceId, systemId);
+                    super.mapReference(performer.getActor(), serviceId, systemId);
                 }
             }
         }
         if (procedure.hasEncounter()) {
-            super.mapReference(procedure.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(procedure.getEncounter(), serviceId, systemId);
         }
         if (procedure.hasLocation()) {
-            super.mapReference(procedure.getLocation(), resource, serviceId, systemId);
+            super.mapReference(procedure.getLocation(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(procedure, serviceId, systemId, mapResourceId);

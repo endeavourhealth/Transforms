@@ -15,27 +15,27 @@ public class IdMapperObservation extends BaseIdMapper {
         Observation observation = (Observation)resource;
 
         if (observation.hasIdentifier()) {
-            super.mapIdentifiers(observation.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(observation.getIdentifier(), serviceId, systemId);
         }
         if (observation.hasSubject()) {
-            super.mapReference(observation.getSubject(), resource, serviceId, systemId);
+            super.mapReference(observation.getSubject(), serviceId, systemId);
         }
         if (observation.hasEncounter()) {
-            super.mapReference(observation.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(observation.getEncounter(), serviceId, systemId);
         }
         if (observation.hasPerformer()) {
-            super.mapReferences(observation.getPerformer(), resource, serviceId, systemId);
+            super.mapReferences(observation.getPerformer(), serviceId, systemId);
         }
         if (observation.hasSpecimen()) {
-            super.mapReference(observation.getSpecimen(), resource, serviceId, systemId);
+            super.mapReference(observation.getSpecimen(), serviceId, systemId);
         }
         if (observation.hasDevice()) {
-            super.mapReference(observation.getDevice(), resource, serviceId, systemId);
+            super.mapReference(observation.getDevice(), serviceId, systemId);
         }
         if (observation.hasRelated()) {
             for (Observation.ObservationRelatedComponent related: observation.getRelated()) {
                 if (related.hasTarget()) {
-                    super.mapReference(related.getTarget(), resource, serviceId, systemId);
+                    super.mapReference(related.getTarget(), serviceId, systemId);
                 }
             }
         }

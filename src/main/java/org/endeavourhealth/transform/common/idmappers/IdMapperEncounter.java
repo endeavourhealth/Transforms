@@ -19,39 +19,39 @@ public class IdMapperEncounter extends BaseIdMapper {
         Encounter encounter = (Encounter)resource;
 
         if (encounter.hasIdentifier()) {
-            super.mapIdentifiers(encounter.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(encounter.getIdentifier(), serviceId, systemId);
         }
         if (encounter.hasPatient()) {
-            super.mapReference(encounter.getPatient(), resource, serviceId, systemId);
+            super.mapReference(encounter.getPatient(), serviceId, systemId);
         }
         if (encounter.hasEpisodeOfCare()) {
-            super.mapReferences(encounter.getEpisodeOfCare(), resource, serviceId, systemId);
+            super.mapReferences(encounter.getEpisodeOfCare(), serviceId, systemId);
         }
         if (encounter.hasIncomingReferral()) {
-            super.mapReferences(encounter.getIncomingReferral(), resource, serviceId, systemId);
+            super.mapReferences(encounter.getIncomingReferral(), serviceId, systemId);
         }
         if (encounter.hasParticipant()) {
             for (Encounter.EncounterParticipantComponent participant: encounter.getParticipant()) {
                 if (participant.hasIndividual()) {
-                    super.mapReference(participant.getIndividual(), resource, serviceId, systemId);
+                    super.mapReference(participant.getIndividual(), serviceId, systemId);
                 }
             }
         }
         if (encounter.hasAppointment()) {
-            super.mapReference(encounter.getAppointment(), resource, serviceId, systemId);
+            super.mapReference(encounter.getAppointment(), serviceId, systemId);
         }
         if (encounter.hasIndication()) {
-            super.mapReferences(encounter.getIndication(), resource, serviceId, systemId);
+            super.mapReferences(encounter.getIndication(), serviceId, systemId);
         }
         if (encounter.hasLocation()) {
             for (Encounter.EncounterLocationComponent location: encounter.getLocation()) {
                 if (location.hasLocation()) {
-                    super.mapReference(location.getLocation(), resource, serviceId, systemId);
+                    super.mapReference(location.getLocation(), serviceId, systemId);
                 }
             }
         }
         if (encounter.hasServiceProvider()) {
-            super.mapReference(encounter.getServiceProvider(), resource, serviceId, systemId);
+            super.mapReference(encounter.getServiceProvider(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(encounter, serviceId, systemId, mapResourceId);

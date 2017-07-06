@@ -15,34 +15,34 @@ public class IdMapperDiagnosticOrder extends BaseIdMapper {
         DiagnosticOrder order = (DiagnosticOrder)resource;
 
         if (order.hasIdentifier()) {
-            super.mapIdentifiers(order.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(order.getIdentifier(), serviceId, systemId);
         }
         if (order.hasSubject()) {
-            super.mapReference(order.getSubject(), resource, serviceId, systemId);
+            super.mapReference(order.getSubject(), serviceId, systemId);
         }
         if (order.hasOrderer()) {
-            super.mapReference(order.getOrderer(), resource, serviceId, systemId);
+            super.mapReference(order.getOrderer(), serviceId, systemId);
         }
         if (order.hasEncounter()) {
-            super.mapReference(order.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(order.getEncounter(), serviceId, systemId);
         }
         if (order.hasSupportingInformation()) {
-            super.mapReferences(order.getSupportingInformation(), resource, serviceId, systemId);
+            super.mapReferences(order.getSupportingInformation(), serviceId, systemId);
         }
         if (order.hasSpecimen()) {
-            super.mapReferences(order.getSpecimen(), resource, serviceId, systemId);
+            super.mapReferences(order.getSpecimen(), serviceId, systemId);
         }
         if (order.hasEvent()) {
             for (DiagnosticOrder.DiagnosticOrderEventComponent event: order.getEvent()) {
                 if (event.hasActor()) {
-                    super.mapReference(event.getActor(), resource, serviceId, systemId);
+                    super.mapReference(event.getActor(), serviceId, systemId);
                 }
             }
         }
         if (order.hasItem()) {
             for (DiagnosticOrder.DiagnosticOrderItemComponent item: order.getItem()) {
                 if (item.hasSpecimen()) {
-                    super.mapReferences(item.getSpecimen(), resource, serviceId, systemId);
+                    super.mapReferences(item.getSpecimen(), serviceId, systemId);
                 }
             }
         }

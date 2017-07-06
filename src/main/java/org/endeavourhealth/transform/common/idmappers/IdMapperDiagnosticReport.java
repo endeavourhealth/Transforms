@@ -15,33 +15,33 @@ public class IdMapperDiagnosticReport extends BaseIdMapper {
         DiagnosticReport report = (DiagnosticReport)resource;
 
         if (report.hasIdentifier()) {
-            super.mapIdentifiers(report.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(report.getIdentifier(), serviceId, systemId);
         }
         if (report.hasSubject()) {
-            super.mapReference(report.getSubject(), resource, serviceId, systemId);
+            super.mapReference(report.getSubject(), serviceId, systemId);
         }
         if (report.hasEncounter()) {
-            super.mapReference(report.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(report.getEncounter(), serviceId, systemId);
         }
         if (report.hasPerformer()) {
-            super.mapReference(report.getPerformer(), resource, serviceId, systemId);
+            super.mapReference(report.getPerformer(), serviceId, systemId);
         }
         if (report.hasRequest()) {
-            super.mapReferences(report.getRequest(), resource, serviceId, systemId);
+            super.mapReferences(report.getRequest(), serviceId, systemId);
         }
         if (report.hasSpecimen()) {
-            super.mapReferences(report.getSpecimen(), resource, serviceId, systemId);
+            super.mapReferences(report.getSpecimen(), serviceId, systemId);
         }
         if (report.hasResult()) {
-            super.mapReferences(report.getResult(), resource, serviceId, systemId);
+            super.mapReferences(report.getResult(), serviceId, systemId);
         }
         if (report.hasImagingStudy()) {
-            super.mapReferences(report.getImagingStudy(), resource, serviceId, systemId);
+            super.mapReferences(report.getImagingStudy(), serviceId, systemId);
         }
         if (report.hasImage()) {
             for (DiagnosticReport.DiagnosticReportImageComponent image: report.getImage()) {
                 if (image.hasLink()) {
-                    super.mapReference(image.getLink(), resource, serviceId, systemId);
+                    super.mapReference(image.getLink(), serviceId, systemId);
                 }
             }
         }

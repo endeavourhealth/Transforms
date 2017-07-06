@@ -16,13 +16,13 @@ public class IdMapperAllergyIntolerance extends BaseIdMapper {
         AllergyIntolerance allergyIntolerance = (AllergyIntolerance)resource;
 
         if (allergyIntolerance.hasIdentifier()) {
-            super.mapIdentifiers(allergyIntolerance.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(allergyIntolerance.getIdentifier(), serviceId, systemId);
         }
         if (allergyIntolerance.hasRecorder()) {
-            super.mapReference(allergyIntolerance.getRecorder(), resource, serviceId, systemId);
+            super.mapReference(allergyIntolerance.getRecorder(), serviceId, systemId);
         }
         if (allergyIntolerance.hasPatient()) {
-            super.mapReference(allergyIntolerance.getPatient(), resource, serviceId, systemId);
+            super.mapReference(allergyIntolerance.getPatient(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(allergyIntolerance, serviceId, systemId, mapResourceId);

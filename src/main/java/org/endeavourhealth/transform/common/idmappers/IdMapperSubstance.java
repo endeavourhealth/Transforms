@@ -13,13 +13,13 @@ public class IdMapperSubstance extends BaseIdMapper {
         Substance substance = (Substance)resource;
 
         if (substance.hasIdentifier()) {
-            super.mapIdentifiers(substance.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(substance.getIdentifier(), serviceId, systemId);
         }
         if (substance.hasInstance()) {
             for (Substance.SubstanceInstanceComponent instance: substance.getInstance()) {
                 if (instance.hasIdentifier()) {
                     if (instance.getIdentifier().hasAssigner()) {
-                        super.mapReference(instance.getIdentifier().getAssigner(), resource, serviceId, systemId);
+                        super.mapReference(instance.getIdentifier().getAssigner(), serviceId, systemId);
                     }
                 }
             }
@@ -27,7 +27,7 @@ public class IdMapperSubstance extends BaseIdMapper {
         if (substance.hasIngredient()) {
             for (Substance.SubstanceIngredientComponent ingredient: substance.getIngredient()) {
                 if (ingredient.hasSubstance()) {
-                    super.mapReference(ingredient.getSubstance(), resource, serviceId, systemId);
+                    super.mapReference(ingredient.getSubstance(), serviceId, systemId);
                 }
             }
         }

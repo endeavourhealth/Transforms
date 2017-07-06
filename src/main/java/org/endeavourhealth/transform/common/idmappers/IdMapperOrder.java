@@ -15,26 +15,26 @@ public class IdMapperOrder extends BaseIdMapper {
         Order order = (Order)resource;
 
         if (order.hasIdentifier()) {
-            super.mapIdentifiers(order.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(order.getIdentifier(), serviceId, systemId);
         }
         if (order.hasSubject()) {
-            super.mapReference(order.getSubject(), resource, serviceId, systemId);
+            super.mapReference(order.getSubject(), serviceId, systemId);
         }
         if (order.hasSource()) {
-            super.mapReference(order.getSource(), resource, serviceId, systemId);
+            super.mapReference(order.getSource(), serviceId, systemId);
         }
         if (order.hasTarget()) {
-            super.mapReference(order.getTarget(), resource, serviceId, systemId);
+            super.mapReference(order.getTarget(), serviceId, systemId);
         }
         if (order.hasReason()) {
             try {
-                super.mapReference(order.getReasonReference(), resource, serviceId, systemId);
+                super.mapReference(order.getReasonReference(), serviceId, systemId);
             } catch (Exception ex) {
                 //not a problem if not a reference
             }
         }
         if (order.hasDetail()) {
-            super.mapReferences(order.getDetail(), resource, serviceId, systemId);
+            super.mapReferences(order.getDetail(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(order, serviceId, systemId, mapResourceId);

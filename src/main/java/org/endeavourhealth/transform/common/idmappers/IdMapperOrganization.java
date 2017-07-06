@@ -13,10 +13,10 @@ public class IdMapperOrganization extends BaseIdMapper {
         Organization organization = (Organization)resource;
 
         if (organization.hasIdentifier()) {
-            super.mapIdentifiers(organization.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(organization.getIdentifier(), serviceId, systemId);
         }
         if (organization.hasPartOf()) {
-            super.mapReference(organization.getPartOf(), resource, serviceId, systemId);
+            super.mapReference(organization.getPartOf(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(organization, serviceId, systemId, mapResourceId);

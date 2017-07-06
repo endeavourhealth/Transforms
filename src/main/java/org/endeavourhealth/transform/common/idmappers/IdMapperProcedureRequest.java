@@ -16,26 +16,26 @@ public class IdMapperProcedureRequest extends BaseIdMapper {
         ProcedureRequest procedureRequest = (ProcedureRequest)resource;
 
         if (procedureRequest.hasIdentifier()) {
-            super.mapIdentifiers(procedureRequest.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(procedureRequest.getIdentifier(), serviceId, systemId);
         }
         if (procedureRequest.hasSubject()) {
-            super.mapReference(procedureRequest.getSubject(), resource, serviceId, systemId);
+            super.mapReference(procedureRequest.getSubject(), serviceId, systemId);
         }
         if (procedureRequest.hasReason()) {
             try {
-                super.mapReference(procedureRequest.getReasonReference(), resource, serviceId, systemId);
+                super.mapReference(procedureRequest.getReasonReference(), serviceId, systemId);
             } catch (Exception ex) {
                 //do nothing if isn't a reference
             }
         }
         if (procedureRequest.hasEncounter()) {
-            super.mapReference(procedureRequest.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(procedureRequest.getEncounter(), serviceId, systemId);
         }
         if (procedureRequest.hasPerformer()) {
-            super.mapReference(procedureRequest.getPerformer(), resource, serviceId, systemId);
+            super.mapReference(procedureRequest.getPerformer(), serviceId, systemId);
         }
         if (procedureRequest.hasOrderer()) {
-            super.mapReference(procedureRequest.getOrderer(), resource, serviceId, systemId);
+            super.mapReference(procedureRequest.getOrderer(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(procedureRequest, serviceId, systemId, mapResourceId);

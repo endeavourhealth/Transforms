@@ -13,10 +13,10 @@ public class IdMapperSlot extends BaseIdMapper {
         Slot slot = (Slot)resource;
 
         if (slot.hasIdentifier()) {
-            super.mapIdentifiers(slot.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(slot.getIdentifier(), serviceId, systemId);
         }
         if (slot.hasSchedule()) {
-            super.mapReference(slot.getSchedule(), resource, serviceId, systemId);
+            super.mapReference(slot.getSchedule(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(slot, serviceId, systemId, mapResourceId);

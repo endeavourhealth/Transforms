@@ -15,16 +15,16 @@ public class IdMapperCondition extends BaseIdMapper {
         Condition condition = (Condition)resource;
 
         if (condition.hasIdentifier()) {
-            super.mapIdentifiers(condition.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(condition.getIdentifier(), serviceId, systemId);
         }
         if (condition.hasPatient()) {
-            super.mapReference(condition.getPatient(), resource, serviceId, systemId);
+            super.mapReference(condition.getPatient(), serviceId, systemId);
         }
         if (condition.hasEncounter()) {
-            super.mapReference(condition.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(condition.getEncounter(), serviceId, systemId);
         }
         if (condition.hasAsserter()) {
-            super.mapReference(condition.getAsserter(), resource, serviceId, systemId);
+            super.mapReference(condition.getAsserter(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(condition, serviceId, systemId, mapResourceId);

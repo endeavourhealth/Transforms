@@ -13,10 +13,10 @@ public class IdMapperSchedule extends BaseIdMapper {
         Schedule schedule = (Schedule)resource;
 
         if (schedule.hasIdentifier()) {
-            super.mapIdentifiers(schedule.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(schedule.getIdentifier(), serviceId, systemId);
         }
         if (schedule.hasActor()) {
-            super.mapReference(schedule.getActor(), resource, serviceId, systemId);
+            super.mapReference(schedule.getActor(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(schedule, serviceId, systemId, mapResourceId);

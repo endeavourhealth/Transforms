@@ -13,25 +13,25 @@ public class IdMapperPatient extends BaseIdMapper {
         Patient patient = (Patient)resource;
 
         if (patient.hasIdentifier()) {
-            super.mapIdentifiers(patient.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(patient.getIdentifier(), serviceId, systemId);
         }
         if (patient.hasContact()) {
             for (Patient.ContactComponent contact: patient.getContact()) {
                 if (contact.hasOrganization()) {
-                    super.mapReference(contact.getOrganization(), resource, serviceId, systemId);
+                    super.mapReference(contact.getOrganization(), serviceId, systemId);
                 }
             }
         }
         if (patient.hasCareProvider()) {
-            super.mapReferences(patient.getCareProvider(), resource, serviceId, systemId);
+            super.mapReferences(patient.getCareProvider(), serviceId, systemId);
         }
         if (patient.hasManagingOrganization()) {
-            super.mapReference(patient.getManagingOrganization(), resource, serviceId, systemId);
+            super.mapReference(patient.getManagingOrganization(), serviceId, systemId);
         }
         if (patient.hasLink()) {
             for (Patient.PatientLinkComponent link: patient.getLink()) {
                 if (link.hasOther()) {
-                    super.mapReference(link.getOther(), resource, serviceId, systemId);
+                    super.mapReference(link.getOther(), serviceId, systemId);
                 }
             }
         }

@@ -15,23 +15,23 @@ public class IdMapperSpecimen extends BaseIdMapper {
         Specimen specimen = (Specimen)resource;
 
         if (specimen.hasIdentifier()) {
-            super.mapIdentifiers(specimen.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(specimen.getIdentifier(), serviceId, systemId);
         }
         if (specimen.hasParent()) {
-            super.mapReference(specimen.getSubject(), resource, serviceId, systemId);
+            super.mapReference(specimen.getSubject(), serviceId, systemId);
         }
         if (specimen.hasSubject()) {
-            super.mapReference(specimen.getSubject(), resource, serviceId, systemId);
+            super.mapReference(specimen.getSubject(), serviceId, systemId);
         }
         if (specimen.hasCollection()) {
             if (specimen.getCollection().hasCollector()) {
-                super.mapReference(specimen.getCollection().getCollector(), resource, serviceId, systemId);
+                super.mapReference(specimen.getCollection().getCollector(), serviceId, systemId);
             }
         }
         if (specimen.hasTreatment()) {
             for (Specimen.SpecimenTreatmentComponent treatment: specimen.getTreatment()) {
                 if (treatment.hasAdditive()) {
-                    super.mapReferences(treatment.getAdditive(), resource, serviceId, systemId);
+                    super.mapReferences(treatment.getAdditive(), serviceId, systemId);
                 }
             }
         }
@@ -39,7 +39,7 @@ public class IdMapperSpecimen extends BaseIdMapper {
             for (Specimen.SpecimenContainerComponent container: specimen.getContainer()) {
                 if (container.hasAdditive()) {
                     try {
-                        super.mapReference(container.getAdditiveReference(), resource, serviceId, systemId);
+                        super.mapReference(container.getAdditiveReference(), serviceId, systemId);
                     } catch (Exception ex) {
                         //do nothing if not a reference
                     }

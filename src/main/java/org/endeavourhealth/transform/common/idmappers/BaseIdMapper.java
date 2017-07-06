@@ -73,7 +73,17 @@ public abstract class BaseIdMapper {
         for (Extension extension: resource.getExtension()) {
             if (extension.hasValue()
                 && extension.getValue() instanceof Reference) {
-                mapReference((Reference)extension.getValue(), resource, serviceId, systemId);
+                mapReference((Reference)extension.getValue(), serviceId, systemId);
+            }
+
+            //need to handle nested extensions within extensions
+            if (extension.hasExtension()) {
+                for (Extension nestedExtension: extension.getExtension()) {
+                    if (nestedExtension.hasValue()
+                            && nestedExtension.getValue() instanceof Reference) {
+                        mapReference((Reference)nestedExtension.getValue(), serviceId, systemId);
+                    }
+                }
             }
         }
     }
@@ -149,10 +159,10 @@ public abstract class BaseIdMapper {
     /**
      * maps the IDs in any identifiers of a resource
      */
-    protected void mapIdentifiers(List<Identifier> identifiers, Resource resource, UUID serviceId, UUID systemId) throws Exception {
+    protected void mapIdentifiers(List<Identifier> identifiers, UUID serviceId, UUID systemId) throws Exception {
         for (Identifier identifier: identifiers) {
             if (identifier.hasAssigner()) {
-                mapReference(identifier.getAssigner(), resource, serviceId, systemId);
+                mapReference(identifier.getAssigner(), serviceId, systemId);
             }
         }
     }
@@ -169,7 +179,7 @@ public abstract class BaseIdMapper {
     /**
      * maps the ID within any reference
      */
-    protected void mapReference(Reference reference, Resource resource, UUID serviceId, UUID systemId) throws Exception {
+    protected void mapReference(Reference reference, UUID serviceId, UUID systemId) throws Exception {
         if (reference == null) {
             return;
         }
@@ -195,14 +205,14 @@ public abstract class BaseIdMapper {
     /**
      * maps the ID within any reference
      */
-    protected void mapReferences(List<Reference> references, Resource resource, UUID serviceId, UUID systemId) throws Exception {
+    protected void mapReferences(List<Reference> references, UUID serviceId, UUID systemId) throws Exception {
         if (references == null
                 || references.isEmpty()) {
             return;
         }
 
         for (Reference reference: references) {
-            mapReference(reference, resource, serviceId, systemId);
+            mapReference(reference, serviceId, systemId);
         }
     }
 

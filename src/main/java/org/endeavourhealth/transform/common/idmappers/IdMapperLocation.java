@@ -13,13 +13,13 @@ public class IdMapperLocation extends BaseIdMapper {
         Location location = (Location)resource;
 
         if (location.hasIdentifier()) {
-            super.mapIdentifiers(location.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(location.getIdentifier(), serviceId, systemId);
         }
         if (location.hasManagingOrganization()) {
-            super.mapReference(location.getManagingOrganization(), resource, serviceId, systemId);
+            super.mapReference(location.getManagingOrganization(), serviceId, systemId);
         }
         if (location.hasPartOf()) {
-            super.mapReference(location.getPartOf(), resource, serviceId, systemId);
+            super.mapReference(location.getPartOf(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(location, serviceId, systemId, mapResourceId);

@@ -15,10 +15,10 @@ public class IdMapperRelatedPerson extends BaseIdMapper {
         RelatedPerson relatedPerson = (RelatedPerson)resource;
 
         if (relatedPerson.hasIdentifier()) {
-            super.mapIdentifiers(relatedPerson.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(relatedPerson.getIdentifier(), serviceId, systemId);
         }
         if (relatedPerson.hasPatient()) {
-            super.mapReference(relatedPerson.getPatient(), resource, serviceId, systemId);
+            super.mapReference(relatedPerson.getPatient(), serviceId, systemId);
         }
 
         return super.mapCommonResourceFields(relatedPerson, serviceId, systemId, mapResourceId);

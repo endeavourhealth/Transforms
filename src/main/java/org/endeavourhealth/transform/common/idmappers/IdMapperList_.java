@@ -16,21 +16,21 @@ public class IdMapperList_ extends BaseIdMapper {
         List_ list = (List_)resource;
 
         if (list.hasIdentifier()) {
-            super.mapIdentifiers(list.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(list.getIdentifier(), serviceId, systemId);
         }
         if (list.hasSubject()) {
-            super.mapReference(list.getSubject(), resource, serviceId, systemId);
+            super.mapReference(list.getSubject(), serviceId, systemId);
         }
         if (list.hasSource()) {
-            super.mapReference(list.getSource(), resource, serviceId, systemId);
+            super.mapReference(list.getSource(), serviceId, systemId);
         }
         if (list.hasEncounter()) {
-            super.mapReference(list.getEncounter(), resource, serviceId, systemId);
+            super.mapReference(list.getEncounter(), serviceId, systemId);
         }
         if (list.hasEntry()) {
             for (List_.ListEntryComponent entry: list.getEntry()) {
                 if (entry.hasItem()) {
-                    super.mapReference(entry.getItem(), resource, serviceId, systemId);
+                    super.mapReference(entry.getItem(), serviceId, systemId);
                 }
             }
         }

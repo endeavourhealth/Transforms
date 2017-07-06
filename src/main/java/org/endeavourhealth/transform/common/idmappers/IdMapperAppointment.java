@@ -15,15 +15,15 @@ public class IdMapperAppointment extends BaseIdMapper {
         Appointment appointment = (Appointment)resource;
 
         if (appointment.hasIdentifier()) {
-            super.mapIdentifiers(appointment.getIdentifier(), resource, serviceId, systemId);
+            super.mapIdentifiers(appointment.getIdentifier(), serviceId, systemId);
         }
         if (appointment.hasSlot()) {
-            super.mapReferences(appointment.getSlot(), resource, serviceId, systemId);
+            super.mapReferences(appointment.getSlot(), serviceId, systemId);
         }
         if (appointment.hasParticipant()) {
             for (Appointment.AppointmentParticipantComponent participant: appointment.getParticipant()) {
                 if (participant.hasActor()) {
-                    super.mapReference(participant.getActor(), resource, serviceId, systemId);
+                    super.mapReference(participant.getActor(), serviceId, systemId);
                 }
             }
         }
