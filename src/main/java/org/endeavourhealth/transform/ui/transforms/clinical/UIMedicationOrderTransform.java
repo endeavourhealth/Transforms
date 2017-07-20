@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.ui.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.utility.StreamExtension;
+import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
 import org.endeavourhealth.transform.ui.helpers.QuantityHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
@@ -31,7 +32,7 @@ public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOr
 		return new UIMedicationOrder()
 				.setId(medicationOrder.getId())
 				.setMedicationStatement(getMedicationStatement(medicationOrder, referencedResources))
-				.setDate(medicationOrder.getDateWritten())
+				.setDate(DateHelper.convert(medicationOrder.getDateWritten()))
 				.setPrescriber(getPractitionerInternalIdentifer(serviceId, systemId, medicationOrder.getPrescriber()))
 				.setQuantity(getQuantity(medicationOrder.getDispenseRequest()))
 				.setExpectedDuration(getExpectedDuration(medicationOrder.getDispenseRequest()));
