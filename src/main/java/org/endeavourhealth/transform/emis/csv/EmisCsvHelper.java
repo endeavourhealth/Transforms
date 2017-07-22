@@ -1161,6 +1161,73 @@ public class EmisCsvHelper {
     }
 
     /**
+     * when we process the IssueRecord file, we build up a map of first and last issue dates for the medication.
+     * If we have any entries in the maps at the end of the transform, then we need to update the existing
+     * resources on the DB with these new dates
+     */
+    public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        //both maps (first and last issue dates) will have the same key set
+        for (String medicationStatementLocalId: drugRecordLastIssueDateMap.keySet()) {
+
+            DateType lastIssueDate = drugRecordLastIssueDateMap.get(medicationStatementLocalId);
+            DateType firstIssueDate = drugRecordFirstIssueDateMap.get(medicationStatementLocalId);
+
+            try {
+                MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement, fhirResourceFiler);
+                boolean changed = false;
+
+                if (firstIssueDate != null) {
+                    Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE);
+                    if (extension == null) {
+                        fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
+                        changed = true;
+
+                    } else {
+                        Date newDate = firstIssueDate.getValue();
+
+                        DateType existingValue = (DateType)extension.getValue();
+                        Date existingDate = existingValue.getValue();
+
+                        if (newDate.before(existingDate)) {
+                            extension.setValue(firstIssueDate);
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (lastIssueDate != null) {
+                    Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE);
+                    if (extension == null) {
+                        fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, lastIssueDate));
+                        changed = true;
+
+                    } else {
+                        Date newDate = lastIssueDate.getValue();
+
+                        DateType existingValue = (DateType)extension.getValue();
+                        Date existingDate = existingValue.getValue();
+
+                        if (newDate.after(existingDate)) {
+                            extension.setValue(lastIssueDate);
+                            changed = true;
+                        }
+                    }
+                }
+
+                //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
+                if (changed) {
+                    String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
+                    fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
+                }
+
+            } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+                //if the medication statement doesn't exist or has been deleted, then just skip it
+            }
+        }
+    }
+
+    /**
      * temporary storage class for changes to the practitioners involved in a session
      */
     public class SessionPractitioners {

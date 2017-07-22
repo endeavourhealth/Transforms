@@ -351,6 +351,9 @@ public abstract class EmisCsvToFhirTransformer {
 
             //process any changes to Problems that didn't have an associated Observation change too
             csvHelper.processRemainingProblems(fhirResourceFiler);
+
+            //update any MedicationStatements to set the last issue date on them
+            csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
         }
     }
 
