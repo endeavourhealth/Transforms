@@ -20,11 +20,14 @@ import org.endeavourhealth.transform.common.exceptions.ClinicalCodeNotFoundExcep
 import org.endeavourhealth.transform.common.exceptions.ResourceDeletedException;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EmisCsvHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(EmisCsvHelper.class);
 
     private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
@@ -165,7 +168,23 @@ public class EmisCsvHelper {
     private void retrieveClinicalCode(Long codeId) throws Exception {
         EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeId);
         if (mapping == null) {
-            throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, false, codeId);
+            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
+            LOG.error("Failed to find clincal codeable concept for code ID " + codeId);
+
+            Coding coding = new Coding();
+            coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
+            coding.setCode("?????");
+            coding.setDisplay("Unknown code");
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            codeableConcept.setText("Missing Clinical Code (Emis ECR 9953529)");
+            codeableConcept.addCoding(coding);
+
+            clinicalCodes.put(codeId, codeableConcept);
+
+            clinicalCodeTypes.put(codeId, ClinicalCodeType.Conditions_Operations_Procedures);
+            return;
+            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, false, codeId);
         }
 
         String json = mapping.getCodeableConcept();
@@ -198,7 +217,14 @@ public class EmisCsvHelper {
     private void retrieveMedication(Long codeId) throws Exception {
         EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, true, codeId);
         if (mapping == null) {
-            throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, true, codeId);
+            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
+            LOG.error("Failed to find medication codeable concept for code ID " + codeId);
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            codeableConcept.setText("Missing Drug Code (Emis ECR 9953529)");
+            medication.put(codeId, codeableConcept);
+            return;
+            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, true, codeId);
         }
 
         String json = mapping.getCodeableConcept();
