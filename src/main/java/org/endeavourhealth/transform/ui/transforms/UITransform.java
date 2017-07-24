@@ -52,6 +52,8 @@ public class UITransform {
             return new UIEpisodeOfCareTransform();
         else if (resourceType == UIDiagnosticReport.class)
             return new UIDiagnosticReportTransform();
+        else if (resourceType == UIDiagnosticOrder.class)
+            return new UIDiagnosticOrderTransform();
 
         throw new NotImplementedException(resourceType.getSimpleName());
     }
