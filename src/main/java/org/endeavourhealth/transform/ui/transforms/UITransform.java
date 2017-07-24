@@ -54,6 +54,8 @@ public class UITransform {
             return new UIDiagnosticReportTransform();
         else if (resourceType == UIDiagnosticOrder.class)
             return new UIDiagnosticOrderTransform();
+        else if (resourceType == UIReferral.class)
+            return new UIReferralTransform();
 
         throw new NotImplementedException(resourceType.getSimpleName());
     }
