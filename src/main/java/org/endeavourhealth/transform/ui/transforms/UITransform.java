@@ -50,6 +50,8 @@ public class UITransform {
             return new UIFamilyMemberHistoryTransform();
         else if (resourceType == UIEpisodeOfCare.class)
             return new UIEpisodeOfCareTransform();
+        else if (resourceType == UIDiagnosticReport.class)
+            return new UIDiagnosticReportTransform();
 
         throw new NotImplementedException(resourceType.getSimpleName());
     }
