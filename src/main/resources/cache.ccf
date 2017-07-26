@@ -69,7 +69,7 @@ jcs.region.EnterpriseResourceMap.elementattributes.IsEternal=false
 # AVAILABLE AUXILIARY CACHES
 jcs.auxiliary.DC=org.apache.jcs.auxiliary.disk.indexed.IndexedDiskCacheFactory
 jcs.auxiliary.DC.attributes=org.apache.jcs.auxiliary.disk.indexed.IndexedDiskCacheAttributes
-jcs.auxiliary.DC.attributes.DiskPath=c:/temp
+jcs.auxiliary.DC.attributes.DiskPath=./cache/
 jcs.auxiliary.DC.attributes.MaxPurgatorySize=10000000
 jcs.auxiliary.DC.attributes.MaxKeySize=-1
 jcs.auxiliary.DC.attributes.MaxRecycleBinSize=5000
