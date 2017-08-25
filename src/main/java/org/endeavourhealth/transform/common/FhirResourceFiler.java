@@ -3,9 +3,12 @@ package org.endeavourhealth.transform.common;
 import com.datastax.driver.core.utils.UUIDs;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.data.admin.ServiceRepository;
+import org.endeavourhealth.core.data.admin.models.Service;
 import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
 import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
+import org.endeavourhealth.core.slack.SlackHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
@@ -257,6 +260,19 @@ public class FhirResourceFiler {
 
         LOG.info("Resource filing completed: admin resources [saved " + adminSaved + ", deleted " + adminDeleted + "]"
                 + ", patient resources [saved " + patientSaved + ", deleted " + patientDeleted + " over " + patientCount + " patients]");
+
+        //adding a slack alert so we proactively know when a practie has been deleted
+        //note the numbers are just arbitrary, because I'm not aware of any GP practice of less than 2000 patients
+        if (patientCount > 2000
+                && patientDeleted > 2000) {
+
+            Service service = new ServiceRepository().getById(serviceId);
+            String msg = "" + patientDeleted + " resources deleted over "
+                       + patientCount + " patients in exchange "
+                       + exchangeId + " for " + service.getName() + " " + service.getId();
+
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.ProductionAlerts, msg);
+        }
     }
 
     /*private List<UUID> getAllBatchIds() {
