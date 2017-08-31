@@ -43,6 +43,7 @@ public class ConditionTransformer extends AbstractTransformer {
         boolean isProblem = false;
         String originalTerm = null;
         boolean isReview = false;
+        Date problemEndDate = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -79,6 +80,12 @@ public class ConditionTransformer extends AbstractTransformer {
             }
         }
 
+        if (fhir.hasAbatement()
+                && fhir.getAbatement() instanceof DateType) {
+            DateType dateType = (DateType)fhir.getAbatement();
+            problemEndDate = dateType.getValue();
+        }
+
         //add the raw original code, to assist in data checking
         originalCode = CodeableConceptHelper.findOriginalCode(fhir.getCode());
 
@@ -108,6 +115,7 @@ public class ConditionTransformer extends AbstractTransformer {
                 originalCode,
                 isProblem,
                 originalTerm,
-                isReview);
+                isReview,
+                problemEndDate);
     }
 }

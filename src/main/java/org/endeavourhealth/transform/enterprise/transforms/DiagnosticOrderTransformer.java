@@ -43,6 +43,7 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
         boolean isProblem = false;
         String originalTerm = null;
         boolean isReview = false;
+        Date problemEndDate = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -106,7 +107,8 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
                 originalCode,
                 isProblem,
                 originalTerm,
-                isReview);
+                isReview,
+                problemEndDate);
     }
 }
 

@@ -42,6 +42,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         boolean isProblem = false;
         String originalTerm = null;
         boolean isReview = false;
+        Date problemEndDate = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -98,7 +99,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 originalCode,
                 isProblem,
                 originalTerm,
-                isReview);
+                isReview,
+                problemEndDate);
     }
 }
 

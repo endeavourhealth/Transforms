@@ -4,8 +4,8 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.data.admin.LibraryRepositoryHelper;
 import org.endeavourhealth.core.rdbms.eds.PatientLinkHelper;
@@ -82,6 +82,7 @@ public class PatientTransformer extends AbstractTransformer {
         Long householdId = null;
         String lsoaCode = null;
         String msoaCode = null;
+        String ethnicCode = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -132,6 +133,12 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
+        if (ethnicityExtension != null) {
+            CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
+            ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+        }
+
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
         boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
@@ -171,7 +178,8 @@ public class PatientTransformer extends AbstractTransformer {
                     postcodePrefix,
                     householdId,
                     lsoaCode,
-                    msoaCode);
+                    msoaCode,
+                    ethnicCode);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
@@ -185,7 +193,8 @@ public class PatientTransformer extends AbstractTransformer {
                         postcodePrefix,
                         householdId,
                         lsoaCode,
-                        msoaCode);
+                        msoaCode,
+                        ethnicCode);
             }
 
         } else {
@@ -202,7 +211,8 @@ public class PatientTransformer extends AbstractTransformer {
                     postcode,
                     householdId,
                     lsoaCode,
-                    msoaCode);
+                    msoaCode,
+                    ethnicCode);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
@@ -214,7 +224,8 @@ public class PatientTransformer extends AbstractTransformer {
                         postcode,
                         householdId,
                         lsoaCode,
-                        msoaCode);
+                        msoaCode,
+                        ethnicCode);
             }
         }
     }

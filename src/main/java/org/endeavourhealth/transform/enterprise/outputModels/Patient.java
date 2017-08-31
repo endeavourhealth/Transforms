@@ -37,7 +37,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                             String postcodePrefix,
                             Long householdId,
                             String lsoaCode,
-                            String msoaCode) throws Exception {
+                            String msoaCode,
+                             String ethnicCode) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                         "" + id,
@@ -52,7 +53,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                         postcodePrefix,
                         convertLong(householdId),
                         lsoaCode,
-                        msoaCode);
+                        msoaCode,
+                        ethnicCode);
     }
 
 
@@ -66,7 +68,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                                         String postcode,
                                         Long householdId,
                                         String lsoaCode,
-                                        String msoaCode) throws Exception {
+                                        String msoaCode,
+                                        String ethnicCode) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -79,7 +82,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                 postcode,
                 convertLong(householdId),
                 lsoaCode,
-                msoaCode);
+                msoaCode,
+                ethnicCode);
     }
 
     @Override
@@ -99,7 +103,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     "postcode_prefix",
                     "household_id",
                     "lsoa_code",
-                    "msoa_code"
+                    "msoa_code",
+                    "ethnic_code"
             };
         } else {
             return new String[]{
@@ -114,7 +119,8 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     "postcode",
                     "household_id",
                     "lsoa_code",
-                    "msoa_code"
+                    "msoa_code",
+                    "ethnic_code"
             };
         }
     }
@@ -136,6 +142,7 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     String.class,
                     Long.TYPE,
                     String.class,
+                    String.class,
                     String.class
             };
         } else {
@@ -150,6 +157,7 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     Date.class,
                     String.class,
                     Long.TYPE,
+                    String.class,
                     String.class,
                     String.class
             };
