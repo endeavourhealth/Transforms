@@ -9,6 +9,7 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
+import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.core.data.ehr.ResourceRepository;
 import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
 import org.endeavourhealth.core.data.ehr.models.ResourceByPatient;
@@ -443,4 +444,105 @@ public class FhirHl7v2Filer {
 
         fhirResourceFiler.savePatientResource(null, false, patient.getId(), patientResources.toArray(new Resource[0]));
     }
+
+    /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+        List<Resource> patientResources = bundle
+                .getEntry()
+                .stream()
+                .map(t -> t.getResource())
+                .filter(t -> FhirResourceFiler.isPatientResource(t))
+                .collect(Collectors.toList());
+
+        //need to find the Patient resource so we can find it's ID
+        Patient patient = patientResources
+                .stream()
+                .filter(t -> t.getResourceType() == ResourceType.Patient)
+                .map(t -> (Patient)t)
+                .collect(StreamExtension.singleCollector());
+        String patientId = patient.getId();
+
+        for (Resource resource: patientResources) {
+
+            //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
+            //sure that any new data is carried over to the old one and re-save the old version
+            if (resource instanceof Encounter) {
+                Encounter newEncounter = (Encounter)resource;
+                String encounterId = newEncounter.getId();
+                try {
+                    Encounter oldEncounter = (Encounter) new ResourceRepository().getCurrentVersionAsResource(ResourceType.Encounter, encounterId);
+                    updateEncounter(oldEncounter, newEncounter);
+                    resource = oldEncounter;
+
+                } catch (ResourceNotFoundException ex) {
+                    //if it is truly new, then no updating required
+                }
+            }
+
+            fhirResourceFiler.savePatientResource(null, false, patientId, resource);
+        }
+    }
+
+    private static void updateEncounter(Encounter oldEncounter, Encounter newEncounter) {
+
+        if (newEncounter.hasIdentifier()) {
+            for (Identifier newIdentifier: newEncounter.getIdentifier()) {
+
+
+                oldEncounter.getIdentifier().add(newIdentifier);
+            }
+        }
+
+        //identifier
+
+        if (newEncounter.hasStatus()) {
+            oldEncounter.setStatus(newEncounter.getStatus());
+        }
+
+        //status history
+
+        if (newEncounter.hasClass_()) {
+            oldEncounter.setClass_(newEncounter.getClass_());
+        }
+
+        //class history
+
+        //type
+        //priority
+        //subject
+        //episode
+        //incoming referral
+        //partificpane
+        //appointment
+        //perido
+        //length
+        //reason
+        //diagnosis
+        //account
+        //hospitalisation
+
+        if (newEncounter.hasLocation()) {
+            for (Encounter.EncounterLocationComponent newLocation: newEncounter.getLocation()) {
+
+                //if the old encounter already has the same location, remove it to replace with the new one
+                if (oldEncounter.hasLocation()) {
+                    for (Encounter.EncounterLocationComponent oldLocation: oldEncounter.getLocation()) {
+                        if (ReferenceHelper.equals(oldLocation.getLocation(), newLocation.getLocation())) {
+                            oldEncounter.getLocation().remove(oldLocation);
+                            break;
+                        }
+                    }
+                }
+
+                oldEncounter.getLocation().add(newLocation);
+            }
+        }
+
+        if (newEncounter.hasServiceProvider()) {
+            oldEncounter.setServiceProvider(newEncounter.getServiceProvider());
+        }
+
+        if (newEncounter.hasPartOf()) {
+            oldEncounter.setPartOf(newEncounter.getPartOf());
+        }
+    }*/
 }
