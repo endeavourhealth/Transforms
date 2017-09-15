@@ -264,7 +264,7 @@ public class FhirResourceFiler {
         //adding a slack alert so we proactively know when a practie has been deleted
         //note the numbers are just arbitrary, because I'm not aware of any GP practice of less than 2000 patients
         if (patientCount > 2000
-                && patientDeleted > 2000) {
+                && patientDeleted > 1000000) {
 
             Service service = new ServiceRepository().getById(serviceId);
             String msg = "" + patientDeleted + " resources deleted over "
