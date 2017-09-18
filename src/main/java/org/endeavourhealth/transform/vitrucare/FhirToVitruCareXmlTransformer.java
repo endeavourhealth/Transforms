@@ -468,7 +468,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
                 ret = saltCacheMap.get(configName);
                 if (ret == null) {
 
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "enterprise");
+                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
                     JsonNode saltNode = config.get("salt");
                     if (saltNode == null) {
                         throw new Exception("No 'Salt' element found in Enterprise config " + configName);

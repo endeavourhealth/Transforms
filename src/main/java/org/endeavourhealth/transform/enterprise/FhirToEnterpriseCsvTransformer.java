@@ -85,7 +85,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
     private static int findTransformBatchSize(String configName) throws Exception {
         Integer i = transformBatchSizeCache.get(configName);
         if (i == null) {
-            JsonNode json = ConfigManager.getConfigurationAsJson(configName, "enterprise");
+            JsonNode json = ConfigManager.getConfigurationAsJson(configName, "subscriber");
             JsonNode batchSize = json.get("TransformBatchSize");
             if (batchSize == null) {
                 i = new Integer(DEFAULT_TRANSFORM_BATCH_SIZE);
