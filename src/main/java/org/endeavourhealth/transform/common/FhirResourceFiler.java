@@ -8,7 +8,7 @@ import org.endeavourhealth.core.data.admin.models.Service;
 import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
 import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
-import org.endeavourhealth.core.slack.SlackHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
@@ -271,7 +271,7 @@ public class FhirResourceFiler {
                        + patientCount + " patients in exchange "
                        + exchangeId + " for " + service.getName() + " " + service.getId();
 
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.ProductionAlerts, msg);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
         }
     }
 
