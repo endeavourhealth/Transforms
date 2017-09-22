@@ -35,14 +35,13 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(FhirToEnterpriseCsvTransformer.class);
 
     private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
-    private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
+    //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
 
     public static String transformFromFhir(UUID serviceId,
                                            UUID systemId,
                                            UUID batchId,
                                            Map<ResourceType,
                                            List<UUID>> resourceIds,
-                                           boolean pseudonymised,
                                            String configName,
                                            UUID protocolId) throws Exception {
 
@@ -57,13 +56,26 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceByExchangeBatch> resourcesMap = hashResourcesByReference(filteredResources);
 
-        OutputContainer data = new OutputContainer(pseudonymised);
+        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
+        boolean pseudonymised = config.get("pseudonymised").asBoolean();
+
+        //nasty workaround to handle a column missing from a table in AIMES
+        boolean hasProblemEndDate = true;
+        if (config.has("problem_end_date")) {
+            hasProblemEndDate = config.get("problem_end_date").asBoolean();
+        }
+
+        int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
+        if (config.has("transform_batch_size")) {
+            batchSize = config.get("transform_batch_size").asInt();
+        }
+        //int batchSize = findTransformBatchSize(configName);
+
+        OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
         EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, configName, data, resourcesMap);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
-
-        int batchSize = findTransformBatchSize(configName);
         params.setBatchSize(batchSize);
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
@@ -82,7 +94,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static int findTransformBatchSize(String configName) throws Exception {
+    /*private static int findTransformBatchSize(String configName) throws Exception {
         Integer i = transformBatchSizeCache.get(configName);
         if (i == null) {
             JsonNode json = ConfigManager.getConfigurationAsJson(configName, "subscriber");
@@ -95,7 +107,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             transformBatchSizeCache.put(configName, i);
         }
         return i.intValue();
-    }
+    }*/
 
     private static Long findEnterpriseOrgId(UUID serviceId, UUID systemId, EnterpriseTransformParams params) throws Exception {
 

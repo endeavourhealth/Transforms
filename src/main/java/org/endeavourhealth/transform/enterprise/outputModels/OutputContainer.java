@@ -37,11 +37,11 @@ public class OutputContainer {
     private final AllergyIntolerance allergyIntolerances;
 
 
-    public OutputContainer(boolean pseduonymised) throws Exception {
-        this(CSV_FORMAT, DATE_FORMAT, TIME_FORMAT, pseduonymised);
+    public OutputContainer(boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
+        this(CSV_FORMAT, DATE_FORMAT, TIME_FORMAT, pseduonymised, hasProblemEndDate);
     }
 
-    public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised) throws Exception {
+    public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
 
         organisations = new Organization("organization.csv", csvFormat, dateFormat, timeFormat);
         practitioners = new Practitioner("practitioner.csv", csvFormat, dateFormat, timeFormat);
@@ -53,7 +53,7 @@ public class OutputContainer {
         encounters = new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat);
         referralRequests = new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat);
         procedureRequests = new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat);
-        observations = new Observation("observation.csv", csvFormat, dateFormat, timeFormat);
+        observations = new Observation("observation.csv", csvFormat, dateFormat, timeFormat, hasProblemEndDate);
         medicationStatements = new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat);
         medicationOrders = new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat);
         allergyIntolerances = new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat);

@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.rdbms.reference.EncounterCode;
+import org.endeavourhealth.core.rdbms.reference.EncounterCodeHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -15,6 +17,7 @@ import java.util.Date;
 public class EncounterTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
+
 
     public boolean shouldAlwaysTransform() {
         return true;
@@ -83,17 +86,24 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         if (fhir.hasExtension()) {
-            for (Extension extension: fhir.getExtension()) {
-                if (extension.getUrl().equals(FhirExtensionUri.ENCOUNTER_SOURCE)) {
-                    CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
 
-                    snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+            if (extension != null) {
+                CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
 
-                    //add the raw original code, to assist in data checking
-                    originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
+                snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
 
-                    //add original term too, for easy display of results
-                    originalTerm = codeableConcept.getText();
+                //add the raw original code and term, to assist in data checking and results display
+                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
+                originalTerm = codeableConcept.getText();
+
+            } else {
+                //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
+                //and see if we can generate a snomed ID from the encounter fields
+                EncounterCode code = mapEncounterCode(fhir);
+                if (code != null) {
+                    snomedConceptId = code.getCode();
+                    originalTerm = code.getTerm();
                 }
             }
         }
@@ -128,6 +138,68 @@ public class EncounterTransformer extends AbstractTransformer {
             originalTerm,
             episodeOfCareId,
             serviceProviderOrganisationId);
+    }
+
+    private EncounterCode mapEncounterCode(Encounter fhir) throws Exception {
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.HL7_MESSAGE_TYPE);
+
+        //if the fhir resource doesn't have any of the secondary care fields we need, then return out
+        if (extension == null
+                || !fhir.hasType()
+                || !fhir.hasClass_()) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+        Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+        if (hl7MessageTypeCoding == null) {
+            return null;
+        }
+        String hl7MessageTypeCode = hl7MessageTypeCoding.getCode();
+        String hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
+
+        String clsDesc = null;
+
+        //if our class is "other" and there's an extension, then get the class out of there
+        Encounter.EncounterClass cls = fhir.getClass_();
+        if (cls == Encounter.EncounterClass.OTHER
+                && fhir.hasClass_Element()
+                && fhir.getClass_Element().hasExtension()) {
+
+            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+                if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
+                    //not 100% of the type of the value, so just append to a String
+                    clsDesc = "" + classExtension.getValue();
+                }
+            }
+        }
+
+        //if it wasn't "other" or didn't have an extension
+        if (Strings.isNullOrEmpty(clsDesc)) {
+            clsDesc = cls.toCode();
+        }
+
+        String typeCode = null;
+        String typeDesc = null;
+        for (CodeableConcept typeCodeableConcept: fhir.getType()) {
+
+            //there should only be a single codeable concept, so just assign this
+            typeDesc = typeCodeableConcept.getText();
+
+            for (Coding coding: typeCodeableConcept.getCoding()) {
+                if (coding.hasSystem()
+                        && (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ENCOUNTER_TYPE_BARTS)
+                        || coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ENCOUNTER_TYPE_HOMERTON))) {
+                    typeCode = coding.getCode();
+                }
+            }
+        }
+
+        //seems a fairly solid pattern to combine these to create something meaningful
+        String term = typeDesc + " " + hl7MessageTypeText;
+
+        return EncounterCodeHelper.findOrCreateCode(term, hl7MessageTypeCode, clsDesc, typeCode);
     }
 
 }
