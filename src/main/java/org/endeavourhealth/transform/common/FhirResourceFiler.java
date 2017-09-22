@@ -209,16 +209,22 @@ public class FhirResourceFiler {
         for (ThreadPoolError error: errors) {
 
             MapAndSaveResourceTask callable = (MapAndSaveResourceTask)error.getCallable();
-            Exception exception = error.getException();
+            Throwable cause = error.getException();
             CsvCurrentState parserState = callable.getParserState();
 
             //if we had an error that doesn't have a CSV state, then it's not something that can be attributed
             //to a specific row in a CSV file, and so should be treated as a fatal exception
             if (parserState == null) {
-                throw exception;
-            }
+                //the cause may be an Exception or Error so we need to explicitly
+                //cast to the right type to throw it without changing the method signature
+                if (cause instanceof Exception) {
+                    throw (Exception)cause;
+                } else if (cause instanceof Error) {
+                    throw (Error)cause;
+                }
+           }
 
-            logTransformRecordError(exception, parserState);
+            logTransformRecordError(cause, parserState);
         }
     }
 
@@ -338,7 +344,7 @@ public class FhirResourceFiler {
      * called when an exception occurs when processing a record in a CSV file, which stores the error in
      * a table which can then be used to re-play the transform for just those records that were in error
      */
-    public void logTransformRecordError(Exception ex, CsvCurrentState state) {
+    public void logTransformRecordError(Throwable ex, CsvCurrentState state) {
 
         //if we've had more than 100 errors, don't bother logging or adding any more exceptions to the audit trail
         if (transformError.getError().size() > 100) {

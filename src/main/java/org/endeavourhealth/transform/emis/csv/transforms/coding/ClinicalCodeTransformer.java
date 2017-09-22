@@ -66,7 +66,7 @@ public abstract class ClinicalCodeTransformer {
         //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
         ThreadPoolError first = errors.get(0);
         WebServiceLookup callable = (WebServiceLookup)first.getCallable();
-        Exception exception = first.getException();
+        Throwable exception = first.getException();
         CsvCurrentState parserState = callable.getParserState();
         throw new TransformException(parserState.toString(), exception);
     }

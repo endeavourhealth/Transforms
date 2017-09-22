@@ -224,8 +224,14 @@ public class FhirDeltaResourceFilter {
 
         //if we've had multiple exceptions, this will only log the first, but the first exception is the one that's interesting
         for (ThreadPoolError error: errors) {
-            Exception exception = error.getException();
-            throw exception;
+            Throwable cause = error.getException();
+            //the cause may be an Exception or Error so we need to explicitly
+            //cast to the right type to throw it without changing the method signature
+            if (cause instanceof Exception) {
+                throw (Exception)cause;
+            } else if (cause instanceof Error) {
+                throw (Error)cause;
+            }
         }
     }
 
