@@ -199,6 +199,9 @@ public class EncounterTransformer extends AbstractTransformer {
 
         //seems a fairly solid pattern to combine these to create something meaningful
         String term = typeDesc + " " + hl7MessageTypeText;
+        if (!clsDesc.equalsIgnoreCase(typeDesc)) {
+            term += " (" + clsDesc + ")";
+        }
 
         EncounterCode ret = EncounterCodeHelper.findOrCreateCode(term, hl7MessageTypeCode, clsDesc, typeCode);
         if (ret == null) {
