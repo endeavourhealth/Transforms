@@ -43,7 +43,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                                            Map<ResourceType,
                                            List<UUID>> resourceIds,
                                            String configName,
-                                           UUID protocolId) throws Exception {
+                                           UUID protocolId,
+                                           String exchangeBody) throws Exception {
 
         //retrieve our resources
         List<ResourceByExchangeBatch> filteredResources = getResources(batchId, resourceIds);
@@ -72,7 +73,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //int batchSize = findTransformBatchSize(configName);
 
         OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
-        EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, configName, data, resourcesMap);
+        EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, configName, data, resourcesMap, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);

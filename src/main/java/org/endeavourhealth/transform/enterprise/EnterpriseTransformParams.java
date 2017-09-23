@@ -17,13 +17,18 @@ public class EnterpriseTransformParams {
     private Long enterpriseOrganisationId = null;
     private Long enterprisePatientId = null;
     private Long enterprisePersonId = null;
+    private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-
-    public EnterpriseTransformParams(UUID protocolId, String enterpriseConfigName, OutputContainer data, Map<String, ResourceByExchangeBatch> allResources) {
+    public EnterpriseTransformParams(UUID protocolId, String enterpriseConfigName, OutputContainer data, Map<String, ResourceByExchangeBatch> allResources, String exchangeBody) {
         this.protocolId = protocolId;
         this.enterpriseConfigName = enterpriseConfigName;
         this.data = data;
         this.allResources = allResources;
+        this.exchangeBody = exchangeBody;
+    }
+
+    public String getExchangeBody() {
+        return exchangeBody;
     }
 
     public UUID getProtocolId() {

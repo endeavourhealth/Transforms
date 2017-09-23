@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.rdbms.reference.EncounterCode;
 import org.endeavourhealth.core.rdbms.reference.EncounterCodeHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -89,22 +90,24 @@ public class EncounterTransformer extends AbstractTransformer {
 
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
             if (extension != null) {
-                CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
 
                 snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
 
                 //add the raw original code and term, to assist in data checking and results display
                 originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
                 originalTerm = codeableConcept.getText();
+            }
+        }
 
-            } else {
-                //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
-                //and see if we can generate a snomed ID from the encounter fields
-                EncounterCode code = mapEncounterCode(fhir);
-                if (code != null) {
-                    snomedConceptId = code.getCode();
-                    originalTerm = code.getTerm();
-                }
+        //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
+        //and see if we can generate a snomed ID from the encounter fields
+        if (Strings.isNullOrEmpty(originalCode)) {
+
+            EncounterCode code = mapEncounterCode(fhir, params);
+            if (code != null) {
+                snomedConceptId = code.getCode();
+                originalTerm = code.getTerm();
             }
         }
 
@@ -140,25 +143,61 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId);
     }
 
-    private EncounterCode mapEncounterCode(Encounter fhir) throws Exception {
+    private EncounterCode mapEncounterCode(Encounter fhir, EnterpriseTransformParams params) throws Exception {
 
+        //if the fhir resource doesn't have a type or class, then return out
+        if (!fhir.hasType()
+            || !fhir.hasClass_()) {
+            LOG.debug("No type or class");
+            return null;
+        }
+
+        String hl7MessageTypeCode = null;
+        String hl7MessageTypeText = null;
+
+        //newer versions of the Emcounters have an extension that gives the ADT message type,
+        //but for older ones we'll need to look back at the original exchange t0 find the type
         Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.HL7_MESSAGE_TYPE);
 
-        //if the fhir resource doesn't have any of the secondary care fields we need, then return out
-        if (extension == null
-                || !fhir.hasType()
-                || !fhir.hasClass_()) {
-            return null;
+        if (extension != null) {
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+            if (hl7MessageTypeCoding == null) {
+                LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
+                return null;
+            }
+            hl7MessageTypeCode = hl7MessageTypeCoding.getCode();
+            hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
+            LOG.debug("Got hl7 type " + hl7MessageTypeCode + " from extension");
+
+        } else {
+            try {
+                String exchangeBody = params.getExchangeBody();
+                Bundle bundle = (Bundle)FhirResourceHelper.deserialiseResouce(exchangeBody);
+                for (Bundle.BundleEntryComponent entry: bundle.getEntry()) {
+                    if (entry.getResource() != null
+                            && entry.getResource() instanceof MessageHeader) {
+
+                        MessageHeader header = (MessageHeader)entry.getResource();
+                        if (header.hasEvent()) {
+                            Coding coding = header.getEvent();
+                            hl7MessageTypeCode = coding.getCode();
+                            hl7MessageTypeText = coding.getDisplay();
+
+                            LOG.debug("Got hl7 type " + hl7MessageTypeCode + " from exchange body");
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                //if the exchange body isn't a FHIR bundle, then we'll get an error by treating as such, so just ignore them
+            }
         }
 
-        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
-        if (hl7MessageTypeCoding == null) {
-            LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
+        //if we couldn't find an HL7 message type, then give up
+        if (Strings.isNullOrEmpty(hl7MessageTypeCode)) {
+            LOG.debug("Failed to find hl7 type");
             return null;
         }
-        String hl7MessageTypeCode = hl7MessageTypeCoding.getCode();
-        String hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
 
         String clsDesc = null;
 
