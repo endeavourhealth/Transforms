@@ -154,6 +154,7 @@ public class EncounterTransformer extends AbstractTransformer {
         CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
         Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
         if (hl7MessageTypeCoding == null) {
+            LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
             return null;
         }
         String hl7MessageTypeCode = hl7MessageTypeCoding.getCode();
@@ -199,7 +200,13 @@ public class EncounterTransformer extends AbstractTransformer {
         //seems a fairly solid pattern to combine these to create something meaningful
         String term = typeDesc + " " + hl7MessageTypeText;
 
-        return EncounterCodeHelper.findOrCreateCode(term, hl7MessageTypeCode, clsDesc, typeCode);
+        EncounterCode ret = EncounterCodeHelper.findOrCreateCode(term, hl7MessageTypeCode, clsDesc, typeCode);
+        if (ret == null) {
+            LOG.debug("Null ret for term " + term + " message type " + hl7MessageTypeCode + " cls " + clsDesc + " type " + typeCode + " in " + fhir.getResourceType() + " " + fhir.getId());
+        } else {
+            LOG.debug("ret " + ret.getCode() + " for term " + term + " message type " + hl7MessageTypeCode + " cls " + clsDesc + " type " + typeCode + " in " + fhir.getResourceType() + " " + fhir.getId());
+        }
+        return ret;
     }
 
 }
