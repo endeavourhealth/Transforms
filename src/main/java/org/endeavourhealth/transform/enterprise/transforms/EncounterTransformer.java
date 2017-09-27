@@ -86,7 +86,14 @@ public class EncounterTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        if (fhir.hasExtension()) {
+        //changing to use our information model to get the concept ID for the consultation type based on the textual term
+        originalTerm = findEncounterTypeTerm(fhir, params);
+        if (!Strings.isNullOrEmpty(originalTerm)) {
+            EncounterCode ret = EncounterCodeHelper.findOrCreateCode(originalTerm);
+            snomedConceptId = ret.getCode();
+        }
+
+        /*if (fhir.hasExtension()) {
 
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
             if (extension != null) {
@@ -109,7 +116,7 @@ public class EncounterTransformer extends AbstractTransformer {
                 snomedConceptId = code.getCode();
                 originalTerm = code.getTerm();
             }
-        }
+        }*/
 
         if (fhir.hasEpisodeOfCare()) {
             if (fhir.getEpisodeOfCare().size() > 1) {
@@ -143,7 +150,108 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId);
     }
 
-    private EncounterCode mapEncounterCode(Encounter fhir, EnterpriseTransformParams params) throws Exception {
+    private String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
+
+        if (fhir.hasExtension()) {
+            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+            if (extension != null) {
+                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+                String term = codeableConcept.getText();
+                if (!Strings.isNullOrEmpty(term)) {
+                    return term;
+                }
+            }
+        }
+
+        //if the fhir resource doesn't have a type or class, then return out
+        if (!fhir.hasType()
+                || !fhir.hasClass_()) {
+            LOG.debug("No type or class");
+            return null;
+        }
+
+        String hl7MessageTypeText = null;
+
+        //newer versions of the Emcounters have an extension that gives the ADT message type,
+        //but for older ones we'll need to look back at the original exchange t0 find the type
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.HL7_MESSAGE_TYPE);
+
+        if (extension != null) {
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+            if (hl7MessageTypeCoding == null) {
+                LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
+                return null;
+            }
+            hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
+            LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
+
+        } else {
+            try {
+                String exchangeBody = params.getExchangeBody();
+                Bundle bundle = (Bundle)FhirResourceHelper.deserialiseResouce(exchangeBody);
+                for (Bundle.BundleEntryComponent entry: bundle.getEntry()) {
+                    if (entry.getResource() != null
+                            && entry.getResource() instanceof MessageHeader) {
+
+                        MessageHeader header = (MessageHeader)entry.getResource();
+                        if (header.hasEvent()) {
+                            Coding coding = header.getEvent();
+                            hl7MessageTypeText = coding.getDisplay();
+
+                            LOG.debug("Got hl7 type " + hl7MessageTypeText + " from exchange body");
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                //if the exchange body isn't a FHIR bundle, then we'll get an error by treating as such, so just ignore them
+            }
+        }
+
+        //if we couldn't find an HL7 message type, then give up
+        if (Strings.isNullOrEmpty(hl7MessageTypeText)) {
+            LOG.debug("Failed to find hl7 type");
+            return null;
+        }
+
+        String clsDesc = null;
+
+        //if our class is "other" and there's an extension, then get the class out of there
+        Encounter.EncounterClass cls = fhir.getClass_();
+        if (cls == Encounter.EncounterClass.OTHER
+                && fhir.hasClass_Element()
+                && fhir.getClass_Element().hasExtension()) {
+
+            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+                if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
+                    //not 100% of the type of the value, so just append to a String
+                    clsDesc = "" + classExtension.getValue();
+                }
+            }
+        }
+
+        //if it wasn't "other" or didn't have an extension
+        if (Strings.isNullOrEmpty(clsDesc)) {
+            clsDesc = cls.toCode();
+        }
+
+        String typeDesc = null;
+        for (CodeableConcept typeCodeableConcept: fhir.getType()) {
+            //there should only be a single codeable concept, so just assign this
+            typeDesc = typeCodeableConcept.getText();
+        }
+
+        //seems a fairly solid pattern to combine these to create something meaningful
+        String term = typeDesc + " " + hl7MessageTypeText;
+        if (!clsDesc.equalsIgnoreCase(typeDesc)) {
+            term += " (" + clsDesc + ")";
+        }
+
+        return term;
+    }
+
+
+    /*private EncounterCode mapEncounterCode(Encounter fhir, EnterpriseTransformParams params) throws Exception {
 
         //if the fhir resource doesn't have a type or class, then return out
         if (!fhir.hasType()
@@ -249,6 +357,6 @@ public class EncounterTransformer extends AbstractTransformer {
             LOG.debug("ret " + ret.getCode() + " for term " + term + " message type " + hl7MessageTypeCode + " cls " + clsDesc + " type " + typeCode + " in " + fhir.getResourceType() + " " + fhir.getId());
         }
         return ret;
-    }
+    }*/
 
 }
