@@ -192,30 +192,33 @@ public class PatientTransformer {
         RegistrationType registrationType = convertRegistrationType(parser.getPatientTypedescription(), parser.getDummyType());
         fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
 
+        //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
+        //for the patient's carer at a specific organisation. That being the case, we store the local carer
+        //on the episode_of_care and the general practitioner on the patient.
         String usualGpGuid = parser.getUsualGpUserInRoleGuid();
-        if (!Strings.isNullOrEmpty(usualGpGuid)) {
+        if (!Strings.isNullOrEmpty(usualGpGuid)
+                && registrationType == RegistrationType.REGULAR_GMS) { //if they're not registered for GMS, then this isn't their usual GP
             fhirPatient.addCareProvider(csvHelper.createPractitionerReference(usualGpGuid));
+        }
+
+        String externalGpGuid = parser.getExternalUsualGPGuid();
+        if (!Strings.isNullOrEmpty(externalGpGuid)) {
+            fhirPatient.addCareProvider(csvHelper.createPractitionerReference(externalGpGuid));
 
         } else {
-            String externalGpGuid = parser.getExternalUsualGPGuid();
-            if (!Strings.isNullOrEmpty(externalGpGuid)) {
-                fhirPatient.addCareProvider(csvHelper.createPractitionerReference(externalGpGuid));
 
+            //have to handle the mis-spelling of the column name in EMIS test pack
+            //String externalOrgGuid = patientParser.getExternalUsualGPOrganisation();
+            String externalOrgGuid = null;
+            if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                    || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+                externalOrgGuid = parser.getExternalUsusalGPOrganisation();
             } else {
+                externalOrgGuid = parser.getExternalUsualGPOrganisation();
+            }
 
-                //have to handle the mis-spelling of the column name in EMIS test pack
-                //String externalOrgGuid = patientParser.getExternalUsualGPOrganisation();
-                String externalOrgGuid = null;
-                if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                        || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
-                    externalOrgGuid = parser.getExternalUsusalGPOrganisation();
-                } else {
-                    externalOrgGuid = parser.getExternalUsualGPOrganisation();
-                }
-
-                if (!Strings.isNullOrEmpty(externalOrgGuid)) {
-                    fhirPatient.addCareProvider(csvHelper.createOrganisationReference(externalOrgGuid));
-                }
+            if (!Strings.isNullOrEmpty(externalOrgGuid)) {
+                fhirPatient.addCareProvider(csvHelper.createOrganisationReference(externalOrgGuid));
             }
         }
 
@@ -224,6 +227,8 @@ public class PatientTransformer {
         String orgUuid = parser.getOrganisationGuid();
         fhirEpisode.setManagingOrganization(csvHelper.createOrganisationReference(orgUuid));
 
+        //the care manager on the episode is the person who cares for the patient AT THIS ORGANISATION,
+        //so ignore the external... fields which refer to clinicians elsewhere
         if (!Strings.isNullOrEmpty(usualGpGuid)) {
             fhirEpisode.setCareManager(csvHelper.createPractitionerReference(usualGpGuid));
         }
@@ -242,6 +247,7 @@ public class PatientTransformer {
         }
 
         if (parser.getIsConfidential()) {
+            //add the confidential flag to BOTH resources
             fhirPatient.addExtension(ExtensionConverter.createBooleanExtension(FhirExtensionUri.IS_CONFIDENTIAL, true));
             fhirEpisode.addExtension(ExtensionConverter.createBooleanExtension(FhirExtensionUri.IS_CONFIDENTIAL, true));
         }
@@ -370,6 +376,8 @@ public class PatientTransformer {
             return RegistrationType.REGULAR_GMS;
         } else if (csvRegType.equalsIgnoreCase("Temporary")) {
             return RegistrationType.TEMPORARY;
+        } else if (csvRegType.equalsIgnoreCase("Community Registered")) {
+            return RegistrationType.COMMUNITY;
         } else {
             return RegistrationType.OTHER;
         }
