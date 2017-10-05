@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceIdHelper;
-import org.endeavourhealth.transform.barts.schema.Problem;
+import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -15,11 +15,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class ProblemTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
+public class DiagnosisTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
     public static void transform(String version,
-                                 Problem parser,
+                                 Diagnosis parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
@@ -30,7 +30,7 @@ public class ProblemTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createConditionResource(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createDiagnosisResource(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -40,7 +40,7 @@ public class ProblemTransformer {
     }
 
 
-    public static void createConditionResource(Problem parser,
+    public static void createDiagnosisResource(Diagnosis parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -49,8 +49,8 @@ public class ProblemTransformer {
 
         Condition fhirCondition = new Condition();
 
-        // Turn problem_id into Resource id
-        String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProblemIdValue="+parser.getProblemId().toString();
+        // Turn key into Resource id
+        String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProblemIdValue="+parser.getDiagnosisId().toString();
         ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
@@ -62,7 +62,7 @@ public class ProblemTransformer {
         }
         fhirCondition.setId(resourceId.getResourceId().toString());
 
-        fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/problem-id").setValue(parser.getProblemId().toString());
+        //fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID());
 
         // set patient reference
         uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
@@ -88,64 +88,48 @@ public class ProblemTransformer {
         }
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
-        // Set Asserter - to field 32
-        /*
-        String names[] = parser.getUpdatedBy().split(",");
-        uniqueId = "Surname="+names[0].trim()+"-Forename="+names[1].trim();
-        resourceId = ResourceIdHelper.getResourceId("B", "Practitioner", uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType("Practitioner");
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(resourceId);
-        }
-        fhirCondition.setAsserter(ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString()));
-        */
+        // Encounter ???
+        // TODO Can we find encounter?
+
+        // Asserter
+            /*
+            uniqueId = "ConsultantCode=" + parser.getConsultantCode();
+            resourceId = ResourceIdHelper.getResourceId("B", "Practitioner", uniqueId);
+            if (resourceId == null) {
+                resourceId = new ResourceId();
+                resourceId.setScopeId("B");
+                resourceId.setResourceType("Practitioner");
+                resourceId.setUniqueId(uniqueId);
+                resourceId.setResourceId(UUID.randomUUID());
+                ResourceIdHelper.saveResourceId(resourceId);
+            }
+            fhirCondition.setAsserter(ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString()));
+            */
 
         // Date recorded
-        d = parser.getUpdateDateTime();
+        d = parser.getDiagnosisDate();
         fhirCondition.setDateRecorded(d);
 
         // set code to coded problem - field 28
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProblemCode());
+        cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getDiagnosisCode());
         fhirCondition.setCode(cc);
 
-        // set category to 'complaint'
+        // set category to 'diagnosis'
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("complaint");
+        cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("diagnosis");
         fhirCondition.setCategory(cc);
 
-        // set clinicalStatus - ???
-        // in field 14 have so far seen 'Active', 'Resolved'
-        // TODO
-
         // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????
-        // TODO
-
-        //  set severity to field 16 + 17
-        /*
-        String severity = parser.getSeverity();
-        if (severity != null) {
-            cc = new CodeableConcept();
-            //TODO set severity - should field severity_class be used ?
-            //cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("complaint");
-            fhirCondition.setSeverity(cc);
-        } */
-
-        // set onset to field  to field 10 + 11
-        //d = parser.getOnsetDate();
-        //Type type = new Type();
-        //fhirCondition.setOnset().set.setDateRecorded(d);
+        // TODO check this
+        //fhirCondition.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
         // set notes
-        fhirCondition.setNotes(parser.getAnnotatedDisp());
+        fhirCondition.setNotes(parser.getDiagnosis());
 
         // save resource
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
 
     }
 

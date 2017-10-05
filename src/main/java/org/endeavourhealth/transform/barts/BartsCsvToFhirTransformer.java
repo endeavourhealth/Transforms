@@ -7,11 +7,8 @@ import org.endeavourhealth.core.data.audit.AuditRepository;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.Error;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.barts.schema.Problem;
-import org.endeavourhealth.transform.barts.schema.Sus;
-import org.endeavourhealth.transform.barts.schema.Tails;
-import org.endeavourhealth.transform.barts.transforms.ProblemTransformer;
-import org.endeavourhealth.transform.barts.transforms.SusTransformer;
+import org.endeavourhealth.transform.barts.schema.*;
+import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -95,82 +92,65 @@ public abstract class BartsCsvToFhirTransformer {
     }
 
 
-    private static String findDataSharingAgreementGuid(Map<Class, AbstractFixedParser> parsers) throws Exception {
-
-        //we need a file name to work out the data sharing agreement ID, so just the first file we can find
-        File f = parsers
-                .values()
-                .iterator()
-                .next()
-                .getFile();
-
-        return findDataSharingAgreementGuid(f);
-    }
-
-    public static String findDataSharingAgreementGuid(File f) throws Exception {
-        String name = Files.getNameWithoutExtension(f.getName());
-        String[] toks = name.split("_");
-        if (toks.length != 5) {
-            throw new TransformException("Failed to extract data sharing agreement GUID from filename " + f.getName());
-        }
-        return toks[4];
-    }
 
     private static void transformParsers(File dir, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors,
                                          int maxFilingThreads) throws Exception {
 
-        //EmisCsvHelper csvHelper = new EmisCsvHelper(findDataSharingAgreementGuid(parsers));
-
-        //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
-        /*
-        if (!new AuditRepository().isServiceStarted(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
-            LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
-            csvHelper.applyAdminResourceCache(fhirResourceFiler);
-        }
-        */
-
-        //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
-        for (File f: dir.listFiles()) {
-            String fName = f.getName();
+        for (File currFile: dir.listFiles()) {
+            String fName = currFile.getName();
             String fileType = identifyFileType(fName);
+            //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
-            if ((fileType.compareTo("TAILOPA") == 0) || (fileType.compareTo("TAILIP") == 0) || (fileType.compareTo("TAILAEA") == 0)) {
-                AbstractFixedParser parser = new Tails(version, f, true);
-                // TODO
-                //TailsPreTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
-            } else {
-                if (fileType.compareTo("PREG") == 0) {
-                    AbstractFixedParser parser = new Tails(version, f, true);
-                    // TODO
-                    //PregPreTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
-                }
-            }
-        }
+            if (fileType.compareTo("SUSOPA") == 0) {
+                File tailFile = new File(currFile.getParent() + File.separator + "tailopa_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
+                LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                Tails tailsParser = new Tails(version, tailFile, true);
+                TailsPreTransformer.transform(version, tailsParser);
 
-        //before getting onto the files that actually create FHIR resources, we need to
-        //work out what record numbers to process, if we're re-running a transform
-        //boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
-
-        //run the transforms for non-patient resources
-        // TODO - verify by i dont think there are any for Barts
-        //LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-        //note the order of these transforms is important, as consultations should be before obs etc.
-        for (File f2: dir.listFiles()) {
-            String fName = f2.getName();
-            String fileType = identifyFileType(fName);
-
-            if ((fileType.compareTo("SUSOPA") == 0) || (fileType.compareTo("SUSIP") == 0) || (fileType.compareTo("SUSAEA") == 0)) {
-                Sus parser = new Sus(version, f2, true);
+                Sus parser = new Sus(version, currFile, true);
                 SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else {
-                if (fileType.compareTo("PROB") == 0) {
-                    Problem parser = new Problem (version, f2, true);
-                    ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                if (fileType.compareTo("SUSIP") == 0) {
+                    File tailFile = new File(currFile.getParent() + File.separator + "tailip_DIS." + currFile.getName().split("_")[2] + "_susrnj.dat");
+                    LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                    Tails tailsParser = new Tails(version, tailFile, true);
+                    TailsPreTransformer.transform(version, tailsParser);
+
+                    Sus parser = new Sus(version, currFile, true);
+                    SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                     parser.close();
+                } else {
+                    if (fileType.compareTo("SUSAEA") == 0) {
+                        File tailFile = new File(currFile.getParent() + File.separator + "tailaea_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
+                        LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                        Tails tailsParser = new Tails(version, tailFile, true);
+                        TailsPreTransformer.transform(version, tailsParser);
+
+                        Sus parser = new Sus(version, currFile, true);
+                        SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                        parser.close();
+                    } else {
+                        if (fileType.compareTo("PROB") == 0) {
+                            Problem parser = new Problem(version, currFile, true);
+                            ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                            parser.close();
+                        } else {
+                            if (fileType.compareTo("PROC") == 0) {
+                                Procedure parser = new Procedure(version, currFile, true);
+                                ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                                parser.close();
+                            } else {
+                                if (fileType.compareTo("DIAG") == 0) {
+                                    Diagnosis parser = new Diagnosis(version, currFile, true);
+                                    DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                                    parser.close();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

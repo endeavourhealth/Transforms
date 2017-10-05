@@ -44,13 +44,13 @@ public class Problem extends AbstractFixedParser {
     }
 
     public String getLocalPatientId() {
-        return super.getString("MRN");
+        return super.getString("MRN").trim();
     }
-    public String getproblem() {
-        return super.getString("Problem");
+    public String getProblem() {
+        return super.getString("Problem").trim();
     }
     public String getAnnotatedDisp() {
-        return super.getString("AnnotatedDisp");
+        return super.getString("AnnotatedDisp").trim();
     }
 
     public Date getOnsetDate() throws TransformException {
@@ -58,16 +58,16 @@ public class Problem extends AbstractFixedParser {
     }
 
     public String getSeverity() {
-        return super.getString("Severity");
+        return super.getString("Severity").trim();
     }
     public String getProblemCode() {
-        return super.getString("ProblemCode");
+        return super.getString("ProblemCode").trim();
     }
     public String getVocabulary() {
-        return super.getString("Vocabulary");
+        return super.getString("Vocabulary").trim();
     }
     public String getUpdatedBy() {
-        return super.getString("UpdatedBy");
+        return super.getString("UpdatedBy").trim();
     }
 
 }

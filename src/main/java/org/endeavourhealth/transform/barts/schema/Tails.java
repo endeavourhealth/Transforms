@@ -11,18 +11,16 @@ public class Tails extends AbstractFixedParser {
     public Tails(String version, File f, boolean openParser) throws Exception {
         super(version, f, openParser, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
 
-        addFieldList(new FixedParserField("CDSVersion",             1, 6));
-        addFieldList(new FixedParserField("CDSRecordType",          7, 3));
-        addFieldList(new FixedParserField("CDSReplacementgroup",    10, 3));
-        addFieldList(new FixedParserField("MRN",    284, 10));
-        addFieldList(new FixedParserField("DOB",    321, 8));
+        addFieldList(new FixedParserField("CDSUniqueueId",             1, 35));
+        addFieldList(new FixedParserField("EncounterId",          109, 30));
+        // NOTE - fields in the three types of Tails files are identical up to and including field 10
     }
 
-    public String getLocalPatientId() {
-        return super.getString("MRN");
+    public String getCDSUniqueueId() {
+        return super.getString("CDSUniqueueId");
     }
-    public String getDOB() {
-        return super.getString("DOB");
+    public String getEncounterId() {
+        return super.getString("EncounterId");
     }
 
 

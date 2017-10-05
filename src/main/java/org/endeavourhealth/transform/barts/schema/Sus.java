@@ -21,6 +21,7 @@ public class Sus extends AbstractFixedParser {
         addFieldList(new FixedParserField("CDSRecordType",          7, 3));
         addFieldList(new FixedParserField("CDSReplacementgroup",    10, 3));
         addFieldList(new FixedParserField("CDSUniqueID",    16, 35));
+        addFieldList(new FixedParserField("CDSUpdateType",    51, 1));
         addFieldList(new FixedParserField("MRN",    284, 10));
         addFieldList(new FixedParserField("DOB",    321, 8));
         addFieldList(new FixedParserField("PatientTitle",    471, 35));
@@ -54,6 +55,10 @@ public class Sus extends AbstractFixedParser {
     }
     public String getCDSUniqueID() {
         return super.getString("CDSUniqueID");
+    }
+    // 1 = Delete, 9 = New/Replace
+    public int getCDSUpdateType() {
+        return super.getInt("CDSUpdateType");
     }
 
     public String getLocalPatientId() {
@@ -120,16 +125,7 @@ public class Sus extends AbstractFixedParser {
     public String getICDSecondaryDiagnosis(int pos) {
         // have the code string already been split ?
         if (ICDSecondaryDiagnosisList == null) {
-            ICDSecondaryDiagnosisList = new ArrayList<String> ();
-            // Each code is 7 characters (6 for code + 1 for indicator) - only code is used
-            String listString = super.getString("ICDSecondaryDiagnosisList");
-            for (int i = 0; i < 49; i++) {
-                int startPos = i * 7;
-                String code = listString.substring(startPos, startPos + 6);
-                if (code != null && code.length() > 0) {
-                    ICDSecondaryDiagnosisList.add(code.substring(0, 5));
-                }
-            }
+            splitICDSecondaryDiagnosisList();
         }
         if (ICDSecondaryDiagnosisList.size() > 0) {
             return ICDSecondaryDiagnosisList.get(pos);
@@ -138,6 +134,25 @@ public class Sus extends AbstractFixedParser {
         }
     }
 
+    public int getICDSecondaryDiagnosisCount() {
+        if (ICDSecondaryDiagnosisList == null) {
+            splitICDSecondaryDiagnosisList();
+        }
+        return ICDSecondaryDiagnosisList.size();
+    }
+
+    private void splitICDSecondaryDiagnosisList() {
+        ICDSecondaryDiagnosisList = new ArrayList<String> ();
+        // Each code is 7 characters (6 for code + 1 for indicator) - only code is used
+        String listString = super.getString("ICDSecondaryDiagnosisList");
+        for (int i = 0; i < 49; i++) {
+            int startPos = i * 7;
+            String code = listString.substring(startPos, startPos + 6);
+            if (code != null && code.length() > 0) {
+                ICDSecondaryDiagnosisList.add(code.substring(0, 5));
+            }
+        }
+    }
 
     public String getOPCSPrimaryProcedureCode() {
         return super.getString("OPCSPrimaryProcedureCode");
@@ -146,19 +161,18 @@ public class Sus extends AbstractFixedParser {
         return super.getDate("OPCSPrimaryProcedureDate");
     }
 
+    public int getOPCSecondaryProcedureCodeCount() {
+        // have the code string already been split ?
+        if (OPCSSecondaryProcedureList == null) {
+            splitOPCSSecondaryProcedureList();
+        }
+        return OPCSSecondaryProcedureList.size();
+    }
+
     public String getOPCSecondaryProcedureCode(int pos) {
         // have the code string already been split ?
         if (OPCSSecondaryProcedureList == null) {
-            OPCSSecondaryProcedureList = new ArrayList<String> ();
-            // Each code-set is 40 characters (6 for code + 1 for indicator) - only code is used
-            String listString = super.getString("OPCSecondaryProcedureList");
-            for (int i = 0; i < 49; i++) {
-                int startPos = i * 40;
-                String code = listString.substring(startPos, startPos + 6);
-                if (code != null && code.length() > 0) {
-                    OPCSSecondaryProcedureList.add(code.substring(0, 3));
-                }
-            }
+            splitOPCSSecondaryProcedureList();
         }
         if (OPCSSecondaryProcedureList.size() > 0) {
             return OPCSSecondaryProcedureList.get(pos);
@@ -167,5 +181,17 @@ public class Sus extends AbstractFixedParser {
         }
     }
 
+    private void splitOPCSSecondaryProcedureList() {
+        OPCSSecondaryProcedureList = new ArrayList<String> ();
+        // Each code-set is 40 characters (6 for code + 1 for indicator) - only code is used
+        String listString = super.getString("OPCSecondaryProcedureList");
+        for (int i = 0; i < 49; i++) {
+            int startPos = i * 40;
+            String code = listString.substring(startPos, startPos + 6);
+            if (code != null && code.length() > 0) {
+                OPCSSecondaryProcedureList.add(code.substring(0, 3));
+            }
+        }
+    }
 
 }

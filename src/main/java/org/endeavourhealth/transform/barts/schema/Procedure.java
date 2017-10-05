@@ -1,0 +1,84 @@
+package org.endeavourhealth.transform.barts.schema;
+
+import org.endeavourhealth.transform.barts.AbstractFixedParser;
+import org.endeavourhealth.transform.barts.FixedParserField;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class Procedure extends AbstractFixedParser {
+    private static final Logger LOG = LoggerFactory.getLogger(Procedure.class);
+
+    public static final String DATE_FORMAT = "dd-MMM-yyyy";
+    public static final String TIME_FORMAT = "hh:mm:ss";
+    public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
+
+    public Procedure(String version, File f, boolean openParser) throws Exception {
+        super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
+
+        addFieldList(new FixedParserField("DOB",             1, 14));
+        addFieldList(new FixedParserField("MRN",    13, 45));
+        addFieldList(new FixedParserField("NHSNo",    59, 45));
+        addFieldList(new FixedParserField("Consultant",    285, 45));
+        addFieldList(new FixedParserField("Procedure_DT_TM",    331, 20));
+        addFieldList(new FixedParserField("ProcedureText",    352, 200));
+        addFieldList(new FixedParserField("Comment",    552, 200));
+        addFieldList(new FixedParserField("ProcedureCode",    754, 200));
+        addFieldList(new FixedParserField("Create_DT_TM",          1139, 20));
+        addFieldList(new FixedParserField("Update_DT_TM",          1160, 20));
+        addFieldList(new FixedParserField("UpdatedBy",    1181, 45));
+        addFieldList(new FixedParserField("EncounterId",          1227, 14));
+        addFieldList(new FixedParserField("FINNo",          1242, 7));
+
+    }
+
+    public Date getDOB() throws TransformException {
+        return super.getDate("DOB");
+    }
+    public String getLocalPatientId() {
+        return super.getString("MRN").trim();
+    }
+    public String getNHSNo() {
+        return super.getString("NHSNo").replaceAll("\\-", "");
+    }
+    public String getConsultant() {
+        return super.getString("Consultant").trim();
+    }
+
+    public Date getProcedureDateTime() throws TransformException {
+        return super.getDate("Procedure_DT_TM");
+    }
+
+    public String getProcedureText() {
+        return super.getString("ProcedureText").trim();
+    }
+    public String getComment() {
+        return super.getString("Comment").trim();
+    }
+    public String getProcedureCode() {
+        return super.getString("ProcedureCode").trim();
+    }
+
+    public Date getCreateDateTime() throws TransformException {
+        return super.getDate("Create_DT_TM");
+    }
+    public Date getUpdateDateTime() throws TransformException {
+        return super.getDateTime("Update_DT_TM");
+    }
+    public String getUpdatedBy() {
+        return super.getString("UpdatedBy").trim();
+    }
+    public Long getEncounterId() {
+        String ret = super.getString("EncounterId").split("\\.")[0];
+        return Long.parseLong(ret);
+    }
+    public String getFINNo() {
+        return super.getString("FINNo").trim();
+    }
+
+}
