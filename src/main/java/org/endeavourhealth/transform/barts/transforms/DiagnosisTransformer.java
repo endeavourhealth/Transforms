@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceIdHelper;
 import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class DiagnosisTransformer {
+public class DiagnosisTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
     public static void transform(String version,
@@ -51,14 +50,18 @@ public class DiagnosisTransformer {
 
         // Turn key into Resource id
         String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProblemIdValue="+parser.getDiagnosisId().toString();
-        ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
+        LOG.debug("Looking for Condition resource id:" + uniqueId);
+        ResourceId resourceId= getResourceId("B", "Condition", uniqueId);
         if (resourceId == null) {
+            LOG.debug("Not found");
             resourceId = new ResourceId();
             resourceId.setScopeId("B");
             resourceId.setResourceType("Condition");
             resourceId.setUniqueId(uniqueId);
             resourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(resourceId);
+            saveResourceId(resourceId);
+        } else {
+            LOG.debug("Found Condition resource id:" + resourceId.getResourceId().toString());
         }
         fhirCondition.setId(resourceId.getResourceId().toString());
 
@@ -66,14 +69,14 @@ public class DiagnosisTransformer {
 
         // set patient reference
         uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = ResourceIdHelper.getResourceId("B", "Patient", uniqueId);
+        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
         if (patientResourceId == null) {
             patientResourceId = new ResourceId();
             patientResourceId.setScopeId("B");
             patientResourceId.setResourceType("Patient");
             patientResourceId.setUniqueId(uniqueId);
             patientResourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(patientResourceId);
+            saveResourceId(patientResourceId);
 
             Patient fhirPatient = new Patient();
             fhirPatient.setId(patientResourceId.getResourceId().toString());

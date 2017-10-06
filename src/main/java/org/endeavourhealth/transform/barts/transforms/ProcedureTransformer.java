@@ -1,11 +1,8 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceIdHelper;
-import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -17,7 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 
-public class ProcedureTransformer {
+public class ProcedureTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
@@ -56,14 +53,14 @@ public class ProcedureTransformer {
         String resourceType = "Procedure";
         String createDateTime = resourceIdFormat.format(parser.getCreateDateTime());
         String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProcedureCode="+parser.getProcedureCode()+"-CreateDateTime="+createDateTime;
-        ResourceId resourceId = ResourceIdHelper.getResourceId("B", resourceType, uniqueId);
+        ResourceId resourceId = getResourceId("B", resourceType, uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
             resourceId.setScopeId("B");
             resourceId.setResourceType(resourceType);
             resourceId.setUniqueId(uniqueId);
             resourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(resourceId);
+            saveResourceId(resourceId);
         }
         fhirProcedure.setId(resourceId.getResourceId().toString());
 
@@ -71,14 +68,14 @@ public class ProcedureTransformer {
 
         // set patient reference
         uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = ResourceIdHelper.getResourceId("B", "Patient", uniqueId);
+        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
         if (patientResourceId == null) {
             patientResourceId = new ResourceId();
             patientResourceId.setScopeId("B");
             patientResourceId.setResourceType("Patient");
             patientResourceId.setUniqueId(uniqueId);
             patientResourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(patientResourceId);
+            saveResourceId(patientResourceId);
 
             Patient fhirPatient = new Patient();
             fhirPatient.setId(patientResourceId.getResourceId().toString());

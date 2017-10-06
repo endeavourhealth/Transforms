@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceIdHelper;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class ProblemTransformer {
+public class ProblemTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
 
     public static void transform(String version,
@@ -51,14 +50,14 @@ public class ProblemTransformer {
 
         // Turn problem_id into Resource id
         String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProblemIdValue="+parser.getProblemId().toString();
-        ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
+        ResourceId resourceId = getResourceId("B", "Condition", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
             resourceId.setScopeId("B");
             resourceId.setResourceType("Condition");
             resourceId.setUniqueId(uniqueId);
             resourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(resourceId);
+            saveResourceId(resourceId);
         }
         fhirCondition.setId(resourceId.getResourceId().toString());
 
@@ -66,14 +65,14 @@ public class ProblemTransformer {
 
         // set patient reference
         uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = ResourceIdHelper.getResourceId("B", "Patient", uniqueId);
+        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
         if (patientResourceId == null) {
             patientResourceId = new ResourceId();
             patientResourceId.setScopeId("B");
             patientResourceId.setResourceType("Patient");
             patientResourceId.setUniqueId(uniqueId);
             patientResourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(patientResourceId);
+            saveResourceId(patientResourceId);
 
             Patient fhirPatient = new Patient();
             fhirPatient.setId(patientResourceId.getResourceId().toString());
