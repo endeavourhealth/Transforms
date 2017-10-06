@@ -134,13 +134,17 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     }
 
     public Date getDate (String column) throws TransformException {
-        Date ret = null;
         String dt = getString(column);
-        if (dt != null && dt.length() > 0) {
+        return parseDate(dt);
+    }
+
+    public Date parseDate (String date) throws TransformException {
+        Date ret = null;
+        if (date != null && date.length() > 0) {
             try {
-                ret = dateFormat.parse(dt);
+                ret = dateFormat.parse(date);
             } catch (ParseException pe) {
-                throw new FileFormatException(file.getName(), "Invalid date format [" + dt + "]", pe);
+                throw new FileFormatException(file.getName(), "Invalid date format [" + date + "]", pe);
             }
         }
         return ret;

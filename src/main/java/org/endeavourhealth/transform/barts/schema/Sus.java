@@ -2,17 +2,22 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractFixedParser;
 import org.endeavourhealth.transform.barts.FixedParserField;
+import org.endeavourhealth.transform.barts.transforms.SusTransformer;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 
 public class Sus extends AbstractFixedParser {
+    private static final Logger LOG = LoggerFactory.getLogger(Sus.class);
     public static final String DATE_FORMAT = "yyyyMMdd";
     public static final String TIME_FORMAT = "hhmmss";
     private ArrayList<String> ICDSecondaryDiagnosisList = null;
-    private ArrayList<String> OPCSSecondaryProcedureList = null;
+    private ArrayList<String> OPCSSecondaryProcedureCodeList = null;
+    private ArrayList<Date> OPCSSecondaryProcedureDateList = null;
 
     public Sus(String version, File f, boolean openParser) throws Exception {
         super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
@@ -46,8 +51,14 @@ public class Sus extends AbstractFixedParser {
 
         addFieldList(new FixedParserField("OPCSPrimaryProcedureCode",    1972, 4));
         addFieldList(new FixedParserField("OPCSPrimaryProcedureDate",    1976, 8));
-        addFieldList(new FixedParserField("OPCSecondaryProcedureList",    2052, 2000));
+        addFieldList(new FixedParserField("OPCSecondaryProcedureList",    2012, 2000));
 
+    }
+
+    public boolean nextRecord() throws Exception {
+        OPCSSecondaryProcedureCodeList = null;
+        OPCSSecondaryProcedureDateList = null;
+        return super.nextRecord();
     }
 
     public int getCDSRecordType() {
@@ -145,12 +156,14 @@ public class Sus extends AbstractFixedParser {
         ICDSecondaryDiagnosisList = new ArrayList<String> ();
         // Each code is 7 characters (6 for code + 1 for indicator) - only code is used
         String listString = super.getString("ICDSecondaryDiagnosisList");
-        for (int i = 0; i < 49; i++) {
-            int startPos = i * 7;
+        int startPos = 0;
+        while (startPos + 6 < listString.length()) {
             String code = listString.substring(startPos, startPos + 6);
             if (code != null && code.length() > 0) {
+                LOG.debug("Adding secondary diagnosis:" + code);
                 ICDSecondaryDiagnosisList.add(code.substring(0, 5));
             }
+            startPos = startPos + 6;
         }
     }
 
@@ -161,36 +174,51 @@ public class Sus extends AbstractFixedParser {
         return super.getDate("OPCSPrimaryProcedureDate");
     }
 
-    public int getOPCSecondaryProcedureCodeCount() {
+    public int getOPCSecondaryProcedureCodeCount() throws TransformException {
         // have the code string already been split ?
-        if (OPCSSecondaryProcedureList == null) {
-            splitOPCSSecondaryProcedureList();
+        if (OPCSSecondaryProcedureCodeList == null) {
+            splitOPCSSecondaryProcedureCodeList();
         }
-        return OPCSSecondaryProcedureList.size();
+        return OPCSSecondaryProcedureCodeList.size();
     }
 
-    public String getOPCSecondaryProcedureCode(int pos) {
+    public String getOPCSecondaryProcedureCode(int pos) throws TransformException {
         // have the code string already been split ?
-        if (OPCSSecondaryProcedureList == null) {
-            splitOPCSSecondaryProcedureList();
+        if (OPCSSecondaryProcedureCodeList == null) {
+            splitOPCSSecondaryProcedureCodeList();
         }
-        if (OPCSSecondaryProcedureList.size() > 0) {
-            return OPCSSecondaryProcedureList.get(pos);
+        if (OPCSSecondaryProcedureCodeList.size() > 0) {
+            return OPCSSecondaryProcedureCodeList.get(pos);
         } else {
             return "";
         }
     }
 
-    private void splitOPCSSecondaryProcedureList() {
-        OPCSSecondaryProcedureList = new ArrayList<String> ();
-        // Each code-set is 40 characters (6 for code + 1 for indicator) - only code is used
+    public Date getOPCSecondaryProcedureDate(int pos) throws TransformException {
+        // have the code string already been split ?
+        if (OPCSSecondaryProcedureCodeList == null) {
+            splitOPCSSecondaryProcedureCodeList();
+        }
+        if (OPCSSecondaryProcedureCodeList.size() > 0) {
+            return OPCSSecondaryProcedureDateList.get(pos);
+        } else {
+            return null;
+        }
+    }
+
+    private void splitOPCSSecondaryProcedureCodeList() throws TransformException {
+        OPCSSecondaryProcedureCodeList = new ArrayList<String> ();
+        OPCSSecondaryProcedureDateList = new ArrayList<Date> ();
+        // Each code-set is 40 characters and consists of 6 fields (4 for code + 8 for date + 4 further sub-fields) - only code and date are used
         String listString = super.getString("OPCSecondaryProcedureList");
-        for (int i = 0; i < 49; i++) {
-            int startPos = i * 40;
-            String code = listString.substring(startPos, startPos + 6);
-            if (code != null && code.length() > 0) {
-                OPCSSecondaryProcedureList.add(code.substring(0, 3));
-            }
+        int startPos = 0;
+        while (startPos + 12 <= listString.length()) {
+            String codeEntry = listString.substring(startPos, startPos + 4);
+            String dateEntry = listString.substring(startPos + 4, startPos + 12);
+            LOG.debug("Adding secondary procedure to list. StartPos=" + startPos +  " code=" + codeEntry + " date=" + dateEntry);
+            OPCSSecondaryProcedureCodeList.add(codeEntry);
+            OPCSSecondaryProcedureDateList.add(parseDate(dateEntry));
+            startPos = startPos + 40;
         }
     }
 

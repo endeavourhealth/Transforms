@@ -105,7 +105,7 @@ public abstract class BartsCsvToFhirTransformer {
 
             if (fileType.compareTo("SUSOPA") == 0) {
                 File tailFile = new File(currFile.getParent() + File.separator + "tailopa_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
-                LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                 Tails tailsParser = new Tails(version, tailFile, true);
                 TailsPreTransformer.transform(version, tailsParser);
 
@@ -115,7 +115,7 @@ public abstract class BartsCsvToFhirTransformer {
             } else {
                 if (fileType.compareTo("SUSIP") == 0) {
                     File tailFile = new File(currFile.getParent() + File.separator + "tailip_DIS." + currFile.getName().split("_")[2] + "_susrnj.dat");
-                    LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                    //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                     Tails tailsParser = new Tails(version, tailFile, true);
                     TailsPreTransformer.transform(version, tailsParser);
 
@@ -125,7 +125,7 @@ public abstract class BartsCsvToFhirTransformer {
                 } else {
                     if (fileType.compareTo("SUSAEA") == 0) {
                         File tailFile = new File(currFile.getParent() + File.separator + "tailaea_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
-                        LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
+                        //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                         Tails tailsParser = new Tails(version, tailFile, true);
                         TailsPreTransformer.transform(version, tailsParser);
 
