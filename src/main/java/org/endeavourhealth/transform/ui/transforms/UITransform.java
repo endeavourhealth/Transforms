@@ -66,46 +66,41 @@ public class UITransform {
         List<UIService> result = new ArrayList<>();
 
         for (Service service : services) {
-            UIService uiService = transformService(service);
-
-            if (uiService != null)
-                result.add(uiService);
+                result.addAll(transformService(service));
         }
 
         return result;
     }
 
-    public static UIService transformService(Service service) throws TransformException {
+    private static List<UIService> transformService(Service service) throws TransformException {
+        List<UIService> result = new ArrayList<>();
+
         try {
             if (service == null)
-                return null;
+                return result;
 
             if (StringUtils.isBlank(service.getEndpoints()))
-                return null;
+                return result;
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readValue(service.getEndpoints(), JsonNode.class);
+            JsonNode endpoints = mapper.readValue(service.getEndpoints(), JsonNode.class);
 
-            String systemUuidString = null;
-            UUID systemUuid = null;
+            if (endpoints.isArray())
+                for (final JsonNode endpoint : endpoints) {
+                    if (endpoint.has("systemUuid")) {
+                        String systemUuidString = endpoint.get("systemUuid").asText().replace("\"", "");
 
-            if (rootNode.has(0)) {
-                if (rootNode.get(0).has("systemUuid")) {
-                    systemUuidString = rootNode.get(0).get("systemUuid").asText().replace("\"", "");
-
-                    if (StringUtils.isNotBlank(systemUuidString))
-                        systemUuid = UUID.fromString(systemUuidString);
+                        if (StringUtils.isNotBlank(systemUuidString))
+                            result.add(new UIService()
+                                .setName(service.getName())
+                                .setLocalIdentifier(service.getLocalIdentifier())
+                                .setServiceId(service.getId())
+                                .setSystemId(UUID.fromString(systemUuidString))
+                            );
+                    }
                 }
-            }
 
-            if (systemUuid == null)
-                return null;
-
-            return new UIService()
-                    .setName(service.getName())
-                    .setLocalIdentifier(service.getLocalIdentifier())
-                    .setServiceId(service.getId())
-                    .setSystemId(systemUuid);
+            return result;
 
         } catch (Exception e) {
             throw new TransformException("Transform exception occurred - please see inner exception", e);

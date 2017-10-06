@@ -19,12 +19,16 @@ public class NameHelper {
     }
 
     public static UIHumanName transform(HumanName name) {
+        HumanName.NameUse nameUse = name.getUse();
+        if (nameUse == null)
+            nameUse = HumanName.NameUse.NULL;
+
         return new UIHumanName()
                 .setFamilyName(NameHelper.getFirst(name.getFamily()))
                 .setGivenNames(NameHelper.getAll(name.getGiven()))
                 .setPrefix(NameHelper.getFirst(name.getPrefix()))
 								.setText(name.getText())
-								.setUse(name.getUse().getDisplay());
+								.setUse(nameUse.getDisplay());
     }
 
     private static HumanName getNameByUse(List<HumanName> names, HumanName.NameUse nameUse) {
