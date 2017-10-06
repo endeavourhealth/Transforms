@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
-import org.endeavourhealth.transform.barts.schema.Sus;
+import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -16,12 +16,12 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class SusTransformer extends BasisTransformer{
-    private static final Logger LOG = LoggerFactory.getLogger(SusTransformer.class);
+public class SusOutpatientTransformer extends BasisTransformer{
+    private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientTransformer.class);
     private static int entryCount = 0;
 
     public static void transform(String version,
-                                 Sus parser,
+                                 SusOutpatient parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
@@ -32,12 +32,10 @@ public class SusTransformer extends BasisTransformer{
             try {
                 entryCount++;
                 // CDS V6-2 Type 010 - Accident and Emergency CDS
-                // CDS V6-2-1 Type 011 - Emergency Care CDS (this is a future version Barts will eventually move to)
                 // CDS V6-2 Type 020 - Outpatient CDS
                 // CDS V6-2 Type 120 - Admitted Patient Care - Finished Birth Episode CDS
                 // CDS V6-2 Type 130 - Admitted Patient Care - Finished General Episode CDS
                 // CDS V6-2 Type 140 - Admitted Patient Care - Finished Delivery Episode CDS
-                // CDS V6-2 Type 150 - Admitted Patient Care - Other Birth Event CDS
                 // CDS V6-2 Type 160 - Admitted Patient Care - Other Delivery Event CDS
                 // CDS V6-2 Type 180 - Admitted Patient Care - Unfinished Birth Episode CDS
                 // CDS V6-2 Type 190 - Admitted Patient Care - Unfinished General Episode CDS
@@ -59,7 +57,7 @@ public class SusTransformer extends BasisTransformer{
         }
     }
 
-    public static void mapFileEntry(Sus parser,
+    public static void mapFileEntry(SusOutpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
                                     String version,
@@ -103,7 +101,7 @@ public class SusTransformer extends BasisTransformer{
     /*
     Data line is of type Inpatient
     */
-    public static void mapDiagnosis(Sus parser,
+    public static void mapDiagnosis(SusOutpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
                                     String version,
@@ -158,7 +156,7 @@ public class SusTransformer extends BasisTransformer{
             */
 
         // Date recorded
-        d = parser.getAdmissionDateTime();
+        d = parser.getAppointmentDateTime();
         fhirCondition.setDateRecorded(d);
 
         // set code to coded problem
@@ -219,7 +217,7 @@ public class SusTransformer extends BasisTransformer{
     /*
 Data line is of type Inpatient
 */
-    public static void mapProcedure(Sus parser,
+    public static void mapProcedure(SusOutpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
                                     String version,
@@ -324,7 +322,7 @@ Data line is of type Inpatient
     /*
         Encounter resources are not maintained by this feed. They are only created if missing. Encounter status etc. is maintained by the HL7 feedd
      */
-    public static ResourceId resolveEncounterResource(String primaryOrgHL7OrgOID, Sus parser, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId) throws Exception {
+    public static ResourceId resolveEncounterResource(String primaryOrgHL7OrgOID, SusOutpatient parser, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId) throws Exception {
         ResourceId resourceId = null;
         TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
         if (tr != null) {
@@ -359,7 +357,7 @@ Data line is of type Inpatient
         return resourceId;
     }
 
-    public static ResourceId resolvePatientResource(String primaryOrgHL7OrgOID, Sus parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static ResourceId resolvePatientResource(String primaryOrgHL7OrgOID, SusOutpatient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
         String uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
         ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
         if (patientResourceId == null) {
@@ -385,7 +383,7 @@ Data line is of type Inpatient
     /*
     Create a enw FHIR Patient Reshource
      */
-    public static Patient createPatientResource(Sus parser, String primaryOrgHL7OrgOID) {
+    public static Patient createPatientResource(SusOutpatient parser, String primaryOrgHL7OrgOID) {
         Patient patient = new Patient();
 
         Identifier patientIdentifier = new Identifier()

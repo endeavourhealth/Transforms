@@ -1,23 +1,15 @@
 package org.endeavourhealth.transform.barts;
 
-import com.google.common.base.Strings;
-import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
-import org.endeavourhealth.core.data.audit.AuditRepository;
-import org.endeavourhealth.core.xml.TransformErrorUtility;
-import org.endeavourhealth.core.xml.transformError.Error;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.*;
 
 public abstract class BartsCsvToFhirTransformer {
@@ -109,8 +101,8 @@ public abstract class BartsCsvToFhirTransformer {
                 Tails tailsParser = new Tails(version, tailFile, true);
                 TailsPreTransformer.transform(version, tailsParser);
 
-                Sus parser = new Sus(version, currFile, true);
-                SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                SusOutpatient parser = new SusOutpatient(version, currFile, true);
+                SusOutpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else {
                 if (fileType.compareTo("SUSIP") == 0) {
@@ -119,8 +111,8 @@ public abstract class BartsCsvToFhirTransformer {
                     Tails tailsParser = new Tails(version, tailFile, true);
                     TailsPreTransformer.transform(version, tailsParser);
 
-                    Sus parser = new Sus(version, currFile, true);
-                    SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                    SusInpatient parser = new SusInpatient(version, currFile, true);
+                    SusInpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                     parser.close();
                 } else {
                     if (fileType.compareTo("SUSAEA") == 0) {
@@ -129,8 +121,8 @@ public abstract class BartsCsvToFhirTransformer {
                         Tails tailsParser = new Tails(version, tailFile, true);
                         TailsPreTransformer.transform(version, tailsParser);
 
-                        Sus parser = new Sus(version, currFile, true);
-                        SusTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                        SusEmergency parser = new SusEmergency(version, currFile, true);
+                        SusEmergencyTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                         parser.close();
                     } else {
                         if (fileType.compareTo("PROB") == 0) {

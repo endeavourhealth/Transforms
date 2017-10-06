@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractFixedParser;
-import org.endeavourhealth.transform.barts.FixedParserField;
-import org.endeavourhealth.transform.barts.transforms.SusTransformer;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,48 +9,18 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class Sus extends AbstractFixedParser {
-    private static final Logger LOG = LoggerFactory.getLogger(Sus.class);
-    public static final String DATE_FORMAT = "yyyyMMdd";
-    public static final String TIME_FORMAT = "hhmmss";
-    private ArrayList<String> ICDSecondaryDiagnosisList = null;
-    private ArrayList<String> OPCSSecondaryProcedureCodeList = null;
-    private ArrayList<Date> OPCSSecondaryProcedureDateList = null;
+/*
+    This class should only contain getters for fields which exist in all three file structures
 
-    public Sus(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
+ */
+public class SusBaseParser extends AbstractFixedParser {
+    private static final Logger LOG = LoggerFactory.getLogger(SusBaseParser.class);
+    protected ArrayList<String> ICDSecondaryDiagnosisList = null;
+    protected ArrayList<String> OPCSSecondaryProcedureCodeList = null;
+    protected ArrayList<Date> OPCSSecondaryProcedureDateList = null;
 
-        addFieldList(new FixedParserField("CDSVersion",             1, 6));
-        addFieldList(new FixedParserField("CDSRecordType",          7, 3));
-        addFieldList(new FixedParserField("CDSReplacementgroup",    10, 3));
-        addFieldList(new FixedParserField("CDSUniqueID",    16, 35));
-        addFieldList(new FixedParserField("CDSUpdateType",    51, 1));
-        addFieldList(new FixedParserField("MRN",    284, 10));
-        addFieldList(new FixedParserField("DOB",    321, 8));
-        addFieldList(new FixedParserField("PatientTitle",    471, 35));
-        addFieldList(new FixedParserField("PatientForename",    506, 35));
-        addFieldList(new FixedParserField("PatientSurname",    541, 35));
-
-        addFieldList(new FixedParserField("AddressType",    646, 2));
-        addFieldList(new FixedParserField("UnstructuredAddress",    648, 175));
-        addFieldList(new FixedParserField("Address1",    823, 35));
-        addFieldList(new FixedParserField("Address2",    858, 35));
-        addFieldList(new FixedParserField("Address3",    893, 35));
-        addFieldList(new FixedParserField("Address4",    928, 35));
-        addFieldList(new FixedParserField("Address5",    963, 35));
-        addFieldList(new FixedParserField("PostCode",    998, 8));
-
-        addFieldList(new FixedParserField("AdmissionDate",    1052, 8));
-        addFieldList(new FixedParserField("AdmissionTime",    1060, 6));
-        addFieldList(new FixedParserField("ConsultantCode",    1332, 8));
-
-        addFieldList(new FixedParserField("ICDPrimaryDiagnosis",    1356, 6));
-        addFieldList(new FixedParserField("ICDSecondaryDiagnosisList",    1363, 350));
-
-        addFieldList(new FixedParserField("OPCSPrimaryProcedureCode",    1972, 4));
-        addFieldList(new FixedParserField("OPCSPrimaryProcedureDate",    1976, 8));
-        addFieldList(new FixedParserField("OPCSecondaryProcedureList",    2012, 2000));
-
+    public SusBaseParser(String version, File f, boolean openParser, String dateFormat, String timeFormat) throws Exception {
+        super(version, f, openParser, dateFormat, timeFormat);
     }
 
     public boolean nextRecord() throws Exception {
@@ -112,22 +80,6 @@ public class Sus extends AbstractFixedParser {
     }
     public String getPostCode() {
         return super.getString("PostCode");
-    }
-
-
-    public Date getAdmissionDate() throws TransformException {
-        return super.getDate("AdmissionDate");
-    }
-    public Date getAdmissionTime() throws TransformException {
-        return super.getTime("AdmissionTime");
-    }
-    public Date getAdmissionDateTime() throws TransformException {
-        return super.getDateTime("AdmissionDate", "AdmissionTime");
-    }
-
-
-    public String getConsultantCode() {
-        return super.getString("ConsultantCode");
     }
 
     public String getICDPrimaryDiagnosis() {
@@ -221,5 +173,4 @@ public class Sus extends AbstractFixedParser {
             startPos = startPos + 40;
         }
     }
-
 }

@@ -24,7 +24,7 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     private BufferedReader br;
     private long currentLineNumber;
     private LinkedHashMap<String, FixedParserField> fieldList = new LinkedHashMap<String, FixedParserField>();
-    private int fieldPositionAdjuster = 0;
+    private int fieldPositionAdjuster = 1; // Assumes first field is defined as starting in position 1
 
     public AbstractFixedParser(String version, File file, boolean openParser, String dateFormat, String timeFormat) throws Exception {
 
@@ -84,9 +84,9 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     }
 
     public void addFieldList(FixedParserField field) {
-        if (fieldList.size() == 0 && field.getFieldPosition() == 1) {
-            // Calculate field position adjuster - first field can be configured from position 1 but String.subString() starts at position 0
-            fieldPositionAdjuster = 1;
+        if (field.getFieldPosition() == 0) {
+            // Calculate field position adjuster - first field can be configured from position 1 or zero but String.subString() starts at position 0
+            fieldPositionAdjuster = 0;
         }
         fieldList.put(field.getName(), field);
     }
