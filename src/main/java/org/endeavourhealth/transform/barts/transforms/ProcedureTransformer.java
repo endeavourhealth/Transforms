@@ -87,7 +87,7 @@ public class ProcedureTransformer extends BasisTransformer {
 
         // save resource
         LOG.debug("Save Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
 
     }
 

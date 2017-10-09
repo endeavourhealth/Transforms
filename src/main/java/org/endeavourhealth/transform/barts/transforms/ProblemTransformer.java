@@ -1,19 +1,16 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.UUID;
 
 public class ProblemTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
@@ -105,8 +102,8 @@ public class ProblemTransformer extends BasisTransformer {
         fhirCondition.setNotes(parser.getAnnotatedDisp());
 
         // save resource
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
 
     }
 

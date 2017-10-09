@@ -176,10 +176,10 @@ public class SusEmergencyTransformer extends BasisTransformer{
         // save resource
         if (parser.getCDSUpdateType() == 1) {
             LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         } else {
             LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         }
 
         // secondary piagnoses ?
@@ -196,10 +196,10 @@ public class SusEmergencyTransformer extends BasisTransformer{
             // save resource
             if (parser.getCDSUpdateType() == 1) {
                 LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             } else {
                 LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+                savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             }
 
         }
@@ -253,10 +253,10 @@ Data line is of type Inpatient
         // save resource
         if (parser.getCDSUpdateType() == 1) {
             LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         } else {
             LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         }
 
         // secondary procedures
@@ -276,10 +276,10 @@ Data line is of type Inpatient
 
             if (parser.getCDSUpdateType() == 1) {
                 LOG.debug("Delete secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             } else {
                 LOG.debug("Save secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             }
         }
 

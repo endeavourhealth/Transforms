@@ -109,7 +109,7 @@ public class DiagnosisTransformer extends BasisTransformer {
 
         // save resource
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
 
     }
 

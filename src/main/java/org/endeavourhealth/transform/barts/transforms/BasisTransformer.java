@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.transform.barts.AbstractFixedParser;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusBaseParser;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
@@ -68,7 +69,7 @@ public class BasisTransformer {
         resourceIdInsertStatement.setObject(4, r.getResourceId());
 
         if (resourceIdInsertStatement.executeUpdate() != 1) {
-            throw new SQLException("Could not create ResourceId:"+r.getScopeId()+":"+r.getResourceType()+":"+r.getUniqueId()+":"+r.getResourceId().toString());
+            throw new SQLException("Could not create ResourceId:" + r.getScopeId() + ":" + r.getResourceType() + ":" + r.getUniqueId() + ":" + r.getResourceId().toString());
         }
     }
 
@@ -121,7 +122,7 @@ public class BasisTransformer {
             fhirOrganization.addAddress(fhirAddress);
 
             LOG.debug("Save Organization:" + FhirSerializationHelper.serializeResource(fhirOrganization));
-            fhirResourceFiler.savePatientResource(currentParserState, fhirOrganization.getId().toString(), fhirOrganization);
+            savePatientResource(fhirResourceFiler, currentParserState, fhirOrganization.getId().toString(), fhirOrganization);
         }
         return resourceId;
     }
@@ -141,7 +142,7 @@ public class BasisTransformer {
             }
         }
         // For Barts FINNo should probably be used here but existing HL7 feed uses encounter id/visit id
-        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID+"-PatIdValue="+localPatientId+"-EpIdTypeCode=VISITID-EpIdValue="+encounterId;
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + localPatientId + "-EpIdTypeCode=VISITID-EpIdValue=" + encounterId;
         resourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "EpisodeOfCare", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
@@ -173,7 +174,7 @@ public class BasisTransformer {
             fhirEpisodeOfCare.setPeriod(fhirPeriod);
 
             LOG.debug("Save fhirEpisodeOfCare:" + FhirSerializationHelper.serializeResource(fhirEpisodeOfCare));
-            fhirResourceFiler.savePatientResource(currentParserState, fhirEpisodeOfCare.getId().toString(), fhirEpisodeOfCare);
+            savePatientResource(fhirResourceFiler, currentParserState, fhirEpisodeOfCare.getId().toString(), fhirEpisodeOfCare);
         }
         return resourceId;
     }
@@ -188,7 +189,7 @@ public class BasisTransformer {
             encounterId = tr.getEncounterId();
         }
 
-        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID+"-PatIdValue="+localPatientId+"-EpIdTypeCode=VISITID-EpIdValue="+encounterId;
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + localPatientId + "-EpIdTypeCode=VISITID-EpIdValue=" + encounterId;
         resourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Encounter", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
@@ -211,14 +212,14 @@ public class BasisTransformer {
             fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareResourceId.getResourceId().toString()));
 
             LOG.debug("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
-            fhirResourceFiler.savePatientResource(currentParserState, fhirEncounter.getId().toString(), fhirEncounter);
+            savePatientResource(fhirResourceFiler, currentParserState, fhirEncounter.getId().toString(), fhirEncounter);
         }
 
         return resourceId;
     }
 
     public static ResourceId resolvePatientResource(CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus) throws Exception {
-        String uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+mrn;
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
         ResourceId patientResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Patient", uniqueId);
         if (patientResourceId == null) {
             patientResourceId = new ResourceId();
@@ -278,13 +279,13 @@ public class BasisTransformer {
             }
 
             LOG.debug("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
-            fhirResourceFiler.savePatientResource(currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
+            savePatientResource(fhirResourceFiler, currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
         }
         return patientResourceId;
     }
 
     public static ResourceId resolveProblemResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String patientId, String onsetDate, String problem) throws Exception {
-        String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+ "-PatientId=" + patientId+"-OnsetDate=" + onsetDate + "-ProblemCode="+problem;
+        String uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-PatientId=" + patientId + "-OnsetDate=" + onsetDate + "-ProblemCode=" + problem;
         return resolveConditionResourceId(uniqueId, fhirResourceFiler);
     }
 
@@ -343,6 +344,14 @@ public class BasisTransformer {
                 }
             }
         }
+    }
+
+    public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
+        fhirResourceFiler.deletePatientResource(parserState,false, groupId,resources);
+    }
+
+    public static void savePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
+        fhirResourceFiler.savePatientResource(parserState, false, groupId, resources);
     }
 
 }
