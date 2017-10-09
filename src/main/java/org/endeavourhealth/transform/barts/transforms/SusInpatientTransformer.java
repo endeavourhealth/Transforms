@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
-import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -14,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.UUID;
 
 public class SusInpatientTransformer extends BasisTransformer{
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTransformer.class);
@@ -65,14 +62,34 @@ public class SusInpatientTransformer extends BasisTransformer{
                                     String primaryOrgHL7OrgOID) throws Exception {
 
         ResourceId patientResourceId = null;
+        ResourceId organisationResourceId = null;
+        ResourceId episodeOfCareResourceId = null;
         ResourceId encounterResourceId = null;
+
+        if ((parser.getICDPrimaryDiagnosis().length() > 0) || (parser.getOPCSPrimaryProcedureCode().length() > 0)) {
+            // Organisation
+            organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler);
+            // Patient
+            HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(HumanName.NameUse.OFFICIAL, parser.getPatientTitle(), parser.getPatientForename(), "", parser.getPatientSurname());
+            Address fhirAddress = null;
+            if (parser.getAddressType().compareTo("02") == 0) {
+                fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
+            }
+            patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null);
+            // EpisodeOfCare
+            EpisodeOfCare.EpisodeOfCareStatus fhirEpisodeOfCareStatus;
+            if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
+                fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
+            } else {
+                fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
+            }
+            episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, null, fhirResourceFiler, patientResourceId, organisationResourceId, parser.getAdmissionDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+            // Encounter
+            encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED);
+        }
 
         // Map diagnosis codes ?
         if (parser.getICDPrimaryDiagnosis().length() > 0) {
-            // Patient
-            patientResourceId = resolvePatientResource(primaryOrgHL7OrgOID, parser, fhirResourceFiler);
-            // Encounter
-            encounterResourceId = resolveEncounterResource(primaryOrgHL7OrgOID, parser, fhirResourceFiler, patientResourceId);
             // Diagnosis
             mapDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId);
         //} else {
@@ -81,15 +98,7 @@ public class SusInpatientTransformer extends BasisTransformer{
 
         // Map procedure codes ?
         if (parser.getOPCSPrimaryProcedureCode().length() > 0) {
-            // Patient
-            if (patientResourceId == null) {
-                patientResourceId = resolvePatientResource(primaryOrgHL7OrgOID, parser, fhirResourceFiler);
-            }
-            // Encounter
-            if (encounterResourceId == null) {
-                encounterResourceId = resolveEncounterResource(primaryOrgHL7OrgOID, parser, fhirResourceFiler, patientResourceId);
-            }
-            // Diagnosis
+            // Procedure
             mapProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId);
         //} else {
            // LOG.debug("No primary procedure present");
@@ -118,16 +127,7 @@ public class SusInpatientTransformer extends BasisTransformer{
         Condition fhirCondition = new Condition();
 
         // Turn key into Resource id
-        uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-CDSIdValue=" + parser.getCDSUniqueID() + "-DiagnosisIdValue=" + parser.getICDPrimaryDiagnosis();
-        ResourceId resourceId = getResourceId("B", "Condition", uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType("Condition");
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(resourceId);
-        }
+        ResourceId resourceId = resolveDiagnosisResourceIdFromCDSData(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
         fhirCondition.setId(resourceId.getResourceId().toString());
 
         fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID());
@@ -185,16 +185,7 @@ public class SusInpatientTransformer extends BasisTransformer{
         // secondary piagnoses ?
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
             // Turn key into Resource id
-            uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-CDSIdValue=" + parser.getCDSUniqueID() + "-DiagnosisIdValue=" + parser.getICDSecondaryDiagnosis(i);
-            resourceId = getResourceId("B", "Condition", uniqueId);
-            if (resourceId == null) {
-                resourceId = new ResourceId();
-                resourceId.setScopeId("B");
-                resourceId.setResourceType("Condition");
-                resourceId.setUniqueId(uniqueId);
-                resourceId.setResourceId(UUID.randomUUID());
-                saveResourceId(resourceId);
-            }
+            resourceId = resolveDiagnosisResourceIdFromCDSData(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i));
             fhirCondition.setId(resourceId.getResourceId().toString());
 
             // set code to coded problem
@@ -234,16 +225,7 @@ Data line is of type Inpatient
         Procedure fhirProcedure = new Procedure ();
 
         // Turn key into Resource id
-        uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-CDSIdValue=" + parser.getCDSUniqueID() + "-DiagnosisIdValue=" + parser.getICDPrimaryDiagnosis();
-        ResourceId resourceId = getResourceId("B", "Condition", uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType("Condition");
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(resourceId);
-        }
+        ResourceId resourceId = resolveProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode());
         fhirProcedure.setId(resourceId.getResourceId().toString());
 
         fhirProcedure.addIdentifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID());
@@ -263,7 +245,7 @@ Data line is of type Inpatient
 
         // Code
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getOPCSPrimaryProcedureCode());
+        cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSPrimaryProcedureCode());
         fhirProcedure.setCode(cc);
 
         // Performed date/time
@@ -288,21 +270,12 @@ Data line is of type Inpatient
         LOG.debug("Secondary procedure count:" + parser.getOPCSecondaryProcedureCodeCount());
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
             // Turn key into Resource id
-            uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-CDSIdValue=" + parser.getCDSUniqueID() + "-DiagnosisIdValue=" + parser.getOPCSecondaryProcedureCode(i);
-            resourceId = getResourceId("B", "Condition", uniqueId);
-            if (resourceId == null) {
-                resourceId = new ResourceId();
-                resourceId.setScopeId("B");
-                resourceId.setResourceType("Condition");
-                resourceId.setUniqueId(uniqueId);
-                resourceId.setResourceId(UUID.randomUUID());
-                saveResourceId(resourceId);
-            }
+            resourceId = resolveProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i));
             fhirProcedure.setId(resourceId.getResourceId().toString());
 
             // Code
             cc = new CodeableConcept();
-            cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getOPCSecondaryProcedureCode(i));
+            cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSecondaryProcedureCode(i));
             fhirProcedure.setCode(cc);
 
             // Performed date/time
@@ -319,105 +292,5 @@ Data line is of type Inpatient
 
     }
 
-    /*
-        Encounter resources are not maintained by this feed. They are only created if missing. Encounter status etc. is maintained by the HL7 feedd
-     */
-    public static ResourceId resolveEncounterResource(String primaryOrgHL7OrgOID, SusInpatient parser, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId) throws Exception {
-        ResourceId resourceId = null;
-        TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
-        if (tr != null) {
-            String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId()+"-EpIdTypeCode=VISITID-EpIdValue="+tr.getEncounterId();
-            resourceId = getResourceId("B", "Encounter", uniqueId);
-            if (resourceId == null) {
-                resourceId = new ResourceId();
-                resourceId.setScopeId("B");
-                resourceId.setResourceType("Encounter");
-                resourceId.setUniqueId(uniqueId);
-                resourceId.setResourceId(UUID.randomUUID());
-
-                LOG.trace("Create new Encounter:" + resourceId.getUniqueId() + " resource:" + resourceId.getResourceId());
-                saveResourceId(resourceId);
-
-                // Save place-holder Encounter
-                Encounter fhirEncounter = new Encounter();
-                fhirEncounter.setId(resourceId.getResourceId().toString());
-
-                if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
-                    fhirEncounter.setStatus(Encounter.EncounterState.FINISHED);
-                } else {
-                    fhirEncounter.setStatus(Encounter.EncounterState.INPROGRESS);
-                }
-
-                fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-                LOG.debug("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirEncounter.getId().toString(), fhirEncounter);
-            }
-        }
-        return resourceId;
-    }
-
-    public static ResourceId resolvePatientResource(String primaryOrgHL7OrgOID, SusInpatient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
-        String uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
-        if (patientResourceId == null) {
-            patientResourceId = new ResourceId();
-            patientResourceId.setScopeId("B");
-            patientResourceId.setResourceType("Patient");
-            patientResourceId.setUniqueId(uniqueId);
-            patientResourceId.setResourceId(UUID.randomUUID());
-
-            LOG.trace("Create new Patient:" + patientResourceId.getUniqueId() + " resource:" + patientResourceId.getResourceId());
-
-            saveResourceId(patientResourceId);
-
-            Patient fhirPatient = createPatientResource(parser, primaryOrgHL7OrgOID);
-            fhirPatient.setId(patientResourceId.getResourceId().toString());
-
-            LOG.debug("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirPatient);
-        }
-        return patientResourceId;
-    }
-
-    /*
-    Create a enw FHIR Patient Reshource
-     */
-    public static Patient createPatientResource(SusInpatient parser, String primaryOrgHL7OrgOID) {
-        Patient patient = new Patient();
-
-        Identifier patientIdentifier = new Identifier()
-                .setSystem("http://endeavourhealth.org/fhir/id/v2-local-patient-id/barts-mrn")
-                .setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()));
-        patient.addIdentifier(patientIdentifier);
-
-
-        HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(HumanName.NameUse.OFFICIAL, parser.getPatientTitle(), parser.getPatientForename(), "", parser.getPatientSurname());
-        patient.addName(name);
-
-        if (parser.getAddressType().compareTo("02") == 0) {
-            Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
-            patient.addAddress(fhirAddress);
-        }
-
-        // Gender
-       // Enumerations.AdministrativeGender gender = mapper.getCodeMapper().mapSex(sourcePid.getSex());
-        //if (gender != null)
-          //  patient.setGender(gender);
-
-
-        // TODO
-        /*
-        *setDateOfBirth(source.getPidSegment(), target);
-        *setSex(source.getPidSegment(), target);
-        *addIdentifiers(source, target);-----NHS No ?????
-        *addEthnicity(source.getPidSegment(), target);
-        *addMaritalStatus(source.getPidSegment(), target);
-        setPrimaryCareProvider(target);
-        setManagingOrganization(source, target);
-    */
-
-        return patient;
-    }
 
 }

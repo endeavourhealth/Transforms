@@ -23,6 +23,7 @@ public class SusEmergency extends SusBaseParser {
         addFieldList(new FixedParserField("CDSUpdateType",    51, 1));
 
         addFieldList(new FixedParserField("MRN",    284, 10));
+        addFieldList(new FixedParserField("NHSNo",    308, 10));
         addFieldList(new FixedParserField("DOB",    321, 8));
         addFieldList(new FixedParserField("PatientTitle",    471, 35));
         addFieldList(new FixedParserField("PatientForename",    506, 35));
@@ -36,6 +37,9 @@ public class SusEmergency extends SusBaseParser {
         addFieldList(new FixedParserField("Address4",    928, 35));
         addFieldList(new FixedParserField("Address5",    963, 35));
         addFieldList(new FixedParserField("PostCode",    998, 8));
+
+        addFieldList(new FixedParserField("Gender",    1018, 1));
+        addFieldList(new FixedParserField("EthnicCategory",    1021, 2));
 
         addFieldList(new FixedParserField("ArrivalDate",    1079, 8));
         addFieldList(new FixedParserField("ArrivalTime",    1087, 6));

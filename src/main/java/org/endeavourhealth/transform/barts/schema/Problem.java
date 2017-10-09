@@ -56,6 +56,9 @@ public class Problem extends AbstractFixedParser {
     public Date getOnsetDate() throws TransformException {
         return super.getDate("OnsetDate");
     }
+    public String getOnsetDateAsString() throws TransformException {
+        return super.getString("OnsetDate");
+    }
 
     public String getSeverity() {
         return super.getString("Severity").trim();

@@ -22,6 +22,7 @@ public class SusInpatient extends SusBaseParser {
         addFieldList(new FixedParserField("CDSUniqueID",    16, 35));
         addFieldList(new FixedParserField("CDSUpdateType",    51, 1));
         addFieldList(new FixedParserField("MRN",    284, 10));
+        addFieldList(new FixedParserField("NHSNo",    308, 10));
         addFieldList(new FixedParserField("DOB",    321, 8));
         addFieldList(new FixedParserField("PatientTitle",    471, 35));
         addFieldList(new FixedParserField("PatientForename",    506, 35));
@@ -35,6 +36,10 @@ public class SusInpatient extends SusBaseParser {
         addFieldList(new FixedParserField("Address4",    928, 35));
         addFieldList(new FixedParserField("Address5",    963, 35));
         addFieldList(new FixedParserField("PostCode",    998, 8));
+
+        addFieldList(new FixedParserField("Gender",    1018, 1));
+        addFieldList(new FixedParserField("EthnicCategory",    1021, 2));
+        addFieldList(new FixedParserField("MaritalStatus",    1023, 1));
 
         addFieldList(new FixedParserField("AdmissionDate",    1052, 8));
         addFieldList(new FixedParserField("AdmissionTime",    1060, 6));

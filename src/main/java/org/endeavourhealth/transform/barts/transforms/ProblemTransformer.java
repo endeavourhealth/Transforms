@@ -6,6 +6,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -46,62 +47,23 @@ public class ProblemTransformer extends BasisTransformer {
         CodeableConcept cc = null;
         Date d = null;
 
+        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
+        // Patient
+        ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
+        // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
+        // Encounter - Problem record cannot be linked to an Encounter
+        // this Problem resource id
+        ResourceId problemResourceId = resolveProblemResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
+
         Condition fhirCondition = new Condition();
 
         // Turn problem_id into Resource id
-        String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProblemIdValue="+parser.getProblemId().toString();
-        ResourceId resourceId = getResourceId("B", "Condition", uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType("Condition");
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(resourceId);
-        }
-        fhirCondition.setId(resourceId.getResourceId().toString());
+        fhirCondition.setId(problemResourceId.getResourceId().toString());
 
         fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/problem-id").setValue(parser.getProblemId().toString());
 
         // set patient reference
-        uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
-        if (patientResourceId == null) {
-            patientResourceId = new ResourceId();
-            patientResourceId.setScopeId("B");
-            patientResourceId.setResourceType("Patient");
-            patientResourceId.setUniqueId(uniqueId);
-            patientResourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(patientResourceId);
-
-            Patient fhirPatient = new Patient();
-            fhirPatient.setId(patientResourceId.getResourceId().toString());
-
-            Identifier patientIdentifier = new Identifier()
-                    .setSystem("http://endeavourhealth.org/fhir/id/v2-local-patient-id/barts-mrn")
-                    .setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()));
-            fhirPatient.addIdentifier(patientIdentifier);
-
-            LOG.debug("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirPatient);
-        }
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-        // Set Asserter - to field 32
-        /*
-        String names[] = parser.getUpdatedBy().split(",");
-        uniqueId = "Surname="+names[0].trim()+"-Forename="+names[1].trim();
-        resourceId = ResourceIdHelper.getResourceId("B", "Practitioner", uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType("Practitioner");
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            ResourceIdHelper.saveResourceId(resourceId);
-        }
-        fhirCondition.setAsserter(ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString()));
-        */
 
         // Date recorded
         d = parser.getUpdateDateTime();

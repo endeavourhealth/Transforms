@@ -22,6 +22,7 @@ public abstract class BartsCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
+    public static final String BARTS_RESOURCE_ID_SCOPE = "B";
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,

@@ -18,6 +18,7 @@ public class SusBaseParser extends AbstractFixedParser {
     protected ArrayList<String> ICDSecondaryDiagnosisList = null;
     protected ArrayList<String> OPCSSecondaryProcedureCodeList = null;
     protected ArrayList<Date> OPCSSecondaryProcedureDateList = null;
+    protected ArrayList<String> OPCSSecondaryProcedureDateAsStringList = null;
 
     public SusBaseParser(String version, File f, boolean openParser, String dateFormat, String timeFormat) throws Exception {
         super(version, f, openParser, dateFormat, timeFormat);
@@ -26,6 +27,7 @@ public class SusBaseParser extends AbstractFixedParser {
     public boolean nextRecord() throws Exception {
         OPCSSecondaryProcedureCodeList = null;
         OPCSSecondaryProcedureDateList = null;
+        OPCSSecondaryProcedureDateAsStringList = null;
         return super.nextRecord();
     }
 
@@ -43,9 +45,12 @@ public class SusBaseParser extends AbstractFixedParser {
     public String getLocalPatientId() {
         return super.getString("MRN");
     }
+    public String getNHSNo() {
+        return super.getString("NHSNo");
+    }
 
-    public String getDOB() {
-        return super.getString("DOB");
+    public Date getDOB() throws TransformException {
+        return super.getDate("DOB");
     }
     public String getPatientTitle() {
         return super.getString("PatientTitle");
@@ -80,6 +85,13 @@ public class SusBaseParser extends AbstractFixedParser {
     }
     public String getPostCode() {
         return super.getString("PostCode");
+    }
+
+    public int getGender() {
+        return Integer.parseInt(super.getString("Gender"));
+    }
+    public String getEthnicCategory() {
+        return super.getString("EthnicCategory");
     }
 
     public String getICDPrimaryDiagnosis() {
@@ -125,6 +137,9 @@ public class SusBaseParser extends AbstractFixedParser {
     public Date getOPCSPrimaryProcedureDate() throws TransformException {
         return super.getDate("OPCSPrimaryProcedureDate");
     }
+    public String getOPCSPrimaryProcedureDateAsString() throws TransformException {
+        return super.getString("OPCSPrimaryProcedureDate");
+    }
 
     public int getOPCSecondaryProcedureCodeCount() throws TransformException {
         // have the code string already been split ?
@@ -158,9 +173,22 @@ public class SusBaseParser extends AbstractFixedParser {
         }
     }
 
+    public String getOPCSecondaryProcedureDateAsString(int pos) throws TransformException {
+        // have the code string already been split ?
+        if (OPCSSecondaryProcedureCodeList == null) {
+            splitOPCSSecondaryProcedureCodeList();
+        }
+        if (OPCSSecondaryProcedureCodeList.size() > 0) {
+            return OPCSSecondaryProcedureDateAsStringList.get(pos);
+        } else {
+            return null;
+        }
+    }
+
     private void splitOPCSSecondaryProcedureCodeList() throws TransformException {
         OPCSSecondaryProcedureCodeList = new ArrayList<String> ();
         OPCSSecondaryProcedureDateList = new ArrayList<Date> ();
+        OPCSSecondaryProcedureDateAsStringList = new ArrayList<String> ();
         // Each code-set is 40 characters and consists of 6 fields (4 for code + 8 for date + 4 further sub-fields) - only code and date are used
         String listString = super.getString("OPCSecondaryProcedureList");
         int startPos = 0;
@@ -169,6 +197,7 @@ public class SusBaseParser extends AbstractFixedParser {
             String dateEntry = listString.substring(startPos + 4, startPos + 12);
             LOG.debug("Adding secondary procedure to list. StartPos=" + startPos +  " code=" + codeEntry + " date=" + dateEntry);
             OPCSSecondaryProcedureCodeList.add(codeEntry);
+            OPCSSecondaryProcedureDateAsStringList.add(dateEntry);
             OPCSSecondaryProcedureDateList.add(parseDate(dateEntry));
             startPos = startPos + 40;
         }

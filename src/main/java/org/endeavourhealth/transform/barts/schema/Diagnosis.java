@@ -21,7 +21,10 @@ public class Diagnosis extends AbstractFixedParser {
 
         addFieldList(new FixedParserField("DiagnosisId",             1, 14));
         addFieldList(new FixedParserField("Update_DT_TM",          16, 20));
+        addFieldList(new FixedParserField("PersonId",    49, 14));
+        addFieldList(new FixedParserField("EncounterId",    64, 14));
         addFieldList(new FixedParserField("MRN",    79, 20));
+        addFieldList(new FixedParserField("FINNbr",    79, 20));
         addFieldList(new FixedParserField("Diagnosis",    121, 150));
         addFieldList(new FixedParserField("DiagnosisDate",    314, 11));
         addFieldList(new FixedParserField("DiagnosisCode",    650, 20));
@@ -31,16 +34,25 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     public Long getDiagnosisId() {
-        String ret = super.getString("DiagnosisId").trim().split("\\.")[0];
-        return Long.parseLong(ret);
+        return Long.parseLong(super.getString("DiagnosisId").trim().split("\\.")[0]);
     }
 
     public Date getUpdateDateTime() throws TransformException {
         return super.getDateTime("Update_DT_TM");
     }
 
+    public Long getPersonId() {
+        return Long.parseLong(super.getString("PersonId").trim().split("\\.")[0]);
+    }
+
+    public Long getEncounterId() {
+        return Long.parseLong(super.getString("EncounterId").trim().split("\\.")[0]);
+    }
     public String getLocalPatientId() {
         return super.getString("MRN").trim();
+    }
+    public String getFINNbr() {
+        return super.getString("FINNbr").trim();
     }
     public String getDiagnosis() {
         return super.getString("Diagnosis").trim();
@@ -48,6 +60,9 @@ public class Diagnosis extends AbstractFixedParser {
 
     public Date getDiagnosisDate() throws TransformException {
         return super.getDate("DiagnosisDate");
+    }
+    public String getDiagnosisDateAsString() throws TransformException {
+        return super.getString("DiagnosisDate");
     }
 
     public String getDiagnosisCode() {

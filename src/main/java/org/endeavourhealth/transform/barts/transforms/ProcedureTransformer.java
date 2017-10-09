@@ -47,57 +47,25 @@ public class ProcedureTransformer extends BasisTransformer {
         CodeableConcept cc = null;
         Date d = null;
 
+        // Organisation
+        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler);
+        // Patient
+        ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
+        // EpisodeOfCare
+        ResourceId episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getFINNo(), fhirResourceFiler, patientResourceId, organisationResourceId, parser.getProcedureDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+        // Encounter
+        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED);
+        // this Diagnosis resource id
+        ResourceId procedureResourceId = resolveProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+
         Procedure fhirProcedure = new Procedure();
 
         // Turn key into Resource id
-        String resourceType = "Procedure";
-        String createDateTime = resourceIdFormat.format(parser.getCreateDateTime());
-        String uniqueId = "ParentOdsCode="+primaryOrgOdsCode+"-ProcedureCode="+parser.getProcedureCode()+"-CreateDateTime="+createDateTime;
-        ResourceId resourceId = getResourceId("B", resourceType, uniqueId);
-        if (resourceId == null) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId("B");
-            resourceId.setResourceType(resourceType);
-            resourceId.setUniqueId(uniqueId);
-            resourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(resourceId);
-        }
-        fhirProcedure.setId(resourceId.getResourceId().toString());
+        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
 
         //fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID());
 
-        // set patient reference
-        uniqueId = "PIdAssAuth="+primaryOrgHL7OrgOID+"-PatIdValue="+parser.getLocalPatientId();
-        ResourceId patientResourceId = getResourceId("B", "Patient", uniqueId);
-        if (patientResourceId == null) {
-            patientResourceId = new ResourceId();
-            patientResourceId.setScopeId("B");
-            patientResourceId.setResourceType("Patient");
-            patientResourceId.setUniqueId(uniqueId);
-            patientResourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(patientResourceId);
-
-            Patient fhirPatient = new Patient();
-            fhirPatient.setId(patientResourceId.getResourceId().toString());
-
-            Identifier patientIdentifier = new Identifier()
-                    .setSystem("http://endeavourhealth.org/fhir/id/v2-local-patient-id/barts-mrn")
-                    .setValue(parser.getLocalPatientId());
-            fhirPatient.addIdentifier(patientIdentifier);
-
-            if (parser.getNHSNo().length() > 0) {
-                patientIdentifier = new Identifier()
-                        .setSystem("http://fhir.nhs.net/Id/nhs-number")
-                        .setValue(parser.getNHSNo());
-                fhirPatient.addIdentifier(patientIdentifier);
-            }
-
-            fhirPatient.setBirthDate(parser.getDOB());
-
-            LOG.debug("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirPatient);
-        }
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+        fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
 
         // set patient reference
         fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));

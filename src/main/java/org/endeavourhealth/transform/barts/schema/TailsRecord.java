@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.schema;
 public class TailsRecord {
     private String CDSUniqueueId;
     private String EncounterId;
+    private String FINNbr;
 
     public void setCDSUniqueueId(String CDSUniqueueId) {
         this.CDSUniqueueId = CDSUniqueueId;
@@ -18,5 +19,13 @@ public class TailsRecord {
 
     public void setEncounterId(String encounterId) {
         EncounterId = encounterId;
+    }
+
+    public String getFINNbr() {
+        return FINNbr;
+    }
+
+    public void setFINNbr(String FINNbr) {
+        this.FINNbr = FINNbr;
     }
 }

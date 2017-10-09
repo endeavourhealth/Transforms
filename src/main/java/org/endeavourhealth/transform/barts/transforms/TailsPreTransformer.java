@@ -23,6 +23,7 @@ public class TailsPreTransformer {
             try {
                 TailsRecord tr = new TailsRecord();
                 tr.setCDSUniqueueId(parser.getCDSUniqueueId());
+                tr.setFINNbr(parser.getFINNbr());
                 tr.setEncounterId(parser.getEncounterId());
                 hm.put(tr.getCDSUniqueueId(), tr);
             } catch (Exception ex) {

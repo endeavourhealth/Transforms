@@ -53,6 +53,9 @@ public class Procedure extends AbstractFixedParser {
     public Date getProcedureDateTime() throws TransformException {
         return super.getDate("Procedure_DT_TM");
     }
+    public String getProcedureDateTimeAsString() throws TransformException {
+        return super.getString("Procedure_DT_TM");
+    }
 
     public String getProcedureText() {
         return super.getString("ProcedureText").trim();
@@ -74,8 +77,7 @@ public class Procedure extends AbstractFixedParser {
         return super.getString("UpdatedBy").trim();
     }
     public Long getEncounterId() {
-        String ret = super.getString("EncounterId").split("\\.")[0];
-        return Long.parseLong(ret);
+        return Long.parseLong(super.getString("EncounterId").split("\\.")[0]);
     }
     public String getFINNo() {
         return super.getString("FINNo").trim();
