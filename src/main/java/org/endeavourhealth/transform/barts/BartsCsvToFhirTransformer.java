@@ -26,8 +26,8 @@ public abstract class BartsCsvToFhirTransformer {
     public static final int CODE_SYSTEM_SNOMED = 1000;
     public static final int CODE_SYSTEM_ICD_10 = 1001;
     public static final int CODE_SYSTEM_OPCS_4 = 1002;
-    public static final int CODE_CONTEXT_DIAGNOSIS = 22;
-    public static final int CODE_CONTEXT_PROCEDURE = 23;
+    public static final int CODE_CONTEXT_DIAGNOSIS = 25;
+    public static final int CODE_CONTEXT_PROCEDURE = 26;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
