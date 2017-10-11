@@ -43,6 +43,9 @@ public class SusInpatient extends SusBaseParser {
 
         addFieldList(new FixedParserField("AdmissionDate",    1052, 8));
         addFieldList(new FixedParserField("AdmissionTime",    1060, 6));
+        addFieldList(new FixedParserField("DischargeDate",    1112, 8));
+        addFieldList(new FixedParserField("DischargeTime",    1120, 6));
+
         addFieldList(new FixedParserField("ConsultantCode",    1332, 8));
 
         addFieldList(new FixedParserField("ICDPrimaryDiagnosis",    1356, 6));
@@ -62,6 +65,16 @@ public class SusInpatient extends SusBaseParser {
     }
     public Date getAdmissionDateTime() throws TransformException {
         return super.getDateTime("AdmissionDate", "AdmissionTime");
+    }
+
+    public Date getDischargeDate() throws TransformException {
+        return super.getDate("DischargeDate");
+    }
+    public Date getDischargeTime() throws TransformException {
+        return super.getTime("DischargeTime");
+    }
+    public Date getDischargeDateTime() throws TransformException {
+        return super.getDateTime("DischargeDate", "DischargeTime");
     }
 
     public String getConsultantCode() {

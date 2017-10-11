@@ -77,8 +77,8 @@ public class BasisTransformer {
     /*
         set sourceCodeSystemId to -1 if no system is defined
      */
-    public static CodeableConcept mapToCodeableConcept(String scope, int sourceContextId, String sourceCodeValue, int sourceCodeSystemId, int targetSystemId, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
-        String searchKey = "scope=" + scope + ":sourceContextId=" + sourceContextId + ":sourceCodeValue=" + sourceCodeValue + ":sourceCodeSystemId=" + sourceCodeSystemId + ":targetSystemId=" + targetSystemId;
+    public static CodeableConcept mapToCodeableConcept(String scope, String sourceContextName, String sourceCodeValue, int sourceCodeSystemId, int targetSystemId, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
+        String searchKey = "scope=" + scope + ":sourceContextName=" + sourceContextName + ":sourceCodeValue=" + sourceCodeValue + ":sourceCodeSystemId=" + sourceCodeSystemId + ":targetSystemId=" + targetSystemId;
         LOG.trace("Looking for:" + searchKey);
         CodeableConcept ret = null;
         if (hl7receiverConnection == null) {
@@ -86,7 +86,7 @@ public class BasisTransformer {
         }
 
         mappingSelectStatement.setString(1, scope);
-        mappingSelectStatement.setInt(2, sourceContextId);
+        mappingSelectStatement.setString(2, sourceContextName);
         mappingSelectStatement.setString(3, sourceCodeValue);
         mappingSelectStatement.setInt(4, sourceCodeSystemId);
         mappingSelectStatement.setInt(5, targetSystemId);
@@ -131,7 +131,7 @@ public class BasisTransformer {
 
         resourceIdSelectStatement = hl7receiverConnection.prepareStatement("SELECT resource_uuid FROM mapping.resource_uuid where scope_id=? and resource_type=? and unique_identifier=?");
         resourceIdInsertStatement = hl7receiverConnection.prepareStatement("insert into mapping.resource_uuid (scope_id, resource_type, unique_identifier, resource_uuid) values (?, ?, ?, ?)");
-        mappingSelectStatement = hl7receiverConnection.prepareStatement("SELECT target_code, b.code_system_identifier as target_code_system, c.code_system_identifier as source_code_system FROM mapping.code a INNER JOIN  mapping.code_system b on a.target_code_system_id = b.code_system_id INNER JOIN  mapping.code_system c on a.source_code_system_id = c.code_system_id where scope_id=? and source_code_context_id =? and source_code=? and source_code_system_id=? and target_code_system_id=? and is_mapped=true");
+        mappingSelectStatement = hl7receiverConnection.prepareStatement("SELECT target_code, b.code_system_identifier as target_code_system, c.code_system_identifier as source_code_system FROM mapping.code a INNER JOIN  mapping.code_system b on a.target_code_system_id = b.code_system_id INNER JOIN  mapping.code_system c on a.source_code_system_id = c.code_system_id INNER JOIN  mapping.code_context d on a.source_code_context_id = d.code_context_id where scope_id=? and d.code_context_name=? and source_code=? and source_code_system_id=? and target_code_system_id=? and is_mapped=true");
     }
 
     /*
@@ -228,7 +228,7 @@ public class BasisTransformer {
     /*
         Encounter resources are not maintained by this feed. They are only created if missing. Encounter status etc. is maintained by the HL7 feed
      */
-    public static ResourceId resolveEncounterResource(CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, String CDSUniqueID, String localPatientId, String encounterId, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId, ResourceId episodeOfCareResourceId, Encounter.EncounterState status) throws Exception {
+    public static ResourceId resolveEncounterResource(CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, String CDSUniqueID, String localPatientId, String encounterId, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId, ResourceId episodeOfCareResourceId, Encounter.EncounterState status, Date periodStart, Date periodEnd) throws Exception {
         ResourceId resourceId = null;
         if (encounterId == null) {
             TailsRecord tr = TailsPreTransformer.getTailsRecord(CDSUniqueID);
@@ -253,8 +253,20 @@ public class BasisTransformer {
 
             fhirEncounter.setStatus(status);
 
+            // Period
+            Period p = new Period();
+            if (periodStart != null) {
+                p.setStart(periodStart);
+            }
+            if (periodEnd != null) {
+                p.setStart(periodEnd);
+            }
+            fhirEncounter.setPeriod(p);
+
+            // Patient reference
             fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
+            // EpisodeOfCare reference
             fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareResourceId.getResourceId().toString()));
 
             LOG.debug("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
@@ -330,22 +342,22 @@ public class BasisTransformer {
         return patientResourceId;
     }
 
-    public static ResourceId resolveProblemResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String patientId, String onsetDate, String problem) throws Exception {
+    public static ResourceId getProblemResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String patientId, String onsetDate, String problem) throws Exception {
         String uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-PatientId=" + patientId + "-OnsetDate=" + onsetDate + "-ProblemCode=" + problem;
-        return resolveConditionResourceId(uniqueId, fhirResourceFiler);
+        return getConditionResourceId(uniqueId, fhirResourceFiler);
     }
 
-    public static ResourceId resolveDiagnosisResourceIdFromCDSData(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String CDSUniqueID, String diagnosis) throws Exception {
+    public static ResourceId getDiagnosisResourceIdFromCDSData(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String CDSUniqueID, String diagnosis) throws Exception {
         String uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-CDSIdValue=" + CDSUniqueID + "-DiagnosisCode=" + diagnosis;
-        return resolveConditionResourceId(uniqueId, fhirResourceFiler);
+        return getConditionResourceId(uniqueId, fhirResourceFiler);
     }
 
-    public static ResourceId resolveDiagnosisResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String patientId, String diagnosisDate, String diagnosis) throws Exception {
+    public static ResourceId getDiagnosisResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String patientId, String diagnosisDate, String diagnosis) throws Exception {
         String uniqueId = "ParentOdsCode=" + primaryOrgOdsCode + "-PatientId=" + patientId + "-DiagnosisDate=" + diagnosisDate + "-DiagnosisCode=" + diagnosis;
-        return resolveConditionResourceId(uniqueId, fhirResourceFiler);
+        return getConditionResourceId(uniqueId, fhirResourceFiler);
     }
 
-    public static ResourceId resolveConditionResourceId(String uniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static ResourceId getConditionResourceId(String uniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
         ResourceId resourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Condition", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
@@ -358,7 +370,7 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    public static ResourceId resolveProcedureResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String CDSUniqueID, String patientId, String encounterId, String procedureDateTime, String procedureCode) throws Exception {
+    public static ResourceId getProcedureResourceId(String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler, String CDSUniqueID, String patientId, String encounterId, String procedureDateTime, String procedureCode) throws Exception {
         if (encounterId == null) {
             TailsRecord tr = TailsPreTransformer.getTailsRecord(CDSUniqueID);
             encounterId = tr.getEncounterId();

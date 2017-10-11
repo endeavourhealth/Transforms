@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.UUID;
 
 public class ProcedureTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
@@ -30,7 +29,7 @@ public class ProcedureTransformer extends BasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createProcedureResource(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -40,7 +39,7 @@ public class ProcedureTransformer extends BasisTransformer {
     }
 
 
-    public static void createProcedureResource(org.endeavourhealth.transform.barts.schema.Procedure parser,
+    public static void createProcedure(org.endeavourhealth.transform.barts.schema.Procedure parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -54,36 +53,17 @@ public class ProcedureTransformer extends BasisTransformer {
         // EpisodeOfCare
         ResourceId episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getFINNo(), fhirResourceFiler, patientResourceId, organisationResourceId, parser.getProcedureDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
         // Encounter
-        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED);
+        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getProcedureDateTime(), parser.getProcedureDateTime());
         // this Diagnosis resource id
-        ResourceId procedureResourceId = resolveProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+        ResourceId procedureResourceId = getProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
 
+        // Procedure Code
+        CodeableConcept procedureCode = new CodeableConcept();
+        procedureCode.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProcedureCode());
+
+        // Create resource
         Procedure fhirProcedure = new Procedure();
-
-        // Turn key into Resource id
-        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
-
-        //fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID());
-
-        fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
-
-        // set patient reference
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-        // status
-        fhirProcedure.setStatus(Procedure.ProcedureStatus.COMPLETED);
-
-        // Code
-        cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProcedureCode());
-        fhirProcedure.setCode(cc);
-
-        // Performed date/time
-        Timing t = new Timing().addEvent(parser.getProcedureDateTime());
-        fhirProcedure.setPerformed(t);
-
-        // set notes
-        fhirProcedure.addNotes(new Annotation().setText(parser.getProcedureText()));
+        createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getProcedureText(), null);
 
         // save resource
         LOG.debug("Save Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
@@ -91,4 +71,42 @@ public class ProcedureTransformer extends BasisTransformer {
 
     }
 
+    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
+        CodeableConcept cc = null;
+        Date d = null;
+
+        // Turn key into Resource id
+        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
+
+        if (identifiers != null) {
+            for (int i = 0; i < identifiers.length; i++) {
+                fhirProcedure.addIdentifier(identifiers[i]);
+            }
+        }
+
+        // Encounter
+        if (encounterResourceId != null) {
+            fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
+        }
+
+        // set patient reference
+        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        // status
+        fhirProcedure.setStatus(status);
+
+        // Code
+        fhirProcedure.setCode(procedureCode);
+
+        // Performed date/time
+        //Timing t = new Timing().addEvent(procedureDate);
+        DateTimeType dateDt = new DateTimeType(procedureDate);
+        fhirProcedure.setPerformed(dateDt);
+
+        // set notes
+        if (notes != null) {
+            fhirProcedure.addNotes(new Annotation().setText(notes));
+        }
+
+    }
 }

@@ -43,6 +43,9 @@ public class SusEmergency extends SusBaseParser {
 
         addFieldList(new FixedParserField("ArrivalDate",    1079, 8));
         addFieldList(new FixedParserField("ArrivalTime",    1087, 6));
+        addFieldList(new FixedParserField("DepartureDate",    1139, 8));
+        addFieldList(new FixedParserField("DepartureTime",    1147, 6));
+
         addFieldList(new FixedParserField("StaffCode",    1259, 3));
 
         addFieldList(new FixedParserField("ICDPrimaryDiagnosis",    1264, 6));
@@ -62,6 +65,16 @@ public class SusEmergency extends SusBaseParser {
     }
     public Date getArrivalDateTime() throws TransformException {
         return super.getDateTime("ArrivalDate", "ArrivalTime");
+    }
+
+    public Date getDepartureDate() throws TransformException {
+        return super.getDate("DepartureDate");
+    }
+    public Date getDepartureTime() throws TransformException {
+        return super.getTime("DepartureTime");
+    }
+    public Date getDepartureDateTime() throws TransformException {
+        return super.getDateTime("DepartureDate", "DepartureTime");
     }
 
 

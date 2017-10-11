@@ -50,7 +50,7 @@ public class ProblemTransformer extends BasisTransformer {
         // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
         // Encounter - Problem record cannot be linked to an Encounter
         // this Problem resource id
-        ResourceId problemResourceId = resolveProblemResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
+        ResourceId problemResourceId = getProblemResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
         Condition fhirCondition = new Condition();
 
@@ -94,9 +94,8 @@ public class ProblemTransformer extends BasisTransformer {
         } */
 
         // set onset to field  to field 10 + 11
-        //d = parser.getOnsetDate();
-        //Type type = new Type();
-        //fhirCondition.setOnset().set.setDateRecorded(d);
+        DateTimeType dateDt = new DateTimeType(parser.getOnsetDate());
+        fhirCondition.setOnset(dateDt);
 
         // set notes
         fhirCondition.setNotes(parser.getAnnotatedDisp());
