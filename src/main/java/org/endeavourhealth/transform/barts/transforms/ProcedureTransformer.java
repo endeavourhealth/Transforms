@@ -53,7 +53,7 @@ public class ProcedureTransformer extends BasisTransformer {
         // EpisodeOfCare
         ResourceId episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getFINNo(), fhirResourceFiler, patientResourceId, organisationResourceId, parser.getProcedureDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
         // Encounter
-        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getProcedureDateTime(), parser.getProcedureDateTime());
+        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime());
         // this Diagnosis resource id
         ResourceId procedureResourceId = getProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
 

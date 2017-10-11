@@ -27,7 +27,7 @@ public class ProblemTransformer extends BasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createConditionResource(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createCondition(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -37,7 +37,7 @@ public class ProblemTransformer extends BasisTransformer {
     }
 
 
-    public static void createConditionResource(Problem parser,
+    public static void createCondition(Problem parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -52,57 +52,56 @@ public class ProblemTransformer extends BasisTransformer {
         // this Problem resource id
         ResourceId problemResourceId = getProblemResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
+        CodeableConcept problemCode = new CodeableConcept();
+        problemCode.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProblemCode());
+
+        //Identifiers
+        Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/problem-id").setValue(parser.getProblemId().toString())};
+
+        DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
+
         Condition fhirCondition = new Condition();
+        createConditionResource(fhirCondition, problemResourceId, patientResourceId, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers);
+
+        // save resource
+        LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+    }
+
+    public static void createConditionResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[]) throws Exception {
+        CodeableConcept cc = null;
+        Date d = null;
 
         // Turn problem_id into Resource id
         fhirCondition.setId(problemResourceId.getResourceId().toString());
 
-        fhirCondition.addIdentifier().setSystem("http://cerner.com/fhir/problem-id").setValue(parser.getProblemId().toString());
+        if (identifiers != null) {
+            for (int i = 0; i < identifiers.length; i++) {
+                fhirCondition.addIdentifier(identifiers[i]);
+            }
+        }
 
         // set patient reference
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
         // Date recorded
-        d = parser.getUpdateDateTime();
-        fhirCondition.setDateRecorded(d);
+        fhirCondition.setDateRecorded(dateRecorded);
 
         // set code to coded problem - field 28
-        cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProblemCode());
-        fhirCondition.setCode(cc);
+        fhirCondition.setCode(problemCode);
 
         // set category to 'complaint'
         cc = new CodeableConcept();
         cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("complaint");
         fhirCondition.setCategory(cc);
 
-        // set clinicalStatus - ???
-        // in field 14 have so far seen 'Active', 'Resolved'
-        // TODO
-
-        // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????
-        // TODO
-
-        //  set severity to field 16 + 17
-        /*
-        String severity = parser.getSeverity();
-        if (severity != null) {
-            cc = new CodeableConcept();
-            //TODO set severity - should field severity_class be used ?
-            //cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("complaint");
-            fhirCondition.setSeverity(cc);
-        } */
-
         // set onset to field  to field 10 + 11
-        DateTimeType dateDt = new DateTimeType(parser.getOnsetDate());
-        fhirCondition.setOnset(dateDt);
+        fhirCondition.setOnset(onsetDate);
 
         // set notes
-        fhirCondition.setNotes(parser.getAnnotatedDisp());
-
-        // save resource
-        LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
-        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+        if (notes != null) {
+            fhirCondition.setNotes(notes);
+        }
 
     }
 

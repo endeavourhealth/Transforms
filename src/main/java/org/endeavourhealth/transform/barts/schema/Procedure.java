@@ -24,6 +24,8 @@ public class Procedure extends AbstractFixedParser {
         addFieldList(new FixedParserField("DOB",             1, 14));
         addFieldList(new FixedParserField("MRN",    13, 45));
         addFieldList(new FixedParserField("NHSNo",    59, 45));
+        addFieldList(new FixedParserField("AdmissionDateTime",    105, 20));
+        addFieldList(new FixedParserField("DischargeDateTime",    126, 20));
         addFieldList(new FixedParserField("Consultant",    285, 45));
         addFieldList(new FixedParserField("Procedure_DT_TM",    331, 20));
         addFieldList(new FixedParserField("ProcedureText",    352, 200));
@@ -55,6 +57,20 @@ public class Procedure extends AbstractFixedParser {
     }
     public String getProcedureDateTimeAsString() throws TransformException {
         return super.getString("Procedure_DT_TM");
+    }
+
+    public Date getAdmissionDateTime() throws TransformException {
+        return super.getDateTime("AdmissionDateTime");
+    }
+    public String getAdmissionDateTimeAsString() throws TransformException {
+        return super.getString("AdmissionDateTime");
+    }
+
+    public Date getDischargeDateTime() throws TransformException {
+        return super.getDateTime("DischargeDateTime");
+    }
+    public String getDischargeDateTimeAsString() throws TransformException {
+        return super.getString("DischargeDateTime");
     }
 
     public String getProcedureText() {
