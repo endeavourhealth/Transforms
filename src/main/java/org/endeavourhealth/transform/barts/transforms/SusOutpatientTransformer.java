@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -160,7 +161,8 @@ public class SusOutpatientTransformer extends BasisTransformer{
 
         // set category to 'diagnosis'
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("diagnosis");
+        //cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("diagnosis");
+        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
         fhirCondition.setCategory(cc);
 
         // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????
@@ -184,7 +186,8 @@ public class SusOutpatientTransformer extends BasisTransformer{
 
             // set code to coded problem
             cc = new CodeableConcept();
-            cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDSecondaryDiagnosis(i));
+            //cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDSecondaryDiagnosis(i));
+            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDSecondaryDiagnosis(i), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
             fhirCondition.setCode(cc);
 
             // save resource
@@ -239,7 +242,8 @@ Data line is of type Inpatient
 
         // Code
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSPrimaryProcedureCode());
+        //cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSPrimaryProcedureCode());
+        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
         fhirProcedure.setCode(cc);
 
         // Performed date/time
@@ -269,7 +273,8 @@ Data line is of type Inpatient
 
             // Code
             cc = new CodeableConcept();
-            cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSecondaryProcedureCode(i));
+            //cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSecondaryProcedureCode(i));
+            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSecondaryProcedureCode(i), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
             fhirProcedure.setCode(cc);
 
             // Performed date/time

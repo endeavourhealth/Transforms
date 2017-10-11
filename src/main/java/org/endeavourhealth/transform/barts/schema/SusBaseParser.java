@@ -195,7 +195,7 @@ public class SusBaseParser extends AbstractFixedParser {
         while (startPos + 12 <= listString.length()) {
             String codeEntry = listString.substring(startPos, startPos + 4);
             String dateEntry = listString.substring(startPos + 4, startPos + 12);
-            LOG.debug("Adding secondary procedure to list. StartPos=" + startPos +  " code=" + codeEntry + " date=" + dateEntry);
+            //LOG.debug("Adding secondary procedure to list. StartPos=" + startPos +  " code=" + codeEntry + " date=" + dateEntry);
             OPCSSecondaryProcedureCodeList.add(codeEntry);
             OPCSSecondaryProcedureDateAsStringList.add(dateEntry);
             OPCSSecondaryProcedureDateList.add(parseDate(dateEntry));

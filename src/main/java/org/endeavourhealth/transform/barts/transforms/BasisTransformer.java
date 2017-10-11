@@ -7,11 +7,10 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
-import org.endeavourhealth.transform.barts.AbstractFixedParser;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.schema.SusBaseParser;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -33,12 +32,14 @@ public class BasisTransformer {
     private static Connection hl7receiverConnection = null;
     private static PreparedStatement resourceIdSelectStatement;
     private static PreparedStatement resourceIdInsertStatement;
+    private static PreparedStatement mappingSelectStatement;
+
 
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
         //ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
         ResourceId ret = null;
         if (hl7receiverConnection == null) {
-            prepareResourceIdJDBC();
+            prepareJDBCConnection();
         }
 
         resourceIdSelectStatement.setString(1, scope);
@@ -60,7 +61,7 @@ public class BasisTransformer {
 
     public static void saveResourceId(ResourceId r) throws SQLException, ClassNotFoundException, IOException {
         if (hl7receiverConnection == null) {
-            prepareResourceIdJDBC();
+            prepareJDBCConnection();
         }
 
         resourceIdInsertStatement.setString(1, r.getScopeId());
@@ -73,8 +74,52 @@ public class BasisTransformer {
         }
     }
 
+    /*
+        set sourceCodeSystemId to -1 if no system is defined
+     */
+    public static CodeableConcept mapToCodeableConcept(String scope, int sourceContextId, String sourceCodeValue, int sourceCodeSystemId, int targetSystemId, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
+        String searchKey = "scope=" + scope + ":sourceContextId=" + sourceContextId + ":sourceCodeValue=" + sourceCodeValue + ":sourceCodeSystemId=" + sourceCodeSystemId + ":targetSystemId=" + targetSystemId;
+        LOG.trace("Looking for:" + searchKey);
+        CodeableConcept ret = null;
+        if (hl7receiverConnection == null) {
+            prepareJDBCConnection();
+        }
 
-    public static void prepareResourceIdJDBC() throws ClassNotFoundException, SQLException, IOException {
+        mappingSelectStatement.setString(1, scope);
+        mappingSelectStatement.setInt(2, sourceContextId);
+        mappingSelectStatement.setString(3, sourceCodeValue);
+        mappingSelectStatement.setInt(4, sourceCodeSystemId);
+        mappingSelectStatement.setInt(5, targetSystemId);
+
+        ResultSet rs = mappingSelectStatement.executeQuery();
+        if (rs.next()) {
+            ret = new CodeableConcept();
+            ret.addCoding().setSystem(rs.getString(2)).setCode(rs.getString(1));
+            if (rs.getString(3).length() > 0) {
+                ret.addCoding().setSystem(rs.getString(3)).setCode(sourceCodeValue);
+            }
+            if (rs.next()) {
+                if (throwErrors) {
+                    throw new TransformException("Mapping entry not unique:" + searchKey);
+                } else {
+                    ret = null;
+                    LOG.error("Mapping entry not unique:" + searchKey);
+                }
+            }
+        } else {
+            if (throwErrors) {
+                throw new TransformException("Mapping entry not found:" + searchKey);
+            } else {
+                LOG.error("Mapping entry not found:" + searchKey);
+            }
+        }
+        rs.close();
+
+        return ret;
+    }
+
+
+    public static void prepareJDBCConnection() throws ClassNotFoundException, SQLException, IOException {
         JsonNode json = ConfigManager.getConfigurationAsJson("hl7receiver_db");
 
         Class.forName(json.get("drivername").asText());
@@ -86,6 +131,7 @@ public class BasisTransformer {
 
         resourceIdSelectStatement = hl7receiverConnection.prepareStatement("SELECT resource_uuid FROM mapping.resource_uuid where scope_id=? and resource_type=? and unique_identifier=?");
         resourceIdInsertStatement = hl7receiverConnection.prepareStatement("insert into mapping.resource_uuid (scope_id, resource_type, unique_identifier, resource_uuid) values (?, ?, ?, ?)");
+        mappingSelectStatement = hl7receiverConnection.prepareStatement("SELECT target_code, b.code_system_identifier as target_code_system, c.code_system_identifier as source_code_system FROM mapping.code a INNER JOIN  mapping.code_system b on a.target_code_system_id = b.code_system_id INNER JOIN  mapping.code_system c on a.source_code_system_id = c.code_system_id where scope_id=? and source_code_context_id =? and source_code=? and source_code_system_id=? and target_code_system_id=? and is_mapped=true");
     }
 
     /*
@@ -122,7 +168,7 @@ public class BasisTransformer {
             fhirOrganization.addAddress(fhirAddress);
 
             LOG.debug("Save Organization:" + FhirSerializationHelper.serializeResource(fhirOrganization));
-            savePatientResource(fhirResourceFiler, currentParserState, fhirOrganization.getId().toString(), fhirOrganization);
+            saveAdminResource(fhirResourceFiler, currentParserState, fhirOrganization);
         }
         return resourceId;
     }
@@ -352,6 +398,11 @@ public class BasisTransformer {
 
     public static void savePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
         fhirResourceFiler.savePatientResource(parserState, false, groupId, resources);
+    }
+
+    public static void saveAdminResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
+        fhirResourceFiler.saveAdminResource(parserState, false, resources);
+
     }
 
 }

@@ -1,21 +1,26 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+//import org.endeavourhealth.hl7receiver.DataLayer;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+//import org.endeavourhealth.hl7receiver.mapping.Mapper;
 import java.util.Date;
 
 public class SusInpatientTransformer extends BasisTransformer{
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTransformer.class);
     private static int entryCount = 0;
+    //private static Mapper mapper = null;
 
     public static void transform(String version,
                                  SusInpatient parser,
@@ -60,6 +65,33 @@ public class SusInpatientTransformer extends BasisTransformer{
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID) throws Exception {
+        /*
+        if (mapper == null) {
+            // **************************************************************************************************
+            HikariDataSource hikariDataSource = new HikariDataSource();
+            hikariDataSource.setJdbcUrl("jdbc:postgresql://localhost:5432/hl7receiver");
+            hikariDataSource.setUsername("postgres");
+            hikariDataSource.setPassword("roskilde");
+            hikariDataSource.setMaximumPoolSize(15);
+            hikariDataSource.setMinimumIdle(2);
+            hikariDataSource.setIdleTimeout(60000);
+            hikariDataSource.setConnectionTimeout(5000L);
+            hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
+            Mapper mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(hikariDataSource));
+
+
+        PGPoolingDataSource source = new PGPoolingDataSource();
+        source.setDataSourceName("SFTPReaderDBConnectionPool");
+        source.setServerName("localhost");
+        source.setDatabaseName("hl7receiver");
+        source.setUser("postgres");
+        source.setPassword("roskilde");
+        source.setMaxConnections(2);
+        Mapper mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(source));
+
+            mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(hikariDataSource));
+        }
+        */
 
         ResourceId patientResourceId = null;
         ResourceId organisationResourceId = null;
@@ -161,7 +193,8 @@ public class SusInpatientTransformer extends BasisTransformer{
 
         // set code to coded problem
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDPrimaryDiagnosis());
+        //cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDPrimaryDiagnosis());
+        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
         fhirCondition.setCode(cc);
 
         // set category to 'diagnosis'
@@ -190,8 +223,10 @@ public class SusInpatientTransformer extends BasisTransformer{
 
             // set code to coded problem
             cc = new CodeableConcept();
-            cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDSecondaryDiagnosis(i));
+            //cc.addCoding().setSystem("http://hl7.org/fhir/ValueSet/icd-10").setCode(parser.getICDSecondaryDiagnosis(i));
+            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDSecondaryDiagnosis(i), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
             fhirCondition.setCode(cc);
+
 
             // save resource
             if (parser.getCDSUpdateType() == 1) {
@@ -243,9 +278,11 @@ Data line is of type Inpatient
             fhirProcedure.setStatus(Procedure.ProcedureStatus.INPROGRESS);
         }
 
+        // **************************************************************************************************
         // Code
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSPrimaryProcedureCode());
+        //cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSPrimaryProcedureCode());
+        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
         fhirProcedure.setCode(cc);
 
         // Performed date/time
@@ -275,7 +312,8 @@ Data line is of type Inpatient
 
             // Code
             cc = new CodeableConcept();
-            cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSecondaryProcedureCode(i));
+            //cc.addCoding().setSystem("http://endeavourhealth.org/fhir/opcs-10").setCode(parser.getOPCSecondaryProcedureCode(i));
+            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSecondaryProcedureCode(i), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
             fhirProcedure.setCode(cc);
 
             // Performed date/time
