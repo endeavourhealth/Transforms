@@ -25,6 +25,7 @@ import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
+import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionUserTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotTransformer;
@@ -295,6 +296,9 @@ public abstract class EmisCsvToFhirTransformer {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
         }
+
+        //check the sharing agreement to see if it's been disabled
+        SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
         ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
