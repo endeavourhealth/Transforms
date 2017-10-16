@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.fhirStorage.exceptions.SerializationException;
@@ -294,7 +295,7 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    public static Encounter createEncounter(CsvCurrentState currentParserState, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId, ResourceId episodeOfCareResourceId, ResourceId encounterResourceId, Encounter.EncounterState status, Date periodStart, Date periodEnd, Identifier identifiers[]) throws Exception {
+    public static Encounter createEncounter(CsvCurrentState currentParserState, FhirResourceFiler fhirResourceFiler, ResourceId patientResourceId, ResourceId episodeOfCareResourceId, ResourceId encounterResourceId, Encounter.EncounterState status, Date periodStart, Date periodEnd, Identifier identifiers[], Encounter.EncounterClass encounterClass) throws Exception {
         // Save place-holder Encounter
         Encounter fhirEncounter = new Encounter();
 
@@ -305,6 +306,8 @@ public class BasisTransformer {
         }
 
         fhirEncounter.setId(encounterResourceId.getResourceId().toString());
+
+        fhirEncounter.setClass_(encounterClass);
 
         fhirEncounter.setStatus(status);
 

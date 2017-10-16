@@ -29,7 +29,7 @@ public class Procedure extends AbstractFixedParser {
         addFieldList(new FixedParserField("Consultant",    285, 45));
         addFieldList(new FixedParserField("Procedure_DT_TM",    331, 20));
         addFieldList(new FixedParserField("ProcedureText",    352, 200));
-        addFieldList(new FixedParserField("Comment",    552, 200));
+        addFieldList(new FixedParserField("Comment",    553, 200));
         addFieldList(new FixedParserField("ProcedureCode",    754, 200));
         addFieldList(new FixedParserField("Create_DT_TM",          1139, 20));
         addFieldList(new FixedParserField("Update_DT_TM",          1160, 20));

@@ -55,7 +55,8 @@ public class ProcedureTransformer extends BasisTransformer {
         ResourceId encounterResourceId = getEncounterResourceId( parser.getEncounterId().toString());
         if (encounterResourceId == null) {
             encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null);
+
+            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null, Encounter.EncounterClass.INPATIENT);
         }
 
         // this Diagnosis resource id
@@ -63,11 +64,11 @@ public class ProcedureTransformer extends BasisTransformer {
 
         // Procedure Code
         CodeableConcept procedureCode = new CodeableConcept();
-        procedureCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setCode(parser.getProcedureCode());
+        procedureCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
 
         // Create resource
         Procedure fhirProcedure = new Procedure();
-        createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getProcedureText(), null);
+        createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
 
         // save resource
         LOG.debug("Save Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));

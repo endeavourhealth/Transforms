@@ -30,6 +30,7 @@ public class Problem extends AbstractFixedParser {
         addFieldList(new FixedParserField("Severity",    690, 50));
         addFieldList(new FixedParserField("ProblemCode",    1025, 20));
         addFieldList(new FixedParserField("Vocabulary",    1046, 20));
+        addFieldList(new FixedParserField("Description",    1088, 500));
         addFieldList(new FixedParserField("UpdatedBy",    1589, 50));
 
     }
@@ -68,6 +69,9 @@ public class Problem extends AbstractFixedParser {
     }
     public String getVocabulary() {
         return super.getString("Vocabulary").trim();
+    }
+    public String getDescription() {
+        return super.getString("Description").trim();
     }
     public String getUpdatedBy() {
         return super.getString("UpdatedBy").trim();

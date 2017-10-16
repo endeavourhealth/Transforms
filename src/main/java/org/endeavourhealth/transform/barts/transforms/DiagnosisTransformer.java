@@ -59,7 +59,7 @@ public class DiagnosisTransformer extends BasisTransformer {
             //Identifiers
             Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
 
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(), parser.getDiagnosisDate(), encounterIdentifiers);
+            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(), parser.getDiagnosisDate(), encounterIdentifiers, Encounter.EncounterClass.OTHER);
         }
 
         // this Diagnosis resource id
@@ -68,7 +68,7 @@ public class DiagnosisTransformer extends BasisTransformer {
         Condition fhirCondition = new Condition();
 
         CodeableConcept diagnosisCode = new CodeableConcept();
-        diagnosisCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setCode(parser.getDiagnosisCode());
+        diagnosisCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getDiagnosis()).setCode(parser.getDiagnosisCode());
 
         //Identifiers
         Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
@@ -112,7 +112,6 @@ public class DiagnosisTransformer extends BasisTransformer {
         fhirCondition.setCategory(cc);
 
         // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????
-        // TODO check this
         //fhirCondition.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
         // set notes

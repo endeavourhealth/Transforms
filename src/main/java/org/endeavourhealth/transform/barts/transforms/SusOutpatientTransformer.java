@@ -103,7 +103,7 @@ public class SusOutpatientTransformer extends BasisTransformer{
             //Identifiers
             Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
 
-            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), encounterIdentifiers);
+            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), encounterIdentifiers, Encounter.EncounterClass.OUTPATIENT);
 
         }
 
