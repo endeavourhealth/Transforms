@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -46,20 +47,23 @@ public class ProcedureTransformer extends BasisTransformer {
         CodeableConcept cc = null;
         Date d = null;
 
-        // Organisation
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler);
+        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
         ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
-        // EpisodeOfCare
-        ResourceId episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getFINNo(), fhirResourceFiler, patientResourceId, organisationResourceId, parser.getProcedureDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+        // EpisodeOfCare - Procedure record cannot be linked to an EpisodeOfCare
         // Encounter
-        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime());
+        ResourceId encounterResourceId = getEncounterResourceId( parser.getEncounterId().toString());
+        if (encounterResourceId == null) {
+            encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
+            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null);
+        }
+
         // this Diagnosis resource id
-        ResourceId procedureResourceId = getProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+        ResourceId procedureResourceId = getProcedureResourceId(parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
 
         // Procedure Code
         CodeableConcept procedureCode = new CodeableConcept();
-        procedureCode.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getProcedureCode());
+        procedureCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setCode(parser.getProcedureCode());
 
         // Create resource
         Procedure fhirProcedure = new Procedure();

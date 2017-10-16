@@ -1,11 +1,11 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusEmergency;
+import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -62,6 +62,8 @@ public class SusEmergencyTransformer extends BasisTransformer{
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID) throws Exception {
 
+        TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
+
         ResourceId patientResourceId = null;
         ResourceId organisationResourceId = null;
         ResourceId episodeOfCareResourceId = null;
@@ -84,15 +86,30 @@ public class SusEmergencyTransformer extends BasisTransformer{
             } else {
                 fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
             }
-            episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, null, fhirResourceFiler, patientResourceId, organisationResourceId, parser.getArrivalDateTime(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+            episodeOfCareResourceId = getEpisodeOfCareResourceId(tr.getEpisodeId());
+            if (episodeOfCareResourceId == null) {
+                episodeOfCareResourceId = createEpisodeOfCareResourceId(tr.getEpisodeId());
+            }
+            //Identifiers
+            Identifier episodeIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId())};
+
+            createEpisodeOfCare(parser.getCurrentState(), fhirResourceFiler, episodeOfCareResourceId, patientResourceId, organisationResourceId, EpisodeOfCare.EpisodeOfCareStatus.FINISHED, parser.getArrivalDateTime(), parser.getDepartureDateTime(), episodeIdentifiers);
             // Encounter
-            encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getArrivalDateTime(), parser.getDepartureDateTime());
+            encounterResourceId = getEncounterResourceId(tr.getEncounterId());
+            if (encounterResourceId == null) {
+                encounterResourceId = createEncounterResourceId(tr.getEncounterId());
+            }
+            //Identifiers
+            Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
+
+            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getArrivalDateTime(), parser.getDepartureDateTime(), encounterIdentifiers);
+
         }
 
         // Map diagnosis codes ?
         if (parser.getICDPrimaryDiagnosis().length() > 0) {
             // Diagnosis
-            mapDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId);
+            mapDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId, tr);
         //} else {
             //LOG.debug("No primary diagnosis present");
         }
@@ -100,7 +117,7 @@ public class SusEmergencyTransformer extends BasisTransformer{
         // Map procedure codes ?
         if (parser.getOPCSPrimaryProcedureCode().length() > 0) {
             // Procedure
-            mapProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId);
+            mapProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId, tr);
         //} else {
            // LOG.debug("No primary procedure present");
         }
@@ -118,20 +135,21 @@ public class SusEmergencyTransformer extends BasisTransformer{
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID,
                                     ResourceId patientResourceId,
-                                    ResourceId encounterResourceId) throws Exception {
+                                    ResourceId encounterResourceId,
+                                    TailsRecord tr) throws Exception {
 
         CodeableConcept cc = null;
         Date d = null;
         String uniqueId;
         LOG.debug("Mapping Diagnosis from file entry (" + entryCount + ")");
 
-        ResourceId diagnosisResourceId = getDiagnosisResourceIdFromCDSData(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
+        ResourceId diagnosisResourceId = getDiagnosisResourceIdFromCDSData(parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
 
         //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID())};
+        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
 
         CodeableConcept diagnosisCode = new CodeableConcept();
-        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
+        cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "",false);
 
         Condition fhirCondition = new Condition();
         DiagnosisTransformer.createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getArrivalDateTime(), new DateTimeType(parser.getArrivalDateTime()), diagnosisCode, null, identifiers);
@@ -147,10 +165,10 @@ public class SusEmergencyTransformer extends BasisTransformer{
 
         // secondary piagnoses ?
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
-            diagnosisResourceId = getDiagnosisResourceIdFromCDSData(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i));
+            diagnosisResourceId = getDiagnosisResourceIdFromCDSData(parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i));
 
             diagnosisCode = new CodeableConcept();
-            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDSecondaryDiagnosis(i), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
+            cc = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDSecondaryDiagnosis(i), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "",false);
 
             fhirCondition = new Condition();
             DiagnosisTransformer.createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getArrivalDateTime(), new DateTimeType(parser.getArrivalDateTime()), diagnosisCode, null, identifiers);
@@ -177,23 +195,23 @@ Data line is of type Inpatient
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID,
                                     ResourceId patientResourceId,
-                                    ResourceId encounterResourceId) throws Exception {
+                                    ResourceId encounterResourceId,
+                                    TailsRecord tr) throws Exception {
 
         CodeableConcept cc = null;
         Date d = null;
         String uniqueId;
         LOG.debug("Mapping Procedure from file entry (" + entryCount + ")");
 
-
         // Turn key into Resource id
-        ResourceId resourceId = getProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode());
+        ResourceId resourceId = getProcedureResourceId(tr.getEncounterId(), parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode());
 
         //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID())};
+        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
 
         // Code
         CodeableConcept procedureCode = new CodeableConcept();
-        procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
+        procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "",false);
 
         Procedure fhirProcedure = new Procedure ();
         ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getOPCSPrimaryProcedureDate(), null, identifiers);
@@ -210,10 +228,10 @@ Data line is of type Inpatient
         // secondary procedures
         LOG.debug("Secondary procedure count:" + parser.getOPCSecondaryProcedureCodeCount());
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
-            resourceId = getProcedureResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getCDSUniqueID(), parser.getLocalPatientId(), null, parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i));
+            resourceId = getProcedureResourceId(tr.getEncounterId(), parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i));
 
             // Code
-            procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSecondaryProcedureCode(i), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, true);
+            procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSecondaryProcedureCode(i), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "",false);
 
             fhirProcedure = new Procedure ();
             ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getOPCSecondaryProcedureDate(i), null, identifiers);

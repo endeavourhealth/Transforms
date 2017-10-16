@@ -4,6 +4,7 @@ public class TailsRecord {
     private String CDSUniqueueId;
     private String EncounterId;
     private String FINNbr;
+    private String EpisodeId;
 
     public void setCDSUniqueueId(String CDSUniqueueId) {
         this.CDSUniqueueId = CDSUniqueueId;
@@ -27,5 +28,13 @@ public class TailsRecord {
 
     public void setFINNbr(String FINNbr) {
         this.FINNbr = FINNbr;
+    }
+
+    public String getEpisodeId() {
+        return EpisodeId;
+    }
+
+    public void setEpisodeId(String episodeId) {
+        EpisodeId = episodeId;
     }
 }

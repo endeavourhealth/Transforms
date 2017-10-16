@@ -46,8 +46,11 @@ public class SusOutpatient extends SusBaseParser {
         addFieldList(new FixedParserField("ICDPrimaryDiagnosis",    1047, 6));
         addFieldList(new FixedParserField("ICDSecondaryDiagnosisList",    1054, 350));
 
+        // 1	Discharged from CONSULTANT's care (last attendance), 2	Another APPOINTMENT given, 3	APPOINTMENT to be made at a later date
+        addFieldList(new FixedParserField("OutcomeCode",    1680, 1));
         addFieldList(new FixedParserField("AppointmentDate",    1681, 8));
         addFieldList(new FixedParserField("AppointmentTime",    1689, 6));
+        addFieldList(new FixedParserField("ExpectedDurationMinutes",    1695, 3));
 
         addFieldList(new FixedParserField("OPCSPrimaryProcedureCode",    1798, 4));
         addFieldList(new FixedParserField("OPCSPrimaryProcedureDate",    1802, 8));
@@ -55,8 +58,13 @@ public class SusOutpatient extends SusBaseParser {
 
     }
 
+
     public String getConsultantCode() {
         return super.getString("ConsultantCode");
+    }
+
+    public int geOutcomeCode() {
+        return super.getInt("OutcomeCode");
     }
 
     public Date getAppointmentDate() throws TransformException {
@@ -67,6 +75,12 @@ public class SusOutpatient extends SusBaseParser {
     }
     public Date getAppointmentDateTime() throws TransformException {
         return super.getDateTime("AppointmentDate", "AppointmentTime");
+    }
+    public int getExpectedDurationMinutes() throws TransformException {
+        return super.getInt("ExpectedDurationMinutes");
+    }
+    public Date getExpectedLeavingDateTime() throws TransformException {
+        return new Date(getAppointmentDateTime().getTime() + (getExpectedDurationMinutes() * 1000));
     }
 
 }

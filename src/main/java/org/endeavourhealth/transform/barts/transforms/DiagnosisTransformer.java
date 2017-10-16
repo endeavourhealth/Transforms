@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -44,26 +45,35 @@ public class DiagnosisTransformer extends BasisTransformer {
         CodeableConcept cc = null;
         Date d = null;
 
-        // Organisation
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler);
+        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
         ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null,null, null, null, null, null);
-        // EpisodeOfCare
-        ResourceId episodeOfCareResourceId = resolveEpisodeResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), parser.getFINNbr(), fhirResourceFiler, patientResourceId, organisationResourceId, parser.getDiagnosisDate(), EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+        // EpisodeOfCare - Diagnosis record cannot be linked to an EpisodeOfCare
         // Encounter
-        ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), primaryOrgHL7OrgOID, null, parser.getLocalPatientId(), parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(),parser.getDiagnosisDate());
-        // this Diagnosis resource id
-        ResourceId diagnosisResourceId = getDiagnosisResourceId(primaryOrgOdsCode, fhirResourceFiler, parser.getLocalPatientId(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
+        //ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), null,  parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, null, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(),parser.getDiagnosisDate());
 
+        ResourceId encounterResourceId = getEncounterResourceId(parser.getEncounterId().toString());
+        if (encounterResourceId == null) {
+            encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
+
+            //Identifiers
+            Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
+
+            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(), parser.getDiagnosisDate(), encounterIdentifiers);
+        }
+
+        // this Diagnosis resource id
+        ResourceId diagnosisResourceId = getDiagnosisResourceId(parser.getLocalPatientId(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
 
         Condition fhirCondition = new Condition();
 
         CodeableConcept diagnosisCode = new CodeableConcept();
-        diagnosisCode.addCoding().setSystem("http://snomed.info/sct").setCode(parser.getDiagnosisCode());
+        diagnosisCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setCode(parser.getDiagnosisCode());
 
-        //Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID())};
+        //Identifiers
+        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
 
-        createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), null);
+        createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers);
 
         // save resource
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));

@@ -14,7 +14,8 @@ public class Tails extends AbstractFixedParser {
         addFieldList(new FixedParserField("CDSUniqueueId",             1, 35));
         addFieldList(new FixedParserField("FINNbr",          91, 12));
         addFieldList(new FixedParserField("EncounterId",          103, 10));
-        // NOTE - fields in the three types of Tails files are identical up to and including field 10
+        addFieldList(new FixedParserField("EpisodeId",          123, 10));
+        // NOTE - fields in the three types of Tails files are identical up to and including field 12
     }
 
     public String getCDSUniqueueId() {
@@ -26,6 +27,8 @@ public class Tails extends AbstractFixedParser {
     public String getEncounterId() {
         return super.getString("EncounterId");
     }
+    public String getEpisodeId() { return super.getString("EpisodeId");
 
+    }
 
 }

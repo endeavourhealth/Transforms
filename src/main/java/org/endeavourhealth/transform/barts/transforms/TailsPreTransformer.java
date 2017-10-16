@@ -3,10 +3,13 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.transform.barts.schema.Tails;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
 public class TailsPreTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(TailsPreTransformer.class);
 
     public static HashMap<String, TailsRecord> hm = new HashMap<String, TailsRecord>();
 
@@ -25,7 +28,9 @@ public class TailsPreTransformer {
                 tr.setCDSUniqueueId(parser.getCDSUniqueueId());
                 tr.setFINNbr(parser.getFINNbr());
                 tr.setEncounterId(parser.getEncounterId());
+                tr.setEpisodeId(parser.getEpisodeId());
                 hm.put(tr.getCDSUniqueueId(), tr);
+                LOG.trace("Adding CDS-Tail:" + tr.getCDSUniqueueId());
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -33,6 +38,7 @@ public class TailsPreTransformer {
     }
 
     public static TailsRecord getTailsRecord(String s) {
+        LOG.trace("Looking for CDS-Tail:" + s);
         return hm.get(s);
     }
 
