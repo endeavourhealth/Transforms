@@ -61,9 +61,11 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
     }
 
     private static UICode getSignificance(Condition condition) {
-        CodeableConcept signficance = ExtensionHelper.getExtensionValue(condition, FhirExtensionUri.PROBLEM_SIGNIFICANCE, CodeableConcept.class);
-        if (signficance.hasCoding() && signficance.getCoding().size() > 0)
-            return CodeHelper.convert(signficance.getCoding().get(0));
+        CodeableConcept significance = ExtensionHelper.getExtensionValue(condition, FhirExtensionUri.PROBLEM_SIGNIFICANCE, CodeableConcept.class);
+        if (significance != null
+            && significance.hasCoding()
+            && significance.getCoding().size() > 0)
+            return CodeHelper.convert(significance.getCoding().get(0));
 
         return null;
     }
