@@ -22,9 +22,23 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
     public List<UICondition> transform(UUID serviceId, UUID systemId, List<Condition> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .filter(t -> (!t.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM)))
+                .filter(c -> !isProblem(c))
                 .map(t -> transform(serviceId, systemId, t, referencedResources, false))
                 .collect(Collectors.toList());
+    }
+
+    private boolean isProblem(Condition c) {
+        if (c.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM))
+            return true;
+
+        if (c.hasCategory()
+            && c.getCategory().hasCoding()
+            && c.getCategory().getCoding().size() > 0
+            && c.getCategory().getCoding().get(0).hasCode()
+            && c.getCategory().getCoding().get(0).getCode().toLowerCase().equals("complaint"))
+            return true;
+
+        return false;
     }
 
     static UICondition transform(UUID serviceId, UUID systemId, Condition condition, ReferencedResources referencedResources, boolean createProblem) {
