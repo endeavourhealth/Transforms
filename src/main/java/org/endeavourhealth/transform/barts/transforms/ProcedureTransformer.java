@@ -39,7 +39,9 @@ public class ProcedureTransformer extends BasisTransformer {
 
     }
 
-
+    /*
+     *
+     */
     public static void createProcedure(org.endeavourhealth.transform.barts.schema.Procedure parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
@@ -71,11 +73,14 @@ public class ProcedureTransformer extends BasisTransformer {
         createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
 
         // save resource
-        LOG.debug("Save Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
+        LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
 
     }
 
+    /*
+     *
+     */
     public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
         CodeableConcept cc = null;
         Date d = null;
@@ -101,6 +106,9 @@ public class ProcedureTransformer extends BasisTransformer {
         fhirProcedure.setStatus(status);
 
         // Code
+        if (procedureCode.getText() == null || procedureCode.getText().length() == 0) {
+            procedureCode.setText(procedureCode.getCoding().get(0).getDisplay());
+        }
         fhirProcedure.setCode(procedureCode);
 
         // Performed date/time

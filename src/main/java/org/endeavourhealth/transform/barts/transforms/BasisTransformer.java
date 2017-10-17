@@ -216,7 +216,7 @@ public class BasisTransformer {
             Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
             fhirOrganization.addAddress(fhirAddress);
 
-            LOG.debug("Save Organization:" + FhirSerializationHelper.serializeResource(fhirOrganization));
+            LOG.trace("Save Organization:" + FhirSerializationHelper.serializeResource(fhirOrganization));
             saveAdminResource(fhirResourceFiler, currentParserState, fhirOrganization);
         }
         return resourceId;
@@ -247,7 +247,7 @@ public class BasisTransformer {
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
-                LOG.debug("Adding identifier to episode:" + identifiers[i].getSystem() + "==>" + identifiers[i].getValue());
+                LOG.trace("Adding identifier to episode:" + identifiers[i].getSystem() + "==>" + identifiers[i].getValue());
                 fhirEpisodeOfCare.addIdentifier(identifiers[i]);
             }
         }
@@ -269,7 +269,7 @@ public class BasisTransformer {
         }
         fhirEpisodeOfCare.setPeriod(p);
 
-        LOG.debug("Save fhirEpisodeOfCare:" + FhirSerializationHelper.serializeResource(fhirEpisodeOfCare));
+        LOG.trace("Save fhirEpisodeOfCare:" + FhirSerializationHelper.serializeResource(fhirEpisodeOfCare));
         savePatientResource(fhirResourceFiler, currentParserState, fhirEpisodeOfCare.getId().toString(), fhirEpisodeOfCare);
 
         return fhirEpisodeOfCare;
@@ -329,7 +329,7 @@ public class BasisTransformer {
             fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareResourceId.getResourceId().toString()));
         }
 
-        LOG.debug("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
+        LOG.trace("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
         savePatientResource(fhirResourceFiler, currentParserState, fhirEncounter.getId().toString(), fhirEncounter);
 
         return fhirEncounter;
@@ -395,7 +395,7 @@ public class BasisTransformer {
                 fhirPatient.setManagingOrganization(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
             }
 
-            LOG.debug("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
+            LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
             savePatientResource(fhirResourceFiler, currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
         }
         return patientResourceId;

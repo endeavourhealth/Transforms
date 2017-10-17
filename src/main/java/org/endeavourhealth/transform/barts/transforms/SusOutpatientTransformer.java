@@ -18,6 +18,9 @@ public class SusOutpatientTransformer extends BasisTransformer{
     private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientTransformer.class);
     private static int entryCount = 0;
 
+    /*
+     *
+     */
     public static void transform(String version,
                                  SusOutpatient parser,
                                  FhirResourceFiler fhirResourceFiler,
@@ -55,12 +58,17 @@ public class SusOutpatientTransformer extends BasisTransformer{
         }
     }
 
+    /*
+     *
+     */
     public static void mapFileEntry(SusOutpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID) throws Exception {
+
+        LOG.debug("Current patient:" + parser.getLocalPatientId());
 
         TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
 
@@ -79,32 +87,35 @@ public class SusOutpatientTransformer extends BasisTransformer{
                 fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
             }
             patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null);
-            // EpisodeOfCare
-            episodeOfCareResourceId = getEpisodeOfCareResourceId(tr.getEpisodeId());
-            if (episodeOfCareResourceId == null) {
-                episodeOfCareResourceId = createEpisodeOfCareResourceId(tr.getEpisodeId());
-            }
-            EpisodeOfCare.EpisodeOfCareStatus episodeStatus;
-            if (parser.geOutcomeCode() == 1) {
-                episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
-            } else {
-                episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
-            }
-            //Identifiers
-            Identifier episodeIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId())};
 
-            // TODO When partial update of EpisodeOfCare is implemented then the 'end date' should probably only be set once when/if creating the resource. It should not be updated here as HL7 is likely more accurate. Same might apply to 'start date'
-            createEpisodeOfCare(parser.getCurrentState(), fhirResourceFiler, episodeOfCareResourceId, patientResourceId, organisationResourceId, episodeStatus, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), episodeIdentifiers);
-            // Encounter
-            encounterResourceId = getEncounterResourceId(tr.getEncounterId());
-            if (encounterResourceId == null) {
-                encounterResourceId = createEncounterResourceId(tr.getEncounterId());
+            if (tr != null && tr.getEpisodeId() != null && tr.getEpisodeId().length() > 0 && tr.getEncounterId() != null && tr.getEncounterId().length() > 0) {
+                // EpisodeOfCare
+                episodeOfCareResourceId = getEpisodeOfCareResourceId(tr.getEpisodeId());
+                if (episodeOfCareResourceId == null) {
+                    episodeOfCareResourceId = createEpisodeOfCareResourceId(tr.getEpisodeId());
+                }
+                EpisodeOfCare.EpisodeOfCareStatus episodeStatus;
+                if (parser.geOutcomeCode() == 1) {
+                    episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
+                } else {
+                    episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
+                }
+                //Identifiers
+                Identifier episodeIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId())};
+
+                // TODO When partial update of EpisodeOfCare is implemented then the 'end date' should probably only be set once when/if creating the resource. It should not be updated here as HL7 is likely more accurate. Same might apply to 'start date'
+                createEpisodeOfCare(parser.getCurrentState(), fhirResourceFiler, episodeOfCareResourceId, patientResourceId, organisationResourceId, episodeStatus, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), episodeIdentifiers);
+
+                // Encounter
+                encounterResourceId = getEncounterResourceId(tr.getEncounterId());
+                if (encounterResourceId == null) {
+                    encounterResourceId = createEncounterResourceId(tr.getEncounterId());
+                }
+                //Identifiers
+                Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
+
+                createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), encounterIdentifiers, Encounter.EncounterClass.OUTPATIENT);
             }
-            //Identifiers
-            Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
-
-            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAppointmentDateTime(), parser.getExpectedLeavingDateTime(), encounterIdentifiers, Encounter.EncounterClass.OUTPATIENT);
-
         }
 
         // Map diagnosis codes ?
@@ -154,10 +165,10 @@ public class SusOutpatientTransformer extends BasisTransformer{
 
         // save resource
         if (parser.getCDSUpdateType() == 1) {
-            LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+            LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         } else {
-            LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+            LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + ")" + FhirSerializationHelper.serializeResource(fhirCondition));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         }
 
@@ -173,10 +184,10 @@ public class SusOutpatientTransformer extends BasisTransformer{
 
             // save resource
             if (parser.getCDSUpdateType() == 1) {
-                LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+                LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             } else {
-                LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+                LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             }
 
@@ -184,8 +195,8 @@ public class SusOutpatientTransformer extends BasisTransformer{
     }
 
     /*
-Data line is of type Inpatient
-*/
+    Data line is of type Inpatient
+    */
     public static void mapProcedure(SusOutpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
@@ -224,10 +235,10 @@ Data line is of type Inpatient
 
         // save resource
         if (parser.getCDSUpdateType() == 1) {
-            LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         } else {
-            LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         }
 
@@ -244,10 +255,10 @@ Data line is of type Inpatient
             ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procStatus, procedureCode, parser.getOPCSecondaryProcedureDate(i), null, identifiers);
 
             if (parser.getCDSUpdateType() == 1) {
-                LOG.debug("Delete secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
+                LOG.debug("Delete secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             } else {
-                LOG.debug("Save secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
+                LOG.debug("Save secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             }
         }

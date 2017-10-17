@@ -76,7 +76,7 @@ public class DiagnosisTransformer extends BasisTransformer {
         createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers);
 
         // save resource
-        LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
+        LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
 
     }
@@ -103,12 +103,15 @@ public class DiagnosisTransformer extends BasisTransformer {
 
         fhirCondition.setOnset(onsetDate);
 
-        // set code to coded problem - field 28
+        // set code to coded problem
+        if (diagnosisCode.getText() == null || diagnosisCode.getText().length() == 0) {
+            diagnosisCode.setText(diagnosisCode.getCoding().get(0).getDisplay());
+        }
         fhirCondition.setCode(diagnosisCode);
 
         // set category to 'diagnosis'
         CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("diagnosis");
+        cc.addCoding().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("diagnosis");
         fhirCondition.setCategory(cc);
 
         // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????

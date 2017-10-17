@@ -65,7 +65,7 @@ public class ProblemTransformer extends BasisTransformer {
         createConditionResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers);
 
         // save resource
-        LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
+        LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
     }
 
@@ -91,12 +91,15 @@ public class ProblemTransformer extends BasisTransformer {
         // Date recorded
         fhirCondition.setDateRecorded(dateRecorded);
 
-        // set code to coded problem - field 28
+        // set code to coded problem
+        if (problemCode.getText() == null || problemCode.getText().length() == 0) {
+            problemCode.setText(problemCode.getCoding().get(0).getDisplay());
+        }
         fhirCondition.setCode(problemCode);
 
         // set category to 'complaint'
         cc = new CodeableConcept();
-        cc.addCoding().setSystem("http://hl7.org/fhir/condition-category").setCode("complaint");
+        cc.addCoding().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
         fhirCondition.setCategory(cc);
 
         // set onset to field  to field 10 + 11

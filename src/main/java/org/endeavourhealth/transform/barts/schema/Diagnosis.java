@@ -24,7 +24,7 @@ public class Diagnosis extends AbstractFixedParser {
         addFieldList(new FixedParserField("PersonId",    49, 14));
         addFieldList(new FixedParserField("EncounterId",    64, 14));
         addFieldList(new FixedParserField("MRN",    79, 20));
-        addFieldList(new FixedParserField("FINNbr",    79, 20));
+        addFieldList(new FixedParserField("FINNbr",    100, 20));
         addFieldList(new FixedParserField("Diagnosis",    121, 150));
         addFieldList(new FixedParserField("DiagnosisDate",    314, 11));
         addFieldList(new FixedParserField("DiagnosisCode",    650, 20));

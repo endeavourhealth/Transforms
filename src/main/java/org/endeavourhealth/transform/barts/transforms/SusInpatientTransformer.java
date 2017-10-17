@@ -20,6 +20,9 @@ public class SusInpatientTransformer extends BasisTransformer{
     private static int entryCount = 0;
     //private static Mapper mapper = null;
 
+    /*
+     *
+     */
     public static void transform(String version,
                                  SusInpatient parser,
                                  FhirResourceFiler fhirResourceFiler,
@@ -57,6 +60,9 @@ public class SusInpatientTransformer extends BasisTransformer{
         }
     }
 
+    /*
+     *
+     */
     public static void mapFileEntry(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper,
@@ -91,6 +97,8 @@ public class SusInpatientTransformer extends BasisTransformer{
         }
         */
 
+        LOG.debug("Current patient:" + parser.getLocalPatientId());
+
         TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
 
         ResourceId patientResourceId = null;
@@ -108,36 +116,39 @@ public class SusInpatientTransformer extends BasisTransformer{
                 fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
             }
             patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null);
-            // EpisodeOfCare
-            episodeOfCareResourceId = getEpisodeOfCareResourceId(tr.getEpisodeId());
-            if (episodeOfCareResourceId == null) {
-                episodeOfCareResourceId = createEpisodeOfCareResourceId(tr.getEpisodeId());
-            }
-            EpisodeOfCare.EpisodeOfCareStatus fhirEpisodeOfCareStatus;
-            if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
-                fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
-            } else {
-                fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
-            }
-            //Identifiers
-            Identifier episodeIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId())};
 
-            createEpisodeOfCare(parser.getCurrentState(), fhirResourceFiler, episodeOfCareResourceId, patientResourceId, organisationResourceId, fhirEpisodeOfCareStatus,   parser.getAdmissionDateTime(), parser.getDischargeDateTime(), episodeIdentifiers);
-            // Encounter
-            encounterResourceId = getEncounterResourceId(tr.getEncounterId());
-            if (encounterResourceId == null) {
-                encounterResourceId = createEncounterResourceId(tr.getEncounterId());
-            }
-            Encounter.EncounterState encounterStatus;
-            if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
-                encounterStatus = Encounter.EncounterState.FINISHED;
-            } else {
-                encounterStatus = Encounter.EncounterState.INPROGRESS;
-            }
-            //Identifiers
-            Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
+            if (tr != null && tr.getEpisodeId() != null && tr.getEpisodeId().length() > 0 && tr.getEncounterId() != null && tr.getEncounterId().length() > 0) {
+                // EpisodeOfCare
+                episodeOfCareResourceId = getEpisodeOfCareResourceId(tr.getEpisodeId());
+                if (episodeOfCareResourceId == null) {
+                    episodeOfCareResourceId = createEpisodeOfCareResourceId(tr.getEpisodeId());
+                }
+                EpisodeOfCare.EpisodeOfCareStatus fhirEpisodeOfCareStatus;
+                if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
+                    fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
+                } else {
+                    fhirEpisodeOfCareStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
+                }
+                //Identifiers
+                Identifier episodeIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId())};
 
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, episodeOfCareResourceId,  encounterResourceId, encounterStatus, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), encounterIdentifiers, Encounter.EncounterClass.INPATIENT);
+                createEpisodeOfCare(parser.getCurrentState(), fhirResourceFiler, episodeOfCareResourceId, patientResourceId, organisationResourceId, fhirEpisodeOfCareStatus, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), episodeIdentifiers);
+                // Encounter
+                encounterResourceId = getEncounterResourceId(tr.getEncounterId());
+                if (encounterResourceId == null) {
+                    encounterResourceId = createEncounterResourceId(tr.getEncounterId());
+                }
+                Encounter.EncounterState encounterStatus;
+                if (parser.getCDSRecordType() == 120 || parser.getCDSRecordType() == 130 || parser.getCDSRecordType() == 140) {
+                    encounterStatus = Encounter.EncounterState.FINISHED;
+                } else {
+                    encounterStatus = Encounter.EncounterState.INPROGRESS;
+                }
+                //Identifiers
+                Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_EPISODE_ID).setValue(tr.getEpisodeId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_ID).setValue(tr.getEncounterId()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(tr.getFINNbr())};
+
+                createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, episodeOfCareResourceId, encounterResourceId, encounterStatus, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), encounterIdentifiers, Encounter.EncounterClass.INPATIENT);
+            }
         }
 
         // Map diagnosis codes ?
@@ -156,7 +167,7 @@ public class SusInpatientTransformer extends BasisTransformer{
 
 
     /*
-    Data line is of type Inpatient
+     * Data line is of type Inpatient
     */
     public static void mapDiagnosis(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
@@ -177,7 +188,7 @@ public class SusInpatientTransformer extends BasisTransformer{
         Condition fhirCondition = new Condition();
 
         //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID())};
+        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
 
         CodeableConcept diagnosisCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "", false);
 
@@ -185,10 +196,10 @@ public class SusInpatientTransformer extends BasisTransformer{
 
         // save resource
         if (parser.getCDSUpdateType() == 1) {
-            LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+            LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         } else {
-            LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+            LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         }
 
@@ -204,10 +215,10 @@ public class SusInpatientTransformer extends BasisTransformer{
 
             // save resource
             if (parser.getCDSUpdateType() == 1) {
-                LOG.debug("Delete primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+                LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             } else {
-                LOG.debug("Save primary Condition resource:" + FhirSerializationHelper.serializeResource(fhirCondition));
+                LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             }
 
@@ -250,17 +261,17 @@ Data line is of type Inpatient
         procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "", false);
 
         //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem("http://cerner.com/fhir/cds-unique-id").setValue(parser.getCDSUniqueID())};
+        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
 
         Procedure fhirProcedure = new Procedure ();
         ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procedureStatus, procedureCode, parser.getOPCSPrimaryProcedureDate(), null, identifiers);
 
         // save resource
         if (parser.getCDSUpdateType() == 1) {
-            LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         } else {
-            LOG.debug("Save primary Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
         }
 
@@ -277,10 +288,10 @@ Data line is of type Inpatient
             ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procedureStatus, procedureCode, parser.getOPCSecondaryProcedureDate(i), null, identifiers);
 
             if (parser.getCDSUpdateType() == 1) {
-                LOG.debug("Delete secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
+                LOG.debug("Delete secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             } else {
-                LOG.debug("Save secondary Procedure (" + i + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
+                LOG.debug("Save secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
             }
         }
