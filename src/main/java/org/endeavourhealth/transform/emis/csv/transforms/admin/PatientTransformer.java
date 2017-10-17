@@ -376,8 +376,7 @@ public class PatientTransformer {
             return RegistrationType.REGULAR_GMS;
         } else if (csvRegType.equalsIgnoreCase("Temporary")) {
             return RegistrationType.TEMPORARY;
-        } else if (csvRegType.equalsIgnoreCase("Community Registered")
-                || csvRegType.equalsIgnoreCase("Community")) {
+        } else if (csvRegType.equalsIgnoreCase("Community Registered")) {
             return RegistrationType.COMMUNITY;
         } else {
             return RegistrationType.OTHER;
