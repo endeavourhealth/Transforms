@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
@@ -70,11 +71,9 @@ public class ProblemTransformer extends BasisTransformer {
     }
 
     public static void createConditionResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[]) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
-
-        // Turn problem_id into Resource id
         fhirCondition.setId(problemResourceId.getResourceId().toString());
+
+        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -98,7 +97,7 @@ public class ProblemTransformer extends BasisTransformer {
         fhirCondition.setCode(problemCode);
 
         // set category to 'complaint'
-        cc = new CodeableConcept();
+        CodeableConcept cc = new CodeableConcept();
         cc.addCoding().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
         fhirCondition.setCategory(cc);
 

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
@@ -83,6 +84,8 @@ public class DiagnosisTransformer extends BasisTransformer {
 
     public static void createDiagnosisResource(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[] ) throws Exception {
         fhirCondition.setId(diagnosisResourceId.getResourceId().toString());
+
+        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
