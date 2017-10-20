@@ -32,7 +32,8 @@ public class SharingOrganisationTransformer {
 
         boolean isDisabled = parser.getDisabled();
         if (isDisabled) {
-            throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
+            //need to remove this so we let the data through again
+            //throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
         }
     }
 
