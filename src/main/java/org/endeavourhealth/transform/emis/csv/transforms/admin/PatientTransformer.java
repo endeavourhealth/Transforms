@@ -268,15 +268,17 @@ public class PatientTransformer {
         UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirPatient.getResourceType(), fhirPatient.getId());
         UUID edsEpisodeId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirEpisode.getResourceType(), fhirEpisode.getId());
 
+        //only go into this if we've had something for the patient before
         if (edsPatientId != null) {
 
             String edsPatientIdStr = edsPatientId.toString();
 
-            //tracking error with Barts Diabetes service
-            if (edsEpisodeId == null) {
-                throw new Exception("Got null episode UUID but non-null patient UUID (" + edsPatientId + ") for service " + fhirResourceFiler.getServiceId() + ", system " + fhirResourceFiler.getSystemId() + " and ID " + fhirEpisode.getId());
+            //the episode ID MAY be null if we've received something for the patient (e.g. an observation) before
+            //we actually received the patient record itself
+            String edsEpisodeIdStr = null;
+            if (edsEpisodeId != null) {
+                edsEpisodeIdStr = edsEpisodeId.toString();
             }
-            String edsEpisodeIdStr = edsEpisodeId.toString();
 
             try {
                 List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(patientGuid, fhirResourceFiler);
