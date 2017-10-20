@@ -64,6 +64,11 @@ public class ProblemTransformer {
             return;
         }
 
+        //set the category on the condition, so we know it's a problem
+        CodeableConcept cc = new CodeableConcept();
+        cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode("complaint");
+        fhirProblem.setCategory(cc);
+
         String comments = parser.getComment();
         fhirProblem.setNotes(comments);
 
