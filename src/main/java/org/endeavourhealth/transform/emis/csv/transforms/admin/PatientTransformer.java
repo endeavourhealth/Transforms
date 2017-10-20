@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -270,6 +271,11 @@ public class PatientTransformer {
         if (edsPatientId != null) {
 
             String edsPatientIdStr = edsPatientId.toString();
+
+            //tracking error with Barts Diabetes service
+            if (edsEpisodeId == null) {
+                throw new Exception("Got null episode UUID but non-null patient UUID (" + edsPatientId + ") for service " + fhirResourceFiler.getServiceId() + ", system " + fhirResourceFiler.getSystemId() + " and ID " + fhirEpisode.getId());
+            }
             String edsEpisodeIdStr = edsEpisodeId.toString();
 
             try {
