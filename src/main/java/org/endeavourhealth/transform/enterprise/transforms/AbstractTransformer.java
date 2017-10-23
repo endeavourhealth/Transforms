@@ -8,7 +8,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.core.data.ehr.ResourceRepository;
 import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
-import org.endeavourhealth.core.rdbms.transform.EnterpriseIdHelper;
+import org.endeavourhealth.core.rdbms.subscriber.EnterpriseIdHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;

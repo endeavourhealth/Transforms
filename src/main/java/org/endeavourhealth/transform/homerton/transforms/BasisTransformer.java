@@ -6,7 +6,7 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;

@@ -8,7 +8,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.fhirStorage.exceptions.SerializationException;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;

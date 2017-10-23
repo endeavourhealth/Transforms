@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.rdbms.reference.EncounterCode;
+import org.endeavourhealth.core.rdbms.reference.models.EncounterCode;
 import org.endeavourhealth.core.rdbms.reference.EncounterCodeHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;

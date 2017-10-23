@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.Problem;
 import org.endeavourhealth.transform.homerton.transforms.BasisTransformer;

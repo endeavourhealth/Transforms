@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.rdbms.hl7receiver.ResourceId;
+import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusEmergency;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;

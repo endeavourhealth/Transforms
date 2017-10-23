@@ -12,7 +12,7 @@ import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
 import org.endeavourhealth.core.data.ehr.models.ResourceByService;
 import org.endeavourhealth.core.data.ehr.models.ResourceHistory;
 import org.endeavourhealth.core.rdbms.eds.PatientLinkHelper;
-import org.endeavourhealth.core.rdbms.transform.EnterpriseIdHelper;
+import org.endeavourhealth.core.rdbms.subscriber.EnterpriseIdHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
