@@ -69,5 +69,40 @@ public class Patient extends AbstractCsvParser {
     public String getCNN() {
         return super.getString("CNN");
     }
+    public String getNHSNo() {
+        return super.getString("NHSNo");
+    }
 
+    public String getFirstname() {
+        return super.getString("Firstname");
+    }
+    public String getSurname() {
+        return super.getString("Surname");
+    }
+    public Date getDOB() throws TransformException {
+        return super.getDate("DOB");
+    }
+
+    public int getGenderID() {
+        return super.getInt("GenderID");
+    }
+
+    public String getAddressLine1() {
+        return super.getString("AddressLine1");
+    }
+    public String getAddressLine2() {
+        return super.getString("AddressLine2");
+    }
+    public String getAddressLine3() {
+        return super.getString("AddressLine3");
+    }
+    public String getCity() {
+        return super.getString("City");
+    }
+    public String getCounty() {
+        return super.getString("County");
+    }
+    public String getPostcode() {
+        return super.getString("Postcode");
+    }
 }

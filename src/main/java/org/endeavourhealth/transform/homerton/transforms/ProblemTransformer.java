@@ -5,7 +5,6 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.Problem;
-import org.endeavourhealth.transform.homerton.transforms.BasisTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.CodeableConcept;
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ProblemTransformer extends BasisTransformer {
+public class ProblemTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
 
     public static void transform(String version,

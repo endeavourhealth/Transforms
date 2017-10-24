@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -14,9 +16,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class DiagnosisTransformer extends BasisTransformer {
+public class DiagnosisTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
+    /*
+     *
+     */
     public static void transform(String version,
                                  Diagnosis parser,
                                  FhirResourceFiler fhirResourceFiler,
@@ -38,24 +43,25 @@ public class DiagnosisTransformer extends BasisTransformer {
 
     }
 
-
+    /*
+     *
+     */
     public static void createDiagnosis(Diagnosis parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
-        ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null,null, null, null, null, null);
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
+        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null,null, null, null, null, null, patientIdentifier);
         // EpisodeOfCare - Diagnosis record cannot be linked to an EpisodeOfCare
         // Encounter
         //ResourceId encounterResourceId = resolveEncounterResource(parser.getCurrentState(), null,  parser.getEncounterId().toString(), fhirResourceFiler, patientResourceId, null, Encounter.EncounterState.FINISHED, parser.getDiagnosisDate(),parser.getDiagnosisDate());
 
-        ResourceId encounterResourceId = getEncounterResourceId(parser.getEncounterId().toString());
+        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString());
         if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
+            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString());
 
             //Identifiers
             Identifier encounterIdentifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
@@ -64,17 +70,24 @@ public class DiagnosisTransformer extends BasisTransformer {
         }
 
         // this Diagnosis resource id
-        ResourceId diagnosisResourceId = getDiagnosisResourceId(parser.getLocalPatientId(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
+        ResourceId diagnosisResourceId = getDiagnosisResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocalPatientId(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
 
-        Condition fhirCondition = new Condition();
+        Condition.ConditionVerificationStatus cvs;
+        if (parser.getActiveIndicator()) {
+            cvs = Condition.ConditionVerificationStatus.CONFIRMED;
+        } else {
+            cvs = Condition.ConditionVerificationStatus.ENTEREDINERROR;
+        }
 
-        CodeableConcept diagnosisCode = new CodeableConcept();
-        diagnosisCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getDiagnosis()).setCode(parser.getDiagnosisCode());
+        //CodeableConcept diagnosisCode = new CodeableConcept();
+        //diagnosisCode.addCoding().setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getDiagnosis()).setCode(parser.getDiagnosisCode());
+        CodeableConcept diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, parser.getDiagnosis(), parser.getDiagnosisCode());
 
         //Identifiers
         Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
 
-        createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers);
+        Condition fhirCondition = new Condition();
+        createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers, cvs);
 
         // save resource
         LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
@@ -82,49 +95,4 @@ public class DiagnosisTransformer extends BasisTransformer {
 
     }
 
-    public static void createDiagnosisResource(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[] ) throws Exception {
-        fhirCondition.setId(diagnosisResourceId.getResourceId().toString());
-
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
-
-        if (identifiers != null) {
-            for (int i = 0; i < identifiers.length; i++) {
-                fhirCondition.addIdentifier(identifiers[i]);
-            }
-        }
-
-        // set patient reference
-        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-        // Encounter
-        if (encounterResourceId != null) {
-            fhirCondition.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
-        }
-
-        // Date recorded
-        fhirCondition.setDateRecorded(dateRecorded);
-
-        fhirCondition.setOnset(onsetDate);
-
-        // set code to coded problem
-        if (diagnosisCode.getText() == null || diagnosisCode.getText().length() == 0) {
-            diagnosisCode.setText(diagnosisCode.getCoding().get(0).getDisplay());
-        }
-        fhirCondition.setCode(diagnosisCode);
-
-        // set category to 'diagnosis'
-        CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("diagnosis");
-        fhirCondition.setCategory(cc);
-
-        // set verificationStatus - to field 8. Confirmed if value is 'Confirmed' otherwise ????
-        //fhirCondition.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
-
-        // set notes
-        if (notes != null) {
-            fhirCondition.setNotes(notes);
-        }
-
-
-    }
 }

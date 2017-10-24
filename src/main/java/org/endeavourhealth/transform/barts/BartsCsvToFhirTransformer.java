@@ -32,7 +32,6 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String CODE_SYSTEM_FIN_NO = "http://cerner.com/fhir/fin-no";
     public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
     public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
-    public static final String CODE_SYSTEM_CONDITION_CATEGORY = "http://hl7.org/fhir/condition-category";
     public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
     public static final String CODE_CONTEXT_PROCEDURE = "BARTSCSV_CLIN_PROCEDURE";
 

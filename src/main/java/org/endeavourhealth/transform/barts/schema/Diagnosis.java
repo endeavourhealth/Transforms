@@ -21,6 +21,7 @@ public class Diagnosis extends AbstractFixedParser {
 
         addFieldList(new FixedParserField("DiagnosisId",             1, 14));
         addFieldList(new FixedParserField("Update_DT_TM",          16, 20));
+        addFieldList(new FixedParserField("ActiveIndicator",          37, 11));
         addFieldList(new FixedParserField("PersonId",    49, 14));
         addFieldList(new FixedParserField("EncounterId",    64, 14));
         addFieldList(new FixedParserField("MRN",    79, 20));
@@ -39,6 +40,15 @@ public class Diagnosis extends AbstractFixedParser {
 
     public Date getUpdateDateTime() throws TransformException {
         return super.getDateTime("Update_DT_TM");
+    }
+
+    public boolean getActiveIndicator() {
+        String val = super.getString("ActiveIndicator");
+        if (val.compareTo("0") == 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public Long getPersonId() {

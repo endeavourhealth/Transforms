@@ -5,11 +5,9 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.hl7.fhir.instance.model.Annotation;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Procedure;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -20,7 +18,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class ProcedureTransformer extends BasisTransformer {
+public class ProcedureTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
