@@ -53,6 +53,9 @@ public class BasisTransformer {
     private static int lastLookupCodeSystemId = 0;
     private static String lastLookupCodeSystemIdentifier = "";
 
+    /*
+     *
+     */
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
         //ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
         ResourceId ret = null;
