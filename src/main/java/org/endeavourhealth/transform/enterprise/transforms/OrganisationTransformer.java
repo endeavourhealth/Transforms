@@ -4,7 +4,6 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -81,18 +80,19 @@ public class OrganisationTransformer extends AbstractTransformer {
 
                     Reference locationReference = (Reference)extension.getValue();
 
-                    try {
-                        Location location = (Location)findResource(locationReference, params);
-                        if (location != null
-                                && location.hasAddress()) {
-                            Address address = location.getAddress();
-                            if (address.hasPostalCode()) {
-                                postcode = address.getPostalCode();
-                            }
-                        }
-                    } catch (ResourceNotFoundException ex) {
+                    Location location = (Location)findResource(locationReference, params);
+                    if (location == null) {
                         //The Emis data contains organisations that refer to organisations that don't exist
                         LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to " + locationReference.getReference() + " that doesn't exist");
+                        continue;
+                    }
+
+                    if (location != null
+                            && location.hasAddress()) {
+                        Address address = location.getAddress();
+                        if (address.hasPostalCode()) {
+                            postcode = address.getPostalCode();
+                        }
                     }
                 }
 

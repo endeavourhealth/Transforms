@@ -4,9 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
-//import org.endeavourhealth.hl7receiver.DataLayer;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
@@ -15,7 +14,6 @@ import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import org.endeavourhealth.hl7receiver.mapping.Mapper;
 import java.util.Date;
 
 public class SusInpatientTransformer extends BartsBasisTransformer {

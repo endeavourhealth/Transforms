@@ -42,7 +42,7 @@ public abstract class BaseIdMapper {
      * maps the main ID of any resource
      * returns true if the resource is new to EDS
      */
-    private boolean mapResourceId(Resource resource, UUID serviceId, UUID systemId) {
+    private boolean mapResourceId(Resource resource, UUID serviceId, UUID systemId) throws Exception {
 
         if (!resource.hasId()) {
             return false;

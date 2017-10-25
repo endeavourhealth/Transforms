@@ -3,7 +3,8 @@ package org.endeavourhealth.transform.ceg.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.*;
 
@@ -96,7 +97,8 @@ public class AbstractTransformer {
             //if not in our map, then hit the DB
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps != null) {
-                ret = new ResourceRepository().getCurrentVersionAsResource(comps.getResourceType(), comps.getId());
+                ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+                ret = resourceDal.getCurrentVersionAsResource(comps.getResourceType(), comps.getId());
             }
         }
         return ret;

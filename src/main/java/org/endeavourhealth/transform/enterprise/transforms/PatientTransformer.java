@@ -7,17 +7,19 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
-import org.endeavourhealth.core.data.admin.LibraryRepositoryHelper;
-import org.endeavourhealth.core.rdbms.eds.PatientLinkHelper;
-import org.endeavourhealth.core.rdbms.eds.PatientLinkPair;
-import org.endeavourhealth.core.rdbms.eds.models.PatientSearch;
-import org.endeavourhealth.core.rdbms.eds.PatientSearchHelper;
-import org.endeavourhealth.core.rdbms.reference.PostcodeHelper;
-import org.endeavourhealth.core.rdbms.reference.models.PostcodeLookup;
-import org.endeavourhealth.core.rdbms.subscriber.EnterpriseAgeUpdater;
-import org.endeavourhealth.core.rdbms.subscriber.EnterpriseIdHelper;
-import org.endeavourhealth.core.rdbms.subscriber.HouseholdHelper;
-import org.endeavourhealth.core.rdbms.subscriber.PseudoIdHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
+import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
+import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
+import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
+import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
+import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
+import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
+import org.endeavourhealth.core.database.dal.subscriber.EnterpriseAgeUpdaterlDalI;
+import org.endeavourhealth.core.database.dal.subscriber.EnterpriseIdDalI;
+import org.endeavourhealth.core.database.dal.subscriber.HouseholdIdDalI;
+import org.endeavourhealth.core.database.dal.subscriber.PseudoIdDalI;
+import org.endeavourhealth.core.database.dal.subscriber.models.EnterpriseAge;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -40,6 +42,8 @@ public class PatientTransformer extends AbstractTransformer {
     private static final int BEST_ORG_SCORE = 10;
 
     private static Map<String, byte[]> saltCacheMap = new HashMap<>();
+    private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
+    private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
@@ -54,17 +58,19 @@ public class PatientTransformer extends AbstractTransformer {
 
         Patient fhirPatient = (Patient)resource;
 
-        String discoveryPersonId = PatientLinkHelper.getPersonId(fhirPatient.getId());
+
+        String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
         //when the person ID table was populated, patients who had been deleted weren't added,
         //so we'll occasionally get null for some patients. If this happens, just do what would have
         //been done originally and assign an ID
         if (Strings.isNullOrEmpty(discoveryPersonId)) {
-            PatientLinkPair pair = PatientLinkHelper.updatePersonId(fhirPatient);
+            PatientLinkPair pair = patientLinkDal.updatePersonId(fhirPatient);
             discoveryPersonId = pair.getNewPersonId();
         }
 
-        Long enterprisePersonId = EnterpriseIdHelper.findOrCreateEnterprisePersonId(discoveryPersonId, params.getEnterpriseConfigName());
+        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+        Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
         long id;
         long organizationId;
@@ -117,7 +123,9 @@ public class PatientTransformer extends AbstractTransformer {
                         && address.getUse().equals(Address.AddressUse.HOME)) {
                     postcode = address.getPostalCode();
                     postcodePrefix = findPostcodePrefix(postcode);
-                    householdId = HouseholdHelper.findOrCreateHouseholdId(params.getEnterpriseConfigName(), address);
+
+                    HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
+                    householdId = householdIdDal.findOrCreateHouseholdId(address);
                     break;
                 }
             }
@@ -125,7 +133,8 @@ public class PatientTransformer extends AbstractTransformer {
 
         //if we've found a postcode, then get the LSOA etc. for it
         if (!Strings.isNullOrEmpty(postcode)) {
-            PostcodeLookup postcodeReference = PostcodeHelper.getPostcodeReference(postcode);
+            PostcodeDalI postcodeDal = DalProvider.factoryPostcodeDal();
+            PostcodeLookup postcodeReference = postcodeDal.getPostcodeReference(postcode);
             if (postcodeReference != null) {
                 lsoaCode = postcodeReference.getLsoaCode();
                 msoaCode = postcodeReference.getMsoaCode();
@@ -158,13 +167,15 @@ public class PatientTransformer extends AbstractTransformer {
 
             //only persist the pseudo ID if it's non-null
             if (!Strings.isNullOrEmpty(pseudoId)) {
-                PseudoIdHelper.storePseudoId(fhirPatient.getId(), params.getEnterpriseConfigName(), pseudoId);
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
             }
 
-            Integer[] ageValues = EnterpriseAgeUpdater.calculateAgeValues(id, dateOfBirth, params.getEnterpriseConfigName());
-            ageYears = ageValues[EnterpriseAgeUpdater.UNIT_YEARS];
-            ageMonths = ageValues[EnterpriseAgeUpdater.UNIT_MONTHS];
-            ageWeeks = ageValues[EnterpriseAgeUpdater.UNIT_WEEKS];
+            EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
+            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValues(id, dateOfBirth);
+            ageYears = ageValues[EnterpriseAge.UNIT_YEARS];
+            ageMonths = ageValues[EnterpriseAge.UNIT_MONTHS];
+            ageWeeks = ageValues[EnterpriseAge.UNIT_WEEKS];
 
             patientWriter.writeUpsertPseudonymised(id,
                     organizationId,
@@ -234,7 +245,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         //check if OUR patient record is an active one at a GP practice, in which case it definitely should define the person record
         String patientId = fhirPatient.getId();
-        PatientSearch patientSearch = PatientSearchHelper.searchByPatientId(UUID.fromString(patientId));
+        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientId));
 
         if (patientSearch != null //if we get null back, then we'll have deleted the patient, so just skip the ID
                 && isActive(patientSearch)
@@ -260,7 +271,7 @@ public class PatientTransformer extends AbstractTransformer {
         List<PatientSearch> patientSearchesInProtocol = new ArrayList<>();
         patientSearchesInProtocol.add(patientSearch);
 
-        List<String> allPatientIds = PatientLinkHelper.getPatientIds(discoveryPersonId);
+        List<String> allPatientIds = patientLinkDal.getPatientIds(discoveryPersonId);
         for (String otherPatientId: allPatientIds) {
 
             //skip the patient ID we've already retrieved
@@ -268,7 +279,7 @@ public class PatientTransformer extends AbstractTransformer {
                 continue;
             }
 
-            PatientSearch otherPatientSearch = PatientSearchHelper.searchByPatientId(UUID.fromString(otherPatientId));
+            PatientSearch otherPatientSearch = patientSearchDal.searchByPatientId(UUID.fromString(otherPatientId));
 
             //if we get null back, then we'll have deleted the patient, so just skip the ID
             if (otherPatientSearch == null) {
@@ -277,7 +288,7 @@ public class PatientTransformer extends AbstractTransformer {
             }
 
             //if this patient search record isn't in our protocol, skip it
-            String otherPatientSearchService = otherPatientSearch.getServiceId();
+            String otherPatientSearchService = otherPatientSearch.getServiceId().toString();
             if (!serviceIdsInProtocol.contains(otherPatientSearchService)) {
                 continue;
             }

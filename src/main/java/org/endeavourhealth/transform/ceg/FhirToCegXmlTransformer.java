@@ -5,8 +5,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.ceg.models.AbstractModel;
 import org.endeavourhealth.transform.ceg.transforms.*;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -196,12 +197,13 @@ public class FhirToCegXmlTransformer {
 
     private static List<Resource> retrieveAllResources(UUID batchId) throws Exception {
 
-        List<ResourceByExchangeBatch> resourcesByExchangeBatch = new ResourceRepository().getResourcesForBatch(batchId);
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resourcesByExchangeBatch = resourceDal.getResourcesForBatch(batchId);
         //LOG.info("Got {} resources for batch {}", resourcesByExchangeBatch.size(), batchId);
 
         List<Resource> ret = new ArrayList<>();
 
-        for (ResourceByExchangeBatch resourceByExchangeBatch: resourcesByExchangeBatch) {
+        for (ResourceWrapper resourceByExchangeBatch: resourcesByExchangeBatch) {
             String json = resourceByExchangeBatch.getResourceData();
             if (!Strings.isNullOrEmpty(json)) {
                 try {

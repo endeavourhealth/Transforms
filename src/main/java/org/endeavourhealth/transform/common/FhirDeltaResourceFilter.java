@@ -2,9 +2,9 @@ package org.endeavourhealth.transform.common;
 
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ResourceByPatient;
-import org.endeavourhealth.core.data.ehr.models.ResourceByService;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -21,7 +21,7 @@ public class FhirDeltaResourceFilter {
     private final int maxThreadsToUse;
     private final UUID serviceId;
     private final UUID systemId;
-    private ResourceRepository resourceRepository = new ResourceRepository();
+    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     public FhirDeltaResourceFilter(UUID serviceId, UUID systemId, int maxFilingThreads) {
         this.serviceId = serviceId;
@@ -123,8 +123,8 @@ public class FhirDeltaResourceFilter {
             List<Resource> resourcesOfType = entry.getValue();
             //retrieve all the resources of this type for the service and hash the JSON by ID
             HashMap<String, String> hmExistingResources = new HashMap<>();
-            List<ResourceByService> existingResources = resourceRepository.getResourcesByService(serviceId, systemId, entry.getKey());
-            for (ResourceByService existingResource: existingResources) {
+            List<ResourceWrapper> existingResources = resourceRepository.getResourcesByService(serviceId, systemId, entry.getKey());
+            for (ResourceWrapper existingResource: existingResources) {
                 String id = existingResource.getResourceId().toString();
                 String json = existingResource.getResourceData();
                 hmExistingResources.put(id, json);
@@ -156,8 +156,8 @@ public class FhirDeltaResourceFilter {
 
         //retrieve all existing resources on the DB for the patient and hash the json by resource ID
         HashMap<String, String> hmExistingResources = new HashMap<>();
-        List<ResourceByPatient> existingResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
-        for (ResourceByPatient existingResource: existingResources) {
+        List<ResourceWrapper> existingResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
+        for (ResourceWrapper existingResource: existingResources) {
             String id = existingResource.getResourceId().toString();
             String json = existingResource.getResourceData();
             hmExistingResources.put(id, json);

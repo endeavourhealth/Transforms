@@ -4,8 +4,9 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
-import org.endeavourhealth.core.data.transform.ResourceIdMapRepository;
-import org.endeavourhealth.core.data.transform.models.ResourceIdMap;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.transform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.database.dal.transform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -24,7 +25,7 @@ import java.util.Map;
 
 public class ObservationTransformer {
 
-    private static ResourceIdMapRepository idMapRepository = new ResourceIdMapRepository();
+    private static ResourceIdTransformDalI idMapRepository = DalProvider.factoryResourceIdTransformDal();
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -111,7 +112,7 @@ public class ObservationTransformer {
     /**
      * finds out what resource type an EMIS observation was previously saved as
      */
-    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, Observation parser) {
+    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, Observation parser) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -133,7 +134,7 @@ public class ObservationTransformer {
         return null;
     }
 
-    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, Observation parser, ResourceType resourceType) {
+    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, Observation parser, ResourceType resourceType) throws Exception {
         String uniqueId = EmisCsvHelper.createUniqueId(parser.getPatientGuid(), parser.getObservationGuid());
         ResourceIdMap mapping = idMapRepository.getResourceIdMap(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), resourceType.toString(), uniqueId);
         return mapping != null;

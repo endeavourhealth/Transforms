@@ -38,7 +38,12 @@ public abstract class UIClinicalTransform<T extends Resource, U extends UIResour
                     && referenceId.startsWith("{")
                     && referenceId.endsWith("}")) {
                 ResourceType resourceType = comps.getResourceType();
-                referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, resourceType, referenceId);
+                try {
+                    referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, resourceType, referenceId);
+                } catch (Exception ex) {
+                    throw new RuntimeException("Failed to look up ID for service " + serviceId + " system " + systemId + " type " + resourceType + " and ID " + referenceId, ex);
+                }
+
             }
         }
 

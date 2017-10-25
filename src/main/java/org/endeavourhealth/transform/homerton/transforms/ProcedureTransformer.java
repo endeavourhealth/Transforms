@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Annotation;

@@ -5,16 +5,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.CodingHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.core.data.admin.CodeRepository;
-import org.endeavourhealth.core.data.admin.models.SnomedLookup;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
+import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.IntegerCodeType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.StringCodeType;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
 
-public class CodeConverter
-{
+public class CodeConverter {
+
     private static final String EMISOPEN_IDENTIFIER_EMIS_PREPARATION = "EMISPREPARATION";
     private static final String EMISOPEN_IDENTIFIER_SNOMED = "SNOMED";
     private static final String EMISOPEN_IDENTIFIER_READ2 = "READ2";
@@ -24,7 +25,7 @@ public class CodeConverter
     private static final String EMISOPEN_IDENTIFIER_EMIS_NON_DRUG_ALLERGY = "EMISNONDRUGALLERGY";
     private static final String EMISOPEN_IDENTIFIER_EMIS_CONSTITUENT = "EMISCONSTITUENT";
 
-    private static CodeRepository repository = new CodeRepository();
+    private static SnomedDalI repository = DalProvider.factorySnomedDal();
 
     public static CodeableConcept convert(StringCodeType code, String descriptiveText) throws TransformException {
 
@@ -75,9 +76,13 @@ public class CodeConverter
 
             //if the system is proper SNOMED, then get the official term for the snomed concept ID
             if (system == FhirUri.CODE_SYSTEM_SNOMED_CT) {
-                SnomedLookup snomedLookup = repository.getSnomedLookup(mappedCode);
-                if (snomedLookup != null) {
-                    mappedTerm = snomedLookup.getTerm();
+                try {
+                    SnomedLookup snomedLookup = repository.getSnomedLookup(mappedCode);
+                    if (snomedLookup != null) {
+                        mappedTerm = snomedLookup.getTerm();
+                    }
+                } catch (Exception ex) {
+                    throw new RuntimeException("Failed to retrieve snomed code from database", ex);
                 }
             }
 

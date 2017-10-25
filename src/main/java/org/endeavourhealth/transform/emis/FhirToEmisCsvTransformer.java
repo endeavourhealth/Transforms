@@ -2,10 +2,11 @@ package org.endeavourhealth.transform.emis;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.admin.OrganisationRepository;
-import org.endeavourhealth.core.data.admin.models.Organisation;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.OrganisationDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Organisation;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.reverseCsv.schema.admin.Location;
@@ -39,8 +40,9 @@ public class FhirToEmisCsvTransformer {
                                            Map<ResourceType, List<UUID>> resourceIds) throws Exception {
 
         //retrieve our resources
-        List<ResourceByExchangeBatch> resourcesByExchangeBatch = new ResourceRepository().getResourcesForBatch(batchId);
-        List<ResourceByExchangeBatch> filteredResources = filterResources(resourcesByExchangeBatch, resourceIds);
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resourcesByExchangeBatch = resourceDal.getResourcesForBatch(batchId);
+        List<ResourceWrapper> filteredResources = filterResources(resourcesByExchangeBatch, resourceIds);
 
         //create the CSV writers, to generate all the output files
         Map<Class, AbstractCsvWriter> writers = createWriters(CSV_FORMAT, DATE_FORMAT_YYYY_MM_DD, TIME_FORMAT);
@@ -87,19 +89,19 @@ public class FhirToEmisCsvTransformer {
         return ret;
     }
 
-    private static List<ResourceByExchangeBatch> filterResources(List<ResourceByExchangeBatch> allResources,
+    private static List<ResourceWrapper> filterResources(List<ResourceWrapper> allResources,
                                                                  Map<ResourceType, List<UUID>> resourceIds) throws Exception {
 
-        List<ResourceByExchangeBatch> ret = new ArrayList<>();
+        List<ResourceWrapper> ret = new ArrayList<>();
 
-        for (ResourceByExchangeBatch resource: allResources) {
+        for (ResourceWrapper resource: allResources) {
             UUID resourceId = resource.getResourceId();
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
 
             //the map of resource IDs tells us the resources that passed the protocol and should be passed
             //to the subscriber. However, any resources that should be deleted should be passed, whether the
             //protocol says to include it or not, since it may have previously been passed to the subscriber anyway
-            if (resource.getIsDeleted()) {
+            if (resource.isDeleted()) {
                 ret.add(resource);
 
             } else {
@@ -124,11 +126,11 @@ public class FhirToEmisCsvTransformer {
     /**
      * hashes the resources by a reference to them, so the transforms can quickly look up dependant resources
      */
-    private static Map<String, ResourceByExchangeBatch> hashResourcesByReference(List<ResourceByExchangeBatch> allResources) throws Exception {
+    private static Map<String, ResourceWrapper> hashResourcesByReference(List<ResourceWrapper> allResources) throws Exception {
 
-        Map<String, ResourceByExchangeBatch> ret = new HashMap<>();
+        Map<String, ResourceWrapper> ret = new HashMap<>();
 
-        for (ResourceByExchangeBatch resource: allResources) {
+        for (ResourceWrapper resource: allResources) {
 
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
             String resourceId = resource.getResourceId().toString();
@@ -141,14 +143,13 @@ public class FhirToEmisCsvTransformer {
         return ret;
     }
 
-    private static void tranformResources(List<ResourceByExchangeBatch> resources, UUID orgId, Map<Class, AbstractCsvWriter> writers) throws Exception {
+    private static void tranformResources(List<ResourceWrapper> resources, UUID orgId, Map<Class, AbstractCsvWriter> writers) throws Exception {
 
         //hash the resources by reference to them, so we can process in a specific order
-        Map<String, ResourceByExchangeBatch> resourcesMap = hashResourcesByReference(resources);
+        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
-
-
-        Organisation org = new OrganisationRepository().getById(orgId);
+        OrganisationDalI organisationDal = DalProvider.factoryOrganisationDal();
+        Organisation org = organisationDal.getById(orgId);
         String orgNationalId = org.getNationalId();
 
         //we detect whether we're doing an update or insert, based on whether we're previously mapped
@@ -189,7 +190,7 @@ public class FhirToEmisCsvTransformer {
         //if there's anything left in the list, then we've missed a resource type
         if (!resources.isEmpty()) {
             Set<String> resourceTypesMissed = new HashSet<>();
-            for (ResourceByExchangeBatch resource: resources) {
+            for (ResourceWrapper resource: resources) {
                 String resourceType = resource.getResourceType();
                 if (!resourceTypesMissed.contains(resource)) {
                     LOG.error("Reverse Transform to Emis CSV doesn't handle {} resource types", resourceType);
@@ -203,12 +204,12 @@ public class FhirToEmisCsvTransformer {
     private static void tranformResources(ResourceType resourceType,
                                           AbstractTransformer transformer,
                                           Map<Class, AbstractCsvWriter> writers,
-                                          List<ResourceByExchangeBatch> resources,
-                                          Map<String, ResourceByExchangeBatch> resourcesMap,
+                                          List<ResourceWrapper> resources,
+                                          Map<String, ResourceWrapper> resourcesMap,
                                           Integer enterpriseOrganisationId) throws Exception {
 
         for (int i=resources.size()-1; i>=0; i--) {
-            ResourceByExchangeBatch resource = resources.get(i);
+            ResourceWrapper resource = resources.get(i);
             if (resource.getResourceType().equals(resourceType.toString())) {
 
                 //we use this function with a null transformer for resources we want to ignore

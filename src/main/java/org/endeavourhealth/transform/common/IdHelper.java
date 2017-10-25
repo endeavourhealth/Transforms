@@ -4,9 +4,9 @@ import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.transform.ResourceIdMapRepository;
-import org.endeavourhealth.core.data.transform.models.ResourceIdMap;
-import org.endeavourhealth.core.data.transform.models.ResourceIdMapByEdsId;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.transform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.database.dal.transform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.common.idmappers.BaseIdMapper;
 import org.hl7.fhir.instance.model.Reference;
@@ -26,7 +26,7 @@ public class IdHelper {
 
     private static JCS cache = null;
     private static Map<Class, BaseIdMapper> idMappers = new ConcurrentHashMap<>();
-    private static ResourceIdMapRepository repository = new ResourceIdMapRepository();
+    private static ResourceIdTransformDalI repository = DalProvider.factoryResourceIdTransformDal();
     private static Map<String, AtomicInteger> synchLocks = new HashMap<>();
 
     static {
@@ -58,11 +58,11 @@ public class IdHelper {
         //return serviceId + "/" + systemId + "/" + resourceType + "/" + sourceId;
     }
 
-    public static String getOrCreateEdsResourceIdString(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) {
+    public static String getOrCreateEdsResourceIdString(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
         return getOrCreateEdsResourceId(serviceId, systemId, resourceType, sourceId).toString();
     }
 
-    public static UUID getOrCreateEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) {
+    public static UUID getOrCreateEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
         String key = createCacheKey(serviceId, systemId, resourceType, sourceId);
 
         //check out in-memory cache first
@@ -89,7 +89,7 @@ public class IdHelper {
         return edsId;
     }
 
-    private static UUID createEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId, String cacheKey) {
+    private static UUID createEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId, String cacheKey) throws Exception {
 
         //we need to synch to prevent two threads generating an ID for the same source ID at the same time
         //use an AtomicInt for each cache key as a synchronisation object and as a way to track
@@ -138,7 +138,7 @@ public class IdHelper {
         return ret;
     }
 
-    public static UUID getEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) {
+    public static UUID getEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
         String key = createCacheKey(serviceId, systemId, resourceType, sourceId);
 
         UUID edsId = (UUID)cache.get(key);
@@ -194,7 +194,7 @@ public class IdHelper {
         return mapper;
     }
 
-    public static Reference convertLocallyUniqueReferenceToEdsReference(Reference localReference, FhirResourceFiler fhirResourceFiler) {
+    public static Reference convertLocallyUniqueReferenceToEdsReference(Reference localReference, FhirResourceFiler fhirResourceFiler) throws Exception {
         ReferenceComponents components = ReferenceHelper.getReferenceComponents(localReference);
         String locallyUniqueId = components.getId();
         ResourceType resourceType = components.getResourceType();
@@ -207,10 +207,10 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, globallyUniqueId);
     }
 
-    public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws TransformException {
+    public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws Exception {
         ReferenceComponents components = ReferenceHelper.getReferenceComponents(edsReference);
         ResourceType resourceType = components.getResourceType();
-        ResourceIdMapByEdsId mapping = repository.getResourceIdMapByEdsId(resourceType.toString(), components.getId());
+        ResourceIdMap mapping = repository.getResourceIdMapByEdsId(resourceType.toString(), components.getId());
         if (mapping == null) {
             //TODO - put this exception back in, once investigated
             LOG.warn("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());

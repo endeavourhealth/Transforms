@@ -2,8 +2,9 @@ package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.core.data.transform.ResourceIdMapRepository;
-import org.endeavourhealth.core.data.transform.models.ResourceIdMapByEdsId;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.transform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.database.dal.transform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
@@ -75,12 +76,12 @@ public class SessionTransformer {
             try {
                 Schedule fhirScheduleOld = (Schedule)csvHelper.retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
 
-                ResourceIdMapRepository repository = new ResourceIdMapRepository();
+                ResourceIdTransformDalI repository = DalProvider.factoryResourceIdTransformDal();
 
                 //then existing resource will have been through the mapping process, so we need to reverse-lookup the source
                 //EMIS user GUID from the EDS ID
                 String edsPractitionerId = ReferenceHelper.getReferenceId(fhirScheduleOld.getActor());
-                ResourceIdMapByEdsId mapping = repository.getResourceIdMapByEdsId(ResourceType.Practitioner.toString(), edsPractitionerId);
+                ResourceIdMap mapping = repository.getResourceIdMapByEdsId(ResourceType.Practitioner.toString(), edsPractitionerId);
                 String emisUserGuid = mapping.getSourceId();
                 userGuids.add(emisUserGuid);
 

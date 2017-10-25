@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.core.rdbms.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.Patient;

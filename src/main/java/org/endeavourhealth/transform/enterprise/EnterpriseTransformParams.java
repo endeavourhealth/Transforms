@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.enterprise;
 
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ public class EnterpriseTransformParams {
     private final UUID protocolId;
     private final String enterpriseConfigName;
     private final OutputContainer data;
-    private final Map<String, ResourceByExchangeBatch> allResources;
+    private final Map<String, ResourceWrapper> allResources;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -19,7 +19,7 @@ public class EnterpriseTransformParams {
     private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public EnterpriseTransformParams(UUID protocolId, String enterpriseConfigName, OutputContainer data, Map<String, ResourceByExchangeBatch> allResources, String exchangeBody) {
+    public EnterpriseTransformParams(UUID protocolId, String enterpriseConfigName, OutputContainer data, Map<String, ResourceWrapper> allResources, String exchangeBody) {
         this.protocolId = protocolId;
         this.enterpriseConfigName = enterpriseConfigName;
         this.data = data;
@@ -43,7 +43,7 @@ public class EnterpriseTransformParams {
         return data;
     }
 
-    public Map<String, ResourceByExchangeBatch> getAllResources() {
+    public Map<String, ResourceWrapper> getAllResources() {
         return allResources;
     }
 

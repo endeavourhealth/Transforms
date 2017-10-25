@@ -5,8 +5,9 @@ import org.endeavourhealth.common.fhir.CodingHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.data.admin.CodeRepository;
-import org.endeavourhealth.core.data.admin.models.SnomedLookup;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
+import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -26,7 +27,7 @@ import java.util.concurrent.Callable;
 public abstract class ClinicalCodeTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ClinicalCodeTransformer.class);
 
-    private static CodeRepository repository = new CodeRepository();
+    private static SnomedDalI repository = DalProvider.factorySnomedDal();
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,

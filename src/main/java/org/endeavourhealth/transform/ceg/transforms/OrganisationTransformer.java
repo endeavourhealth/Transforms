@@ -3,7 +3,8 @@ package org.endeavourhealth.transform.ceg.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.transform.ceg.models.AbstractModel;
 import org.endeavourhealth.transform.ceg.models.Organisation;
 import org.hl7.fhir.instance.model.Organization;
@@ -26,7 +27,8 @@ public class OrganisationTransformer extends AbstractTransformer {
 
         if (fhir.hasPartOf()) {
             String id = ReferenceHelper.getReferenceId(fhir.getPartOf());
-            Organization partOfOrg = (Organization)new ResourceRepository().getCurrentVersionAsResource(ResourceType.Organization, id);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            Organization partOfOrg = (Organization)resourceDal.getCurrentVersionAsResource(ResourceType.Organization, id);
             if (partOfOrg != null) {
                 model.setCommissioner(partOfOrg.getName());
 

@@ -9,14 +9,12 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.utility.XmlSerializer;
-import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
-import org.endeavourhealth.core.data.ehr.HasResourceDataJson;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
-import org.endeavourhealth.core.data.ehr.models.ResourceByPatient;
-import org.endeavourhealth.core.data.ehr.models.ResourceHistory;
-import org.endeavourhealth.core.data.transform.VitruCareRepository;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
+import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.transform.VitruCareTransformDalI;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
@@ -44,9 +42,9 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";
     //private static final String PSEUDO_SALT_RESOURCE = "VitruCare - Leeds.EncryptedSalt";
 
-    private static ResourceRepository resourceRepository = new ResourceRepository();
-    private static VitruCareRepository vitruCareRepository = new VitruCareRepository();
-    private static ExchangeBatchRepository exchangeBatchRepository = new ExchangeBatchRepository();
+    private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private static VitruCareTransformDalI vitruCareRepository = DalProvider.factoryVitruCareTransformDal();
+    private static ExchangeBatchDalI exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
     //private static byte[] saltBytes = null;
     private static Set<String> snomedCodeSet = null;
     private static Set<String> emisCodeSet = null;
@@ -56,17 +54,17 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
                                            Map<ResourceType, List<UUID>> resourceIds, String configName) throws Exception {
 
         //retrieve our resources
-        List<ResourceByExchangeBatch> filteredResources = getResources(batchId, resourceIds);
+        List<ResourceWrapper> filteredResources = getResources(batchId, resourceIds);
         if (filteredResources.isEmpty()) {
             return null;
         }
 
         //deserialise any patient-facing resources
-        List<ResourceByExchangeBatch> patientResourceWrappers = new ArrayList<>();
+        List<ResourceWrapper> patientResourceWrappers = new ArrayList<>();
         boolean containsDeletes = false;
         UUID exchangeId = null;
 
-        for (ResourceByExchangeBatch resourceBatchEntry: filteredResources) {
+        for (ResourceWrapper resourceBatchEntry: filteredResources) {
             String typeString = resourceBatchEntry.getResourceType();
             ResourceType type = ResourceType.valueOf(typeString);
             if (!FhirResourceFiler.isPatientResource(type)) {
@@ -75,7 +73,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
 
             patientResourceWrappers.add(resourceBatchEntry);
 
-            if (resourceBatchEntry.getIsDeleted()) {
+            if (resourceBatchEntry.isDeleted()) {
                 containsDeletes = true;
             }
 
@@ -123,7 +121,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static String createUpdatePayload(String vitruCareId, List<ResourceByExchangeBatch> patientResources) throws Exception {
+    private static String createUpdatePayload(String vitruCareId, List<ResourceWrapper> patientResources) throws Exception {
 
         Payload payload = new Payload();
         payload.setPatientGUID(vitruCareId);
@@ -166,9 +164,9 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
 
     private static boolean populateFullPayload(Payload payload, UUID edsPatientId, String vitruCareId, String configName) throws Exception {
 
-        ResourceHistory patientResourceWrapper = resourceRepository.getCurrentVersion(ResourceType.Patient.toString(), edsPatientId);
+        ResourceWrapper patientResourceWrapper = resourceRepository.getCurrentVersion(ResourceType.Patient.toString(), edsPatientId);
         if (patientResourceWrapper == null
-            || patientResourceWrapper.getIsDeleted()) {
+            || patientResourceWrapper.isDeleted()) {
             return false;
         }
 
@@ -193,15 +191,15 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
             payload.setGender(convertGender(gender));
         }
 
-        List<ResourceByPatient> resourceByPatients = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
+        List<ResourceWrapper> resourceByPatients = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
         populatePayloadClinicals(payload, resourceByPatients);
 
         return true;
     }
 
-    private static <T extends HasResourceDataJson> void populatePayloadClinicals(Payload payload, List<T> resourceWrappers) throws Exception {
+    private static void populatePayloadClinicals(Payload payload, List<ResourceWrapper> resourceWrappers) throws Exception {
 
-        for (HasResourceDataJson resourceWrapper: resourceWrappers) {
+        for (ResourceWrapper resourceWrapper: resourceWrappers) {
 
             Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
             ResourceType resourceType = resource.getResourceType();
@@ -430,7 +428,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     }
 
 
-    private static String findVitruCareId(UUID edsPatientId) {
+    private static String findVitruCareId(UUID edsPatientId) throws Exception {
         return vitruCareRepository.getVitruCareId(edsPatientId);
     }
 

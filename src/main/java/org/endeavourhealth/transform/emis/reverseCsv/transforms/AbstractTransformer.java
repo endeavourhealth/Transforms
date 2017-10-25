@@ -1,9 +1,10 @@
 package org.endeavourhealth.transform.emis.reverseCsv.transforms;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
-import org.endeavourhealth.core.data.transform.ResourceIdMapRepository;
-import org.endeavourhealth.core.data.transform.models.ResourceIdMapByEdsId;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.transform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.database.dal.transform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
 import org.hl7.fhir.instance.model.Resource;
 
@@ -11,16 +12,16 @@ import java.util.Map;
 
 public abstract class AbstractTransformer {
 
-    private ResourceIdMapRepository idMapRepository = new ResourceIdMapRepository();
+    private ResourceIdTransformDalI idMapRepository = DalProvider.factoryResourceIdTransformDal();
     protected static final ParserPool PARSER_POOL = new ParserPool();
 
-    public void transform(ResourceByExchangeBatch resourceWrapper, Map<Class, AbstractCsvWriter> writers) throws Exception {
+    public void transform(ResourceWrapper resourceWrapper, Map<Class, AbstractCsvWriter> writers) throws Exception {
 
         //find the source local ID for our EDS ID
-        ResourceIdMapByEdsId obj = idMapRepository.getResourceIdMapByEdsId(resourceWrapper.getResourceType(), resourceWrapper.getResourceId());
+        ResourceIdMap obj = idMapRepository.getResourceIdMapByEdsId(resourceWrapper.getResourceType(), resourceWrapper.getResourceId());
         String sourceId = obj.getSourceId();
 
-        if (resourceWrapper.getIsDeleted()) {
+        if (resourceWrapper.isDeleted()) {
 
             transformDeleted(sourceId, writers);
 

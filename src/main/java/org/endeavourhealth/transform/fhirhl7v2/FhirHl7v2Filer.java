@@ -8,11 +8,11 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
-import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
-import org.endeavourhealth.core.data.ehr.models.ResourceByPatient;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
+import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -108,12 +108,12 @@ public class FhirHl7v2Filer {
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
 
-        ResourceRepository resourceRepository = new ResourceRepository();
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceByPatient> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
 
-        for (ResourceByPatient minorPatientResource: minorPatientResources) {
+        for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
             ResourceType resourceType = ResourceType.valueOf(minorPatientResource.getResourceType());
             String resourceReference = createResoourceReferenceValue(minorPatientResource);
@@ -160,12 +160,12 @@ public class FhirHl7v2Filer {
 
         UUID batchId = findOrCreateBatchId(exchangeId, batchIds, patientId);
 
-        ResourceRepository resourceRepository = new ResourceRepository();
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceByPatient> patientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
+        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
 
-        for (ResourceByPatient patientResource: patientResources) {
+        for (ResourceWrapper patientResource: patientResources) {
 
             ResourceType resourceType = ResourceType.valueOf(patientResource.getResourceType());
             String json = patientResource.getResourceData();
@@ -232,13 +232,13 @@ public class FhirHl7v2Filer {
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
 
-        ResourceRepository resourceRepository = new ResourceRepository();
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceByPatient> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
-        for (ResourceByPatient minorPatientResource: minorPatientResources) {
+        for (ResourceWrapper minorPatientResource: minorPatientResources) {
             String referenceValue = createResoourceReferenceValue(minorPatientResource);
 
             if (!idMappings.containsKey(referenceValue)) {
@@ -247,7 +247,7 @@ public class FhirHl7v2Filer {
         }
 
         //copy the resources to the major patient
-        for (ResourceByPatient minorPatientResource: minorPatientResources) {
+        for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
             String json = minorPatientResource.getResourceData();
             Resource fhirOriginal = ParserPool.getInstance().parse(json);
@@ -350,17 +350,17 @@ public class FhirHl7v2Filer {
         throw new TransformException("Failed to find parameter [" + name + "] in Parameters resource");
     }
 
-    private static String createResoourceReferenceValue(ResourceByPatient resourceByPatient) {
+    private static String createResoourceReferenceValue(ResourceWrapper resourceByPatient) {
         UUID resourceId = resourceByPatient.getResourceId();
         String resourceTypeStr = resourceByPatient.getResourceType();
         ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);
         return ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
     }
 
-    private UUID findOrCreateBatchId(UUID exchangeId, List<UUID> batchIds, String patientId) {
+    private UUID findOrCreateBatchId(UUID exchangeId, List<UUID> batchIds, String patientId) throws Exception {
 
         //look for a batch ID that already exists for this exchange
-        ExchangeBatchRepository exchangeBatchRepository = new ExchangeBatchRepository();
+        ExchangeBatchDalI exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
         List<ExchangeBatch> batches = exchangeBatchRepository.retrieveForExchangeId(exchangeId);
         for (ExchangeBatch batch: batches) {
             UUID batchPatientUuid = batch.getEdsPatientId();

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.data.admin.models.Service;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
@@ -93,7 +93,7 @@ public class UITransform {
                         if (StringUtils.isNotBlank(systemUuidString))
                             result.add(new UIService()
                                 .setName(service.getName())
-                                .setLocalIdentifier(service.getLocalIdentifier())
+                                .setLocalIdentifier(service.getLocalId())
                                 .setServiceId(service.getId())
                                 .setSystemId(UUID.fromString(systemUuidString))
                             );

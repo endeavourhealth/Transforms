@@ -3,10 +3,11 @@ package org.endeavourhealth.transform.common;
 import com.datastax.driver.core.utils.UUIDs;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.data.admin.ServiceRepository;
-import org.endeavourhealth.core.data.admin.models.Service;
-import org.endeavourhealth.core.data.ehr.ExchangeBatchRepository;
-import org.endeavourhealth.core.data.ehr.models.ExchangeBatch;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
+import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
@@ -35,7 +36,7 @@ public class FhirResourceFiler {
     private final UUID serviceId;
     private final UUID systemId;
     private final FhirStorageService storageService;
-    private final ExchangeBatchRepository exchangeBatchRepository;
+    private final ExchangeBatchDalI exchangeBatchRepository;
     private final TransformError transformError;
     //private final ExchangeTransformAudit transformAudit;
     //private final Map<String, String> resourceTypes; //although a set would be idea, a map allows safe multi-thread access
@@ -60,7 +61,7 @@ public class FhirResourceFiler {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.storageService = new FhirStorageService(serviceId, systemId);
-        this.exchangeBatchRepository = new ExchangeBatchRepository();
+        this.exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
         this.transformError = transformError;
         this.batchIdsCreated = batchIdsCreated;
         this.threadPool = new ThreadPool(maxFilingThreads, 50000);
@@ -123,7 +124,7 @@ public class FhirResourceFiler {
         handleErrors(errors);
     }
 
-    private ExchangeBatch getAdminBatchId() {
+    private ExchangeBatch getAdminBatchId() throws Exception {
         if (adminBatchId == null) {
 
             try {
@@ -140,7 +141,7 @@ public class FhirResourceFiler {
         return adminBatchId;
     }
 
-    private ExchangeBatch getPatientBatchId(String patientId) {
+    private ExchangeBatch getPatientBatchId(String patientId) throws Exception {
         ExchangeBatch patientBatch = patientBatchIdMap.get(patientId);
         if (patientBatch == null) {
 
@@ -169,7 +170,7 @@ public class FhirResourceFiler {
         return exchangeBatch;
     }
 
-    private ExchangeBatch createExchangeBatch() {
+    private ExchangeBatch createExchangeBatch() throws Exception {
         ExchangeBatch exchangeBatch = createExchangeBatch(exchangeId);
         exchangeBatchRepository.save(exchangeBatch);
 
@@ -245,8 +246,7 @@ public class FhirResourceFiler {
     }*/
 
 
-    private void logResults() {
-
+    private void logResults() throws Exception {
 
         int adminSaved = 0;
         int adminDeleted = 0;
@@ -272,7 +272,8 @@ public class FhirResourceFiler {
         if (patientCount > 2000
                 && patientDeleted > 1000000) {
 
-            Service service = new ServiceRepository().getById(serviceId);
+            ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+            Service service = serviceDal.getById(serviceId);
             String msg = "" + patientDeleted + " resources deleted over "
                        + patientCount + " patients in exchange "
                        + exchangeId + " for " + service.getName() + " " + service.getId();

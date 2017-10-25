@@ -3,9 +3,10 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
+import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.rdbms.reference.models.EncounterCode;
-import org.endeavourhealth.core.rdbms.reference.EncounterCodeHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -19,6 +20,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
 
+    private static final EncounterCodeDalI encounterCodeDal = DalProvider.factoryEncounterCodeDal();
 
     public boolean shouldAlwaysTransform() {
         return true;
@@ -89,7 +91,7 @@ public class EncounterTransformer extends AbstractTransformer {
         //changing to use our information model to get the concept ID for the consultation type based on the textual term
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
-            EncounterCode ret = EncounterCodeHelper.findOrCreateCode(originalTerm);
+            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
             snomedConceptId = ret.getCode();
         }
 

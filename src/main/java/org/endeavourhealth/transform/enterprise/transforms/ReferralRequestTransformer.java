@@ -7,7 +7,6 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -237,24 +236,20 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                                                                ReferralRequest fhir,
                                                                EnterpriseTransformParams params) throws Exception {
 
-        try {
-            Practitioner fhirPractitioner = (Practitioner)findResource(practitionerReference, params);
-            Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
-            Reference organisationReference = role.getManagingOrganization();
-            Long ret = findEnterpriseId(params, organisationReference);
-            if (ret == null) {
-                ret = transformOnDemand(organisationReference, params);
-            }
-            return ret;
-
-        } catch (ResourceNotFoundException ex) {
+        Practitioner fhirPractitioner = (Practitioner)findResource(practitionerReference, params);
+        if (fhirPractitioner == null) {
             //we have a number of examples of Emis data where the practitioner doesn't exist, so handle this not being found
             LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to a Practitioner that doesn't exist");
             return null;
         }
+        Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
+        Reference organisationReference = role.getManagingOrganization();
+        Long ret = findEnterpriseId(params, organisationReference);
+        if (ret == null) {
+            ret = transformOnDemand(organisationReference, params);
+        }
+        return ret;
     }
-
-
 
 }
 

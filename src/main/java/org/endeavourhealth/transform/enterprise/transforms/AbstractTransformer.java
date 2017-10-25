@@ -5,10 +5,11 @@ import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ResourceByExchangeBatch;
-import org.endeavourhealth.core.rdbms.subscriber.EnterpriseIdHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriber.EnterpriseIdDalI;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
@@ -50,24 +51,24 @@ public abstract class AbstractTransformer {
         }
     }
 
-    public void transform(List<ResourceByExchangeBatch> resources,
+    public void transform(List<ResourceWrapper> resources,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
 
-        Map<ResourceByExchangeBatch, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform());
+        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform());
 
-        for (ResourceByExchangeBatch resource: resources) {
+        for (ResourceWrapper resource: resources) {
 
             try {
                 Long enterpriseId = enterpriseIds.get(resource);
                 if (enterpriseId == null) {
                     continue;
 
-                } else if (resource.getIsDeleted()) {
+                } else if (resource.isDeleted()) {
                     csvWriter.writeDelete(enterpriseId.longValue());
 
                 } else {
-                    Resource fhir = deserialiseResouce(resource);
+                    Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
                     transform(enterpriseId, fhir, csvWriter, params);
                 }
             } catch (Exception ex) {
@@ -102,20 +103,21 @@ public abstract class AbstractTransformer {
         return findEnterpriseId(params, resourceType, resourceId);
     }
 
-    protected static Long findEnterpriseId(EnterpriseTransformParams params, ResourceByExchangeBatch resource) throws Exception {
+    protected static Long findEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
         return findEnterpriseId(params, resource.getResourceType(), resource.getResourceId().toString());
     }
 
     public static Long findEnterpriseId(EnterpriseTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (ret == null) {
-            ret = EnterpriseIdHelper.findEnterpriseId(params.getEnterpriseConfigName(), resourceType, resourceId);
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findEnterpriseId(resourceType, resourceId);
             //ret = idMappingRepository.getEnterpriseIdMappingId(enterpriseTableName, resourceType, resourceId);
         }
         return ret;
     }
 
-    protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, ResourceByExchangeBatch resource) throws Exception {
+    protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
         String resourceType = resource.getResourceType();
         String resourceId = resource.getResourceId().toString();
         return findOrCreateEnterpriseId(params, resourceType, resourceId);
@@ -124,7 +126,8 @@ public abstract class AbstractTransformer {
     public static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (ret == null) {
-            ret = EnterpriseIdHelper.findOrCreateEnterpriseId(params.getEnterpriseConfigName(), resourceType, resourceId);
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findOrCreateEnterpriseId(resourceType, resourceId);
 
             addIdToCache(params.getEnterpriseConfigName(), resourceType, resourceId, ret);
         }
@@ -152,7 +155,7 @@ public abstract class AbstractTransformer {
         cache.put(createCacheKey(enterpriseConfigName, resourceType, resourceId), toCache);
     }
 
-    public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
+    /*public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
         String json = resourceByExchangeBatch.getResourceData();
         return deserialiseResouce(json);
     }
@@ -167,27 +170,28 @@ public abstract class AbstractTransformer {
             throw ex;
         }
 
-    }
+    }*/
 
     protected static Resource findResource(Reference reference,
                                            EnterpriseTransformParams params) throws Exception {
 
         String referenceStr = reference.getReference();
-        Map<String, ResourceByExchangeBatch> hmAllResources = params.getAllResources();
+        Map<String, ResourceWrapper> hmAllResources = params.getAllResources();
 
         //look in our resources map first
-        ResourceByExchangeBatch ret = hmAllResources.get(referenceStr);
+        ResourceWrapper ret = hmAllResources.get(referenceStr);
         if (ret != null) {
-            if (ret.getIsDeleted()) {
+            if (ret.isDeleted()) {
                 return null;
             } else {
-                return deserialiseResouce(ret);
+                return FhirResourceHelper.deserialiseResouce(ret);
             }
         } else {
 
             //if not in our map, then hit the DB
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
-            return new ResourceRepository().getCurrentVersionAsResource(comps.getResourceType(), comps.getId());
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            return resourceDal.getCurrentVersionAsResource(comps.getResourceType(), comps.getId());
         }
     }
 
@@ -209,17 +213,17 @@ public abstract class AbstractTransformer {
         }
     }*/
 
-    protected static Map<ResourceByExchangeBatch, Long> mapIds(String enterpriseConfigName, List<ResourceByExchangeBatch> resources, boolean createIfNotFound) throws Exception {
+    protected static Map<ResourceWrapper, Long> mapIds(String enterpriseConfigName, List<ResourceWrapper> resources, boolean createIfNotFound) throws Exception {
 
-        Map<ResourceByExchangeBatch, Long> ids = new HashMap<>();
+        Map<ResourceWrapper, Long> ids = new HashMap<>();
 
         //first, try to find existing IDs for our resources in our memory cache
         findEnterpriseIdsInCache(enterpriseConfigName, resources, ids);
 
-        List<ResourceByExchangeBatch> resourcesToFindOnDb = new ArrayList<>();
-        List<ResourceByExchangeBatch> resourcesToFindOrCreateOnDb = new ArrayList<>();
+        List<ResourceWrapper> resourcesToFindOnDb = new ArrayList<>();
+        List<ResourceWrapper> resourcesToFindOrCreateOnDb = new ArrayList<>();
 
-        for (ResourceByExchangeBatch resource: resources) {
+        for (ResourceWrapper resource: resources) {
 
             //if our memory cache contained this ID, then skip it
             if (ids.containsKey(resource)) {
@@ -227,7 +231,7 @@ public abstract class AbstractTransformer {
             }
 
             //if we didn't find an ID in memory, then we'll either want to simply find on the DB or find and create on the DB
-            if (resource.getIsDeleted()
+            if (resource.isDeleted()
                     || !createIfNotFound) {
                 resourcesToFindOnDb.add(resource);
 
@@ -238,10 +242,11 @@ public abstract class AbstractTransformer {
 
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
-            EnterpriseIdHelper.findEnterpriseIds(enterpriseConfigName, resourcesToFindOnDb, ids);
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
+            enterpriseIdDal.findEnterpriseIds(resourcesToFindOnDb, ids);
 
             //add them to our cache
-            for (ResourceByExchangeBatch resource: resourcesToFindOnDb) {
+            for (ResourceWrapper resource: resourcesToFindOnDb) {
                 Long enterpriseId = ids.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
             }
@@ -249,10 +254,11 @@ public abstract class AbstractTransformer {
 
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
-            EnterpriseIdHelper.findOrCreateEnterpriseIds(enterpriseConfigName, resourcesToFindOrCreateOnDb, ids);
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
+            enterpriseIdDal.findOrCreateEnterpriseIds(resourcesToFindOrCreateOnDb, ids);
 
             //add them to our cache
-            for (ResourceByExchangeBatch resource: resourcesToFindOrCreateOnDb) {
+            for (ResourceWrapper resource: resourcesToFindOrCreateOnDb) {
                 Long enterpriseId = ids.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
             }
@@ -261,9 +267,9 @@ public abstract class AbstractTransformer {
         return ids;
     }
 
-    private static void findEnterpriseIdsInCache(String enterpriseConfigName, List<ResourceByExchangeBatch> resources, Map<ResourceByExchangeBatch, Long> ids) throws Exception {
+    private static void findEnterpriseIdsInCache(String enterpriseConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
 
-        for (ResourceByExchangeBatch resource: resources) {
+        for (ResourceWrapper resource: resources) {
             Long cachedId = checkCacheForId(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString());
             if (cachedId != null) {
                 ids.put(resource, cachedId);
@@ -276,14 +282,8 @@ public abstract class AbstractTransformer {
 
     protected Long transformOnDemand(Reference reference,
                                      EnterpriseTransformParams params) throws Exception {
-        Resource fhir = null;
-        try {
-            fhir = findResource(reference, params);
-        } catch (ResourceNotFoundException ex) {
-            //we have some data that refers to non-existant resources, so if we get that, log it
-            LOG.warn("No resource found for reference " + reference.getReference());
-        }
 
+        Resource fhir = findResource(reference, params);
         if (fhir == null) {
             return null;
         }

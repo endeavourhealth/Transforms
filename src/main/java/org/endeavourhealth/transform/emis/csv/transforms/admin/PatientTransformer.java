@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.ContactRelationship;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -280,14 +279,14 @@ public class PatientTransformer {
                 edsEpisodeIdStr = edsEpisodeId.toString();
             }
 
-            try {
-                List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(patientGuid, fhirResourceFiler);
+            List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(patientGuid, fhirResourceFiler);
+            if (resources != null) {
                 for (Resource resource : resources) {
 
                     //if this resource is our patient or episode resource, then skip deleting it here, as we'll just delete them at the end
                     if ((resource.getResourceType() == fhirPatient.getResourceType()
                             && resource.getId().equals(edsPatientIdStr))
-                    || (edsEpisodeId != null
+                            || (edsEpisodeId != null
                             && resource.getResourceType() == fhirEpisode.getResourceType()
                             && resource.getId().equals(edsEpisodeIdStr))) {
                         continue;
@@ -301,8 +300,6 @@ public class PatientTransformer {
 
                     fhirResourceFiler.deletePatientResource(currentState, false, patientGuid, resource);
                 }
-            } catch (ResourceNotFoundException ex) {
-                //if this is the first time we've received anything for this patient, we won't be able to find it in the DB
             }
         }
 

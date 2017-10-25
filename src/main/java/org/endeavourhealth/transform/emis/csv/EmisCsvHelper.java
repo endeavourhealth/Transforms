@@ -6,18 +6,15 @@ import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
-import org.endeavourhealth.core.data.ehr.ResourceNotFoundException;
-import org.endeavourhealth.core.data.ehr.ResourceRepository;
-import org.endeavourhealth.core.data.ehr.models.ResourceByPatient;
-import org.endeavourhealth.core.data.ehr.models.ResourceHistory;
-import org.endeavourhealth.core.data.transform.EmisRepository;
-import org.endeavourhealth.core.data.transform.models.EmisAdminResourceCache;
-import org.endeavourhealth.core.data.transform.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.transform.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.transform.models.EmisAdminResourceCache;
+import org.endeavourhealth.core.database.dal.transform.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.exceptions.ClinicalCodeNotFoundException;
-import org.endeavourhealth.transform.common.exceptions.ResourceDeletedException;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -41,8 +38,8 @@ public class EmisCsvHelper {
     private Map<Long, CodeableConcept> clinicalCodes = new ConcurrentHashMap<>();
     private Map<Long, ClinicalCodeType> clinicalCodeTypes = new ConcurrentHashMap<>();
     private Map<Long, CodeableConcept> medication = new ConcurrentHashMap<>();
-    private EmisRepository mappingRepository = new EmisRepository();
-    private ResourceRepository resourceRepository = new ResourceRepository();
+    private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
+    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
     private Map<String, String> problemMap = new HashMap<>(); //changed to cache the conditions as JSON strings
@@ -107,7 +104,6 @@ public class EmisCsvHelper {
         mapping.setDataSharingAgreementGuid(dataSharingAgreementGuid);
         mapping.setMedication(true);
         mapping.setCodeId(codeId);
-        mapping.setTimeUuid(UUIDs.timeBased());
         mapping.setCodeType(null);
         mapping.setCodeableConcept(json);
         mapping.setSnomedConceptId(snomedConceptId);
@@ -140,7 +136,6 @@ public class EmisCsvHelper {
         mapping.setDataSharingAgreementGuid(dataSharingAgreementGuid);
         mapping.setMedication(false);
         mapping.setCodeId(codeId);
-        mapping.setTimeUuid(UUIDs.timeBased());
         mapping.setCodeType(type.getValue());
         mapping.setCodeableConcept(json);
         mapping.setReadTerm(readTerm);
@@ -346,16 +341,16 @@ public class EmisCsvHelper {
                 resourceType,
                 locallyUniqueId);
         if (globallyUniqueId == null) {
-            throw new ResourceNotFoundException(resourceType, globallyUniqueId);
+            return null;
         }
 
-        ResourceHistory resourceHistory = resourceRepository.getCurrentVersion(resourceType.toString(), globallyUniqueId);
+        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(resourceType.toString(), globallyUniqueId);
         if (resourceHistory == null) {
-            throw new ResourceNotFoundException(resourceType, globallyUniqueId);
+            return null;
         }
 
-        if (resourceHistory.getIsDeleted()) {
-            throw new ResourceDeletedException(resourceType, globallyUniqueId);
+        if (resourceHistory.isDeleted()) {
+            return null;
         }
 
         String json = resourceHistory.getResourceData();
@@ -369,16 +364,16 @@ public class EmisCsvHelper {
                 ResourceType.Patient,
                 patientGuid);
         if (edsPatientId == null) {
-            throw new ResourceNotFoundException(ResourceType.Patient, edsPatientId);
+            return null;
         }
 
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
-        List<ResourceByPatient> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
+        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
 
         List<Resource> ret = new ArrayList<>();
 
-        for (ResourceByPatient resourceWrapper: resourceWrappers) {
+        for (ResourceWrapper resourceWrapper: resourceWrappers) {
             String json = resourceWrapper.getResourceData();
             Resource resource = PARSER_POOL.parse(json);
             ret.add(resource);
@@ -402,10 +397,8 @@ public class EmisCsvHelper {
                                                             List<String> childResourceRelationships,
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Observation fhirObservation;
-        try {
-            fhirObservation = (Observation) retrieveResource(locallyUniqueObservationId, ResourceType.Observation, fhirResourceFiler);
-        } catch (ResourceNotFoundException|ResourceDeletedException e) {
+        Observation fhirObservation = (Observation)retrieveResource(locallyUniqueObservationId, ResourceType.Observation, fhirResourceFiler);
+        if (fhirObservation == null) {
             //if the resource can't be found, it's because that EMIS observation record was saved as something other
             //than a FHIR Observation (example in the CSV test files is an Allergy that is linked to another Allergy)
             return;
@@ -544,10 +537,8 @@ public class EmisCsvHelper {
                                                    FhirResourceFiler fhirResourceFiler,
                                                    String extensionUrl) throws Exception {
 
-        DomainResource fhirResource;
-        try {
-            fhirResource = (DomainResource)retrieveResource(locallyUniqueResourceId, resourceType, fhirResourceFiler);
-        } catch (ResourceNotFoundException|ResourceDeletedException ex) {
+        DomainResource fhirResource = (DomainResource)retrieveResource(locallyUniqueResourceId, resourceType, fhirResourceFiler);
+        if (fhirResource == null) {
             //it's possible to create medication items that are linked to non-existent problems in Emis Web,
             //so ignore any data
             return;
@@ -575,35 +566,33 @@ public class EmisCsvHelper {
                                                                FhirResourceFiler fhirResourceFiler,
                                                                String locallyUniqueId,
                                                                ResourceType resourceType) throws Exception {
-        try {
-            List<Reference> ret = new ArrayList<>();
 
-            DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType, fhirResourceFiler);
+        DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType, fhirResourceFiler);
+        if (previousVersion == null) {
+            //if this is the first time, then we'll have a null resource
+            return null;
+        }
+        List<Reference> ret = new ArrayList<>();
 
-            if (previousVersion.hasContained()) {
-                for (Resource contained: previousVersion.getContained()) {
-                    if (contained instanceof List_) {
-                        List_ list = (List_)contained;
-                        for (List_.ListEntryComponent entry: list.getEntry()) {
-                            Reference previousReference = entry.getItem();
+        if (previousVersion.hasContained()) {
+            for (Resource contained: previousVersion.getContained()) {
+                if (contained instanceof List_) {
+                    List_ list = (List_)contained;
+                    for (List_.ListEntryComponent entry: list.getEntry()) {
+                        Reference previousReference = entry.getItem();
 
-                            //the reference we have has already been mapped to an EDS ID, so we need to un-map it
-                            //back to the source ID, so the ID mapper can safely map it when we save the resource
-                            Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(previousReference);
-                            if (unmappedReference != null) {
-                                ret.add(unmappedReference);
-                            }
+                        //the reference we have has already been mapped to an EDS ID, so we need to un-map it
+                        //back to the source ID, so the ID mapper can safely map it when we save the resource
+                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(previousReference);
+                        if (unmappedReference != null) {
+                            ret.add(unmappedReference);
                         }
                     }
                 }
             }
-
-            return ret;
-
-        } catch (ResourceNotFoundException|ResourceDeletedException ex) {
-            //if this is the first time, then we'll get this exception raised
-            return null;
         }
+
+        return ret;
     }
 
     public void cacheDrugRecordDate(String drugRecordGuid, String patientGuid, DateTimeType dateTime) {
@@ -696,10 +685,8 @@ public class EmisCsvHelper {
 
     private void updateExistingScheduleWithNewPractitioners(String sessionGuid, SessionPractitioners practitioners, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Schedule fhirSchedule = null;
-        try {
-            fhirSchedule = (Schedule)retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
-        } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+        Schedule fhirSchedule = (Schedule)retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
+        if (fhirSchedule == null) {
             //because the SessionUser file doesn't have an OrganisationGuid column, we can't split that file
             //so we will be trying to update the practitioners on sessions that don't exist. So if we get
             //an exception here, just return out
@@ -798,10 +785,8 @@ public class EmisCsvHelper {
 
         for (Map.Entry<String, List<String>> entry : organisationLocationMap.entrySet()) {
 
-            Location fhirLocation = null;
-            try {
-                fhirLocation = (Location) retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
-            } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+            Location fhirLocation = (Location) retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
+            if (fhirLocation == null) {
                 //if the location has been deleted, it doesn't matter, and the emis data integrity issues
                 //mean we may have references to unknown locations
                 continue;
@@ -870,35 +855,33 @@ public class EmisCsvHelper {
             DateAndCode ethnicity = ethnicityMap.get(patientGuid);
             DateAndCode maritalStatus = maritalStatusMap.get(patientGuid);
 
-            try {
-                Patient fhirPatient = (Patient) retrieveResource(createUniqueId(patientGuid, null), ResourceType.Patient, fhirResourceFiler);
-
-                if (ethnicity != null) {
-
-                    //make to use the extension if it's already present
-                    boolean done = false;
-                    for (Extension extension : fhirPatient.getExtension()) {
-                        if (extension.getUrl().equals(FhirExtensionUri.PATIENT_ETHNICITY)) {
-                            extension.setValue(ethnicity.getCodeableConcept());
-                            done = true;
-                            break;
-                        }
-                    }
-                    if (!done) {
-                        fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, ethnicity.getCodeableConcept()));
-                    }
-                }
-
-                if (maritalStatus != null) {
-                    fhirPatient.setMaritalStatus(maritalStatus.getCodeableConcept());
-                }
-
-                fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirPatient);
-
-            } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+            Patient fhirPatient = (Patient) retrieveResource(createUniqueId(patientGuid, null), ResourceType.Patient, fhirResourceFiler);
+            if (fhirPatient == null) {
                 //if we try to update the ethnicity on a deleted patient, or one we've never received, we'll get this exception, which is fine to ignore
+                continue;
             }
 
+            if (ethnicity != null) {
+
+                //make to use the extension if it's already present
+                boolean done = false;
+                for (Extension extension : fhirPatient.getExtension()) {
+                    if (extension.getUrl().equals(FhirExtensionUri.PATIENT_ETHNICITY)) {
+                        extension.setValue(ethnicity.getCodeableConcept());
+                        done = true;
+                        break;
+                    }
+                }
+                if (!done) {
+                    fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, ethnicity.getCodeableConcept()));
+                }
+            }
+
+            if (maritalStatus != null) {
+                fhirPatient.setMaritalStatus(maritalStatus.getCodeableConcept());
+            }
+
+            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirPatient);
         }
     }
 
@@ -974,10 +957,8 @@ public class EmisCsvHelper {
 
         String locallyUniqueId = updatedProblem.getId();
 
-        Condition existingProblem = null;
-        try {
-            existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
-        } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+        Condition existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        if (existingProblem == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
             return;
@@ -1029,10 +1010,8 @@ public class EmisCsvHelper {
      */
     private void downgradeExistingProblemToCondition(String locallyUniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Condition existingProblem = null;
-        try {
-            existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
-        } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+        Condition existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        if (existingProblem == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
             return;
@@ -1147,13 +1126,12 @@ public class EmisCsvHelper {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        try {
-            Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+
+        //we've had cases of data referring to non-existent problems, so check for null
+        if (fhirPproblem != null) {
             CodeableConcept codeableConcept = fhirPproblem.getCode();
             readCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-
-        } catch (ResourceDeletedException|ResourceNotFoundException ex) {
-            //we've had cases of data referring to non-existent problems
         }
 
         problemReadCodes.put(locallyUniqueId, readCode);
@@ -1173,56 +1151,55 @@ public class EmisCsvHelper {
             DateType lastIssueDate = drugRecordLastIssueDateMap.get(medicationStatementLocalId);
             DateType firstIssueDate = drugRecordFirstIssueDateMap.get(medicationStatementLocalId);
 
-            try {
-                MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement, fhirResourceFiler);
-                boolean changed = false;
-
-                if (firstIssueDate != null) {
-                    Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE);
-                    if (extension == null) {
-                        fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
-                        changed = true;
-
-                    } else {
-                        Date newDate = firstIssueDate.getValue();
-
-                        DateType existingValue = (DateType)extension.getValue();
-                        Date existingDate = existingValue.getValue();
-
-                        if (newDate.before(existingDate)) {
-                            extension.setValue(firstIssueDate);
-                            changed = true;
-                        }
-                    }
-                }
-
-                if (lastIssueDate != null) {
-                    Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE);
-                    if (extension == null) {
-                        fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, lastIssueDate));
-                        changed = true;
-
-                    } else {
-                        Date newDate = lastIssueDate.getValue();
-
-                        DateType existingValue = (DateType)extension.getValue();
-                        Date existingDate = existingValue.getValue();
-
-                        if (newDate.after(existingDate)) {
-                            extension.setValue(lastIssueDate);
-                            changed = true;
-                        }
-                    }
-                }
-
-                //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
-                if (changed) {
-                    String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
-                    fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
-                }
-
-            } catch (ResourceDeletedException|ResourceNotFoundException ex) {
+            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement, fhirResourceFiler);
+            if (fhirMedicationStatement == null) {
                 //if the medication statement doesn't exist or has been deleted, then just skip it
+                continue;
+            }
+            boolean changed = false;
+
+            if (firstIssueDate != null) {
+                Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE);
+                if (extension == null) {
+                    fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
+                    changed = true;
+
+                } else {
+                    Date newDate = firstIssueDate.getValue();
+
+                    DateType existingValue = (DateType)extension.getValue();
+                    Date existingDate = existingValue.getValue();
+
+                    if (newDate.before(existingDate)) {
+                        extension.setValue(firstIssueDate);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (lastIssueDate != null) {
+                Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE);
+                if (extension == null) {
+                    fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, lastIssueDate));
+                    changed = true;
+
+                } else {
+                    Date newDate = lastIssueDate.getValue();
+
+                    DateType existingValue = (DateType)extension.getValue();
+                    Date existingDate = existingValue.getValue();
+
+                    if (newDate.after(existingDate)) {
+                        extension.setValue(lastIssueDate);
+                        changed = true;
+                    }
+                }
+            }
+
+            //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
+            if (changed) {
+                String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
+                fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
             }
         }
     }
