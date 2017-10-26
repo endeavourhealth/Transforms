@@ -14,7 +14,7 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.transform.VitruCareTransformDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.VitruCareTransformDalI;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
@@ -43,7 +43,6 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     //private static final String PSEUDO_SALT_RESOURCE = "VitruCare - Leeds.EncryptedSalt";
 
     private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-    private static VitruCareTransformDalI vitruCareRepository = DalProvider.factoryVitruCareTransformDal();
     private static ExchangeBatchDalI exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
     //private static byte[] saltBytes = null;
     private static Set<String> snomedCodeSet = null;
@@ -97,7 +96,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         }
 
         //see if we've sent data to vitrucare before or not
-        String vitruCareId = findVitruCareId(edsPatientId);
+        String vitruCareId = findVitruCareId(edsPatientId, configName);
 
         if (Strings.isNullOrEmpty(vitruCareId)) {
             return createInitialPayload(edsPatientId, configName);
@@ -177,6 +176,8 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         //if we don't have a VitruCare ID, generate one from our patient
         if (vitruCareId == null) {
             vitruCareId = createVitruCareId(fhirPatient, configName);
+
+            VitruCareTransformDalI vitruCareRepository = DalProvider.factoryVitruCareTransformDal(configName);
             vitruCareRepository.saveVitruCareIdMapping(edsPatientId, serviceId, systemId, vitruCareId);
         }
         payload.setPatientGUID(vitruCareId);
@@ -428,7 +429,8 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     }
 
 
-    private static String findVitruCareId(UUID edsPatientId) throws Exception {
+    private static String findVitruCareId(UUID edsPatientId, String configName) throws Exception {
+        VitruCareTransformDalI vitruCareRepository = DalProvider.factoryVitruCareTransformDal(configName);
         return vitruCareRepository.getVitruCareId(edsPatientId);
     }
 

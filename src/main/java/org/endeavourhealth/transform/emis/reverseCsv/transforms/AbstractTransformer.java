@@ -3,8 +3,8 @@ package org.endeavourhealth.transform.emis.reverseCsv.transforms;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.transform.ResourceIdTransformDalI;
-import org.endeavourhealth.core.database.dal.transform.models.ResourceIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
 import org.hl7.fhir.instance.model.Resource;
 
