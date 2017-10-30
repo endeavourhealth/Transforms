@@ -417,6 +417,7 @@ public class FhirResourceFiler {
                     }
 
                 } catch (Exception ex) {
+                    LOG.error("", ex);
                     throw new TransformException("Exception mapping or storing " + resource.getResourceType() + " " + resource.getId(), ex);
                 }
             }

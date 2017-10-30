@@ -11,12 +11,15 @@ import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
 import org.hl7.fhir.instance.model.CodeableConcept;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class DrugCodeTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(DrugCodeTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -110,7 +113,14 @@ public class DrugCodeTransformer {
 
         @Override
         public Object call() throws Exception {
-            csvHelper.addMedication(codeId, fhirConcept, dmdId, term);
+            try {
+                csvHelper.addMedication(codeId, fhirConcept, dmdId, term);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
             return null;
         }
 

@@ -190,40 +190,45 @@ public abstract class ClinicalCodeTransformer {
         @Override
         public Object call() throws Exception {
 
-            String conceptIdStr = snomedConceptId.toString();
+            try {
+                String conceptIdStr = snomedConceptId.toString();
 
-            //derive the code system from the length of the concept ID
-            String codeSystem = null;
-            if (conceptIdStr.length() > 9) {
-                //this isn't strictly going to be an Emis snomed code, as we would need
-                //to look at the namespace digits in the code to know that an cross-reference against
-                //the known Emis namespaces (google "snomed ct namespace registry") but if it's a
-                //long-form concept ID, then it's not going to be a standard snomed one
-                codeSystem = FhirUri.CODE_SYSTEM_EMISSNOMED;
-            } else {
-                codeSystem = FhirUri.CODE_SYSTEM_SNOMED_CT;
+                //derive the code system from the length of the concept ID
+                String codeSystem = null;
+                if (conceptIdStr.length() > 9) {
+                    //this isn't strictly going to be an Emis snomed code, as we would need
+                    //to look at the namespace digits in the code to know that an cross-reference against
+                    //the known Emis namespaces (google "snomed ct namespace registry") but if it's a
+                    //long-form concept ID, then it's not going to be a standard snomed one
+                    codeSystem = FhirUri.CODE_SYSTEM_EMISSNOMED;
+                } else {
+                    codeSystem = FhirUri.CODE_SYSTEM_SNOMED_CT;
+                }
+
+                String snomedTerm = null;
+
+                SnomedLookup snomedLookup = repository.getSnomedLookup(snomedConceptId.toString());
+
+                if (snomedLookup == null) {
+                    //if the concept ID isn't a valid Snomed concept, then still store in FHIR, but as an EMIS code
+                    fhirConcept.addCoding(CodingHelper.createCoding(codeSystem, readTerm, snomedConceptId.toString()));
+
+                } else {
+                    snomedTerm = snomedLookup.getTerm();
+                    fhirConcept.addCoding(CodingHelper.createCoding(codeSystem, snomedTerm, snomedConceptId.toString()));
+                }
+
+                //although not supported by FHIR, we should store the description ID we've been given somewhere
+                fhirConcept.addCoding(CodingHelper.createCoding(FhirUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID, "", snomedDescriptionId.toString()));
+
+                //store the coding in Cassandra
+                csvHelper.addClinicalCode(codeId, fhirConcept, codeType, readTerm,
+                        readCode, snomedConceptId, snomedDescriptionId, snomedTerm,
+                        nationalCode, nationalCodeCategory, nationalCodeDescription, parentCodeId);
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
             }
-
-            String snomedTerm = null;
-
-            SnomedLookup snomedLookup = repository.getSnomedLookup(snomedConceptId.toString());
-
-            if (snomedLookup == null) {
-                //if the concept ID isn't a valid Snomed concept, then still store in FHIR, but as an EMIS code
-                fhirConcept.addCoding(CodingHelper.createCoding(codeSystem, readTerm, snomedConceptId.toString()));
-
-            } else {
-                snomedTerm = snomedLookup.getTerm();
-                fhirConcept.addCoding(CodingHelper.createCoding(codeSystem, snomedTerm, snomedConceptId.toString()));
-            }
-
-            //although not supported by FHIR, we should store the description ID we've been given somewhere
-            fhirConcept.addCoding(CodingHelper.createCoding(FhirUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID, "", snomedDescriptionId.toString()));
-
-            //store the coding in Cassandra
-            csvHelper.addClinicalCode(codeId, fhirConcept, codeType, readTerm,
-                    readCode, snomedConceptId, snomedDescriptionId, snomedTerm,
-                    nationalCode, nationalCodeCategory, nationalCodeDescription, parentCodeId);
 
             return null;
         }
