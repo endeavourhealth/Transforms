@@ -53,7 +53,7 @@ public class ProcedureTransformer extends BartsBasisTransformer {
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, null, null, null);
+        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, null, null, null, null);
         // EpisodeOfCare - Procedure record cannot be linked to an EpisodeOfCare
         // Encounter
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE,  parser.getEncounterId().toString());

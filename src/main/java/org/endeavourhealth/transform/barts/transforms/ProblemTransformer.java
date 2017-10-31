@@ -56,7 +56,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, patientIdentifier, null, null);
+        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, patientIdentifier, null, null, null);
         // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
         // Encounter - Problem record cannot be linked to an Encounter
         // this Problem resource id

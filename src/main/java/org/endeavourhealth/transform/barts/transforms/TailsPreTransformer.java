@@ -30,7 +30,7 @@ public class TailsPreTransformer {
                 tr.setEncounterId(parser.getEncounterId());
                 tr.setEpisodeId(parser.getEpisodeId());
                 hm.put(tr.getCDSUniqueueId(), tr);
-                LOG.trace("Adding CDS-Tail:" + tr.getCDSUniqueueId());
+                //LOG.trace("Adding CDS-Tail:" + tr.getCDSUniqueueId());
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -38,7 +38,7 @@ public class TailsPreTransformer {
     }
 
     public static TailsRecord getTailsRecord(String s) {
-        LOG.trace("Looking for CDS-Tail:" + s);
+        //LOG.trace("Looking for CDS-Tail:" + s);
         return hm.get(s);
     }
 

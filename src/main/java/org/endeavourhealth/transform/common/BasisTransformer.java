@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -22,6 +23,7 @@ import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Enumerations;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
+import org.hl7.fhir.instance.model.Extension;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Meta;
@@ -154,6 +156,9 @@ public class BasisTransformer {
         return ret;
     }
 
+    /*
+     *
+     */
     public static String getCodeSystemName(int codeSystemId) throws SQLException {
         LOG.trace("Looking for Code Systems:" + codeSystemId);
         String ret = "UNKNOWN:" + codeSystemId;
@@ -451,7 +456,7 @@ public class BasisTransformer {
     /*
      *
      */
-    public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice) throws Exception {
+    public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice, CodeableConcept ethnicGroup) throws Exception {
         if (uniqueId == null) {
             // Default format is for Barts
             uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
@@ -472,6 +477,13 @@ public class BasisTransformer {
             Patient fhirPatient = new Patient();
 
             fhirPatient.setId(patientResourceId.getResourceId().toString());
+
+            if (ethnicGroup != null) {
+                Extension ex = new Extension();
+                ex.setUrl(FhirExtensionUri.PATIENT_ETHNICITY);
+                ex.setValue(ethnicGroup);
+                fhirPatient.addExtension(ex);
+            }
 
             if (identifiers != null) {
                 for (int i = 0; i < identifiers.length; i++) {
