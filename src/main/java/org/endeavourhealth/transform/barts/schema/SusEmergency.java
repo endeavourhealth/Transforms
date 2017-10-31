@@ -41,6 +41,9 @@ public class SusEmergency extends SusBaseParser {
         addFieldList(new FixedParserField("Gender",    1018, 1));
         addFieldList(new FixedParserField("EthnicCategory",    1021, 2));
 
+        addFieldList(new FixedParserField("GP",    1023, 8));
+        addFieldList(new FixedParserField("GPPractice",    1031, 12));
+
         addFieldList(new FixedParserField("ArrivalDate",    1079, 8));
         addFieldList(new FixedParserField("ArrivalTime",    1087, 6));
         addFieldList(new FixedParserField("DepartureDate",    1139, 8));

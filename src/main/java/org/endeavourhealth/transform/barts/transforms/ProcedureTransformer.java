@@ -53,7 +53,7 @@ public class ProcedureTransformer extends BartsBasisTransformer {
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, null);
+        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, null, null, null);
         // EpisodeOfCare - Procedure record cannot be linked to an EpisodeOfCare
         // Encounter
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE,  parser.getEncounterId().toString());
@@ -81,48 +81,5 @@ public class ProcedureTransformer extends BartsBasisTransformer {
 
     }
 
-    /*
-     *
-     */
-    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
 
-        // Turn key into Resource id
-        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
-
-        if (identifiers != null) {
-            for (int i = 0; i < identifiers.length; i++) {
-                fhirProcedure.addIdentifier(identifiers[i]);
-            }
-        }
-
-        // Encounter
-        if (encounterResourceId != null) {
-            fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
-        }
-
-        // set patient reference
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-        // status
-        fhirProcedure.setStatus(status);
-
-        // Code
-        if (procedureCode.getText() == null || procedureCode.getText().length() == 0) {
-            procedureCode.setText(procedureCode.getCoding().get(0).getDisplay());
-        }
-        fhirProcedure.setCode(procedureCode);
-
-        // Performed date/time
-        //Timing t = new Timing().addEvent(procedureDate);
-        DateTimeType dateDt = new DateTimeType(procedureDate);
-        fhirProcedure.setPerformed(dateDt);
-
-        // set notes
-        if (notes != null) {
-            fhirProcedure.addNotes(new Annotation().setText(notes));
-        }
-
-    }
 }

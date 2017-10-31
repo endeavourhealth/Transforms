@@ -34,7 +34,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createCondition(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createConditionProblem(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -44,19 +44,19 @@ public class ProblemTransformer extends BartsBasisTransformer {
     }
 
     /*
-     *
-     */
-    public static void createCondition(Problem parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+*
+*/
+    public static void createConditionProblem(Problem parser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              EmisCsvHelper csvHelper,
+                                              String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
         CodeableConcept cc = null;
         Date d = null;
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // Patient
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, patientIdentifier);
+        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null, patientIdentifier, null, null);
         // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
         // Encounter - Problem record cannot be linked to an Encounter
         // this Problem resource id

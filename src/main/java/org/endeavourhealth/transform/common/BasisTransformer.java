@@ -4,14 +4,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
+import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Annotation;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Condition;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -24,6 +28,7 @@ import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Organization;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Period;
+import org.hl7.fhir.instance.model.Procedure;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -54,10 +59,9 @@ public class BasisTransformer {
     private static String lastLookupCodeSystemIdentifier = "";
 
     /*
-     *
+     * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
      */
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
-        //ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
         ResourceId ret = null;
         if (hl7receiverConnection == null) {
             prepareJDBCConnection();
@@ -98,7 +102,7 @@ public class BasisTransformer {
     /*
         set sourceCodeSystemId to -1 if no system is defined
      */
-    public static CodeableConcept mapToCodeableConcept(String scope, String sourceContextName, String sourceCodeValue, int sourceSystemId, int targetSystemId, String displayText, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
+    public static CodeableConcept mapToCodeableConceptDONOTUSEFORNOW(String scope, String sourceContextName, String sourceCodeValue, int sourceSystemId, int targetSystemId, String displayText, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
         String sourceCodeSystem = null;
         String targetCodeSystem = null;
         String searchKey = "scope=" + scope + ":sourceContextName=" + sourceContextName + ":sourceCodeValue=" + sourceCodeValue + ":sourceCodeSystemId=" + sourceSystemId + ":targetSystemId=" + targetSystemId;
@@ -352,7 +356,7 @@ public class BasisTransformer {
     /*
      *
      */
-    public static void createDiagnosisResource(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[], Condition.ConditionVerificationStatus cvs ) throws Exception {
+    public static void createDiagnosis(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[], Condition.ConditionVerificationStatus cvs ) throws Exception {
         fhirCondition.setId(diagnosisResourceId.getResourceId().toString());
 
         fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
@@ -402,7 +406,52 @@ public class BasisTransformer {
     /*
      *
      */
-    public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[]) throws Exception {
+    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
+        CodeableConcept cc = null;
+        Date d = null;
+
+        // Turn key into Resource id
+        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
+
+        if (identifiers != null) {
+            for (int i = 0; i < identifiers.length; i++) {
+                fhirProcedure.addIdentifier(identifiers[i]);
+            }
+        }
+
+        // Encounter
+        if (encounterResourceId != null) {
+            fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
+        }
+
+        // set patient reference
+        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        // status
+        fhirProcedure.setStatus(status);
+
+        // Code
+        if (procedureCode.getText() == null || procedureCode.getText().length() == 0) {
+            procedureCode.setText(procedureCode.getCoding().get(0).getDisplay());
+        }
+        fhirProcedure.setCode(procedureCode);
+
+        // Performed date/time
+        //Timing t = new Timing().addEvent(procedureDate);
+        DateTimeType dateDt = new DateTimeType(procedureDate);
+        fhirProcedure.setPerformed(dateDt);
+
+        // set notes
+        if (notes != null) {
+            fhirProcedure.addNotes(new Annotation().setText(notes));
+        }
+
+    }
+
+    /*
+     *
+     */
+    public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice) throws Exception {
         if (uniqueId == null) {
             // Default format is for Barts
             uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
@@ -466,6 +515,14 @@ public class BasisTransformer {
                 fhirPatient.setManagingOrganization(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
             }
 
+            if (gp != null) {
+                fhirPatient.addCareProvider(ReferenceHelper.createReference(ResourceType.Practitioner, gp.getResourceId().toString()));
+            }
+
+            if (gpPractice != null) {
+                fhirPatient.addCareProvider(ReferenceHelper.createReference(ResourceType.Organization, gpPractice.getResourceId().toString()));
+            }
+
             LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
             savePatientResource(fhirResourceFiler, currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
         }
@@ -511,6 +568,50 @@ public class BasisTransformer {
             resourceId.setResourceId(UUID.randomUUID());
             saveResourceId(resourceId);
         }
+        return resourceId;
+    }
+
+    /*
+     *
+     */
+    public static ResourceId getGPResourceId(String scope, String gmcCode) throws Exception {
+        String uniqueId = "GmcCode=" + gmcCode;
+        return getResourceId(scope, "Practitioner", uniqueId);
+    }
+
+    /*
+     *
+     */
+    public static ResourceId createGPResourceId(String scope, String gmcCode) throws Exception {
+        String uniqueId = "GmcCode=" + gmcCode;
+        ResourceId resourceId = new ResourceId();
+        resourceId.setScopeId(scope);
+        resourceId.setResourceType("Practitioner");
+        resourceId.setUniqueId(uniqueId);
+        resourceId.setResourceId(UUID.randomUUID());
+        saveResourceId(resourceId);
+        return resourceId;
+    }
+
+    /*
+ *
+ */
+    public static ResourceId getGlobalOrgResourceId(String odsCode) throws Exception {
+        String uniqueId = "OdsCode=" + odsCode;
+        return getResourceId("G", "Organization", uniqueId);
+    }
+
+    /*
+     *
+     */
+    public static ResourceId createGlobalOrgResourceId(String odsCode) throws Exception {
+        String uniqueId = "OdsCode=" + odsCode;
+        ResourceId resourceId = new ResourceId();
+        resourceId.setScopeId("G");
+        resourceId.setResourceType("Organization");
+        resourceId.setUniqueId(uniqueId);
+        resourceId.setResourceId(UUID.randomUUID());
+        saveResourceId(resourceId);
         return resourceId;
     }
 

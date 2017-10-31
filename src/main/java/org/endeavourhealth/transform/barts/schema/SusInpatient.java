@@ -55,6 +55,9 @@ public class SusInpatient extends SusBaseParser {
         addFieldList(new FixedParserField("OPCSPrimaryProcedureDate",    1976, 8));
         addFieldList(new FixedParserField("OPCSecondaryProcedureList",    2012, 2000));
 
+        addFieldList(new FixedParserField("GP",    5325, 8));
+        addFieldList(new FixedParserField("GPPractice",    5333, 12));
+
     }
 
     public Date getAdmissionDate() throws TransformException {

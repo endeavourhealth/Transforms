@@ -56,6 +56,10 @@ public class SusOutpatient extends SusBaseParser {
         addFieldList(new FixedParserField("OPCSPrimaryProcedureDate",    1802, 8));
         addFieldList(new FixedParserField("OPCSecondaryProcedureList",    1838, 2000));
 
+
+        addFieldList(new FixedParserField("GP",    4532, 8));
+        addFieldList(new FixedParserField("GPPractice",    4540, 12));
+
     }
 
 

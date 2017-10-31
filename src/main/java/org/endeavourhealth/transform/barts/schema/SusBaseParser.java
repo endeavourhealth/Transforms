@@ -94,6 +94,14 @@ public class SusBaseParser extends AbstractFixedParser {
         return super.getString("EthnicCategory");
     }
 
+    public String getGP() {
+        return super.getString("GP");
+    }
+
+    public String getGPPractice() {
+        return super.getString("GPPractice");
+    }
+
     public String getICDPrimaryDiagnosis() {
         return super.getString("ICDPrimaryDiagnosis");
     }

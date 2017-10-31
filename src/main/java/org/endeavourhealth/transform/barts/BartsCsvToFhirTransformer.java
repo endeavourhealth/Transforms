@@ -23,13 +23,12 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
-    public static final int CODE_SYSTEM_SNOMED = 1000;
-    public static final int CODE_SYSTEM_ICD_10 = 1001;
-    public static final int CODE_SYSTEM_OPCS_4 = 1002;
+    //public static final int CODE_SYSTEM_SNOMED = 1000;
+    //public static final int CODE_SYSTEM_ICD_10 = 1001;
+    //public static final int CODE_SYSTEM_OPCS_4 = 1002;
     public static final String CODE_SYSTEM_CDS_UNIQUE_ID = "http://cerner.com/fhir/cds-unique-id";
     public static final String CODE_SYSTEM_DIAGNOSIS_ID = "http://cerner.com/fhir/diagnosis-id";
     public static final String CODE_SYSTEM_PROBLEM_ID = "http://cerner.com/fhir/problem-id";
-    public static final String CODE_SYSTEM_FIN_NO = "http://cerner.com/fhir/fin-no";
     public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
     public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
     public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
