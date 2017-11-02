@@ -56,10 +56,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
         if (fhir.hasPerformer()) {
             Reference practitionerReference = fhir.getPerformer();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasDateElement()) {

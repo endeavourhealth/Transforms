@@ -55,10 +55,7 @@ public class OrganisationTransformer extends AbstractTransformer {
 
         if (fhir.hasPartOf()) {
             Reference partOfReference = fhir.getPartOf();
-            parentOrganisationId = findEnterpriseId(params, partOfReference);
-            if (parentOrganisationId == null) {
-                parentOrganisationId = transformOnDemand(partOfReference, params);
-            }
+            parentOrganisationId = transformOnDemandAndMapId(partOfReference, params);
         }
 
         if (fhir.hasType()) {

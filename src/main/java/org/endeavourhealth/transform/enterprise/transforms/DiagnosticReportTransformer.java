@@ -58,10 +58,7 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
             for (Extension extension: fhir.getExtension()) {
                 if (extension.getUrl().equals(FhirExtensionUri.DIAGNOSTIC_REPORT_FILED_BY)) {
                     Reference practitionerReference = (Reference)extension.getValue();
-                    practitionerId = findEnterpriseId(params, practitionerReference);
-                    if (practitionerId == null) {
-                        practitionerId = transformOnDemand(practitionerReference, params);
-                    }
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
                 }
             }
         }

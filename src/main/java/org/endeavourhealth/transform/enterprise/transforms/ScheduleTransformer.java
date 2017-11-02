@@ -36,10 +36,7 @@ public class ScheduleTransformer extends AbstractTransformer {
 
         if (fhir.hasActor()) {
             Reference practitionerReference = fhir.getActor();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasPlanningHorizon()) {

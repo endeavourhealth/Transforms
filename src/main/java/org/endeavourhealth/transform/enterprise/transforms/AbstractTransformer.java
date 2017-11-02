@@ -68,9 +68,19 @@ public abstract class AbstractTransformer {
                     csvWriter.writeDelete(enterpriseId.longValue());
 
                 } else {
-                    Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
-                    transform(enterpriseId, fhir, csvWriter, params);
+
+                    //check to see if we've already transformed this resource in this batch already,
+                    //which can happen for dependent items like orgs and practitioners
+                    ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
+                    String resourceId = resource.getResourceId().toString();
+                    Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceId);
+                    if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
+
+                        Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
+                        transform(enterpriseId, fhir, csvWriter, params);
+                    }
                 }
+
             } catch (Exception ex) {
                 throw new TransformException("Exception transforming " + resource.getResourceType() + " " + resource.getResourceId(), ex);
             }
@@ -120,6 +130,13 @@ public abstract class AbstractTransformer {
     protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
         String resourceType = resource.getResourceType();
         String resourceId = resource.getResourceId().toString();
+        return findOrCreateEnterpriseId(params, resourceType, resourceId);
+    }
+
+    protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, Reference reference) throws Exception {
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+        String resourceType = comps.getResourceType().toString();
+        String resourceId = comps.getId();
         return findOrCreateEnterpriseId(params, resourceType, resourceId);
     }
 
@@ -277,11 +294,49 @@ public abstract class AbstractTransformer {
         }
     }
 
+    /**
+     * transforms a dependent resource not necessarily in the exchcnge batch we're currently transforming,
+     * e.g. transform a practitioner that's referenced by an observation in this batch
+     */
+    protected Long transformOnDemandAndMapId(Reference reference,
+                                             EnterpriseTransformParams params) throws Exception {
 
+        Long enterpriseId = null;
 
+        if (!params.hasResourceBeenTransformedAddIfNot(reference)) {
 
-    protected Long transformOnDemand(Reference reference,
-                                     EnterpriseTransformParams params) throws Exception {
+            Resource fhir = findResource(reference, params);
+            if (fhir == null) {
+                //if the target resource doesn't exist, or has been deleted, just return null as we can't use it
+                return null;
+            }
+
+            enterpriseId = findOrCreateEnterpriseId(params, reference);
+
+            ResourceType resourceType = fhir.getResourceType();
+            AbstractTransformer transformer = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(resourceType);
+            if (transformer == null) {
+                throw new TransformException("No transformer found for resource " + reference.getReference());
+            }
+
+            AbstractEnterpriseCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
+            transformer.transform(enterpriseId, fhir, csvWriter, params);
+
+        } else {
+            enterpriseId = findEnterpriseId(params, reference);
+        }
+
+        return enterpriseId;
+    }
+    /*protected Long transformOnDemandAndMapId(Reference reference,
+                                            EnterpriseTransformParams params) throws Exception {
+
+        Long existingEnterpriseId = findEnterpriseId(params, reference);
+        if (existingEnterpriseId != null) {
+            //if we've already got an ID for this resource we must have previously transformed it
+            //so we don't need to forcibly transform it now
+            return existingEnterpriseId;
+        }
 
         Resource fhir = findResource(reference, params);
         if (fhir == null) {
@@ -299,5 +354,5 @@ public abstract class AbstractTransformer {
         transformer.transform(enterpriseId, fhir, csvWriter, params);
 
         return enterpriseId;
-    }
+    }*/
 }

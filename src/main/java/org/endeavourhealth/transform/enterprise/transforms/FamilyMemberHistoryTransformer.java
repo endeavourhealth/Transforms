@@ -58,10 +58,7 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.FAMILY_MEMBER_HISTORY_REPORTED_BY)) {
                     Reference practitionerReference = (Reference)extension.getValue();
-                    practitionerId = findEnterpriseId(params, practitionerReference);
-                    if (practitionerId == null) {
-                        practitionerId = transformOnDemand(practitionerReference, params);
-                    }
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
                 }
             }
         }

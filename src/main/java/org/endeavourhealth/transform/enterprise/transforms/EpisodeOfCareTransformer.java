@@ -42,10 +42,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
 
         if (fhirEpisode.hasCareManager()) {
             Reference practitionerReference = fhirEpisode.getCareManager();
-            usualGpPractitionerId = findEnterpriseId(params, practitionerReference);
-            if (usualGpPractitionerId == null) {
-                usualGpPractitionerId = transformOnDemand(practitionerReference, params);
-            }
+            usualGpPractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         //the registration type is a field on the Patient resource, even though it should really be part of the episode

@@ -52,10 +52,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         if (fhir.hasPrescriber()) {
             Reference practitionerReference = fhir.getPrescriber();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasEncounter()) {

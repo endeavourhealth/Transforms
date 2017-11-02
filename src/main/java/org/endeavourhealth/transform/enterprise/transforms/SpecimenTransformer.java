@@ -70,10 +70,7 @@ public class SpecimenTransformer extends AbstractTransformer {
 
             if (fhirCollection.hasCollector()) {
                 Reference practitionerReference = fhirCollection.getCollector();
-                practitionerId = findEnterpriseId(params, practitionerReference);
-                if (practitionerId == null) {
-                    practitionerId = transformOnDemand(practitionerReference, params);
-                }
+                practitionerId = transformOnDemandAndMapId(practitionerReference, params);
             }
         }
 

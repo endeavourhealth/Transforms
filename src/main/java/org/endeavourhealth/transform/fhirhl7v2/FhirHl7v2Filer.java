@@ -1,12 +1,7 @@
 package org.endeavourhealth.transform.fhirhl7v2;
 
-import com.google.common.base.Strings;
-import org.apache.commons.codec.binary.StringUtils;
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
@@ -19,15 +14,11 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.ui.helpers.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FhirHl7v2Filer {
@@ -36,6 +27,8 @@ public class FhirHl7v2Filer {
     private static final String ADT_A34 = "ADT^A34";
     private static final String ADT_A35 = "ADT^A35";
     private static final String ADT_A44 = "ADT^A44";
+
+    private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     public void file(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                      TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
@@ -428,7 +421,7 @@ public class FhirHl7v2Filer {
         fhirResourceFiler.saveAdminResource(null, false, adminResources.toArray(new Resource[0]));
     }
 
-    private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+    /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
                 .stream()
@@ -443,9 +436,9 @@ public class FhirHl7v2Filer {
                 .collect(StreamExtension.singleCollector());
 
         fhirResourceFiler.savePatientResource(null, false, patient.getId(), patientResources.toArray(new Resource[0]));
-    }
+    }*/
 
-    /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+    private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
                 .stream()
@@ -464,85 +457,659 @@ public class FhirHl7v2Filer {
         for (Resource resource: patientResources) {
 
             //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
-            //sure that any new data is carried over to the old one and re-save the old version
+            //sure that we don't lose any data in the old instance by just overwriting it
             if (resource instanceof Encounter) {
-                Encounter newEncounter = (Encounter)resource;
-                String encounterId = newEncounter.getId();
-                try {
-                    Encounter oldEncounter = (Encounter) new ResourceRepository().getCurrentVersionAsResource(ResourceType.Encounter, encounterId);
-                    updateEncounter(oldEncounter, newEncounter);
-                    resource = oldEncounter;
-
-                } catch (ResourceNotFoundException ex) {
-                    //if it is truly new, then no updating required
-                }
+                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(resource.getResourceType(), resource.getId());
+                resource = updateEncounter(oldEncounter, (Encounter)resource);
             }
 
             fhirResourceFiler.savePatientResource(null, false, patientId, resource);
         }
     }
 
-    private static void updateEncounter(Encounter oldEncounter, Encounter newEncounter) {
+    public static Resource updateEncounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
 
-        if (newEncounter.hasIdentifier()) {
-            for (Identifier newIdentifier: newEncounter.getIdentifier()) {
+        if (oldEncounter == null) {
+            return newEncounter;
+        }
 
+        //field got from http://hl7.org/fhir/DSTU2/encounter.html
+        updateEncounterIdentifiers(oldEncounter, newEncounter);
+        updateEncounterStatus(oldEncounter, newEncounter);
+        updateEncounterStatusHistory(oldEncounter, newEncounter);
+        updateEncounterClass(oldEncounter, newEncounter);
+        updateEncounterType(oldEncounter, newEncounter);
+        updateEncounterPriority(oldEncounter, newEncounter);
+        updateEncounterPatient(oldEncounter, newEncounter);
+        updateEncounterEpisode(oldEncounter, newEncounter);
+        updateEncounterIncomingReferral(oldEncounter, newEncounter);
+        updateEncounterParticipant(oldEncounter, newEncounter);
+        updateEncounterAppointment(oldEncounter, newEncounter);
+        updateEncounterPeriod(oldEncounter, newEncounter);
+        updateEncounterLength(oldEncounter, newEncounter);
+        updateEncounterReason(oldEncounter, newEncounter);
+        updateEncounterIndication(oldEncounter, newEncounter);
+        updateEncounterHospitalisation(oldEncounter, newEncounter);
+        updateEncounterLocation(oldEncounter, newEncounter);
+        updateEncounterServiceProvider(oldEncounter, newEncounter);
+        updateEncounterPartOf(oldEncounter, newEncounter);
+        updateExtensions(oldEncounter, newEncounter);
 
-                oldEncounter.getIdentifier().add(newIdentifier);
+        return oldEncounter;
+    }
+
+    private static void updateExtensions(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasExtension()) {
+            return;
+        }
+
+        for (Extension newExtension: newEncounter.getExtension()) {
+            String newUrl = newExtension.getUrl();
+
+            Extension oldExtension = ExtensionConverter.findExtension(oldEncounter, newUrl);
+            if (oldExtension == null) {
+                newExtension = newExtension.copy();
+                oldEncounter.addExtension(newExtension);
+
+            } else {
+                Type newValue = newExtension.getValue();
+                newValue = newValue.copy();
+                oldExtension.setValue(newValue);
             }
         }
+    }
 
-        //identifier
+    private static void updateEncounterPartOf(Encounter oldEncounter, Encounter newEncounter) {
+        if (newEncounter.hasPartOf()) {
+            Reference ref = newEncounter.getPartOf();
+            ref = ref.copy();
+            oldEncounter.setPartOf(ref);
+        }
+    }
 
-        if (newEncounter.hasStatus()) {
-            oldEncounter.setStatus(newEncounter.getStatus());
+    private static void updateEncounterServiceProvider(Encounter oldEncounter, Encounter newEncounter) {
+        if (newEncounter.hasServiceProvider()) {
+            Reference ref = newEncounter.getServiceProvider();
+            ref = ref.copy();
+            oldEncounter.setServiceProvider(ref);
+        }
+    }
+
+    private static void updateEncounterLocation(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasLocation()) {
+            return;
         }
 
-        //status history
+        for (Encounter.EncounterLocationComponent newLocation: newEncounter.getLocation()) {
 
-        if (newEncounter.hasClass_()) {
-            oldEncounter.setClass_(newEncounter.getClass_());
-        }
+            //find any locations on the old encounter that match the same location reference
+            List<Encounter.EncounterLocationComponent> oldLocationsForSamePlace = new ArrayList<>();
 
-        //class history
+            if (oldEncounter.hasLocation()) {
+                for (Encounter.EncounterLocationComponent oldLocation: oldEncounter.getLocation()) {
+                    if (ReferenceHelper.equals(oldLocation.getLocation(), newLocation.getLocation())) {
+                        oldLocationsForSamePlace.add(oldLocation);
+                    }
+                }
+            }
 
-        //type
-        //priority
-        //subject
-        //episode
-        //incoming referral
-        //partificpane
-        //appointment
-        //perido
-        //length
-        //reason
-        //diagnosis
-        //account
-        //hospitalisation
+            boolean addNewLocation;
 
-        if (newEncounter.hasLocation()) {
-            for (Encounter.EncounterLocationComponent newLocation: newEncounter.getLocation()) {
+            if (oldLocationsForSamePlace.isEmpty()) {
+                //if this is the first time we've heard of this location, just add it
+                addNewLocation = true;
 
-                //if the old encounter already has the same location, remove it to replace with the new one
-                if (oldEncounter.hasLocation()) {
-                    for (Encounter.EncounterLocationComponent oldLocation: oldEncounter.getLocation()) {
-                        if (ReferenceHelper.equals(oldLocation.getLocation(), newLocation.getLocation())) {
-                            oldEncounter.getLocation().remove(oldLocation);
+            } else {
+
+                if (!newLocation.hasPeriod()
+                        && !newLocation.hasStatus()) {
+                    //if the new participant doesn't have a status or period, there's no new info, so don't add it
+                    addNewLocation = false;
+
+                } else {
+                    addNewLocation = true;
+
+                    for (Encounter.EncounterLocationComponent oldLocation: oldLocationsForSamePlace) {
+
+                         if (newLocation.hasPeriod()) {
+                            Period newPeriod = newLocation.getPeriod();
+
+                            Period oldPeriod = null;
+                            if (oldLocation.hasPeriod()) {
+                                oldPeriod = oldLocation.getPeriod();
+                            }
+
+                            //see if we can merge the old and new periods
+                            Period mergedPeriod = compareAndMergePeriods(oldPeriod, newPeriod);
+                            if (mergedPeriod != null) {
+                                oldLocation.setPeriod(mergedPeriod);
+                                addNewLocation = false;
+
+                            } else {
+                                //if we couldn't merge the period, then skip this location
+                                //and don't try to set the new status on this old location
+                                continue;
+                            }
+                        }
+
+                        if (newLocation.hasStatus()) {
+                            Encounter.EncounterLocationStatus newStatus = newLocation.getStatus();
+                            oldLocation.setStatus(newStatus);
+                            addNewLocation = false;
+                        }
+
+                        if (!addNewLocation ) {
                             break;
                         }
                     }
                 }
+            }
 
+            if (addNewLocation) {
+                newLocation = newLocation.copy();
                 oldEncounter.getLocation().add(newLocation);
             }
         }
+    }
 
-        if (newEncounter.hasServiceProvider()) {
-            oldEncounter.setServiceProvider(newEncounter.getServiceProvider());
+    private static void updateEncounterHospitalisation(Encounter oldEncounter, Encounter newEncounter) {
+
+        if (newEncounter.hasHospitalization()) {
+            Encounter.EncounterHospitalizationComponent h = newEncounter.getHospitalization();
+            h = h.copy();
+            oldEncounter.setHospitalization(h);
+        }
+    }
+
+    private static void updateEncounterIndication(Encounter oldEncounter, Encounter newEncounter) {
+        if (newEncounter.hasIndication()) {
+            for (Reference newIndication: newEncounter.getIndication()) {
+
+                if (!oldEncounter.hasIndication()
+                    || !ReferenceHelper.contains(oldEncounter.getIndication(), newIndication)) {
+                    newIndication = newIndication.copy();
+                    oldEncounter.addIndication(newIndication);
+                }
+            }
+        }
+    }
+
+    private static void updateEncounterReason(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasReason()) {
+            return;
         }
 
-        if (newEncounter.hasPartOf()) {
-            oldEncounter.setPartOf(newEncounter.getPartOf());
+        for (CodeableConcept newConcept: newEncounter.getReason()) {
+
+            boolean add = true;
+            if (oldEncounter.hasReason()) {
+                for (CodeableConcept oldConcept: oldEncounter.getReason()) {
+                    if (oldConcept.equalsDeep(newConcept)) {
+                        add = false;
+                        break;
+                    }
+                }
+            }
+
+            if (add) {
+                newConcept = newConcept.copy();
+                oldEncounter.addReason(newConcept);
+            }
         }
-    }*/
+    }
+
+    private static void updateEncounterLength(Encounter oldEncounter, Encounter newEncounter) {
+        if (newEncounter.hasLength()) {
+            Duration d = newEncounter.getLength();
+            d = d.copy();
+            oldEncounter.setLength(d);
+        }
+    }
+
+    private static void updateEncounterPeriod(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasPeriod()) {
+            return;
+        }
+
+        Period oldPeriod = null;
+        if (oldEncounter.hasPeriod()) {
+            oldPeriod = oldEncounter.getPeriod();
+        } else {
+            oldPeriod = new Period();
+            oldEncounter.setPeriod(oldPeriod);
+        }
+
+        Period newPeriod = newEncounter.getPeriod();
+
+        if (newPeriod.hasStart()) {
+            Date d = newPeriod.getStart();
+            oldPeriod.setStart(d);
+        }
+
+        if (newPeriod.hasEnd()) {
+            Date d = newPeriod.getEnd();
+            oldPeriod.setEnd(d);
+        }
+    }
+
+    private static void updateEncounterAppointment(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasAppointment()) {
+            return;
+        }
+
+        Reference ref = newEncounter.getAppointment();
+        ref = ref.copy();
+        oldEncounter.setAppointment(ref);
+    }
+
+    private static void updateEncounterParticipant(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasParticipant()) {
+            return;
+        }
+
+        for (Encounter.EncounterParticipantComponent newParticipant: newEncounter.getParticipant()) {
+
+            //find all old participants for the same person and type
+            List<Encounter.EncounterParticipantComponent> oldParticipantsSamePersonAndType = new ArrayList<>();
+
+            for (Encounter.EncounterParticipantComponent oldParticipant : oldEncounter.getParticipant()) {
+
+                if (oldParticipant.hasIndividual() != newParticipant.hasIndividual()) {
+                    continue;
+                }
+
+                if (oldParticipant.hasIndividual()
+                        && !ReferenceHelper.equals(oldParticipant.getIndividual(), newParticipant.getIndividual())) {
+                    continue;
+                }
+
+                if (oldParticipant.hasType() != newParticipant.hasType()) {
+                    continue;
+                }
+
+                if (oldParticipant.hasType()) {
+                    int oldCount = oldParticipant.getType().size();
+                    int newCount = newParticipant.getType().size();
+                    if (oldCount != newCount) {
+                        continue;
+                    }
+
+                    boolean typesMatch = true;
+                    for (CodeableConcept oldType: oldParticipant.getType()) {
+                        boolean foundType = false;
+                        for (CodeableConcept newType: newParticipant.getType()) {
+                            if (oldType.equalsDeep(newType)) {
+                                foundType = true;
+                                break;
+                            }
+                        }
+                        if (!foundType) {
+                            typesMatch = false;
+                            break;
+                        }
+                    }
+                    if (!typesMatch) {
+                        continue;
+                    }
+                }
+
+                //if we finally make it here, this old participant matches the new one on person and type
+                oldParticipantsSamePersonAndType.add(oldParticipant);
+            }
+
+            boolean addNewParticipant;
+
+            if (oldParticipantsSamePersonAndType.isEmpty()) {
+                //if there are no old participants with the same type and person, then just add the new one
+                addNewParticipant = true;
+
+            } else {
+
+                if (!newParticipant.hasPeriod()) {
+                    //if the new participant doesn't have a period, there's no new info, so don't add it
+                    addNewParticipant = false;
+
+                } else {
+                    addNewParticipant = true;
+                    Period newPeriod = newParticipant.getPeriod();
+
+                    for (Encounter.EncounterParticipantComponent oldParticipant : oldParticipantsSamePersonAndType) {
+
+                        Period oldPeriod = null;
+                        if (oldParticipant.hasPeriod()) {
+                            oldPeriod = oldParticipant.getPeriod();
+                        }
+
+                        //see if we can merge the old and new periods
+                        Period mergedPeriod = compareAndMergePeriods(oldPeriod, newPeriod);
+                        if (mergedPeriod != null) {
+                            oldParticipant.setPeriod(mergedPeriod);
+                            addNewParticipant = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (addNewParticipant) {
+                newParticipant = newParticipant.copy();
+                oldEncounter.getParticipant().add(newParticipant);
+            }
+        }
+    }
+
+    /**
+     * compares old and new periods, returning a new merged one if they can be merged, null if they can't
+     */
+    private static Period compareAndMergePeriods(Period oldPeriod, Period newPeriod) {
+
+        //if the nwe period is empty, just return the old period
+        if (newPeriod == null
+            || (!newPeriod.hasStart() && !newPeriod.hasEnd())) {
+            return oldPeriod.copy();
+        }
+
+        //if the old period is empty, just return the new period
+        if (oldPeriod == null
+            || (!oldPeriod.hasStart() && !oldPeriod.hasEnd())) {
+            return newPeriod.copy();
+        }
+
+        //if here, then we have start, end or both on our new period and start, end of both on our old period too
+        Date newStart = null;
+        Date newEnd = null;
+        if (newPeriod.hasStart()) {
+            newStart = newPeriod.getStart();
+        }
+        if (newPeriod.hasEnd()) {
+            newEnd = newPeriod.getEnd();
+        }
+
+        Date oldStart = null;
+        Date oldEnd = null;
+        if (oldPeriod.hasStart()) {
+            oldStart = oldPeriod.getStart();
+        }
+        if (oldPeriod.hasEnd()) {
+            oldEnd = oldPeriod.getEnd();
+        }
+
+        //if we have old and new starts, and they don't match, then skip this participant
+        if (newStart != null
+                && oldStart != null
+                && !oldStart.equals(newStart)) {
+            return null;
+        }
+
+        //if we have a new start date, make sure it's not after the existing end date, if we have one
+        if (oldEnd != null
+                && newStart != null
+                && newStart.after(oldEnd)) {
+            return null;
+        }
+
+        //if we have old and new end dates, and they don't match, then skip this participant
+        if (newEnd != null
+                && oldEnd != null
+                && !oldEnd.equals(newEnd)) {
+            return null;
+        }
+
+        //if we have a new end date, make sure it's not before the start date, if we have one
+        if (oldStart != null
+                && newEnd != null
+                && newEnd.before(oldStart)) {
+            return null;
+        }
+
+        //if we make it here, set the new dates in the old period
+        Period merged = oldPeriod.copy();
+
+        if (newStart != null) {
+            merged.setStart(newStart);
+        }
+        if (newEnd != null) {
+            merged.setEnd(newEnd);
+        }
+
+        return merged;
+    }
+
+    private static void updateEncounterIncomingReferral(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasIncomingReferral()) {
+            return;
+        }
+
+        for (Reference newReference: newEncounter.getIncomingReferral()) {
+
+            if (!oldEncounter.hasIncomingReferral()
+                || !ReferenceHelper.contains(oldEncounter.getIncomingReferral(), newReference)) {
+                newReference = newReference.copy();
+                oldEncounter.addIncomingReferral(newReference);
+            }
+        }
+    }
+
+    private static void updateEncounterEpisode(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasEpisodeOfCare()) {
+            return;
+        }
+
+        for (Reference newReference: newEncounter.getEpisodeOfCare()) {
+
+            if (!oldEncounter.hasEpisodeOfCare()
+                || !ReferenceHelper.contains(oldEncounter.getEpisodeOfCare(), newReference)) {
+                newReference = newReference.copy();
+                oldEncounter.addEpisodeOfCare(newReference);
+            }
+        }
+    }
+
+    private static void updateEncounterPatient(Encounter oldEncounter, Encounter newEncounter) throws Exception {
+        //the subject (i.e. patient) should never change, so check this and validate rather than apply changes
+        if (!oldEncounter.hasPatient()) {
+            throw new TransformException("No patient on OLD " + oldEncounter.getResourceType() + " " + oldEncounter.getId());
+        }
+        if (!newEncounter.hasPatient()) {
+            throw new TransformException("No patient on NEW " + newEncounter.getResourceType() + " " + newEncounter.getId());
+        }
+
+        String oldPatientRef = oldEncounter.getPatient().getReference();
+        String newPatientRef = newEncounter.getPatient().getReference();
+        if (!oldPatientRef.equals(newPatientRef)) {
+            throw new TransformException("Old " + oldEncounter.getResourceType() + " " + oldEncounter.getId() + " links to " + oldPatientRef + " but new version to " + newPatientRef);
+        }
+    }
+
+    private static void updateEncounterPriority(Encounter oldEncounter, Encounter newEncounter) {
+        if (newEncounter.hasPriority()) {
+            CodeableConcept codeableConcept = newEncounter.getPriority();
+            codeableConcept = codeableConcept.copy(); //not strictly necessary, but can't hurt
+            oldEncounter.setPriority(codeableConcept);
+        }
+    }
+
+    private static void updateEncounterType(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasType()) {
+            return;
+        }
+
+        for (CodeableConcept newConcept: newEncounter.getType()) {
+
+            boolean add = true;
+            if (oldEncounter.hasType()) {
+                for (CodeableConcept oldConcept: oldEncounter.getType()) {
+                    if (oldConcept.equalsDeep(newConcept)) {
+                        add = false;
+                        break;
+                    }
+                }
+            }
+
+            if (add) {
+                newConcept = newConcept.copy();
+                oldEncounter.addType(newConcept);
+            }
+        }
+    }
+
+    private static void updateEncounterClass(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasClass_()) {
+            return;
+        }
+
+        Encounter.EncounterClass cls = newEncounter.getClass_();
+        oldEncounter.setClass_(cls);
+    }
+
+    private static void updateEncounterStatusHistory(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasStatusHistory()) {
+            return;
+        }
+
+        for (Encounter.EncounterStatusHistoryComponent newStatus: newEncounter.getStatusHistory()) {
+
+            //see if we can find a matching status element that we can update with new info (i.e. dates)
+            boolean add = true;
+
+            if (oldEncounter.hasStatusHistory()) {
+
+                //status and period are mandatory on the status history, so we don't need to mess about checking the has... fns
+                Encounter.EncounterState newState = newStatus.getStatus();
+                Period newPeriod = newStatus.getPeriod();
+
+                for (Encounter.EncounterStatusHistoryComponent oldStatus: oldEncounter.getStatusHistory()) {
+
+                    Encounter.EncounterState oldState = oldStatus.getStatus();
+                    Period oldPeriod = oldStatus.getPeriod();
+                    if (oldState != newState) {
+                        continue;
+                    }
+
+                    Period mergedPeriod = compareAndMergePeriods(oldPeriod, newPeriod);
+                    if (mergedPeriod == null) {
+                        continue;
+                    }
+
+                    //if we make it here, we can set the new merged period on the old status and skip adding it as a new status entirely
+                    oldStatus.setPeriod(mergedPeriod);
+                    add = false;
+                }
+            }
+
+            if (add) {
+                newStatus = newStatus.copy();
+                oldEncounter.getStatusHistory().add(newStatus);
+            }
+        }
+    }
+
+    private static void updateEncounterStatus(Encounter oldEncounter, Encounter newEncounter) {
+        if (!newEncounter.hasStatus()) {
+            return;
+        }
+
+        Encounter.EncounterState oldStatus = null;
+        if (oldEncounter.hasStatus()) {
+            oldStatus = oldEncounter.getStatus();
+        }
+
+        //set the new status
+        Encounter.EncounterState newStatus = newEncounter.getStatus();
+        oldEncounter.setStatus(newStatus);
+
+        //if we actually changed the status, see if we need to move the old status into the status history
+        if (oldStatus != null
+                && oldStatus != newStatus) {
+
+            boolean add = true;
+
+            //see if we have a status history record with the old status in
+            if (oldEncounter.hasStatusHistory()) {
+                for (Encounter.EncounterStatusHistoryComponent oldStatusHistory: oldEncounter.getStatusHistory()) {
+                    if (oldStatusHistory.getStatus() == oldStatus) {
+                        add = false;
+                        break;
+                    }
+                }
+            }
+
+            if (add) {
+                Encounter.EncounterStatusHistoryComponent newStatusHistory = oldEncounter.addStatusHistory();
+                newStatusHistory.setStatus(oldStatus);
+                newStatusHistory.setPeriod(new Period()); //period is mandatory, but we don't have any dates to go in there
+            }
+        }
+    }
+
+
+
+    private static void updateEncounterIdentifiers(Encounter oldEncounter, Encounter newEncounter) {
+
+        if (!newEncounter.hasIdentifier()) {
+            return;
+        }
+
+        for (Identifier newIdentifier: newEncounter.getIdentifier()) {
+
+            boolean add = true;
+
+            if (oldEncounter.hasIdentifier()) {
+                for (Identifier oldIdentifier: oldEncounter.getIdentifier()) {
+
+                    if (oldIdentifier.hasUse() != newIdentifier.hasUse()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasUse()
+                            && oldIdentifier.getUse() != newIdentifier.getUse()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasType() != newIdentifier.hasType()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasType()
+                            && !oldIdentifier.getType().equalsDeep(newIdentifier.getType())) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasSystem() != newIdentifier.hasSystem()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasSystem()
+                            && !oldIdentifier.getSystem().equals(newIdentifier.getSystem())) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasValue() != newIdentifier.hasValue()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasValue()
+                            && !oldIdentifier.getValue().equals(newIdentifier.getValue())) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasPeriod() != newIdentifier.hasPeriod()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasPeriod()
+                            && !oldIdentifier.getPeriod().equalsDeep(newIdentifier.getPeriod())) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasAssigner() != newIdentifier.hasAssigner()) {
+                        continue;
+                    }
+                    if (oldIdentifier.hasAssigner()
+                            && !oldIdentifier.getAssigner().equalsDeep(newIdentifier.getAssigner())) {
+                        continue;
+                    }
+
+                    //if we make it here, the old identifier matches the new one, so we don't need to add it
+                    add = false;
+                    break;
+                }
+            }
+
+            if (add) {
+                newIdentifier = newIdentifier.copy();
+                oldEncounter.addIdentifier(newIdentifier);
+            }
+        }
+    }
 }

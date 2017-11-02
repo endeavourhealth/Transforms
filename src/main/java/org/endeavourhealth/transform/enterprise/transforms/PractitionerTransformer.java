@@ -47,10 +47,7 @@ public class PractitionerTransformer extends AbstractTransformer {
             }
 
             Reference organisationReference = role.getManagingOrganization();
-            practitionerEnterpriseOrgId = findEnterpriseId(params, organisationReference);
-            if (practitionerEnterpriseOrgId == null) {
-                practitionerEnterpriseOrgId = transformOnDemand(organisationReference, params);
-            }
+            practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
 

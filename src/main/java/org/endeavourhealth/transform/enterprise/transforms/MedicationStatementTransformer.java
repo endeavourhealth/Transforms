@@ -53,10 +53,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasDateAssertedElement()) {

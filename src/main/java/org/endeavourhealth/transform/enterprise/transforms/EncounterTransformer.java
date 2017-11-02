@@ -68,10 +68,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
                 if (primary) {
                     Reference practitionerReference = participantComponent.getIndividual();
-                    practitionerId = findEnterpriseId(params, practitionerReference);
-                    if (practitionerId == null) {
-                        practitionerId = transformOnDemand(practitionerReference, params);
-                    }
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
                 }
             }
         }
@@ -168,7 +165,7 @@ public class EncounterTransformer extends AbstractTransformer {
         //if the fhir resource doesn't have a type or class, then return out
         if (!fhir.hasType()
                 || !fhir.hasClass_()) {
-            LOG.debug("No type or class");
+            //LOG.debug("No type or class");
             return null;
         }
 
@@ -182,11 +179,11 @@ public class EncounterTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
             Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
             if (hl7MessageTypeCoding == null) {
-                LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
+                //LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
                 return null;
             }
             hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
-            LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
+            //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
 
         } else {
             try {
@@ -201,7 +198,7 @@ public class EncounterTransformer extends AbstractTransformer {
                             Coding coding = header.getEvent();
                             hl7MessageTypeText = coding.getDisplay();
 
-                            LOG.debug("Got hl7 type " + hl7MessageTypeText + " from exchange body");
+                            //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from exchange body");
                         }
                     }
                 }
@@ -212,7 +209,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         //if we couldn't find an HL7 message type, then give up
         if (Strings.isNullOrEmpty(hl7MessageTypeText)) {
-            LOG.debug("Failed to find hl7 type");
+            //LOG.debug("Failed to find hl7 type");
             return null;
         }
 

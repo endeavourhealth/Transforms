@@ -98,10 +98,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
 
             //the requester can be an organisation or practitioner
             if (resourceType == ResourceType.Organization) {
-                requesterOrganizationId = findEnterpriseId(params, requesterReference);
-                if (requesterOrganizationId == null) {
-                    requesterOrganizationId = transformOnDemand(requesterReference, params);
-                }
+                requesterOrganizationId = transformOnDemandAndMapId(requesterReference, params);
 
             } else if (resourceType == ResourceType.Practitioner) {
                 requesterOrganizationId = findOrganisationEnterpriseIdFromPractictioner(requesterReference, fhir, params);
@@ -115,21 +112,21 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 if (ReferenceHelper.isResourceType(recipientReference, ResourceType.Organization)) {
                     //the EMIS test pack contains referrals that point to recipient organisations that don't exist,
                     //so we need to handle the failure to find the organisation
-                    recipientOrganizationId = findEnterpriseId(params, recipientReference);
-                    if (recipientOrganizationId == null) {
-                        recipientOrganizationId = transformOnDemand(recipientReference, params);
-                    }
+                    recipientOrganizationId = transformOnDemandAndMapId(recipientReference, params);
                 }
             }
 
             //if we didn't find an organisation reference, look for a practitioner one
-            if (recipientOrganizationId == null) {
+            //just rely on the organisation ID, so we don't accidentally infer that the referral is to
+            //and organisation when it's not because the Emis data contains referrals with BOTH sender and recipient
+            //organsiation GUIDs being to unknown orgs, and we should let that be carried through into the subscriber DB
+            /*if (recipientOrganizationId == null) {
                 for (Reference recipientReference : fhir.getRecipient()) {
                     if (ReferenceHelper.isResourceType(recipientReference, ResourceType.Practitioner)) {
                         recipientOrganizationId = findOrganisationEnterpriseIdFromPractictioner(recipientReference, fhir, params);
                     }
                 }
-            }
+            }*/
         }
 
         Reference practitionerReference = null;
@@ -165,10 +162,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         }
 
         if (practitionerReference != null) {
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasPriority()) {
@@ -244,10 +238,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         }
         Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
         Reference organisationReference = role.getManagingOrganization();
-        Long ret = findEnterpriseId(params, organisationReference);
-        if (ret == null) {
-            ret = transformOnDemand(organisationReference, params);
-        }
+
+        Long ret = transformOnDemandAndMapId(organisationReference, params);
         return ret;
     }
 

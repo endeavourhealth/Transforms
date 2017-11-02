@@ -59,10 +59,7 @@ public class ObservationTransformer extends AbstractTransformer {
             for (Reference reference: fhir.getPerformer()) {
                 ResourceType resourceType = ReferenceHelper.getResourceType(reference);
                 if (resourceType == ResourceType.Practitioner) {
-                    practitionerId = findEnterpriseId(params, reference);
-                    if (practitionerId == null) {
-                        practitionerId = transformOnDemand(reference, params);
-                    }
+                    practitionerId = transformOnDemandAndMapId(reference, params);
                 }
             }
         }

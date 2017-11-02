@@ -120,9 +120,9 @@ public class IdHelper {
                 repository.insert(mapping);
 
                 //logging to trace problem with EmisOpen duplicate patients
-                if (resourceType == ResourceType.Patient) {
+                /*if (resourceType == ResourceType.Patient) {
                     LOG.trace("Creating new EDS ID " + mapping.getEdsId() + " for patient " + sourceId + " service " + serviceId + " system " + systemId);
-                }
+                }*/
             }
 
             ret = mapping.getEdsId();

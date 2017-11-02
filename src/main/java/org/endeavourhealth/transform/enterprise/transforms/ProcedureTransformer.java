@@ -61,10 +61,7 @@ public class ProcedureTransformer extends AbstractTransformer {
             }
             Procedure.ProcedurePerformerComponent performerComponent = fhir.getPerformer().get(0);
             Reference practitionerReference = performerComponent.getActor();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasPerformedDateTimeType()) {

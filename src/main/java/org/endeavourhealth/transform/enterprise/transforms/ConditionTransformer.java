@@ -57,10 +57,7 @@ public class ConditionTransformer extends AbstractTransformer {
 
         if (fhir.hasAsserter()) {
             Reference practitionerReference = fhir.getAsserter();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasOnsetDateTimeType()) {

@@ -48,10 +48,7 @@ public class AppointmentTransformer extends AbstractTransformer {
                 ReferenceComponents components = ReferenceHelper.getReferenceComponents(reference);
 
                 if (components.getResourceType() == ResourceType.Practitioner) {
-                    practitionerId = findEnterpriseId(params, reference);
-                    if (practitionerId == null) {
-                        practitionerId = transformOnDemand(reference, params);
-                    }
+                    practitionerId = transformOnDemandAndMapId(reference, params);
                 }
             }
         }
@@ -76,10 +73,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         if (fhirSlot != null) {
 
             Reference scheduleReference = fhirSlot.getSchedule();
-            scheduleId = findEnterpriseId(params, scheduleReference);
-            if (scheduleId == null) {
-                scheduleId = transformOnDemand(scheduleReference, params);
-            }
+            scheduleId = transformOnDemandAndMapId(scheduleReference, params);
 
         } else {
             LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());

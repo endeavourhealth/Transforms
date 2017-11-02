@@ -55,10 +55,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
         if (fhir.hasRecorder()) {
             Reference practitionerReference = fhir.getRecorder();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasOnset()) {

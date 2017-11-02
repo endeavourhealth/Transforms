@@ -57,10 +57,7 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
 
         if (fhir.hasOrderer()) {
             Reference practitionerReference = fhir.getOrderer();
-            practitionerId = findEnterpriseId(params, practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, params);
-            }
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasEvent()) {
