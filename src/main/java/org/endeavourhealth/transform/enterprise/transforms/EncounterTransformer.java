@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
@@ -149,7 +152,11 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId);
     }
 
-    private String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
+    public static String findEncounterTypeTerm(Encounter fhir) {
+        return findEncounterTypeTerm(fhir, null);
+    }
+
+    private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
 
         if (fhir.hasExtension()) {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
@@ -185,7 +192,8 @@ public class EncounterTransformer extends AbstractTransformer {
             hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
             //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
 
-        } else {
+        } else if (params != null) {
+            //for older formats of the transformed resources, the HL7 message type can only be found from the raw original exchange body
             try {
                 String exchangeBody = params.getExchangeBody();
                 Bundle bundle = (Bundle)FhirResourceHelper.deserialiseResouce(exchangeBody);
