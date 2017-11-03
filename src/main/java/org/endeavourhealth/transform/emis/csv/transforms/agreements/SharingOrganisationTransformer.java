@@ -1,20 +1,21 @@
 package org.endeavourhealth.transform.emis.csv.transforms.agreements;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.agreements.SharingOrganisation;
-import org.hl7.fhir.instance.model.Meta;
-import org.hl7.fhir.instance.model.Period;
-import org.hl7.fhir.instance.model.Practitioner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.Map;
 
 public class SharingOrganisationTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SharingOrganisationTransformer.class);
+
+    private static Boolean allowDisabledOrganisations = null;
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -32,9 +33,25 @@ public class SharingOrganisationTransformer {
 
         boolean isDisabled = parser.getDisabled();
         if (isDisabled) {
-            //need to remove this so we let the data through again
-            throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
+            if (!getAllowDisabledOrganisations()) {
+                throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
+            }
         }
     }
 
+    private static boolean getAllowDisabledOrganisations() {
+        if (allowDisabledOrganisations == null) {
+            boolean b;
+            try {
+                JsonNode ex = ConfigManager.getConfigurationAsJson("emis", "queuereader");
+                b = ex.get("process_disabled").asBoolean();
+            } catch (Exception var4) {
+                b = false;
+            }
+
+            allowDisabledOrganisations = new Boolean(b);
+            LOG.info("Allowing Disabled Emis Organisations = " + allowDisabledOrganisations);
+        }
+        return allowDisabledOrganisations.booleanValue();
+    }
 }
