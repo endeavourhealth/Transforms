@@ -361,10 +361,25 @@ public class BasisTransformer {
     /*
      *
      */
-    public static void createDiagnosis(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[], Condition.ConditionVerificationStatus cvs ) throws Exception {
+    public static void createDiagnosis(Condition fhirCondition, ResourceId diagnosisResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Date dateRecorded, DateTimeType onsetDate, CodeableConcept diagnosisCode, String notes, Identifier identifiers[], Condition.ConditionVerificationStatus cvs, String[] metaUri, Extension[] ex) throws Exception {
         fhirCondition.setId(diagnosisResourceId.getResourceId().toString());
 
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+        // Extensions
+        if (ex != null) {
+            for (int i = 0; i < ex.length; i++) {
+                fhirCondition.addExtension(ex[i]);
+            }
+        }
+
+        // Meta
+        Meta meta = new Meta();
+        meta.addProfile(FhirUri.PROFILE_URI_CONDITION); // This should always be added to make it compatible with EMIS data for viewing purposes
+        if (metaUri != null) {
+            for (int i = 0; i < metaUri.length; i++) {
+                meta.addProfile(metaUri[i]);
+            }
+        }
+        fhirCondition.setMeta(meta);
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -411,12 +426,28 @@ public class BasisTransformer {
     /*
      *
      */
-    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
+    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[], String[] metaUri, Extension[] ex) throws Exception {
         CodeableConcept cc = null;
         Date d = null;
 
         // Turn key into Resource id
         fhirProcedure.setId(procedureResourceId.getResourceId().toString());
+
+        // Extensions
+        if (ex != null) {
+            for (int i = 0; i < ex.length; i++) {
+                fhirProcedure.addExtension(ex[i]);
+            }
+        }
+
+        // Meta
+        if (metaUri != null) {
+            Meta meta = new Meta();
+            for (int i = 0; i < metaUri.length; i++) {
+                meta.addProfile(metaUri[i]);
+            }
+            fhirProcedure.setMeta(meta);
+        }
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -630,7 +661,7 @@ public class BasisTransformer {
     /*
     *
     */
-    public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[]) throws Exception {
+    public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[], Extension[] ex) throws Exception {
         fhirCondition.setId(problemResourceId.getResourceId().toString());
 
         fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
@@ -638,6 +669,13 @@ public class BasisTransformer {
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
                 fhirCondition.addIdentifier(identifiers[i]);
+            }
+        }
+
+        // Extensions
+        if (ex != null) {
+            for (int i = 0; i < ex.length; i++) {
+                fhirCondition.addExtension(ex[i]);
             }
         }
 

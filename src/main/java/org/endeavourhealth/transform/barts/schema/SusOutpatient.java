@@ -84,7 +84,7 @@ public class SusOutpatient extends SusBaseParser {
         return super.getInt("ExpectedDurationMinutes");
     }
     public Date getExpectedLeavingDateTime() throws TransformException {
-        return new Date(getAppointmentDateTime().getTime() + (getExpectedDurationMinutes() * 1000));
+        return new Date(getAppointmentDateTime().getTime() + (getExpectedDurationMinutes() * 60000));
     }
 
 }
