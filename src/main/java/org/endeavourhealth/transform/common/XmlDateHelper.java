@@ -1,5 +1,9 @@
 package org.endeavourhealth.transform.common;
 
+import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
+
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.util.Date;
 

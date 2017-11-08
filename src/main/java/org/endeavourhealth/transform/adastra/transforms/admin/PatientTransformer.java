@@ -1,15 +1,17 @@
-package org.endeavourhealth.transform.adastra.transforms;
+package org.endeavourhealth.transform.adastra.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.*;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
 import java.util.List;
+
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
 
 public class PatientTransformer {
 
@@ -24,8 +26,10 @@ public class PatientTransformer {
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
         // set patient ID
-        AdastraHelper.setUniqueId(fhirPatient, patient.getNationalNumber().getNumber(), caseReport.getAdastraCaseReference());;
+        AdastraHelper.setUniquePatientId(fhirPatient, patient.getNationalNumber().getNumber());
+        guidMapper.put("patient", fhirPatient.getId());
 
+        fhirPatient.getId();
         HumanName humanName = NameConverter.convert(firstName, lastName, null);
         fhirPatient.addName(humanName);
 
@@ -85,7 +89,7 @@ public class PatientTransformer {
         @XmlElement(namespace = "http://www.adastra.com/dataExport")
         protected String surgeryPostcode;*/
 
-        ReferenceHelper.createReference(ResourceType.Organization, registration.getSurgeryNationalCode());
+        AdastraHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 
 
         resources.add(fhirPatient);
