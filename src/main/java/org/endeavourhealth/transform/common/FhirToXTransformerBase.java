@@ -5,20 +5,58 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.hl7.fhir.instance.model.ResourceType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class FhirToXTransformerBase {
 
     protected static List<ResourceWrapper> getResources(UUID batchId, Map<ResourceType, List<UUID>> resourceIds) throws Exception {
 
-        //retrieve our resources
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourcesByExchangeBatch = resourceDal.getResourcesForBatch(batchId);
-        List<ResourceWrapper> filteredResources = filterResources(resourcesByExchangeBatch, resourceIds);
-        return filteredResources;
+
+        List<ResourceWrapper> resources = resourceDal.getResourcesForBatch(batchId);
+        resources = filterResources(resources, resourceIds);
+        resources = pruneOlderDuplicates(resources);
+
+        return resources;
+    }
+
+    /**
+     * we can end up with multiple instances of the same resource in a batch (or at least the Emis test data can)
+     * so strip out all but the latest version of each resource, so we're not wasting time sending over
+     * data that will immediately be overwritten and also we don't need to make sure to process them in order
+     */
+    private static List<ResourceWrapper> pruneOlderDuplicates(List<ResourceWrapper> resources) {
+
+        HashMap<UUID, UUID> hmLatestVersion = new HashMap<>();
+        List<ResourceWrapper> ret = new ArrayList<>();
+
+        for (ResourceWrapper resource: resources) {
+            UUID id = resource.getResourceId();
+            UUID version = resource.getVersion();
+
+            UUID latestVersion = hmLatestVersion.get(id);
+            if (latestVersion == null) {
+                hmLatestVersion.put(id, version);
+
+            } else {
+                int comp = version.compareTo(latestVersion);
+                if (comp > 0) {
+                    hmLatestVersion.put(id, latestVersion);
+                }
+            }
+        }
+
+        for (ResourceWrapper resource: resources) {
+            UUID id = resource.getResourceId();
+            UUID version = resource.getVersion();
+
+            UUID latestVersion = hmLatestVersion.get(id);
+            if (latestVersion.equals(version)) {
+                ret.add(resource);
+            }
+        }
+
+        return ret;
     }
 
     private static List<ResourceWrapper> filterResources(List<ResourceWrapper> allResources,

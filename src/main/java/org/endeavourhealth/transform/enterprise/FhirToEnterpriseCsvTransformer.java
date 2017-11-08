@@ -56,9 +56,6 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         LOG.trace("Transforming batch " + batchId + " and " + filteredResources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        //hash the resources by reference to them, so the transforms can quickly look up dependant resources
-        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(filteredResources);
-
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
         boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
@@ -73,6 +70,9 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             batchSize = config.get("transform_batch_size").asInt();
         }
         //int batchSize = findTransformBatchSize(configName);
+
+        //hash the resources by reference to them, so the transforms can quickly look up dependant resources
+        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(filteredResources);
 
         OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
         EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, configName, data, resourcesMap, exchangeBody);
@@ -198,8 +198,6 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
     private static void tranformResources(List<ResourceWrapper> resources,
                                           EnterpriseTransformParams params) throws Exception {
-
-
 
         int threads = Math.min(10, resources.size()/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
         threads = Math.max(threads, 1); //make sure we have a min of 1
@@ -403,6 +401,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //find all the ones we want to transform
         List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
         HashSet<ResourceWrapper> hsResourcesToTransform = new HashSet<>();
+
         for (ResourceWrapper resource: resources) {
             if (resource.getResourceType().equals(resourceType.toString())) {
                 resourcesToTransform.add(resource);
@@ -414,23 +413,24 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             return false;
         }
 
-        //remove all the resources we processed, so we can check for ones we missed at the end
-        //removeAll is really slow, so changing around
+        //remove all the resources we're going to, so we can check for ones we missed at the end
+        //removeAll is really slow, so changing to be faster
+        //resources.removeAll(resourcesToTransform);
         for (int i=resources.size()-1; i>=0; i--) {
             ResourceWrapper r = resources.get(i);
             if (hsResourcesToTransform.contains(r)) {
                 resources.remove(i);
             }
         }
-        //resources.removeAll(resourcesToTransform);
 
         //we use this function with a null transformer for resources we want to ignore
         AbstractTransformer transformer = createTransformerForResourceType(resourceType);
-        AbstractEnterpriseCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
         if (transformer != null) {
 
-            List<ResourceWrapper> batch = new ArrayList<>();
+            AbstractEnterpriseCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
 
+            //transform in batches
+            List<ResourceWrapper> batch = new ArrayList<>();
             for (ResourceWrapper resource: resourcesToTransform) {
 
                 batch.add(resource);
