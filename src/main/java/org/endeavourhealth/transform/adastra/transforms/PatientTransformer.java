@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.adastra.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.*;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
@@ -22,7 +23,8 @@ public class PatientTransformer {
         Patient fhirPatient = new Patient();
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
-        //TODO - set patient ID
+        // set patient ID
+        AdastraHelper.setUniqueId(fhirPatient, patient.getNationalNumber().getNumber(), caseReport.getAdastraCaseReference());;
 
         HumanName humanName = NameConverter.convert(firstName, lastName, null);
         fhirPatient.addName(humanName);
@@ -33,10 +35,10 @@ public class PatientTransformer {
             if (type.equals("Exact")) {
                 Date dob = XmlDateHelper.convertDate(dateOfBirthType.getDobValue());
                 fhirPatient.setBirthDate(dob);
-
             } else if (type.equals("AgeOnly")) {
-                //TODO - need to know how to handle this
-
+                // Age Only sets the DOB as the mid point of the year of birth so treat like a normal DOB
+                Date dob = XmlDateHelper.convertDate(dateOfBirthType.getDobValue());
+                fhirPatient.setBirthDate(dob);
             } else {
                 throw new Exception("Unexpected date of birth type [" + type + "]");
             }
@@ -73,7 +75,8 @@ public class PatientTransformer {
         }
 
         AdastraCaseDataExport.Patient.GpRegistration registration = patient.getGpRegistration();
-//TODO - handle registered practice details properly
+        //TODO - handle registered practice details properly
+        //fhirPatient.setManagingOrganization()
      /*   protected String registrationStatus;
         @XmlElement(namespace = "http://www.adastra.com/dataExport")
         protected String gpNationalCode;
@@ -81,6 +84,8 @@ public class PatientTransformer {
         protected String surgeryNationalCode;
         @XmlElement(namespace = "http://www.adastra.com/dataExport")
         protected String surgeryPostcode;*/
+
+        ReferenceHelper.createReference(ResourceType.Organization, registration.getSurgeryNationalCode());
 
 
         resources.add(fhirPatient);

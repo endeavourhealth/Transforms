@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.adastra;
 import org.endeavourhealth.common.utility.XmlHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.transforms.EpisodeTransformer;
+import org.endeavourhealth.transform.adastra.transforms.OrganisationTransformer;
 import org.endeavourhealth.transform.adastra.transforms.PatientTransformer;
 import org.hl7.fhir.instance.model.Resource;
 
@@ -22,7 +23,7 @@ public class AdastraXmlToFhirTransformer {
         //TODO - handle case reference
         //TODO - handle care number
 
-
+        OrganisationTransformer.transform(caseReport, ret);
         PatientTransformer.transform(caseReport, ret);
         EpisodeTransformer.transform(caseReport, ret);
 
