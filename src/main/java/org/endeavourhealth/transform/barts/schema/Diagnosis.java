@@ -42,9 +42,13 @@ public class Diagnosis extends AbstractFixedParser {
         return super.getDateTime("Update_DT_TM");
     }
 
-    public boolean getActiveIndicator() {
-        String val = super.getString("ActiveIndicator");
-        if (val.compareTo("0") == 0) {
+    public String getActiveIndicator() {
+        return super.getString("ActiveIndicator");
+    }
+
+    public boolean isActive() {
+        int val = super.getInt("ActiveIndicator");
+        if (val == 1) {
             return true;
         } else {
             return false;

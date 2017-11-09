@@ -75,7 +75,8 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
         ResourceId diagnosisResourceId = getDiagnosisResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocalPatientId(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
 
         Condition.ConditionVerificationStatus cvs;
-        if (parser.getActiveIndicator()) {
+        //LOG.debug("ActiveIndicator=" + parser.getActiveIndicator());
+        if (parser.isActive()) {
             cvs = Condition.ConditionVerificationStatus.CONFIRMED;
         } else {
             cvs = Condition.ConditionVerificationStatus.ENTEREDINERROR;
