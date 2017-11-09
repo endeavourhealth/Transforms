@@ -19,6 +19,7 @@ public class Read2 {
     private static final String ROOT_GENITOURINARY_SYSTEM_DISEASES = "K";
     private static final String ROOT_SKIN_AND_SUBCUTANEOUS_TISSUE_DISEASES = "M";
     private static final String ROOT_MUSCULOSKELETAL_AND_CONNECTIVE_TISSUE_DISEASES = "N";
+    private static final String ROOT_FAMILY_HISTORY = "12";
 
     public static boolean isProcedure(String code) {
         return code.startsWith(ROOT_OPERATIONS_PROCEDURES)
@@ -41,5 +42,7 @@ public class Read2 {
                 || code.startsWith(ROOT_MUSCULOSKELETAL_AND_CONNECTIVE_TISSUE_DISEASES);
     }
 
-
+    public static boolean isFamilyHistory(String code) {
+        return code.startsWith(ROOT_FAMILY_HISTORY);
+    }
 }

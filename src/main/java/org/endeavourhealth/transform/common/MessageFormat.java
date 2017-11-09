@@ -18,4 +18,5 @@ public class MessageFormat {
     public static final String ADASTRA_XML = "ADASTRA_XML";
     public static final String BARTS_CSV = "BARTSCSV";
     public static final String HOMERTON_CSV = "HOMERTONCSV";
+    public static final String VISION_CSV = "VISIONCSV";
 }
