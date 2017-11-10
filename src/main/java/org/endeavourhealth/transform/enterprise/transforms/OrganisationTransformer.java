@@ -17,7 +17,7 @@ public class OrganisationTransformer extends AbstractTransformer {
         return false;
     }
 
-    public void transform(Long enterpriseId,
+    protected void transform(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {

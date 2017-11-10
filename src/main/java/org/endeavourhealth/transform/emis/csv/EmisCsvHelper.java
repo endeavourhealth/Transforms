@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.emis.csv;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.*;
@@ -33,6 +32,7 @@ public class EmisCsvHelper {
     private static final ParserPool PARSER_POOL = new ParserPool();
 
     private String dataSharingAgreementGuid = null;
+    private boolean allowProcessingDisabledServices = false;
 
     //metadata, not relating to patients
     private Map<Long, CodeableConcept> clinicalCodes = new ConcurrentHashMap<>();
@@ -56,8 +56,13 @@ public class EmisCsvHelper {
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
 
-    public EmisCsvHelper(String dataSharingAgreementGuid) {
+    public EmisCsvHelper(String dataSharingAgreementGuid, boolean allowProcessingDisabledServices) {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
+        this.allowProcessingDisabledServices = allowProcessingDisabledServices;
+    }
+
+    public boolean isAllowProcessingDisabledServices() {
+        return allowProcessingDisabledServices;
     }
 
     /**

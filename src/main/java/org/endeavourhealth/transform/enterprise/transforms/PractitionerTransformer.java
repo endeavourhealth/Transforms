@@ -14,7 +14,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         return false;
     }
 
-    public void transform(Long enterpriseId,
+    protected void transform(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
@@ -51,16 +51,14 @@ public class PractitionerTransformer extends AbstractTransformer {
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
 
+        //if we failed to find a proper organisation ID for the practitioner, assign it to the
+        //organisation we're doing the transform for
         if (practitionerEnterpriseOrgId == null) {
             //LOG.trace("No role, so setting to the enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
             practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
         }
 
         organizaationId = practitionerEnterpriseOrgId.longValue();
-
-        /*if (organizaationId != enterpriseOrganisationId.longValue()) {
-            return;
-        }*/
 
         org.endeavourhealth.transform.enterprise.outputModels.Practitioner model = (org.endeavourhealth.transform.enterprise.outputModels.Practitioner)csvWriter;
         model.writeUpsert(id,

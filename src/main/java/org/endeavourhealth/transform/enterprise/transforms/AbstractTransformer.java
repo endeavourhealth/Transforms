@@ -1,30 +1,27 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseInstanceMapDalI;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
-import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class AbstractTransformer {
 
@@ -55,7 +52,7 @@ public abstract class AbstractTransformer {
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
 
-        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform());
+        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resource: resources) {
 
@@ -87,9 +84,11 @@ public abstract class AbstractTransformer {
         }
     }
 
+    //defines whether the resources covered by this transformer should ALWAYS be transformed (e.g. patient data)
+    //or only transformed if something refers to it (e.g. orgs and practitioners)
     public abstract boolean shouldAlwaysTransform();
 
-    public abstract void transform(Long enterpriseId,
+    protected abstract void transform(Long enterpriseId,
                                    Resource resource,
                                    AbstractEnterpriseCsvWriter csvWriter,
                                    EnterpriseTransformParams params) throws Exception;
@@ -100,11 +99,11 @@ public abstract class AbstractTransformer {
 
 
 
-    protected static Long findEnterpriseId(EnterpriseTransformParams params, Resource resource) throws Exception {
+    /*protected static Long findEnterpriseId(EnterpriseTransformParams params, Resource resource) throws Exception {
         String resourceType = resource.getResourceType().toString();
         String resourceId = resource.getId();
         return findEnterpriseId(params, resourceType, resourceId);
-    }
+    }*/
 
     protected static Long findEnterpriseId(EnterpriseTransformParams params, Reference reference) throws Exception {
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
@@ -113,9 +112,9 @@ public abstract class AbstractTransformer {
         return findEnterpriseId(params, resourceType, resourceId);
     }
 
-    protected static Long findEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
+    /*protected static Long findEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
         return findEnterpriseId(params, resource.getResourceType(), resource.getResourceId().toString());
-    }
+    }*/
 
     public static Long findEnterpriseId(EnterpriseTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
@@ -127,11 +126,11 @@ public abstract class AbstractTransformer {
         return ret;
     }
 
-    protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
+    /*protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, ResourceWrapper resource) throws Exception {
         String resourceType = resource.getResourceType();
         String resourceId = resource.getResourceId().toString();
         return findOrCreateEnterpriseId(params, resourceType, resourceId);
-    }
+    }*/
 
     protected static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, Reference reference) throws Exception {
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
@@ -230,12 +229,12 @@ public abstract class AbstractTransformer {
         }
     }*/
 
-    protected static Map<ResourceWrapper, Long> mapIds(String enterpriseConfigName, List<ResourceWrapper> resources, boolean createIfNotFound) throws Exception {
+    private static Map<ResourceWrapper, Long> mapIds(String enterpriseConfigName, List<ResourceWrapper> resources, boolean createIfNotFound, EnterpriseTransformParams params) throws Exception {
 
-        Map<ResourceWrapper, Long> ids = new HashMap<>();
+        Map<ResourceWrapper, Long> ret = new HashMap<>();
 
         //first, try to find existing IDs for our resources in our memory cache
-        findEnterpriseIdsInCache(enterpriseConfigName, resources, ids);
+        findEnterpriseIdsInCache(enterpriseConfigName, resources, ret);
 
         List<ResourceWrapper> resourcesToFindOnDb = new ArrayList<>();
         List<ResourceWrapper> resourcesToFindOrCreateOnDb = new ArrayList<>();
@@ -243,9 +242,16 @@ public abstract class AbstractTransformer {
         for (ResourceWrapper resource: resources) {
 
             //if our memory cache contained this ID, then skip it
-            if (ids.containsKey(resource)) {
+            if (ret.containsKey(resource)) {
                 continue;
             }
+
+            //if this resource is mapped to a different instance of the same concept (e.g. it's a duplicate instance
+            //of an organisation), then we don't want to generate an ID for it
+            //TODO - finish
+            /*if (isResourceMappedToAnotherInstance(enterpriseConfigName, resource, params)) {
+                continue;
+            }*/
 
             //if we didn't find an ID in memory, then we'll either want to simply find on the DB or find and create on the DB
             if (resource.isDeleted()
@@ -260,11 +266,11 @@ public abstract class AbstractTransformer {
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
             EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findEnterpriseIds(resourcesToFindOnDb, ids);
+            enterpriseIdDal.findEnterpriseIds(resourcesToFindOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource: resourcesToFindOnDb) {
-                Long enterpriseId = ids.get(resource);
+                Long enterpriseId = ret.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
             }
         }
@@ -272,16 +278,93 @@ public abstract class AbstractTransformer {
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
             EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findOrCreateEnterpriseIds(resourcesToFindOrCreateOnDb, ids);
+            enterpriseIdDal.findOrCreateEnterpriseIds(resourcesToFindOrCreateOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource: resourcesToFindOrCreateOnDb) {
-                Long enterpriseId = ids.get(resource);
+                Long enterpriseId = ret.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
             }
         }
 
-        return ids;
+        return ret;
+    }
+
+    private static boolean isResourceMappedToAnotherInstance(String enterpriseConfigName, ResourceWrapper resource, EnterpriseTransformParams params) throws Exception {
+
+        String resourceType = resource.getResourceType();
+        UUID resourceId = resource.getResourceId();
+
+        //only orgs and practitioners are mapped to other instances
+        if (!resourceType.equals(ResourceType.Organization.toString())
+                && !resourceType.equals(ResourceType.Practitioner.toString())) {
+            return false;
+        }
+
+        EnterpriseInstanceMapDalI instanceMapper = DalProvider.factoryEnterpriseInstanceDal(enterpriseConfigName);
+        UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
+
+        //if we've not got a mapping, then we need to create one from our resource data
+        if (mappedResourceId == null) {
+            String mappingValue = findInstanceMappingValue(resource, params);
+            mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+        }
+
+        //if the mapped ID is different to the resource ID then it's mapped to another instance
+        return !mappedResourceId.equals(resourceId);
+    }
+
+    private static String findInstanceMappingValue(ResourceWrapper resourceWrapper, EnterpriseTransformParams params) throws Exception {
+
+        //if our resource is deleted return null so we just map the resource to itself
+        if (resourceWrapper.isDeleted()) {
+            return null;
+        }
+
+        String json = resourceWrapper.getResourceData();
+        Resource resource = FhirResourceHelper.deserialiseResouce(json);
+
+        if (resource instanceof Organization) {
+            //for orgs, we use the ODS code
+            Organization fhirOrg = (Organization)resource;
+            return IdentifierHelper.findOdsCode(fhirOrg);
+
+        } else if (resource instanceof Practitioner) {
+            //we don't have any unique identifier for a person, so use a combination
+            //of their name PLUS their org ods code
+            Practitioner fhirPractitioner = (Practitioner)resource;
+            if (fhirPractitioner.hasName()) {
+                HumanName humanName = fhirPractitioner.getName();
+                String name = humanName.getText();
+
+                if (!Strings.isNullOrEmpty(name)
+                        && fhirPractitioner.hasPractitionerRole()) {
+
+                    if (fhirPractitioner.getPractitionerRole().size() > 1) {
+                        throw new Exception("Don't know how to handle practitioners with more than one role");
+                    }
+
+                    Practitioner.PractitionerPractitionerRoleComponent fhirRole = fhirPractitioner.getPractitionerRole().get(0);
+                    if (fhirRole.hasManagingOrganization()) {
+                        Reference orgReference = fhirRole.getManagingOrganization();
+                        Organization fhirOrganisation = (Organization) findResource(orgReference, params);
+                        if (fhirOrganisation != null) {
+                            String odsCode = IdentifierHelper.findOdsCode(fhirOrganisation);
+                            if (!Strings.isNullOrEmpty(odsCode)) {
+                                return name + "@" + odsCode;
+
+                            }
+                        }
+                    }
+                }
+            }
+
+            //if we don't have enough to make a unique value, then return null
+            return null;
+
+        } else {
+            throw new IllegalArgumentException("Should only be mapping instances for practitioners and organisations");
+        }
     }
 
     private static void findEnterpriseIdsInCache(String enterpriseConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
@@ -298,7 +381,8 @@ public abstract class AbstractTransformer {
      * transforms a dependent resource not necessarily in the exchcnge batch we're currently transforming,
      * e.g. transform a practitioner that's referenced by an observation in this batch
      */
-    protected Long transformOnDemandAndMapId(Reference reference,
+    //TODO - finish this
+    /*protected Long transformOnDemandAndMapId(Reference reference,
                                              EnterpriseTransformParams params) throws Exception {
 
         Long enterpriseId = null;
@@ -327,8 +411,8 @@ public abstract class AbstractTransformer {
         }
 
         return enterpriseId;
-    }
-    /*protected Long transformOnDemandAndMapId(Reference reference,
+    }*/
+    protected Long transformOnDemandAndMapId(Reference reference,
                                             EnterpriseTransformParams params) throws Exception {
 
         Long existingEnterpriseId = findEnterpriseId(params, reference);
@@ -354,5 +438,5 @@ public abstract class AbstractTransformer {
         transformer.transform(enterpriseId, fhir, csvWriter, params);
 
         return enterpriseId;
-    }*/
+    }
 }

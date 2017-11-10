@@ -158,6 +158,15 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         ResourceType resourceType = comps.getResourceType();
         String resourceId = comps.getId();
 
+//TODO - finish
+        //TODO - have a way to "take over" the ID mapping for our instance
+        //we need to load the organisation
+        /*Organization fhirOrg = (Organization)resourceRepository.getCurrentVersionAsResource(resourceType, resourceId);
+        String odsCode = IdentifierHelper.findOdsCode(fhirOrg);
+        if (!Strings.isNullOrEmpty(odsCode)) {
+
+        }*/
+
         enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId);
 
         enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), systemId.toString(), enterpriseOrganisationId);

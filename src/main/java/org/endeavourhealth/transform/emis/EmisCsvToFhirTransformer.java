@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.emis;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
@@ -60,6 +62,8 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+
+    private static Boolean cachedAllowDisabledOrganisations = null;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
@@ -485,7 +489,17 @@ public abstract class EmisCsvToFhirTransformer {
                                          int maxFilingThreads,
                                          boolean processPatientData) throws Exception {
 
-        EmisCsvHelper csvHelper = new EmisCsvHelper(findDataSharingAgreementGuid(parsers));
+        boolean allowProcessingDisabledServices = getAllowDisabledOrganisations();
+        if (!processPatientData) {
+            //if we've already decided that we're not going to process the patient data,
+            //then we've already handled the fact that this service will be disabled,
+            //so allow the extract to be processed
+            allowProcessingDisabledServices = true;
+        }
+
+        String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
+
+        EmisCsvHelper csvHelper = new EmisCsvHelper(sharingAgreementGuid, allowProcessingDisabledServices);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
@@ -620,4 +634,19 @@ public abstract class EmisCsvToFhirTransformer {
         return recordNumbers;
     }
 
+    private static boolean getAllowDisabledOrganisations() {
+        if (cachedAllowDisabledOrganisations == null) {
+            boolean b;
+            try {
+                JsonNode ex = ConfigManager.getConfigurationAsJson("emis", "queuereader");
+                b = ex.get("process_disabled").asBoolean();
+            } catch (Exception var4) {
+                b = false;
+            }
+
+            cachedAllowDisabledOrganisations = new Boolean(b);
+            LOG.info("Allowing Disabled Emis Organisations = " + cachedAllowDisabledOrganisations);
+        }
+        return cachedAllowDisabledOrganisations.booleanValue();
+    }
 }
