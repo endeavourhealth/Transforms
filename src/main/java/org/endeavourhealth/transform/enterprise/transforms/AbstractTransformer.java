@@ -424,6 +424,7 @@ public abstract class AbstractTransformer {
 
         Resource fhir = findResource(reference, params);
         if (fhir == null) {
+            //if it's deleted then just return null since there's no point assigning an ID
             return null;
         }
 
@@ -433,8 +434,13 @@ public abstract class AbstractTransformer {
             throw new TransformException("No transformer found for resource " + reference.getReference());
         }
 
-        AbstractEnterpriseCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
+        //generate a new enterprise ID for our resource. So we have an audit of this, and can recover if we
+        //kill the queue reader at this point, we also need to store our resource's ID in the exchange_batch_extra_resource table
+        //TODO - add new save
+
         Long enterpriseId = findOrCreateEnterpriseId(params, resourceType.toString(), fhir.getId());
+
+        AbstractEnterpriseCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
         transformer.transform(enterpriseId, fhir, csvWriter, params);
 
         return enterpriseId;
