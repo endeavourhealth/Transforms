@@ -33,6 +33,7 @@ public class EmisCsvHelper {
 
     private String dataSharingAgreementGuid = null;
     private boolean allowProcessingDisabledServices = false;
+    private boolean allowProcessingMissingCodes = false;
 
     //metadata, not relating to patients
     private Map<Long, CodeableConcept> clinicalCodes = new ConcurrentHashMap<>();
@@ -56,9 +57,10 @@ public class EmisCsvHelper {
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
 
-    public EmisCsvHelper(String dataSharingAgreementGuid, boolean allowProcessingDisabledServices) {
+    public EmisCsvHelper(String dataSharingAgreementGuid, boolean allowProcessingDisabledServices, boolean allowProcessingMissingCodes) {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
         this.allowProcessingDisabledServices = allowProcessingDisabledServices;
+        this.allowProcessingMissingCodes = allowProcessingMissingCodes;
     }
 
     public boolean isAllowProcessingDisabledServices() {
@@ -168,23 +170,26 @@ public class EmisCsvHelper {
     private void retrieveClinicalCode(Long codeId) throws Exception {
         EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeId);
         if (mapping == null) {
-            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
-            LOG.error("Failed to find clincal codeable concept for code ID " + codeId);
+            if (allowProcessingMissingCodes) {
+                LOG.error("Failed to find clincal codeable concept for code ID " + codeId);
 
-            Coding coding = new Coding();
-            coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
-            coding.setCode("?????");
-            coding.setDisplay("Unknown code");
+                Coding coding = new Coding();
+                coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
+                coding.setCode("?????");
+                coding.setDisplay("Unknown code");
 
-            CodeableConcept codeableConcept = new CodeableConcept();
-            codeableConcept.setText("Missing Clinical Code (Emis ECR 9953529)");
-            codeableConcept.addCoding(coding);
+                CodeableConcept codeableConcept = new CodeableConcept();
+                codeableConcept.setText("Missing Clinical Code (Emis ECR 9953529)");
+                codeableConcept.addCoding(coding);
 
-            clinicalCodes.put(codeId, codeableConcept);
+                clinicalCodes.put(codeId, codeableConcept);
 
-            clinicalCodeTypes.put(codeId, ClinicalCodeType.Conditions_Operations_Procedures);
-            return;
-            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, false, codeId);
+                clinicalCodeTypes.put(codeId, ClinicalCodeType.Conditions_Operations_Procedures);
+                return;
+
+            } else {
+                throw new Exception("Failed to find clinical code for codeId " + codeId);
+            }
         }
 
         String json = mapping.getCodeableConcept();
@@ -217,14 +222,18 @@ public class EmisCsvHelper {
     private void retrieveMedication(Long codeId) throws Exception {
         EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, true, codeId);
         if (mapping == null) {
-            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
-            LOG.error("Failed to find medication codeable concept for code ID " + codeId);
+            if (allowProcessingMissingCodes) {
+                //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
+                LOG.error("Failed to find medication codeable concept for code ID " + codeId);
 
-            CodeableConcept codeableConcept = new CodeableConcept();
-            codeableConcept.setText("Missing Drug Code (Emis ECR 9953529)");
-            medication.put(codeId, codeableConcept);
-            return;
-            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, true, codeId);
+                CodeableConcept codeableConcept = new CodeableConcept();
+                codeableConcept.setText("Missing Drug Code (Emis ECR 9953529)");
+                medication.put(codeId, codeableConcept);
+                return;
+
+            } else {
+                throw new Exception("Failed to find drug code for codeId " + codeId);
+            }
         }
 
         String json = mapping.getCodeableConcept();

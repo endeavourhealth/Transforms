@@ -64,6 +64,7 @@ public abstract class EmisCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static Boolean cachedAllowDisabledOrganisations = null;
+    private static Boolean cachedAllowMissingCodes = null;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
@@ -490,6 +491,9 @@ public abstract class EmisCsvToFhirTransformer {
                                          boolean processPatientData) throws Exception {
 
         boolean allowProcessingDisabledServices = getAllowDisabledOrganisations();
+        boolean allowMissingCodes = getAllowMissingCodes();
+        String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
+
         if (!processPatientData) {
             //if we've already decided that we're not going to process the patient data,
             //then we've already handled the fact that this service will be disabled,
@@ -497,9 +501,7 @@ public abstract class EmisCsvToFhirTransformer {
             allowProcessingDisabledServices = true;
         }
 
-        String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
-
-        EmisCsvHelper csvHelper = new EmisCsvHelper(sharingAgreementGuid, allowProcessingDisabledServices);
+        EmisCsvHelper csvHelper = new EmisCsvHelper(sharingAgreementGuid, allowProcessingDisabledServices, allowMissingCodes);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
@@ -636,17 +638,35 @@ public abstract class EmisCsvToFhirTransformer {
 
     private static boolean getAllowDisabledOrganisations() {
         if (cachedAllowDisabledOrganisations == null) {
-            boolean b;
-            try {
-                JsonNode ex = ConfigManager.getConfigurationAsJson("emis", "queuereader");
-                b = ex.get("process_disabled").asBoolean();
-            } catch (Exception var4) {
-                b = false;
-            }
-
-            cachedAllowDisabledOrganisations = new Boolean(b);
-            LOG.info("Allowing Disabled Emis Organisations = " + cachedAllowDisabledOrganisations);
+            readConfig();
         }
         return cachedAllowDisabledOrganisations.booleanValue();
+    }
+
+    private static boolean getAllowMissingCodes() {
+        if (cachedAllowMissingCodes == null) {
+            readConfig();
+        }
+        return cachedAllowMissingCodes.booleanValue();
+    }
+
+    private static void readConfig() {
+        boolean b1;
+        boolean b2;
+        try {
+            JsonNode json = ConfigManager.getConfigurationAsJson("emis", "queuereader");
+            b1 = json.get("process_disabled").asBoolean();
+            b2 = json.get("missing_codees").asBoolean();
+        } catch (Exception var4) {
+            b1 = false;
+            b2 = false;
+        }
+
+        cachedAllowDisabledOrganisations = new Boolean(b1);
+        cachedAllowMissingCodes = new Boolean(b2);
+
+        LOG.info("Allowing Disabled Emis Organisations = " + cachedAllowDisabledOrganisations);
+        LOG.info("Allowing Missing Codes = " + cachedAllowMissingCodes);
+
     }
 }
