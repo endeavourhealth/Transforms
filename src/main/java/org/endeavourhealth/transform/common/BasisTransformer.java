@@ -661,7 +661,7 @@ public class BasisTransformer {
     /*
     *
     */
-    public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[], Extension[] ex) throws Exception {
+    public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[], Extension[] ex, Condition.ConditionVerificationStatus cvs) throws Exception {
         fhirCondition.setId(problemResourceId.getResourceId().toString());
 
         fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
@@ -701,6 +701,8 @@ public class BasisTransformer {
 
         // set onset to field  to field 10 + 11
         fhirCondition.setOnset(onsetDate);
+
+        fhirCondition.setVerificationStatus(cvs);
 
         // set notes
         if (notes != null) {

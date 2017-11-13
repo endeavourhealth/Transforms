@@ -75,8 +75,19 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
+        Condition.ConditionVerificationStatus cvs;
+        if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
+            cvs = Condition.ConditionVerificationStatus.ENTEREDINERROR;
+        } else {
+            if (parser.getConfirmation().compareToIgnoreCase("Confirmed") == 0) {
+                cvs = Condition.ConditionVerificationStatus.CONFIRMED;
+            } else {
+                cvs = Condition.ConditionVerificationStatus.PROVISIONAL;
+            }
+        }
+
         Condition fhirCondition = new Condition();
-        createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex);
+        createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex, cvs);
 
         // save resource
         LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
