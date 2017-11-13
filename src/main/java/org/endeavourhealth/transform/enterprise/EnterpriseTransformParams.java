@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.enterprise;
 
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
-import org.hibernate.event.spi.RefreshEvent;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.HashSet;
@@ -13,6 +12,8 @@ import java.util.UUID;
 public class EnterpriseTransformParams {
 
     private final UUID protocolId;
+    private final UUID exchangeId;
+    private final UUID batchId;
     private final String enterpriseConfigName;
     private final OutputContainer data;
     private final Map<String, ResourceWrapper> allResources;
@@ -24,8 +25,11 @@ public class EnterpriseTransformParams {
     private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public EnterpriseTransformParams(UUID protocolId, String enterpriseConfigName, OutputContainer data, Map<String, ResourceWrapper> allResources, String exchangeBody) {
+    public EnterpriseTransformParams(UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+                                     OutputContainer data, Map<String, ResourceWrapper> allResources, String exchangeBody) {
         this.protocolId = protocolId;
+        this.exchangeId = exchangeId;
+        this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
         this.data = data;
         this.allResources = allResources;
@@ -39,6 +43,14 @@ public class EnterpriseTransformParams {
 
     public UUID getProtocolId() {
         return protocolId;
+    }
+
+    public UUID getExchangeId() {
+        return exchangeId;
+    }
+
+    public UUID getBatchId() {
+        return batchId;
     }
 
     public String getEnterpriseConfigName() {

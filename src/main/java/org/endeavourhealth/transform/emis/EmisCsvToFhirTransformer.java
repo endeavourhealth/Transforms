@@ -176,7 +176,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{411D0A79-6913-473C-B486-C01F6430D8A6}", "21/09/2017");
         map.put("{0862FADA-594A-415E-B971-7A4312E0A58C}", "10/06/2017");
         map.put("{249C3F3C-24F0-44CE-97A9-B535982BD70C}", "15/10/2017");
-        map.put("{5D7A1915-6E22-4B20-A8AE-4768C06D3BBF}", "15/08/2017");
+        map.put("{5D7A1915-6E22-4B20-A8AE-4768C06D3BBF}", "28/09/2017"); //Barts community
         map.put("{131AE556-8B50-4C17-9D7D-A4B19F7B1FEA}", "15/10/2017");
         map.put("{C0D2D0DF-EF78-444D-9A6D-B9EDEF5EF350}", "13/10/2017");
         map.put("{F174B354-4156-4BCB-960F-35D0145075EA}", "01/02/2017");
@@ -211,7 +211,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{5A1AABA9-7E96-41E7-AF18-E02F4CF1DFB6}", "15/10/2017");
         map.put("{7D8CE31D-66AA-4D6A-9EFD-313646BD1D73}", "15/10/2017");
         map.put("{03EA4A79-B6F1-4524-9D15-992B47BCEC9A}", "15/10/2017");
-        map.put("{4588C493-2EA3-429A-8428-E610AE6A6D76}", "15/08/2017");
+        map.put("{4588C493-2EA3-429A-8428-E610AE6A6D76}", "28/09/2017"); //Barts community
         map.put("{B13F3CC9-C317-4E0D-9C57-C545E4A53CAF}", "15/10/2017");
         map.put("{463DA820-6EC4-48CB-B915-81B31AFBD121}", "13/10/2017");
         map.put("{16F0D65C-B2A8-4186-B4E7-BBAF4390EC55}", "13/10/2017");

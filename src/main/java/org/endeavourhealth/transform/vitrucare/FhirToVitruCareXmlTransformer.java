@@ -50,20 +50,14 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     private static Map<String, byte[]> saltCacheMap = new HashMap<>();
 
     public static String transformFromFhir(UUID batchId,
-                                           Map<ResourceType, List<UUID>> resourceIds, String configName) throws Exception {
-
-        //retrieve our resources
-        List<ResourceWrapper> filteredResources = getResources(batchId, resourceIds);
-        if (filteredResources.isEmpty()) {
-            return null;
-        }
+                                           List<ResourceWrapper> resources, String configName) throws Exception {
 
         //deserialise any patient-facing resources
         List<ResourceWrapper> patientResourceWrappers = new ArrayList<>();
         boolean containsDeletes = false;
         UUID exchangeId = null;
 
-        for (ResourceWrapper resourceBatchEntry: filteredResources) {
+        for (ResourceWrapper resourceBatchEntry: resources) {
             String typeString = resourceBatchEntry.getResourceType();
             ResourceType type = ResourceType.valueOf(typeString);
             if (!FhirResourceFiler.isPatientResource(type)) {

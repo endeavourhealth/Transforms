@@ -41,20 +41,14 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
     public static String transformFromFhir(UUID serviceId,
                                            UUID systemId,
+                                           UUID exchangeId,
                                            UUID batchId,
-                                           Map<ResourceType,
-                                           List<UUID>> resourceIds,
+                                           List<ResourceWrapper> resources,
                                            String configName,
                                            UUID protocolId,
                                            String exchangeBody) throws Exception {
 
-        //retrieve our resources
-        List<ResourceWrapper> filteredResources = getResources(batchId, resourceIds);
-        if (filteredResources.isEmpty()) {
-            return null;
-        }
-
-        LOG.trace("Transforming batch " + batchId + " and " + filteredResources.size() + " resources for service " + serviceId + " -> " + configName);
+        LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
         boolean pseudonymised = config.get("pseudonymised").asBoolean();
@@ -72,10 +66,10 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //int batchSize = findTransformBatchSize(configName);
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
-        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(filteredResources);
+        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
         OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
-        EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, configName, data, resourcesMap, exchangeBody);
+        EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
@@ -87,7 +81,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
 
         try {
-            tranformResources(filteredResources, params);
+            tranformResources(resources, params);
 
             byte[] bytes = data.writeToZip();
             return Base64.getEncoder().encodeToString(bytes);
@@ -156,19 +150,30 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         Reference orgReference = patient.getManagingOrganization();
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(orgReference);
         ResourceType resourceType = comps.getResourceType();
-        String resourceId = comps.getId();
+        UUID resourceId = UUID.fromString(comps.getId());
 
-//TODO - finish
-        //TODO - have a way to "take over" the ID mapping for our instance
-        //we need to load the organisation
-        /*Organization fhirOrg = (Organization)resourceRepository.getCurrentVersionAsResource(resourceType, resourceId);
-        String odsCode = IdentifierHelper.findOdsCode(fhirOrg);
-        if (!Strings.isNullOrEmpty(odsCode)) {
+        //we need to see if our organisation is mapped to another instance of the same place,
+        //in which case we need to use the enterprise ID of that other instance
+        EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+        UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
-        }*/
+        //if we've not got a mapping, then we need to create one from our resource data
+        if (mappedResourceId == null) {
+            Resource fhir = resourceRepository.getCurrentVersionAsResource(resourceType, resourceId.toString());
+            String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
+            mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+        }
 
-        enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId);
+        //if our mapped resource ID is different to our proper ID, then there's a different instance of our organisation
+        //already on the database. So we want to "take over" that organisation record, with our own instance
+        if (!mappedResourceId.equals(resourceId)) {
+            instanceMapper.takeOverInstanceMapping(resourceType, mappedResourceId, resourceId);
+        }
 
+        //generate (or find) an enterprise ID for our organization
+        enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+
+        //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
         enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), systemId.toString(), enterpriseOrganisationId);
 
         return enterpriseOrganisationId;
