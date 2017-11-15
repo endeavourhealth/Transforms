@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.vision.schema;
 
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
 import java.io.File;
 import java.util.Date;
@@ -10,7 +10,7 @@ import java.util.Date;
 public class Journal extends AbstractCsvParser {
 
     public Journal(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT, VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -33,7 +33,6 @@ public class Journal extends AbstractCsvParser {
                 "DRUG_STRENGTH",    /////
                 "DRUG_PACKSIZE",    /////
                 "DMD_CODE",
-
                 "IMMS_STATUS",      ////////
                 "IMMS_COMPOUND",    ////////
                 "IMMS_SOURCE",      ////////
@@ -41,7 +40,6 @@ public class Journal extends AbstractCsvParser {
                 "IMMS_REASON",      ////////
                 "IMMS_METHOD",      ////////
                 "IMMS_SITE",        ////////
-
                 "ENTITY",           ////////
                 "VALUE1_NAME",
                 "VALUE1",
@@ -73,13 +71,9 @@ public class Journal extends AbstractCsvParser {
     public Date getEffectiveDateTime() throws TransformException {
         return super.getDateTime("DATE","TIME");
     }
-//    public String getEffectiveDatePrecision() {
-//        return super.getString("EffectiveDatePrecision");
-//    }
     public Date getEnteredDateTime() throws TransformException {
         return super.getDate("RECORDED_DATE");
     }
-
     public String getReadCode() {
         return super.getString("CODE");
     }
@@ -135,7 +129,6 @@ public class Journal extends AbstractCsvParser {
     public Date getEndDate() throws TransformException {
         return super.getDate("END_DATE");   //Episode end date (F or N) or drug end date (A or I)
     }
-
     public String getAllergyCertainty() {
         return super.getString("CERTAINTY");
     }
@@ -145,7 +138,6 @@ public class Journal extends AbstractCsvParser {
     public String getAction() { return super.getString("ACTION"); }
     public String getSubset() { return super.getString("SUBSET"); }
 
-
     public String getObservationEntity() {
         return super.getString("ENTITY");
     }
@@ -153,5 +145,4 @@ public class Journal extends AbstractCsvParser {
     public String getDocumentID() {
         return super.getString("DOCUMENT_ID");
     }
-
 }

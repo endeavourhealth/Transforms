@@ -83,81 +83,6 @@ public class VisionCsvHelper {
         resource.setId(createUniqueId(patientGuid, sourceGuid));
     }
 
-
-
-    public void addMedication(Long codeId,
-                              CodeableConcept codeableConcept,
-                              Long snomedConceptId,
-                              String snomedTerm) throws Exception {
-
-        //don't add to the caches. A large percentage of codes aren't ever used, so let them be lazily loaded when
-        //required, so we don't chew up memory needlessly
-        //medication.put(codeId, codeableConcept);
-
-        //store the medication in the DB
-
-        String json = PARSER_POOL.composeString(codeableConcept, CODEABLE_CONCEPT);
-
-        EmisCsvCodeMap mapping = new EmisCsvCodeMap();
-        mapping.setDataSharingAgreementGuid(dataSharingAgreementGuid);
-        mapping.setMedication(true);
-        mapping.setCodeId(codeId);
-        mapping.setCodeType(null);
-        mapping.setCodeableConcept(json);
-        mapping.setSnomedConceptId(snomedConceptId);
-        mapping.setSnomedTerm(snomedTerm);
-
-        mappingRepository.save(mapping);
-    }
-    public void addClinicalCode(Long codeId,
-                                CodeableConcept codeableConcept,
-                                ClinicalCodeType type,
-                                String readTerm,
-                                String readCode,
-                                Long snomedConceptId,
-                                Long snomedDescriptionId,
-                                String snomedTerm,
-                                String nationalCode,
-                                String nationalCodeCategory,
-                                String nationalCodeDescription,
-                                Long parentCodeId) throws Exception {
-
-        //don't add to the caches. A large percentage of codes aren't ever used, so let them be lazily loaded when
-        //required, so we don't chew up memory needlessly
-        /*clinicalCodes.put(codeId, codeableConcept);
-        clinicalCodeTypes.put(codeId, type);*/
-
-        //store the code in the DB
-        String json = PARSER_POOL.composeString(codeableConcept, CODEABLE_CONCEPT);
-
-        EmisCsvCodeMap mapping = new EmisCsvCodeMap();
-        mapping.setDataSharingAgreementGuid(dataSharingAgreementGuid);
-        mapping.setMedication(false);
-        mapping.setCodeId(codeId);
-        mapping.setCodeType(type.getValue());
-        mapping.setCodeableConcept(json);
-        mapping.setReadTerm(readTerm);
-        mapping.setReadCode(readCode);
-        mapping.setSnomedConceptId(snomedConceptId);
-        mapping.setSnomedDescriptionId(snomedDescriptionId);
-        mapping.setSnomedTerm(snomedTerm);
-        mapping.setNationalCode(nationalCode);
-        mapping.setNationalCodeCategory(nationalCodeCategory);
-        mapping.setNationalCodeDescription(nationalCodeDescription);
-        mapping.setParentCodeId(parentCodeId);
-
-        mappingRepository.save(mapping);
-    }
-
-    public CodeableConcept findClinicalCode(Long codeId) throws Exception {
-        CodeableConcept ret = clinicalCodes.get(codeId);
-        if (ret == null) {
-            retrieveClinicalCode(codeId);
-            ret = clinicalCodes.get(codeId);
-        }
-        return ret.copy();
-    }
-
     private void retrieveClinicalCode(Long codeId) throws Exception {
         EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeId);
         if (mapping == null) {
@@ -189,41 +114,6 @@ public class VisionCsvHelper {
         clinicalCodeTypes.put(codeId, type);
     }
 
-    public ClinicalCodeType findClinicalCodeType(Long codeId) throws Exception {
-        ClinicalCodeType ret = clinicalCodeTypes.get(codeId);
-        if (ret == null) {
-            retrieveClinicalCode(codeId);
-            ret = clinicalCodeTypes.get(codeId);
-        }
-        return ret;
-    }
-
-    public CodeableConcept findMedication(Long codeId) throws Exception {
-        CodeableConcept ret = medication.get(codeId);
-        if (ret == null) {
-            retrieveMedication(codeId);
-            ret = medication.get(codeId);
-        }
-        return ret.copy();
-    }
-
-    private void retrieveMedication(Long codeId) throws Exception {
-        EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, true, codeId);
-        if (mapping == null) {
-            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
-            LOG.error("Failed to find medication codeable concept for code ID " + codeId);
-
-            CodeableConcept codeableConcept = new CodeableConcept();
-            codeableConcept.setText("Missing Drug Code (Emis ECR 9953529)");
-            medication.put(codeId, codeableConcept);
-            return;
-            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, true, codeId);
-        }
-
-        String json = mapping.getCodeableConcept();
-        CodeableConcept codeableConcept = (CodeableConcept)PARSER_POOL.parseType(json, CODEABLE_CONCEPT);
-        medication.put(codeId, codeableConcept);
-    }
 
     /**
      * admin-type resources just use the EMIS CSV GUID as their reference
@@ -237,12 +127,6 @@ public class VisionCsvHelper {
     public Reference createPractitionerReference(String practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
-    public Reference createScheduleReference(String scheduleGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid);
-    }
-    public Reference createSlotReference(String slotGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Slot, slotGuid);
-    }
 
     /**
      * patient-type resources must include the patient GUID are part of the unique ID in the reference
@@ -251,15 +135,10 @@ public class VisionCsvHelper {
     public Reference createPatientReference(String patientGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
     }
-    public Reference createAppointmentReference(String appointmentGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(appointmentGuid)) {
-            throw new IllegalArgumentException("Missing appointmentGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Appointment, createUniqueId(patientGuid, appointmentGuid));
-    }
+
     public Reference createEncounterReference(String encounterGuid, String patientGuid) throws Exception {
         if (Strings.isNullOrEmpty(encounterGuid)) {
-            throw new IllegalArgumentException("Missing encounterGuid");
+            throw new IllegalArgumentException("Missing Encounter ID");
         }
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
@@ -271,25 +150,14 @@ public class VisionCsvHelper {
     }
     public Reference createMedicationStatementReference(String medicationStatementGuid, String patientGuid) throws Exception {
         if (Strings.isNullOrEmpty(medicationStatementGuid)) {
-            throw new IllegalArgumentException("Missing medicationStatementGuid");
+            throw new IllegalArgumentException("Missing MedicationStatement ID");
         }
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
     }
-    public Reference createProblemReference(String problemGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(problemGuid)) {
-            throw new IllegalArgumentException("Missing problemGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
-    }
-
 
 
     public void cacheReferral(String observationGuid, String patientGuid, ReferralRequest fhirReferral) {
         referralMap.put(createUniqueId(patientGuid, observationGuid), fhirReferral);
-    }
-
-    public ReferralRequest findReferral(String observationGuid, String patientGuid) {
-        return referralMap.remove(createUniqueId(patientGuid, observationGuid));
     }
 
     public void cacheProblem(String observationGuid, String patientGuid, Condition fhirCondition) throws Exception {
@@ -1124,11 +992,11 @@ public class VisionCsvHelper {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition fhirProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
 
         //we've had cases of data referring to non-existent problems, so check for null
-        if (fhirPproblem != null) {
-            CodeableConcept codeableConcept = fhirPproblem.getCode();
+        if (fhirProblem != null) {
+            CodeableConcept codeableConcept = fhirProblem.getCode();
             readCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
         }
 

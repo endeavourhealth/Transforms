@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
+import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceIdMap;
@@ -77,8 +78,11 @@ public class JournalTransformer {
                 case Immunization:
                     createOrDeleteImmunization(parser, fhirResourceFiler, csvHelper);
                     break;
-                case Medication:
-                    createOrDeleteMedication(parser, fhirResourceFiler, csvHelper);
+                case MedicationStatement:
+                    createOrDeleteMedicationStatement(parser, fhirResourceFiler, csvHelper);
+                    break;
+                case MedicationOrder:
+                    createOrDeleteMedicationIssue(parser, fhirResourceFiler, csvHelper);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
@@ -146,8 +150,11 @@ public class JournalTransformer {
             case Immunization:
                 createOrDeleteImmunization(parser, fhirResourceFiler, csvHelper);
                 break;
-            case Medication:
-                createOrDeleteMedication(parser, fhirResourceFiler, csvHelper);
+            case MedicationStatement:
+                createOrDeleteMedicationStatement(parser, fhirResourceFiler, csvHelper);
+                break;
+            case MedicationOrder:
+                createOrDeleteMedicationIssue(parser, fhirResourceFiler, csvHelper);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
@@ -162,8 +169,26 @@ public class JournalTransformer {
     }
 
 
+    public static MedicationAuthorisationType getMedicationAuthType(Journal parser) {
+
+        String type = parser.getDrugPrescriptionType();
+        /*  A	Acute(one-off issue)
+            I	Issue of repeat
+            R	Repeat authorisation
+        */
+
+        if (type.equalsIgnoreCase("A")) {
+            return MedicationAuthorisationType.ACUTE;
+        }
+        else if (type.equalsIgnoreCase("R")) {
+            return MedicationAuthorisationType.REPEAT;
+        }
+        else
+            return null;
+    }
+
     //the FHIR resource type is roughly derived from the code subset and ReadCode
-    private static ResourceType getTargetResourceType(Journal parser,
+    public static ResourceType getTargetResourceType(Journal parser,
                                                      VisionCsvHelper csvHelper) throws Exception {
         String subset = parser.getSubset();
         /*  A = Acute (Therapy)
@@ -187,10 +212,10 @@ public class JournalTransformer {
             return ResourceType.AllergyIntolerance;
         } else if (subset.equalsIgnoreCase("T")) {
             return ResourceType.Observation;
-        } else if ( subset.equalsIgnoreCase("A") ||
-                    subset.equalsIgnoreCase("R") ||
-                    subset.equalsIgnoreCase("S")) {
-            return ResourceType.Medication;
+        } else if ( subset.equalsIgnoreCase("A") || subset.equalsIgnoreCase("R")) {
+            return ResourceType.MedicationStatement;
+        } else if ( subset.equalsIgnoreCase("S")) {
+            return ResourceType.MedicationOrder;
         } else if (Read2.isFamilyHistory(readCode)) {
              return ResourceType.FamilyMemberHistory;
         } else {
@@ -198,18 +223,16 @@ public class JournalTransformer {
         }
     }
 
-    private static void createOrDeleteMedication(Journal parser,
+    private static void createOrDeleteMedicationStatement(Journal parser,
                                                  FhirResourceFiler fhirResourceFiler,
                                                  VisionCsvHelper csvHelper) throws Exception {
 
         MedicationStatement fhirMedicationStatement = new MedicationStatement();
-        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
-
         String drugRecordID = parser.getObservationID();
         String patientID = parser.getPatientID();
 
+        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
         VisionCsvHelper.setUniqueId(fhirMedicationStatement, patientID, drugRecordID);
-
         fhirMedicationStatement.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
@@ -219,14 +242,13 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-
         fhirMedicationStatement.setInformationSource(csvHelper.createPractitionerReference(clinicianID));
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
         fhirMedicationStatement.setDateAssertedElement(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
-        if (parser.getEndDate() == null ) {
+        if (parser.getEndDate() == null) {
             fhirMedicationStatement.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
         } else {
             fhirMedicationStatement.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
@@ -248,15 +270,21 @@ public class JournalTransformer {
         MedicationStatement.MedicationStatementDosageComponent fhirDose = fhirMedicationStatement.addDosage();
         fhirDose.setText(dose);
 
+        MedicationAuthorisationType fhirAuthorisationType = getMedicationAuthType(parser);
+        if (fhirAuthorisationType != null) {
+            Coding fhirCoding = CodingHelper.createCoding(fhirAuthorisationType);
+            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE, fhirCoding));
+        }
 
         //        //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
 //        String problemObservationIDs = parser.getLinks();
 //        if (!Strings.isNullOrEmpty(problemObservationIDs)) {
 //
-//            //TODO: loop through record to find cached linked problem
+//            //TODO: loop through record to find linked problem
 //            //fhirMedicationStatement.setReasonForUse(csvHelper.createConditionReference(problemObservationID, patientID));
 //        }
 //
+
 //        DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordGuid, patientGuid);
 //        if (firstIssueDate != null) {
 //            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
@@ -267,27 +295,92 @@ public class JournalTransformer {
 //            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, mostRecentDate));
 //        }
 //
-//        String enteredByGuid = parser.getEnteredByUserInRoleGuid();
-//        if (!Strings.isNullOrEmpty(enteredByGuid)) {
-//            Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
-//            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_BY, reference));
-//        }
-//
-//        //in the earliest version of the extract, we only got the entered date and not time
-//        Date enteredDateTime = parser.getEnteredDateTime();
-//        if (enteredDateTime != null) {
-//            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
-//        }
-//
-//        String authorisationType = parser.getPrescriptionType();
-//        MedicationAuthorisationType fhirAuthorisationType = MedicationAuthorisationType.fromDescription(authorisationType);
-//        Coding fhirCoding = CodingHelper.createCoding(fhirAuthorisationType);
-//        fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE, fhirCoding));
-//
+        String enteredByID = parser.getClinicianUserID();
+        if (!Strings.isNullOrEmpty(enteredByID)) {
+            Reference reference = csvHelper.createPractitionerReference(enteredByID);
+            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_BY, reference));
+        }
+
+        Date enteredDateTime = parser.getEnteredDateTime();
+        if (enteredDateTime != null) {
+            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
+        }
 
         addEncounterExtension(fhirMedicationStatement, parser, csvHelper, patientID);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirMedicationStatement);
+    }
+
+    private static void createOrDeleteMedicationIssue  (Journal parser,
+                                                       FhirResourceFiler fhirResourceFiler,
+                                                       VisionCsvHelper csvHelper) throws Exception {
+
+        MedicationOrder fhirMedicationOrder = new MedicationOrder();
+        fhirMedicationOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+
+        String issueRecordID = parser.getObservationID();
+        String patientID = parser.getPatientID();
+
+        VisionCsvHelper.setUniqueId(fhirMedicationOrder, patientID, issueRecordID);
+
+        fhirMedicationOrder.setPatient(csvHelper.createPatientReference(patientID));
+
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        if (parser.getAction().equalsIgnoreCase("D")) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirMedicationOrder);
+            return;
+        }
+
+        String clinicianID = parser.getClinicianUserID();
+        fhirMedicationOrder.setPrescriber(csvHelper.createPractitionerReference(clinicianID));
+
+        Date effectiveDate = parser.getEffectiveDateTime();
+        String effectiveDatePrecision = "YMD";
+        DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
+        fhirMedicationOrder.setDateWrittenElement(dateTime);
+
+        String dmdId = parser.getDrugDMDCode();
+        String term = parser.getRubric();
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
+        fhirMedicationOrder.setMedication(codeableConcept);
+
+        String dose = parser.getValue2().toString();
+        MedicationOrder.MedicationOrderDosageInstructionComponent fhirDose = fhirMedicationOrder.addDosageInstruction();
+        fhirDose.setText(dose);
+
+        Double quantity = parser.getValue1();
+        String quantityUnit = parser.getValue1NumericUnit();
+        //Integer courseDuration = parser.getCourseDurationInDays();
+        MedicationOrder.MedicationOrderDispenseRequestComponent fhirDispenseRequest = new MedicationOrder.MedicationOrderDispenseRequestComponent();
+        fhirDispenseRequest.setQuantity(QuantityHelper.createSimpleQuantity(quantity, quantityUnit));
+        //fhirDispenseRequest.setExpectedSupplyDuration(QuantityHelper.createDuration(courseDuration, "days"));
+        fhirMedicationOrder.setDispenseRequest(fhirDispenseRequest);
+
+
+        //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
+//        String problemObservationGuid = parser.getProblemObservationGuid();
+//        if (!Strings.isNullOrEmpty(problemObservationGuid)) {
+//            fhirMedication.setReason(csvHelper.createObservationReference(problemObservationGuid, patientGuid));
+//        }
+
+        //TODO: Link issue to drug record - Is the drug record in the links field?
+        String [] links = parser.getLinks().split("|");
+        String drugRecordID = links[0];
+        Reference authorisationReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID);
+        fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, authorisationReference));
+
+        String enteredByID = parser.getClinicianUserID();
+        if (!Strings.isNullOrEmpty(enteredByID)) {
+            Reference reference = csvHelper.createPractitionerReference(enteredByID);
+            fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_BY, reference));
+        }
+
+        Date enteredDateTime = parser.getEnteredDateTime();
+        if (enteredDateTime != null) {
+            fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
+        }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirMedicationOrder);
     }
 
     private static void createOrDeleteAllergy(Journal parser,
@@ -506,12 +599,13 @@ public class JournalTransformer {
 //            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
 //        }
 //
-//        //apply any linked items from this extract
-//        List<String> linkedResources = csvHelper.getAndRemoveProblemRelationships(observationGuid, patientGuid);
-//        if (linkedResources != null) {
-//            List<Reference> references = ReferenceHelper.createReferences(linkedResources);
-//            csvHelper.addLinkedItemsToResource(fhirProblem, references, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
-//        }
+
+        //apply any linked items from this extract
+        List<String> linkedResources = csvHelper.getAndRemoveProblemRelationships(observationID, patientID);
+        if (linkedResources != null) {
+            List<Reference> references = ReferenceHelper.createReferences(linkedResources);
+            csvHelper.addLinkedItemsToResource(fhirProblem, references, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
+        }
 
         addDocumentExtension(fhirProblem, parser);
 

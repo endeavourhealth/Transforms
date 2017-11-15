@@ -51,8 +51,6 @@ public abstract class VisionCsvToFhirTransformer {
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         File orgDirectory = validateAndFindCommonDirectory(sharedStoragePath, files);
 
-
-
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
 
@@ -127,13 +125,10 @@ public abstract class VisionCsvToFhirTransformer {
 
         findFileAndOpenParser(Practice.class, dir, version, openParser, parsers);
         findFileAndOpenParser(Staff.class, dir, version, openParser, parsers);
-
         findFileAndOpenParser(Patient.class, dir, version, openParser, parsers);
-
         findFileAndOpenParser(Encounter.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Journal.class, dir, version, openParser, parsers);
         findFileAndOpenParser(Referral.class, dir, version, openParser, parsers);
-
+        findFileAndOpenParser(Journal.class, dir, version, openParser, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
         //Set<File> sh = new HashSet<>(parsers);
@@ -213,9 +208,11 @@ public abstract class VisionCsvToFhirTransformer {
 //        ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //TODO: get consultation, problem links and cache - PARSE Entire Journal file for links
-        //JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        //TODO: medication pre-transformer to get first issue and repeats
 //        DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 //        IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+
 //        DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 //
 //        //before getting onto the files that actually create FHIR resources, we need to

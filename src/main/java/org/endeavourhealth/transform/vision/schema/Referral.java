@@ -62,5 +62,8 @@ public class Referral extends AbstractCsvParser {
     public String getReferralType() {
         return super.getString("TYPE");
     }
+    public String getLinks() {
+        return super.getString("LINKS");
+    }
 
 }

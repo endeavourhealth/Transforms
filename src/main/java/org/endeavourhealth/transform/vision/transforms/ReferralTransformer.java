@@ -83,12 +83,22 @@ public class ReferralTransformer {
             fhirReferral.addRecipient(csvHelper.createOrganisationReference(recipientOrgID));
         }
 
+
+        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
+        String [] links = parser.getLinks().split("|");
+//        String consultationID = EncounterLinks|    //map to an encounterId
+//        if (!Strings.isNullOrEmpty(consultationID)) {
+//            fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+//        }
+
         //addDocumentExtension(fhirReferral, parser);
 
         //unlike other resources, we don't save the Referral immediately, as there's data we
         //require on the corresponding row in the Observation file. So cache in the helper
         //and we'll finish the job when we get to that.
         csvHelper.cacheReferral(observationID, patientID, fhirReferral);
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirReferral);
     }
 
     private static ReferralType convertReferralType(String type) throws Exception {
