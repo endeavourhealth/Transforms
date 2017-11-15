@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.emis;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
@@ -60,6 +62,9 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+
+    private static Boolean cachedAllowDisabledOrganisations = null;
+    private static Boolean cachedAllowMissingCodes = null;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
@@ -172,7 +177,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{411D0A79-6913-473C-B486-C01F6430D8A6}", "21/09/2017");
         map.put("{0862FADA-594A-415E-B971-7A4312E0A58C}", "10/06/2017");
         map.put("{249C3F3C-24F0-44CE-97A9-B535982BD70C}", "15/10/2017");
-        map.put("{5D7A1915-6E22-4B20-A8AE-4768C06D3BBF}", "15/08/2017");
+        map.put("{5D7A1915-6E22-4B20-A8AE-4768C06D3BBF}", "28/09/2017"); //Barts community
         map.put("{131AE556-8B50-4C17-9D7D-A4B19F7B1FEA}", "15/10/2017");
         map.put("{C0D2D0DF-EF78-444D-9A6D-B9EDEF5EF350}", "13/10/2017");
         map.put("{F174B354-4156-4BCB-960F-35D0145075EA}", "01/02/2017");
@@ -185,7 +190,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{E6FBEA1C-BDA2-40B7-A461-C262103F08D7}", "08/06/2017");
         map.put("{141C68EB-1BC8-4E99-A9D9-0E63A8944CA9}", "15/10/2017");
         map.put("{A3EA804D-E7EB-43EE-8F1F-E860F6337FF7}", "15/10/2017");
-        map.put("{771B42CC-9C0C-46E2-8143-76F04AF91AD5}", "19/10/2017");
+        map.put("{771B42CC-9C0C-46E2-8143-76F04AF91AD5}", "13/11/2017"); //cranwich road
         map.put("{16EA8D5C-C667-4818-B629-5D6F4300FEEF}", "11/05/2017");
         map.put("{29E51964-C94D-4CB4-894E-EB18E27DEFC1}", "15/10/2017");
         map.put("{3646CCA5-7FE4-4DFE-87CD-DA3CE1BA885D}", "27/09/2017");
@@ -207,7 +212,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{5A1AABA9-7E96-41E7-AF18-E02F4CF1DFB6}", "15/10/2017");
         map.put("{7D8CE31D-66AA-4D6A-9EFD-313646BD1D73}", "15/10/2017");
         map.put("{03EA4A79-B6F1-4524-9D15-992B47BCEC9A}", "15/10/2017");
-        map.put("{4588C493-2EA3-429A-8428-E610AE6A6D76}", "15/08/2017");
+        map.put("{4588C493-2EA3-429A-8428-E610AE6A6D76}", "28/09/2017"); //Barts community
         map.put("{B13F3CC9-C317-4E0D-9C57-C545E4A53CAF}", "15/10/2017");
         map.put("{463DA820-6EC4-48CB-B915-81B31AFBD121}", "13/10/2017");
         map.put("{16F0D65C-B2A8-4186-B4E7-BBAF4390EC55}", "13/10/2017");
@@ -485,7 +490,18 @@ public abstract class EmisCsvToFhirTransformer {
                                          int maxFilingThreads,
                                          boolean processPatientData) throws Exception {
 
-        EmisCsvHelper csvHelper = new EmisCsvHelper(findDataSharingAgreementGuid(parsers));
+        boolean allowProcessingDisabledServices = getAllowDisabledOrganisations();
+        boolean allowMissingCodes = getAllowMissingCodes();
+        String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
+
+        if (!processPatientData) {
+            //if we've already decided that we're not going to process the patient data,
+            //then we've already handled the fact that this service will be disabled,
+            //so allow the extract to be processed
+            allowProcessingDisabledServices = true;
+        }
+
+        EmisCsvHelper csvHelper = new EmisCsvHelper(sharingAgreementGuid, allowProcessingDisabledServices, allowMissingCodes);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
@@ -620,4 +636,37 @@ public abstract class EmisCsvToFhirTransformer {
         return recordNumbers;
     }
 
+    private static boolean getAllowDisabledOrganisations() {
+        if (cachedAllowDisabledOrganisations == null) {
+            readConfig();
+        }
+        return cachedAllowDisabledOrganisations.booleanValue();
+    }
+
+    private static boolean getAllowMissingCodes() {
+        if (cachedAllowMissingCodes == null) {
+            readConfig();
+        }
+        return cachedAllowMissingCodes.booleanValue();
+    }
+
+    private static void readConfig() {
+        boolean b1;
+        boolean b2;
+        try {
+            JsonNode json = ConfigManager.getConfigurationAsJson("emis", "queuereader");
+            b1 = json.get("process_disabled").asBoolean();
+            b2 = json.get("missing_codees").asBoolean();
+        } catch (Exception var4) {
+            b1 = false;
+            b2 = false;
+        }
+
+        cachedAllowDisabledOrganisations = new Boolean(b1);
+        cachedAllowMissingCodes = new Boolean(b2);
+
+        LOG.info("Allowing Disabled Emis Organisations = " + cachedAllowDisabledOrganisations);
+        LOG.info("Allowing Missing Codes = " + cachedAllowMissingCodes);
+
+    }
 }

@@ -26,7 +26,9 @@ public class Problem extends AbstractFixedParser {
         addFieldList(new FixedParserField("MRN",    52, 40));
         addFieldList(new FixedParserField("Problem",    93, 200));
         addFieldList(new FixedParserField("AnnotatedDisp",    294, 200));
+        addFieldList(new FixedParserField("Confirmation",    516, 20));
         addFieldList(new FixedParserField("OnsetDate",    579, 11));
+        addFieldList(new FixedParserField("StatusLifecycle",    624, 20));
         addFieldList(new FixedParserField("Severity",    690, 50));
         addFieldList(new FixedParserField("ProblemCode",    1025, 20));
         addFieldList(new FixedParserField("Vocabulary",    1046, 20));
@@ -53,6 +55,9 @@ public class Problem extends AbstractFixedParser {
     public String getAnnotatedDisp() {
         return super.getString("AnnotatedDisp").trim();
     }
+    public String getConfirmation() {
+        return super.getString("Confirmation");
+    }
 
     public Date getOnsetDate() throws TransformException {
         return super.getDate("OnsetDate");
@@ -61,6 +66,9 @@ public class Problem extends AbstractFixedParser {
         return super.getString("OnsetDate");
     }
 
+    public String getStatusLifecycle() {
+        return super.getString("StatusLifecycle");
+    }
     public String getSeverity() {
         return super.getString("Severity").trim();
     }

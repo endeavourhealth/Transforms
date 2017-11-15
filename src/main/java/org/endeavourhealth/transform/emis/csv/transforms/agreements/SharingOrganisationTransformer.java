@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.emis.csv.transforms.agreements;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -14,8 +12,6 @@ import java.util.Map;
 
 public class SharingOrganisationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SharingOrganisationTransformer.class);
-
-    private static Boolean allowDisabledOrganisations = null;
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -33,25 +29,11 @@ public class SharingOrganisationTransformer {
 
         boolean isDisabled = parser.getDisabled();
         if (isDisabled) {
-            if (!getAllowDisabledOrganisations()) {
+            if (!csvHelper.isAllowProcessingDisabledServices()) {
                 throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
             }
         }
     }
 
-    private static boolean getAllowDisabledOrganisations() {
-        if (allowDisabledOrganisations == null) {
-            boolean b;
-            try {
-                JsonNode ex = ConfigManager.getConfigurationAsJson("emis", "queuereader");
-                b = ex.get("process_disabled").asBoolean();
-            } catch (Exception var4) {
-                b = false;
-            }
 
-            allowDisabledOrganisations = new Boolean(b);
-            LOG.info("Allowing Disabled Emis Organisations = " + allowDisabledOrganisations);
-        }
-        return allowDisabledOrganisations.booleanValue();
-    }
 }

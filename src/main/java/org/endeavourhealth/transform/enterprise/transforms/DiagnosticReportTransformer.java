@@ -20,7 +20,7 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
         return true;
     }
 
-    public void transform(Long enterpriseId,
+    protected void transform(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
