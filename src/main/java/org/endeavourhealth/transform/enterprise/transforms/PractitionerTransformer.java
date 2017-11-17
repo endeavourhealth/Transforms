@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -32,6 +33,12 @@ public class PractitionerTransformer extends AbstractTransformer {
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
             name = fhirName.getText();
+
+            //the Practitioners from the HL7 Receiver don't have their name set as the transform doesn't use
+            //the standard functions written to populate names, so we need to manually build the name from the elements
+            if (Strings.isNullOrEmpty(name)) {
+                name = createNameFromElements(fhirName);
+            }
         }
 
         Long practitionerEnterpriseOrgId = null;
@@ -66,5 +73,38 @@ public class PractitionerTransformer extends AbstractTransformer {
             name,
             roleCode,
             roleDesc);
+    }
+
+    private static String createNameFromElements(HumanName name) {
+        String ret = "";
+
+        if (name.hasPrefix()) {
+            for (StringType s : name.getPrefix()) {
+                ret += s.getValueNotNull();
+                ret += " ";
+            }
+        }
+
+        if (name.hasGiven()) {
+            for (StringType s : name.getGiven()) {
+                ret += s.getValueNotNull();
+                ret += " ";
+            }
+        }
+
+        if (name.hasFamily()) {
+            for (StringType s : name.getFamily()) {
+                ret += s.getValueNotNull();
+                ret += " ";
+            }
+        }
+
+        ret = ret.trim();
+
+        if (Strings.isNullOrEmpty(ret)) {
+            return null;
+        } else {
+            return ret;
+        }
     }
 }
