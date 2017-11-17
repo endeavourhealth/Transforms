@@ -3,8 +3,6 @@ package org.endeavourhealth.transform.vision;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.Error;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -117,17 +115,16 @@ public abstract class VisionCsvToFhirTransformer {
 
     private static void validateAndOpenParsers(File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
-        //admin - staff
-        //patient - demographics
-        //clinical - encounters
-        //clinical - journal
-        //clinical - referrals
-
         findFileAndOpenParser(Practice.class, dir, version, openParser, parsers);
+        //admin - staff
         findFileAndOpenParser(Staff.class, dir, version, openParser, parsers);
+        //patient - demographics
         findFileAndOpenParser(Patient.class, dir, version, openParser, parsers);
+        //clinical - encounters
         findFileAndOpenParser(Encounter.class, dir, version, openParser, parsers);
+        //clinical - referrals
         findFileAndOpenParser(Referral.class, dir, version, openParser, parsers);
+        //clinical - journal (observations, medication, problems etc.)
         findFileAndOpenParser(Journal.class, dir, version, openParser, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
@@ -142,7 +139,7 @@ public abstract class VisionCsvToFhirTransformer {
         for (File file: dir.listFiles()) {
             if (file.isFile()
                     && !expectedFiles.contains(file)
-                    && !Files.getFileExtension(file.getAbsolutePath()).equalsIgnoreCase("zip")) {
+                    && !Files.getFileExtension(file.getAbsolutePath()).equalsIgnoreCase("csv")) {
 
                 throw new FileFormatException(file, "Unexpected file " + file + " in Vision CSV extract");
             }
@@ -193,37 +190,18 @@ public abstract class VisionCsvToFhirTransformer {
 
         VisionCsvHelper csvHelper = new VisionCsvHelper();
 
-        //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
-        ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
-        if (!exchangeDal.isServiceStarted(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
-            LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
-            csvHelper.applyAdminResourceCache(fhirResourceFiler);
-        }
-
-        //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
-//        ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-//        DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-//        OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-//        SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-//        ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-        //TODO: get consultation, problem links and cache - PARSE Entire Journal file for links
+        //this transform does not create resources themselves, but cache data that the subsequent ones rely on
         JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        //TODO: medication pre-transformer to get first issue and repeats
-//        DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-//        IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-//        DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-//
-//        //before getting onto the files that actually create FHIR resources, we need to
-//        //work out what record numbers to process, if we're re-running a transform
-//        boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
+        //before getting onto the files that actually create FHIR resources, we need to
+        //work out what record numbers to process, if we're re-running a transform
+        //boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
 
         //run the transforms for non-patient resources
         PracticeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         StaffTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-        //note the order of these transforms is important, as consultations should be before obs etc.
+        //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
         PatientTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EncounterTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         ReferralTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

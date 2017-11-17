@@ -1,9 +1,6 @@
 package org.endeavourhealth.transform.vision.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.ContactPointHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
@@ -63,23 +60,17 @@ public class PracticeTransformer {
         String name = parser.getOrganisationName();
         fhirOrganisation.setName(name);
 
-//        String organisationType = parser.getOrganisationType();
-//        if (!Strings.isNullOrEmpty(organisationType)) {
-//            OrganisationType fhirOrgType = convertOrganisationType(organisationType);
-//            if (fhirOrgType != null) {
-//                fhirOrganisation.setType(CodeableConceptHelper.createCodeableConcept(fhirOrgType));
-//            } else {
-//                //if the org type from the CSV can't be mapped to one of the value set, store as a freetext type
-//                //LOG.info("Unmapped organisation type " + organisationType);
-//                fhirOrganisation.setType(CodeableConceptHelper.createCodeableConcept(organisationType));
-//            }
-//        }
+        //try to get a org type from the name, i.e. Tinshill Surgery = GP_PRACTICE
+        OrganisationType fhirOrgType = convertOrganisationType(name);
+        if (fhirOrgType != null) {
+            fhirOrganisation.setType(CodeableConceptHelper.createCodeableConcept(fhirOrgType));
+        } else {
+            //if the org type can't be mapped to one of the value set, store as a freetext type
+            LOG.info("Cannot map organisation name: " + name);
+            fhirOrganisation.setType(CodeableConceptHelper.createCodeableConcept(name));
+        }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirOrganisation);
-
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirOrganisation);
     }
 
     private static void createLocationResource(Practice parser,
@@ -114,68 +105,33 @@ public class PracticeTransformer {
         fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email);
         fhirLocation.addTelecom(fhirContact);
 
-//        Date openDate = parser.getOpenDate();
-//        Date closeDate = parser.getCloseDate();
-//        boolean deleted = parser.getDeleted();
-//        Period fhirPeriod = PeriodHelper.createPeriod(openDate, closeDate);
-//        if (PeriodHelper.isActive(fhirPeriod) && !deleted) {
-//            fhirLocation.setStatus(org.hl7.fhir.instance.model.Location.LocationStatus.ACTIVE);
-//        } else {
-//            fhirLocation.setStatus(org.hl7.fhir.instance.model.Location.LocationStatus.INACTIVE);
-//        }
-//        fhirLocation.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ACTIVE_PERIOD, fhirPeriod));
-
-//        String mainContactName = parser.getMainContactName();
-//        if (!Strings.isNullOrEmpty(mainContactName)) {
-//            fhirLocation.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.LOCATION_MAIN_CONTACT, new StringType(mainContactName)));
-//        }
-
         String name = parser.getOrganisationName();   // the location name is the organisation name, that's all we have
         fhirLocation.setName(name);
-
-//        String type = parser.getLocationTypeDescription();
-//        fhirLocation.setType(CodeableConceptHelper.createCodeableConcept(type));
 
         String organisationID = parser.getOrganisationID();
         fhirLocation.setManagingOrganization(csvHelper.createOrganisationReference(organisationID));
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirLocation);
-
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirLocation);
     }
 
-    private static OrganisationType convertOrganisationType(String csvOrganisationType) {
-        try {
-            return OrganisationType.fromDescription(csvOrganisationType);
-        } catch (Exception ex) {
+    private static OrganisationType convertOrganisationType(String csvOrganisationName) {
+        //the below mappings are based on what was present in the Vision CSV sample files
+        csvOrganisationName = csvOrganisationName.toLowerCase();
 
-            //the below mappings are based on what was present in the EMIS CSV sample files
-            //EMIS has been asked for a complete list, but until this is made available, these
-            //are the only known types. There are a number of organisation types, such as "Hospice"
-            //or "Community" which don't map to any official NHS organisation type
-            if (csvOrganisationType.equalsIgnoreCase("General Practice")
-                    || csvOrganisationType.equalsIgnoreCase("General Practice Surgery")
-                    || csvOrganisationType.equalsIgnoreCase("Main Surgery")) {
-                return OrganisationType.GP_PRACTICE;
+        if (csvOrganisationName.contains("practice")
+                || csvOrganisationName.contains("surgery")) {
+            return OrganisationType.GP_PRACTICE;
+        } else if (csvOrganisationName.contains("ccg")) {
+            return OrganisationType.CCG;
+        } else if (csvOrganisationName.contains("pct")
+                || csvOrganisationName.contains("primary care trust")) {
+            return OrganisationType.PCT;
+        } else if (csvOrganisationName.contains("hospital")
+                || csvOrganisationName.contains("nhs trust")) {
+            return OrganisationType.NHS_TRUST;
 
-            } else if (csvOrganisationType.equalsIgnoreCase("CCG")) {
-                return OrganisationType.CCG;
-
-            } else if (csvOrganisationType.equalsIgnoreCase("PCT Site")
-                    || csvOrganisationType.equalsIgnoreCase("Primary Care Trust")) {
-                return OrganisationType.PCT;
-
-            } else if (csvOrganisationType.equalsIgnoreCase("Hospital")
-                    || csvOrganisationType.equalsIgnoreCase("NHS Trust Site")
-                    || csvOrganisationType.equalsIgnoreCase("NHS Trust")) {
-                return OrganisationType.NHS_TRUST;
-
-            } else {
-                return null;
-            }
+        } else {
+            return null;
         }
-
     }
 }

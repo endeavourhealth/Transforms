@@ -101,7 +101,7 @@ public class EncounterTransformer {
             csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
         }
 
-        //apply any linked items from this extract //TODO:  Set up consultation links in Journal pre-transformer
+        //apply any linked items from this extract //TODO:  Set up consultation links in Journal pre-transformer using E: prefix
         List<String> linkedResources = csvHelper.getAndRemoveConsultationRelationships(consultationID, patientID);
         if (linkedResources != null) {
             List<Reference> references = ReferenceHelper.createReferences(linkedResources);

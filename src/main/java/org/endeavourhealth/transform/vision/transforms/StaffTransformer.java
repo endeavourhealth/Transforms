@@ -67,15 +67,11 @@ public class StaffTransformer {
         String roleCode = parser.getJobCategoryCode();
         String roleName = getJobCategoryName(roleCode);
 
-        //fhirPractitioner.setActive(true);  //assume active?
+        //fhirPractitioner.setActive(true);  //assume active for vision?
 
         fhirRole.setRole(CodeableConceptHelper.createCodeableConcept(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES, roleName, roleCode));
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirPractitioner);
-
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirPractitioner);
     }
 
 

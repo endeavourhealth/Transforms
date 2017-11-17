@@ -15,6 +15,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import java.util.Date;
 import java.util.Map;
 
+import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkID;
 import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.getTargetResourceType;
 
 public class JournalPreTransformer {
@@ -25,7 +26,7 @@ public class JournalPreTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
+        //to parse any record in this file is a critical error
         AbstractCsvParser parser = parsers.get(Journal.class);
         while (parser.nextRecord()) {
 
@@ -47,46 +48,54 @@ public class JournalPreTransformer {
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
 
         //get the Journal linked items
-        String[] links = parser.getLinks().split("|");
+        String[] links = null;
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            links = parser.getLinks().split("|");
+        }
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
         String readCode = parser.getReadCode();
 
         //TODO:// Are parent observation supported in Vision?
 
-
         //cache the fact an observation is a problem
         if (resourceType == ResourceType.Condition) {
             csvHelper.cacheProblemObservationGuid(patientID, observationID, readCode);
         } else {
             //if it is not a problem, cache the observation linked problem
-            String problemID = links[0];    //TODO: how determine the link is a problem?
-            if (!Strings.isNullOrEmpty(problemID)) {
-                //if this record is linked to a problem, store this relationship in the helper
-                csvHelper.cacheProblemRelationship(problemID,
+            if (links != null) {
+                String problemID = links[0];    //TODO: how determine the link is a problem, i.e. this is a medication resource with a linked problem?
+                if (!Strings.isNullOrEmpty(problemID)) {
+                    //if this record is linked to a problem, store this relationship in the helper
+                    csvHelper.cacheProblemRelationship(problemID,
+                            patientID,
+                            observationID,
+                            resourceType);
+                }
+            }
+        }
+
+
+        //linked consultation encounter record
+        if (links != null) {
+            String consultationID = extractEncounterLinkID (links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                csvHelper.cacheConsultationRelationship(consultationID,
                         patientID,
                         observationID,
                         resourceType);
             }
         }
 
-
-        //linked consultation record - Prefixed with E  ??
-        String consultationID = links[0];           //TODO: consultation encounter pre-fixed with an E?
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            csvHelper.cacheConsultationRelationship(consultationID,
-                    patientID,
-                    observationID,
-                    resourceType);
-        }
-
-        //medication issue record - set linked drug record
+        //medication issue record - set linked drug record first and last issue dates
         if (resourceType == ResourceType.MedicationOrder) {
-            String drugRecordID = links[0];   //TODO:  if it is a medication issue, how determine linked drug statement?
-            Date effectiveDate = parser.getEffectiveDateTime();
-            String effectiveDatePrecision = "YMD";
-            DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
-            csvHelper.cacheDrugRecordDate(drugRecordID, patientID, dateTime);
+            if (links != null) {
+                String drugRecordID = links[0];   //TODO:  if it is a medication issue, how determine linked drug statement?
+                Date effectiveDate = parser.getEffectiveDateTime();
+                String effectiveDatePrecision = "YMD";
+                DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
+                csvHelper.cacheDrugRecordDate(drugRecordID, patientID, dateTime);
+            }
         }
 
         //try to get Ethicity from Journal

@@ -276,25 +276,26 @@ public class JournalTransformer {
             fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE, fhirCoding));
         }
 
-        //        //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
-//        String problemObservationIDs = parser.getLinks();
-//        if (!Strings.isNullOrEmpty(problemObservationIDs)) {
-//
-//            //TODO: loop through record to find linked problem
-//            //fhirMedicationStatement.setReasonForUse(csvHelper.createConditionReference(problemObservationID, patientID));
-//        }
-//
+        //get any linked problems for this medication
+        List<String> linkedProblems = csvHelper.getAndRemoveProblemRelationships(drugRecordID, patientID);
+        if (linkedProblems != null) {
+            List<Reference> references = ReferenceHelper.createReferences(linkedProblems);
+            for (Reference ref: references) {
+                String problemReferenceId = ref.getId();
+                fhirMedicationStatement.setReasonForUse (csvHelper.createConditionReference(problemReferenceId, patientID));
+            }
+        }
 
-//        DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordGuid, patientGuid);
-//        if (firstIssueDate != null) {
-//            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
-//        }
-//
-//        DateType mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
-//        if (mostRecentDate != null) {
-//            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, mostRecentDate));
-//        }
-//
+        DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordID, patientID);
+        if (firstIssueDate != null) {
+            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
+        }
+
+        DateType mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordID, patientID);
+        if (mostRecentDate != null) {
+            fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, mostRecentDate));
+        }
+
         String enteredByID = parser.getClinicianUserID();
         if (!Strings.isNullOrEmpty(enteredByID)) {
             Reference reference = csvHelper.createPractitionerReference(enteredByID);
@@ -356,18 +357,25 @@ public class JournalTransformer {
         //fhirDispenseRequest.setExpectedSupplyDuration(QuantityHelper.createDuration(courseDuration, "days"));
         fhirMedicationOrder.setDispenseRequest(fhirDispenseRequest);
 
-
-        //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
-//        String problemObservationGuid = parser.getProblemObservationGuid();
-//        if (!Strings.isNullOrEmpty(problemObservationGuid)) {
-//            fhirMedication.setReason(csvHelper.createObservationReference(problemObservationGuid, patientGuid));
-//        }
+        //get any linked problems for this medication issue
+        List<String> linkedProblems = csvHelper.getAndRemoveProblemRelationships(issueRecordID, patientID);
+        if (linkedProblems != null) {
+            List<Reference> references = ReferenceHelper.createReferences(linkedProblems);
+            for (Reference ref: references) {
+                String problemReferenceId = ref.getId();
+                fhirMedicationOrder.setReason (csvHelper.createConditionReference(problemReferenceId, patientID));
+            }
+        }
 
         //TODO: Link issue to drug record - Is the drug record in the links field?
-        String [] links = parser.getLinks().split("|");
-        String drugRecordID = links[0];
-        Reference authorisationReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID);
-        fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, authorisationReference));
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String drugRecordID = links[0];
+            if (!Strings.isNullOrEmpty(drugRecordID)) {
+                Reference authorisationReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID);
+                fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, authorisationReference));
+            }
+        }
 
         String enteredByID = parser.getClinicianUserID();
         if (!Strings.isNullOrEmpty(enteredByID)) {
@@ -422,10 +430,10 @@ public class JournalTransformer {
         String associatedText = parser.getAssociatedText();
         fhirAllergy.setNote(AnnotationHelper.createAnnotation(associatedText));
 
-        //TODO: add severity if avail
+        //TODO: add severity if available
         String severity = parser.getAllergySeverity();
 
-        //TODO: add certainty if avail
+        //TODO: add certainty if available
         String certainty = parser.getAllergyCertainty();
 
         addEncounterExtension(fhirAllergy, parser, csvHelper, patientID);
@@ -487,12 +495,14 @@ public class JournalTransformer {
         String associatedText = parser.getAssociatedText();
         fhirProcedure.addNotes(AnnotationHelper.createAnnotation(associatedText));
 
-        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
-        String [] links = parser.getLinks().split("|");
-//        String consultationID = links [X]    //map to an encounterId if prefixed with an E
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            fhirProcedure.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-//        }
+        //set linked encounter
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String consultationID = extractEncounterLinkID(links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                fhirProcedure.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+            }
+        }
 
         //the document, entered date and person are stored in extensions
         addRecordedByExtension(fhirProcedure, parser, csvHelper);
@@ -674,12 +684,14 @@ public class JournalTransformer {
         String associatedText = parser.getAssociatedText();
         fhirObservation.setComments(associatedText);
 
-        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
-        String [] links = parser.getLinks().split("|");
-//        String consultationID = EncounterLinks|    //map to an encounterId
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-//        }
+        //set linked encounter
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String consultationID = extractEncounterLinkID(links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+            }
+        }
 
         //TODO:// Event links
         List<String> childObservations = csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
@@ -823,12 +835,14 @@ public class JournalTransformer {
         //TODO:// analyse test data to set the following if present:
         //Source, Compound, Batch, Method, Site, Reason
 
-        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
-        String [] links = parser.getLinks().split("|");
-//        String consultationID = links [X]    //map to an encounterId if prefixed with an E
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            fhirImmunisation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-//        }
+        //set linked encounter
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String consultationID = extractEncounterLinkID(links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                fhirImmunisation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+            }
+        }
 
         String associatedText = parser.getAssociatedText();
         fhirImmunisation.addNote(AnnotationHelper.createAnnotation(associatedText));
@@ -866,13 +880,24 @@ public class JournalTransformer {
     }
 
     private static void addEncounterExtension(DomainResource resource, Journal parser, VisionCsvHelper csvHelper, String patientID) throws Exception {
-        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
-        String [] links = parser.getLinks().split("|");
-//        String consultationID = links [X]    //map to an encounterId if prefixed with an E
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            Reference reference = csvHelper.createEncounterReference(consultationID, patientID);
-//            resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference));
-//        }
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String consultationID = extractEncounterLinkID(links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                Reference reference = csvHelper.createEncounterReference(consultationID, patientID);
+                resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference));
+            }
+        }
+    }
+
+    //The consultation encounter link value is pre-fixed with E (check example data)
+    public static String extractEncounterLinkID(String[] links) {
+        for (String link: links) {
+            if (link.startsWith("E")) {
+                return link.replace("E", "");
+            }
+        }
+        return null;
     }
 
     private static void assertValueEmpty(Resource destinationResource, Journal parser) throws Exception {
