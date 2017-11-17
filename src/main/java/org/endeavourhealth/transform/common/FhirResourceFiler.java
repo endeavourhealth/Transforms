@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common;
 
 import com.datastax.driver.core.utils.UUIDs;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -9,7 +10,6 @@ import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
@@ -72,28 +72,32 @@ public class FhirResourceFiler {
         saveAdminResource(parserState, true, resources);
     }
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        addResourceToQueue(parserState, false, mapIds, getAdminBatchId(), false, resources);
+        ExchangeBatch batch = getAdminBatch();
+        addResourceToQueue(parserState, false, mapIds, batch, false, resources);
     }
 
     public void deleteAdminResource(CsvCurrentState parserState, Resource... resources) throws Exception {
         deleteAdminResource(parserState, true, resources);
     }
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        addResourceToQueue(parserState, false, mapIds, getAdminBatchId(), true, resources);
+        ExchangeBatch batch = getAdminBatch();
+        addResourceToQueue(parserState, false, mapIds, batch, true, resources);
     }
 
     public void savePatientResource(CsvCurrentState parserState, String patientId, Resource... resources) throws Exception {
         savePatientResource(parserState, true, patientId, resources);
     }
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, String patientId, Resource... resources) throws Exception {
-        addResourceToQueue(parserState, true, mapIds, getPatientBatchId(patientId), false, resources);
+        ExchangeBatch batch = getPatientBatch(mapIds, patientId, resources);
+        addResourceToQueue(parserState, true, mapIds, batch, false, resources);
     }
 
     public void deletePatientResource(CsvCurrentState parserState, String patientId, Resource... resources) throws Exception {
         deletePatientResource(parserState, true, patientId, resources);
     }
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, String patientId, Resource... resources) throws Exception {
-        addResourceToQueue(parserState, true, mapIds, getPatientBatchId(patientId), true, resources);
+        ExchangeBatch batch = getPatientBatch(mapIds, patientId, resources);
+        addResourceToQueue(parserState, true, mapIds, batch, true, resources);
     }
 
     private void addResourceToQueue(CsvCurrentState parserState,
@@ -104,6 +108,7 @@ public class FhirResourceFiler {
                                     Resource... resources) throws Exception {
 
         for (Resource resource: resources) {
+
             //validate we're treating the resource properly as admin / patient
             if (isPatientResource(resource) != expectingPatientResource) {
                 throw new PatientResourceException(resource, expectingPatientResource);
@@ -124,7 +129,7 @@ public class FhirResourceFiler {
         handleErrors(errors);
     }
 
-    private ExchangeBatch getAdminBatchId() throws Exception {
+    private ExchangeBatch getAdminBatch() throws Exception {
         if (adminBatchId == null) {
 
             try {
@@ -132,7 +137,7 @@ public class FhirResourceFiler {
 
                 //make sure to check if it's still null, as another thread may have created the ID while we were waiting to batchIdLock
                 if (adminBatchId == null) {
-                    adminBatchId = createExchangeBatch();
+                    adminBatchId = createAndSaveExchangeBatch(null);
                 }
             } finally {
                 batchIdLock.unlock();
@@ -141,7 +146,7 @@ public class FhirResourceFiler {
         return adminBatchId;
     }
 
-    private ExchangeBatch getPatientBatchId(String patientId) throws Exception {
+    private ExchangeBatch getPatientBatch(boolean mapIds, String patientId, Resource... resources) throws Exception {
         ExchangeBatch patientBatch = patientBatchIdMap.get(patientId);
         if (patientBatch == null) {
 
@@ -152,7 +157,12 @@ public class FhirResourceFiler {
                 patientBatch = patientBatchIdMap.get(patientId);
 
                 if (patientBatch == null) {
-                    patientBatch = createExchangeBatch();
+
+                    //we need to generate/find the EDS patient UUID to go in the batch
+                    UUID edsPatientId = findEdsPatientId(mapIds, resources);
+                    patientBatch = createAndSaveExchangeBatch(edsPatientId);
+
+                    //but hash by the raw patient ID, so we can quickly look up the batch for subsequent resources
                     patientBatchIdMap.put(patientId, patientBatch);
                 }
             } finally {
@@ -162,16 +172,32 @@ public class FhirResourceFiler {
         return patientBatch;
     }
 
-    public static ExchangeBatch createExchangeBatch(UUID exchangeId) {
-        ExchangeBatch exchangeBatch = new ExchangeBatch();
-        exchangeBatch.setBatchId(UUIDs.timeBased());
-        exchangeBatch.setExchangeId(exchangeId);
-        exchangeBatch.setInsertedAt(new Date());
-        return exchangeBatch;
+    private UUID findEdsPatientId(boolean mapIds, Resource... resources) throws Exception {
+        for (Resource resource: resources) {
+
+            try {
+                //get the patient reference from the resource
+                String patientId = IdHelper.getPatientId(resource);
+
+                //if we need to map IDs, then the reference will be a raw source ID, so needs mapping
+                if (mapIds) {
+                    patientId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, ResourceType.Patient, patientId);
+                }
+
+                return UUID.fromString(patientId);
+            } catch (Exception ex) {
+                //if we try this on a Slot, it'll fail as it doesn't have a patient but we treat it like a patient resource, so just ignore any errors
+            }
+        }
+
+        //if we get here, something is wrong since we've failed to find a patient ID
+        throw new TransformException("Failed to find or create EDS patient ID");
     }
 
-    private ExchangeBatch createExchangeBatch() throws Exception {
-        ExchangeBatch exchangeBatch = createExchangeBatch(exchangeId);
+
+    private ExchangeBatch createAndSaveExchangeBatch(UUID edsPatientId) throws Exception {
+
+        ExchangeBatch exchangeBatch = createExchangeBatch(exchangeId, edsPatientId);
         exchangeBatchRepository.save(exchangeBatch);
 
         UUID batchId = exchangeBatch.getBatchId();
@@ -181,6 +207,17 @@ public class FhirResourceFiler {
         countResourcesSaved.put(exchangeBatch, new AtomicInteger());
 
         return exchangeBatch;
+    }
+
+    public static ExchangeBatch createExchangeBatch(UUID exchangeId, UUID edsPatientId) {
+
+        ExchangeBatch ret = new ExchangeBatch();
+        ret.setBatchId(UUIDs.timeBased());
+        ret.setExchangeId(exchangeId);
+        ret.setInsertedAt(new Date());
+        ret.setEdsPatientId(edsPatientId);
+
+        return ret;
     }
 
     /**
@@ -398,7 +435,8 @@ public class FhirResourceFiler {
                     }
 
                     //if we've not set the EDS patient ID on our batch yet, then do so now
-                    if (patientResources
+                    //this is now done as the exchange batch is created, so there's no need to save again
+                    /*if (patientResources
                             && exchangeBatch.getEdsPatientId() == null) {
                         try {
                             String edsPatientId = IdHelper.getPatientId(resource);
@@ -407,7 +445,7 @@ public class FhirResourceFiler {
                         } catch (Exception ex) {
                             //if we try this on a Slot, it'll fail, so just ignore any errors
                         }
-                    }
+                    }*/
 
                     UUID batchUuid = exchangeBatch.getBatchId();
                     if (isDelete) {

@@ -120,7 +120,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             this.csvRecord = csvIterator.next();
 
             if (csvReader.getCurrentLineNumber() % 50000 == 0) {
-                LOG.trace("Starting line {} of {}", csvReader.getCurrentLineNumber(), file.getAbsolutePath());
+                LOG.trace("Line " + csvReader.getCurrentLineNumber() + " of " + file.getAbsolutePath());
             }
 
             //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
@@ -136,7 +136,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
         //only log out we "completed" the file if we read any rows from it
         if (csvReader.getCurrentLineNumber() > 1) {
-            LOG.info("Completed file {}", file.getAbsolutePath());
+            LOG.info("Completed " + file.getAbsolutePath());
         }
 
         this.csvRecord = null;

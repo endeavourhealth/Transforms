@@ -13,6 +13,9 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
+import org.endeavourhealth.transform.enterprise.outputModels.EncounterRaw;
+import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +32,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transform(Long enterpriseId,
+    protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
@@ -62,7 +65,9 @@ public class EncounterTransformer extends AbstractTransformer {
                 boolean primary = false;
                 for (CodeableConcept codeableConcept: participantComponent.getType()) {
                     for (Coding coding : codeableConcept.getCoding()) {
-                        if (coding.getCode().equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode())) {
+                        String typeCode = coding.getCode();
+                        if (typeCode.equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode()) //used for GP
+                                || typeCode.equals(EncounterParticipantType.ATTENDER.getCode())) { //used for ADT
                             primary = true;
                             break;
                         }
@@ -150,6 +155,299 @@ public class EncounterTransformer extends AbstractTransformer {
             originalTerm,
             episodeOfCareId,
             serviceProviderOrganisationId);
+
+        //we also need to populate the two new encounter tables
+        tranformExtraEncounterTables(resource, params,
+                id, organisationId, patientId, personId, practitionerId,
+                episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
+                serviceProviderOrganisationId);
+    }
+
+    private void tranformExtraEncounterTables(Resource resource, EnterpriseTransformParams params,
+                                              long id, long organisationId, long patientId, long personId, Long practitionerId,
+                                              Long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
+                                              Long serviceProviderOrganisationId) throws Exception {
+
+        Encounter fhir = (Encounter)resource;
+
+        Long recordingPractitionerId = findRecordingPractitionerId(fhir, params);
+        Date recordingDate = findRecordingDate(fhir);
+        Long locationId = findLocationId(fhir, params);
+        Date endDate = findEndDate(fhir);
+        Integer durationMins = findDuration(clinicalEffectiveDate, endDate);
+        Long completionStatusConceptId = null; //leave these concepts as null for now, until we know the rules
+        Long healthcareServiceTypeConceptId = null;
+        Long interactionModeConceptId = null;
+        Long administrativeActionConceptId = null;
+        Long purposeConceptId = null;
+        Long dispositionConceptId = null;
+        Long siteOfCareTypeConceptId = null;
+        Long patientStatusConceptId = null;
+        String fhirAdtMessageCode = findAdtMessageCode(fhir);
+        String fhirClass = findClass(fhir);
+        String fhirType = findType(fhir);
+        String fhirStatus = findStatus(fhir);
+        Long fhirSnomedConceptId = findSnomedSourceConceptId(fhir);
+        String fhirOriginalCode = findOriginalReadCode(fhir);
+        String fhirOriginalTerm = findOriginalTerm(fhir);
+
+        OutputContainer outputContainer = params.getOutputContainer();
+
+        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
+        encounterDetail.writeUpsert(id,
+                        organisationId,
+                        patientId,
+                        personId,
+                        practitionerId,
+                        episodeOfCareId,
+                        clinicalEffectiveDate,
+                        datePrecisionId,
+                        recordingPractitionerId,
+                        recordingDate,
+                        appointmentId,
+                        serviceProviderOrganisationId,
+                        locationId,
+                        endDate,
+                        durationMins,
+                        completionStatusConceptId,
+                        healthcareServiceTypeConceptId,
+                        interactionModeConceptId,
+                        administrativeActionConceptId,
+                        purposeConceptId,
+                        dispositionConceptId,
+                        siteOfCareTypeConceptId,
+                        patientStatusConceptId);
+
+
+        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
+        encounterRaw.writeUpsert(id,
+                        organisationId,
+                        patientId,
+                        personId,
+                        practitionerId,
+                        episodeOfCareId,
+                        clinicalEffectiveDate,
+                        datePrecisionId,
+                        recordingPractitionerId,
+                        recordingDate,
+                        appointmentId,
+                        serviceProviderOrganisationId,
+                        locationId,
+                        endDate,
+                        durationMins,
+                        fhirAdtMessageCode,
+                        fhirClass,
+                        fhirType,
+                        fhirStatus,
+                        fhirSnomedConceptId,
+                        fhirOriginalCode,
+                        fhirOriginalTerm);
+    }
+
+    private Integer findDuration(Date startDate, Date endDate) {
+        if (startDate == null
+                || endDate == null) {
+            return null;
+        }
+
+        long msDiff = endDate.getTime() - startDate.getTime();
+        long secDiff = msDiff / 1000;
+        long minDur = secDiff / 60;
+        return new Integer((int)minDur);
+    }
+
+    private String findOriginalTerm(Encounter fhir) {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (extension == null) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+        return codeableConcept.getText();
+    }
+
+    private String findOriginalReadCode(Encounter fhir) {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (extension == null) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+        return CodeableConceptHelper.findOriginalCode(codeableConcept);
+    }
+
+    private Long findSnomedSourceConceptId(Encounter fhir) {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (extension == null) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+        return CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+    }
+
+    private String findStatus(Encounter fhir) {
+        if (!fhir.hasStatus()) {
+            return null;
+        }
+
+        Encounter.EncounterState encounterState = fhir.getStatus();
+        return encounterState.toCode();
+    }
+
+    private String findType(Encounter fhir) {
+        if (!fhir.hasType()) {
+            return null;
+        }
+
+        //only seem to ever have one type
+        CodeableConcept codeableConcept = fhir.getType().get(0);
+        return codeableConcept.getText();
+    }
+
+    private String findClass(Encounter fhir) {
+        if (!fhir.hasClass_()) {
+            return null;
+        }
+
+        Encounter.EncounterClass encounterClass = fhir.getClass_();
+        if (encounterClass == Encounter.EncounterClass.OTHER
+                && fhir.hasClass_Element()
+                && fhir.getClass_Element().hasExtension()) {
+
+            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+                if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
+                    return "" + classExtension.getValue();
+                }
+            }
+        }
+
+        return encounterClass.toCode();
+    }
+
+    private String findAdtMessageCode(Encounter fhir) {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.HL7_MESSAGE_TYPE);
+        if (extension == null) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+        Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+        if (hl7MessageTypeCoding == null) {
+            return null;
+        }
+
+        return hl7MessageTypeCoding.getCode();
+    }
+
+    private Long findRecordingPractitionerId(Encounter fhir, EnterpriseTransformParams params) throws Exception {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (extension == null) {
+            return null;
+        }
+
+        Reference reference = (Reference)extension.getValue();
+        return transformOnDemandAndMapId(reference, params);
+    }
+
+    private Date findEndDate(Encounter fhir) {
+        if (fhir.hasPeriod()) {
+            Period p = fhir.getPeriod();
+            if (p.hasEnd()) {
+                return p.getEnd();
+            }
+        }
+
+        return null;
+    }
+
+    private Long findLocationId(Encounter fhir, EnterpriseTransformParams params) throws Exception {
+
+        if (!fhir.hasLocation()) {
+            return null;
+        }
+
+        Reference locationReference = null;
+
+        //use an active location
+        for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+            if (location.hasStatus()
+                    && location.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
+
+                locationReference = location.getLocation();
+            }
+        }
+
+        //if no active location, use a completed one
+        if (locationReference == null) {
+            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+                if (location.hasStatus()
+                        && location.getStatus() == Encounter.EncounterLocationStatus.COMPLETED) {
+
+                    locationReference = location.getLocation();
+                }
+            }
+        }
+
+        //if no completed or active location any
+        if (locationReference == null) {
+            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+                locationReference = location.getLocation();
+            }
+        }
+
+        if (locationReference == null) {
+            return null;
+
+        } else {
+            return transformOnDemandAndMapId(locationReference, params);
+        }
+    }
+
+    private Date findRecordingDate(Encounter fhir) {
+        if (fhir.hasExtension()) {
+            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+            if (extension != null) {
+                DateTimeType dtt = (DateTimeType)extension.getValue();
+                return dtt.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    private void transformEncounterRaw(Long enterpriseId, Resource resource, EnterpriseTransformParams params,
+                                       long id, long organisationId, long patientId, long personId, long practitionerId,
+                                       long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
+                                       Long serviceProviderOrganisationId, Long recordingPractitionerId, Date recordingDate,
+                                       Long locationId, Date endDate, Integer duration, Integer durationUnit) throws Exception {
+
+
+
+        OutputContainer outputContainer = params.getOutputContainer();
+
+
+
     }
 
     public static String findEncounterTypeTerm(Encounter fhir) {
@@ -365,5 +663,23 @@ public class EncounterTransformer extends AbstractTransformer {
         }
         return ret;
     }*/
+
+    @Override
+    protected void transformResourceDelete(Long enterpriseId,
+                                           AbstractEnterpriseCsvWriter csvWriter,
+                                           EnterpriseTransformParams params) throws Exception {
+
+        //we need to override this function as we also need to send the delete to the other two encounter tables
+        super.transformResourceDelete(enterpriseId, csvWriter, params);
+
+        OutputContainer outputContainer = params.getOutputContainer();
+
+        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
+        encounterRaw.writeDelete(enterpriseId);
+
+        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
+        encounterDetail.writeDelete(enterpriseId);
+
+    }
 
 }

@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.fhirhl7v2;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
@@ -364,8 +367,8 @@ public class FhirHl7v2Filer {
         }
 
         //if we've not got an existing batch for this exchange and patient, then generate a new one
-        ExchangeBatch exchangeBatch = FhirResourceFiler.createExchangeBatch(exchangeId);
-        exchangeBatch.setEdsPatientId(UUID.fromString(patientId));
+        UUID edsPatientId = UUID.fromString(patientId);
+        ExchangeBatch exchangeBatch = FhirResourceFiler.createExchangeBatch(exchangeId, edsPatientId);
         exchangeBatchRepository.save(exchangeBatch);
 
         //make sure to add to the list of batch IDs created

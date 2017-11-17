@@ -51,7 +51,7 @@ public class PatientTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transform(Long enterpriseId,
+    protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {
@@ -153,7 +153,7 @@ public class PatientTransformer extends AbstractTransformer {
         boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
         org.endeavourhealth.transform.enterprise.outputModels.Patient patientWriter = (org.endeavourhealth.transform.enterprise.outputModels.Patient)csvWriter;
-        org.endeavourhealth.transform.enterprise.outputModels.Person personWriter = params.getData().getPersons();
+        org.endeavourhealth.transform.enterprise.outputModels.Person personWriter = params.getOutputContainer().getPersons();
 
         if (patientWriter.isPseduonymised()) {
 

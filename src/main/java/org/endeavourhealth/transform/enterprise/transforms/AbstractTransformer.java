@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractTransformer {
 
@@ -32,6 +33,7 @@ public abstract class AbstractTransformer {
     private static JCS cache = null;
     /*private static Map<String, AtomicInteger> maxIdMap = new ConcurrentHashMap<>();
     private static ReentrantLock futuresLock = new ReentrantLock();*/
+    private static final ReentrantLock onDemandLock = new ReentrantLock();
 
     static {
         try {
@@ -48,9 +50,9 @@ public abstract class AbstractTransformer {
         }
     }
 
-    public void transform(List<ResourceWrapper> resources,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+    public void transformResources(List<ResourceWrapper> resources,
+                                    AbstractEnterpriseCsvWriter csvWriter,
+                                    EnterpriseTransformParams params) throws Exception {
 
         Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform(), params);
 
@@ -60,25 +62,25 @@ public abstract class AbstractTransformer {
                 Long enterpriseId = enterpriseIds.get(resource);
                 if (enterpriseId == null) {
                     //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
-                    //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already
-                    //transformed)
+                    //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already transformed)
                     continue;
 
-                } else if (resource.isDeleted()) {
-                    csvWriter.writeDelete(enterpriseId.longValue());
+                }
 
-                } else {
+                //check to see if we've already transformed this resource in this batch already,
+                //which can happen for dependent items like orgs and practitioners
+                ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
+                String resourceId = resource.getResourceId().toString();
+                Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceId);
 
-                    //check to see if we've already transformed this resource in this batch already,
-                    //which can happen for dependent items like orgs and practitioners
-                    ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
-                    String resourceId = resource.getResourceId().toString();
-                    Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceId);
+                if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
 
-                    if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
+                    if (resource.isDeleted()) {
+                        transformResourceDelete(enterpriseId, csvWriter, params);
 
+                    } else {
                         Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
-                        transform(enterpriseId, fhir, csvWriter, params);
+                        transformResource(enterpriseId, fhir, csvWriter, params);
                     }
                 }
 
@@ -92,10 +94,17 @@ public abstract class AbstractTransformer {
     //or only transformed if something refers to it (e.g. orgs and practitioners)
     public abstract boolean shouldAlwaysTransform();
 
-    protected abstract void transform(Long enterpriseId,
+    protected abstract void transformResource(Long enterpriseId,
                                    Resource resource,
                                    AbstractEnterpriseCsvWriter csvWriter,
                                    EnterpriseTransformParams params) throws Exception;
+
+    protected void transformResourceDelete(Long enterpriseId,
+                                           AbstractEnterpriseCsvWriter csvWriter,
+                                           EnterpriseTransformParams params) throws Exception {
+
+        csvWriter.writeDelete(enterpriseId.longValue());
+    }
 
     protected static Integer convertDatePrecision(TemporalPrecisionEnum precision) throws Exception {
         return Integer.valueOf(precision.getCalendarConstant());
@@ -252,7 +261,8 @@ public abstract class AbstractTransformer {
 
             //if this resource is mapped to a different instance of the same concept (e.g. it's a duplicate instance
             //of an organisation), then we don't want to generate an ID for it
-            if (isResourceMappedToAnotherInstance(resource, params)) {
+            if (params.isUseInstanceMapping()
+                && isResourceMappedToAnotherInstance(resource, params)) {
                 continue;
             }
 
@@ -402,55 +412,80 @@ public abstract class AbstractTransformer {
             return existingEnterpriseId;
         }
 
-        Resource fhir = findResource(reference, params);
-        if (fhir == null) {
-            //if it's deleted then just return null since there's no point assigning an ID
-            return null;
-        }
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+        ResourceType resourceType = comps.getResourceType();
+        UUID resourceId = UUID.fromString(comps.getId());
 
-        ResourceType resourceType = fhir.getResourceType();
-        UUID resourceId = UUID.fromString(fhir.getId());
+        //we've have multiple threads potentially trying to transform the same dependend resource (e.g. practitioner)
+        //so we need to sync on something to ensure we only
+        try {
+            onDemandLock.lock();
 
-        //see if this resource is mapped to another instance of the same concept (e.g. organisation),
-        //in which case we want to use the enterprise ID for that OTHER instance
-        if (resourceType == ResourceType.Organization
-                || resourceType == ResourceType.Practitioner) {
+            //see if this resource is mapped to another instance of the same concept (e.g. organisation),
+            //in which case we want to use the enterprise ID for that OTHER instance
+            if (params.isUseInstanceMapping()
+                && (resourceType == ResourceType.Organization
+                    || resourceType == ResourceType.Practitioner)) {
 
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            UUID mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
+                EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+                UUID mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
 
-            //if we've not got a mapping, then we need to create one from our resource data
-            if (mappedResourceId == null) {
-                String mappingValue = findInstanceMappingValue(fhir, params);
-                mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+                //if we've not got a mapping, then we need to create one from our resource data
+                if (mappedResourceId == null) {
+
+                    Resource fhirResource = findResource(reference, params);
+                    if (fhirResource == null) {
+                        //if it's deleted then just return null since there's no point assigning an ID
+                        return null;
+                    }
+
+                    String mappingValue = findInstanceMappingValue(fhirResource, params);
+                    mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+                }
+
+                //if our mapped ID is different to our proper ID, then we don't need to transform that
+                //other resource, as it will already have been done, so we can just return it's Enterprise ID
+                if (!mappedResourceId.equals(resourceId)) {
+                    return findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                }
             }
 
-            //if our mapped ID is different to our proper ID, then we don't need to transform that
-            //other resource, as it will already have been done, so we can just return it's Enterprise ID
-            if (!mappedResourceId.equals(resourceId)) {
-                return findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+            if (params.hasResourceBeenTransformedAddIfNot(reference)) {
+                //if we've already transformed the resource, which could happen because the transform is multi-threaded,
+                //then have another look for the enterprise ID as it must exist
+                return findEnterpriseId(params, reference);
             }
+
+            //if we've got here, we actually want to transform the referred to resource, so retrieve from the DB
+            Resource fhir = findResource(reference, params);
+            if (fhir == null) {
+                //if it's deleted then just return null since there's no point assigning an ID
+                return null;
+            }
+
+            AbstractTransformer transformer = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(resourceType);
+            if (transformer == null) {
+                throw new TransformException("No transformer found for resource " + reference.getReference());
+            }
+
+            //generate a new enterprise ID for our resource. So we have an audit of this, and can recover if we
+            //kill the queue reader at this point, we also need to store our resource's ID in the exchange_batch_extra_resource table
+            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
+            //LOG.info("Saving extra resource exchange " + params.getExchangeId() + " batch " + params.getBatchId() + " resource type " + resourceType + " id " + resourceId);
+            exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
+
+            //then generate the new ID
+            Long enterpriseId = findOrCreateEnterpriseId(params, resourceType.toString(), fhir.getId());
+
+            //and transform the resource
+            AbstractEnterpriseCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
+            transformer.transformResource(enterpriseId, fhir, csvWriter, params);
+
+            return enterpriseId;
+
+        } finally {
+            onDemandLock.unlock();
         }
-
-        //if we make it here, we DO want to generate an enterprise ID for our resource and transform it
-        AbstractTransformer transformer = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(resourceType);
-        if (transformer == null) {
-            throw new TransformException("No transformer found for resource " + reference.getReference());
-        }
-
-        //generate a new enterprise ID for our resource. So we have an audit of this, and can recover if we
-        //kill the queue reader at this point, we also need to store our resource's ID in the exchange_batch_extra_resource table
-        ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
-        exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
-
-        //then generate the new ID
-        Long enterpriseId = findOrCreateEnterpriseId(params, resourceType.toString(), fhir.getId());
-
-        //and transform the resource
-        AbstractEnterpriseCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-        transformer.transform(enterpriseId, fhir, csvWriter, params);
-
-        return enterpriseId;
     }
     /*protected Long transformOnDemandAndMapId(Reference reference,
                                              EnterpriseTransformParams params) throws Exception {

@@ -15,9 +15,10 @@ public class EnterpriseTransformParams {
     private final UUID exchangeId;
     private final UUID batchId;
     private final String enterpriseConfigName;
-    private final OutputContainer data;
+    private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> allResources;
     private final Set<String> resourcesTransformed;
+    private final boolean useInstanceMapping;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -26,15 +27,21 @@ public class EnterpriseTransformParams {
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public EnterpriseTransformParams(UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     OutputContainer data, Map<String, ResourceWrapper> allResources, String exchangeBody) {
+                                     OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody,
+                                     boolean useInstanceMapping) {
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
-        this.data = data;
+        this.outputContainer = outputContainer;
         this.allResources = allResources;
         this.exchangeBody = exchangeBody;
         this.resourcesTransformed = new HashSet<>();
+        this.useInstanceMapping = useInstanceMapping;
+    }
+
+    public boolean isUseInstanceMapping() {
+        return useInstanceMapping;
     }
 
     public String getExchangeBody() {
@@ -57,8 +64,8 @@ public class EnterpriseTransformParams {
         return enterpriseConfigName;
     }
 
-    public OutputContainer getData() {
-        return data;
+    public OutputContainer getOutputContainer() {
+        return outputContainer;
     }
 
     public Map<String, ResourceWrapper> getAllResources() {

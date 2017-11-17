@@ -19,7 +19,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transform(Long enterpriseId,
+    protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformParams params) throws Exception {

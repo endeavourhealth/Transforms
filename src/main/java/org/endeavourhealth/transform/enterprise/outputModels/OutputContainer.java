@@ -7,6 +7,8 @@ import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -20,21 +22,8 @@ public class OutputContainer {
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String COLUMN_CLASS_MAPPINGS = "ColumnClassMappings.json";
-
-    private final Organization organisations;
-    private final Practitioner practitioners;
-    private final Schedule schedules;
-    private final Person persons;
-    private final Patient patients;
-    private final EpisodeOfCare episodesOfCare;
-    private final Appointment appointments;
-    private final Encounter encounters;
-    private final ReferralRequest referralRequests;
-    private final ProcedureRequest procedureRequests;
-    private final Observation observations;
-    private final MedicationStatement medicationStatements;
-    private final MedicationOrder medicationOrders;
-    private final AllergyIntolerance allergyIntolerances;
+    
+    private final List<AbstractEnterpriseCsvWriter> csvWriters;
 
 
     public OutputContainer(boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
@@ -43,20 +32,24 @@ public class OutputContainer {
 
     public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
 
-        organisations = new Organization("organization.csv", csvFormat, dateFormat, timeFormat);
-        practitioners = new Practitioner("practitioner.csv", csvFormat, dateFormat, timeFormat);
-        schedules = new Schedule("schedule.csv", csvFormat, dateFormat, timeFormat);
-        persons = new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised);
-        patients = new Patient("patient.csv", csvFormat, dateFormat, timeFormat, pseduonymised);
-        episodesOfCare = new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat);
-        appointments = new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat);
-        encounters = new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat);
-        referralRequests = new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat);
-        procedureRequests = new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat);
-        observations = new Observation("observation.csv", csvFormat, dateFormat, timeFormat, hasProblemEndDate);
-        medicationStatements = new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat);
-        medicationOrders = new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat);
-        allergyIntolerances = new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat);
+        csvWriters = new ArrayList<>();
+        csvWriters.add(new Organization("organization.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Location("location.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Practitioner("practitioner.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Schedule("schedule.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
+        csvWriters.add(new Patient("patient.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
+        csvWriters.add(new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new EncounterDetail("encounter_detail.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new EncounterRaw("encounter_raw.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Observation("observation.csv", csvFormat, dateFormat, timeFormat, hasProblemEndDate));
+        csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
     }
 
 
@@ -70,41 +63,19 @@ public class OutputContainer {
         //the first entry is a json file giving us the target class names for each column
         ObjectNode columnClassMappingJson = new ObjectNode(JsonNodeFactory.instance);
 
-        writeColumnClassMappings(organisations, columnClassMappingJson);
-        writeColumnClassMappings(practitioners, columnClassMappingJson);
-        writeColumnClassMappings(schedules, columnClassMappingJson);
-        writeColumnClassMappings(persons, columnClassMappingJson);
-        writeColumnClassMappings(patients, columnClassMappingJson);
-        writeColumnClassMappings(episodesOfCare, columnClassMappingJson);
-        writeColumnClassMappings(appointments, columnClassMappingJson);
-        writeColumnClassMappings(encounters, columnClassMappingJson);
-        writeColumnClassMappings(referralRequests, columnClassMappingJson);
-        writeColumnClassMappings(procedureRequests, columnClassMappingJson);
-        writeColumnClassMappings(observations, columnClassMappingJson);
-        writeColumnClassMappings(medicationStatements, columnClassMappingJson);
-        writeColumnClassMappings(medicationOrders, columnClassMappingJson);
-        writeColumnClassMappings(allergyIntolerances, columnClassMappingJson);
+        for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
+            writeColumnClassMappings(csvWriter, columnClassMappingJson);
+        }
 
         String jsonStr = ObjectMapperPool.getInstance().writeValueAsString(columnClassMappingJson);
         zos.putNextEntry(new ZipEntry(COLUMN_CLASS_MAPPINGS));
         zos.write(jsonStr.getBytes());
         zos.flush();
         
-        //then write the CSV files        
-        writeZipEntry(organisations, zos);
-        writeZipEntry(practitioners, zos);
-        writeZipEntry(schedules, zos);
-        writeZipEntry(persons, zos);
-        writeZipEntry(patients, zos);
-        writeZipEntry(episodesOfCare, zos);
-        writeZipEntry(appointments, zos);
-        writeZipEntry(encounters, zos);
-        writeZipEntry(referralRequests, zos);
-        writeZipEntry(procedureRequests, zos);
-        writeZipEntry(observations, zos);
-        writeZipEntry(medicationStatements, zos);
-        writeZipEntry(medicationOrders, zos);
-        writeZipEntry(allergyIntolerances, zos);
+        //then write the CSV files
+        for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
+            writeZipEntry(csvWriter, zos);
+        }
 
         //close
         zos.close();
@@ -154,59 +125,84 @@ public class OutputContainer {
         zipOutputStream.flush();
     }
 
+    public List<AbstractEnterpriseCsvWriter> getCsvWriters() {
+        return csvWriters;
+    }
+
+    public <T extends AbstractEnterpriseCsvWriter> T findCsvWriter(Class<T> cls) {
+        for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
+            if (csvWriter.getClass() == cls) {
+                return (T)csvWriter;
+            }
+        }
+        return null;
+    }
+
     public Organization getOrganisations() {
-        return organisations;
+        return findCsvWriter(Organization.class);
+    }
+
+    public Location getLocations() {
+        return findCsvWriter(Location.class);
     }
 
     public Practitioner getPractitioners() {
-        return practitioners;
+        return findCsvWriter(Practitioner.class);
     }
 
     public Schedule getSchedules() {
-        return schedules;
+        return findCsvWriter(Schedule.class);
     }
 
     public Person getPersons() {
-        return persons;
+        return findCsvWriter(Person.class);
     }
 
     public Patient getPatients() {
-        return patients;
+        return findCsvWriter(Patient.class);
     }
 
     public EpisodeOfCare getEpisodesOfCare() {
-        return episodesOfCare;
+        return findCsvWriter(EpisodeOfCare.class);
     }
 
     public Appointment getAppointments() {
-        return appointments;
+        return findCsvWriter(Appointment.class);
     }
 
     public Encounter getEncounters() {
-        return encounters;
+        return findCsvWriter(Encounter.class);
+    }
+
+    public EncounterDetail getEncounterDetails() {
+        return findCsvWriter(EncounterDetail.class);
+    }
+
+    public EncounterRaw getEncounterRaws() {
+        return findCsvWriter(EncounterRaw.class);
     }
 
     public ReferralRequest getReferralRequests() {
-        return referralRequests;
+        return findCsvWriter(ReferralRequest.class);
     }
 
     public ProcedureRequest getProcedureRequests() {
-        return procedureRequests;
+        return findCsvWriter(ProcedureRequest.class);
     }
 
     public Observation getObservations() {
-        return observations;
+        return findCsvWriter(Observation.class);
     }
 
     public MedicationStatement getMedicationStatements() {
-        return medicationStatements;
+        return findCsvWriter(MedicationStatement.class);
     }
 
     public MedicationOrder getMedicationOrders() {
-        return medicationOrders;
+        return findCsvWriter(MedicationOrder.class);
     }
 
     public AllergyIntolerance getAllergyIntolerances() {
-        return allergyIntolerances;
+        return findCsvWriter(AllergyIntolerance.class);
     }
 }
