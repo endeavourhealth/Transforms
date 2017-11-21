@@ -114,8 +114,12 @@ public class PatientTransformer extends AbstractTransformer {
             dateOfDeath = d.getValue();
         }
 
-        patientGenderId = fhirPatient.getGender().ordinal();
+        if (fhirPatient.hasGender()) {
+            patientGenderId = fhirPatient.getGender().ordinal();
 
+        } else {
+            patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
+        }
 
         if (fhirPatient.hasAddress()) {
             for (Address address: fhirPatient.getAddress()) {
