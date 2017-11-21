@@ -66,6 +66,20 @@ jcs.region.EnterpriseResourceMap.cacheattributes.DiskUsagePatternName=UPDATE
 jcs.region.EnterpriseResourceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
 jcs.region.EnterpriseResourceMap.elementattributes.IsEternal=false
 
+# MEMORY ONLY CACHE FOR Enterprise Instance MAPPING
+jcs.region.EnterpriseInstanceMap=
+jcs.region.EnterpriseInstanceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
+jcs.region.EnterpriseInstanceMap.cacheattributes.MaxObjects=100000
+jcs.region.EnterpriseInstanceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
+jcs.region.EnterpriseInstanceMap.cacheattributes.UseMemoryShrinker=true
+jcs.region.EnterpriseInstanceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
+jcs.region.EnterpriseInstanceMap.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.EnterpriseInstanceMap.cacheattributes.MaxSpoolPerRun=500
+jcs.region.EnterpriseInstanceMap.cacheattributes.DiskUsagePatternName=UPDATE
+jcs.region.EnterpriseInstanceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
+jcs.region.EnterpriseInstanceMap.elementattributes.IsEternal=false
+
+
 # AVAILABLE AUXILIARY CACHES
 jcs.auxiliary.DC=org.apache.jcs.auxiliary.disk.indexed.IndexedDiskCacheFactory
 jcs.auxiliary.DC.attributes=org.apache.jcs.auxiliary.disk.indexed.IndexedDiskCacheAttributes

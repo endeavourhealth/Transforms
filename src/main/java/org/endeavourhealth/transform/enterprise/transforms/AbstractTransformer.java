@@ -30,9 +30,8 @@ public abstract class AbstractTransformer {
     private static final ParserPool PARSER_POOL = new ParserPool();
 
     //private static final EnterpriseIdMapRepository idMappingRepository = new EnterpriseIdMapRepository();
-    private static JCS cache = null;
-    /*private static Map<String, AtomicInteger> maxIdMap = new ConcurrentHashMap<>();
-    private static ReentrantLock futuresLock = new ReentrantLock();*/
+    private static JCS idCache = null;
+    private static JCS instanceCache = null;
     private static final ReentrantLock onDemandLock = new ReentrantLock();
 
     static {
@@ -43,7 +42,8 @@ public abstract class AbstractTransformer {
             /*org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger("org.apache.jcs");
             logger.setLevel(org.apache.log4j.Level.OFF);*/
 
-            cache = JCS.getInstance("EnterpriseResourceMap");
+            idCache = JCS.getInstance("EnterpriseResourceMap");
+            instanceCache = JCS.getInstance("EnterpriseInstanceMap");
 
         } catch (CacheException ex) {
             throw new RuntimeException("Error initialising cache", ex);
@@ -174,14 +174,14 @@ public abstract class AbstractTransformer {
     }
 
     private static Long checkCacheForId(String enterpriseConfigName, String resourceType, String resourceId) throws Exception {
-        return (Long)cache.get(createCacheKey(enterpriseConfigName, resourceType, resourceId));
+        return (Long)idCache.get(createCacheKey(enterpriseConfigName, resourceType, resourceId));
     }
 
     private static void addIdToCache(String enterpriseConfigName, String resourceType, String resourceId, Long toCache) throws Exception {
         if (toCache == null) {
             return;
         }
-        cache.put(createCacheKey(enterpriseConfigName, resourceType, resourceId), toCache);
+        idCache.put(createCacheKey(enterpriseConfigName, resourceType, resourceId), toCache);
     }
 
     /*public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
@@ -314,18 +314,26 @@ public abstract class AbstractTransformer {
             return false;
         }
 
-        EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-        UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
-
-        //if we've not got a mapping, then we need to create one from our resource data
+        UUID mappedResourceId = checkInstanceMapCache(resourceType, resourceId);
         if (mappedResourceId == null) {
-            String mappingValue = findInstanceMappingValue(resource, params);
-            mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+
+            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
+
+            //if we've not got a mapping, then we need to create one from our resource data
+            if (mappedResourceId == null) {
+                String mappingValue = findInstanceMappingValue(resource, params);
+                mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+            }
+
+            addToInstanceMapCache(resourceType, resourceId, mappedResourceId);
         }
 
         //if the mapped ID is different to the resource ID then it's mapped to another instance
         return !mappedResourceId.equals(resourceId);
     }
+
+
 
     private static String findInstanceMappingValue(ResourceWrapper resourceWrapper, EnterpriseTransformParams params) throws Exception {
 
@@ -416,7 +424,7 @@ public abstract class AbstractTransformer {
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
 
-        //we've have multiple threads potentially trying to transform the same dependend resource (e.g. practitioner)
+        //we've have multiple threads potentially trying to transform the same dependent resource (e.g. practitioner)
         //so we need to sync on something to ensure we only
         try {
             onDemandLock.lock();
@@ -427,20 +435,26 @@ public abstract class AbstractTransformer {
                 && (resourceType == ResourceType.Organization
                     || resourceType == ResourceType.Practitioner)) {
 
-                EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-                UUID mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
-
-                //if we've not got a mapping, then we need to create one from our resource data
+                UUID mappedResourceId = checkInstanceMapCache(resourceType, resourceId);
                 if (mappedResourceId == null) {
 
-                    Resource fhirResource = findResource(reference, params);
-                    if (fhirResource == null) {
-                        //if it's deleted then just return null since there's no point assigning an ID
-                        return null;
+                    EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+                    mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
+
+                    //if we've not got a mapping, then we need to create one from our resource data
+                    if (mappedResourceId == null) {
+
+                        Resource fhirResource = findResource(reference, params);
+                        if (fhirResource == null) {
+                            //if it's deleted then just return null since there's no point assigning an ID
+                            return null;
+                        }
+
+                        String mappingValue = findInstanceMappingValue(fhirResource, params);
+                        mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
                     }
 
-                    String mappingValue = findInstanceMappingValue(fhirResource, params);
-                    mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+                    addToInstanceMapCache(resourceType, resourceId, mappedResourceId);
                 }
 
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
@@ -498,6 +512,19 @@ public abstract class AbstractTransformer {
             onDemandLock.unlock();
         }
     }
+
+    private static UUID checkInstanceMapCache(ResourceType resourceType, UUID resourceId) {
+        Object key = createCacheKey(null, resourceType.toString(), resourceId.toString());
+        return (UUID)instanceCache.get(key);
+    }
+
+    private static void addToInstanceMapCache(ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
+        Object key = createCacheKey(null, resourceType.toString(), resourceId.toString());
+        instanceCache.put(key, mappedResourceId);
+    }
+
+
+
     /*protected Long transformOnDemandAndMapId(Reference reference,
                                              EnterpriseTransformParams params) throws Exception {
 
