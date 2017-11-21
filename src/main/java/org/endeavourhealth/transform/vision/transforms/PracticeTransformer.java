@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.UUID;
 
 public class PracticeTransformer {
 
@@ -37,16 +36,59 @@ public class PracticeTransformer {
     private static void createResource(Practice parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        VisionCsvHelper csvHelper) throws Exception {
-        //first up, create the location resource
-        createLocationResource(parser, fhirResourceFiler, csvHelper);
-
-        //then the organisation and link
+        //first up, create the organisation resource
         createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+
+        //then the location and link the two
+        createLocationResource(parser, fhirResourceFiler, csvHelper);
+    }
+
+    private static void createLocationResource(Practice parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       VisionCsvHelper csvHelper) throws Exception {
+
+        org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
+        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+
+        //set the Location ID to that of the Organisation ID
+        String organisationID = parser.getOrganisationID();
+        fhirLocation.setId(organisationID);
+
+        String houseNameFlat = parser.getAddress1();
+        String numberAndStreet = parser.getAddress2();
+        String village = parser.getAddress3();
+        String town = parser.getAddress4();
+        String county = parser.getAddress5();
+        String postcode = parser.getPostCode();
+
+        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.WORK, houseNameFlat, numberAndStreet, village, town, county, postcode);
+        fhirLocation.setAddress(fhirAddress);
+
+        String phoneNumber = parser.getPhone();
+        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, phoneNumber);
+        fhirLocation.addTelecom(fhirContact);
+
+        String faxNumber = parser.getFax();
+        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.FAX, ContactPoint.ContactPointUse.WORK, faxNumber);
+        fhirLocation.addTelecom(fhirContact);
+
+        String email = parser.getEmail();
+        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email);
+        fhirLocation.addTelecom(fhirContact);
+
+        // the location name is the organisation name, that's all we have
+        String name = parser.getOrganisationName();
+        fhirLocation.setName(name);
+
+        //set the managing organisation for the location, basically itself!
+        fhirLocation.setManagingOrganization(csvHelper.createOrganisationReference(organisationID));
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirLocation);
     }
 
     private static void createOrganisationResource(Practice parser,
-                                               FhirResourceFiler fhirResourceFiler,
-                                               VisionCsvHelper csvHelper) throws Exception {
+                                                   FhirResourceFiler fhirResourceFiler,
+                                                   VisionCsvHelper csvHelper) throws Exception {
         Organization fhirOrganisation = new Organization();
         fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
 
@@ -71,47 +113,6 @@ public class PracticeTransformer {
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirOrganisation);
-    }
-
-    private static void createLocationResource(Practice parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       VisionCsvHelper csvHelper) throws Exception {
-
-        org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
-
-        String locationGuid = UUID.randomUUID().toString();  //create a new identifier to link to the org
-        fhirLocation.setId(locationGuid);
-
-        String houseNameFlat = parser.getAddress1();
-        String numberAndStreet = parser.getAddress2();
-        String village = parser.getAddress3();
-        String town = parser.getAddress4();
-        String county = parser.getAddress5();
-        String postcode = parser.getPostCode();
-
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.WORK, houseNameFlat, numberAndStreet, village, town, county, postcode);
-        fhirLocation.setAddress(fhirAddress);
-
-        String phoneNumber = parser.getPhone();
-        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, phoneNumber);
-        fhirLocation.addTelecom(fhirContact);
-
-        String faxNumber = parser.getFax();
-        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.FAX, ContactPoint.ContactPointUse.WORK, faxNumber);
-        fhirLocation.addTelecom(fhirContact);
-
-        String email = parser.getEmail();
-        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email);
-        fhirLocation.addTelecom(fhirContact);
-
-        String name = parser.getOrganisationName();   // the location name is the organisation name, that's all we have
-        fhirLocation.setName(name);
-
-        String organisationID = parser.getOrganisationID();
-        fhirLocation.setManagingOrganization(csvHelper.createOrganisationReference(organisationID));
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirLocation);
     }
 
     private static OrganisationType convertOrganisationType(String csvOrganisationName) {

@@ -55,7 +55,6 @@ public class EncounterTransformer {
         //link the consultation to our episode of care
         Reference episodeReference = csvHelper.createEpisodeReference(patientID);
         fhirEncounter.addEpisodeOfCare(episodeReference);
-
         fhirEncounter.setStatus(Encounter.EncounterState.FINISHED);
 
         String clinicianID = parser.getClinicianUserID();
@@ -65,8 +64,7 @@ public class EncounterTransformer {
             fhirParticipant.setIndividual(csvHelper.createPractitionerReference(clinicianID));
         }
 
-        Date enteredDateTime = null;
-        enteredDateTime = parser.getEnteredDateTime();
+        Date enteredDateTime = parser.getEnteredDateTime();
         if (enteredDateTime != null) {
             fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
         }
@@ -95,13 +93,13 @@ public class EncounterTransformer {
             fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE, fhirCodeableConcept));
         }
 
-        //carry over linked items from any previous instance of this problem
+        //carry over linked items from any previous instance of this encounter
         List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
         if (previousReferences != null && !previousReferences.isEmpty()) {
             csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
         }
 
-        //apply any linked items from this extract //TODO:  Set up consultation links in Journal pre-transformer using E: prefix
+        //apply any linked items from this extract. Encounter links set-up in Journal pre-transformer
         List<String> linkedResources = csvHelper.getAndRemoveConsultationRelationships(consultationID, patientID);
         if (linkedResources != null) {
             List<Reference> references = ReferenceHelper.createReferences(linkedResources);

@@ -38,11 +38,14 @@ public class Referral extends AbstractCsvParser {
     public String getPatientID() {
         return super.getString("PID");
     }
-    public String getObservationID() {
+    public String getReferralID() {
         return super.getString("ID");
     }
     public Date getReferralDate() throws TransformException {
         return super.getDate("DATE");
+    }
+    public Date getActionDate() throws TransformException {
+        return super.getDate("ACTION_DATE");
     }
     public String getReferralUserID() {
         return super.getString("HCP");

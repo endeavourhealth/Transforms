@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
-import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -58,9 +57,7 @@ public class PatientTransformer {
         //create Episode of Care Resource
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
         fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
-
         VisionCsvHelper.setUniqueId(fhirEpisode, patientID, null);
-
         fhirEpisode.setPatient(csvHelper.createPatientReference(patientID.toString()));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
@@ -77,8 +74,8 @@ public class PatientTransformer {
 
         //store the patient GUID and patient number to the patient resource
         int patientNumber = parser.getPatientNumber();
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, patientID));
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER, "" + patientNumber));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID, patientID));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER, "" + patientNumber));
 
         Date dob = parser.getDateOfBirth();
         fhirPatient.setBirthDate(dob);
@@ -151,6 +148,7 @@ public class PatientTransformer {
             if (codeableConcept != null)
                 fhirPatient.setMaritalStatus(codeableConcept);
         }
+
         String homePhone = parser.getHomePhone();
         ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.HOME, homePhone);
         fhirPatient.addTelecom(fhirContact);
@@ -165,7 +163,7 @@ public class PatientTransformer {
 
         String ethnicityCSV = parser.getEthnicOrigin();
         if (!Strings.isNullOrEmpty(ethnicityCSV)) {
-            EthnicCategory ethnicCategory = EthnicCategory.valueOf(ethnicityCSV);  //TODO: map ethnicity types - mapped in Vision?
+            EthnicCategory ethnicCategory = EthnicCategory.valueOf(ethnicityCSV);  //TODO: check ethnicity types mapped in Vision?
             if (ethnicCategory != null) {
                 CodeableConcept fhirEthnicity = CodeableConceptHelper.createCodeableConcept(ethnicCategory);
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
@@ -200,13 +198,13 @@ public class PatientTransformer {
             fhirEpisode.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
         }
 
-        //save both resources together, so the patient is defintiely saved before the episode
+        //save both resources together, so the patient is saved before the episode
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirPatient, fhirEpisode);
     }
 
     /**
-     * Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
-     * we need to manually delete all dependant resources
+     * Vision - do they send us a delete for a patient WITHOUT a corresponding delete for all other data?,
+     * if so we need to manually delete all dependant resources
      */
     private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, VisionCsvHelper csvHelper,
 																									CsvCurrentState currentState, String patientGuid,
@@ -253,59 +251,6 @@ public class PatientTransformer {
 
         //and delete the patient and episode
         fhirResourceFiler.deletePatientResource(currentState, patientGuid, fhirPatient, fhirEpisode);
-    }
-
-    private static void transformEthnicityAndMaritalStatus(org.hl7.fhir.instance.model.Patient fhirPatient,
-                                                        String patientGuid,
-                                                        VisionCsvHelper csvHelper,
-                                                        FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientGuid);
-        CodeableConcept fhirMaritalStatus = csvHelper.findMaritalStatus(patientGuid);
-
-        //if we don't have an ethnicity or marital status already cached, we may be performing a delta transform
-        //so need to see if we have one previously saved that we should carry over
-        if (fhirEthnicity == null || fhirMaritalStatus == null) {
-            try {
-                org.hl7.fhir.instance.model.Patient oldFhirPatient = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(patientGuid, ResourceType.Patient, fhirResourceFiler);
-
-                if (fhirEthnicity == null) {
-                    for (Extension extension: oldFhirPatient.getExtension()) {
-                        if (extension.getUrl().equals(FhirExtensionUri.PATIENT_ETHNICITY)) {
-                            fhirEthnicity = (CodeableConcept)extension.getValue();
-                        }
-                    }
-                }
-
-                if (fhirMaritalStatus == null) {
-                    fhirMaritalStatus = oldFhirPatient.getMaritalStatus();
-                }
-
-            } catch (Exception ex) {
-                //if the patient didn't previously exist, then we'll get an exception
-            }
-        }
-
-        if (fhirEthnicity != null) {
-            fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
-        }
-
-        if (fhirMaritalStatus != null) {
-            fhirPatient.setMaritalStatus(fhirMaritalStatus);
-        }
-    }
-
-    /**
-     * converts free-text NHS number status to one of the official NHS statuses
-     */
-    private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus) {
-        //note: no idea what possible values will come from EMIS in this field, and there's no content
-        //in the column on the two live extracts seen. So this is more of a placeholder until we get some more info.
-        if (nhsNumberStatus.equalsIgnoreCase("Verified")) {
-            return NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
-        } else {
-            return null;
-        }
     }
 
     private static RegistrationType convertRegistrationType(String csvRegTypeCode) {

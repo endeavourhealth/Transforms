@@ -45,16 +45,16 @@ public class JournalPreTransformer {
             return;
         }
 
-        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+        ResourceType resourceType = getTargetResourceType(parser);
+        String observationID = parser.getObservationID();
+        String patientID = parser.getPatientID();
+        String readCode = parser.getReadCode();
 
         //get the Journal linked items
         String[] links = null;
         if (!Strings.isNullOrEmpty(parser.getLinks())) {
             links = parser.getLinks().split("|");
         }
-        String observationID = parser.getObservationID();
-        String patientID = parser.getPatientID();
-        String readCode = parser.getReadCode();
 
         //TODO:// Are parent observation supported in Vision?
 
@@ -74,7 +74,6 @@ public class JournalPreTransformer {
                 }
             }
         }
-
 
         //linked consultation encounter record
         if (links != null) {

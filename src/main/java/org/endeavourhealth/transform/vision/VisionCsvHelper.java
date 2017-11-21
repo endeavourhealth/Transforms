@@ -2,41 +2,32 @@ package org.endeavourhealth.transform.vision;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherTransform.EmisTransformDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class VisionCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(VisionCsvHelper.class);
 
-    private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
     private static final String CONTAINED_LIST_ID = "Items";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
-    private String dataSharingAgreementGuid = null;
-
-    //metadata, not relating to patients
-    private Map<Long, CodeableConcept> clinicalCodes = new ConcurrentHashMap<>();
-    private Map<Long, ClinicalCodeType> clinicalCodeTypes = new ConcurrentHashMap<>();
-    private Map<Long, CodeableConcept> medication = new ConcurrentHashMap<>();
-    private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
@@ -48,8 +39,6 @@ public class VisionCsvHelper {
     private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
     private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
     private Map<String, List<Observation.ObservationComponentComponent>> bpComponentMap = new HashMap<>();
-    private Map<String, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
-    private Map<String, List<String>> organisationLocationMap = new HashMap<>();
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
@@ -81,38 +70,6 @@ public class VisionCsvHelper {
     public static void setUniqueId(Resource resource, String patientGuid, String sourceGuid) {
         resource.setId(createUniqueId(patientGuid, sourceGuid));
     }
-
-    private void retrieveClinicalCode(Long codeId) throws Exception {
-        EmisCsvCodeMap mapping = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeId);
-        if (mapping == null) {
-            //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
-            LOG.error("Failed to find clincal codeable concept for code ID " + codeId);
-
-            Coding coding = new Coding();
-            coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
-            coding.setCode("?????");
-            coding.setDisplay("Unknown code");
-
-            CodeableConcept codeableConcept = new CodeableConcept();
-            codeableConcept.setText("Missing Clinical Code (Emis ECR 9953529)");
-            codeableConcept.addCoding(coding);
-
-            clinicalCodes.put(codeId, codeableConcept);
-
-            clinicalCodeTypes.put(codeId, ClinicalCodeType.Conditions_Operations_Procedures);
-            return;
-            //throw new ClinicalCodeNotFoundException(dataSharingAgreementGuid, false, codeId);
-        }
-
-        String json = mapping.getCodeableConcept();
-
-        CodeableConcept codeableConcept = (CodeableConcept)PARSER_POOL.parseType(json, CODEABLE_CONCEPT);
-        clinicalCodes.put(codeId, codeableConcept);
-
-        ClinicalCodeType type = ClinicalCodeType.fromValue(mapping.getCodeType());
-        clinicalCodeTypes.put(codeId, type);
-    }
-
 
     /**
      * admin-type resources just use the EMIS CSV GUID as their reference
@@ -163,7 +120,6 @@ public class VisionCsvHelper {
         //the Condition java objects are huge in memory, so save some by caching as a JSON string
         String conditionJson = FhirSerializationHelper.serializeResource(fhirCondition);
         problemMap.put(createUniqueId(patientGuid, observationGuid), conditionJson);
-        //problemMap.put(createUniqueId(patientGuid, observationGuid), fhirCondition);
     }
 
     public boolean existsProblem(String observationGuid, String patientGuid) {
@@ -177,7 +133,6 @@ public class VisionCsvHelper {
         } else {
             return null;
         }
-        //return problemMap.remove(createUniqueId(patientGuid, observationGuid));
     }
 
     public List<String> getAndRemoveObservationParentRelationships(String parentObservationGuid, String patientGuid) {
@@ -246,17 +201,6 @@ public class VisionCsvHelper {
 
         return ret;
     }
-
-    /**
-     * as the end of processing all CSV files, there may be some new observations that link
-     * to past parent observations. These linkages are saved against the parent observation,
-     * so we need to retrieve them off the main repository, amend them and save them
-     */
-    public void processRemainingObservationParentChildLinks(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (Map.Entry<String, List<String>> entry : observationChildMap.entrySet())
-            updateExistingObservationWithNewChildLinks(entry.getKey(), entry.getValue(), fhirResourceFiler);
-    }
-
 
     private void updateExistingObservationWithNewChildLinks(String locallyUniqueObservationId,
                                                             List<String> childResourceRelationships,
@@ -330,16 +274,6 @@ public class VisionCsvHelper {
 
         String resourceReference = ReferenceHelper.createResourceReference(resourceType, createUniqueId(patientGuid, resourceGuid));
         list.add(resourceReference);
-    }
-
-    /**
-     * called at the end of the transform, to update pre-existing Problem resources with references to new
-     * clinical resources that are in those problems
-     */
-    public void processRemainingProblemRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Map.Entry<String, List<String>> entry : problemChildMap.entrySet())
-            addRelationshipsToExistingResource(entry.getKey(), ResourceType.Condition, entry.getValue(), fhirResourceFiler, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
     }
 
     /**
@@ -503,175 +437,6 @@ public class VisionCsvHelper {
         return bpComponentMap.remove(key);
     }
 
-    public void cacheSessionPractitionerMap(String sessionGuid, String emisUserGuid, boolean isDeleted) {
-
-        SessionPractitioners obj = sessionPractitionerMap.get(sessionGuid);
-        if (obj == null) {
-            obj = new SessionPractitioners();
-            sessionPractitionerMap.put(sessionGuid, obj);
-        }
-
-        if (isDeleted) {
-            obj.getEmisUserGuidsToDelete().add(emisUserGuid);
-        } else {
-            obj.getEmisUserGuidsToSave().add(emisUserGuid);
-        }
-    }
-
-    public List<String> findSessionPractionersToSave(String sessionGuid, boolean creatingScheduleResource) {
-        //unlike the other maps, we don't remove from this map, since we need to be able to look up
-        //the staff for a session when creating Schedule resources and Appointment ones
-        SessionPractitioners obj = sessionPractitionerMap.get(sessionGuid);
-        if (obj == null) {
-            return new ArrayList<>();
-        } else {
-            //since we're not removing from the map, like elsewhere, we need to set a flag to say we've
-            //used this entry when creating a schedule resource, so we know to not process it at the end of the transform
-            if (creatingScheduleResource) {
-                obj.setProcessedSession(true);
-            }
-
-            return obj.getEmisUserGuidsToSave();
-        }
-    }
-
-    /**
-     * called at the end of the transform. If the sessionPractitionerMap contains any entries that haven't been processed
-     * then we have changes to the staff in a previously saved FHIR Schedule, so we need to amend that Schedule
-     */
-    public void processRemainingSessionPractitioners(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Map.Entry<String, SessionPractitioners> entry : sessionPractitionerMap.entrySet()) {
-            if (!entry.getValue().isProcessedSession()) {
-                updateExistingScheduleWithNewPractitioners(entry.getKey(), entry.getValue(), fhirResourceFiler);
-            }
-        }
-    }
-
-    private void updateExistingScheduleWithNewPractitioners(String sessionGuid, SessionPractitioners practitioners, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        Schedule fhirSchedule = (Schedule)retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
-        if (fhirSchedule == null) {
-            //because the SessionUser file doesn't have an OrganisationGuid column, we can't split that file
-            //so we will be trying to update the practitioners on sessions that don't exist. So if we get
-            //an exception here, just return out
-            return;
-        }
-
-        //get the references from the existing schedule, removing them as we go
-        List<Reference> references = new ArrayList<>();
-
-        if (fhirSchedule.hasActor()) {
-            references.add(fhirSchedule.getActor());
-            fhirSchedule.setActor(null);
-        }
-        if (fhirSchedule.hasExtension()) {
-            List<Extension> extensions = fhirSchedule.getExtension();
-            for (int i=extensions.size()-1; i>=0; i--) {
-                Extension extension = extensions.get(i);
-                if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_ADDITIONAL_ACTOR)) {
-                    references.add((Reference)extension.getValue());
-                    extensions.remove(i);
-                }
-            }
-        }
-
-        //add any new practitioner references
-        for (String emisUserGuid: practitioners.getEmisUserGuidsToSave()) {
-
-            //we're updating an existing FHIR resource, so need to explicitly map the EMIS user GUID to an EDS ID
-            String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
-                    ResourceType.Practitioner,
-                    emisUserGuid);
-            Reference referenceToAdd = ReferenceHelper.createReference(ResourceType.Practitioner, globallyUniqueId);
-
-            if (!ReferenceHelper.contains(references, referenceToAdd)) {
-                references.add(referenceToAdd);
-            }
-        }
-
-        for (String emisUserGuid: practitioners.getEmisUserGuidsToDelete()) {
-
-            //we're updating an existing FHIR resource, so need to explicitly map the EMIS user GUID to an EDS ID
-            String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
-                    ResourceType.Practitioner,
-                    emisUserGuid);
-
-            Reference referenceToDelete = ReferenceHelper.createReference(ResourceType.Practitioner, globallyUniqueId);
-            ReferenceHelper.remove(references, referenceToDelete);
-        }
-
-        //save the references back into the schedule, treating the first as the main practitioner
-        if (!references.isEmpty()) {
-
-            Reference first = references.get(0);
-            fhirSchedule.setActor(first);
-
-            //add any additional references as additional actors
-            for (int i = 1; i < references.size(); i++) {
-                Reference additional = references.get(i);
-                fhirSchedule.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.SCHEDULE_ADDITIONAL_ACTOR, additional));
-            }
-        }
-
-        fhirResourceFiler.saveAdminResource(null, false, fhirSchedule);
-    }
-
-    public void cacheOrganisationLocationMap(String locationGuid, String orgGuid, boolean mainLocation) {
-
-        List<String> orgGuids = organisationLocationMap.get(locationGuid);
-        if (orgGuids == null) {
-            orgGuids = new ArrayList<>();
-            organisationLocationMap.put(locationGuid, orgGuids);
-        }
-
-        //if this location link is for the main location of an organisation, then insert that
-        //org at the start of the list, so it's used as the managing organisation for the location
-        if (mainLocation) {
-            orgGuids.add(0, orgGuid);
-        } else {
-            orgGuids.add(orgGuid);
-        }
-
-    }
-
-    public List<String> findOrganisationLocationMapping(String locationGuid) {
-        return organisationLocationMap.remove(locationGuid);
-    }
-
-    /**
-     * called at the end of the transform to handle any changes to location/organisation mappings
-     * that weren't handled when we went through the Location file (i.e. changes in the OrganisationLocation file
-     * with no corresponding changes in the Location file)
-     */
-    public void processRemainingOrganisationLocationMappings(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Map.Entry<String, List<String>> entry : organisationLocationMap.entrySet()) {
-
-            Location fhirLocation = (Location) retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
-            if (fhirLocation == null) {
-                //if the location has been deleted, it doesn't matter, and the emis data integrity issues
-                //mean we may have references to unknown locations
-                continue;
-            }
-
-            String organisationGuid = entry.getValue().get(0);
-
-            //the resource has already been through the ID mapping process, so we need to manually map the organisation ID
-            String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
-                    ResourceType.Organization,
-                    organisationGuid);
-
-            Reference reference = ReferenceHelper.createReference(ResourceType.Organization, globallyUniqueId);
-            fhirLocation.setManagingOrganization(reference);
-
-            fhirResourceFiler.saveAdminResource(null, false, fhirLocation);
-        }
-    }
-
     public void cacheEthnicity(String patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
         DateAndCode dc = ethnicityMap.get(createUniqueId(patientGuid, null));
         if (dc == null
@@ -703,50 +468,6 @@ public class VisionCsvHelper {
             return dc.getCodeableConcept();
         } else {
             return null;
-        }
-    }
-
-    /**
-     * when the transform is complete, if there's any values left in the ethnicity and marital status maps,
-     * then we need to update pre-existing patients with new data
-     */
-    public void processRemainingEthnicitiesAndMartialStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        HashSet<String> patientGuids = new HashSet<>(ethnicityMap.keySet());
-        patientGuids.addAll(new HashSet<>(maritalStatusMap.keySet()));
-
-        for (String patientGuid: patientGuids) {
-
-            DateAndCode ethnicity = ethnicityMap.get(patientGuid);
-            DateAndCode maritalStatus = maritalStatusMap.get(patientGuid);
-
-            Patient fhirPatient = (Patient) retrieveResource(createUniqueId(patientGuid, null), ResourceType.Patient, fhirResourceFiler);
-            if (fhirPatient == null) {
-                //if we try to update the ethnicity on a deleted patient, or one we've never received, we'll get this exception, which is fine to ignore
-                continue;
-            }
-
-            if (ethnicity != null) {
-
-                //make to use the extension if it's already present
-                boolean done = false;
-                for (Extension extension : fhirPatient.getExtension()) {
-                    if (extension.getUrl().equals(FhirExtensionUri.PATIENT_ETHNICITY)) {
-                        extension.setValue(ethnicity.getCodeableConcept());
-                        done = true;
-                        break;
-                    }
-                }
-                if (!done) {
-                    fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, ethnicity.getCodeableConcept()));
-                }
-            }
-
-            if (maritalStatus != null) {
-                fhirPatient.setMaritalStatus(maritalStatus.getCodeableConcept());
-            }
-
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirPatient);
         }
     }
 
@@ -882,39 +603,6 @@ public class VisionCsvHelper {
                 String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
                 fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
             }
-        }
-    }
-
-    /**
-     * temporary storage class for changes to the practitioners involved in a session
-     */
-    public class SessionPractitioners {
-        private List<String> emisUserGuidsToSave = new ArrayList<>();
-        private List<String> emisUserGuidsToDelete = new ArrayList<>();
-        private boolean processedSession = false;
-
-        public List<String> getEmisUserGuidsToSave() {
-            return emisUserGuidsToSave;
-        }
-
-        public void setEmisUserGuidsToSave(List<String> emisUserGuidsToSave) {
-            this.emisUserGuidsToSave = emisUserGuidsToSave;
-        }
-
-        public List<String> getEmisUserGuidsToDelete() {
-            return emisUserGuidsToDelete;
-        }
-
-        public void setEmisUserGuidsToDelete(List<String> emisUserGuidsToDelete) {
-            this.emisUserGuidsToDelete = emisUserGuidsToDelete;
-        }
-
-        public boolean isProcessedSession() {
-            return processedSession;
-        }
-
-        public void setProcessedSession(boolean processedSession) {
-            this.processedSession = processedSession;
         }
     }
 

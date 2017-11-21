@@ -46,8 +46,6 @@ public class StaffTransformer {
         String givenName = parser.getGivenName();
         String surname = parser.getSurname();
 
-        //the sample data contains users with a given name but no surname. FHIR requires all names
-        //to have a surname, so treat the sole given name as the surname
         if (Strings.isNullOrEmpty(surname)) {
             surname = givenName;
             givenName = "";

@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Map;
 
+import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkID;
+
 public class ReferralTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReferralTransformer.class);
@@ -44,17 +46,23 @@ public class ReferralTransformer {
         ReferralRequest fhirReferral = new ReferralRequest();
         fhirReferral.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
 
-        String observationID = parser.getObservationID();
+        String referralID = parser.getReferralID();
         String patientID = parser.getPatientID();
 
-        VisionCsvHelper.setUniqueId(fhirReferral, patientID, observationID);
+        VisionCsvHelper.setUniqueId(fhirReferral, patientID, referralID);
 
         fhirReferral.setPatient(csvHelper.createPatientReference(patientID));
+
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        if (parser.getAction().equalsIgnoreCase("D")) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirReferral);
+            return;
+        }
 
         Date referralDate = parser.getReferralDate();
         fhirReferral.setDate(referralDate);
 
-        //TODO: check referral urgency
+        //TODO: no referral urgency?
 //        String urgency = parser.getReferralUrgency();
 //        if (!Strings.isNullOrEmpty(urgency)) {
 //            ReferralPriority fhirPriority = convertUrgency(urgency);
@@ -66,6 +74,9 @@ public class ReferralTransformer {
 //                fhirReferral.setPriority(CodeableConceptHelper.createCodeableConcept(urgency));
 //            }
 //        }
+
+        String referralUserID = parser.getReferralUserID();
+        fhirReferral.setRequester(csvHelper.createPractitionerReference(referralUserID));
 
         String referralType = parser.getReferralType();
         if (!Strings.isNullOrEmpty(referralType)) {
@@ -83,20 +94,17 @@ public class ReferralTransformer {
             fhirReferral.addRecipient(csvHelper.createOrganisationReference(recipientOrgID));
         }
 
+        //set linked encounter
+        if (!Strings.isNullOrEmpty(parser.getLinks())) {
+            String[] links = parser.getLinks().split("|");
+            String consultationID = extractEncounterLinkID(links);
+            if (!Strings.isNullOrEmpty(consultationID)) {
+                fhirReferral.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+            }
+        }
 
-        //TODO:// Encounter link  - The link value is pre-fixed with E  (need example) for an Encounter link
-        String [] links = parser.getLinks().split("|");
-//        String consultationID = EncounterLinks|    //map to an encounterId
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-//        }
-
+        //TODO:  no linked documents ?
         //addDocumentExtension(fhirReferral, parser);
-
-        //unlike other resources, we don't save the Referral immediately, as there's data we
-        //require on the corresponding row in the Observation file. So cache in the helper
-        //and we'll finish the job when we get to that.
-        csvHelper.cacheReferral(observationID, patientID, fhirReferral);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirReferral);
     }

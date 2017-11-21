@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.vision.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
-import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
@@ -17,6 +16,8 @@ import org.endeavourhealth.transform.terminology.TerminologyService;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 public class JournalTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JournalTransformer.class);
 
     private static ResourceIdTransformDalI idMapRepository = DalProvider.factoryResourceIdTransformDal();
 
@@ -104,7 +107,8 @@ public class JournalTransformer {
         potentialResourceTypes.add(ResourceType.AllergyIntolerance);
         potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
         potentialResourceTypes.add(ResourceType.Immunization);
-        potentialResourceTypes.add(ResourceType.Medication);
+        potentialResourceTypes.add(ResourceType.MedicationStatement);
+        potentialResourceTypes.add(ResourceType.MedicationOrder);
 
         for (ResourceType resourceType: potentialResourceTypes) {
             if (wasSavedAsResourceType(fhirResourceFiler, parser, resourceType)) {
@@ -125,12 +129,15 @@ public class JournalTransformer {
                                        VisionCsvHelper csvHelper,
                                        String version) throws Exception {
 
-        //the Read code should NEVER be null, adding this to handle those rows gracefully
-        if (parser.getReadCode() == null) {
+        //the coded elements should NEVER all be null, adding this to handle those rows gracefully
+        if (Strings.isNullOrEmpty(parser.getReadCode())
+                && (Strings.isNullOrEmpty(parser.getDrugDMDCode()))
+                && (Strings.isNullOrEmpty(parser.getSnomedCode()))) {
+            LOG.warn("Journal ID: "+parser.getObservationID()+" contains no coded items");
             return;
         }
 
-        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+        ResourceType resourceType = getTargetResourceType(parser);
         switch (resourceType) {
             case Observation:
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
@@ -188,8 +195,7 @@ public class JournalTransformer {
     }
 
     //the FHIR resource type is roughly derived from the code subset and ReadCode
-    public static ResourceType getTargetResourceType(Journal parser,
-                                                     VisionCsvHelper csvHelper) throws Exception {
+    public static ResourceType getTargetResourceType(Journal parser) throws Exception {
         String subset = parser.getSubset();
         /*  A = Acute (Therapy)
             R = Repeat
@@ -200,7 +206,6 @@ public class JournalTransformer {
             T = Test
             L = Allergy
         */
-
         String readCode = parser.getReadCode();
         if (Read2.isProcedure(readCode)) {
             return ResourceType.Procedure;
@@ -417,11 +422,26 @@ public class JournalTransformer {
         Date enteredDate = parser.getEnteredDateTime();
         fhirAllergy.setRecordedDate(enteredDate);
 
-        String readCode = parser.getReadCode();
-        String term = parser.getRubric();
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-        TerminologyService.translateToSnomed(codeableConcept);
-        fhirAllergy.setSubstance(codeableConcept);
+        //if the Snomed code exists, pass through the translator to create a full coded concept
+        CodeableConcept codeableConcept = null;
+        String snomedCode = parser.getSnomedCode();
+        if (!Strings.isNullOrEmpty(snomedCode)) {
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        //otherwise, perform a READ to Snomed translation
+        else {
+            String readCode = parser.getReadCode();
+            String term = parser.getRubric();
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        if (codeableConcept != null) {
+            fhirAllergy.setSubstance(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Allergy ID: "+observationID);
+            return;
+        }
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
@@ -469,7 +489,7 @@ public class JournalTransformer {
         fhirProcedure.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
         //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept;
+        CodeableConcept codeableConcept = null;
         String snomedCode = parser.getSnomedCode();
         if (!Strings.isNullOrEmpty(snomedCode)) {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
@@ -482,7 +502,12 @@ public class JournalTransformer {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
-        fhirProcedure.setCode(codeableConcept);
+        if (codeableConcept != null) {
+            fhirProcedure.setCode(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Procedure ID: "+observationID);
+            return;
+        }
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
@@ -543,7 +568,7 @@ public class JournalTransformer {
         fhirProblem.setCategory(cc);
 
         //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept;
+        CodeableConcept codeableConcept = null;
         String snomedCode = parser.getSnomedCode();
         if (!Strings.isNullOrEmpty(snomedCode)) {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
@@ -556,7 +581,12 @@ public class JournalTransformer {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
-        fhirProblem.setCode(codeableConcept);
+        if (codeableConcept != null) {
+            fhirProblem.setCode(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Condition ID: "+observationID);
+            return;
+        }
 
         String comments = parser.getAssociatedText();
         fhirProblem.setNotes(comments);
@@ -568,7 +598,6 @@ public class JournalTransformer {
         }
 
         //TODO: Review Vision files for problem associations
-
 //        Date lastReviewDate = parser.getLastReviewDate();
 //        String lastReviewPrecision = parser.getLastReviewDatePrecision();
 //        DateType lastReviewDateType = EmisDateTimeHelper.createDateType(lastReviewDate, lastReviewPrecision);
@@ -603,12 +632,12 @@ public class JournalTransformer {
 //            fhirProblem.addExtension(ExtensionConverter.createCompoundExtension(FhirExtensionUri.PROBLEM_RELATED, typeExtension, referenceExtension));
 //        }
 //
-//        //carry over linked items from any previous instance of this problem
-//        List<Reference> previousReferences = EmisCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
-//        if (previousReferences != null && !previousReferences.isEmpty()) {
-//            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
-//        }
-//
+
+        //carry over linked items from any previous instance of this problem
+        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
+        if (previousReferences != null && !previousReferences.isEmpty()) {
+            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
+        }
 
         //apply any linked items from this extract
         List<String> linkedResources = csvHelper.getAndRemoveProblemRelationships(observationID, patientID);
@@ -651,7 +680,7 @@ public class JournalTransformer {
         fhirObservation.setEffective(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
         //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept;
+        CodeableConcept codeableConcept = null;
         String snomedCode = parser.getSnomedCode();
         if (!Strings.isNullOrEmpty(snomedCode)) {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
@@ -664,7 +693,12 @@ public class JournalTransformer {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
-        fhirObservation.setCode(codeableConcept);
+        if (codeableConcept != null) {
+            fhirObservation.setCode(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Observation ID: "+observationID);
+            return;
+        }
 
         String clinicianID = parser.getClinicianUserID();
         fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
@@ -693,7 +727,7 @@ public class JournalTransformer {
             }
         }
 
-        //TODO:// Event links
+        //TODO:// Event links setup in Pre-Transformer if they exist
         List<String> childObservations = csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
         if (childObservations != null) {
             List<Reference> references = ReferenceHelper.createReferences(childObservations);
@@ -768,7 +802,12 @@ public class JournalTransformer {
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
-        fhirCondition.setCode(codeableConcept);
+        if (codeableConcept != null) {
+            fhirCondition.setCode(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Family History ID: "+observationID);
+            return;
+        }
 
         String associatedText = parser.getAssociatedText();
         fhirCondition.setNote(AnnotationHelper.createAnnotation(associatedText));
@@ -813,8 +852,7 @@ public class JournalTransformer {
         }
 
         String status = parser.getImmsStatus();
-        //TODO: lookup code to set status
-        fhirImmunisation.setStatus(ImmunizationStatus.COMPLETED.getCode());
+        fhirImmunisation.setStatus(status);
         fhirImmunisation.setWasNotGiven(false);
         fhirImmunisation.setReported(false);
 
@@ -822,18 +860,52 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         fhirImmunisation.setDateElement(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
-        String readCode = parser.getReadCode();
-        String term = parser.getRubric();
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-        TerminologyService.translateToSnomed(codeableConcept);
-        fhirImmunisation.setVaccineCode(codeableConcept);
+        //if the Snomed code exists, pass through the translator to create a full coded concept
+        CodeableConcept codeableConcept;
+        String snomedCode = parser.getSnomedCode();
+        if (!Strings.isNullOrEmpty(snomedCode)) {
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        //otherwise, perform a READ to Snomed translation
+        else {
+            String readCode = parser.getReadCode();
+            String term = parser.getRubric();
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        if (codeableConcept != null) {
+            fhirImmunisation.setVaccineCode(codeableConcept);
+        } else {
+            LOG.warn("Unable to create codeableConcept for Immunisation ID: "+observationID);
+            return;
+        }
 
         String clinicianID = parser.getClinicianUserID();
         Reference reference = csvHelper.createPractitionerReference(clinicianID);
         fhirImmunisation.setPerformer(reference);
 
         //TODO:// analyse test data to set the following if present:
-        //Source, Compound, Batch, Method, Site, Reason
+        String immsSource = parser.getImmsSource();
+        String immsCompound = parser.getImmsCompound();
+
+        String immsMethod = parser.getImmsMethod();
+        fhirImmunisation.setRoute(new CodeableConcept().setText(immsMethod));
+
+        String immsSite = parser.getImmsSite();
+        fhirImmunisation.setSite(new CodeableConcept().setText(immsSite));
+
+        String immsBatch = parser.getImmsBatch();
+        fhirImmunisation.setLotNumber(immsBatch);
+
+        Immunization.ImmunizationExplanationComponent immsExplanationComponent = new Immunization.ImmunizationExplanationComponent();
+        String immsReason = parser.getImmsReason();
+        if (!Strings.isNullOrEmpty(immsReason)) {
+            immsExplanationComponent.addReason().setText(immsReason);
+        } else {
+            immsExplanationComponent.addReasonNotGiven();
+        }
+        fhirImmunisation.setExplanation(immsExplanationComponent);
 
         //set linked encounter
         if (!Strings.isNullOrEmpty(parser.getLinks())) {
