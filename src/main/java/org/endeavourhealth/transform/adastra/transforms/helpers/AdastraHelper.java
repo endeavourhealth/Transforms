@@ -3,30 +3,21 @@ package org.endeavourhealth.transform.adastra.transforms.helpers;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
+import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 public class AdastraHelper {
     private static final String ID_DELIMITER = ":";
 
-    public static HashMap<String, String> guidMapper = new HashMap<String, String>();
-
-    public static void setUniqueId(Resource resource, String sourceGuid) {
-        resource.setId(createUniqueId(guidMapper.get("patient"), sourceGuid));
-    }
-
-    public static void setUniquePatientId(Resource resource, String nhsNumber) {
-        resource.setId(createUniqueId(nhsNumber, null));
-    }
-
-    public static void setUniqueLocationId(Resource resource, String orgId, String locationName) {
-        resource.setId(createUniqueId(orgId, locationName));
-    }
-
-    public static void setUniqueUserId(Resource resource, String orgId, String userName) {
-        resource.setId(createUniqueId(orgId, userName));
-    }
+    public static HashMap<String, String> uniqueIdMapper = new HashMap<String, String>();
+    public static List<String> consultationIds = new ArrayList<>();
+    public static List<String> observationIds = new ArrayList<>();
 
     /**
      * to ensure globally unique IDs for all resources, a new ID is created
@@ -54,32 +45,32 @@ public class AdastraHelper {
 
     //Administrative references
     public static Reference createOrganisationReference(String nationalCode) {
-        return ReferenceHelper.createReference(ResourceType.Organization, guidMapper.get(nationalCode));
+        return ReferenceHelper.createReference(ResourceType.Organization, uniqueIdMapper.get(nationalCode));
     }
 
     public static Reference createLocationReference(String locationName) {
-        return ReferenceHelper.createReference(ResourceType.Location, guidMapper.get(locationName));
+        return ReferenceHelper.createReference(ResourceType.Location, uniqueIdMapper.get(locationName));
     }
 
     public static Reference createPatientReference() {
-        return ReferenceHelper.createReference(ResourceType.Patient, guidMapper.get("patient"));
+        return ReferenceHelper.createReference(ResourceType.Patient, uniqueIdMapper.get("patient"));
     }
 
     public static Reference createEpisodeReference() {
-        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, guidMapper.get("episode"));
+        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, uniqueIdMapper.get("episode"));
     }
 
     public static Reference createAppointmentReference() {
-        return ReferenceHelper.createReference(ResourceType.Appointment, guidMapper.get("episode"));
+        return ReferenceHelper.createReference(ResourceType.Appointment, uniqueIdMapper.get("episode"));
     }
 
     public static Reference createUserReference(String name) {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, guidMapper.get(name));
+        return ReferenceHelper.createReference(ResourceType.Practitioner, uniqueIdMapper.get(name));
     }
 
     //Clinical References
     public static Reference createEncounterReference(String encounterId) {
-        return ReferenceHelper.createReference(ResourceType.Encounter, guidMapper.get("latestAppointment"));
+        return ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
     }
 
 
@@ -94,6 +85,12 @@ public class AdastraHelper {
         codeableConcept.addCoding(coding);
 
         return codeableConcept;
+    }
+
+    public static DateTimeType getDateTimeType(XMLGregorianCalendar date) {
+
+        Date dateString = XmlDateHelper.convertDate(date);
+        return new DateTimeType(dateString, TemporalPrecisionEnum.SECOND);
     }
 
 

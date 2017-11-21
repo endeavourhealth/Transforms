@@ -9,9 +9,8 @@ import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.List;
-import java.util.UUID;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class AppointmentTransformer {
 
@@ -21,8 +20,8 @@ public class AppointmentTransformer {
         Appointment fhirAppointment = new Appointment();
         fhirAppointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
 
-        AdastraHelper.setUniqueId(fhirAppointment, UUID.randomUUID().toString());
-        guidMapper.put("latestAppointment", fhirAppointment.getId());
+        fhirAppointment.setId(caseReport.getAdastraCaseReference() + ":" + appointment.getAppointmentTime() + ":" + appointment.getLocation());
+        uniqueIdMapper.put("latestAppointment", fhirAppointment.getId());
 
         fhirAppointment.setStart(XmlDateHelper.convertDate(appointment.getAppointmentTime()));
         fhirAppointment.setStatus(getAppointmentStatus(appointment.getStatus()));

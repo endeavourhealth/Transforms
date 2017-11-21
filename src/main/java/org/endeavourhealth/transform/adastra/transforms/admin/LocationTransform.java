@@ -10,35 +10,36 @@ import org.hl7.fhir.instance.model.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class LocationTransform {
 
     public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) {
 
+        String orgCode = caseReport.getPatient().getGpRegistration().getSurgeryNationalCode();
         List<String> locations = new ArrayList<>();
 
-        createLocation(caseReport.getLatestAppointment().getLocation(), resources);
-        locations.add(caseReport.getLatestAppointment().getLocation());
+        if (caseReport.getLatestAppointment().getLocation() != null) {
+            createLocation(caseReport.getLatestAppointment().getLocation(), orgCode, resources);
+            locations.add(caseReport.getLatestAppointment().getLocation());
+        }
 
         for (AdastraCaseDataExport.Consultation con : caseReport.getConsultation()) {
             // A new location name so add a new location
             if (!locations.contains(con.getLocation())) {
-                createLocation(con.getLocation(), resources);
+                createLocation(con.getLocation(), orgCode, resources);
             }
         }
     }
 
-    public static void createLocation(String locationText, List<Resource> resources) {
-
-        //TODO work out the org id
-        String orgId = "Adastra";
+    public static void createLocation(String locationText, String orgCode, List<Resource> resources) {
 
         org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
         fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
 
-        AdastraHelper.setUniqueLocationId(fhirLocation, orgId, locationText);
-        guidMapper.put(locationText, fhirLocation.getId());
+        fhirLocation.setId(orgCode + ":" + locationText);
+        fhirLocation.setManagingOrganization(AdastraHelper.createOrganisationReference(orgCode));
+        uniqueIdMapper.put(locationText, fhirLocation.getId());
 
         fhirLocation.setName(locationText);
         fhirLocation.setType(CodeableConceptHelper.createCodeableConcept(locationText));

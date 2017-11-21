@@ -13,7 +13,7 @@ import org.hl7.fhir.instance.model.Resource;
 import java.util.Date;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class EpisodeTransformer {
 
@@ -22,8 +22,8 @@ public class EpisodeTransformer {
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
         fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
 
-        AdastraHelper.setUniqueId(fhirEpisode, caseReport.getAdastraCaseReference());
-        guidMapper.put("episode", fhirEpisode.getId());
+        fhirEpisode.setId(caseReport.getPatient().getNationalNumber().getNumber() + ":" + caseReport.getAdastraCaseReference());
+        uniqueIdMapper.put("episode", fhirEpisode.getId());
 
         fhirEpisode.setPatient(AdastraHelper.createPatientReference());
         fhirEpisode.setManagingOrganization(AdastraHelper.createOrganisationReference(caseReport.getPatient().getGpRegistration().getSurgeryNationalCode()));

@@ -11,7 +11,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class PatientTransformer {
 
@@ -26,8 +26,8 @@ public class PatientTransformer {
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
         // set patient ID
-        AdastraHelper.setUniquePatientId(fhirPatient, patient.getNationalNumber().getNumber());
-        guidMapper.put("patient", fhirPatient.getId());
+        fhirPatient.setId(patient.getNationalNumber().getNumber() + ":" + patient.getDateOfBirth().getDobValue());
+        uniqueIdMapper.put("patient", fhirPatient.getId());
 
         fhirPatient.getId();
         HumanName humanName = NameConverter.convert(firstName, lastName, null);
@@ -79,15 +79,6 @@ public class PatientTransformer {
         }
 
         AdastraCaseDataExport.Patient.GpRegistration registration = patient.getGpRegistration();
-        //TODO - handle registered practice details properly
-        //fhirPatient.setManagingOrganization()
-     /*   protected String registrationStatus;
-        @XmlElement(namespace = "http://www.adastra.com/dataExport")
-        protected String gpNationalCode;
-        @XmlElement(namespace = "http://www.adastra.com/dataExport")
-        protected String surgeryNationalCode;
-        @XmlElement(namespace = "http://www.adastra.com/dataExport")
-        protected String surgeryPostcode;*/
 
         AdastraHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 

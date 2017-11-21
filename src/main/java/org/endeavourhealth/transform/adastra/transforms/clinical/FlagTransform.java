@@ -14,17 +14,12 @@ import java.util.UUID;
 
 public class FlagTransform {
 
-    public static void transform(AdastraCaseDataExport.SpecialNote specialNote, String consultationId, List<Resource> resources) {
+    public static void transform(AdastraCaseDataExport.SpecialNote specialNote, String caseRef, List<Resource> resources) {
         Flag fhirFlag = new Flag();
 
-        //TODO add Flag and change the meta to flag
-        fhirFlag.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        fhirFlag.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FLAG));
 
-
-        //Need to check if this needs to be consistent
-        String observationGuid = UUID.randomUUID().toString();
-
-        AdastraHelper.setUniqueId(fhirFlag, observationGuid);
+        fhirFlag.setId(caseRef + ":" + specialNote.getText());
 
         fhirFlag.setSubject(AdastraHelper.createPatientReference());
 

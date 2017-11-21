@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.adastra.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Organization;
@@ -9,7 +8,7 @@ import org.hl7.fhir.instance.model.Resource;
 
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.guidMapper;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class OrganisationTransformer {
 
@@ -23,8 +22,9 @@ public class OrganisationTransformer {
 
         organization.addIdentifier().setSystem("http://fhir.nhs.net/Id/ods-organization-code").setValue(gpRegistration.getSurgeryNationalCode());
         organization.addAddress().setPostalCode(gpRegistration.getSurgeryPostcode());
-        AdastraHelper.setUniqueId(organization, gpRegistration.getSurgeryNationalCode() + gpRegistration.getSurgeryPostcode());
-        guidMapper.put(gpRegistration.getSurgeryNationalCode(), organization.getId());
+
+        organization.setId(gpRegistration.getSurgeryNationalCode() + ":" + gpRegistration.getSurgeryPostcode());
+        uniqueIdMapper.put(gpRegistration.getSurgeryNationalCode(), organization.getId());
 
         resources.add(organization);
 
