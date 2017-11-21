@@ -446,7 +446,18 @@ public abstract class AbstractTransformer {
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
                 //other resource, as it will already have been done, so we can just return it's Enterprise ID
                 if (!mappedResourceId.equals(resourceId)) {
-                    return findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                    Long mappedInstanceEnterpriseId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                    if (mappedInstanceEnterpriseId == null) {
+                        //if we've just started processing the first exchange for an org that's taking over the
+                        //instance map, there's a chance we'll catch it mid-way through taking over, in which
+                        //case we should just give a second and try again, throwing an error if we fail
+                        Thread.sleep(1000);
+                        mappedInstanceEnterpriseId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                        if (mappedInstanceEnterpriseId == null) {
+                            throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString());
+                        }
+                    }
+                    return mappedInstanceEnterpriseId;
                 }
             }
 
