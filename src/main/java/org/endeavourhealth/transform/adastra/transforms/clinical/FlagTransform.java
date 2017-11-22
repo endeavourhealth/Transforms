@@ -4,17 +4,18 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 
-import javax.xml.datatype.XMLGregorianCalendar;
 import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class FlagTransform {
 
-    public static void transform(AdastraCaseDataExport.SpecialNote specialNote, String caseRef, List<Resource> resources) {
+    public static void transform(AdastraCaseDataExport.SpecialNote specialNote, String caseRef,
+                                 FhirResourceFiler fhirResourceFiler) throws Exception {
         Flag fhirFlag = new Flag();
 
         fhirFlag.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FLAG));
@@ -32,7 +33,7 @@ public class FlagTransform {
 
         fhirFlag.setCode(codeableConcept);
 
-        resources.add(fhirFlag);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirFlag);
 
     }
 }

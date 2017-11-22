@@ -2,29 +2,27 @@ package org.endeavourhealth.transform.adastra.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Organization;
-import org.hl7.fhir.instance.model.Resource;
-
-import java.util.List;
 
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class OrganisationTransformer {
 
-    public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) throws Exception {
+    public static void transform(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AdastraCaseDataExport.Patient.GpRegistration gpRegistration = caseReport.getPatient().getGpRegistration();
 
-        Organization organization = new Organization();
-        organization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        Organization fhirOrganisation = new Organization();
+        fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
 
-        organization.addIdentifier().setSystem("http://fhir.nhs.net/Id/ods-organization-code").setValue(gpRegistration.getSurgeryNationalCode());
-        organization.addAddress().setPostalCode(gpRegistration.getSurgeryPostcode());
+        fhirOrganisation.addIdentifier().setSystem("http://fhir.nhs.net/Id/ods-organization-code").setValue(gpRegistration.getSurgeryNationalCode());
+        fhirOrganisation.addAddress().setPostalCode(gpRegistration.getSurgeryPostcode());
 
-        organization.setId(gpRegistration.getSurgeryNationalCode() + ":" + gpRegistration.getSurgeryPostcode());
-        uniqueIdMapper.put(gpRegistration.getSurgeryNationalCode(), organization.getId());
+        fhirOrganisation.setId(gpRegistration.getSurgeryNationalCode() + ":" + gpRegistration.getSurgeryPostcode());
+        uniqueIdMapper.put(gpRegistration.getSurgeryNationalCode(), fhirOrganisation.getId());
 
-        resources.add(organization);
+        fhirResourceFiler.saveAdminResource(null, fhirOrganisation);
     }
 }

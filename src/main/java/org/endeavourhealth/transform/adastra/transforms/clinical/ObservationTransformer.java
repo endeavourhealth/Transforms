@@ -6,27 +6,22 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
-import org.endeavourhealth.transform.common.XmlDateHelper;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
-import org.endeavourhealth.transform.emis.emisopen.transforms.common.DateConverter;
 import org.hl7.fhir.instance.model.*;
 
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.util.List;
-import java.util.UUID;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.consultationIds;
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.observationIds;
+import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class ObservationTransformer {
 
-    public static void observationFromPresentingCondition(AdastraCaseDataExport caseReport, List<Resource> resources)  throws Exception {
+    public static void observationFromPresentingCondition(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler)  throws Exception {
 
         AdastraCaseDataExport.PresentingCondition presentingCondition = caseReport.getPresentingCondition();
 
         Observation fhirObservation = createStandardObservation();
-
 
         fhirObservation.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, "Presenting Condition"));
 
@@ -42,11 +37,13 @@ public class ObservationTransformer {
         fhirObservation.setStatus(Observation.ObservationStatus.PRELIMINARY);
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(caseReport.getActiveDate()));
+
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
     }
 
     public static void observationFromFreeText(String freeText, String consultationID,
                                                XMLGregorianCalendar consultationDate, String caseRef,
-                                               String context, List<Resource> resources)  throws Exception {
+                                               String context, FhirResourceFiler fhirResourceFiler)  throws Exception {
 
         Observation fhirObservation = createStandardObservation();
 
@@ -63,13 +60,13 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
 
-        resources.add(fhirObservation);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
 
     }
 
     public static void observationFromCodedItem(CodedItem codedItem, String consultationID,
                                                 XMLGregorianCalendar consultationDate, String caseRef,
-                                                String context, List<Resource> resources)  throws Exception {
+                                                String context, FhirResourceFiler fhirResourceFiler)  throws Exception {
 
         Observation fhirObservation = createStandardObservation();
 
@@ -87,7 +84,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
 
-        resources.add(fhirObservation);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
     }
 
     private static Observation createStandardObservation() {

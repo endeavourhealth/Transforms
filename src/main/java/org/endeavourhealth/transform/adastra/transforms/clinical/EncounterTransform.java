@@ -5,19 +5,19 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
-import java.util.List;
 
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.consultationIds;
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class EncounterTransform {
 
-    public static void createMainCaseEncounter(AdastraCaseDataExport caseReport, List<Resource> resources) {
+    public static void createMainCaseEncounter(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         Encounter fhirEncounter = new Encounter();
         fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
@@ -50,16 +50,17 @@ public class EncounterTransform {
             fhirEncounter.setStatus(Encounter.EncounterState.ARRIVED);
         }
 
-        resources.add(fhirEncounter);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirEncounter);
     }
 
-    public static void createChildEncountersFromConsultations(AdastraCaseDataExport caseReport, List<Resource> resources) throws Exception {
+    public static void createChildEncountersFromConsultations(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
         for (AdastraCaseDataExport.Consultation consultation : caseReport.getConsultation()) {
-            createEncounterFromConsultation(consultation, caseReport.getAdastraCaseReference(), resources);
+            createEncounterFromConsultation(consultation, caseReport.getAdastraCaseReference(), fhirResourceFiler);
         }
     }
 
-    private static void createEncounterFromConsultation(AdastraCaseDataExport.Consultation consultation, String caseRef, List<Resource> resources) throws Exception {
+    private static void createEncounterFromConsultation(AdastraCaseDataExport.Consultation consultation,
+                                                        String caseRef, FhirResourceFiler fhirResourceFiler) throws Exception {
         Encounter fhirEncounter = new Encounter();
         fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
 
@@ -95,25 +96,25 @@ public class EncounterTransform {
         fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PRIMARY_PERFORMER));
         fhirParticipant.setIndividual(AdastraHelper.createUserReference(consultation.getConsultationBy().getName()));
 
-        resources.add(fhirEncounter);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirEncounter);
 
         if (consultation.getSummary() != null) {
             ObservationTransformer.observationFromFreeText(consultation.getSummary(), consultationID,
                     consultation.getStartTime(), caseRef,
-                    "Summary", resources);
+                    "Summary", fhirResourceFiler);
         }
 
         if (consultation.getMedicalHistory() != null) {
             ObservationTransformer.observationFromFreeText(consultation.getMedicalHistory(), consultationID,
                     consultation.getStartTime(), caseRef,
-                    "Medical History", resources);
+                    "Medical History", fhirResourceFiler);
         }
 
         if (consultation.getEventOutcome() != null) {
             for (CodedItem codedItem : consultation.getEventOutcome()) {
                 ObservationTransformer.observationFromCodedItem(codedItem, consultationID,
                         consultation.getStartTime(), caseRef,
-                        "Event Outcome", resources);
+                        "Event Outcome", fhirResourceFiler);
             }
         }
 
@@ -121,7 +122,7 @@ public class EncounterTransform {
             for (CodedItem codedItem : consultation.getClinicalCode()) {
                 ObservationTransformer.observationFromCodedItem(codedItem, consultationID,
                         consultation.getStartTime(), caseRef,
-                        "Clinical Note", resources);
+                        "Clinical Note", fhirResourceFiler);
             }
         }
     }

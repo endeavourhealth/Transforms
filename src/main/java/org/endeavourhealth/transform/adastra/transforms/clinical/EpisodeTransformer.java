@@ -4,20 +4,19 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Period;
-import org.hl7.fhir.instance.model.Resource;
 
 import java.util.Date;
-import java.util.List;
 
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class EpisodeTransformer {
 
-    public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) {
+    public static void transform(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
         fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
@@ -45,6 +44,6 @@ public class EpisodeTransformer {
             fhirEpisode.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
         }
 
-        resources.add(fhirEpisode);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirEpisode);
     }
 }

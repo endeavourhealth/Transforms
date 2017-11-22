@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.adastra;
 
 import org.endeavourhealth.common.utility.XmlHelper;
+import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.admin.LocationTransform;
@@ -11,62 +12,63 @@ import org.endeavourhealth.transform.adastra.transforms.clinical.EncounterTransf
 import org.endeavourhealth.transform.adastra.transforms.clinical.EpisodeTransformer;
 import org.endeavourhealth.transform.adastra.transforms.clinical.FlagTransform;
 import org.endeavourhealth.transform.adastra.transforms.clinical.ObservationTransformer;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.hl7.fhir.instance.model.Resource;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
-public class AdastraXmlToFhirTransformer {
+public abstract class AdastraXmlToFhirTransformer {
 
-    public static List<Resource> toFhirFullRecord(String xmlPayload) throws Exception {
+    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
+                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
+                                 String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
 
-        AdastraCaseDataExport caseReport = XmlHelper.deserialize(xmlPayload, AdastraCaseDataExport.class);
+        AdastraCaseDataExport caseReport = XmlHelper.deserialize(exchangeBody, AdastraCaseDataExport.class);
 
         checkMessageForIssues(caseReport);
 
-        List<Resource> ret = new ArrayList<>();
+        //the processor is responsible for saving FHIR resources
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
 
-        OrganisationTransformer.transform(caseReport, ret);
-        LocationTransform.transform(caseReport, ret);
-        UserTransform.transform(caseReport, ret);
-        PatientTransformer.transform(caseReport, ret);
-        EpisodeTransformer.transform(caseReport, ret);
-        EncounterTransform.createMainCaseEncounter(caseReport, ret);
+        OrganisationTransformer.transform(caseReport, processor);
+        LocationTransform.transform(caseReport, processor);
+        UserTransform.transform(caseReport, processor);
+        PatientTransformer.transform(caseReport, processor);
+        EpisodeTransformer.transform(caseReport, processor);
+        EncounterTransform.createMainCaseEncounter(caseReport, processor);
         String mainEncounterId = uniqueIdMapper.get("caseEncounter");
 
         if (caseReport.getConsultation() != null) {
-            EncounterTransform.createChildEncountersFromConsultations(caseReport, ret);
+            EncounterTransform.createChildEncountersFromConsultations(caseReport, processor);
         }
 
         if (caseReport.getOutcome() != null) {
             for (CodedItem codedItem : caseReport.getOutcome()) {
                 ObservationTransformer.observationFromCodedItem(codedItem, mainEncounterId,
                         caseReport.getActiveDate(), caseReport.getAdastraCaseReference(),
-                        "Outcome", ret);
+                        "Outcome", processor);
             }
         }
 
         if (caseReport.getPresentingCondition() != null)
-            ObservationTransformer.observationFromPresentingCondition(caseReport, ret);
+            ObservationTransformer.observationFromPresentingCondition(caseReport, processor);
 
         if  (caseReport.getQuestions() != null && !caseReport.getQuestions().isEmpty()) {
             ObservationTransformer.observationFromFreeText(caseReport.getQuestions(), mainEncounterId,
                     caseReport.getActiveDate(), caseReport.getAdastraCaseReference(),
-                    "Questions", ret);
+                    "Questions", processor);
         }
 
         if (caseReport.getSpecialNote() != null) {
             for (AdastraCaseDataExport.SpecialNote specialNote : caseReport.getSpecialNote()) {
-                FlagTransform.transform(specialNote, caseReport.getAdastraCaseReference(), ret);
+                FlagTransform.transform(specialNote, caseReport.getAdastraCaseReference(), processor);
             }
         }
 
-        return ret;
     }
-
 
     private static void checkMessageForIssues(AdastraCaseDataExport caseReport) throws TransformException {
         if (caseReport.getAdastraCaseReference() == null) {
