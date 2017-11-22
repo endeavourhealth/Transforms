@@ -5,10 +5,10 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Practitioner;
-import org.hl7.fhir.instance.model.Resource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,20 +17,21 @@ import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHe
 
 public class UserTransform {
 
-    public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) throws Exception {
+    public static void transform(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         List<String> users = new ArrayList<>();
         String orgId = uniqueIdMapper.get(caseReport.getPatient().getGpRegistration().getSurgeryNationalCode());
         for (AdastraCaseDataExport.Consultation con : caseReport.getConsultation()) {
             if (!users.contains(con.getConsultationBy().getName())) {
-                createUser(con.getConsultationBy(), con.getLocation(), orgId, resources);
+                createUser(con.getConsultationBy(), con.getLocation(), orgId, fhirResourceFiler);
                 users.add(con.getConsultationBy().getName());
             }
         }
 
     }
 
-    private static void createUser(AdastraCaseDataExport.Consultation.ConsultationBy conBy, String locationName, String orgId, List<Resource> resources) {
+    private static void createUser(AdastraCaseDataExport.Consultation.ConsultationBy conBy, String locationName,
+                                   String orgId, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         Practitioner fhirPractitioner = new Practitioner();
         fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
@@ -49,7 +50,7 @@ public class UserTransform {
 
         fhirPractitioner.addPractitionerRole(fhirRole);
 
-        resources.add(fhirPractitioner);
+        fhirResourceFiler.saveAdminResource(null, fhirPractitioner);
 
     }
 }

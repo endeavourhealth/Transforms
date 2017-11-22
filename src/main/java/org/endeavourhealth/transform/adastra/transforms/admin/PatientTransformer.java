@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.*;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 
@@ -15,7 +16,7 @@ import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHe
 
 public class PatientTransformer {
 
-    public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) throws Exception {
+    public static void transform(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AdastraCaseDataExport.Patient patient = caseReport.getPatient();
 
@@ -82,8 +83,7 @@ public class PatientTransformer {
 
         AdastraHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 
-
-        resources.add(fhirPatient);
+        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirPatient);
     }
 
     private static ContactPoint convertPhoneNumber(PatientPhoneNumberType phoneNumber) throws Exception {
