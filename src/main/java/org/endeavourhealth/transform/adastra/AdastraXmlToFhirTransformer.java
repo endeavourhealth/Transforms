@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.adastra.transforms.clinical.EncounterTransf
 import org.endeavourhealth.transform.adastra.transforms.clinical.EpisodeTransformer;
 import org.endeavourhealth.transform.adastra.transforms.clinical.FlagTransform;
 import org.endeavourhealth.transform.adastra.transforms.clinical.ObservationTransformer;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ public class AdastraXmlToFhirTransformer {
     public static List<Resource> toFhirFullRecord(String xmlPayload) throws Exception {
 
         AdastraCaseDataExport caseReport = XmlHelper.deserialize(xmlPayload, AdastraCaseDataExport.class);
+
+        checkMessageForIssues(caseReport);
 
         List<Resource> ret = new ArrayList<>();
 
@@ -40,7 +43,9 @@ public class AdastraXmlToFhirTransformer {
 
         if (caseReport.getOutcome() != null) {
             for (CodedItem codedItem : caseReport.getOutcome()) {
-                ObservationTransformer.observationFromCodedItem(codedItem, mainEncounterId, caseReport.getActiveDate(), caseReport.getAdastraCaseReference(), ret);
+                ObservationTransformer.observationFromCodedItem(codedItem, mainEncounterId,
+                        caseReport.getActiveDate(), caseReport.getAdastraCaseReference(),
+                        "Outcome", ret);
             }
         }
 
@@ -48,7 +53,9 @@ public class AdastraXmlToFhirTransformer {
             ObservationTransformer.observationFromPresentingCondition(caseReport, ret);
 
         if  (caseReport.getQuestions() != null && !caseReport.getQuestions().isEmpty()) {
-            ObservationTransformer.observationFromFreeText(caseReport.getQuestions(), mainEncounterId, caseReport.getActiveDate(), caseReport.getAdastraCaseReference(), ret);
+            ObservationTransformer.observationFromFreeText(caseReport.getQuestions(), mainEncounterId,
+                    caseReport.getActiveDate(), caseReport.getAdastraCaseReference(),
+                    "Questions", ret);
         }
 
         if (caseReport.getSpecialNote() != null) {
@@ -61,4 +68,17 @@ public class AdastraXmlToFhirTransformer {
     }
 
 
+    private static void checkMessageForIssues(AdastraCaseDataExport caseReport) throws TransformException {
+        if (caseReport.getAdastraCaseReference() == null) {
+            throw new TransformException("Case Reference not specified in message");
+        }
+
+        if (caseReport.getPatient() == null) {
+            throw new TransformException("Patient not specified in message");
+        }
+
+        if (caseReport.getPatient().getGpRegistration() == null) {
+            throw new TransformException("GP Registration not specified in message");
+        }
+    }
 }

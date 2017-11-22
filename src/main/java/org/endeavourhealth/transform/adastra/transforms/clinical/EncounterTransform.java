@@ -98,22 +98,30 @@ public class EncounterTransform {
         resources.add(fhirEncounter);
 
         if (consultation.getSummary() != null) {
-            ObservationTransformer.observationFromFreeText(consultation.getSummary(), consultationID, consultation.getStartTime(), caseRef, resources);
+            ObservationTransformer.observationFromFreeText(consultation.getSummary(), consultationID,
+                    consultation.getStartTime(), caseRef,
+                    "Summary", resources);
         }
 
         if (consultation.getMedicalHistory() != null) {
-            ObservationTransformer.observationFromFreeText(consultation.getMedicalHistory(), consultationID, consultation.getStartTime(), caseRef, resources);
+            ObservationTransformer.observationFromFreeText(consultation.getMedicalHistory(), consultationID,
+                    consultation.getStartTime(), caseRef,
+                    "Medical History", resources);
         }
 
         if (consultation.getEventOutcome() != null) {
             for (CodedItem codedItem : consultation.getEventOutcome()) {
-                ObservationTransformer.observationFromCodedItem(codedItem, consultationID, consultation.getStartTime(), caseRef, resources);
+                ObservationTransformer.observationFromCodedItem(codedItem, consultationID,
+                        consultation.getStartTime(), caseRef,
+                        "Event Outcome", resources);
             }
         }
 
         if (consultation.getClinicalCode() != null) {
             for (CodedItem codedItem : consultation.getClinicalCode()) {
-                ObservationTransformer.observationFromCodedItem(codedItem, consultationID, consultation.getStartTime(), caseRef, resources);
+                ObservationTransformer.observationFromCodedItem(codedItem, consultationID,
+                        consultation.getStartTime(), caseRef,
+                        "Clinical Note", resources);
             }
         }
     }

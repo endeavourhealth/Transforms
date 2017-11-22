@@ -14,7 +14,6 @@ public class OrganisationTransformer {
 
     public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) throws Exception {
 
-
         AdastraCaseDataExport.Patient.GpRegistration gpRegistration = caseReport.getPatient().getGpRegistration();
 
         Organization organization = new Organization();
@@ -27,6 +26,5 @@ public class OrganisationTransformer {
         uniqueIdMapper.put(gpRegistration.getSurgeryNationalCode(), organization.getId());
 
         resources.add(organization);
-
     }
 }

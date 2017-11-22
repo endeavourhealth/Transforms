@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.adastra.transforms.clinical;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
@@ -25,6 +27,9 @@ public class ObservationTransformer {
 
         Observation fhirObservation = createStandardObservation();
 
+
+        fhirObservation.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, "Presenting Condition"));
+
         fhirObservation.setId(caseReport.getAdastraCaseReference() + ":" + presentingCondition.getSymptoms());
         checkForDuplicateObservations(fhirObservation.getId());
 
@@ -39,9 +44,13 @@ public class ObservationTransformer {
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(caseReport.getActiveDate()));
     }
 
-    public static void observationFromFreeText(String freeText, String consultationID, XMLGregorianCalendar consultationDate, String caseRef, List<Resource> resources)  throws Exception {
+    public static void observationFromFreeText(String freeText, String consultationID,
+                                               XMLGregorianCalendar consultationDate, String caseRef,
+                                               String context, List<Resource> resources)  throws Exception {
 
         Observation fhirObservation = createStandardObservation();
+
+        fhirObservation.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, context));
 
         fhirObservation.setId(caseRef + ":" + freeText);
         checkForDuplicateObservations(fhirObservation.getId());
@@ -52,18 +61,22 @@ public class ObservationTransformer {
 
         fhirObservation.setStatus(Observation.ObservationStatus.FINAL);
 
-        //fhirObservation.setEffective(EmisDateTimeHelper.createDateTimeType(XmlDateHelper.convertDate(consultationDate), "YMDT"));
-
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
+
+        resources.add(fhirObservation);
 
     }
 
-    public static void observationFromCodedItem(CodedItem codedItem, String consultationID, XMLGregorianCalendar consultationDate, String caseRef, List<Resource> resources)  throws Exception {
+    public static void observationFromCodedItem(CodedItem codedItem, String consultationID,
+                                                XMLGregorianCalendar consultationDate, String caseRef,
+                                                String context, List<Resource> resources)  throws Exception {
 
         Observation fhirObservation = createStandardObservation();
 
         fhirObservation.setId(caseRef + ":" + codedItem.getCode());
         checkForDuplicateObservations(fhirObservation.getId());
+
+        fhirObservation.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, context));
 
         fhirObservation.setComments(codedItem.getDescription());
         fhirObservation.setCode(AdastraHelper.createCodableConcept(codedItem));

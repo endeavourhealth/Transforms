@@ -16,18 +16,20 @@ public class LocationTransform {
 
     public static void transform(AdastraCaseDataExport caseReport, List<Resource> resources) {
 
-        String orgCode = caseReport.getPatient().getGpRegistration().getSurgeryNationalCode();
-        List<String> locations = new ArrayList<>();
+        if (caseReport.getPatient().getGpRegistration().getSurgeryNationalCode() != null) {
+            String orgCode = caseReport.getPatient().getGpRegistration().getSurgeryNationalCode();
+            List<String> locations = new ArrayList<>();
 
-        if (caseReport.getLatestAppointment().getLocation() != null) {
-            createLocation(caseReport.getLatestAppointment().getLocation(), orgCode, resources);
-            locations.add(caseReport.getLatestAppointment().getLocation());
-        }
+            if (caseReport.getLatestAppointment().getLocation() != null) {
+                createLocation(caseReport.getLatestAppointment().getLocation(), orgCode, resources);
+                locations.add(caseReport.getLatestAppointment().getLocation());
+            }
 
-        for (AdastraCaseDataExport.Consultation con : caseReport.getConsultation()) {
-            // A new location name so add a new location
-            if (!locations.contains(con.getLocation())) {
-                createLocation(con.getLocation(), orgCode, resources);
+            for (AdastraCaseDataExport.Consultation con : caseReport.getConsultation()) {
+                // A new location name so add a new location
+                if (!locations.contains(con.getLocation())) {
+                    createLocation(con.getLocation(), orgCode, resources);
+                }
             }
         }
     }
