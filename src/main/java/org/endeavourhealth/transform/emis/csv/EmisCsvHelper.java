@@ -586,27 +586,24 @@ public class EmisCsvHelper {
             //if this is the first time, then we'll have a null resource
             return null;
         }
-        List<Reference> ret = new ArrayList<>();
+        List<Reference> edsReferences = new ArrayList<>();
 
         if (previousVersion.hasContained()) {
             for (Resource contained: previousVersion.getContained()) {
                 if (contained instanceof List_) {
                     List_ list = (List_)contained;
+
                     for (List_.ListEntryComponent entry: list.getEntry()) {
                         Reference previousReference = entry.getItem();
-
-                        //the reference we have has already been mapped to an EDS ID, so we need to un-map it
-                        //back to the source ID, so the ID mapper can safely map it when we save the resource
-                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(previousReference);
-                        if (unmappedReference != null) {
-                            ret.add(unmappedReference);
-                        }
+                        edsReferences.add(previousReference);
                     }
                 }
             }
         }
 
-        return ret;
+        //the reference we have has already been mapped to an EDS ID, so we need to un-map it
+        //back to the source ID, so the ID mapper can safely map it when we save the resource
+        return IdHelper.convertEdsReferencesToLocallyUniqueReferences(edsReferences);
     }
 
     public void cacheDrugRecordDate(String drugRecordGuid, String patientGuid, DateTimeType dateTime) {

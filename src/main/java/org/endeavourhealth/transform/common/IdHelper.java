@@ -15,9 +15,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -208,11 +206,30 @@ public class IdHelper {
     }
 
     public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws Exception {
+        List<Reference> list = new ArrayList<>();
+        list.add(edsReference);
+
+        List<Reference> ret = convertEdsReferencesToLocallyUniqueReferences(list);
+        if (ret.isEmpty()) {
+            //TODO - put this exception back in, once investigated
+            //throw new TransformException("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
+            LOG.warn("Failed to find Resource ID Mapping for reference " + edsReference.getReference());
+            return null;
+
+        } else {
+            return ret.get(0);
+        }
+    }
+
+    public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(List<Reference> edsReferences) throws Exception {
+        return repository.convertEdsToSourceReferences(edsReferences);
+    }
+
+    /*public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws Exception {
         ReferenceComponents components = ReferenceHelper.getReferenceComponents(edsReference);
         ResourceType resourceType = components.getResourceType();
         ResourceIdMap mapping = repository.getResourceIdMapByEdsId(resourceType.toString(), components.getId());
         if (mapping == null) {
-            //TODO - put this exception back in, once investigated
             LOG.warn("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
             return null;
             //throw new TransformException("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
@@ -220,7 +237,7 @@ public class IdHelper {
 
         String emisId = mapping.getSourceId();
         return ReferenceHelper.createReference(resourceType, emisId);
-    }
+    }*/
 
     public static void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
         getIdMapper(resource).remapIds(resource, idMappings);
