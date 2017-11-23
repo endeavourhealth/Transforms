@@ -6,7 +6,9 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsBartsSusResourceMapDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
@@ -16,7 +18,12 @@ import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 
 public class SusInpatientTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTransformer.class);
@@ -100,7 +107,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         }
         */
 
-        LOG.debug("Current patient:" + parser.getLocalPatientId());
+        LOG.debug("Current patient:" + parser.getLocalPatientId() + "/" + parser.getCDSUniqueID());
 
         TailsRecord tr = TailsPreTransformer.getTailsRecord(parser.getCDSUniqueID());
 
@@ -144,7 +151,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
             if (parser.getEthnicCategory() != null && parser.getEthnicCategory().length() > 0) {
                 ethnicGroup = new CodeableConcept();
                 ethnicGroup.addCoding().setCode(parser.getEthnicCategory()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY).setDisplay(getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-                LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
+                //LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
             }
 
             patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null, patientIdentifier, gpResourceId, gpPracticeResourceId, ethnicGroup);
@@ -214,10 +221,15 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
                                     ResourceId patientResourceId,
                                     ResourceId encounterResourceId) throws Exception {
 
-        CodeableConcept cc = null;
-        Date d = null;
-        String uniqueId;
+        //CodeableConcept cc = null;
+        //Date d = null;
+        //String uniqueId;
+        List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Diagnosis from file entry (" + entryCount + ")");
+
+        RdbmsBartsSusResourceMapDal database = DalProvider.factoryBartsSusResourceMapDal();
+        List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION);
+        LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
 
         ResourceId resourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
 
@@ -240,6 +252,14 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         } else {
             LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            if (currentMappings.contains(resourceId.getResourceId())) {
+                // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
+                currentMappings.remove(resourceId.getResourceId());
+            } else {
+                // New add
+                mappingsToAdd.add(resourceId.getResourceId());
+            }
+
         }
 
         // secondary piagnoses ?
@@ -260,9 +280,33 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
             } else {
                 LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
-            }
+                if (currentMappings.contains(resourceId.getResourceId())) {
+                    // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
+                    currentMappings.remove(resourceId.getResourceId());
+                } else {
+                    // New add
+                    mappingsToAdd.add(resourceId.getResourceId());
+                }
 
+            }
         }
+
+        if (currentMappings.size() > 0) {
+            // Any mappings left are no longer referenced
+            //delete all Condition resources in the list
+            Iterator it = currentMappings.iterator();
+            while (it.hasNext()) {
+                fhirCondition = new Condition();
+                fhirCondition.setId(it.next().toString());
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            }
+            //delete all multi-mappings
+            database.deleteSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION, currentMappings);
+        }
+        if (mappingsToAdd.size() > 0) {
+            database.saveSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION, mappingsToAdd);
+        }
+
     }
 
     /*
@@ -278,10 +322,15 @@ Data line is of type Inpatient
                                     ResourceId encounterResourceId,
                                     TailsRecord tr) throws Exception {
 
-        CodeableConcept cc = null;
-        Date d = null;
-        String uniqueId;
+        //CodeableConcept cc = null;
+        //Date d = null;
+        //String uniqueId;
+        List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Procedure from file entry (" + entryCount + ")");
+
+        RdbmsBartsSusResourceMapDal database = DalProvider.factoryBartsSusResourceMapDal();
+        List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE);
+        LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
 
         ResourceId resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode());
 
@@ -316,6 +365,14 @@ Data line is of type Inpatient
         } else {
             LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+            if (currentMappings.contains(resourceId.getResourceId())) {
+                // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
+                currentMappings.remove(resourceId.getResourceId());
+            } else {
+                // New add
+                mappingsToAdd.add(resourceId.getResourceId());
+            }
+
         }
 
         // secondary procedures
@@ -336,7 +393,30 @@ Data line is of type Inpatient
             } else {
                 LOG.debug("Save secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                if (currentMappings.contains(resourceId.getResourceId())) {
+                    // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
+                    currentMappings.remove(resourceId.getResourceId());
+                } else {
+                    // New add
+                    mappingsToAdd.add(resourceId.getResourceId());
+                }
             }
+        }
+
+        if (currentMappings.size() > 0) {
+            // Any mappings left are no longer referenced
+            //delete all Condition resources in the list
+            Iterator it = currentMappings.iterator();
+            while (it.hasNext()) {
+                fhirProcedure = new Procedure();
+                fhirProcedure.setId(it.next().toString());
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+            }
+            //delete all multi-mappings
+            database.deleteSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE, currentMappings);
+        }
+        if (mappingsToAdd.size() > 0) {
+            database.saveSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE, mappingsToAdd);
         }
 
     }
