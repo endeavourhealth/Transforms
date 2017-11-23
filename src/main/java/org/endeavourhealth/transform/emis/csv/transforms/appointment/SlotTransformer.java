@@ -63,6 +63,10 @@ public class SlotTransformer {
         //use the same slot GUID as the appointment GUID; since it's a different resource type, it should be fine
         EmisCsvHelper.setUniqueId(fhirAppointment, patientGuid, slotGuid);
 
+        //moved this higher up, because we need to have set the patient ID on the resource before we delete it
+        Appointment.AppointmentParticipantComponent fhirParticipant = fhirAppointment.addParticipant();
+        fhirParticipant.setActor(csvHelper.createPatientReference(patientGuid));
+
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirSlot, fhirAppointment);
@@ -94,8 +98,6 @@ public class SlotTransformer {
         Reference slotReference = csvHelper.createSlotReference(fhirSlot.getId());
         fhirAppointment.addSlot(slotReference);
 
-        Appointment.AppointmentParticipantComponent fhirParticipant = fhirAppointment.addParticipant();
-        fhirParticipant.setActor(csvHelper.createPatientReference(patientGuid));
         fhirParticipant.setStatus(Appointment.ParticipationStatus.ACCEPTED);
 
         //the helper class has a list of our practitioners
