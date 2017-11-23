@@ -61,6 +61,8 @@ public class JournalPreTransformer {
         //cache the fact an observation is a problem
         if (resourceType == ResourceType.Condition) {
             csvHelper.cacheProblemObservationGuid(patientID, observationID, readCode);
+
+            //TODO: then deal with items linked to problems other than encounters
         } else {
             //if it is not a problem, cache the observation linked problem
             if (links != null) {

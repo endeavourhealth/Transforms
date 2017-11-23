@@ -112,7 +112,7 @@ public class Journal extends AbstractCsvParser {
     }
 
     public Double getValue2() {
-        return super.getDouble("VALUE2");   //if drug, then dosage, else second value for BP
+        return super.getDouble("VALUE2");   //if drug, then dosage, else second value for BP or special case
     }
     public String getValue2NumericUnit() {
         return super.getString("VALUE2_UNITS");

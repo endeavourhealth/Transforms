@@ -11,7 +11,6 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.hl7.fhir.instance.model.*;
@@ -31,8 +30,6 @@ public class VisionCsvHelper {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
-    private Map<String, String> problemMap = new HashMap<>(); //changed to cache the conditions as JSON strings
-    private Map<String, ReferralRequest> referralMap = new HashMap<>();
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, List<String>> problemChildMap = new HashMap<>();
     private Map<String, List<String>> consultationChildMap = new HashMap<>();
@@ -109,30 +106,6 @@ public class VisionCsvHelper {
             throw new IllegalArgumentException("Missing MedicationStatement ID");
         }
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
-    }
-
-
-    public void cacheReferral(String observationGuid, String patientGuid, ReferralRequest fhirReferral) {
-        referralMap.put(createUniqueId(patientGuid, observationGuid), fhirReferral);
-    }
-
-    public void cacheProblem(String observationGuid, String patientGuid, Condition fhirCondition) throws Exception {
-        //the Condition java objects are huge in memory, so save some by caching as a JSON string
-        String conditionJson = FhirSerializationHelper.serializeResource(fhirCondition);
-        problemMap.put(createUniqueId(patientGuid, observationGuid), conditionJson);
-    }
-
-    public boolean existsProblem(String observationGuid, String patientGuid) {
-        return problemMap.get(createUniqueId(patientGuid, observationGuid)) != null;
-    }
-
-    public Condition findProblem(String observationGuid, String patientGuid) throws Exception {
-        String conditionJson = problemMap.remove(createUniqueId(patientGuid, observationGuid));
-        if (conditionJson != null) {
-            return (Condition)FhirSerializationHelper.deserializeResource(conditionJson);
-        } else {
-            return null;
-        }
     }
 
     public List<String> getAndRemoveObservationParentRelationships(String parentObservationGuid, String patientGuid) {

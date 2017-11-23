@@ -20,6 +20,7 @@ public class Read2 {
     private static final String ROOT_SKIN_AND_SUBCUTANEOUS_TISSUE_DISEASES = "M";
     private static final String ROOT_MUSCULOSKELETAL_AND_CONNECTIVE_TISSUE_DISEASES = "N";
     private static final String ROOT_FAMILY_HISTORY = "12";
+    private static final String ROOT_BP = "246";
 
     public static boolean isProcedure(String code) {
         return code.startsWith(ROOT_OPERATIONS_PROCEDURES)
@@ -44,5 +45,11 @@ public class Read2 {
 
     public static boolean isFamilyHistory(String code) {
         return code.startsWith(ROOT_FAMILY_HISTORY);
+    }
+
+    public static boolean isBPCode(String code) {
+        return code.startsWith(ROOT_BP)
+                || code.startsWith("662L")
+                || code.startsWith("6623");
     }
 }

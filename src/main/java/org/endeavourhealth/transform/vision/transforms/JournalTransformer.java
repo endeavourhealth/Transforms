@@ -25,6 +25,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static org.endeavourhealth.transform.terminology.Read2.isBPCode;
+
 public class JournalTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(JournalTransformer.class);
@@ -172,7 +174,7 @@ public class JournalTransformer {
 
         //remove any cached links of child observations that link to the row we just processed. If the row used
         //the links, they'll already have been removed. If not, then we can't use them anyway.
-        csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
+        //csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
     }
 
 
@@ -648,8 +650,6 @@ public class JournalTransformer {
 
         addDocumentExtension(fhirProblem, parser);
 
-        csvHelper.cacheProblem(observationID, patientID, fhirProblem);
-
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirProblem);
     }
 
@@ -703,19 +703,44 @@ public class JournalTransformer {
         String clinicianID = parser.getClinicianUserID();
         fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
 
+        //get the values and units
         Double value1 = parser.getValue1();
         String units1 = parser.getValue1NumericUnit();
-        if (!Strings.isNullOrEmpty(value1.toString())) {
-            fhirObservation.setValue(QuantityHelper.createQuantity(value1, units1));
-        }
-
-        Double value2 = parser.getValue2();  //only if a special case
+        Double value2 = parser.getValue2();
         String units2 = parser.getValue2NumericUnit();
-        if (!Strings.isNullOrEmpty(value2.toString())) {
-            fhirObservation.setValue(QuantityHelper.createQuantity(value2, units2));
-        }
-
         String associatedText = parser.getAssociatedText();
+
+        //BP is a special case
+        if (isBPCode (parser.getReadCode()) && value1 != null && value2 != null) {
+            Observation.ObservationComponentComponent componentSystolic = fhirObservation.addComponent();
+            componentSystolic.setCode(CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163030003"));
+            componentSystolic.setValue(QuantityHelper.createQuantity(value1, units1));
+
+            Observation.ObservationComponentComponent componentDiastolic = fhirObservation.addComponent();
+            componentDiastolic.setCode(CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163031004"));
+            componentDiastolic.setValue(QuantityHelper.createQuantity(value2, units2));
+        }
+        else {
+            //otherwise, add in the 1st value if it exists
+            if (value1 != null) {
+                fhirObservation.setValue(QuantityHelper.createQuantity(value1, units1));
+            }
+
+            //the 2nd value only exists if another special case, so add appended to associated text
+            String value2NarrativeText = convertSpecialCaseValues(parser);
+            if (!Strings.isNullOrEmpty(value2NarrativeText)) {
+                //OPTION 1 - create appended associated text
+                associatedText = value2NarrativeText.concat(associatedText);
+
+                //OPTION 2 - create an Observation Narrative
+//            if (!Strings.isNullOrEmpty(value2NarrativeText)) {
+//                Narrative narrative = new Narrative();
+//                narrative.setStatus(Narrative.NarrativeStatus.ADDITIONAL);
+//                narrative.setDivAsString("<div>" + value2NarrativeText + "</div>");
+//                fhirObservation.setText(narrative);
+//            }
+            }
+        }
         fhirObservation.setComments(associatedText);
 
         //set linked encounter
@@ -727,24 +752,24 @@ public class JournalTransformer {
             }
         }
 
-        //TODO:// Event links setup in Pre-Transformer if they exist
-        List<String> childObservations = csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
-        if (childObservations != null) {
-            List<Reference> references = ReferenceHelper.createReferences(childObservations);
-            for (Reference reference : references) {
-                org.hl7.fhir.instance.model.Observation.ObservationRelatedComponent fhirRelation = fhirObservation.addRelated();
-                fhirRelation.setType(org.hl7.fhir.instance.model.Observation.ObservationRelationshipType.HASMEMBER);
-                fhirRelation.setTarget(reference);
-            }
-        }
-
-        //if we have BP readings from child observations, include them in the components for this observation too
-        List<org.hl7.fhir.instance.model.Observation.ObservationComponentComponent> observationComponents = csvHelper.findBpComponents(observationID, patientID);
-        if (observationComponents != null) {
-            for (org.hl7.fhir.instance.model.Observation.ObservationComponentComponent component: observationComponents) {
-                fhirObservation.getComponent().add(component);
-            }
-        }
+        //TODO:// Event links setup in Pre-Transformer if they exist?
+//        List<String> childObservations = csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
+//        if (childObservations != null) {
+//            List<Reference> references = ReferenceHelper.createReferences(childObservations);
+//            for (Reference reference : references) {
+//                org.hl7.fhir.instance.model.Observation.ObservationRelatedComponent fhirRelation = fhirObservation.addRelated();
+//                fhirRelation.setType(org.hl7.fhir.instance.model.Observation.ObservationRelationshipType.HASMEMBER);
+//                fhirRelation.setTarget(reference);
+//            }
+//        }
+//
+//        //if we have BP readings from child observations, include them in the components for this observation too
+//        List<org.hl7.fhir.instance.model.Observation.ObservationComponentComponent> observationComponents = csvHelper.findBpComponents(observationID, patientID);
+//        if (observationComponents != null) {
+//            for (org.hl7.fhir.instance.model.Observation.ObservationComponentComponent component: observationComponents) {
+//                fhirObservation.getComponent().add(component);
+//            }
+//        }
 
         //the document, entered date and person are stored in extensions
         addDocumentExtension(fhirObservation, parser);
@@ -1015,5 +1040,53 @@ public class JournalTransformer {
             Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
             resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
         }
+    }
+
+    //implements Appendix B - Special Cases for observations with two values
+    private static String convertSpecialCaseValues(Journal parser) {
+        String readCode = parser.getReadCode();
+        Double value2 = parser.getValue2();
+
+        if (!Strings.isNullOrEmpty(readCode)) {
+            //alcohol consumption
+            if (readCode.startsWith("136")) {
+                if (value2 == null || value2 == 0)
+                    return "lifetime teetotaller. ";
+                if (value2 == 1)
+                    return "current drinker. ";
+                if (value2 == 2)
+                    return "ex-drinker. ";
+            }
+            //smoking status
+            if (readCode.startsWith("137")) {
+                if (value2 == null || value2 == 0)
+                    return "never smoked. ";
+                if (value2 == 1)
+                    return "smoker. ";
+                if (value2 == 2)
+                    return "ex-smoker. ";
+            }
+            //weight
+            if (readCode.startsWith("22A") && value2 != null) {
+                return "BMI: " + value2 + ". ";
+            }
+            //Alpha Fetoprotein
+            if (readCode.startsWith("44B") && value2 != null) {
+                return "Weeks Pregnant: " + value2 + ". ";
+            }
+            //Parity status (could have seperate value 1 and 2 or both)
+            if (readCode.startsWith("152")) {
+                String out = "";
+                Double value1 = parser.getValue1();
+                if (value1 != null) {
+                    out = "Births: " + value1 + ". ";
+                }
+                if (value2 != null) {
+                    out = out.concat("Miscarriages: " + value2 + ". ");
+                }
+                return out;
+            }
+        }
+        return null;
     }
 }
