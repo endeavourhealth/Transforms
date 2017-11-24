@@ -189,15 +189,19 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
                                     ResourceId encounterResourceId,
                                     TailsRecord tr) throws Exception {
 
-        //CodeableConcept cc = null;
-        //Date d = null;
-        //String uniqueId;
+        String resourceMapSourceRowId ="CDSIdValue="+parser.getCDSUniqueID();
         List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Diagnosis from file entry (" + entryCount + ")");
 
         RdbmsBartsSusResourceMapDal database = DalProvider.factoryBartsSusResourceMapDal();
-        List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION);
+        List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), resourceMapSourceRowId, Enumerations.ResourceType.CONDITION);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
+        if (currentMappings != null) {
+            Iterator it = currentMappings.iterator();
+            while (it.hasNext()) {
+                LOG.debug("Resource id (multi-mappings):" + ((UUID) it.next()).toString());
+            }
+        }
 
         // Turn key into Resource id
         ResourceId diagnosisResourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
@@ -265,15 +269,17 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
             //delete all Condition resources in the list
             Iterator it = currentMappings.iterator();
             while (it.hasNext()) {
+                UUID uuid = (UUID) it.next();
                 fhirCondition = new Condition();
-                fhirCondition.setId(it.next().toString());
+                fhirCondition.setId(uuid.toString());
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             }
             //delete all multi-mappings
-            database.deleteSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION, currentMappings);
+            LOG.debug("Remove all remaining sus_resource_map entries");
+            database.deleteSusResourceMappings(fhirResourceFiler.getServiceId(), resourceMapSourceRowId, Enumerations.ResourceType.CONDITION, currentMappings);
         }
         if (mappingsToAdd.size() > 0) {
-            database.saveSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION, mappingsToAdd);
+            database.saveSusResourceMappings(fhirResourceFiler.getServiceId(), resourceMapSourceRowId, Enumerations.ResourceType.CONDITION, mappingsToAdd);
         }
 
     }
