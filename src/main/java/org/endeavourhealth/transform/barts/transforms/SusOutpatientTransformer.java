@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsBartsSusResourceMapDal;
@@ -272,6 +273,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
                 UUID uuid = (UUID) it.next();
                 fhirCondition = new Condition();
                 fhirCondition.setId(uuid.toString());
+                fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
             }
             //delete all multi-mappings
@@ -369,6 +371,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
             while (it.hasNext()) {
                 fhirProcedure = new Procedure();
                 fhirProcedure.setId(it.next().toString());
+                fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
             }
             //delete all multi-mappings
