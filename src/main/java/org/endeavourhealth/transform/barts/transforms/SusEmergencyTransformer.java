@@ -229,6 +229,8 @@ public class SusEmergencyTransformer extends BartsBasisTransformer {
         }
 
         // secondary piagnoses ?
+        LOG.debug("Secondary diagnosis list=" + parser.getICDSecondaryDiagnosisList());
+        LOG.debug("Secondary diagnosis count=" + parser.getICDSecondaryDiagnosisCount());
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
             diagnosisResourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i));
 
@@ -331,7 +333,8 @@ Data line is of type Inpatient
         }
 
         // secondary procedures
-        LOG.debug("Secondary procedure count:" + parser.getOPCSecondaryProcedureCodeCount());
+        LOG.debug("Secondary procedure list=" + parser.getOPCSecondaryProcedureList());
+        LOG.debug("Secondary procedure count=" + parser.getOPCSecondaryProcedureCodeCount());
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
             resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i));
 

@@ -25,6 +25,7 @@ public class SusBaseParser extends AbstractFixedParser {
     }
 
     public boolean nextRecord() throws Exception {
+        ICDSecondaryDiagnosisList = null;
         OPCSSecondaryProcedureCodeList = null;
         OPCSSecondaryProcedureDateList = null;
         OPCSSecondaryProcedureDateAsStringList = null;
@@ -124,18 +125,20 @@ public class SusBaseParser extends AbstractFixedParser {
         return ICDSecondaryDiagnosisList.size();
     }
 
+    public String getICDSecondaryDiagnosisList() {
+        return super.getString("ICDSecondaryDiagnosisList");
+    }
+
     private void splitICDSecondaryDiagnosisList() {
         ICDSecondaryDiagnosisList = new ArrayList<String> ();
         // Each code is 7 characters (6 for code + 1 for indicator) - only code is used
-        String listString = super.getString("ICDSecondaryDiagnosisList");
-        int startPos = 0;
-        while (startPos + 6 < listString.length()) {
-            String code = listString.substring(startPos, startPos + 6);
-            if (code != null && code.length() > 0) {
-                LOG.debug("Adding secondary diagnosis:" + code);
-                ICDSecondaryDiagnosisList.add(code.substring(0, 5));
-            }
-            startPos = startPos + 6;
+        String listString = getICDSecondaryDiagnosisList();
+        //LOG.trace("Diagnosis counter start string=" + listString);
+        while (listString != null && listString.length() > 0) {
+            String code = listString.substring(0, (listString.length() >= 6 ? 6 : listString.length())).trim();
+            //LOG.trace("Diagnosis counter found code=" + code + "=");
+            ICDSecondaryDiagnosisList.add(code);
+            listString = listString.substring((listString.length() >= 7 ? 7 : listString.length()));
         }
     }
 
@@ -147,6 +150,10 @@ public class SusBaseParser extends AbstractFixedParser {
     }
     public String getOPCSPrimaryProcedureDateAsString() throws TransformException {
         return super.getString("OPCSPrimaryProcedureDate");
+    }
+
+    public String getOPCSecondaryProcedureList() {
+        return super.getString("OPCSecondaryProcedureList");
     }
 
     public int getOPCSecondaryProcedureCodeCount() throws TransformException {
@@ -198,7 +205,7 @@ public class SusBaseParser extends AbstractFixedParser {
         OPCSSecondaryProcedureDateList = new ArrayList<Date> ();
         OPCSSecondaryProcedureDateAsStringList = new ArrayList<String> ();
         // Each code-set is 40 characters and consists of 6 fields (4 for code + 8 for date + 4 further sub-fields) - only code and date are used
-        String listString = super.getString("OPCSecondaryProcedureList");
+        String listString = getOPCSecondaryProcedureList();
         int startPos = 0;
         while (startPos + 12 <= listString.length()) {
             String codeEntry = listString.substring(startPos, startPos + 4);
