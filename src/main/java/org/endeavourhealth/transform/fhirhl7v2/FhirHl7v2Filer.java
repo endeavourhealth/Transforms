@@ -261,7 +261,7 @@ public class FhirHl7v2Filer {
                     storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
                 } catch (Exception ex) {
-                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + fhirOriginal.getId() + " and now has " + fhirAmended.getId());
+                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + fhirOriginal.getId() + " and now has " + fhirAmended.getId(), ex);
                 }
             }
 
