@@ -95,12 +95,9 @@ public class ReferralTransformer {
         }
 
         //set linked encounter
-        if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String consultationID = extractEncounterLinkID(links);
-            if (!Strings.isNullOrEmpty(consultationID)) {
-                fhirReferral.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-            }
+        String consultationID = extractEncounterLinkID(parser.getLinks());
+        if (!Strings.isNullOrEmpty(consultationID)) {
+            fhirReferral.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
         }
 
         //TODO:  no linked documents ?

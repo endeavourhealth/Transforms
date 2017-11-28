@@ -425,19 +425,7 @@ public class JournalTransformer {
         fhirAllergy.setRecordedDate(enteredDate);
 
         //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept = null;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirAllergy.setSubstance(codeableConcept);
         } else {
@@ -490,20 +478,7 @@ public class JournalTransformer {
 
         fhirProcedure.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
-        //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept = null;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirProcedure.setCode(codeableConcept);
         } else {
@@ -523,12 +498,9 @@ public class JournalTransformer {
         fhirProcedure.addNotes(AnnotationHelper.createAnnotation(associatedText));
 
         //set linked encounter
-        if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String consultationID = extractEncounterLinkID(links);
-            if (!Strings.isNullOrEmpty(consultationID)) {
-                fhirProcedure.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-            }
+        String consultationID = extractEncounterLinkID(parser.getLinks());
+        if (!Strings.isNullOrEmpty(consultationID)) {
+            fhirProcedure.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
         }
 
         //the document, entered date and person are stored in extensions
@@ -569,20 +541,7 @@ public class JournalTransformer {
         cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode("complaint");
         fhirProblem.setCategory(cc);
 
-        //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept = null;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirProblem.setCode(codeableConcept);
         } else {
@@ -679,20 +638,7 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         fhirObservation.setEffective(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
-        //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept = null;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirObservation.setCode(codeableConcept);
         } else {
@@ -710,7 +656,7 @@ public class JournalTransformer {
         String units2 = parser.getValue2NumericUnit();
         String associatedText = parser.getAssociatedText();
 
-        //BP is a special case
+        //BP is a special case - create systolic and diastolic coded components
         if (isBPCode (parser.getReadCode()) && value1 != null && value2 != null) {
             Observation.ObservationComponentComponent componentSystolic = fhirObservation.addComponent();
             componentSystolic.setCode(CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163030003"));
@@ -744,12 +690,9 @@ public class JournalTransformer {
         fhirObservation.setComments(associatedText);
 
         //set linked encounter
-        if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String consultationID = extractEncounterLinkID(links);
-            if (!Strings.isNullOrEmpty(consultationID)) {
-                fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-            }
+        String consultationID = extractEncounterLinkID(parser.getLinks());
+        if (!Strings.isNullOrEmpty(consultationID)) {
+            fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
         }
 
         //TODO:// Event links setup in Pre-Transformer if they exist?
@@ -813,20 +756,7 @@ public class JournalTransformer {
 
         FamilyMemberHistory.FamilyMemberHistoryConditionComponent fhirCondition = fhirFamilyHistory.addCondition();
 
-        //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirCondition.setCode(codeableConcept);
         } else {
@@ -885,20 +815,7 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         fhirImmunisation.setDateElement(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
-        //if the Snomed code exists, pass through the translator to create a full coded concept
-        CodeableConcept codeableConcept;
-        String snomedCode = parser.getSnomedCode();
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            String readCode = parser.getReadCode();
-            String term = parser.getRubric();
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
+        CodeableConcept codeableConcept = createCodeableConcept (parser);
         if (codeableConcept != null) {
             fhirImmunisation.setVaccineCode(codeableConcept);
         } else {
@@ -933,12 +850,9 @@ public class JournalTransformer {
         fhirImmunisation.setExplanation(immsExplanationComponent);
 
         //set linked encounter
-        if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String consultationID = extractEncounterLinkID(links);
-            if (!Strings.isNullOrEmpty(consultationID)) {
-                fhirImmunisation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
-            }
+        String consultationID = extractEncounterLinkID(parser.getLinks());
+        if (!Strings.isNullOrEmpty(consultationID)) {
+            fhirImmunisation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
         }
 
         String associatedText = parser.getAssociatedText();
@@ -977,21 +891,47 @@ public class JournalTransformer {
     }
 
     private static void addEncounterExtension(DomainResource resource, Journal parser, VisionCsvHelper csvHelper, String patientID) throws Exception {
-        if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String consultationID = extractEncounterLinkID(links);
-            if (!Strings.isNullOrEmpty(consultationID)) {
-                Reference reference = csvHelper.createEncounterReference(consultationID, patientID);
-                resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference));
-            }
+        String consultationID = extractEncounterLinkID(parser.getLinks());
+        if (!Strings.isNullOrEmpty(consultationID)) {
+            Reference reference = csvHelper.createEncounterReference(consultationID, patientID);
+            resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference));
         }
     }
 
     //The consultation encounter link value is pre-fixed with E (check example data)
-    public static String extractEncounterLinkID(String[] links) {
-        for (String link: links) {
-            if (link.startsWith("E")) {
-                return link.replace("E", "");
+    public static String extractEncounterLinkID(String links) {
+        if (!Strings.isNullOrEmpty(links)) {
+            String[] linkIDs = links.split("|");
+            for (String link : linkIDs) {
+                if (link.startsWith("E")) {
+                    return link.replace("E", "");
+                }
+            }
+        }
+        return null;
+    }
+
+    // TODO: if it is a medication issue, how determine linked drug statement?
+    public static String extractDrugRecordLinkID(String links) {
+        if (!Strings.isNullOrEmpty(links)) {
+            String[] linkIDs = links.split("|");
+            for (String link : linkIDs) {
+                if (link.startsWith("D")) {
+                    return link.replace("D", "");
+                }
+            }
+        }
+        return null;
+    }
+
+    //TODO: how determine the link is a problem, i.e. this is a medication or observation resource with a linked problem?
+    public static String extractProblemLinkID(String links) {
+        if (!Strings.isNullOrEmpty(links)) {
+            String[] linkIDs = links.split("|");
+            for (String link : linkIDs) {
+                if (link.startsWith("P")) {
+                    return link.replace("P", "");
+                }
             }
         }
         return null;
@@ -1040,6 +980,25 @@ public class JournalTransformer {
             Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
             resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
         }
+    }
+
+    // convert coded item from Read2 or Snomed to full Snomed codeable concept
+    private static CodeableConcept createCodeableConcept (Journal parser) throws Exception {
+        CodeableConcept codeableConcept = null;
+        String snomedCode = parser.getSnomedCode();
+        //if the Snomed code exists, pass through the translator to create a full coded concept
+        if (!Strings.isNullOrEmpty(snomedCode)) {
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        //otherwise, perform a READ to Snomed translation
+        else {
+            String readCode = parser.getReadCode();
+            String term = parser.getRubric();
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
+            TerminologyService.translateToSnomed(codeableConcept);
+        }
+        return codeableConcept;
     }
 
     //implements Appendix B - Special Cases for observations with two values
