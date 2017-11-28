@@ -6,8 +6,8 @@ import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
@@ -121,9 +121,10 @@ public class JournalTransformer {
     }
 
     private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, Journal parser, ResourceType resourceType) throws Exception {
-        String uniqueId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
-        ResourceIdMap mapping = idMapRepository.getResourceIdMap(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), resourceType.toString(), uniqueId);
-        return mapping != null;
+        String sourceId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
+        Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
+        Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
+        return edsReference != null;
     }
 
     public static void createResource(Journal parser,

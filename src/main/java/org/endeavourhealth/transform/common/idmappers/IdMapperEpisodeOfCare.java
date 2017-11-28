@@ -7,10 +7,85 @@ import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 public class IdMapperEpisodeOfCare extends BaseIdMapper {
+
     @Override
+    public void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception {
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
+        super.addCommonResourceReferences(episodeOfCare, referenceValues);
+
+        if (episodeOfCare.hasIdentifier()) {
+            super.addIndentifierReferences(episodeOfCare.getIdentifier(), referenceValues);
+        }
+        if (episodeOfCare.hasCondition()) {
+            super.addReferences(episodeOfCare.getCondition(), referenceValues);
+        }
+        if (episodeOfCare.hasPatient()) {
+            super.addReference(episodeOfCare.getPatient(), referenceValues);
+        }
+        if (episodeOfCare.hasManagingOrganization()) {
+            super.addReference(episodeOfCare.getManagingOrganization(), referenceValues);
+        }
+        if (episodeOfCare.hasReferralRequest()) {
+            super.addReferences(episodeOfCare.getReferralRequest(), referenceValues);
+        }
+        if (episodeOfCare.hasCareManager()) {
+            super.addReference(episodeOfCare.getCareManager(), referenceValues);
+        }
+        if (episodeOfCare.hasCareTeam()) {
+            for (EpisodeOfCare.EpisodeOfCareCareTeamComponent careTeam: episodeOfCare.getCareTeam()) {
+                if (careTeam.hasMember()) {
+                    super.addReference(careTeam.getMember(), referenceValues);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
+        super.mapCommonResourceFields(episodeOfCare, mappings);
+
+        if (episodeOfCare.hasIdentifier()) {
+            super.mapIdentifiers(episodeOfCare.getIdentifier(), mappings);
+        }
+        if (episodeOfCare.hasCondition()) {
+            super.mapReferences(episodeOfCare.getCondition(), mappings);
+        }
+        if (episodeOfCare.hasPatient()) {
+            super.mapReference(episodeOfCare.getPatient(), mappings);
+        }
+        if (episodeOfCare.hasManagingOrganization()) {
+            super.mapReference(episodeOfCare.getManagingOrganization(), mappings);
+        }
+        if (episodeOfCare.hasReferralRequest()) {
+            super.mapReferences(episodeOfCare.getReferralRequest(), mappings);
+        }
+        if (episodeOfCare.hasCareManager()) {
+            super.mapReference(episodeOfCare.getCareManager(), mappings);
+        }
+        if (episodeOfCare.hasCareTeam()) {
+            for (EpisodeOfCare.EpisodeOfCareCareTeamComponent careTeam: episodeOfCare.getCareTeam()) {
+                if (careTeam.hasMember()) {
+                    super.mapReference(careTeam.getMember(), mappings);
+                }
+            }
+        }
+    }
+
+    @Override
+    public String getPatientId(Resource resource) throws PatientResourceException {
+
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
+        if (episodeOfCare.hasPatient()) {
+            return ReferenceHelper.getReferenceId(episodeOfCare.getPatient(), ResourceType.Patient);
+        }
+        return null;
+    }
+
+    /*@Override
     public boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception {
         EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
 
@@ -43,15 +118,6 @@ public class IdMapperEpisodeOfCare extends BaseIdMapper {
         return super.mapCommonResourceFields(episodeOfCare, serviceId, systemId, mapResourceId);
     }
 
-    @Override
-    public String getPatientId(Resource resource) throws PatientResourceException {
-
-        EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
-        if (episodeOfCare.hasPatient()) {
-            return ReferenceHelper.getReferenceId(episodeOfCare.getPatient(), ResourceType.Patient);
-        }
-        return null;
-    }
 
     @Override
     public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
@@ -84,5 +150,5 @@ public class IdMapperEpisodeOfCare extends BaseIdMapper {
         }
 
         super.remapCommonResourceFields(episodeOfCare, idMappings);
-    }
+    }*/
 }

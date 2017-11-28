@@ -1,11 +1,13 @@
 package org.endeavourhealth.transform.emis.reverseCsv.transforms;
 
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.Map;
@@ -18,8 +20,9 @@ public abstract class AbstractTransformer {
     public void transform(ResourceWrapper resourceWrapper, Map<Class, AbstractCsvWriter> writers) throws Exception {
 
         //find the source local ID for our EDS ID
-        ResourceIdMap obj = idMapRepository.getResourceIdMapByEdsId(resourceWrapper.getResourceType(), resourceWrapper.getResourceId());
-        String sourceId = obj.getSourceId();
+        Reference edsReference = ReferenceHelper.createReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceId().toString());
+        Reference rawReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(edsReference);
+        String sourceId = ReferenceHelper.getReferenceId(rawReference);
 
         if (resourceWrapper.isDeleted()) {
 

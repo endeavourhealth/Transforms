@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.admin.OrganisationLocation;
@@ -21,7 +22,7 @@ public class OrganisationLocationTransformer {
         while (parser.nextRecord()) {
 
             try {
-                createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper);
+                createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper, version);
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -31,7 +32,8 @@ public class OrganisationLocationTransformer {
 
     private static void createLocationOrganisationMapping(OrganisationLocation parser,
                                                           FhirResourceFiler fhirResourceFiler,
-                                                          EmisCsvHelper csvHelper) throws Exception {
+                                                          EmisCsvHelper csvHelper,
+                                                          String version) throws Exception {
 
         //if an org-location link has been deleted, then either a) the location has been deleted
         //in which case we'll sort it out because we'll have the deleted row in the Location CSV or
@@ -43,7 +45,16 @@ public class OrganisationLocationTransformer {
 
         String orgGuid = parser.getOrgansationGuid();
         String locationGuid = parser.getLocationGuid();
-        boolean mainLocation = parser.getIsMainLocation();
+
+        boolean mainLocation;
+        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+            //NOTE in the emis test pack, the IsMainLocation column in the OrganisationLocation file is not in the
+            //standard true/false format and is 1/0 instead, hence this special handler for that version
+            int i = parser.getIsMainLocationAsInt();
+            mainLocation = i > 0;
+        } else {
+            mainLocation = parser.getIsMainLocation();
+        }
 
         csvHelper.cacheOrganisationLocationMap(locationGuid, orgGuid, mainLocation);
     }

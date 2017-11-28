@@ -7,11 +7,132 @@ import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 public class IdMapperMedicationOrder extends BaseIdMapper {
 
     @Override
+    public void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception {
+        MedicationOrder medicationOrder = (MedicationOrder)resource;
+        super.addCommonResourceReferences(medicationOrder, referenceValues);
+
+        if (medicationOrder.hasIdentifier()) {
+            super.addIndentifierReferences(medicationOrder.getIdentifier(), referenceValues);
+        }
+        if (medicationOrder.hasPatient()) {
+            super.addReference(medicationOrder.getPatient(), referenceValues);
+        }
+        if (medicationOrder.hasPrescriber()) {
+            super.addReference(medicationOrder.getPrescriber(), referenceValues);
+        }
+        if (medicationOrder.hasEncounter()) {
+            super.addReference(medicationOrder.getEncounter(), referenceValues);
+        }
+        if (medicationOrder.hasReason()) {
+            try {
+                super.addReference(medicationOrder.getReasonReference(), referenceValues);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasMedication()) {
+            try {
+                super.addReference(medicationOrder.getMedicationReference(), referenceValues);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasDosageInstruction()) {
+            for (MedicationOrder.MedicationOrderDosageInstructionComponent dosage: medicationOrder.getDosageInstruction()) {
+                if (dosage.hasSite()) {
+                    try {
+                        super.addReference(dosage.getSiteReference(), referenceValues);
+                    } catch (Exception ex) {
+                        //do nothing if not a reference
+                    }
+                }
+            }
+        }
+        if (medicationOrder.hasDispenseRequest()) {
+            try {
+                super.addReference(medicationOrder.getDispenseRequest().getMedicationReference(), referenceValues);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasPriorPrescription()) {
+            super.addReference(medicationOrder.getPriorPrescription(), referenceValues);
+        }
+
+    }
+
+    @Override
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+        MedicationOrder medicationOrder = (MedicationOrder)resource;
+        super.mapCommonResourceFields(medicationOrder, mappings);
+
+        if (medicationOrder.hasIdentifier()) {
+            super.mapIdentifiers(medicationOrder.getIdentifier(), mappings);
+        }
+        if (medicationOrder.hasPatient()) {
+            super.mapReference(medicationOrder.getPatient(), mappings);
+        }
+        if (medicationOrder.hasPrescriber()) {
+            super.mapReference(medicationOrder.getPrescriber(), mappings);
+        }
+        if (medicationOrder.hasEncounter()) {
+            super.mapReference(medicationOrder.getEncounter(), mappings);
+        }
+        if (medicationOrder.hasReason()) {
+            try {
+                super.mapReference(medicationOrder.getReasonReference(), mappings);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasMedication()) {
+            try {
+                super.mapReference(medicationOrder.getMedicationReference(), mappings);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasDosageInstruction()) {
+            for (MedicationOrder.MedicationOrderDosageInstructionComponent dosage: medicationOrder.getDosageInstruction()) {
+                if (dosage.hasSite()) {
+                    try {
+                        super.mapReference(dosage.getSiteReference(), mappings);
+                    } catch (Exception ex) {
+                        //do nothing if not a reference
+                    }
+                }
+            }
+        }
+        if (medicationOrder.hasDispenseRequest()) {
+            try {
+                super.mapReference(medicationOrder.getDispenseRequest().getMedicationReference(), mappings);
+            } catch (Exception ex) {
+                //do nothing if not a reference
+            }
+        }
+        if (medicationOrder.hasPriorPrescription()) {
+            super.mapReference(medicationOrder.getPriorPrescription(), mappings);
+        }
+
+    }
+
+    @Override
+    public String getPatientId(Resource resource) throws PatientResourceException {
+
+        MedicationOrder medicationOrder = (MedicationOrder)resource;
+        if (medicationOrder.hasPatient()) {
+            return ReferenceHelper.getReferenceId(medicationOrder.getPatient(), ResourceType.Patient);
+        }
+        return null;
+    }
+
+
+    /*@Override
     public boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception {
         MedicationOrder medicationOrder = (MedicationOrder)resource;
 
@@ -66,18 +187,9 @@ public class IdMapperMedicationOrder extends BaseIdMapper {
         return super.mapCommonResourceFields(medicationOrder, serviceId, systemId, mapResourceId);
     }
 
-    @Override
-    public String getPatientId(Resource resource) throws PatientResourceException {
-
-        MedicationOrder medicationOrder = (MedicationOrder)resource;
-        if (medicationOrder.hasPatient()) {
-            return ReferenceHelper.getReferenceId(medicationOrder.getPatient(), ResourceType.Patient);
-        }
-        return null;
-    }
 
     @Override
     public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
         throw new Exception("Resource type not supported for remapping");
-    }
+    }*/
 }

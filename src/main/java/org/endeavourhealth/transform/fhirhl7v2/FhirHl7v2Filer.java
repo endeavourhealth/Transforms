@@ -129,7 +129,7 @@ public class FhirHl7v2Filer {
             //copy and remap the resource, then save
             //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
             Resource fhirAmended = ParserPool.getInstance().parse(json);
-            IdHelper.remapIds(fhirAmended, idMappings);
+            IdHelper.applyReferenceMappings(fhirAmended, idMappings);
 
             storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
@@ -257,7 +257,7 @@ public class FhirHl7v2Filer {
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
-                    IdHelper.remapIds(fhirAmended, idMappings);
+                    IdHelper.applyReferenceMappings(fhirAmended, idMappings);
                     storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
                 } catch (Exception ex) {

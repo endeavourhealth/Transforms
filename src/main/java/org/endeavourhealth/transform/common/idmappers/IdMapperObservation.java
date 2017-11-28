@@ -7,10 +7,86 @@ import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 public class IdMapperObservation extends BaseIdMapper {
+
+
     @Override
+    public void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception {
+        Observation observation = (Observation)resource;
+        super.addCommonResourceReferences(observation, referenceValues);
+
+        if (observation.hasIdentifier()) {
+            super.addIndentifierReferences(observation.getIdentifier(), referenceValues);
+        }
+        if (observation.hasSubject()) {
+            super.addReference(observation.getSubject(), referenceValues);
+        }
+        if (observation.hasEncounter()) {
+            super.addReference(observation.getEncounter(), referenceValues);
+        }
+        if (observation.hasPerformer()) {
+            super.addReferences(observation.getPerformer(), referenceValues);
+        }
+        if (observation.hasSpecimen()) {
+            super.addReference(observation.getSpecimen(), referenceValues);
+        }
+        if (observation.hasDevice()) {
+            super.addReference(observation.getDevice(), referenceValues);
+        }
+        if (observation.hasRelated()) {
+            for (Observation.ObservationRelatedComponent related: observation.getRelated()) {
+                if (related.hasTarget()) {
+                    super.addReference(related.getTarget(), referenceValues);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+        Observation observation = (Observation)resource;
+        super.mapCommonResourceFields(observation, mappings);
+
+        if (observation.hasIdentifier()) {
+            super.mapIdentifiers(observation.getIdentifier(), mappings);
+        }
+        if (observation.hasSubject()) {
+            super.mapReference(observation.getSubject(), mappings);
+        }
+        if (observation.hasEncounter()) {
+            super.mapReference(observation.getEncounter(), mappings);
+        }
+        if (observation.hasPerformer()) {
+            super.mapReferences(observation.getPerformer(), mappings);
+        }
+        if (observation.hasSpecimen()) {
+            super.mapReference(observation.getSpecimen(), mappings);
+        }
+        if (observation.hasDevice()) {
+            super.mapReference(observation.getDevice(), mappings);
+        }
+        if (observation.hasRelated()) {
+            for (Observation.ObservationRelatedComponent related: observation.getRelated()) {
+                if (related.hasTarget()) {
+                    super.mapReference(related.getTarget(), mappings);
+                }
+            }
+        }
+    }
+
+    @Override
+    public String getPatientId(Resource resource) throws PatientResourceException {
+
+        Observation observation = (Observation)resource;
+        if (observation.hasSubject()) {
+            return ReferenceHelper.getReferenceId(observation.getSubject(), ResourceType.Patient);
+        }
+        return null;
+    }
+
+    /*@Override
     public boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception {
         Observation observation = (Observation)resource;
 
@@ -44,17 +120,7 @@ public class IdMapperObservation extends BaseIdMapper {
     }
 
     @Override
-    public String getPatientId(Resource resource) throws PatientResourceException {
-
-        Observation observation = (Observation)resource;
-        if (observation.hasSubject()) {
-            return ReferenceHelper.getReferenceId(observation.getSubject(), ResourceType.Patient);
-        }
-        return null;
-    }
-
-    @Override
     public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
         throw new Exception("Resource type not supported for remapping");
-    }
+    }*/
 }

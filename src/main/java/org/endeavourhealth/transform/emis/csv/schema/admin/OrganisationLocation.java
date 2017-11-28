@@ -31,6 +31,9 @@ public class OrganisationLocation extends AbstractCsvParser {
     public boolean getIsMainLocation() {
         return super.getBoolean("IsMainLocation");
     }
+    public int getIsMainLocationAsInt() {
+        return super.getInt("IsMainLocation");
+    }
     public boolean getDeleted() {
         return super.getBoolean("Deleted");
     }

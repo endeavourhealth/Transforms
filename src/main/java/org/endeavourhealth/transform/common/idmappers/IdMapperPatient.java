@@ -5,10 +5,79 @@ import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 public class IdMapperPatient extends BaseIdMapper {
+
+
     @Override
+    public void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception {
+        Patient patient = (Patient)resource;
+        super.addCommonResourceReferences(patient, referenceValues);
+
+        if (patient.hasIdentifier()) {
+            super.addIndentifierReferences(patient.getIdentifier(), referenceValues);
+        }
+        if (patient.hasContact()) {
+            for (Patient.ContactComponent contact: patient.getContact()) {
+                if (contact.hasOrganization()) {
+                    super.addReference(contact.getOrganization(), referenceValues);
+                }
+            }
+        }
+        if (patient.hasCareProvider()) {
+            super.addReferences(patient.getCareProvider(), referenceValues);
+        }
+        if (patient.hasManagingOrganization()) {
+            super.addReference(patient.getManagingOrganization(), referenceValues);
+        }
+        if (patient.hasLink()) {
+            for (Patient.PatientLinkComponent link: patient.getLink()) {
+                if (link.hasOther()) {
+                    super.addReference(link.getOther(), referenceValues);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+        Patient patient = (Patient)resource;
+        super.mapCommonResourceFields(patient, mappings);
+
+        if (patient.hasIdentifier()) {
+            super.mapIdentifiers(patient.getIdentifier(), mappings);
+        }
+        if (patient.hasContact()) {
+            for (Patient.ContactComponent contact: patient.getContact()) {
+                if (contact.hasOrganization()) {
+                    super.mapReference(contact.getOrganization(), mappings);
+                }
+            }
+        }
+        if (patient.hasCareProvider()) {
+            super.mapReferences(patient.getCareProvider(), mappings);
+        }
+        if (patient.hasManagingOrganization()) {
+            super.mapReference(patient.getManagingOrganization(), mappings);
+        }
+        if (patient.hasLink()) {
+            for (Patient.PatientLinkComponent link: patient.getLink()) {
+                if (link.hasOther()) {
+                    super.mapReference(link.getOther(), mappings);
+                }
+            }
+        }
+    }
+
+    @Override
+    public String getPatientId(Resource resource) throws PatientResourceException {
+
+        Patient patient = (Patient)resource;
+        return patient.getId();
+    }
+
+    /*@Override
     public boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception {
         Patient patient = (Patient)resource;
 
@@ -40,14 +109,7 @@ public class IdMapperPatient extends BaseIdMapper {
     }
 
     @Override
-    public String getPatientId(Resource resource) throws PatientResourceException {
-
-        Patient patient = (Patient)resource;
-        return patient.getId();
-    }
-
-    @Override
     public void remapIds(Resource resource, Map<String, String> idMappings) throws Exception {
         throw new Exception("Resource type not supported for remapping");
-    }
+    }*/
 }

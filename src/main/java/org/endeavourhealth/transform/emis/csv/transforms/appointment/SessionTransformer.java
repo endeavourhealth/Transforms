@@ -1,16 +1,14 @@
 package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceIdMap;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.appointment.Session;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -76,25 +74,27 @@ public class SessionTransformer {
             try {
                 Schedule fhirScheduleOld = (Schedule)csvHelper.retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
 
-                ResourceIdTransformDalI repository = DalProvider.factoryResourceIdTransformDal();
+                List<Reference> edsReferences = new ArrayList<>();
 
-                //then existing resource will have been through the mapping process, so we need to reverse-lookup the source
-                //EMIS user GUID from the EDS ID
-                String edsPractitionerId = ReferenceHelper.getReferenceId(fhirScheduleOld.getActor());
-                ResourceIdMap mapping = repository.getResourceIdMapByEdsId(ResourceType.Practitioner.toString(), edsPractitionerId);
-                String emisUserGuid = mapping.getSourceId();
-                userGuids.add(emisUserGuid);
+                if (fhirScheduleOld.hasActor()) {
+                    Reference actorReference = fhirScheduleOld.getActor();
+                    edsReferences.add(actorReference);
+                }
 
                 if (fhirScheduleOld.hasExtension()) {
                     for (Extension extension: fhirScheduleOld.getExtension()) {
                         if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_ADDITIONAL_ACTOR)) {
                             Reference oldAdditionalActor = (Reference)extension.getValue();
-                            edsPractitionerId = ReferenceHelper.getReferenceId(oldAdditionalActor);
-                            mapping = repository.getResourceIdMapByEdsId(ResourceType.Practitioner.toString(), edsPractitionerId);
-                            emisUserGuid = mapping.getSourceId();
-                            userGuids.add(emisUserGuid);
+                            edsReferences.add(oldAdditionalActor);
                         }
                     }
+                }
+
+                //then existing resource will have been through the mapping process, so we need to reverse-lookup the source EMIS user GUID from the EDS ID
+                List<Reference> rawReferences = IdHelper.convertEdsReferencesToLocallyUniqueReferences(edsReferences);
+                for (Reference rawReference: rawReferences) {
+                    String emisUserGuid = ReferenceHelper.getReferenceId(rawReference);
+                    userGuids.add(emisUserGuid);
                 }
 
             } catch (Exception ex) {
