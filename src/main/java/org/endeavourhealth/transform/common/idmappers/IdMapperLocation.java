@@ -27,18 +27,18 @@ public class IdMapperLocation extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Location location = (Location)resource;
-        super.mapCommonResourceFields(location, mappings);
+        super.mapCommonResourceFields(location, mappings, failForMissingMappings);
 
         if (location.hasIdentifier()) {
-            super.mapIdentifiers(location.getIdentifier(), mappings);
+            super.mapIdentifiers(location.getIdentifier(), mappings, failForMissingMappings);
         }
         if (location.hasManagingOrganization()) {
-            super.mapReference(location.getManagingOrganization(), mappings);
+            super.mapReference(location.getManagingOrganization(), mappings, failForMissingMappings);
         }
         if (location.hasPartOf()) {
-            super.mapReference(location.getPartOf(), mappings);
+            super.mapReference(location.getPartOf(), mappings, failForMissingMappings);
         }
 
     }

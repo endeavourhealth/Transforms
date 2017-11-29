@@ -45,32 +45,32 @@ public class IdMapperObservation extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Observation observation = (Observation)resource;
-        super.mapCommonResourceFields(observation, mappings);
+        super.mapCommonResourceFields(observation, mappings, failForMissingMappings);
 
         if (observation.hasIdentifier()) {
-            super.mapIdentifiers(observation.getIdentifier(), mappings);
+            super.mapIdentifiers(observation.getIdentifier(), mappings, failForMissingMappings);
         }
         if (observation.hasSubject()) {
-            super.mapReference(observation.getSubject(), mappings);
+            super.mapReference(observation.getSubject(), mappings, failForMissingMappings);
         }
         if (observation.hasEncounter()) {
-            super.mapReference(observation.getEncounter(), mappings);
+            super.mapReference(observation.getEncounter(), mappings, failForMissingMappings);
         }
         if (observation.hasPerformer()) {
-            super.mapReferences(observation.getPerformer(), mappings);
+            super.mapReferences(observation.getPerformer(), mappings, failForMissingMappings);
         }
         if (observation.hasSpecimen()) {
-            super.mapReference(observation.getSpecimen(), mappings);
+            super.mapReference(observation.getSpecimen(), mappings, failForMissingMappings);
         }
         if (observation.hasDevice()) {
-            super.mapReference(observation.getDevice(), mappings);
+            super.mapReference(observation.getDevice(), mappings, failForMissingMappings);
         }
         if (observation.hasRelated()) {
             for (Observation.ObservationRelatedComponent related: observation.getRelated()) {
                 if (related.hasTarget()) {
-                    super.mapReference(related.getTarget(), mappings);
+                    super.mapReference(related.getTarget(), mappings, failForMissingMappings);
                 }
             }
         }

@@ -38,27 +38,27 @@ public class IdMapperReferralRequest extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         ReferralRequest referralRequest = (ReferralRequest)resource;
-        super.mapCommonResourceFields(referralRequest, mappings);
+        super.mapCommonResourceFields(referralRequest, mappings, failForMissingMappings);
 
         if (referralRequest.hasIdentifier()) {
-            super.mapIdentifiers(referralRequest.getIdentifier(), mappings);
+            super.mapIdentifiers(referralRequest.getIdentifier(), mappings, failForMissingMappings);
         }
         if (referralRequest.hasPatient()) {
-            super.mapReference(referralRequest.getPatient(), mappings);
+            super.mapReference(referralRequest.getPatient(), mappings, failForMissingMappings);
         }
         if (referralRequest.hasRequester()) {
-            super.mapReference(referralRequest.getRequester(), mappings);
+            super.mapReference(referralRequest.getRequester(), mappings, failForMissingMappings);
         }
         if (referralRequest.hasRecipient()) {
-            super.mapReferences(referralRequest.getRecipient(), mappings);
+            super.mapReferences(referralRequest.getRecipient(), mappings, failForMissingMappings);
         }
         if (referralRequest.hasEncounter()) {
-            super.mapReference(referralRequest.getEncounter(), mappings);
+            super.mapReference(referralRequest.getEncounter(), mappings, failForMissingMappings);
         }
         if (referralRequest.hasSupportingInformation()) {
-            super.mapReferences(referralRequest.getSupportingInformation(), mappings);
+            super.mapReferences(referralRequest.getSupportingInformation(), mappings, failForMissingMappings);
         }
 
     }

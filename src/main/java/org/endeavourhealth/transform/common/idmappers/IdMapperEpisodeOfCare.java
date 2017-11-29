@@ -44,32 +44,32 @@ public class IdMapperEpisodeOfCare extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         EpisodeOfCare episodeOfCare = (EpisodeOfCare)resource;
-        super.mapCommonResourceFields(episodeOfCare, mappings);
+        super.mapCommonResourceFields(episodeOfCare, mappings, failForMissingMappings);
 
         if (episodeOfCare.hasIdentifier()) {
-            super.mapIdentifiers(episodeOfCare.getIdentifier(), mappings);
+            super.mapIdentifiers(episodeOfCare.getIdentifier(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasCondition()) {
-            super.mapReferences(episodeOfCare.getCondition(), mappings);
+            super.mapReferences(episodeOfCare.getCondition(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasPatient()) {
-            super.mapReference(episodeOfCare.getPatient(), mappings);
+            super.mapReference(episodeOfCare.getPatient(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasManagingOrganization()) {
-            super.mapReference(episodeOfCare.getManagingOrganization(), mappings);
+            super.mapReference(episodeOfCare.getManagingOrganization(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasReferralRequest()) {
-            super.mapReferences(episodeOfCare.getReferralRequest(), mappings);
+            super.mapReferences(episodeOfCare.getReferralRequest(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasCareManager()) {
-            super.mapReference(episodeOfCare.getCareManager(), mappings);
+            super.mapReference(episodeOfCare.getCareManager(), mappings, failForMissingMappings);
         }
         if (episodeOfCare.hasCareTeam()) {
             for (EpisodeOfCare.EpisodeOfCareCareTeamComponent careTeam: episodeOfCare.getCareTeam()) {
                 if (careTeam.hasMember()) {
-                    super.mapReference(careTeam.getMember(), mappings);
+                    super.mapReference(careTeam.getMember(), mappings, failForMissingMappings);
                 }
             }
         }

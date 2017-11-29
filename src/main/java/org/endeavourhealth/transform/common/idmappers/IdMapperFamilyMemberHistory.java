@@ -25,15 +25,15 @@ public class IdMapperFamilyMemberHistory extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         FamilyMemberHistory familyHistory = (FamilyMemberHistory)resource;
-        super.mapCommonResourceFields(familyHistory, mappings);
+        super.mapCommonResourceFields(familyHistory, mappings, failForMissingMappings);
 
         if (familyHistory.hasIdentifier()) {
-            super.mapIdentifiers(familyHistory.getIdentifier(), mappings);
+            super.mapIdentifiers(familyHistory.getIdentifier(), mappings, failForMissingMappings);
         }
         if (familyHistory.hasPatient()) {
-            super.mapReference(familyHistory.getPatient(), mappings);
+            super.mapReference(familyHistory.getPatient(), mappings, failForMissingMappings);
         }
     }
 

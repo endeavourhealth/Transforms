@@ -26,15 +26,15 @@ public class IdMapperRelatedPerson extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         RelatedPerson relatedPerson = (RelatedPerson)resource;
-        super.mapCommonResourceFields(relatedPerson, mappings);
+        super.mapCommonResourceFields(relatedPerson, mappings, failForMissingMappings);
 
         if (relatedPerson.hasIdentifier()) {
-            super.mapIdentifiers(relatedPerson.getIdentifier(), mappings);
+            super.mapIdentifiers(relatedPerson.getIdentifier(), mappings, failForMissingMappings);
         }
         if (relatedPerson.hasPatient()) {
-            super.mapReference(relatedPerson.getPatient(), mappings);
+            super.mapReference(relatedPerson.getPatient(), mappings, failForMissingMappings);
         }
     }
 

@@ -38,28 +38,28 @@ public class IdMapperProcedure extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Procedure procedure = (Procedure)resource;
-        super.mapCommonResourceFields(procedure, mappings);
+        super.mapCommonResourceFields(procedure, mappings, failForMissingMappings);
 
         if (procedure.hasIdentifier()) {
-            super.mapIdentifiers(procedure.getIdentifier(), mappings);
+            super.mapIdentifiers(procedure.getIdentifier(), mappings, failForMissingMappings);
         }
         if (procedure.hasSubject()) {
-            super.mapReference(procedure.getSubject(), mappings);
+            super.mapReference(procedure.getSubject(), mappings, failForMissingMappings);
         }
         if (procedure.hasPerformer()) {
             for (Procedure.ProcedurePerformerComponent performer: procedure.getPerformer()) {
                 if (performer.hasActor()) {
-                    super.mapReference(performer.getActor(), mappings);
+                    super.mapReference(performer.getActor(), mappings, failForMissingMappings);
                 }
             }
         }
         if (procedure.hasEncounter()) {
-            super.mapReference(procedure.getEncounter(), mappings);
+            super.mapReference(procedure.getEncounter(), mappings, failForMissingMappings);
         }
         if (procedure.hasLocation()) {
-            super.mapReference(procedure.getLocation(), mappings);
+            super.mapReference(procedure.getLocation(), mappings, failForMissingMappings);
         }
     }
 

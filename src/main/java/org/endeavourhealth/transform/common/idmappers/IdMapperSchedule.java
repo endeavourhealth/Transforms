@@ -23,15 +23,15 @@ public class IdMapperSchedule extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Schedule schedule = (Schedule)resource;
-        super.mapCommonResourceFields(schedule, mappings);
+        super.mapCommonResourceFields(schedule, mappings, failForMissingMappings);
 
         if (schedule.hasIdentifier()) {
-            super.mapIdentifiers(schedule.getIdentifier(), mappings);
+            super.mapIdentifiers(schedule.getIdentifier(), mappings, failForMissingMappings);
         }
         if (schedule.hasActor()) {
-            super.mapReference(schedule.getActor(), mappings);
+            super.mapReference(schedule.getActor(), mappings, failForMissingMappings);
         }
     }
 

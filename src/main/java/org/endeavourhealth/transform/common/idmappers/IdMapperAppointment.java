@@ -32,21 +32,21 @@ public class IdMapperAppointment extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Appointment appointment = (Appointment)resource;
 
-        super.mapCommonResourceFields(appointment, mappings);
+        super.mapCommonResourceFields(appointment, mappings, failForMissingMappings);
 
         if (appointment.hasIdentifier()) {
-            super.mapIdentifiers(appointment.getIdentifier(), mappings);
+            super.mapIdentifiers(appointment.getIdentifier(), mappings, failForMissingMappings);
         }
         if (appointment.hasSlot()) {
-            super.mapReferences(appointment.getSlot(), mappings);
+            super.mapReferences(appointment.getSlot(), mappings, failForMissingMappings);
         }
         if (appointment.hasParticipant()) {
             for (Appointment.AppointmentParticipantComponent participant: appointment.getParticipant()) {
                 if (participant.hasActor()) {
-                    super.mapReference(participant.getActor(), mappings);
+                    super.mapReference(participant.getActor(), mappings, failForMissingMappings);
                 }
             }
         }

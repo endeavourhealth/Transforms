@@ -24,15 +24,15 @@ public class IdMapperOrganization extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Organization organization = (Organization)resource;
-        super.mapCommonResourceFields(organization, mappings);
+        super.mapCommonResourceFields(organization, mappings, failForMissingMappings);
 
         if (organization.hasIdentifier()) {
-            super.mapIdentifiers(organization.getIdentifier(), mappings);
+            super.mapIdentifiers(organization.getIdentifier(), mappings, failForMissingMappings);
         }
         if (organization.hasPartOf()) {
-            super.mapReference(organization.getPartOf(), mappings);
+            super.mapReference(organization.getPartOf(), mappings, failForMissingMappings);
         }
     }
 

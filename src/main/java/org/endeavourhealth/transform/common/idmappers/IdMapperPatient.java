@@ -41,30 +41,30 @@ public class IdMapperPatient extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Patient patient = (Patient)resource;
-        super.mapCommonResourceFields(patient, mappings);
+        super.mapCommonResourceFields(patient, mappings, failForMissingMappings);
 
         if (patient.hasIdentifier()) {
-            super.mapIdentifiers(patient.getIdentifier(), mappings);
+            super.mapIdentifiers(patient.getIdentifier(), mappings, failForMissingMappings);
         }
         if (patient.hasContact()) {
             for (Patient.ContactComponent contact: patient.getContact()) {
                 if (contact.hasOrganization()) {
-                    super.mapReference(contact.getOrganization(), mappings);
+                    super.mapReference(contact.getOrganization(), mappings, failForMissingMappings);
                 }
             }
         }
         if (patient.hasCareProvider()) {
-            super.mapReferences(patient.getCareProvider(), mappings);
+            super.mapReferences(patient.getCareProvider(), mappings, failForMissingMappings);
         }
         if (patient.hasManagingOrganization()) {
-            super.mapReference(patient.getManagingOrganization(), mappings);
+            super.mapReference(patient.getManagingOrganization(), mappings, failForMissingMappings);
         }
         if (patient.hasLink()) {
             for (Patient.PatientLinkComponent link: patient.getLink()) {
                 if (link.hasOther()) {
-                    super.mapReference(link.getOther(), mappings);
+                    super.mapReference(link.getOther(), mappings, failForMissingMappings);
                 }
             }
         }

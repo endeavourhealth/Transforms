@@ -67,32 +67,32 @@ public class IdMapperMedicationOrder extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         MedicationOrder medicationOrder = (MedicationOrder)resource;
-        super.mapCommonResourceFields(medicationOrder, mappings);
+        super.mapCommonResourceFields(medicationOrder, mappings, failForMissingMappings);
 
         if (medicationOrder.hasIdentifier()) {
-            super.mapIdentifiers(medicationOrder.getIdentifier(), mappings);
+            super.mapIdentifiers(medicationOrder.getIdentifier(), mappings, failForMissingMappings);
         }
         if (medicationOrder.hasPatient()) {
-            super.mapReference(medicationOrder.getPatient(), mappings);
+            super.mapReference(medicationOrder.getPatient(), mappings, failForMissingMappings);
         }
         if (medicationOrder.hasPrescriber()) {
-            super.mapReference(medicationOrder.getPrescriber(), mappings);
+            super.mapReference(medicationOrder.getPrescriber(), mappings, failForMissingMappings);
         }
         if (medicationOrder.hasEncounter()) {
-            super.mapReference(medicationOrder.getEncounter(), mappings);
+            super.mapReference(medicationOrder.getEncounter(), mappings, failForMissingMappings);
         }
         if (medicationOrder.hasReason()) {
             try {
-                super.mapReference(medicationOrder.getReasonReference(), mappings);
+                super.mapReference(medicationOrder.getReasonReference(), mappings, failForMissingMappings);
             } catch (Exception ex) {
                 //do nothing if not a reference
             }
         }
         if (medicationOrder.hasMedication()) {
             try {
-                super.mapReference(medicationOrder.getMedicationReference(), mappings);
+                super.mapReference(medicationOrder.getMedicationReference(), mappings, failForMissingMappings);
             } catch (Exception ex) {
                 //do nothing if not a reference
             }
@@ -101,7 +101,7 @@ public class IdMapperMedicationOrder extends BaseIdMapper {
             for (MedicationOrder.MedicationOrderDosageInstructionComponent dosage: medicationOrder.getDosageInstruction()) {
                 if (dosage.hasSite()) {
                     try {
-                        super.mapReference(dosage.getSiteReference(), mappings);
+                        super.mapReference(dosage.getSiteReference(), mappings, failForMissingMappings);
                     } catch (Exception ex) {
                         //do nothing if not a reference
                     }
@@ -110,13 +110,13 @@ public class IdMapperMedicationOrder extends BaseIdMapper {
         }
         if (medicationOrder.hasDispenseRequest()) {
             try {
-                super.mapReference(medicationOrder.getDispenseRequest().getMedicationReference(), mappings);
+                super.mapReference(medicationOrder.getDispenseRequest().getMedicationReference(), mappings, failForMissingMappings);
             } catch (Exception ex) {
                 //do nothing if not a reference
             }
         }
         if (medicationOrder.hasPriorPrescription()) {
-            super.mapReference(medicationOrder.getPriorPrescription(), mappings);
+            super.mapReference(medicationOrder.getPriorPrescription(), mappings, failForMissingMappings);
         }
 
     }

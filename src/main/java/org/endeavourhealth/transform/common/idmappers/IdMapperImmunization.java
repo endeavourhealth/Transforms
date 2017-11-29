@@ -55,42 +55,42 @@ public class IdMapperImmunization extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Immunization immunization = (Immunization)resource;
-        super.mapCommonResourceFields(immunization, mappings);
+        super.mapCommonResourceFields(immunization, mappings, failForMissingMappings);
 
         if (immunization.hasIdentifier()) {
-            super.mapIdentifiers(immunization.getIdentifier(), mappings);
+            super.mapIdentifiers(immunization.getIdentifier(), mappings, failForMissingMappings);
         }
         if (immunization.hasPatient()) {
-            super.mapReference(immunization.getPatient(), mappings);
+            super.mapReference(immunization.getPatient(), mappings, failForMissingMappings);
         }
         if (immunization.hasPerformer()) {
-            super.mapReference(immunization.getPerformer(), mappings);
+            super.mapReference(immunization.getPerformer(), mappings, failForMissingMappings);
         }
         if (immunization.hasRequester()) {
-            super.mapReference(immunization.getRequester(), mappings);
+            super.mapReference(immunization.getRequester(), mappings, failForMissingMappings);
         }
         if (immunization.hasEncounter()) {
-            super.mapReference(immunization.getEncounter(), mappings);
+            super.mapReference(immunization.getEncounter(), mappings, failForMissingMappings);
         }
         if (immunization.hasManufacturer()) {
-            super.mapReference(immunization.getManufacturer(), mappings);
+            super.mapReference(immunization.getManufacturer(), mappings, failForMissingMappings);
         }
         if (immunization.hasLocation()) {
-            super.mapReference(immunization.getLocation(), mappings);
+            super.mapReference(immunization.getLocation(), mappings, failForMissingMappings);
         }
         if (immunization.hasReaction()) {
             for (Immunization.ImmunizationReactionComponent reaction: immunization.getReaction()) {
                 if (reaction.hasDetail()) {
-                    super.mapReference(reaction.getDetail(), mappings);
+                    super.mapReference(reaction.getDetail(), mappings, failForMissingMappings);
                 }
             }
         }
         if (immunization.hasVaccinationProtocol()) {
             for (Immunization.ImmunizationVaccinationProtocolComponent protocol: immunization.getVaccinationProtocol()) {
                 if (protocol.hasAuthority()) {
-                    super.mapReference(protocol.getAuthority(), mappings);
+                    super.mapReference(protocol.getAuthority(), mappings, failForMissingMappings);
                 }
             }
         }

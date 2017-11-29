@@ -18,7 +18,7 @@ public abstract class BaseIdMapper {
 
 
     public abstract void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception;
-    public abstract void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception;
+    public abstract void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception;
     /*public abstract boolean mapIds(Resource resource, UUID serviceId, UUID systemId, boolean mapResourceId) throws Exception;
     public abstract void remapIds(Resource resource, Map<String, String> idMappings) throws Exception;*/
     public abstract String getPatientId(Resource resource) throws PatientResourceException;
@@ -106,15 +106,15 @@ public abstract class BaseIdMapper {
     /**
      * maps the extensions and contained resources in a FHIR resource
      */
-    protected void mapCommonResourceFields(DomainResource resource, Map<String, String> mappings) throws Exception {
-        mapExtensions(resource, mappings);
-        mapContainedResources(resource, mappings);
+    protected void mapCommonResourceFields(DomainResource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
+        mapExtensions(resource, mappings, failForMissingMappings);
+        mapContainedResources(resource, mappings, failForMissingMappings);
     }
 
     /**
      * maps the IDs in any extensions of a resource
      */
-    private void mapExtensions(DomainResource resource, Map<String, String> mappings) throws Exception {
+    private void mapExtensions(DomainResource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
 
         if (!resource.hasExtension()) {
             return;
@@ -123,7 +123,7 @@ public abstract class BaseIdMapper {
         for (Extension extension: resource.getExtension()) {
             if (extension.hasValue()
                     && extension.getValue() instanceof Reference) {
-                mapReference((Reference)extension.getValue(), mappings);
+                mapReference((Reference)extension.getValue(), mappings, failForMissingMappings);
             }
         }
     }
@@ -132,7 +132,7 @@ public abstract class BaseIdMapper {
     /**
      * maps the IDs in any extensions of a resource
      */
-    private void mapContainedResources(DomainResource resource, Map<String, String> mappings) throws Exception {
+    private void mapContainedResources(DomainResource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
 
         if (!resource.hasContained()) {
             return;
@@ -140,22 +140,22 @@ public abstract class BaseIdMapper {
 
         for (Resource contained: resource.getContained()) {
             BaseIdMapper idMapper = IdHelper.getIdMapper(contained);
-            idMapper.applyReferenceMappings(contained, mappings);
+            idMapper.applyReferenceMappings(contained, mappings, failForMissingMappings);
         }
     }
 
     /**
      * maps the IDs in any identifiers of a resource
      */
-    protected void mapIdentifiers(List<Identifier> identifiers, Map<String, String> mappings) throws Exception {
+    protected void mapIdentifiers(List<Identifier> identifiers, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         for (Identifier identifier: identifiers) {
             if (identifier.hasAssigner()) {
-                mapReference(identifier.getAssigner(), mappings);
+                mapReference(identifier.getAssigner(), mappings, failForMissingMappings);
             }
         }
     }
 
-    protected void mapReference(Reference reference, Map<String, String> mappings) throws Exception {
+    protected void mapReference(Reference reference, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         if (reference == null) {
             return;
         }
@@ -177,21 +177,26 @@ public abstract class BaseIdMapper {
                     return;
                 }
 
-                throw new Exception("Failed to find mapping for reference " + reference.getReference());
+                //when mapping new resources, we want to know about missing mappings, but for ADT A34 merges, we only change some fields
+                if (failForMissingMappings) {
+                    throw new Exception("Failed to find mapping for reference " + reference.getReference());
+                } else {
+                    return;
+                }
             }
 
             reference.setReference(newReferenceValue);
         }
     }
 
-    protected void mapReferences(List<Reference> references, Map<String, String> mappings) throws Exception {
+    protected void mapReferences(List<Reference> references, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         if (references == null
                 || references.isEmpty()) {
             return;
         }
 
         for (Reference reference: references) {
-            mapReference(reference, mappings);
+            mapReference(reference, mappings, failForMissingMappings);
         }
     }
 

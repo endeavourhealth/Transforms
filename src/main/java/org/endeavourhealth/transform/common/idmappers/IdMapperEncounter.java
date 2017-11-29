@@ -57,44 +57,44 @@ public class IdMapperEncounter extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Encounter encounter = (Encounter)resource;
-        super.mapCommonResourceFields(encounter, mappings);
+        super.mapCommonResourceFields(encounter, mappings, failForMissingMappings);
 
         if (encounter.hasIdentifier()) {
-            super.mapIdentifiers(encounter.getIdentifier(), mappings);
+            super.mapIdentifiers(encounter.getIdentifier(), mappings, failForMissingMappings);
         }
         if (encounter.hasPatient()) {
-            super.mapReference(encounter.getPatient(), mappings);
+            super.mapReference(encounter.getPatient(), mappings, failForMissingMappings);
         }
         if (encounter.hasEpisodeOfCare()) {
-            super.mapReferences(encounter.getEpisodeOfCare(), mappings);
+            super.mapReferences(encounter.getEpisodeOfCare(), mappings, failForMissingMappings);
         }
         if (encounter.hasIncomingReferral()) {
-            super.mapReferences(encounter.getIncomingReferral(), mappings);
+            super.mapReferences(encounter.getIncomingReferral(), mappings, failForMissingMappings);
         }
         if (encounter.hasParticipant()) {
             for (Encounter.EncounterParticipantComponent participant: encounter.getParticipant()) {
                 if (participant.hasIndividual()) {
-                    super.mapReference(participant.getIndividual(), mappings);
+                    super.mapReference(participant.getIndividual(), mappings, failForMissingMappings);
                 }
             }
         }
         if (encounter.hasAppointment()) {
-            super.mapReference(encounter.getAppointment(), mappings);
+            super.mapReference(encounter.getAppointment(), mappings, failForMissingMappings);
         }
         if (encounter.hasIndication()) {
-            super.mapReferences(encounter.getIndication(), mappings);
+            super.mapReferences(encounter.getIndication(), mappings, failForMissingMappings);
         }
         if (encounter.hasLocation()) {
             for (Encounter.EncounterLocationComponent location: encounter.getLocation()) {
                 if (location.hasLocation()) {
-                    super.mapReference(location.getLocation(), mappings);
+                    super.mapReference(location.getLocation(), mappings, failForMissingMappings);
                 }
             }
         }
         if (encounter.hasServiceProvider()) {
-            super.mapReference(encounter.getServiceProvider(), mappings);
+            super.mapReference(encounter.getServiceProvider(), mappings, failForMissingMappings);
         }
 
     }

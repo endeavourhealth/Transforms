@@ -36,18 +36,18 @@ public class IdMapperSubstance extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Substance substance = (Substance)resource;
-        super.mapCommonResourceFields(substance, mappings);
+        super.mapCommonResourceFields(substance, mappings, failForMissingMappings);
 
         if (substance.hasIdentifier()) {
-            super.mapIdentifiers(substance.getIdentifier(), mappings);
+            super.mapIdentifiers(substance.getIdentifier(), mappings, failForMissingMappings);
         }
         if (substance.hasInstance()) {
             for (Substance.SubstanceInstanceComponent instance: substance.getInstance()) {
                 if (instance.hasIdentifier()) {
                     if (instance.getIdentifier().hasAssigner()) {
-                        super.mapReference(instance.getIdentifier().getAssigner(), mappings);
+                        super.mapReference(instance.getIdentifier().getAssigner(), mappings, failForMissingMappings);
                     }
                 }
             }
@@ -55,7 +55,7 @@ public class IdMapperSubstance extends BaseIdMapper {
         if (substance.hasIngredient()) {
             for (Substance.SubstanceIngredientComponent ingredient: substance.getIngredient()) {
                 if (ingredient.hasSubstance()) {
-                    super.mapReference(ingredient.getSubstance(), mappings);
+                    super.mapReference(ingredient.getSubstance(), mappings, failForMissingMappings);
                 }
             }
         }

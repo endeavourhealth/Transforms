@@ -43,31 +43,31 @@ public class IdMapperOrder extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Order order = (Order)resource;
-        super.mapCommonResourceFields(order, mappings);
+        super.mapCommonResourceFields(order, mappings, failForMissingMappings);
 
         if (order.hasIdentifier()) {
-            super.mapIdentifiers(order.getIdentifier(), mappings);
+            super.mapIdentifiers(order.getIdentifier(), mappings, failForMissingMappings);
         }
         if (order.hasSubject()) {
-            super.mapReference(order.getSubject(), mappings);
+            super.mapReference(order.getSubject(), mappings, failForMissingMappings);
         }
         if (order.hasSource()) {
-            super.mapReference(order.getSource(), mappings);
+            super.mapReference(order.getSource(), mappings, failForMissingMappings);
         }
         if (order.hasTarget()) {
-            super.mapReference(order.getTarget(), mappings);
+            super.mapReference(order.getTarget(), mappings, failForMissingMappings);
         }
         if (order.hasReason()) {
             try {
-                super.mapReference(order.getReasonReference(), mappings);
+                super.mapReference(order.getReasonReference(), mappings, failForMissingMappings);
             } catch (Exception ex) {
                 //not a problem if not a reference
             }
         }
         if (order.hasDetail()) {
-            super.mapReferences(order.getDetail(), mappings);
+            super.mapReferences(order.getDetail(), mappings, failForMissingMappings);
         }
 
     }

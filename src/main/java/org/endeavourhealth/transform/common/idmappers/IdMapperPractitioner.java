@@ -34,23 +34,23 @@ public class IdMapperPractitioner extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Practitioner practitioner = (Practitioner)resource;
-        super.mapCommonResourceFields(practitioner, mappings);
+        super.mapCommonResourceFields(practitioner, mappings, failForMissingMappings);
 
         if (practitioner.hasIdentifier()) {
-            super.mapIdentifiers(practitioner.getIdentifier(), mappings);
+            super.mapIdentifiers(practitioner.getIdentifier(), mappings, failForMissingMappings);
         }
         if (practitioner.hasPractitionerRole()) {
             for (Practitioner.PractitionerPractitionerRoleComponent role: practitioner.getPractitionerRole()) {
                 if (role.hasManagingOrganization()) {
-                    super.mapReference(role.getManagingOrganization(), mappings);
+                    super.mapReference(role.getManagingOrganization(), mappings, failForMissingMappings);
                 }
                 if (role.hasLocation()) {
-                    super.mapReferences(role.getLocation(), mappings);
+                    super.mapReferences(role.getLocation(), mappings, failForMissingMappings);
                 }
                 if (role.hasHealthcareService()) {
-                    super.mapReferences(role.getHealthcareService(), mappings);
+                    super.mapReferences(role.getHealthcareService(), mappings, failForMissingMappings);
                 }
             }
         }

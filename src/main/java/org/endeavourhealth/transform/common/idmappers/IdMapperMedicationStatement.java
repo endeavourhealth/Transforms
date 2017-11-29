@@ -59,23 +59,23 @@ public class IdMapperMedicationStatement extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         MedicationStatement medicationStatement = (MedicationStatement)resource;
-        super.mapCommonResourceFields(medicationStatement, mappings);
+        super.mapCommonResourceFields(medicationStatement, mappings, failForMissingMappings);
 
         if (medicationStatement.hasIdentifier()) {
-            super.mapIdentifiers(medicationStatement.getIdentifier(), mappings);
+            super.mapIdentifiers(medicationStatement.getIdentifier(), mappings, failForMissingMappings);
         }
         if (medicationStatement.hasPatient()) {
-            super.mapReference(medicationStatement.getPatient(), mappings);
+            super.mapReference(medicationStatement.getPatient(), mappings, failForMissingMappings);
         }
         if (medicationStatement.hasInformationSource()) {
-            super.mapReference(medicationStatement.getInformationSource(), mappings);
+            super.mapReference(medicationStatement.getInformationSource(), mappings, failForMissingMappings);
         }
         if (medicationStatement.hasReasonForUse()) {
             try {
                 if (medicationStatement.hasReasonForUseReference()) {
-                    super.mapReference(medicationStatement.getReasonForUseReference(), mappings);
+                    super.mapReference(medicationStatement.getReasonForUseReference(), mappings, failForMissingMappings);
                 }
             } catch (Exception ex) {
                 //do nothing if not a reference
@@ -84,7 +84,7 @@ public class IdMapperMedicationStatement extends BaseIdMapper {
         if (medicationStatement.hasMedication()) {
             try {
                 if (medicationStatement.hasMedicationReference()) {
-                    super.mapReference(medicationStatement.getMedicationReference(), mappings);
+                    super.mapReference(medicationStatement.getMedicationReference(), mappings, failForMissingMappings);
                 }
             } catch (Exception ex) {
                 //do nothing if not a reference
@@ -94,7 +94,7 @@ public class IdMapperMedicationStatement extends BaseIdMapper {
             for (MedicationStatement.MedicationStatementDosageComponent dosage: medicationStatement.getDosage()) {
                 try {
                     if (dosage.hasSiteReference()) {
-                        super.mapReference(dosage.getSiteReference(), mappings);
+                        super.mapReference(dosage.getSiteReference(), mappings, failForMissingMappings);
                     }
                 } catch (Exception ex) {
                     //do nothing if not a reference

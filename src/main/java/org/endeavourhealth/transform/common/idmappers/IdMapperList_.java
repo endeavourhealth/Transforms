@@ -40,26 +40,26 @@ public class IdMapperList_ extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         List_ list = (List_)resource;
-        super.mapCommonResourceFields(list, mappings);
+        super.mapCommonResourceFields(list, mappings, failForMissingMappings);
 
         if (list.hasIdentifier()) {
-            super.mapIdentifiers(list.getIdentifier(), mappings);
+            super.mapIdentifiers(list.getIdentifier(), mappings, failForMissingMappings);
         }
         if (list.hasSubject()) {
-            super.mapReference(list.getSubject(), mappings);
+            super.mapReference(list.getSubject(), mappings, failForMissingMappings);
         }
         if (list.hasSource()) {
-            super.mapReference(list.getSource(), mappings);
+            super.mapReference(list.getSource(), mappings, failForMissingMappings);
         }
         if (list.hasEncounter()) {
-            super.mapReference(list.getEncounter(), mappings);
+            super.mapReference(list.getEncounter(), mappings, failForMissingMappings);
         }
         if (list.hasEntry()) {
             for (List_.ListEntryComponent entry: list.getEntry()) {
                 if (entry.hasItem()) {
-                    super.mapReference(entry.getItem(), mappings);
+                    super.mapReference(entry.getItem(), mappings, failForMissingMappings);
                 }
             }
         }

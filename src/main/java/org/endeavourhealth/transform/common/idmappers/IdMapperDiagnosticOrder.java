@@ -52,40 +52,40 @@ public class IdMapperDiagnosticOrder extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         DiagnosticOrder order = (DiagnosticOrder)resource;
 
-        super.mapCommonResourceFields(order, mappings);
+        super.mapCommonResourceFields(order, mappings, failForMissingMappings);
 
         if (order.hasIdentifier()) {
-            super.mapIdentifiers(order.getIdentifier(), mappings);
+            super.mapIdentifiers(order.getIdentifier(), mappings, failForMissingMappings);
         }
         if (order.hasSubject()) {
-            super.mapReference(order.getSubject(), mappings);
+            super.mapReference(order.getSubject(), mappings, failForMissingMappings);
         }
         if (order.hasOrderer()) {
-            super.mapReference(order.getOrderer(), mappings);
+            super.mapReference(order.getOrderer(), mappings, failForMissingMappings);
         }
         if (order.hasEncounter()) {
-            super.mapReference(order.getEncounter(), mappings);
+            super.mapReference(order.getEncounter(), mappings, failForMissingMappings);
         }
         if (order.hasSupportingInformation()) {
-            super.mapReferences(order.getSupportingInformation(), mappings);
+            super.mapReferences(order.getSupportingInformation(), mappings, failForMissingMappings);
         }
         if (order.hasSpecimen()) {
-            super.mapReferences(order.getSpecimen(), mappings);
+            super.mapReferences(order.getSpecimen(), mappings, failForMissingMappings);
         }
         if (order.hasEvent()) {
             for (DiagnosticOrder.DiagnosticOrderEventComponent event: order.getEvent()) {
                 if (event.hasActor()) {
-                    super.mapReference(event.getActor(), mappings);
+                    super.mapReference(event.getActor(), mappings, failForMissingMappings);
                 }
             }
         }
         if (order.hasItem()) {
             for (DiagnosticOrder.DiagnosticOrderItemComponent item: order.getItem()) {
                 if (item.hasSpecimen()) {
-                    super.mapReferences(item.getSpecimen(), mappings);
+                    super.mapReferences(item.getSpecimen(), mappings, failForMissingMappings);
                 }
             }
         }

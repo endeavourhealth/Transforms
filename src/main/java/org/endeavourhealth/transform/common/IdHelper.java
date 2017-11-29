@@ -241,7 +241,7 @@ public class IdHelper {
         isNewResource = populateResourceIdMappings(serviceId, systemId, referenceValues, sourceIdReferenceValue, mappings);
 
         //now apply the references
-        idMapper.applyReferenceMappings(resource, mappings);
+        idMapper.applyReferenceMappings(resource, mappings, true);
 
         //and map the ID if we're doing that
         if (mapResourceId) {
@@ -403,8 +403,8 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, emisId);
     }*/
 
-    public static void applyReferenceMappings(Resource resource, Map<String, String> idMappings) throws Exception {
-        getIdMapper(resource).applyReferenceMappings(resource, idMappings);
+    public static void applyReferenceMappings(Resource resource, Map<String, String> idMappings, boolean failForMissingMappings) throws Exception {
+        getIdMapper(resource).applyReferenceMappings(resource, idMappings, failForMissingMappings);
     }
 
     /**

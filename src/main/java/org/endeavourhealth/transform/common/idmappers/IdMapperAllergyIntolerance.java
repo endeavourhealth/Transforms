@@ -28,19 +28,19 @@ public class IdMapperAllergyIntolerance extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         AllergyIntolerance allergyIntolerance = (AllergyIntolerance)resource;
 
-        super.mapCommonResourceFields(allergyIntolerance, mappings);
+        super.mapCommonResourceFields(allergyIntolerance, mappings, failForMissingMappings);
 
         if (allergyIntolerance.hasIdentifier()) {
-            super.mapIdentifiers(allergyIntolerance.getIdentifier(), mappings);
+            super.mapIdentifiers(allergyIntolerance.getIdentifier(), mappings, failForMissingMappings);
         }
         if (allergyIntolerance.hasRecorder()) {
-            super.mapReference(allergyIntolerance.getRecorder(), mappings);
+            super.mapReference(allergyIntolerance.getRecorder(), mappings, failForMissingMappings);
         }
         if (allergyIntolerance.hasPatient()) {
-            super.mapReference(allergyIntolerance.getPatient(), mappings);
+            super.mapReference(allergyIntolerance.getPatient(), mappings, failForMissingMappings);
         }
     }
 

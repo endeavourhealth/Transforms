@@ -52,28 +52,28 @@ public class IdMapperSpecimen extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Specimen specimen = (Specimen)resource;
-        super.mapCommonResourceFields(specimen, mappings);
+        super.mapCommonResourceFields(specimen, mappings, failForMissingMappings);
 
         if (specimen.hasIdentifier()) {
-            super.mapIdentifiers(specimen.getIdentifier(), mappings);
+            super.mapIdentifiers(specimen.getIdentifier(), mappings, failForMissingMappings);
         }
         if (specimen.hasParent()) {
-            super.mapReference(specimen.getSubject(), mappings);
+            super.mapReference(specimen.getSubject(), mappings, failForMissingMappings);
         }
         if (specimen.hasSubject()) {
-            super.mapReference(specimen.getSubject(), mappings);
+            super.mapReference(specimen.getSubject(), mappings, failForMissingMappings);
         }
         if (specimen.hasCollection()) {
             if (specimen.getCollection().hasCollector()) {
-                super.mapReference(specimen.getCollection().getCollector(), mappings);
+                super.mapReference(specimen.getCollection().getCollector(), mappings, failForMissingMappings);
             }
         }
         if (specimen.hasTreatment()) {
             for (Specimen.SpecimenTreatmentComponent treatment: specimen.getTreatment()) {
                 if (treatment.hasAdditive()) {
-                    super.mapReferences(treatment.getAdditive(), mappings);
+                    super.mapReferences(treatment.getAdditive(), mappings, failForMissingMappings);
                 }
             }
         }
@@ -81,7 +81,7 @@ public class IdMapperSpecimen extends BaseIdMapper {
             for (Specimen.SpecimenContainerComponent container: specimen.getContainer()) {
                 if (container.hasAdditive()) {
                     try {
-                        super.mapReference(container.getAdditiveReference(), mappings);
+                        super.mapReference(container.getAdditiveReference(), mappings, failForMissingMappings);
                     } catch (Exception ex) {
                         //do nothing if not a reference
                     }

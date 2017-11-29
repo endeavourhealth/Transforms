@@ -41,31 +41,31 @@ public class IdMapperProcedureRequest extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         ProcedureRequest procedureRequest = (ProcedureRequest)resource;
-        super.mapCommonResourceFields(procedureRequest, mappings);
+        super.mapCommonResourceFields(procedureRequest, mappings, failForMissingMappings);
 
         if (procedureRequest.hasIdentifier()) {
-            super.mapIdentifiers(procedureRequest.getIdentifier(), mappings);
+            super.mapIdentifiers(procedureRequest.getIdentifier(), mappings, failForMissingMappings);
         }
         if (procedureRequest.hasSubject()) {
-            super.mapReference(procedureRequest.getSubject(), mappings);
+            super.mapReference(procedureRequest.getSubject(), mappings, failForMissingMappings);
         }
         if (procedureRequest.hasReason()) {
             try {
-                super.mapReference(procedureRequest.getReasonReference(), mappings);
+                super.mapReference(procedureRequest.getReasonReference(), mappings, failForMissingMappings);
             } catch (Exception ex) {
                 //do nothing if isn't a reference
             }
         }
         if (procedureRequest.hasEncounter()) {
-            super.mapReference(procedureRequest.getEncounter(), mappings);
+            super.mapReference(procedureRequest.getEncounter(), mappings, failForMissingMappings);
         }
         if (procedureRequest.hasPerformer()) {
-            super.mapReference(procedureRequest.getPerformer(), mappings);
+            super.mapReference(procedureRequest.getPerformer(), mappings, failForMissingMappings);
         }
         if (procedureRequest.hasOrderer()) {
-            super.mapReference(procedureRequest.getOrderer(), mappings);
+            super.mapReference(procedureRequest.getOrderer(), mappings, failForMissingMappings);
         }
     }
 

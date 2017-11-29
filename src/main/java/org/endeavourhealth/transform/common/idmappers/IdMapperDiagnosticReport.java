@@ -52,39 +52,39 @@ public class IdMapperDiagnosticReport extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         DiagnosticReport report = (DiagnosticReport)resource;
 
-        super.mapCommonResourceFields(report, mappings);
+        super.mapCommonResourceFields(report, mappings, failForMissingMappings);
 
         if (report.hasIdentifier()) {
-            super.mapIdentifiers(report.getIdentifier(), mappings);
+            super.mapIdentifiers(report.getIdentifier(), mappings, failForMissingMappings);
         }
         if (report.hasSubject()) {
-            super.mapReference(report.getSubject(), mappings);
+            super.mapReference(report.getSubject(), mappings, failForMissingMappings);
         }
         if (report.hasEncounter()) {
-            super.mapReference(report.getEncounter(), mappings);
+            super.mapReference(report.getEncounter(), mappings, failForMissingMappings);
         }
         if (report.hasPerformer()) {
-            super.mapReference(report.getPerformer(), mappings);
+            super.mapReference(report.getPerformer(), mappings, failForMissingMappings);
         }
         if (report.hasRequest()) {
-            super.mapReferences(report.getRequest(), mappings);
+            super.mapReferences(report.getRequest(), mappings, failForMissingMappings);
         }
         if (report.hasSpecimen()) {
-            super.mapReferences(report.getSpecimen(), mappings);
+            super.mapReferences(report.getSpecimen(), mappings, failForMissingMappings);
         }
         if (report.hasResult()) {
-            super.mapReferences(report.getResult(), mappings);
+            super.mapReferences(report.getResult(), mappings, failForMissingMappings);
         }
         if (report.hasImagingStudy()) {
-            super.mapReferences(report.getImagingStudy(), mappings);
+            super.mapReferences(report.getImagingStudy(), mappings, failForMissingMappings);
         }
         if (report.hasImage()) {
             for (DiagnosticReport.DiagnosticReportImageComponent image: report.getImage()) {
                 if (image.hasLink()) {
-                    super.mapReference(image.getLink(), mappings);
+                    super.mapReference(image.getLink(), mappings, failForMissingMappings);
                 }
             }
         }

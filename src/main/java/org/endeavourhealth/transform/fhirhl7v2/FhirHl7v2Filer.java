@@ -112,7 +112,7 @@ public class FhirHl7v2Filer {
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
             ResourceType resourceType = ResourceType.valueOf(minorPatientResource.getResourceType());
-            String resourceReference = createResoourceReferenceValue(minorPatientResource);
+            String resourceReference = createResourceReferenceValue(minorPatientResource);
 
             //we only want to change resources that we've been given new IDs for (but make sure to skip
             //the patient resource, as we've manually added its ID into the map)
@@ -129,7 +129,7 @@ public class FhirHl7v2Filer {
             //copy and remap the resource, then save
             //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
             Resource fhirAmended = ParserPool.getInstance().parse(json);
-            IdHelper.applyReferenceMappings(fhirAmended, idMappings);
+            IdHelper.applyReferenceMappings(fhirAmended, idMappings, false);
 
             storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
@@ -214,16 +214,16 @@ public class FhirHl7v2Filer {
 
         Map<String, String> idMappings = createIdMappings(parameters);
 
+        //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
+        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);
+        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId);
+        idMappings.put(minorPatientReference, majorPatientReference);
+
         LOG.debug("Id mappings are");
         for (String key: idMappings.keySet()) {
             String value = idMappings.get(key);
             LOG.debug(key + " -> " + value);
         }
-
-        //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
-        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);
-        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId);
-        idMappings.put(minorPatientReference, majorPatientReference);
 
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
@@ -235,7 +235,7 @@ public class FhirHl7v2Filer {
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
-            String referenceValue = createResoourceReferenceValue(minorPatientResource);
+            String referenceValue = createResourceReferenceValue(minorPatientResource);
 
             if (!idMappings.containsKey(referenceValue)) {
                 throw new TransformException("Parameters doesn't contain new ID for " + referenceValue);
@@ -257,7 +257,7 @@ public class FhirHl7v2Filer {
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
-                    IdHelper.applyReferenceMappings(fhirAmended, idMappings);
+                    IdHelper.applyReferenceMappings(fhirAmended, idMappings, false);
                     storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
                 } catch (Exception ex) {
@@ -346,7 +346,7 @@ public class FhirHl7v2Filer {
         throw new TransformException("Failed to find parameter [" + name + "] in Parameters resource");
     }
 
-    private static String createResoourceReferenceValue(ResourceWrapper resourceByPatient) {
+    private static String createResourceReferenceValue(ResourceWrapper resourceByPatient) {
         UUID resourceId = resourceByPatient.getResourceId();
         String resourceTypeStr = resourceByPatient.getResourceType();
         ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);

@@ -24,15 +24,15 @@ public class IdMapperSlot extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Slot slot = (Slot)resource;
-        super.mapCommonResourceFields(slot, mappings);
+        super.mapCommonResourceFields(slot, mappings, failForMissingMappings);
 
         if (slot.hasIdentifier()) {
-            super.mapIdentifiers(slot.getIdentifier(), mappings);
+            super.mapIdentifiers(slot.getIdentifier(), mappings, failForMissingMappings);
         }
         if (slot.hasSchedule()) {
-            super.mapReference(slot.getSchedule(), mappings);
+            super.mapReference(slot.getSchedule(), mappings, failForMissingMappings);
         }
     }
 

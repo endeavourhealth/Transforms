@@ -32,21 +32,21 @@ public class IdMapperCondition extends BaseIdMapper {
     }
 
     @Override
-    public void applyReferenceMappings(Resource resource, Map<String, String> mappings) throws Exception {
+    public void applyReferenceMappings(Resource resource, Map<String, String> mappings, boolean failForMissingMappings) throws Exception {
         Condition condition = (Condition)resource;
-        super.mapCommonResourceFields(condition, mappings);
+        super.mapCommonResourceFields(condition, mappings, failForMissingMappings);
 
         if (condition.hasIdentifier()) {
-            super.mapIdentifiers(condition.getIdentifier(), mappings);
+            super.mapIdentifiers(condition.getIdentifier(), mappings, failForMissingMappings);
         }
         if (condition.hasPatient()) {
-            super.mapReference(condition.getPatient(), mappings);
+            super.mapReference(condition.getPatient(), mappings, failForMissingMappings);
         }
         if (condition.hasEncounter()) {
-            super.mapReference(condition.getEncounter(), mappings);
+            super.mapReference(condition.getEncounter(), mappings, failForMissingMappings);
         }
         if (condition.hasAsserter()) {
-            super.mapReference(condition.getAsserter(), mappings);
+            super.mapReference(condition.getAsserter(), mappings, failForMissingMappings);
         }
     }
 
