@@ -191,6 +191,7 @@ public abstract class VisionCsvToFhirTransformer {
         VisionCsvHelper csvHelper = new VisionCsvHelper();
 
         //this transform does not create resources themselves, but cache data that the subsequent ones rely on
+        JournalProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //before getting onto the files that actually create FHIR resources, we need to

@@ -696,25 +696,6 @@ public class JournalTransformer {
             fhirObservation.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
         }
 
-        //TODO:// Event links setup in Pre-Transformer if they exist?
-//        List<String> childObservations = csvHelper.getAndRemoveObservationParentRelationships(observationID, patientID);
-//        if (childObservations != null) {
-//            List<Reference> references = ReferenceHelper.createReferences(childObservations);
-//            for (Reference reference : references) {
-//                org.hl7.fhir.instance.model.Observation.ObservationRelatedComponent fhirRelation = fhirObservation.addRelated();
-//                fhirRelation.setType(org.hl7.fhir.instance.model.Observation.ObservationRelationshipType.HASMEMBER);
-//                fhirRelation.setTarget(reference);
-//            }
-//        }
-//
-//        //if we have BP readings from child observations, include them in the components for this observation too
-//        List<org.hl7.fhir.instance.model.Observation.ObservationComponentComponent> observationComponents = csvHelper.findBpComponents(observationID, patientID);
-//        if (observationComponents != null) {
-//            for (org.hl7.fhir.instance.model.Observation.ObservationComponentComponent component: observationComponents) {
-//                fhirObservation.getComponent().add(component);
-//            }
-//        }
-
         //the document, entered date and person are stored in extensions
         addDocumentExtension(fhirObservation, parser);
         addRecordedByExtension(fhirObservation, parser, csvHelper);
@@ -899,7 +880,7 @@ public class JournalTransformer {
         }
     }
 
-    //The consultation encounter link value is pre-fixed with E (check example data)
+    //The consultation encounter link value is pre-fixed with E
     public static String extractEncounterLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("|");
@@ -925,17 +906,21 @@ public class JournalTransformer {
         return null;
     }
 
-    //TODO: how determine the link is a problem, i.e. this is a medication or observation resource with a linked problem?
-    public static String extractProblemLinkID(String links) {
+    //problem links are NOT pre-fixed with an E and exist in the problem observation cache
+    public static String extractProblemLinkIDs(String links, String patientID, VisionCsvHelper csvHelper) {
+        String problemLinkIDs = "";
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("|");
-            for (String link : linkIDs) {
-                if (link.startsWith("P")) {
-                    return link.replace("P", "");
+            for (String linkID : linkIDs) {
+                if (!linkID.startsWith("E")) {
+                    //check if link is an actual problem previously cached in Problem Pre-transformer
+                    if (csvHelper.isProblemObservationGuid(patientID, linkID)) {
+                        problemLinkIDs = problemLinkIDs.concat(linkID + "|");
+                    }
                 }
             }
         }
-        return null;
+        return problemLinkIDs;
     }
 
     private static void assertValueEmpty(Resource destinationResource, Journal parser) throws Exception {

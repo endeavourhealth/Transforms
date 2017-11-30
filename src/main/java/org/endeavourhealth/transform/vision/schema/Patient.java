@@ -57,6 +57,9 @@ public class Patient extends AbstractCsvParser {
     }
 
     public String getPatientID() {
+        return super.getString("PID");
+    }
+    public String getPatientRef() {
         return super.getString("REFERENCE");
     }
     public String getOrganisationID() { return super.getString("SERVICE_ID"); }

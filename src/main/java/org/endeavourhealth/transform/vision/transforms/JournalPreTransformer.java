@@ -49,20 +49,19 @@ public class JournalPreTransformer {
         String patientID = parser.getPatientID();
         String readCode = parser.getReadCode();
 
-        //TODO:// Are parent observation supported in Vision?
-
-        //cache the fact an observation is a problem
-        if (resourceType == ResourceType.Condition) {
-            csvHelper.cacheProblemObservationGuid(patientID, observationID, readCode);
-        } else {
-            //if it is not a problem, cache the observation linked problem
-            String problemID = extractProblemLinkID (parser.getLinks());
-            if (!Strings.isNullOrEmpty(problemID)) {
-                //if this record is linked to a problem, store this relationship in the helper
-                csvHelper.cacheProblemRelationship(problemID,
-                        patientID,
-                        observationID,
-                        resourceType);
+        //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
+        if (resourceType != ResourceType.Condition) {
+            //extract actual problem links
+            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks(), patientID, csvHelper);
+            if (!Strings.isNullOrEmpty(problemLinkIDs)) {
+                String[] linkIDs = problemLinkIDs.split("|");
+                for (String problemID : linkIDs) {
+                    //store the problem/observation relationship in the helper
+                    csvHelper.cacheProblemRelationship(problemID,
+                            patientID,
+                            observationID,
+                            resourceType);
+                }
             }
         }
 

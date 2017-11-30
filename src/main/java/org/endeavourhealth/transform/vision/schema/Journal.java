@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.vision.schema;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
@@ -75,7 +76,12 @@ public class Journal extends AbstractCsvParser {
         return super.getDate("RECORDED_DATE");
     }
     public String getReadCode() {
-        return super.getString("CODE");
+        String readCode = super.getString("CODE");
+        if (!Strings.isNullOrEmpty(readCode)) {
+            if (readCode.length() > 5)      //trim the Read code to 5 bytes
+                readCode = readCode.substring(0,5);
+        }
+        return readCode;
     }
     public String getSnomedCode() {
         return super.getString("SNOMED_CODE");
@@ -89,10 +95,10 @@ public class Journal extends AbstractCsvParser {
     }
 
     public String getProblemEpisodicity() {
-        return super.getString("EPISODE");  //if CODE = Diagnosis or Problem
+        return super.getString("EPISODE");      //if CODE = Diagnosis or Problem
     }
     public String getDrugPrescriptionType() {
-        return super.getString("EPISODE");  //if CODE = Prescribeable item
+        return super.getString("EPISODE");      //if CODE = Prescribeable item
     }
 
     public String getDrugDMDCode() { return super.getString("DMD_CODE"); }
