@@ -429,9 +429,9 @@ public class FhirResourceFiler {
             for (Resource resource: resources) {
 
                 try {
-                    boolean isNewResource = false;
+                    boolean isDefinitelyNewResource = false;
                     if (mapIds) {
-                        isNewResource = IdHelper.mapIds(serviceId, systemId, resource);
+                        isDefinitelyNewResource = IdHelper.mapIds(serviceId, systemId, resource);
                     }
 
                     //if we've not set the EDS patient ID on our batch yet, then do so now
@@ -451,7 +451,7 @@ public class FhirResourceFiler {
                     if (isDelete) {
                         storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
                     } else {
-                        storageService.exchangeBatchUpdate(exchangeId, batchUuid, resource, isNewResource);
+                        storageService.exchangeBatchUpdate(exchangeId, batchUuid, resource, isDefinitelyNewResource);
                     }
 
                 } catch (Exception ex) {
