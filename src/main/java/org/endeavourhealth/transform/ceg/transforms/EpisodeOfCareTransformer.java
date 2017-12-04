@@ -86,7 +86,9 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         String gender = fhirPatient.getGender().getDisplay();
         model.setGender(gender);
 
-        Coding regTypeCoding = (Coding)findExtension(fhirPatient, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
+        //the registration type is a property of a patient's stay at an organisation, so look in resource instead
+        Coding regTypeCoding = (Coding)findExtension(fhirEpisode, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
+        //Coding regTypeCoding = (Coding)findExtension(fhirPatient, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
         if (regTypeCoding != null) {
             String regTypeDesc = regTypeCoding.getDisplay();
             model.setPatientStatus(regTypeDesc);

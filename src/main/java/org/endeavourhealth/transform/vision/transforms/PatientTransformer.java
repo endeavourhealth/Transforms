@@ -115,7 +115,9 @@ public class PatientTransformer {
         fhirPatient.addAddress(fhirAddress);
 
         RegistrationType registrationType = convertRegistrationType(parser.getPatientTypeCode());
-        fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
+        //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
+        fhirEpisode.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
+        //fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
 
         //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
         //for the patient's carer at a specific organisation. That being the case, we store the local carer

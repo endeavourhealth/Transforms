@@ -7,7 +7,6 @@ import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -190,7 +189,9 @@ public class PatientTransformer {
         }
 
         RegistrationType registrationType = convertRegistrationType(parser.getPatientTypedescription(), parser.getDummyType());
-        fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
+        //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
+        fhirEpisode.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
+        //fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, CodingHelper.createCoding(registrationType)));
 
         //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
         //for the patient's carer at a specific organisation. That being the case, we store the local carer

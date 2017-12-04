@@ -45,16 +45,21 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             usualGpPractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        //the registration type is a field on the Patient resource, even though it should really be part of the episode
-        Patient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
-        if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
-
-            Extension extension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
-            if (extension != null) {
-                Coding coding = (Coding)extension.getValue();
-                RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
-                registrationTypeId = new Integer(fhirRegistrationType.ordinal());
+        //registration type has moved to the EpisodeOfCare resource, although there will be some old instances (for now)
+        //where the extension is on the Patient resource
+        Extension extension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
+        if (extension == null) {
+            //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
+            Patient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
+            if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
+                extension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
             }
+        }
+
+        if (extension != null) {
+            Coding coding = (Coding)extension.getValue();
+            RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
+            registrationTypeId = new Integer(fhirRegistrationType.ordinal());
         }
 
         /*if (fhirEpisode.hasManagingOrganization()) {

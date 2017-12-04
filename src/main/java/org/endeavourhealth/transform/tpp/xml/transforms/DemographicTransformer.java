@@ -4,8 +4,8 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.tpp.xml.schema.*;
 import org.endeavourhealth.transform.tpp.xml.schema.Address;
+import org.endeavourhealth.transform.tpp.xml.schema.*;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Patient;
 
@@ -41,20 +41,22 @@ public class DemographicTransformer {
         transformAddress(fhirPatient, tppDemographics);
         transformCommunications(fhirPatient, tppDemographics);
         transformUsualGp(fhirPatient, tppDemographics, fhirResources);
-        transformCareDates(fhirPatient, tppDemographics, fhirResources);
-        transformRegistrationType(fhirPatient, tppDemographics);
+        EpisodeOfCare fhirEpisode = transformCareDates(fhirPatient, tppDemographics, fhirResources);
+        transformRegistrationType(fhirEpisode, tppDemographics);
     }
 
-    private static void transformRegistrationType(Patient fhirPatient, Demographics tppDemographics) {
+    private static void transformRegistrationType(EpisodeOfCare fhirEpisode, Demographics tppDemographics) {
 
         //TODO - need to get proper object type for registrationType
         String registrationType = tppDemographics.getRegistrationType();
 
         Extension ext = ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, new StringType(registrationType));
-        fhirPatient.addExtension(ext);
+        //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
+        fhirEpisode.addExtension(ext);
+        //fhirPatient.addExtension(ext);
     }
 
-    private static void transformCareDates(Patient fhirPatient, Demographics tppDemographics, List<Resource> fhirResources) throws TransformException {
+    private static EpisodeOfCare transformCareDates(Patient fhirPatient, Demographics tppDemographics, List<Resource> fhirResources) throws TransformException {
 
         XMLGregorianCalendar startDate = tppDemographics.getCareStartDate();
         XMLGregorianCalendar endDate = tppDemographics.getCareEndDate();
@@ -87,6 +89,8 @@ public class DemographicTransformer {
         fhirEpisode.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientId));
 
         fhirEpisode.setManagingOrganization(FhirHelper.findAndCreateReference(Organization.class, fhirResources));
+
+        return fhirEpisode;
     }
 
     private static void transformUsualGp(Patient fhirPatient, Demographics tppDemographics, List<Resource> fhirResources) throws TransformException {
