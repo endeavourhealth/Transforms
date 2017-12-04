@@ -139,7 +139,7 @@ public class JournalPreTransformer {
         return null;
     }
 
-    //Vision use Ethnic groups so map from code
+    //Vision use Ethnic groups so map from Read code
     private static EthnicCategory findEthnicityCode(String readCode) {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;

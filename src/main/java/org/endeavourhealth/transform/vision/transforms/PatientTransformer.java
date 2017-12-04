@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -161,19 +160,10 @@ public class PatientTransformer {
         fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.HOME, email);
         fhirPatient.addTelecom(fhirContact);
 
-        String ethnicityCSV = parser.getEthnicOrigin();
-        if (!Strings.isNullOrEmpty(ethnicityCSV)) {
-            EthnicCategory ethnicCategory = EthnicCategory.valueOf(ethnicityCSV);
-            if (ethnicCategory != null) {
-                CodeableConcept fhirEthnicity = CodeableConceptHelper.createCodeableConcept(ethnicCategory);
-                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
-            }
-        } else {
-            //Nothing in patient record, try coded item check from pre-transformer
-            CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientID);
-            if (fhirEthnicity != null) {
-                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
-            }
+        //get Ethnicity from Journal pre-transformer
+        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientID);
+        if (fhirEthnicity != null) {
+            fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
         }
 
         String organisationID = parser.getOrganisationID();
