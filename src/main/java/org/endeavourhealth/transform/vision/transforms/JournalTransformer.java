@@ -893,7 +893,7 @@ public class JournalTransformer {
         return null;
     }
 
-    // TODO: if it is a medication issue, how determine linked drug statement?
+    // TODO: if it is a medication issue, how determine linked drug statement? - Asked Vision
     public static String extractDrugRecordLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("|");

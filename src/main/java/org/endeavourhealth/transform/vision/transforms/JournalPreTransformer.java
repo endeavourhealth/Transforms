@@ -85,8 +85,8 @@ public class JournalPreTransformer {
             }
         }
 
-        //try to get Ethicity from Journal
-        if (readCode.startsWith("9i")) {
+        //try to get Ethnicity from Journal
+        if (readCode.startsWith("9S")) {
             Date effectiveDate = parser.getEffectiveDateTime();
             String effectiveDatePrecision = "YMD";
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
@@ -139,43 +139,44 @@ public class JournalPreTransformer {
         return null;
     }
 
+    //Vision use Ethnic groups so map from code
     private static EthnicCategory findEthnicityCode(String readCode) {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
-        if (readCode.startsWith("9i0")) {
+        if (readCode.startsWith("9S10")) {
             return EthnicCategory.WHITE_BRITISH;
-        } else if (readCode.startsWith("9i1")) {
+        } else if (readCode.startsWith("9S11")) {
             return EthnicCategory.WHITE_IRISH;
-        } else if (readCode.startsWith("9i2")) {
+        } else if (readCode.startsWith("9S12")) {
             return EthnicCategory.OTHER_WHITE;
-        } else if (readCode.startsWith("9i3")) {
+        } else if (readCode.startsWith("9SB5")) {
             return EthnicCategory.MIXED_CARIBBEAN;
-        } else if (readCode.startsWith("9i4")) {
+        } else if (readCode.startsWith("9SB6")) {
             return EthnicCategory.MIXED_AFRICAN;
-        } else if (readCode.startsWith("9i5")) {
+        } else if (readCode.startsWith("9SB2")) {
             return EthnicCategory.MIXED_ASIAN;
-        } else if (readCode.startsWith("9i6")) {
+        } else if (readCode.startsWith("9SB.")) {
             return EthnicCategory.OTHER_MIXED;
-        } else if (readCode.startsWith("9i7")) {
+        } else if (readCode.startsWith("9S6")) {
             return EthnicCategory.ASIAN_INDIAN;
-        } else if (readCode.startsWith("9i8")) {
+        } else if (readCode.startsWith("9S7")) {
             return EthnicCategory.ASIAN_PAKISTANI;
-        } else if (readCode.startsWith("9i9")) {
+        } else if (readCode.startsWith("9S8")) {
             return EthnicCategory.ASIAN_BANGLADESHI;
-        } else if (readCode.startsWith("9iA")) {
+        } else if (readCode.startsWith("9SH")) {
             return EthnicCategory.OTHER_ASIAN;
-        } else if (readCode.startsWith("9iB")) {
+        } else if (readCode.startsWith("9S2")) {
             return EthnicCategory.BLACK_CARIBBEAN;
-        } else if (readCode.startsWith("9iC")) {
+        } else if (readCode.startsWith("9S3")) {
             return EthnicCategory.BLACK_AFRICAN;
-        } else if (readCode.startsWith("9iD")) {
+        } else if (readCode.startsWith("9S4")) {
             return EthnicCategory.OTHER_BLACK;
-        } else if (readCode.startsWith("9iE")) {
+        } else if (readCode.startsWith("9S9")) {
             return EthnicCategory.CHINESE;
-        } else if (readCode.startsWith("9iF")) {
+        } else if (readCode.startsWith("9SJ")) {
             return EthnicCategory.OTHER;
-        } else if (readCode.startsWith("9iG")) {
+        } else if (readCode.startsWith("9SE")) {
             return EthnicCategory.NOT_STATED;
         } else {
             return null;

@@ -163,7 +163,7 @@ public class PatientTransformer {
 
         String ethnicityCSV = parser.getEthnicOrigin();
         if (!Strings.isNullOrEmpty(ethnicityCSV)) {
-            EthnicCategory ethnicCategory = EthnicCategory.valueOf(ethnicityCSV);  //TODO: check ethnicity types mapped in Vision?
+            EthnicCategory ethnicCategory = EthnicCategory.valueOf(ethnicityCSV);
             if (ethnicCategory != null) {
                 CodeableConcept fhirEthnicity = CodeableConceptHelper.createCodeableConcept(ethnicCategory);
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity));
