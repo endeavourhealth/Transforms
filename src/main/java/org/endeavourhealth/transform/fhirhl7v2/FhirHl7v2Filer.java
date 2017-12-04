@@ -129,7 +129,7 @@ public class FhirHl7v2Filer {
             //copy and remap the resource, then save
             //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
             Resource fhirAmended = ParserPool.getInstance().parse(json);
-            IdHelper.applyReferenceMappings(fhirAmended, idMappings, false);
+            IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
 
             storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
@@ -257,7 +257,7 @@ public class FhirHl7v2Filer {
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
-                    IdHelper.applyReferenceMappings(fhirAmended, idMappings, false);
+                    IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
                     storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
 
                 } catch (Exception ex) {
@@ -265,7 +265,7 @@ public class FhirHl7v2Filer {
                 }
             }
 
-            //finally delete the resource from the old patient
+            //finally delete the resource from the old patient - do the delete AFTER, so any failure on the insert happens before we do the delete
             storageService.exchangeBatchDelete(exchangeId, minorBatchId, fhirOriginal);
 
             LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());

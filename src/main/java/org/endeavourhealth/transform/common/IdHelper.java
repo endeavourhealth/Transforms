@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common;
 
+import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
@@ -403,8 +404,22 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, emisId);
     }*/
 
-    public static void applyReferenceMappings(Resource resource, Map<String, String> idMappings, boolean failForMissingMappings) throws Exception {
+    public static void applyExternalReferenceMappings(Resource resource, Map<String, String> idMappings, boolean failForMissingMappings) throws Exception {
         getIdMapper(resource).applyReferenceMappings(resource, idMappings, failForMissingMappings);
+
+        //the ID mapper classes don't do the resource ID itself, so this must be done manually
+        Reference sourceReference = ReferenceHelper.createReferenceExternal(resource);
+        String sourceIdReferenceValue = sourceReference.getReference();
+        String edsIdReferenceValue = idMappings.get(sourceIdReferenceValue);
+
+        if (!Strings.isNullOrEmpty(edsIdReferenceValue)) {
+            Reference edsReference = new Reference().setReference(edsIdReferenceValue);
+            String edsId = ReferenceHelper.getReferenceId(edsReference);
+            resource.setId(edsId);
+
+        } else if (failForMissingMappings) {
+            throw new Exception("Failed to find mapping for reference " + sourceIdReferenceValue);
+        }
     }
 
     /**
