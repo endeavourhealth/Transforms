@@ -138,12 +138,18 @@ public abstract class VisionCsvToFhirTransformer {
 
         for (File file: dir.listFiles()) {
             if (file.isFile()
+                    && !ignoreKnownFile(file)
                     && !expectedFiles.contains(file)
                     && !Files.getFileExtension(file.getAbsolutePath()).equalsIgnoreCase("csv")) {
 
                 throw new FileFormatException(file, "Unexpected file " + file + " in Vision CSV extract");
             }
         }
+    }
+
+    // these files comes with the Vision extract but we currently do not transform, so ignore them in the unexpected file check
+    public static boolean ignoreKnownFile (File file) {
+        return file.getName().contains("active_user_data") || file.getName().contains("patient_check_sum_data");
     }
 
     public static void findFileAndOpenParser(Class parserCls, File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
@@ -159,9 +165,9 @@ public abstract class VisionCsvToFhirTransformer {
                 continue;
             }
 
-            //Vision files are format:  FULL_GMS123_encounter_data_extract-2014-09-23_165206.csv
+            //Vision files are format:  FULL_33333_encounter_data_extract-2017-09-23-165206.csv
             String[] toks = fName.split("_");
-            if (toks.length != 6) {
+            if (toks.length != 5) {
                 continue;
             }
 
