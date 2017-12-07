@@ -29,7 +29,7 @@ public abstract class VisionCsvToFhirTransformer {
 
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
     public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180;  //. DEFAULT;
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
