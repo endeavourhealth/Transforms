@@ -162,17 +162,20 @@ public abstract class VisionCsvToFhirTransformer {
             //we're only interested in CSV files
             String extension = Files.getFileExtension(fName);
             if (!extension.equalsIgnoreCase("csv")) {
+                LOG.info("File extension: "+fName+" found");
                 continue;
             }
 
             //Vision files are format:  FULL_33333_encounter_data_extract-2017-09-23-165206.csv
             String[] toks = fName.split("_");
             if (toks.length != 5) {
+                LOG.info("File name underscore length not 5: "+toks.length+" for filename: "+fName);
                 continue;
             }
 
             //No file matching the class, i.e. Encounter
             if (!toks[2].equalsIgnoreCase(name)) {
+                LOG.info("File name not matching expected ("+name+") in filename: "+fName);
                 continue;
             }
 
