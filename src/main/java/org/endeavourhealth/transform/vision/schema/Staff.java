@@ -8,7 +8,17 @@ import java.io.File;
 public class Staff extends AbstractCsvParser {
 
     public Staff(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT, VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, VisionCsvToFhirTransformer.TIME_FORMAT);
+        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+                "ID",
+                "SURNAME",
+                "FORENAME",
+                "TITLE",
+                "SEX",
+                "HCP",
+                "HCP_TYPE",
+                "SERVICE_ID"),
+                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

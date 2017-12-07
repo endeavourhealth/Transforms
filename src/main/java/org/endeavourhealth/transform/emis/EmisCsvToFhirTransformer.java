@@ -61,7 +61,7 @@ public abstract class EmisCsvToFhirTransformer {
 
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
     public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
     private static Boolean cachedAllowDisabledOrganisations = null;
     private static Boolean cachedAllowMissingCodes = null;

@@ -11,7 +11,51 @@ import java.util.Date;
 public class Journal extends AbstractCsvParser {
 
     public Journal(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT, VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, VisionCsvToFhirTransformer.TIME_FORMAT);
+        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+                "PID",
+                "ID",
+                "DATE",
+                "RECORDED_DATE",
+                "CODE",
+                "SNOMED_CODE",
+                "BNF_CODE",
+                "HCP",
+                "HCP_TYPE",
+                "GMS",
+                "EPISODE",
+                "TEXT",
+                "RUBRIC",
+                "DRUG_FORM",
+                "DRUG_STRENGTH",
+                "DRUG_PACKSIZE",
+                "DMD_CODE",
+                "IMMS_STATUS",
+                "IMMS_COMPOUND",
+                "IMMS_SOURCE",
+                "IMMS_BATCH",
+                "IMMS_REASON",
+                "IMMS_METHOD",
+                "IMMS_SITE",
+                "ENTITY",
+                "VALUE1_NAME",
+                "VALUE1",
+                "VALUE1_UNITS",
+                "VALUE2_NAME",
+                "VALUE2",
+                "VALUE2_UNITS",
+                "END_DATE",
+                "TIME",
+                "CONTEXT",
+                "CERTAINTY",
+                "SEVERITY",
+                "LINKS",
+                "LINKS_EXT",
+                "SERVICE_ID",
+                "ACTION",
+                "SUBSET",
+                "DOCUMENT_ID"),
+                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -30,18 +74,18 @@ public class Journal extends AbstractCsvParser {
                 "EPISODE",
                 "TEXT",
                 "RUBRIC",
-                "DRUG_FORM",        //////
-                "DRUG_STRENGTH",    /////
-                "DRUG_PACKSIZE",    /////
+                "DRUG_FORM",
+                "DRUG_STRENGTH",
+                "DRUG_PACKSIZE",
                 "DMD_CODE",
-                "IMMS_STATUS",      ////////
-                "IMMS_COMPOUND",    ////////
-                "IMMS_SOURCE",      ////////
-                "IMMS_BATCH",       ////////
-                "IMMS_REASON",      ////////
-                "IMMS_METHOD",      ////////
-                "IMMS_SITE",        ////////
-                "ENTITY",           ////////
+                "IMMS_STATUS",
+                "IMMS_COMPOUND",
+                "IMMS_SOURCE",
+                "IMMS_BATCH",
+                "IMMS_REASON",
+                "IMMS_METHOD",
+                "IMMS_SITE",
+                "ENTITY",
                 "VALUE1_NAME",
                 "VALUE1",
                 "VALUE1_UNITS",
@@ -53,7 +97,7 @@ public class Journal extends AbstractCsvParser {
                 "CONTEXT",
                 "CERTAINTY",
                 "SEVERITY",
-                "LINKS",            ////////
+                "LINKS",
                 "LINKS_EXT",
                 "SERVICE_ID",
                 "ACTION",

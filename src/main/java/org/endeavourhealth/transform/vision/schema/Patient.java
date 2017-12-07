@@ -10,7 +10,44 @@ import java.util.Date;
 public class Patient extends AbstractCsvParser {
 
     public Patient(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT, VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, VisionCsvToFhirTransformer.TIME_FORMAT);
+        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+                "PID",
+                "REFERENCE",
+                "DATE_OF_BIRTH",
+                "SEX",
+                "POSTCODE",
+                "MARITAL_STATUS",
+                "GP",
+                "GP_USUAL",
+                "ACTIVE",
+                "REGISTERED_DATE",
+                "REMOVED_DATE",
+                "HA",
+                "PCG",
+                "SURGERY",
+                "MILEAGE",
+                "DISPENSING",
+                "ETHNIC",
+                "DATE_OF_DEATH",
+                "PRACTICE",
+                "SURNAME",
+                "FORENAME",
+                "TITLE",
+                "NHS_NUMBER",
+                "ADDRESS",
+                "ADDRESS_1",
+                "ADDRESS_2",
+                "ADDRESS_3",
+                "ADDRESS_4",
+                "ADDRESS_5",
+                "PHONE_NUMBER",
+                "MOBILE_NUMBER",
+                "EMAIL",
+                "PRACT_NUMBER",
+                "SERVICE_ID",
+                "ACTION"),
+                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

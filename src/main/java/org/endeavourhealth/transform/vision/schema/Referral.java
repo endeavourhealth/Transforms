@@ -10,7 +10,24 @@ import java.util.Date;
 public class Referral extends AbstractCsvParser {
 
     public Referral(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT, VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, VisionCsvToFhirTransformer.TIME_FORMAT);
+        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+                "PID",
+                "ID",
+                "DATE",
+                "HCP",
+                "HCP_TYPE",
+                "TO_HCP",
+                "SPECIALTY",
+                "UNIT",
+                "TYPE",
+                "CONTRACTOR",
+                "CONTRACT",
+                "ACTION_DATE",
+                "LINKS",
+                "SERVICE_ID",
+                "ACTION"),
+                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
 
