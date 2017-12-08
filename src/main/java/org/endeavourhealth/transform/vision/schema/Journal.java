@@ -149,6 +149,7 @@ public class Journal extends AbstractCsvParser {
     }
 
     public String getDrugDMDCode() { return super.getString("DMD_CODE"); }
+    public String getDrugPrep() { return super.getString("DRUG_PACKSIZE"); }   //this is ml, tablet, capsule in test data
 
     public String getAssociatedText() {
         return super.getString("TEXT");
@@ -165,11 +166,13 @@ public class Journal extends AbstractCsvParser {
     }
 
     public Double getValue2() {
-        return super.getDouble("VALUE2");   //if drug, then dosage, else second value for BP or special case
+        return super.getDouble("VALUE2");   //second value for BP or special case
     }
     public String getValue2NumericUnit() {
         return super.getString("VALUE2_UNITS");
     }
+
+
 
     public String getImmsStatus() { return super.getString("IMMS_STATUS"); }
     public String getImmsCompound() { return super.getString("IMMS_COMPOUND"); }

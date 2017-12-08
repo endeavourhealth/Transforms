@@ -210,7 +210,7 @@ public class JournalTransformer {
             L = Allergy
         */
         String readCode = parser.getReadCode();
-        if (Read2.isProcedure(readCode)) {
+        if (Read2.isProcedure(readCode) && !Read2.isBPCode(readCode)) {
             return ResourceType.Procedure;
         } else if (Read2.isDisorder(readCode) || subset.equalsIgnoreCase("P")) {
             return ResourceType.Condition;
@@ -268,13 +268,13 @@ public class JournalTransformer {
         fhirMedicationStatement.setMedication(codeableConcept);
 
         Double quantity = parser.getValue1();
-        String quantityUnit = parser.getValue1NumericUnit();
+        String quantityUnit = parser.getDrugPrep();
         Quantity fhirQuantity = new Quantity();
         fhirQuantity.setValue(BigDecimal.valueOf(quantity.doubleValue()));
         fhirQuantity.setUnit(quantityUnit);
         fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_QUANTITY, fhirQuantity));
 
-        String dose = parser.getValue2().toString();
+        String dose = parser.getAssociatedText();
         MedicationStatement.MedicationStatementDosageComponent fhirDose = fhirMedicationStatement.addDosage();
         fhirDose.setText(dose);
 
@@ -353,12 +353,12 @@ public class JournalTransformer {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
         fhirMedicationOrder.setMedication(codeableConcept);
 
-        String dose = parser.getValue2().toString();
+        String dose = parser.getAssociatedText();
         MedicationOrder.MedicationOrderDosageInstructionComponent fhirDose = fhirMedicationOrder.addDosageInstruction();
         fhirDose.setText(dose);
 
         Double quantity = parser.getValue1();
-        String quantityUnit = parser.getValue1NumericUnit();
+        String quantityUnit = parser.getDrugPrep();
         //Integer courseDuration = parser.getCourseDurationInDays();
         MedicationOrder.MedicationOrderDispenseRequestComponent fhirDispenseRequest = new MedicationOrder.MedicationOrderDispenseRequestComponent();
         fhirDispenseRequest.setQuantity(QuantityHelper.createSimpleQuantity(quantity, quantityUnit));

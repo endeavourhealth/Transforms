@@ -65,9 +65,9 @@ public abstract class TerminologyService {
             return;
         }
 
+        Coding coding = codingList.get(0);
+        String system = coding.getSystem();
         try {
-            Coding coding = codingList.get(0);
-            String system = coding.getSystem();
             if (system.equals(FhirUri.CODE_SYSTEM_SNOMED_CT)) {
                 //no mapping required unless no display term present
                 if (Strings.isNullOrEmpty(coding.getDisplay())) {
@@ -91,7 +91,7 @@ public abstract class TerminologyService {
             }
         }
         catch (Exception e) {
-            throw new TransformException("Code Translation Exception", e);
+            throw new TransformException("Code Translation Exception for code [" + coding.getCode() +"]" , e);
         }
     }
 }
