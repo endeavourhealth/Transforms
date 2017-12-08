@@ -7,6 +7,8 @@ import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 import java.io.File;
 import java.util.Date;
 
+import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
+
 public class Referral extends AbstractCsvParser {
 
     public Referral(String version, File f, boolean openParser) throws Exception {
@@ -65,7 +67,7 @@ public class Referral extends AbstractCsvParser {
         return super.getDate("ACTION_DATE");
     }
     public String getReferralUserID() {
-        return super.getString("HCP");
+        return cleanUserId(super.getString("HCP"));
     }
     public String getReferralUserType() {
         return super.getString("HCP_TYPE");

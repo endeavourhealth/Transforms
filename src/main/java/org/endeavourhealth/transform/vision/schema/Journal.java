@@ -8,6 +8,8 @@ import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 import java.io.File;
 import java.util.Date;
 
+import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
+
 public class Journal extends AbstractCsvParser {
 
     public Journal(String version, File f, boolean openParser) throws Exception {
@@ -136,19 +138,7 @@ public class Journal extends AbstractCsvParser {
     }
 
     public String getClinicianUserID() {
-        String hcp = super.getString("HCP");
-        // tidy up data into a valid Id value
-        if (!Strings.isNullOrEmpty(hcp)) {
-            if (hcp.contains(":STAFF:")) {
-                hcp = hcp.replace(":","").replace("STAFF","");
-                return hcp;
-            }
-            if (hcp.contains("EXT_STAFF")) {
-                hcp = hcp.substring(0,hcp.indexOf(","));
-                hcp = hcp.replace(":","").replace("EXT_STAFF","").replace(",", "");
-            }
-        }
-        return hcp;
+        return cleanUserId(super.getString("HCP"));
     }
 
     public String getProblemEpisodicity() {

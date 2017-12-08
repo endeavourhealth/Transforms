@@ -299,4 +299,20 @@ public abstract class VisionCsvToFhirTransformer {
         return recordNumbers;
     }
 
+    public static String cleanUserId(String data) {
+        if (!Strings.isNullOrEmpty(data)) {
+            if (data.contains(":STAFF:")) {
+                data = data.replace(":","").replace("STAFF","");
+                LOG.info("Cleansed user Id: "+data);
+                return data;
+            }
+            if (data.contains(":EXT_STAFF:")) {
+                data = data.substring(0,data.indexOf(","));
+                data = data.replace(":","").replace("EXT_STAFF","").replace(",", "");
+                LOG.info("Cleansed user Id: "+data);
+                return data;
+            }
+        }
+        return data;
+    }
 }

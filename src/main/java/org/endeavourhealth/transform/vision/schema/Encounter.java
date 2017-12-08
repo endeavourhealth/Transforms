@@ -7,6 +7,8 @@ import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 import java.io.File;
 import java.util.Date;
 
+import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
+
 public class Encounter extends AbstractCsvParser {
 
     public Encounter(String version, File f, boolean openParser) throws Exception {
@@ -72,7 +74,7 @@ public class Encounter extends AbstractCsvParser {
     }
 
     public String getClinicianUserID() {
-        return super.getString("HCP");
+        return cleanUserId(super.getString("HCP"));
     }
 
     public String getConsultationSessionTypeCode() { return super.getString("SESSION"); }
