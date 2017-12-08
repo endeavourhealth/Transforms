@@ -134,8 +134,21 @@ public class Journal extends AbstractCsvParser {
     public String getBNFCode() {
         return super.getString("BNF_CODE");
     }
+
     public String getClinicianUserID() {
-        return super.getString("HCP");
+        String hcp = super.getString("HCP");
+        // tidy up data into a valid Id value
+        if (!Strings.isNullOrEmpty(hcp)) {
+            if (hcp.contains(":STAFF:")) {
+                hcp = hcp.replace(":","").replace("STAFF","");
+                return hcp;
+            }
+            if (hcp.contains("EXT_STAFF")) {
+                hcp = hcp.substring(0,hcp.indexOf(","));
+                hcp = hcp.replace(":","").replace("EXT_STAFF","").replace(",", "");
+            }
+        }
+        return hcp;
     }
 
     public String getProblemEpisodicity() {
