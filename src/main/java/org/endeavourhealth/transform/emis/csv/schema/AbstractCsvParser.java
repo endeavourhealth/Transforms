@@ -53,6 +53,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     private void open() throws Exception {
 
         //withHeader() now set as part of the CSV_FORMAT in the specific transformer
+        LOG.info("Parser header: "+csvFormat.getHeader());
+
         this.csvReader = CSVParser.parse(file, Charset.defaultCharset(), csvFormat);
         try {
             this.csvIterator = csvReader.iterator();
