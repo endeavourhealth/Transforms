@@ -114,7 +114,7 @@ public class Journal extends AbstractCsvParser {
         return super.getString("SERVICE_ID");
     }
     public Date getEffectiveDateTime() throws TransformException {
-        return super.getDateTime("DATE","TIME");
+        return super.getDate("DATE");
     }
     public Date getEnteredDateTime() throws TransformException {
         return super.getDate("RECORDED_DATE");

@@ -27,8 +27,8 @@ public abstract class VisionCsvToFhirTransformer {
 
     public static final String VERSION_0_18 = "0.18";
 
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "hh:mm:ss";
+    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyyMMdd";
+    public static final String TIME_FORMAT = "hhmmss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
