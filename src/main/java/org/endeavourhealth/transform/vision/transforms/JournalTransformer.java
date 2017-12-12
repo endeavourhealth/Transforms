@@ -650,12 +650,28 @@ public class JournalTransformer {
         String clinicianID = parser.getClinicianUserID();
         fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
 
-        //get the values and units
-        Double value1 = parser.getValue1();
-        String units1 = parser.getValue1NumericUnit();
-        Double value2 = parser.getValue2();
-        String units2 = parser.getValue2NumericUnit();
+        Double value1 = null;
+        String units1 = null;
+        Double value2 = null;
+        String units2 = null;
+        String value1Name = parser.getValue1Name();
         String associatedText = parser.getAssociatedText();
+
+        // medication review has text in the value field, so append to associated text instead
+        if (value1Name.equalsIgnoreCase("REVIEW_DAT")) {
+            String value1AsText = parser.getValue1AsText();
+            if (!Strings.isNullOrEmpty(value1AsText)) {
+                value1AsText = "Review date: "+value1AsText + ". ";
+                associatedText = value1AsText.concat(associatedText);
+            }
+        }
+        else {
+            //get the numeric values and units
+            value1 = parser.getValue1();
+            units1 = parser.getValue1NumericUnit();
+            value2 = parser.getValue2();
+            units2 = parser.getValue2NumericUnit();
+        }
 
         //BP is a special case - create systolic and diastolic coded components
         if (isBPCode (parser.getReadCode()) && value1 != null && value2 != null) {

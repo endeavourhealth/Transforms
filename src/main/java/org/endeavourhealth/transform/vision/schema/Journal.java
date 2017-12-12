@@ -158,6 +158,14 @@ public class Journal extends AbstractCsvParser {
         return super.getString("RUBRIC");
     }
 
+    public String getValue1Name() {
+        return super.getString("VALUE1_NAME");
+    }
+
+    public String getValue1AsText() {
+        return super.getString("VALUE1");
+    }
+
     public Double getValue1() {
         return super.getDouble("VALUE1");   //if drug, then amount, else numeric value for investigation, value, result
     }
