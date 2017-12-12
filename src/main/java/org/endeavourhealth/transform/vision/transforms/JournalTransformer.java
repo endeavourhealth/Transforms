@@ -250,7 +250,9 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-        fhirMedicationStatement.setInformationSource(csvHelper.createPractitionerReference(clinicianID));
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            fhirMedicationStatement.setInformationSource(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
@@ -341,7 +343,9 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-        fhirMedicationOrder.setPrescriber(csvHelper.createPractitionerReference(clinicianID));
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            fhirMedicationOrder.setPrescriber(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
@@ -420,7 +424,9 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-        fhirAllergy.setRecorder(csvHelper.createPractitionerReference(clinicianID));
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            fhirAllergy.setRecorder(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         Date enteredDate = parser.getEnteredDateTime();
         fhirAllergy.setRecordedDate(enteredDate);
@@ -492,8 +498,10 @@ public class JournalTransformer {
         fhirProcedure.setPerformed(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
         String clinicianID = parser.getClinicianUserID();
-        Procedure.ProcedurePerformerComponent fhirPerformer = fhirProcedure.addPerformer();
-        fhirPerformer.setActor(csvHelper.createPractitionerReference(clinicianID));
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            Procedure.ProcedurePerformerComponent fhirPerformer = fhirProcedure.addPerformer();
+            fhirPerformer.setActor(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         String associatedText = parser.getAssociatedText();
         fhirProcedure.addNotes(AnnotationHelper.createAnnotation(associatedText));
@@ -648,7 +656,9 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-        fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         Double value1 = null;
         String units1 = null;
@@ -765,9 +775,11 @@ public class JournalTransformer {
         String associatedText = parser.getAssociatedText();
         fhirCondition.setNote(AnnotationHelper.createAnnotation(associatedText));
 
-        String clinicianGuid = parser.getClinicianUserID();
-        Reference reference = csvHelper.createPractitionerReference(clinicianGuid);
-        fhirFamilyHistory.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.FAMILY_MEMBER_HISTORY_REPORTED_BY, reference));
+        String clinicianID = parser.getClinicianUserID();
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            Reference reference = csvHelper.createPractitionerReference(clinicianID);
+            fhirFamilyHistory.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.FAMILY_MEMBER_HISTORY_REPORTED_BY, reference));
+        }
 
         addEncounterExtension(fhirFamilyHistory, parser, csvHelper, patientID);
 
@@ -822,8 +834,10 @@ public class JournalTransformer {
         }
 
         String clinicianID = parser.getClinicianUserID();
-        Reference reference = csvHelper.createPractitionerReference(clinicianID);
-        fhirImmunisation.setPerformer(reference);
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            Reference reference = csvHelper.createPractitionerReference(clinicianID);
+            fhirImmunisation.setPerformer(reference);
+        }
 
         //TODO:// analyse test data to set the following if present:
         String immsSource = parser.getImmsSource();
@@ -940,7 +954,8 @@ public class JournalTransformer {
     }
 
     private static void assertValueEmpty(Resource destinationResource, Journal parser) throws Exception {
-        if (parser.getValue1() != null) {
+        if (!Strings.isNullOrEmpty(parser.getValue1AsText()) && !parser.getValue1Name().equalsIgnoreCase("REVIEW_DAT")) {
+        //if (parser.getValue1() != null) {
             throw new FieldNotEmptyException("Value", destinationResource);
         }
     }

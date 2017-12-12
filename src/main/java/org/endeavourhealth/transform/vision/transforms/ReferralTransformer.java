@@ -76,7 +76,9 @@ public class ReferralTransformer {
 //        }
 
         String referralUserID = parser.getReferralUserID();
-        fhirReferral.setRequester(csvHelper.createPractitionerReference(referralUserID));
+        if (!Strings.isNullOrEmpty(referralUserID)) {
+            fhirReferral.setRequester(csvHelper.createPractitionerReference(referralUserID));
+        }
 
         String referralType = parser.getReferralType();
         if (!Strings.isNullOrEmpty(referralType)) {
