@@ -37,7 +37,6 @@ public class ProblemTransformer extends HomertonBasisTransformer {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-
     }
 
 
@@ -59,7 +58,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         // this Problem resource id
         //ResourceId problemResourceId = getProblemResourceId(parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
-        CodeableConcept problemCode = new CodeableConcept();
+        //CodeableConcept problemCode = new CodeableConcept();
         //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProblem());
 
         //Identifiers
@@ -70,9 +69,23 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         Condition fhirCondition = new Condition();
         //createConditionResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers);
 
+        //ResourceId patientResourceId = resolvePatientResource(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getCNN(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null, patientIdentifier, gpResourceId, gpPracticeResourceId, ethnicGroup);
+
+        //ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        fhirCondition.setId(parser.getProblemId());
+
+        // set patient reference
+        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, parser.getCNN()));
+
+        // set category to 'complaint'
+        cc = new CodeableConcept();
+        cc.addCoding().setSystem(HomertonCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
+        fhirCondition.setCategory(cc);
+
         // save resource
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
-        //savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirCondition.getId(), fhirCondition);
     }
 
     /*
@@ -94,19 +107,12 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         if (encounterResourceId != null) {
             fhirCondition.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
         }
-        // set patient reference
-        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
         // Date recorded
         fhirCondition.setDateRecorded(dateRecorded);
 
         // set code to coded problem - field 28
         fhirCondition.setCode(problemCode);
-
-        // set category to 'complaint'
-        cc = new CodeableConcept();
-        cc.addCoding().setSystem(HomertonCsvToFhirTransformer.CODE_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
-        fhirCondition.setCategory(cc);
 
         // set onset to field  to field 10 + 11
         fhirCondition.setOnset(onsetDate);

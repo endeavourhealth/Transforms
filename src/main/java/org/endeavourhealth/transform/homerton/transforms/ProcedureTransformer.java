@@ -71,16 +71,21 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         //ResourceId procedureResourceId = getProcedureResourceId(parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
 
         // Procedure Code
-        CodeableConcept procedureCode = new CodeableConcept();
+        //CodeableConcept procedureCode = new CodeableConcept();
         //procedureCode.addCoding().setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
 
         // Create resource
         Procedure fhirProcedure = new Procedure();
         //createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
 
+        fhirProcedure.setId(parser.getProcedureId());
+
+        // set patient reference
+        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, parser.getCNN()));
+
         // save resource
         LOG.debug("Save Procedure:" + FhirSerializationHelper.serializeResource(fhirProcedure));
-        //savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
 
     }
 
@@ -92,7 +97,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         Date d = null;
 
         // Turn key into Resource id
-        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
+
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -105,8 +110,6 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
             fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
         }
 
-        // set patient reference
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
         // status
         fhirProcedure.setStatus(status);

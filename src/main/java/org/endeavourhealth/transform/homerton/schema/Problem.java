@@ -102,6 +102,9 @@ public class Problem extends AbstractCsvParser {
 
     }
 
+    public String getProblemId() {
+        return super.getString("PROBLEM_ID");
+    }
     public String getPatientDimID() {
         return super.getString("PatientDimID");
     }

@@ -572,9 +572,19 @@ public class BasisTransformer {
         return patientResourceId;
     }
 
+    public static ResourceId getPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        return getResourceId(scope, "Patient", uniqueId);
+    }
+
     public static ResourceId getProblemResourceId(String scope, String patientId, String onsetDate, String problem) throws Exception {
         String uniqueId = "PatientId=" + patientId + "-OnsetDate=" + onsetDate + "-ProblemCode=" + problem;
         return getConditionResourceId(scope, uniqueId);
+    }
+
+    public static ResourceId readProblemResourceId(String scope, String patientId, String onsetDate, String problem) throws Exception {
+        String uniqueId = "PatientId=" + patientId + "-OnsetDate=" + onsetDate + "-ProblemCode=" + problem;
+        return getResourceId(scope, "Condition", uniqueId);
     }
 
     public static ResourceId getDiagnosisResourceIdFromCDSData(String scope, String CDSUniqueID, String diagnosis) throws Exception {
@@ -585,6 +595,11 @@ public class BasisTransformer {
     public static ResourceId getDiagnosisResourceId(String scope, String patientId, String diagnosisDate, String diagnosis) throws Exception {
         String uniqueId = "PatientId=" + patientId + "-DiagnosisDate=" + diagnosisDate + "-DiagnosisCode=" + diagnosis;
         return getConditionResourceId(scope, uniqueId);
+    }
+
+    public static ResourceId readDiagnosisResourceId(String scope, String patientId, String diagnosisDate, String diagnosis) throws Exception {
+        String uniqueId = "PatientId=" + patientId + "-DiagnosisDate=" + diagnosisDate + "-DiagnosisCode=" + diagnosis;
+        return getResourceId(scope, "Condition", uniqueId);
     }
 
     public static ResourceId getConditionResourceId(String scope, String uniqueId) throws Exception {
@@ -612,6 +627,11 @@ public class BasisTransformer {
             saveResourceId(resourceId);
         }
         return resourceId;
+    }
+
+    public static ResourceId readProcedureResourceId(String scope, String encounterId, String procedureDateTime, String procedureCode) throws Exception {
+        String uniqueId = "EncounterId=" + encounterId + "-ProcedureDateTime=" + procedureDateTime + "-ProcedureCode=" + procedureCode;
+        return getResourceId(scope, "Procedure", uniqueId);
     }
 
     /*
@@ -731,12 +751,25 @@ public class BasisTransformer {
         fhirResourceFiler.deletePatientResource(parserState,false, groupId,resources);
     }
 
+    public static void deletePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
+        fhirResourceFiler.deletePatientResource(parserState,true, groupId,resources);
+    }
+
     public static void savePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
         fhirResourceFiler.savePatientResource(parserState, false, groupId, resources);
     }
 
     public static void saveAdminResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
         fhirResourceFiler.saveAdminResource(parserState, false, resources);
+
+    }
+
+    public static void savePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
+        fhirResourceFiler.savePatientResource(parserState, true, groupId, resources);
+    }
+
+    public static void saveAdminResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
+        fhirResourceFiler.saveAdminResource(parserState, true, resources);
 
     }
 

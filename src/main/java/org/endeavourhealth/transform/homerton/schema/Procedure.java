@@ -81,6 +81,9 @@ public class Procedure extends AbstractCsvParser {
 
     }
 
+    public String getProcedureId() {
+        return super.getString("PROCEDURE_ID");
+    }
     public String getPatientDimID() {
         return super.getString("PatientDimID");
     }

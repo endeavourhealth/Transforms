@@ -106,7 +106,19 @@ public abstract class BartsCsvToFhirTransformer {
             String fileType = identifyFileType(fName);
             //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
-            if (fileType.compareTo("SUSOPA") == 0) {
+            if (fileType.compareTo("BULKPROBLEMS") == 0) {
+                BulkProblem parser = new BulkProblem(version, currFile, true);
+                BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
+            } else if (fileType.compareTo("BULKDIAGNOSES") == 0) {
+                BulkDiagnosis parser = new BulkDiagnosis(version, currFile, true);
+                BulkDiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
+            } else if (fileType.compareTo("BULKPROCEDURES") == 0) {
+                BulkProcedure parser = new BulkProcedure(version, currFile, true);
+                BulkProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
+            } else if (fileType.compareTo("SUSOPA") == 0) {
                 File tailFile = new File(currFile.getParent() + File.separator + "tailopa_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
                 //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                 Tails tailsParser = new Tails(version, tailFile, true);
@@ -115,8 +127,7 @@ public abstract class BartsCsvToFhirTransformer {
                 SusOutpatient parser = new SusOutpatient(version, currFile, true);
                 SusOutpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else {
-                if (fileType.compareTo("SUSIP") == 0) {
+            } else if (fileType.compareTo("SUSIP") == 0) {
                     File tailFile = new File(currFile.getParent() + File.separator + "tailip_DIS." + currFile.getName().split("_")[2] + "_susrnj.dat");
                     //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                     Tails tailsParser = new Tails(version, tailFile, true);
@@ -125,8 +136,7 @@ public abstract class BartsCsvToFhirTransformer {
                     SusInpatient parser = new SusInpatient(version, currFile, true);
                     SusInpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                     parser.close();
-                } else {
-                    if (fileType.compareTo("SUSAEA") == 0) {
+            } else if (fileType.compareTo("SUSAEA") == 0) {
                         File tailFile = new File(currFile.getParent() + File.separator + "tailaea_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
                         //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                         Tails tailsParser = new Tails(version, tailFile, true);
@@ -135,26 +145,18 @@ public abstract class BartsCsvToFhirTransformer {
                         SusEmergency parser = new SusEmergency(version, currFile, true);
                         SusEmergencyTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                         parser.close();
-                    } else {
-                        if (fileType.compareTo("PROB") == 0) {
+            } else if (fileType.compareTo("PROB") == 0) {
                             Problem parser = new Problem(version, currFile, true);
                             ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                             parser.close();
-                        } else {
-                            if (fileType.compareTo("PROC") == 0) {
+            } else if (fileType.compareTo("PROC") == 0) {
                                 Procedure parser = new Procedure(version, currFile, true);
                                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                 parser.close();
-                            } else {
-                                if (fileType.compareTo("DIAG") == 0) {
+            } else if (fileType.compareTo("DIAG") == 0) {
                                     Diagnosis parser = new Diagnosis(version, currFile, true);
                                     DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                     parser.close();
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -163,42 +165,46 @@ public abstract class BartsCsvToFhirTransformer {
         String[] parts = filename.split("_");
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
-        if (filenamePart1.compareToIgnoreCase("susopa") == 0) {
-            return "SUSOPA";
-        } else {
-            if (filenamePart1.compareToIgnoreCase("susaea") == 0) {
-                return "SUSAEA";
+
+        if (filenamePart1.compareToIgnoreCase("PC") == 0) {
+            // Bulk
+            if (filenamePart2.compareToIgnoreCase("PROBLEMS") == 0) {
+                return "BULKPROBLEMS";
+            } else if (filenamePart2.compareToIgnoreCase("DIAGNOSES") == 0) {
+                return "BULKDIAGNOSES";
+            } else if (filenamePart2.compareToIgnoreCase("PROCEDURES") == 0) {
+                return "BULKPROCEDURES";
             } else {
-                if (filenamePart1.compareToIgnoreCase("tailopa") == 0) {
+                return "UNKNOWN";
+            }
+        } else if (filenamePart1.compareToIgnoreCase("susopa") == 0) {
+                return "SUSOPA";
+        } else if (filenamePart1.compareToIgnoreCase("susaea") == 0) {
+                return "SUSAEA";
+        } else if (filenamePart1.compareToIgnoreCase("tailopa") == 0) {
                     return filenamePart1.toUpperCase();
-                } else {
-                    if (filenamePart1.compareToIgnoreCase("tailaea") == 0) {
+        } else if (filenamePart1.compareToIgnoreCase("tailaea") == 0) {
                         return filenamePart1.toUpperCase();
+        } else {
+            String filenamePart3 = parts[2];
+
+            if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
+                return filenamePart1.toUpperCase();
+            } else {
+                String filenamePart4 = parts[3];
+
+                if (filenamePart1.compareToIgnoreCase("ip") == 0) {
+                    return "SUSIP";
+                } else if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
+                    return filenamePart3.toUpperCase();
+                } else {
+                    //String filenamePart5 = parts[4];
+                    String filenamePart6 = parts[5];
+
+                    if (filenamePart1.compareToIgnoreCase("GETL") == 0) {
+                        return filenamePart3.toUpperCase();
                     } else {
-                        String filenamePart3 = parts[2];
-
-                        if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
-                            return filenamePart1.toUpperCase();
-                        } else {
-                            String filenamePart4 = parts[3];
-
-                            if (filenamePart1.compareToIgnoreCase("ip") == 0) {
-                                return "SUSIP";
-                            } else {
-                                if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
-                                    return filenamePart3.toUpperCase();
-                                } else {
-                                    //String filenamePart5 = parts[4];
-                                    String filenamePart6 = parts[5];
-
-                                    if (filenamePart1.compareToIgnoreCase("GETL") == 0) {
-                                        return filenamePart3.toUpperCase();
-                                    } else {
-                                        return "UNKNOWN";
-                                    }
-                                }
-                            }
-                        }
+                        return "UNKNOWN";
                     }
                 }
             }

@@ -82,9 +82,35 @@ public class Patient extends AbstractCsvParser {
     public Date getDOB() throws TransformException {
         return super.getDate("DOB");
     }
+    public Date getDOD() throws TransformException {
+        return super.getDate("DOD");
+    }
+
+    public String getMobileTel() {
+        return super.getString("MobileTel");
+    }
+    public String getHomeTel() {
+        return super.getString("HomeTel");
+    }
+    public String getWorkTel() {
+        return super.getString("WorkTel");
+    }
 
     public int getGenderID() {
         return super.getInt("GenderID");
+    }
+    public String getEthnicGroupID() {
+        return super.getString("EthnicGroupID");
+    }
+    public String getEthnicGroupName() {
+        return super.getString("EthnicGroupName");
+    }
+
+    public String getGPID() {
+        return super.getString("GPID");
+    }
+    public String getPracticeID() {
+        return super.getString("PracticeID");
     }
 
     public String getAddressLine1() {

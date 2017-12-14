@@ -80,7 +80,7 @@ public abstract class HomertonCsvToFhirTransformer {
                 LOG.error("Failed to find file {} in shared storage {}", file, sharedStoragePath);
                 throw new FileNotFoundException("" + f + " doesn't exist");
             }
-            //LOG.info("Successfully found file {} in shared storage {}", file, sharedStoragePath);
+            LOG.info("Successfully found file {} in shared storage {}", file, sharedStoragePath);
 
             try {
                 File orgDir = f.getParentFile();
@@ -111,36 +111,29 @@ public abstract class HomertonCsvToFhirTransformer {
         for (File currFile: dir.listFiles()) {
             String fName = currFile.getName();
             String fileType = identifyFileType(fName);
-            //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
+            LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
             if (fileType.compareTo("PATIENT") == 0) {
                 Patient parser = new Patient(version, currFile, true);
                 PatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
-            } else {
-                if (fileType.compareTo("PROBLEM") == 0) {
-                    Problem parser = new Problem(version, currFile, true);
-                    ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
-                    parser.close();
-                } else {
-                    if (fileType.compareTo("DIAGNOSIS") == 0) {
-                        Diagnosis parser = new Diagnosis(version, currFile, true);
-                        DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
-                        parser.close();
-                    } else {
-                        if (fileType.compareTo("PROCEDURE") == 0) {
-                            Procedure parser = new Procedure(version, currFile, true);
-                            ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
-                            parser.close();
-                        }
-                    }
-                }
+            } else if (fileType.compareTo("PROBLEM") == 0) {
+                Problem parser = new Problem(version, currFile, true);
+                ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                parser.close();
+            } else if (fileType.compareTo("DIAGNOSIS") == 0) {
+                Diagnosis parser = new Diagnosis(version, currFile, true);
+                DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                parser.close();
+            } else if (fileType.compareTo("PROCEDURE") == 0) {
+                Procedure parser = new Procedure(version, currFile, true);
+                ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                parser.close();
             }
         }
     }
 
     private static String identifyFileType(String filename) {
-        String[] parts = filename.split("_");
-        return  parts[0].toUpperCase();
+        return  filename.split("\\.")[0].toUpperCase();
     }
 }
