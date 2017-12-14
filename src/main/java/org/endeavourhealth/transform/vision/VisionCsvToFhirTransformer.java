@@ -3,8 +3,8 @@ package org.endeavourhealth.transform.vision;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
-import org.endeavourhealth.core.xml.transformError.Error;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
@@ -56,7 +56,7 @@ public abstract class VisionCsvToFhirTransformer {
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(orgDirectory, version, true, allParsers);
+            validateAndOpenParsers(files, version, true, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor, previousErrors, maxFilingThreads);
@@ -113,51 +113,51 @@ public abstract class VisionCsvToFhirTransformer {
     }
 
 
-    private static void validateAndOpenParsers(File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    private static void validateAndOpenParsers(String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
-        findFileAndOpenParser(Practice.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Practice.class, files, version, openParser, parsers);
         //admin - staff
-        findFileAndOpenParser(Staff.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Staff.class, files, version, openParser, parsers);
         //patient - demographics
-        findFileAndOpenParser(Patient.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Patient.class, files, version, openParser, parsers);
         //clinical - encounters
-        findFileAndOpenParser(Encounter.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Encounter.class, files, version, openParser, parsers);
         //clinical - referrals
-        findFileAndOpenParser(Referral.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Referral.class, files, version, openParser, parsers);
         //clinical - journal (observations, medication, problems etc.)
-        findFileAndOpenParser(Journal.class, dir, version, openParser, parsers);
+        findFileAndOpenParser(Journal.class, files, version, openParser, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
         //Set<File> sh = new HashSet<>(parsers);
 
-        Set<File> expectedFiles = parsers
+        Set<String> expectedFiles = parsers
                 .values()
                 .stream()
-                .map(T -> T.getFile())
+                .map(T -> T.getFilePath())
                 .collect(Collectors.toSet());
 
-        for (File file: dir.listFiles()) {
-            if (file.isFile()
-                    && !ignoreKnownFile(file)
-                    && !expectedFiles.contains(file)
-                    && !Files.getFileExtension(file.getAbsolutePath()).equalsIgnoreCase("csv")) {
+        for (String filePath: files) {
+            if (!ignoreKnownFile(filePath)
+                    && !expectedFiles.contains(filePath)
+                    && !FilenameUtils.getExtension(filePath).equalsIgnoreCase("csv")) {
 
-                throw new FileFormatException(file, "Unexpected file " + file + " in Vision CSV extract");
+                throw new FileFormatException(filePath, "Unexpected file " + filePath + " in Vision CSV extract");
             }
         }
     }
 
     // these files comes with the Vision extract but we currently do not transform, so ignore them in the unexpected file check
-    public static boolean ignoreKnownFile (File file) {
-        return file.getName().contains("active_user_data") || file.getName().contains("patient_check_sum_data");
+    private static boolean ignoreKnownFile(String filePath) {
+        String name = FilenameUtils.getName(filePath);
+        return name.contains("active_user_data") || name.contains("patient_check_sum_data");
     }
 
-    public static void findFileAndOpenParser(Class parserCls, File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
+    public static void findFileAndOpenParser(Class parserCls, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();
 
-        for (File f: dir.listFiles()) {
-            String fName = f.getName();
+        for (String filePath: files) {
+            String fName = FilenameUtils.getName(filePath);
 
             //we're only interested in CSV files
             String extension = Files.getFileExtension(fName);
@@ -177,14 +177,14 @@ public abstract class VisionCsvToFhirTransformer {
             }
 
             //now construct an instance of the parser for the file we've found
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(String.class, File.class, Boolean.TYPE);
-            AbstractCsvParser parser = constructor.newInstance(version, f, openParser);
+            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(String.class, String.class, Boolean.TYPE);
+            AbstractCsvParser parser = constructor.newInstance(version, filePath, openParser);
 
             ret.put(parserCls, parser);
             return;
         }
 
-        throw new FileNotFoundException("Failed to find CSV file for " + name + " in " + dir);
+        throw new FileNotFoundException("Failed to find CSV file for " + name);
     }
 
 
@@ -250,9 +250,10 @@ public abstract class VisionCsvToFhirTransformer {
 
         for (AbstractCsvParser parser: allParsers.values()) {
 
-            String fileName = parser.getFile().getName();
+            String filePath = parser.getFilePath();
+            String fileName = FilenameUtils.getName(filePath);
 
-            Set<Long> recordNumbers = findRecordNumbersToProcess(fileName, previousErrors);
+            Set<Long> recordNumbers = TransformErrorUtility.findRecordNumbersToProcess(fileName, previousErrors);
             parser.setRecordNumbersToProcess(recordNumbers);
 
             //if we have a non-null set, then we're processing specific records in some file
@@ -264,40 +265,6 @@ public abstract class VisionCsvToFhirTransformer {
         return processingSpecificRecords;
     }
 
-    private static Set<Long> findRecordNumbersToProcess(String fileName, TransformError previousErrors) {
-
-        //if we're running for the first time, then return null to process the full file
-        if (previousErrors == null) {
-            return null;
-        }
-
-        //if we previously had a fatal exception, then we want to process the full file
-        if (TransformErrorUtility.containsArgument(previousErrors, TransformErrorUtility.ARG_FATAL_ERROR)) {
-            return null;
-        }
-
-        //if we previously aborted due to errors in a previous exchange, then we want to process it all
-        if (TransformErrorUtility.containsArgument(previousErrors, TransformErrorUtility.ARG_WAITING)) {
-            return null;
-        }
-
-        //if we make it to here, we only want to process specific record numbers in our file, or even none, if there were
-        //no previous errors processing this specific file
-        HashSet<Long> recordNumbers = new HashSet<>();
-
-        for (Error error: previousErrors.getError()) {
-
-            String errorFileName = TransformErrorUtility.findArgumentValue(error, TransformErrorUtility.ARG_EMIS_CSV_FILE);
-            if (!Strings.isNullOrEmpty(errorFileName)
-                && errorFileName.equals(fileName)) {
-
-                String errorRecordNumber = TransformErrorUtility.findArgumentValue(error, TransformErrorUtility.ARG_EMIS_CSV_RECORD_NUMBER);
-                recordNumbers.add(Long.valueOf(errorRecordNumber));
-            }
-        }
-
-        return recordNumbers;
-    }
 
     public static String cleanUserId(String data) {
         if (!Strings.isNullOrEmpty(data)) {

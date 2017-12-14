@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
-import org.endeavourhealth.transform.barts.AbstractFixedParser;
-import org.endeavourhealth.transform.barts.FixedParserField;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Date;
 
 public class BulkProblem extends AbstractCharacterParser {
@@ -17,8 +14,8 @@ public class BulkProblem extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public BulkProblem(String version, File f, boolean openParser) throws Exception {
-        super(version, f, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public BulkProblem(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("ProblemId");
         addFieldList("Update_DT_TM");

@@ -1,16 +1,18 @@
 package org.endeavourhealth.transform.homerton;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.homerton.schema.Diagnosis;
+import org.endeavourhealth.transform.homerton.schema.Patient;
 import org.endeavourhealth.transform.homerton.schema.Problem;
 import org.endeavourhealth.transform.homerton.schema.Procedure;
 import org.endeavourhealth.transform.homerton.transforms.DiagnosisTransformer;
+import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
 import org.endeavourhealth.transform.homerton.transforms.ProblemTransformer;
 import org.endeavourhealth.transform.homerton.transforms.ProcedureTransformer;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.homerton.schema.Patient;
-import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,13 +52,14 @@ public abstract class HomertonCsvToFhirTransformer {
         String[] files = exchangeBody.split("\n");
         for (int i=0; i<files.length; i++) {
             String file = files[i].trim();
-            files[i] = file;
+            String filePath = FilenameUtils.concat(sharedStoragePath, file);
+            files[i] = filePath;
         }
 
         LOG.info("Invoking Homerton CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        File orgDirectory = validateAndFindCommonDirectory(sharedStoragePath, files);
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
@@ -64,7 +67,7 @@ public abstract class HomertonCsvToFhirTransformer {
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
-        transformParsers(orgDirectory, version, processor, previousErrors, maxFilingThreads);
+        transformParsers(files, version, processor, previousErrors, maxFilingThreads);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -103,30 +106,30 @@ public abstract class HomertonCsvToFhirTransformer {
 
 
 
-    private static void transformParsers(File dir, String version,
+    private static void transformParsers(String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors,
                                          int maxFilingThreads) throws Exception {
 
-        for (File currFile: dir.listFiles()) {
-            String fName = currFile.getName();
+        for (String filePath: files) {
+            String fName = FilenameUtils.getName(filePath);
             String fileType = identifyFileType(fName);
-            LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
+            LOG.debug("currFile:" + filePath + " Type:" + fileType);
 
             if (fileType.compareTo("PATIENT") == 0) {
-                Patient parser = new Patient(version, currFile, true);
+                Patient parser = new Patient(version, filePath, true);
                 PatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROBLEM") == 0) {
-                Problem parser = new Problem(version, currFile, true);
+                Problem parser = new Problem(version, filePath, true);
                 ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
-                Diagnosis parser = new Diagnosis(version, currFile, true);
+                Diagnosis parser = new Diagnosis(version, filePath, true);
                 DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
-                Procedure parser = new Procedure(version, currFile, true);
+                Procedure parser = new Procedure(version, filePath, true);
                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             }

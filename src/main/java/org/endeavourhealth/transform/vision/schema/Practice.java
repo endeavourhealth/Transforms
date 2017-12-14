@@ -3,12 +3,10 @@ package org.endeavourhealth.transform.vision.schema;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
-import java.io.File;
-
 public class Practice extends AbstractCsvParser {
 
-    public Practice(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Practice(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "ID",
                 "NAME",
                 "IDENTIFIER",

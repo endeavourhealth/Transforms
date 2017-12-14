@@ -4,13 +4,12 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.io.File;
 import java.util.Date;
 
 public class Location extends AbstractCsvParser {
 
-    public Location(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public Location(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

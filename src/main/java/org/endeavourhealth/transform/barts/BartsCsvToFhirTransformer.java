@@ -1,16 +1,20 @@
 package org.endeavourhealth.transform.barts;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 public abstract class BartsCsvToFhirTransformer {
 
@@ -43,13 +47,14 @@ public abstract class BartsCsvToFhirTransformer {
         String[] files = exchangeBody.split("\n");
         for (int i=0; i<files.length; i++) {
             String file = files[i].trim();
-            files[i] = file;
+            String filePath = FilenameUtils.concat(sharedStoragePath, file);
+            files[i] = filePath;
         }
 
         LOG.info("Invoking Barts CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        File orgDirectory = validateAndFindCommonDirectory(sharedStoragePath, files);
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
@@ -57,7 +62,7 @@ public abstract class BartsCsvToFhirTransformer {
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Barts CSV content in {}", orgDirectory);
-        transformParsers(orgDirectory, version, processor, previousErrors, maxFilingThreads);
+        transformParsers(files, version, processor, previousErrors, maxFilingThreads);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -96,69 +101,80 @@ public abstract class BartsCsvToFhirTransformer {
 
 
 
-    private static void transformParsers(File dir, String version,
+    private static void transformParsers(String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors,
                                          int maxFilingThreads) throws Exception {
 
-        for (File currFile: dir.listFiles()) {
-            String fName = currFile.getName();
+        for (String filePath: files) {
+            String fName = FilenameUtils.getName(filePath);
             String fileType = identifyFileType(fName);
             //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
             if (fileType.compareTo("BULKPROBLEMS") == 0) {
-                BulkProblem parser = new BulkProblem(version, currFile, true);
+                BulkProblem parser = new BulkProblem(version, filePath, true);
                 BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("BULKDIAGNOSES") == 0) {
-                BulkDiagnosis parser = new BulkDiagnosis(version, currFile, true);
+                BulkDiagnosis parser = new BulkDiagnosis(version, filePath, true);
                 BulkDiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("BULKPROCEDURES") == 0) {
-                BulkProcedure parser = new BulkProcedure(version, currFile, true);
+                BulkProcedure parser = new BulkProcedure(version, filePath, true);
                 BulkProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("SUSOPA") == 0) {
-                File tailFile = new File(currFile.getParent() + File.separator + "tailopa_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
+                String tailFilePath = findTailFile(files, "tailopa_DIS." + fName.split("_")[1].split("\\.")[1]);
                 //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
-                Tails tailsParser = new Tails(version, tailFile, true);
+                Tails tailsParser = new Tails(version, tailFilePath, true);
                 TailsPreTransformer.transform(version, tailsParser);
 
-                SusOutpatient parser = new SusOutpatient(version, currFile, true);
+                SusOutpatient parser = new SusOutpatient(version, filePath, true);
                 SusOutpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("SUSIP") == 0) {
-                    File tailFile = new File(currFile.getParent() + File.separator + "tailip_DIS." + currFile.getName().split("_")[2] + "_susrnj.dat");
+                    String tailFilePath = findTailFile(files, "tailip_DIS." + fName.split("_")[2] + "_susrnj.dat");
                     //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
-                    Tails tailsParser = new Tails(version, tailFile, true);
+                    Tails tailsParser = new Tails(version, tailFilePath, true);
                     TailsPreTransformer.transform(version, tailsParser);
 
-                    SusInpatient parser = new SusInpatient(version, currFile, true);
+                    SusInpatient parser = new SusInpatient(version, filePath, true);
                     SusInpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                     parser.close();
             } else if (fileType.compareTo("SUSAEA") == 0) {
-                        File tailFile = new File(currFile.getParent() + File.separator + "tailaea_DIS." + currFile.getName().split("_")[1].split("\\.")[1]);
+                        String tailFilePath = findTailFile(files, "tailaea_DIS." + fName.split("_")[1].split("\\.")[1]);
                         //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
-                        Tails tailsParser = new Tails(version, tailFile, true);
+                        Tails tailsParser = new Tails(version, tailFilePath, true);
                         TailsPreTransformer.transform(version, tailsParser);
 
-                        SusEmergency parser = new SusEmergency(version, currFile, true);
+                        SusEmergency parser = new SusEmergency(version, filePath, true);
                         SusEmergencyTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                         parser.close();
             } else if (fileType.compareTo("PROB") == 0) {
-                            Problem parser = new Problem(version, currFile, true);
+                            Problem parser = new Problem(version, filePath, true);
                             ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                             parser.close();
             } else if (fileType.compareTo("PROC") == 0) {
-                                Procedure parser = new Procedure(version, currFile, true);
+                                Procedure parser = new Procedure(version, filePath, true);
                                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                 parser.close();
             } else if (fileType.compareTo("DIAG") == 0) {
-                                    Diagnosis parser = new Diagnosis(version, currFile, true);
+                                    Diagnosis parser = new Diagnosis(version, filePath, true);
                                     DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                     parser.close();
             }
         }
+    }
+
+    private static String findTailFile(String[] files, String expectedName) throws TransformException {
+        for (String filePath: files) {
+            String name = FilenameUtils.getName(filePath);
+            if (name.equalsIgnoreCase(expectedName)) {
+                return filePath;
+            }
+        }
+
+        throw new TransformException("Failed to find tail file for expected name " + expectedName);
     }
 
     private static String identifyFileType(String filename) {

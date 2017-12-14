@@ -4,15 +4,14 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
-import java.io.File;
 import java.util.Date;
 
 import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
 
 public class Referral extends AbstractCsvParser {
 
-    public Referral(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Referral(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "PID",
                 "ID",
                 "DATE",

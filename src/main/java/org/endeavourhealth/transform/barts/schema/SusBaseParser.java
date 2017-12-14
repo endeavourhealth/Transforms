@@ -5,7 +5,6 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -20,8 +19,8 @@ public class SusBaseParser extends AbstractFixedParser {
     protected ArrayList<Date> OPCSSecondaryProcedureDateList = null;
     protected ArrayList<String> OPCSSecondaryProcedureDateAsStringList = null;
 
-    public SusBaseParser(String version, File f, boolean openParser, String dateFormat, String timeFormat) throws Exception {
-        super(version, f, openParser, dateFormat, timeFormat);
+    public SusBaseParser(String version, String filePath, boolean openParser, String dateFormat, String timeFormat) throws Exception {
+        super(version, filePath, openParser, dateFormat, timeFormat);
     }
 
     public boolean nextRecord() throws Exception {

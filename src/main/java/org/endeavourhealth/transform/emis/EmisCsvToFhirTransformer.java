@@ -2,31 +2,18 @@ package org.endeavourhealth.transform.emis;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
-import org.endeavourhealth.core.xml.transformError.Error;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
-import org.endeavourhealth.transform.emis.csv.schema.admin.*;
-import org.endeavourhealth.transform.emis.csv.schema.agreements.SharingOrganisation;
-import org.endeavourhealth.transform.emis.csv.schema.appointment.Session;
-import org.endeavourhealth.transform.emis.csv.schema.appointment.SessionUser;
-import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
-import org.endeavourhealth.transform.emis.csv.schema.audit.PatientAudit;
-import org.endeavourhealth.transform.emis.csv.schema.audit.RegistrationAudit;
-import org.endeavourhealth.transform.emis.csv.schema.careRecord.*;
-import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCode;
-import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
-import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
-import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
@@ -43,12 +30,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public abstract class EmisCsvToFhirTransformer {
 
@@ -75,40 +60,37 @@ public abstract class EmisCsvToFhirTransformer {
         String[] files = exchangeBody.split("\n");
         for (int i=0; i<files.length; i++) {
             String file = files[i].trim();
-            files[i] = file;
+            String filePath = FilenameUtils.concat(sharedStoragePath, file);
+            files[i] = filePath;
         }
-        //String[] files = exchangeBody.split(java.lang.System.lineSeparator());
 
         LOG.info("Invoking EMIS CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
 
-        //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        File orgDirectory = validateAndFindCommonDirectory(sharedStoragePath, files);
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
-        String version = determineVersion(orgDirectory);
-        //validateVersion(version);
+        String version = determineVersion(files);
 
         boolean processPatientData = shouldProcessPatientData(orgDirectory, files);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
 
-        Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
+        Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(orgDirectory, version, true, allParsers);
+            createParsers(files, version, parsers);
 
-            LOG.trace("Transforming EMIS CSV content in {}", orgDirectory);
-            transformParsers(version, allParsers, processor, previousErrors, maxFilingThreads, processPatientData);
+            LOG.trace("Transforming EMIS CSV content in " + orgDirectory);
+            transformParsers(version, parsers, processor, previousErrors, maxFilingThreads, processPatientData);
 
         } finally {
-
-            closeParsers(allParsers.values());
+            closeParsers(parsers.values());
         }
 
-        LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
+        LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
         processor.waitToFinish();
     }
 
@@ -116,13 +98,14 @@ public abstract class EmisCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    private static boolean shouldProcessPatientData(File orgDirectory, String[] csvFiles) throws Exception {
+    private static boolean shouldProcessPatientData(String orgDirectory, String[] csvFiles) throws Exception {
 
         //find the extract date from one of the CSV file names
-        Date extractDate = findExtractDate(new File(orgDirectory, csvFiles[0]));
+        Date extractDate = findExtractDate(csvFiles[0]);
 
         //our org GUID is the same as the directory name
-        String orgGuid = orgDirectory.getName();
+        String orgGuid = new File(orgDirectory).getName();
+        //TODO - validate that this org GUID is correct
 
         Date startDate = findStartDate(orgGuid);
 
@@ -307,7 +290,32 @@ public abstract class EmisCsvToFhirTransformer {
      * the Emis schema changes without notice, so rather than define the version in the SFTP reader,
      * we simply look at the files to work out what version it really is
      */
-    public static String determineVersion(File dir) throws Exception {
+    public static String determineVersion(String[] files) throws Exception {
+
+        List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(VERSION_5_4);
+        possibleVersions.add(VERSION_5_3);
+        possibleVersions.add(VERSION_5_1);
+        possibleVersions.add(VERSION_5_0);
+
+        for (String filePath: files) {
+
+            //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
+            AbstractCsvParser parser = createParserForFile(null, filePath);
+
+            //calling this will return the possible versions that apply to this parser
+            possibleVersions = parser.testForValidVersions(possibleVersions);
+        }
+
+        //if we end up with one or more possible versions that do apply, then
+        //return the first, since that'll be the most recent one
+        if (!possibleVersions.isEmpty()) {
+            return possibleVersions.get(0);
+        }
+
+        throw new TransformException("Unable to determine version for EMIS CSV");
+    }
+    /*public static String determineVersion(File dir) throws Exception {
 
         String[] versions = new String[]{VERSION_5_0, VERSION_5_1, VERSION_5_3, VERSION_5_4};
         Exception lastException = null;
@@ -332,10 +340,10 @@ public abstract class EmisCsvToFhirTransformer {
         }
 
         throw new TransformException("Unable to determine version for EMIS CSV", lastException);
-    }
+    }*/
 
 
-    private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
+    /*private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
         String organisationDir = null;
 
         for (String file: files) {
@@ -363,120 +371,62 @@ public abstract class EmisCsvToFhirTransformer {
 
         }
         return new File(organisationDir);
-    }
+    }*/
 
 
-    private static void validateAndOpenParsers(File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    private static void createParsers(String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        findFileAndOpenParser(Location.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Organisation.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(OrganisationLocation.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Patient.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(UserInRole.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(SharingOrganisation.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Session.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(SessionUser.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Slot.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Consultation.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Diary.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Observation.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(ObservationReferral.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(Problem.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(ClinicalCode.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(DrugCode.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(DrugRecord.class, dir, version, openParser, parsers);
-        findFileAndOpenParser(IssueRecord.class, dir, version, openParser, parsers);
+        for (String filePath: files) {
 
-        //these last two files aren't present in older versions
-        if (version.equals(VERSION_5_3)
-                || version.equals(VERSION_5_4)) {
-            findFileAndOpenParser(PatientAudit.class, dir, version, openParser, parsers);
-            findFileAndOpenParser(RegistrationAudit.class, dir, version, openParser, parsers);
-        }
-
-        //then validate there are no extra, unexpected files in the folder, which would imply new data
-        //Set<File> sh = new HashSet<>(parsers);
-
-        Set<File> expectedFiles = parsers
-                .values()
-                .stream()
-                .map(T -> T.getFile())
-                .collect(Collectors.toSet());
-
-        for (File file: dir.listFiles()) {
-            if (file.isFile()
-                    && !expectedFiles.contains(file)
-                    && !Files.getFileExtension(file.getAbsolutePath()).equalsIgnoreCase("gpg")) {
-
-                throw new FileFormatException(file, "Unexpected file " + file + " in EMIS CSV extract");
-            }
+            AbstractCsvParser parser = createParserForFile(version, filePath);
+            Class cls = parser.getClass();
+            parsers.put(cls, parser);
         }
     }
 
-    public static void findFileAndOpenParser(Class parserCls, File dir, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
+    private static AbstractCsvParser createParserForFile(String version, String filePath) throws Exception {
+        String fName = FilenameUtils.getName(filePath);
+        String[] toks = fName.split("_");
 
-        Package p = parserCls.getPackage();
-        String[] packages = p.getName().split("\\.");
-        String domain = packages[packages.length-1];
-        String name = parserCls.getSimpleName();
+        String domain = toks[1];
+        String name = toks[2];
 
-        for (File f: dir.listFiles()) {
-            String fName = f.getName();
+        //need to camel case the domain
+        String first = domain.substring(0, 1);
+        String last = domain.substring(1);
+        domain = first.toLowerCase() + last;
 
-            //we're only interested in CSV files
-            String extension = Files.getFileExtension(fName);
-            if (!extension.equalsIgnoreCase("csv")) {
-                continue;
-            }
+        String clsName = "org.endeavourhealth.transform.emis.csv.schema." + domain + "." + name;
+        Class cls = Class.forName(clsName);
 
-            String[] toks = fName.split("_");
-            if (toks.length != 5) {
-                continue;
-            }
-
-            if (!toks[1].equalsIgnoreCase(domain)
-                    || !toks[2].equalsIgnoreCase(name)) {
-                continue;
-            }
-
-            //now construct an instance of the parser for the file we've found
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(String.class, File.class, Boolean.TYPE);
-            AbstractCsvParser parser = constructor.newInstance(version, f, openParser);
-
-            ret.put(parserCls, parser);
-            return;
-        }
-
-        throw new FileNotFoundException("Failed to find CSV file for " + domain + "_" + name + " in " + dir);
+        //now construct an instance of the parser for the file we've found
+        Constructor<AbstractCsvParser> constructor = cls.getConstructor(String.class, String.class, Boolean.TYPE);
+        return constructor.newInstance(version, filePath, false);
     }
 
 
     private static String findDataSharingAgreementGuid(Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         //we need a file name to work out the data sharing agreement ID, so just the first file we can find
-        File f = parsers
+        String firstFilePath = parsers
                 .values()
                 .iterator()
                 .next()
-                .getFile();
+                .getFilePath();
 
-        return findDataSharingAgreementGuid(f);
-    }
-
-    public static String findDataSharingAgreementGuid(File f) throws Exception {
-        String name = Files.getNameWithoutExtension(f.getName());
+        String name = FilenameUtils.getBaseName(firstFilePath); //file name without extension
         String[] toks = name.split("_");
         if (toks.length != 5) {
-            throw new TransformException("Failed to extract data sharing agreement GUID from filename " + f.getName());
+            throw new TransformException("Failed to extract data sharing agreement GUID from filename " + firstFilePath);
         }
         return toks[4];
     }
 
-    private static Date findExtractDate(File f) throws Exception {
-        String name = Files.getNameWithoutExtension(f.getName());
+    private static Date findExtractDate(String filePath) throws Exception {
+        String name = FilenameUtils.getBaseName(filePath);
         String[] toks = name.split("_");
         if (toks.length != 5) {
-            throw new TransformException("Failed to find extract date in filename " + f.getName());
+            throw new TransformException("Failed to find extract date in filename " + filePath);
         }
         String dateStr = toks[3];
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -587,9 +537,10 @@ public abstract class EmisCsvToFhirTransformer {
 
         for (AbstractCsvParser parser: allParsers.values()) {
 
-            String fileName = parser.getFile().getName();
+            String filePath = parser.getFilePath();
+            String fileName = FilenameUtils.getName(filePath);
 
-            Set<Long> recordNumbers = findRecordNumbersToProcess(fileName, previousErrors);
+            Set<Long> recordNumbers = TransformErrorUtility.findRecordNumbersToProcess(fileName, previousErrors);
             parser.setRecordNumbersToProcess(recordNumbers);
 
             //if we have a non-null set, then we're processing specific records in some file
@@ -601,40 +552,6 @@ public abstract class EmisCsvToFhirTransformer {
         return processingSpecificRecords;
     }
 
-    private static Set<Long> findRecordNumbersToProcess(String fileName, TransformError previousErrors) {
-
-        //if we're running for the first time, then return null to process the full file
-        if (previousErrors == null) {
-            return null;
-        }
-
-        //if we previously had a fatal exception, then we want to process the full file
-        if (TransformErrorUtility.containsArgument(previousErrors, TransformErrorUtility.ARG_FATAL_ERROR)) {
-            return null;
-        }
-
-        //if we previously aborted due to errors in a previous exchange, then we want to process it all
-        if (TransformErrorUtility.containsArgument(previousErrors, TransformErrorUtility.ARG_WAITING)) {
-            return null;
-        }
-
-        //if we make it to here, we only want to process specific record numbers in our file, or even none, if there were
-        //no previous errors processing this specific file
-        HashSet<Long> recordNumbers = new HashSet<>();
-
-        for (Error error: previousErrors.getError()) {
-
-            String errorFileName = TransformErrorUtility.findArgumentValue(error, TransformErrorUtility.ARG_EMIS_CSV_FILE);
-            if (!Strings.isNullOrEmpty(errorFileName)
-                && errorFileName.equals(fileName)) {
-
-                String errorRecordNumber = TransformErrorUtility.findArgumentValue(error, TransformErrorUtility.ARG_EMIS_CSV_RECORD_NUMBER);
-                recordNumbers.add(Long.valueOf(errorRecordNumber));
-            }
-        }
-
-        return recordNumbers;
-    }
 
     private static boolean getAllowDisabledOrganisations() {
         if (cachedAllowDisabledOrganisations == null) {

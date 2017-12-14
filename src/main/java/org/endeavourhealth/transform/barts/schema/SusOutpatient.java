@@ -5,7 +5,6 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Date;
 
 public class SusOutpatient extends SusBaseParser {
@@ -13,8 +12,8 @@ public class SusOutpatient extends SusBaseParser {
     public static final String DATE_FORMAT = "yyyyMMdd";
     public static final String TIME_FORMAT = "hhmmss";
 
-    public SusOutpatient(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
+    public SusOutpatient(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList(new FixedParserField("CDSVersion",             1, 6));
         addFieldList(new FixedParserField("CDSRecordType",          7, 3));

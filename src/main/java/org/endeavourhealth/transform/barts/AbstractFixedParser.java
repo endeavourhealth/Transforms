@@ -1,22 +1,26 @@
 package org.endeavourhealth.transform.barts;
 
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.LinkedHashMap;
 
 public abstract class AbstractFixedParser implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFixedParser.class);
 
     private final String version;
-    private final File file;
+    private final String filePath;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
     private final DateFormat dateTimeFormat;
@@ -26,10 +30,10 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     private LinkedHashMap<String, FixedParserField> fieldList = new LinkedHashMap<String, FixedParserField>();
     private int fieldPositionAdjuster = 1; // Assumes first field is defined as starting in position 1
 
-    public AbstractFixedParser(String version, File file, boolean openParser, String dateFormat, String timeFormat) throws Exception {
+    public AbstractFixedParser(String version, String filePath, boolean openParser, String dateFormat, String timeFormat) throws Exception {
 
         this.version = version;
-        this.file = file;
+        this.filePath = filePath;
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
         this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
@@ -41,7 +45,7 @@ public abstract class AbstractFixedParser implements AutoCloseable {
 
     private void open() throws Exception {
         try {
-            FileReader fr = new FileReader(this.file);
+            InputStreamReader fr = FileHelper.readFileReaderFromSharedStorage(filePath);
             this.br = new BufferedReader(fr);
             currentLineNumber = 0;
 
@@ -74,7 +78,7 @@ public abstract class AbstractFixedParser implements AutoCloseable {
         } else {
             //only log out we "completed" the file if we read any rows from it
             if (currentLineNumber > 1) {
-                LOG.info("Completed file {}", file.getAbsolutePath());
+                LOG.info("Completed file {}", filePath);
             }
             curentLine = null;
             //automatically close the parser once we reach the end, to cut down on memory use
@@ -127,24 +131,24 @@ public abstract class AbstractFixedParser implements AutoCloseable {
             try {
                 ret = dateTimeFormat.parse(dt);
             } catch (ParseException pe) {
-                throw new FileFormatException(file.getName(), "Invalid date format [" + dt + "]", pe);
+                throw new FileFormatException(filePath, "Invalid date format [" + dt + "]", pe);
             }
         }
         return ret;
     }
 
-    public Date getDate (String column) throws TransformException {
+    public Date getDate(String column) throws TransformException {
         String dt = getString(column);
         return parseDate(dt);
     }
 
-    public Date parseDate (String date) throws TransformException {
+    public Date parseDate(String date) throws TransformException {
         Date ret = null;
         if (date != null && date.length() > 0) {
             try {
                 ret = dateFormat.parse(date);
             } catch (ParseException pe) {
-                throw new FileFormatException(file.getName(), "Invalid date format [" + date + "]", pe);
+                throw new FileFormatException(filePath, "Invalid date format [" + date + "]", pe);
             }
         }
         return ret;
@@ -157,7 +161,7 @@ public abstract class AbstractFixedParser implements AutoCloseable {
             try {
                 ret = timeFormat.parse(dt);
             } catch (ParseException pe) {
-                throw new FileFormatException(file.getName(), "Invalid date format [" + dt + "]", pe);
+                throw new FileFormatException(filePath, "Invalid date format [" + dt + "]", pe);
             }
         }
         return ret;
@@ -186,11 +190,11 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     }
 
     public CsvCurrentState getCurrentState() {
-        return new CsvCurrentState(file, currentLineNumber);
+        return new CsvCurrentState(filePath, currentLineNumber);
     }
 
-    public File getFile() {
-        return file;
+    public String getFilePath() {
+        return filePath;
     }
 
 }

@@ -6,9 +6,6 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Procedure extends AbstractFixedParser {
@@ -18,8 +15,8 @@ public class Procedure extends AbstractFixedParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public Procedure(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
+    public Procedure(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList(new FixedParserField("DOB",             1, 14));
         addFieldList(new FixedParserField("MRN",    13, 45));

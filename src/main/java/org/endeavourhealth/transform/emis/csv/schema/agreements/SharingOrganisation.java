@@ -3,13 +3,12 @@ package org.endeavourhealth.transform.emis.csv.schema.agreements;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.io.File;
 import java.util.Date;
 
 public class SharingOrganisation extends AbstractCsvParser {
 
-    public SharingOrganisation(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public SharingOrganisation(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

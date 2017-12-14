@@ -6,7 +6,6 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Date;
 
 public class Diagnosis extends AbstractFixedParser {
@@ -16,8 +15,8 @@ public class Diagnosis extends AbstractFixedParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public Diagnosis(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, DATE_FORMAT, TIME_FORMAT);
+    public Diagnosis(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList(new FixedParserField("DiagnosisId",             1, 14));
         addFieldList(new FixedParserField("Update_DT_TM",          16, 20));

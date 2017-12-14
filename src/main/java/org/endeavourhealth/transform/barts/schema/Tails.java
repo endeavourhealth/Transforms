@@ -4,12 +4,10 @@ import org.endeavourhealth.transform.barts.AbstractFixedParser;
 import org.endeavourhealth.transform.barts.FixedParserField;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
-import java.io.File;
-
 public class Tails extends AbstractFixedParser {
 
-    public Tails(String version, File f, boolean openParser) throws Exception {
-        super(version, f, openParser, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public Tails(String version, String filePath, boolean openParser) throws Exception {
+        super(version, filePath, openParser, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
 
         addFieldList(new FixedParserField("CDSUniqueueId",             1, 35));
         addFieldList(new FixedParserField("FINNbr",          91, 12));

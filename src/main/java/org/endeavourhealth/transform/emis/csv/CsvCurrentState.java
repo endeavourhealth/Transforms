@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv;
 
-import java.io.File;
+import org.apache.commons.io.FilenameUtils;
 
 public class CsvCurrentState {
 
@@ -8,8 +8,8 @@ public class CsvCurrentState {
     //private String fileDir;
     private Long recordNumber;
 
-    public CsvCurrentState(File file, long recordNumber) {
-        this.fileName = file.getName();
+    public CsvCurrentState(String filePath, long recordNumber) {
+        this.fileName = FilenameUtils.getName(filePath);
         //this.fileDir = file.getParent();
         this.recordNumber = Long.valueOf(recordNumber);
     }

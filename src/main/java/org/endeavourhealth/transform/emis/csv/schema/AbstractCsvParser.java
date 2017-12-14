@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.csv.CsvHelper;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -11,22 +12,20 @@ import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public abstract class AbstractCsvParser implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCsvParser.class);
 
     private final String version;
-    private final File file;
+    private final String filePath;
     private final CSVFormat csvFormat;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
@@ -37,10 +36,10 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     private Set<Long> recordNumbersToProcess = null;
 
 
-    public AbstractCsvParser(String version, File file, boolean openParser, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+    public AbstractCsvParser(String version, String filePath, boolean openParser, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
 
         this.version = version;
-        this.file = file;
+        this.filePath = filePath;
         this.csvFormat = csvFormat;
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
@@ -53,29 +52,14 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     private void open() throws Exception {
 
         //withHeader() now set as part of the CSV_FORMAT in the specific transformer
-        this.csvReader = CSVParser.parse(file, Charset.defaultCharset(), csvFormat);
+        InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
+        this.csvReader = new CSVParser(isr, csvFormat);
         try {
             this.csvIterator = csvReader.iterator();
 
-            //refactored out
             String[] expectedHeaders = getCsvHeaders(version);
-            CsvHelper.validateCsvHeaders(csvReader, file, expectedHeaders);
+            CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
 
-            /*Map<String, Integer> headerMap = csvReader.getHeaderMap();
-            String[] expectedHeaders = getCsvHeaders(version);
-            if (headerMap.size() != expectedHeaders.length) {
-                throw new FileFormatException(file.getName(), "Mismatch in number of CSV columns in " + file.getName() + " expected " + expectedHeaders.length + " but found " + headerMap.size());
-            }
-
-            for (int i = 0; i < expectedHeaders.length; i++) {
-                String expectedHeader = expectedHeaders[i];
-                Integer mapIndex = headerMap.get(expectedHeader);
-                if (mapIndex == null) {
-                    throw new FileFormatException(file.getName(), "Missing column " + expectedHeader + " in " + file.getName());
-                } else if (mapIndex.intValue() != i) {
-                    throw new FileFormatException(file.getName(), "Out of order column " + expectedHeader + " in " + file.getName() + " expected at " + i + " but found at " + mapIndex);
-                }
-            }*/
         } catch (Exception e) {
             //if we get any exception thrown during the constructor, make sure to close the reader
             close();
@@ -88,6 +72,35 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             csvReader.close();
             csvReader = null;
         }
+    }
+
+    public List<String> testForValidVersions(List<String> possibleVersions) throws Exception {
+
+        List<String> ret = new ArrayList<>();
+
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1000); //assuming we never have headers longer than 1000 bytes
+        StringReader stringReader = new StringReader(firstChars);
+        CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation
+        try {
+
+            for (String possibleVersion: possibleVersions) {
+                String[] expectedHeaders = getCsvHeaders(possibleVersion);
+                try {
+                    CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
+
+                    //if we call the above and don't get an exception, the possible versio is valid for the headers found
+                    ret.add(possibleVersion);
+
+                } catch (IllegalArgumentException ex) {
+                    //if we get this exception, the headers don't match the possible version
+                }
+            }
+
+        } finally {
+            stringReader.close();
+        }
+
+        return ret;
     }
 
     /*public void reset() throws Exception {
@@ -120,7 +133,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             this.csvRecord = csvIterator.next();
 
             if (csvReader.getCurrentLineNumber() % 50000 == 0) {
-                LOG.trace("Line " + csvReader.getCurrentLineNumber() + " of " + file.getAbsolutePath());
+                LOG.trace("Line " + csvReader.getCurrentLineNumber() + " of " + filePath);
             }
 
             //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
@@ -136,7 +149,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
         //only log out we "completed" the file if we read any rows from it
         if (csvReader.getCurrentLineNumber() > 1) {
-            LOG.info("Completed " + file.getAbsolutePath());
+            LOG.info("Completed " + filePath);
         }
 
         this.csvRecord = null;
@@ -148,8 +161,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     }
 
 
-    public File getFile() {
-        return file;
+    public String getFilePath() {
+        return filePath;
     }
 
     public long getCurrentLineNumber() {
@@ -157,7 +170,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     }
 
     public CsvCurrentState getCurrentState() {
-        return new CsvCurrentState(file, getCurrentLineNumber());
+        return new CsvCurrentState(filePath, getCurrentLineNumber());
     }
 
     /**
@@ -204,7 +217,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         try {
             return dateFormat.parse(s);
         } catch (ParseException pe) {
-            throw new FileFormatException(file.getName(), "Invalid date format [" + s + "]", pe);
+            throw new FileFormatException(filePath, "Invalid date format [" + s + "]", pe);
         }
     }
     public Date getTime(String column) throws TransformException {
@@ -216,7 +229,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         try {
             return timeFormat.parse(s);
         } catch (ParseException pe) {
-            throw new FileFormatException(file.getName(), "Invalid time format [" + s + "]", pe);
+            throw new FileFormatException(filePath, "Invalid time format [" + s + "]", pe);
         }
     }
     public Date getDateTime(String dateColumn, String timeColumn) throws TransformException {
