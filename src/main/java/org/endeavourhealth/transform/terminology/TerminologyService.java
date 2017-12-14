@@ -69,7 +69,7 @@ public abstract class TerminologyService {
         String system = coding.getSystem();
         try {
             if (system.equals(FhirUri.CODE_SYSTEM_SNOMED_CT)) {
-                //no mapping required unless no display term present
+                //mapping required if no display term present
                 if (Strings.isNullOrEmpty(coding.getDisplay())) {
                     SnomedCode mapping = TerminologyService.lookupSnomedFromConceptId(coding.getCode());
                     codeableConcept.addCoding(mapping.toCoding());

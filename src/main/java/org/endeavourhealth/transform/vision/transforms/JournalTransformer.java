@@ -1011,6 +1011,8 @@ public class JournalTransformer {
         //otherwise, perform a READ to Snomed translation
         else {
             String readCode = parser.getReadCode();
+            if (readCode.equalsIgnoreCase("ZZZZZ"))
+                return null;
             String term = parser.getRubric();
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
