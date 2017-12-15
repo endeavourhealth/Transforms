@@ -6,9 +6,11 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -36,13 +38,30 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createConditionProblem(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                String valStr = validateEntry(parser);
+                if (valStr == null) {
+                    createConditionProblem(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                } else {
+                    LOG.debug("Validation error:" + valStr);
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                }
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
 
+    }
+
+    /*
+     *
+     */
+    public static String validateEntry(Problem parser) {
+        if (parser.getLocalPatientId() == null || parser.getLocalPatientId().length() == 0) {
+            return "LocalPatientId not found for problemId " + parser.getProblemId();
+        } else {
+            return null;
+        }
     }
 
     /*

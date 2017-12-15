@@ -5,9 +5,11 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
@@ -29,12 +31,22 @@ public class ProcedureTransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        int lineCount = 0;
         // Skip header line
         parser.nextRecord();
+        lineCount++;
 
         while (parser.nextRecord()) {
             try {
-                createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                lineCount++;
+                String valStr = validateEntry(parser);
+                if (valStr == null) {
+                    createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                } else {
+                    valStr = "Validation error on line " + Integer.toString(lineCount) + " - " + valStr;
+                    LOG.debug("Validation error:" + valStr);
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                }
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -42,6 +54,18 @@ public class ProcedureTransformer extends BartsBasisTransformer {
         }
 
     }
+
+    /*
+     *
+     */
+    public static String validateEntry(org.endeavourhealth.transform.barts.schema.Procedure parser) {
+        if (parser.getLocalPatientId() == null || parser.getLocalPatientId().length() == 0) {
+            return "LocalPatientId not found";
+        } else {
+            return null;
+        }
+    }
+
 
     /*
      *
