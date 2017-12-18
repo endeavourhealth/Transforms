@@ -1003,9 +1003,10 @@ public class JournalTransformer {
     private static CodeableConcept createCodeableConcept (Journal parser) throws Exception {
         CodeableConcept codeableConcept = null;
         String snomedCode = parser.getSnomedCode();
-        //if the Snomed code exists, pass through the translator to create a full coded concept
+        String term = parser.getRubric();
+        //if the Snomed code exists with no term, pass through the translator to create a full coded concept
         if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", snomedCode);
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, snomedCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
         //otherwise, perform a READ to Snomed translation
@@ -1013,7 +1014,6 @@ public class JournalTransformer {
             String readCode = parser.getReadCode();
             if (readCode.equalsIgnoreCase("ZZZZZ"))
                 return null;
-            String term = parser.getRubric();
             codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
