@@ -40,7 +40,8 @@ public abstract class VisionCsvToFhirTransformer {
         String[] files = exchangeBody.split("\n");
         for (int i=0; i<files.length; i++) {
             String file = files[i].trim();
-            files[i] = file;
+            String filePath = FilenameUtils.concat(sharedStoragePath, file);
+            files[i] = filePath;
         }
         //String[] files = exchangeBody.split(java.lang.System.lineSeparator());
 
