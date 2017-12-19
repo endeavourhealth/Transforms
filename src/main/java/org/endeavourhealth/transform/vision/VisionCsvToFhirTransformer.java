@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -14,7 +15,6 @@ import org.endeavourhealth.transform.vision.transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -48,7 +48,7 @@ public abstract class VisionCsvToFhirTransformer {
         LOG.info("Invoking Vision CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        File orgDirectory = validateAndFindCommonDirectory(sharedStoragePath, files);
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
@@ -81,38 +81,6 @@ public abstract class VisionCsvToFhirTransformer {
             }
         }
     }
-
-
-    private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
-        String organisationDir = null;
-
-        for (String file: files) {
-            File f = new File(sharedStoragePath, file);
-            if (!f.exists()) {
-                LOG.error("Failed to find file {} in shared storage {}", file, sharedStoragePath);
-                throw new FileNotFoundException("" + f + " doesn't exist");
-            }
-            //LOG.info("Successfully found file {} in shared storage {}", file, sharedStoragePath);
-
-            try {
-                File orgDir = f.getParentFile();
-
-                if (organisationDir == null) {
-                    organisationDir = orgDir.getAbsolutePath();
-                } else {
-                    if (!organisationDir.equalsIgnoreCase(orgDir.getAbsolutePath())) {
-                        throw new Exception();
-                    }
-                }
-
-            } catch (Exception ex) {
-                throw new FileNotFoundException("" + f + " isn't in the expected directory structure within " + organisationDir);
-            }
-
-        }
-        return new File(organisationDir);
-    }
-
 
     private static void validateAndOpenParsers(String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
