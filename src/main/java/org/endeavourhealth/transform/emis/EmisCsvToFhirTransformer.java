@@ -460,6 +460,8 @@ public abstract class EmisCsvToFhirTransformer {
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
         }
 
+        LOG.trace("Starting pre-transforms to cache data");
+
         //check the sharing agreement to see if it's been disabled
         SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
@@ -478,6 +480,8 @@ public abstract class EmisCsvToFhirTransformer {
         //work out what record numbers to process, if we're re-running a transform
         boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
 
+        LOG.trace("Starting admin transforms");
+
         //run the transforms for non-patient resources
         LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
@@ -488,6 +492,8 @@ public abstract class EmisCsvToFhirTransformer {
         //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then
         //another extract to replace it
         if (processPatientData) {
+
+            LOG.trace("Starting patient transforms");
 
             //note the order of these transforms is important, as consultations should be before obs etc.
             PatientTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
