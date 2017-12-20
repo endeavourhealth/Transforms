@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
+import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +49,13 @@ public class BulkProcedure extends AbstractCharacterParser {
     public Date getDOB() throws TransformException {
         return super.getDate("DOB");
     }
-    public String getLocalPatientId() {
+    public String getLocalPatientId() throws FileFormatException {
         return super.getString("MRN").trim();
     }
-    public String getNHSNo() {
+    public String getNHSNo() throws FileFormatException {
         return super.getString("NHSNo").replaceAll("\\-", "");
     }
-    public String getConsultant() {
+    public String getConsultant() throws FileFormatException {
         return super.getString("Consultant").trim();
     }
 
@@ -79,13 +80,13 @@ public class BulkProcedure extends AbstractCharacterParser {
         return super.getString("DischargeDateTime");
     }
 
-    public String getProcedureText() {
+    public String getProcedureText() throws FileFormatException {
         return super.getString("ProcedureText").trim();
     }
-    public String getComment() {
+    public String getComment() throws FileFormatException {
         return super.getString("Comment").trim();
     }
-    public String getProcedureCode() {
+    public String getProcedureCode() throws FileFormatException {
         return super.getString("ProcedureCode").trim();
     }
 
@@ -95,13 +96,13 @@ public class BulkProcedure extends AbstractCharacterParser {
     public Date getUpdateDateTime() throws TransformException {
         return super.getDateTime("Update_DT_TM");
     }
-    public String getUpdatedBy() {
+    public String getUpdatedBy() throws FileFormatException {
         return super.getString("UpdatedBy").trim();
     }
-    public Long getEncounterId() {
+    public Long getEncounterId() throws FileFormatException {
         return Long.parseLong(super.getString("EncounterId").split("\\.")[0]);
     }
-    public String getFINNo() {
+    public String getFINNo() throws FileFormatException {
         return super.getString("FINNo").trim();
     }
 

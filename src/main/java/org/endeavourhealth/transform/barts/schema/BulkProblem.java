@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
+import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ public class BulkProblem extends AbstractCharacterParser {
         addFieldList("Classification");
         addFieldList("Onset_Precision");
         addFieldList("OnsetDate");
+        addFieldList("Status_Precision");
+        addFieldList("Status_Date");
         addFieldList("StatusLifecycle");
         addFieldList("Lifecycle_Cancelled_Rsn");
         addFieldList("Severity_Class");
@@ -52,7 +55,7 @@ public class BulkProblem extends AbstractCharacterParser {
         addFieldList("Record_Updated_Dt");
     }
 
-    public Long getProblemId() {
+    public Long getProblemId() throws FileFormatException {
         String ret = super.getString("ProblemId").split("\\.")[0];
         return Long.parseLong(ret);
     }
@@ -61,16 +64,16 @@ public class BulkProblem extends AbstractCharacterParser {
         return super.getDateTime("Update_DT_TM");
     }
 
-    public String getLocalPatientId() {
+    public String getLocalPatientId() throws FileFormatException {
         return super.getString("MRN").trim();
     }
-    public String getProblem() {
+    public String getProblem() throws FileFormatException {
         return super.getString("Problem").trim();
     }
-    public String getAnnotatedDisp() {
+    public String getAnnotatedDisp() throws FileFormatException {
         return super.getString("AnnotatedDisp").trim();
     }
-    public String getConfirmation() {
+    public String getConfirmation() throws FileFormatException {
         return super.getString("Confirmation");
     }
 
@@ -81,22 +84,22 @@ public class BulkProblem extends AbstractCharacterParser {
         return super.getString("OnsetDate");
     }
 
-    public String getStatusLifecycle() {
+    public String getStatusLifecycle() throws FileFormatException {
         return super.getString("StatusLifecycle");
     }
-    public String getSeverity() {
+    public String getSeverity() throws FileFormatException {
         return super.getString("Severity").trim();
     }
-    public String getProblemCode() {
+    public String getProblemCode() throws FileFormatException {
         return super.getString("ProblemCode").trim();
     }
-    public String getVocabulary() {
+    public String getVocabulary() throws FileFormatException {
         return super.getString("Vocabulary").trim();
     }
-    public String getDescription() {
+    public String getDescription() throws FileFormatException {
         return super.getString("Description").trim();
     }
-    public String getUpdatedBy() {
+    public String getUpdatedBy() throws FileFormatException {
         return super.getString("UpdatedBy").trim();
     }
 

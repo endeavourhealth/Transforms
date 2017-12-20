@@ -109,19 +109,19 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
         return getHeaders(version);
     }
 
-    public String getString(String column) {
+    public String getString(String column) throws FileFormatException {
         int fieldPos = fieldList.indexOf(column);
         if (fieldPos >= 0) {
-            LOG.trace("Field found - pos:" + fieldPos);
+            //LOG.trace("Field found - pos:" + fieldPos);
             String content = curentLineSplit[fieldPos].trim();
-            LOG.trace("Field content>" + content + "<");
+            //LOG.trace("Field content>" + content + "<");
             return content;
         } else {
-            return null;
+            throw new FileFormatException(filePath, "Field not defined [" + column + "]");
         }
     }
 
-    public Integer getInt(String column) {
+    public Integer getInt(String column) throws FileFormatException {
         String s = getString(column);
         if (s == null || s.length() == 0) {
             return null;
@@ -186,7 +186,7 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
         }
     }
 
-    public Long getLong(String column) {
+    public Long getLong(String column) throws FileFormatException {
         String s = getString(column);
         if (s == null) {
             return null;

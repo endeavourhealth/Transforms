@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
+import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +43,13 @@ public class BulkDiagnosis extends AbstractCharacterParser {
         addFieldList("Vocabulary");
         addFieldList("Axis");
         addFieldList("SecondaryDescription");
+        addFieldList("Source_System");
+        addFieldList("Ctrl_Id");
+        addFieldList("Record_Updated_Dt");
+
     }
 
-    public Long getDiagnosisId() {
+    public Long getDiagnosisId() throws FileFormatException {
         return Long.parseLong(super.getString("DiagnosisId").trim().split("\\.")[0]);
     }
 
@@ -52,11 +57,11 @@ public class BulkDiagnosis extends AbstractCharacterParser {
         return super.getDateTime("Update_DT_TM");
     }
 
-    public String getActiveIndicator() {
+    public String getActiveIndicator() throws FileFormatException {
         return super.getString("ActiveIndicator");
     }
 
-    public boolean isActive() {
+    public boolean isActive() throws FileFormatException {
         int val = super.getInt("ActiveIndicator");
         if (val == 1) {
             return true;
@@ -65,20 +70,20 @@ public class BulkDiagnosis extends AbstractCharacterParser {
         }
     }
 
-    public Long getPersonId() {
+    public Long getPersonId() throws FileFormatException {
         return Long.parseLong(super.getString("PersonId").trim().split("\\.")[0]);
     }
 
-    public Long getEncounterId() {
+    public Long getEncounterId() throws FileFormatException {
         return Long.parseLong(super.getString("EncounterId").trim().split("\\.")[0]);
     }
-    public String getLocalPatientId() {
+    public String getLocalPatientId() throws FileFormatException {
         return super.getString("MRN").trim();
     }
-    public String getFINNbr() {
+    public String getFINNbr() throws FileFormatException {
         return super.getString("FINNbr").trim();
     }
-    public String getDiagnosis() {
+    public String getDiagnosis() throws FileFormatException {
         return super.getString("Diagnosis").trim();
     }
 
@@ -89,13 +94,13 @@ public class BulkDiagnosis extends AbstractCharacterParser {
         return super.getString("DiagnosisDate");
     }
 
-    public String getDiagnosisCode() {
+    public String getDiagnosisCode() throws FileFormatException {
         return super.getString("DiagnosisCode").trim();
     }
-    public String getVocabulary() {
+    public String getVocabulary() throws FileFormatException {
         return super.getString("Vocabulary").trim();
     }
-    public String getSecondaryDescription() {
+    public String getSecondaryDescription() throws FileFormatException {
         return super.getString("SecondaryDescription").trim();
     }
 
