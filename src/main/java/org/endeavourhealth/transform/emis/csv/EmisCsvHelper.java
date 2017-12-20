@@ -929,10 +929,27 @@ public class EmisCsvHelper {
     public void applyAdminResourceCache(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         List<EmisAdminResourceCache> cachedResources = mappingRepository.getCachedResources(dataSharingAgreementGuid);
+        LOG.trace("Got to apply " + cachedResources.size() + " admin resources");
+
+        int count = 0;
+
         for (EmisAdminResourceCache cachedResource: cachedResources) {
 
             Resource fhirResource = PARSER_POOL.parse(cachedResource.getResourceData());
             fhirResourceFiler.saveAdminResource(null, fhirResource);
+
+            //to cut memory usage, clear out the JSON field on each object as we pass it. Due to weird
+            //Emis org/practitioner hierarchy, we've got 500k practitioners to save, so this is quite a lot of memory
+            cachedResource.setDataSharingAgreementGuid(null);
+            cachedResource.setEmisGuid(null);
+            cachedResource.setResourceType(null);
+            cachedResource.setResourceData(null);
+
+            //log progress
+            count ++;
+            if (count % 50000 == 0) {
+                LOG.trace("Done " + count + " / " + cachedResources.size());
+            }
         }
     }
 
