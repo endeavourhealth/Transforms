@@ -251,7 +251,10 @@ public class FhirDeltaResourceFilter {
         public Object call() throws Exception {
 
             try {
-                IdHelper.mapIds(serviceId, systemId, resource);
+                List<Resource> resources = new ArrayList<>();
+                resources.add(resource);
+
+                IdHelper.mapIds(serviceId, systemId, resources);
             } catch (Exception ex) {
                 throw new TransformException("Exception mapping  " + resource.getResourceType() + " " + resource.getId(), ex);
             }
