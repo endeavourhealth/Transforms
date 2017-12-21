@@ -604,10 +604,10 @@ public class JournalTransformer {
 //
 
         //carry over linked items from any previous instance of this problem
-//        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
-//        if (previousReferences != null && !previousReferences.isEmpty()) {
-//            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
-//        }
+        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
+        if (previousReferences != null && !previousReferences.isEmpty()) {
+            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
+        }
 
         //apply any linked items from this extract
         List<String> linkedResources = csvHelper.getAndRemoveProblemRelationships(observationID, patientID);

@@ -94,10 +94,10 @@ public class EncounterTransformer {
         }
 
         //carry over linked items from any previous instance of this encounter
-//        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
-//        if (previousReferences != null && !previousReferences.isEmpty()) {
-//            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
-//        }
+        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
+        if (previousReferences != null && !previousReferences.isEmpty()) {
+            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
+        }
 
         //apply any linked items from this extract. Encounter links set-up in Journal pre-transformer
         List<String> linkedResources = csvHelper.getAndRemoveConsultationRelationships(consultationID, patientID);
