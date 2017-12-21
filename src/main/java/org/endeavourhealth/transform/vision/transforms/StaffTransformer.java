@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Staff;
+import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Practitioner;
 
@@ -64,6 +65,14 @@ public class StaffTransformer {
 
         String roleCode = parser.getJobCategoryCode();
         String roleName = getJobCategoryName(roleCode);
+
+        String gmpCode = parser.getGMPCode();
+        if (!Strings.isNullOrEmpty(gmpCode)) {
+            Identifier identifier = new Identifier()
+                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE)
+                    .setValue(gmpCode);
+            fhirPractitioner.addIdentifier(identifier);
+        }
 
         //fhirPractitioner.setActive(true);  //assume active for vision?
 
