@@ -38,8 +38,6 @@ public class FhirResourceFiler {
     private final FhirStorageService storageService;
     private final ExchangeBatchDalI exchangeBatchRepository;
     private final TransformError transformError;
-    //private final ExchangeTransformAudit transformAudit;
-    //private final Map<String, String> resourceTypes; //although a set would be idea, a map allows safe multi-thread access
     private final List<UUID> batchIdsCreated;
 
     //batch IDs
@@ -48,7 +46,9 @@ public class FhirResourceFiler {
     private ExchangeBatch adminBatchId = null;
 
     //threading
-    private ThreadPool threadPool = null;
+    private MapIdTask nextMapIdTask = new MapIdTask();
+    private ThreadPool threadPoolIdMapper = null;
+    private ThreadPool threadPoolFiler = null;
 
     //counts
     private Map<ExchangeBatch, AtomicInteger> countResourcesSaved = new ConcurrentHashMap<>();
@@ -64,7 +64,8 @@ public class FhirResourceFiler {
         this.exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
         this.transformError = transformError;
         this.batchIdsCreated = batchIdsCreated;
-        this.threadPool = new ThreadPool(maxFilingThreads, 50000);
+        this.threadPoolIdMapper = new ThreadPool(maxFilingThreads, 25000);
+        this.threadPoolFiler = new ThreadPool(maxFilingThreads, 25000);
     }
 
 
@@ -104,7 +105,7 @@ public class FhirResourceFiler {
                                     boolean expectingPatientResource,
                                     boolean mapIds,
                                     ExchangeBatch exchangeBatch,
-                                    boolean toDelete,
+                                    boolean isDelete,
                                     Resource... resources) throws Exception {
 
         for (Resource resource: resources) {
@@ -118,16 +119,54 @@ public class FhirResourceFiler {
             resourceTypes.put(resourceType, resourceType);*/
 
             //increment our counters for auditing
-            if (toDelete) {
+            if (isDelete) {
                 countResourcesDeleted.get(exchangeBatch).incrementAndGet();
             } else {
                 countResourcesSaved.get(exchangeBatch).incrementAndGet();
             }
         }
 
-        List<ThreadPoolError> errors = threadPool.submit(new MapAndSaveResourceTask(parserState, toDelete, mapIds, exchangeBatch, expectingPatientResource, resources));
+        //if we want to map IDs then put in the ID mapping queue, otherwise go straight to the filing queue
+        if (mapIds) {
+            addToIdMappingQueue(parserState, isDelete, exchangeBatch, resources);
+
+        } else {
+            for (Resource resource: resources) {
+                addToFilingQueue(parserState, isDelete, exchangeBatch, resource, false);
+            }
+        }
+    }
+
+    private void addToIdMappingQueue(CsvCurrentState parserState, boolean isDelete,
+                                     ExchangeBatch exchangeBatch, Resource[] resources) throws Exception {
+
+        //we batch up ID mapping as it's more efficient to do multiple at once
+        MapIdJob job = new MapIdJob(parserState, isDelete, exchangeBatch, resources);
+        nextMapIdTask.addJob(job);
+
+        //if the task is full, then execute it
+        if (nextMapIdTask.isFull()) {
+            runNextMapIdTask();
+        }
+    }
+
+    private void runNextMapIdTask() throws Exception {
+        MapIdTask task = nextMapIdTask;
+        nextMapIdTask = new MapIdTask();
+
+        List<ThreadPoolError> errors = threadPoolIdMapper.submit(task);
         handleErrors(errors);
     }
+
+    private void addToFilingQueue(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch,
+                                  Resource resource, boolean isDefinitelyNewResource) throws Exception {
+
+        FileResourceTask task = new FileResourceTask(parserState, isDelete, exchangeBatch, resource, isDefinitelyNewResource);
+        List<ThreadPoolError> errors = threadPoolFiler.submit(task);
+        handleErrors(errors);
+    }
+
+
 
     private ExchangeBatch getAdminBatch() throws Exception {
         if (adminBatchId == null) {
@@ -226,43 +265,63 @@ public class FhirResourceFiler {
      */
     public void waitToFinish() throws Exception {
 
-        //wait for all tasks to be completed
-        List<ThreadPoolError> errors = threadPool.waitAndStop();
+        //make sure the current job of ID mapping gets run
+        runNextMapIdTask();
+
+        //close down the ID mapper pool
+        List<ThreadPoolError> errors = threadPoolIdMapper.waitAndStop();
         handleErrors(errors);
 
-        //update the resource types used
-        //saveResourceTypesUsed();
+        //close down the filing pool
+        errors = threadPoolFiler.waitAndStop();
+        handleErrors(errors);
 
         //log out counts of what we processed
         logResults();
-
-        //return getAllBatchIds();
     }
 
-    private void handleErrors(List<ThreadPoolError> errors) throws Exception {
+    /**
+     * whenever anything it added to one of the thread pools, we may get one or more errors
+     * returned for previously submitted tasks. This function handles those errors.
+     * Note, this is synchronised because we add to thread pools from both the main transform
+     * thread and the ID mapping threads
+     */
+    private synchronized void handleErrors(List<ThreadPoolError> errors) throws Exception {
         if (errors == null || errors.isEmpty()) {
             return;
         }
 
         for (ThreadPoolError error: errors) {
 
-            MapAndSaveResourceTask callable = (MapAndSaveResourceTask)error.getCallable();
             Throwable cause = error.getException();
-            CsvCurrentState parserState = callable.getParserState();
+
+            //if the exception is one of our special types, then we
+            if (cause instanceof FilingAndMappingException) {
+                FilingAndMappingException filingAndMappingException = (FilingAndMappingException)cause;
+                List<CsvCurrentState> parserStates = filingAndMappingException.getParserStates();
+                Throwable innerCause = cause.getCause();
+
+                if (parserStates != null
+                    && !parserStates.isEmpty()) {
+
+                    for (CsvCurrentState parserState: parserStates) {
+                        logTransformRecordError(innerCause, parserState);
+                    }
+
+                    return;
+                }
+            }
 
             //if we had an error that doesn't have a CSV state, then it's not something that can be attributed
             //to a specific row in a CSV file, and so should be treated as a fatal exception
-            if (parserState == null) {
-                //the cause may be an Exception or Error so we need to explicitly
-                //cast to the right type to throw it without changing the method signature
-                if (cause instanceof Exception) {
-                    throw (Exception)cause;
-                } else if (cause instanceof Error) {
-                    throw (Error)cause;
-                }
-           }
 
-            logTransformRecordError(cause, parserState);
+            //the cause may be an Exception or Error so we need to explicitly
+            //cast to the right type to throw it without changing the method signature
+            if (cause instanceof Exception) {
+                throw (Exception)cause;
+            } else if (cause instanceof Error) {
+                throw (Error)cause;
+            }
         }
     }
 
@@ -402,9 +461,187 @@ public class FhirResourceFiler {
         TransformErrorUtility.addTransformError(transformError, ex, args);
     }
 
+    class MapIdJob {
+        private CsvCurrentState parserState = null;
+        private boolean isDelete = false;
+        private ExchangeBatch exchangeBatch = null;
+        private Resource[] resources = null;
+
+        MapIdJob(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch, Resource... resources) {
+            this.parserState = parserState;
+            this.isDelete = isDelete;
+            this.exchangeBatch = exchangeBatch;
+            this.resources = resources;
+        }
+
+        public CsvCurrentState getParserState() {
+            return parserState;
+        }
+
+        public void setParserState(CsvCurrentState parserState) {
+            this.parserState = parserState;
+        }
+
+        public boolean isDelete() {
+            return isDelete;
+        }
+
+        public void setDelete(boolean delete) {
+            isDelete = delete;
+        }
+
+        public ExchangeBatch getExchangeBatch() {
+            return exchangeBatch;
+        }
+
+        public void setExchangeBatch(ExchangeBatch exchangeBatch) {
+            this.exchangeBatch = exchangeBatch;
+        }
+
+        public Resource[] getResources() {
+            return resources;
+        }
+
+        public void setResources(Resource[] resources) {
+            this.resources = resources;
+        }
+    }
+
+    class FilingAndMappingException extends Exception {
+        private List<CsvCurrentState> parserStates = null;
+
+        public FilingAndMappingException(String message, CsvCurrentState parserState, Exception cause) {
+            super(message, cause);
+
+            if (parserState != null) {
+                parserStates = new ArrayList<>();
+                this.parserStates.add(parserState);
+            }
+        }
+
+        public FilingAndMappingException(String message, List<CsvCurrentState> parserStates, Exception cause) {
+            super(message, cause);
+
+            this.parserStates = parserStates;
+        }
+
+        public List<CsvCurrentState> getParserStates() {
+            return parserStates;
+        }
+    }
 
 
-    class MapAndSaveResourceTask implements Callable {
+    class MapIdTask implements Callable {
+
+        private List<MapIdJob> jobs = new ArrayList<>();
+
+        public MapIdTask() { }
+
+        public void addJob(MapIdJob job) {
+            jobs.add(job);
+        }
+
+        public boolean isFull() {
+            return jobs.size() >= 10;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            //collate all the resources from the jobs into a single list, with a map for reverse lookups
+            List<Resource> resources = new ArrayList<>();
+            Map<Resource, MapIdJob> hmJobs = new HashMap<>();
+
+            for (MapIdJob job: jobs) {
+                Resource[] resourcesArr = job.getResources();
+                for (Resource resource: resourcesArr) {
+                    resources.add(resource);
+                    hmJobs.put(resource, job);
+                }
+            }
+
+            //do the ID mapping
+            Set<Resource> definitelyNewResources = null;
+            try {
+                definitelyNewResources = IdHelper.mapIds(serviceId, systemId, resources);
+
+            } catch (Exception ex) {
+
+                String err = "Exception mapping resources: ";
+                List<CsvCurrentState> parserStates = new ArrayList<>();
+                for (Resource resource: resources) {
+                    err += resource.getResourceType() + "/" + resource.getId() + " ";
+
+                    if (parserStates != null) {
+                        MapIdJob job = hmJobs.get(resource);
+                        CsvCurrentState parserState = job.getParserState();
+                        if (parserState == null) {
+                            //if one of our jobs has a null parser state, then it's not a CSV-record level error
+                            //so null the list so it gets treated as a fatal error
+                            parserStates = null;
+                        } else {
+                            parserStates.add(parserState);
+                        }
+                    }
+                }
+
+                LOG.error(err, ex);
+                throw new FilingAndMappingException(err, parserStates, ex);
+            }
+
+            //then bump onto the filing queue
+            for (Resource resource: resources) {
+                boolean isDefinitelyNewResource = definitelyNewResources.contains(resource);
+                MapIdJob job = hmJobs.get(resource);
+                CsvCurrentState parserState = job.getParserState();
+                boolean isDelete = job.isDelete();
+                ExchangeBatch exchangeBatch = job.exchangeBatch;
+
+                addToFilingQueue(parserState, isDelete, exchangeBatch, resource, isDefinitelyNewResource);
+            }
+
+            return null;
+        }
+    }
+
+    class FileResourceTask implements Callable {
+
+        private CsvCurrentState parserState = null;
+        private boolean isDelete = false;
+        private ExchangeBatch exchangeBatch = null;
+        private Resource resource = null;
+        private boolean isDefinitelyNewResource = false;
+
+        public FileResourceTask(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch,
+                                Resource resource, boolean isDefinitelyNewResource) {
+            this.parserState = parserState;
+            this.isDelete = isDelete;
+            this.exchangeBatch = exchangeBatch;
+            this.resource = resource;
+            this.isDefinitelyNewResource = isDefinitelyNewResource;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                UUID batchUuid = exchangeBatch.getBatchId();
+                if (isDelete) {
+                    storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
+                } else {
+                    storageService.exchangeBatchUpdate(exchangeId, batchUuid, resource, isDefinitelyNewResource);
+                }
+
+            } catch (Exception ex) {
+                LOG.error("", ex);
+                throw new FilingAndMappingException("Exception filing " + resource.getResourceType() + " " + resource.getId(), parserState, ex);
+            }
+
+            return null;
+        }
+    }
+
+    /*class MapAndSaveResourceTask implements Callable {
 
         private CsvCurrentState parserState = null;
         private boolean isDelete = false;
@@ -434,19 +671,6 @@ public class FhirResourceFiler {
                         isDefinitelyNewResource = IdHelper.mapIds(serviceId, systemId, resource);
                     }
 
-                    //if we've not set the EDS patient ID on our batch yet, then do so now
-                    //this is now done as the exchange batch is created, so there's no need to save again
-                    /*if (patientResources
-                            && exchangeBatch.getEdsPatientId() == null) {
-                        try {
-                            String edsPatientId = IdHelper.getPatientId(resource);
-                            exchangeBatch.setEdsPatientId(UUID.fromString(edsPatientId));
-                            exchangeBatchRepository.save(exchangeBatch);
-                        } catch (Exception ex) {
-                            //if we try this on a Slot, it'll fail, so just ignore any errors
-                        }
-                    }*/
-
                     UUID batchUuid = exchangeBatch.getBatchId();
                     if (isDelete) {
                         storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
@@ -466,7 +690,7 @@ public class FhirResourceFiler {
         public CsvCurrentState getParserState() {
             return parserState;
         }
-    }
+    }*/
 
 
 

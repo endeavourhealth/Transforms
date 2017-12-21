@@ -212,15 +212,130 @@ public class IdHelper {
         return edsId;
     }*/
 
-    public static boolean mapIds(UUID serviceId, UUID systemId, Resource resource) throws Exception {
-        return mapIds(serviceId, systemId, resource, true);
-    }
-
     /**
      * maps the ID and all IDs within references in a FHIR resource to unique ones in the EDS space
      * returns true to indicate the resource is new to us, false otherwise
      */
-    public static boolean mapIds(UUID serviceId, UUID systemId, Resource resource, boolean mapResourceId) throws Exception {
+    public static Set<Resource> mapIds(UUID serviceId, UUID systemId, List<Resource> resources) throws Exception {
+
+        Set<Resource> definitelyNewResources = new HashSet<>();
+
+        //first step is to collect all the references that we want to map
+        Set<String> referenceValues = new HashSet<>();
+        Map<Resource, String> resourceIdSourceReferenceMap = new HashMap<>();
+        Set<String> resourceIdSourceReferenceStrings = new HashSet<>();
+
+        for (Resource resource: resources) {
+
+            //find all the references from the resource, using an ID mapper for that resource type
+            BaseIdMapper idMapper = getIdMapper(resource);
+            idMapper.getResourceReferences(resource, referenceValues);
+
+            //add the resource ID to the map too, in reference format
+            String sourceIdReferenceValue = ReferenceHelper.createResourceReference(resource.getResourceType(), resource.getId());
+            referenceValues.add(sourceIdReferenceValue);
+            resourceIdSourceReferenceMap.put(resource, sourceIdReferenceValue);
+            resourceIdSourceReferenceStrings.add(sourceIdReferenceValue);
+        }
+
+        //next, we go to the cache and DB to find and create mappings for the references
+        Map<String, String> mappings = new HashMap<>();
+
+        Set<String> definitelyNewResourceIdSourceReferences = populateResourceIdMappings(serviceId, systemId, referenceValues, resourceIdSourceReferenceStrings, mappings);
+
+        //finally apply the references
+        for (Resource resource: resources) {
+
+            //apply the mappings to all references
+            BaseIdMapper idMapper = getIdMapper(resource);
+            idMapper.applyReferenceMappings(resource, mappings, true);
+
+            //and apply the mapping to the ID too
+            String sourceIdReferenceValue = resourceIdSourceReferenceMap.get(resource);
+            String edsIdReferenceValue = mappings.get(sourceIdReferenceValue);
+            Reference edsReference = new Reference().setReference(edsIdReferenceValue);
+            String edsId = ReferenceHelper.getReferenceId(edsReference);
+            resource.setId(edsId);
+
+            //also find out if our resource is new or not
+            boolean isNewResource = definitelyNewResourceIdSourceReferences.contains(sourceIdReferenceValue);
+            if (isNewResource) {
+                definitelyNewResources.add(resource);
+            }
+        }
+
+        return definitelyNewResources;
+    }
+
+    private static Set<String> populateResourceIdMappings(UUID serviceId, UUID systemId, Set<String> sourceReferencesToMap,
+                                                                   Set<String> resourceIdSourceReferenceStrings,
+                                                                   Map<String, String> mappingsToPopulate) throws Exception {
+
+        Set<String> definitelyNewResourceIdSourceReferences = new HashSet<>();
+
+        //convert the set of reference Strings to a list of Reference objects
+        List<Reference> referencesToHitDb = new ArrayList<>();
+
+        for (String sourceReferenceValue: sourceReferencesToMap) {
+            Reference sourceReference = new Reference().setReference(sourceReferenceValue);
+
+            UUID edsId = checkCache(sourceReferenceValue);
+            if (edsId != null) {
+                //if in the cache, construct a new reference String with the ID and add to our map
+                ResourceType resourceType = ReferenceHelper.getResourceType(sourceReference);
+                String edsReferenceValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
+                mappingsToPopulate.put(sourceReferenceValue, edsReferenceValue);
+
+            } else {
+                //if not found in the cache, we'll need to go to the DB
+                referencesToHitDb.add(sourceReference);
+            }
+        }
+
+        //call to the cache and DB to find existing mappings
+        Map<Reference, Reference> referenceMappingsFromDb = repository.findEdsReferencesFromSourceReferences(serviceId, systemId, referencesToHitDb);
+
+        //ensure we've got a mapping for every reference we started with and create where not
+        for (Reference sourceReference: referencesToHitDb) {
+            String sourceReferenceValue = sourceReference.getReference();
+            Reference mappedReference = referenceMappingsFromDb.get(sourceReference);
+
+            UUID edsId = null;
+            String mappedReferenceValue = null;
+
+            //if we don't have a pre-existing mapping for this source reference, we need to create one
+            if (mappedReference == null) {
+
+                //if we failed to find a mapping for our resource ID, then it means we're saving a new resource
+                if (resourceIdSourceReferenceStrings.contains(sourceReferenceValue)) {
+                    definitelyNewResourceIdSourceReferences.add(sourceReferenceValue);
+                }
+
+                ReferenceComponents comps = ReferenceHelper.getReferenceComponents(sourceReference);
+                String resourceType = comps.getResourceType().toString();
+                String sourceId = comps.getId();
+
+                edsId = repository.findOrCreateThreadSafe(serviceId, systemId, resourceType, sourceId);
+                mappedReferenceValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
+
+            } else {
+                //if we do have a mapping, extract the ID as a UUID so we can cache it
+                String edsIdStr = ReferenceHelper.getReferenceId(mappedReference);
+                edsId = UUID.fromString(edsIdStr);
+                mappedReferenceValue = mappedReference.getReference();
+            }
+
+            //add to our map of mappings
+            mappingsToPopulate.put(sourceReferenceValue, mappedReferenceValue);
+
+            //and add to our cache for next time
+            addToCache(sourceReferenceValue, edsId);
+        }
+
+        return definitelyNewResourceIdSourceReferences;
+    }
+
+    /*public static boolean mapIds(UUID serviceId, UUID systemId, Resource resource) throws Exception {
 
         //get a suitable mapper implementation for the resource type
         BaseIdMapper idMapper = getIdMapper(resource);
@@ -230,27 +345,21 @@ public class IdHelper {
         idMapper.getResourceReferences(resource, referenceValues);
 
         //if we want to map the resource ID, add that to the list of references
-        boolean isNewResource = false;
-        String sourceIdReferenceValue = null;
-        if (mapResourceId) {
-            Reference sourceReference = ReferenceHelper.createReferenceExternal(resource);
-            sourceIdReferenceValue = sourceReference.getReference();
-            referenceValues.add(sourceIdReferenceValue);
-        }
+        Reference sourceReference = ReferenceHelper.createReferenceExternal(resource);
+        String sourceIdReferenceValue = sourceReference.getReference();
+        referenceValues.add(sourceIdReferenceValue);
 
         Map<String, String> mappings = new HashMap<>();
-        isNewResource = populateResourceIdMappings(serviceId, systemId, referenceValues, sourceIdReferenceValue, mappings);
+        boolean isNewResource = populateResourceIdMappings(serviceId, systemId, referenceValues, sourceIdReferenceValue, mappings);
 
         //now apply the references
         idMapper.applyReferenceMappings(resource, mappings, true);
 
         //and map the ID if we're doing that
-        if (mapResourceId) {
-            String edsIdReferenceValue = mappings.get(sourceIdReferenceValue);
-            Reference edsReference = new Reference().setReference(edsIdReferenceValue);
-            String edsId = ReferenceHelper.getReferenceId(edsReference);
-            resource.setId(edsId);
-        }
+        String edsIdReferenceValue = mappings.get(sourceIdReferenceValue);
+        Reference edsReference = new Reference().setReference(edsIdReferenceValue);
+        String edsId = ReferenceHelper.getReferenceId(edsReference);
+        resource.setId(edsId);
 
         return isNewResource;
     }
@@ -319,7 +428,7 @@ public class IdHelper {
         }
 
         return isNewResource;
-    }
+    }*/
 
     /**
      * returns the patient ID of the resource or null if it doesn't have one. If called with
