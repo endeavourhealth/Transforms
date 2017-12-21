@@ -170,7 +170,7 @@ public class Patient extends AbstractCsvParser {
         return super.getString("GP");
     }
     public String getExternalUsualGPOrganisation() {
-        return super.getString("SURGERY");
+        return super.getString("SERVICE_ID");
     }
     public String getPatientAction() {
         return super.getString("ACTION");
