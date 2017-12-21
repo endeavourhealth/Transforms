@@ -210,7 +210,10 @@ public class JournalTransformer {
             L = Allergy
         */
         String readCode = parser.getReadCode();
-        if (Read2.isProcedure(readCode) && !Read2.isBPCode(readCode) && !subset.equalsIgnoreCase("T")) {
+        if (Read2.isProcedure(readCode)
+                && !Read2.isBPCode(readCode)
+                && Strings.isNullOrEmpty(parser.getValue1AsText())
+                && !subset.equalsIgnoreCase("T")) {
             return ResourceType.Procedure;
         } else if (Read2.isDisorder(readCode) || subset.equalsIgnoreCase("P")) {
             return ResourceType.Condition;
