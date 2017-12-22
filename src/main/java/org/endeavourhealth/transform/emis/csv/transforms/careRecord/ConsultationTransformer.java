@@ -126,9 +126,13 @@ public class ConsultationTransformer {
         }
 
         //carry over linked items from any previous instance of this problem
-        List<Reference> previousReferences = EmisCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
+        //use the cache in the CSV helper now, rather than hitting the DB
+        //List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
+        List<String> previousReferences = csvHelper.findConsultationPreviousLinkedResources(fhirEncounter.getId());
+
         if (previousReferences != null && !previousReferences.isEmpty()) {
-            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
+            List<Reference> references = ReferenceHelper.createReferences(previousReferences);
+            csvHelper.addLinkedItemsToResource(fhirEncounter, references, FhirExtensionUri.ENCOUNTER_COMPONENTS);
         }
 
         //apply any linked items from this extract

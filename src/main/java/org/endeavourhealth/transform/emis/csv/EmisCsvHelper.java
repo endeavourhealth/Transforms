@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class EmisCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCsvHelper.class);
@@ -56,6 +57,8 @@ public class EmisCsvHelper {
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<String, List<String>> consultationPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
+    private Map<String, List<String>> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
 
     public EmisCsvHelper(String dataSharingAgreementGuid, boolean allowProcessingDisabledServices, boolean allowProcessingMissingCodes) {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
@@ -350,20 +353,21 @@ public class EmisCsvHelper {
 
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(),
-                fhirResourceFiler.getSystemId(),
-                resourceType,
-                locallyUniqueId);
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        UUID systemId = fhirResourceFiler.getSystemId();
+
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, systemId, resourceType, locallyUniqueId);
+
+        //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
         if (globallyUniqueId == null) {
             return null;
         }
 
         ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(resourceType.toString(), globallyUniqueId);
-        if (resourceHistory == null) {
-            return null;
-        }
 
-        if (resourceHistory.isDeleted()) {
+        //if the resource has been deleted before, we'll have a null entry or one that says it's deleted
+        if (resourceHistory == null
+                || resourceHistory.isDeleted()) {
             return null;
         }
 
@@ -576,12 +580,11 @@ public class EmisCsvHelper {
         }
     }
 
-    public static List<Reference> findPreviousLinkedReferences(EmisCsvHelper csvHelper,
-                                                               FhirResourceFiler fhirResourceFiler,
-                                                               String locallyUniqueId,
-                                                               ResourceType resourceType) throws Exception {
+    public List<Reference> findPreviousLinkedReferences(FhirResourceFiler fhirResourceFiler,
+                                                       String locallyUniqueId,
+                                                       ResourceType resourceType) throws Exception {
 
-        DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType, fhirResourceFiler);
+        DomainResource previousVersion = (DomainResource)retrieveResource(locallyUniqueId, resourceType, fhirResourceFiler);
         if (previousVersion == null) {
             //if this is the first time, then we'll have a null resource
             return null;
@@ -1231,6 +1234,47 @@ public class EmisCsvHelper {
             }
         }
     }
+
+    public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
+
+        if (previousReferences == null
+                || previousReferences.isEmpty()) {
+            return;
+        }
+
+        //to cut memory use, cache as a list of Strings not Reference objects
+        List<String> referenceStrings = previousReferences
+                .stream()
+                .map(T -> T.getReference())
+                .collect(Collectors.toList());
+
+        consultationPreviousLinkedResources.put(encounterSourceId, referenceStrings);
+    }
+
+    public List<String> findConsultationPreviousLinkedResources(String encounterSourceId) {
+        return consultationPreviousLinkedResources.remove(encounterSourceId);
+    }
+
+    public void cacheProblemPreviousLinkedResources(String problemSourceId, List<Reference> previousReferences) {
+        if (previousReferences == null
+                || previousReferences.isEmpty()) {
+            return;
+        }
+
+        //to cut memory use, cache as a list of Strings not Reference objects
+        List<String> referenceStrings = previousReferences
+                .stream()
+                .map(T -> T.getReference())
+                .collect(Collectors.toList());
+
+        problemPreviousLinkedResources.put(problemSourceId, referenceStrings);
+    }
+
+    public List<String> findProblemPreviousLinkedResources(String problemSourceId) {
+        return problemPreviousLinkedResources.remove(problemSourceId);
+    }
+
+
 
     /**
      * temporary storage class for changes to the practitioners involved in a session

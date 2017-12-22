@@ -125,9 +125,12 @@ public class ProblemTransformer {
         }
 
         //carry over linked items from any previous instance of this problem
-        List<Reference> previousReferences = EmisCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
+        //List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
+        List<String> previousReferences = csvHelper.findProblemPreviousLinkedResources(fhirProblem.getId());
+
         if (previousReferences != null && !previousReferences.isEmpty()) {
-            csvHelper.addLinkedItemsToResource(fhirProblem, previousReferences, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
+            List<Reference> references = ReferenceHelper.createReferences(previousReferences);
+            csvHelper.addLinkedItemsToResource(fhirProblem, references, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
         }
 
         //apply any linked items from this extract

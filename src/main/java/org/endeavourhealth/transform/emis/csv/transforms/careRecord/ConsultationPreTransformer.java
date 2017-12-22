@@ -7,7 +7,7 @@ import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
-import org.endeavourhealth.transform.emis.csv.schema.careRecord.Problem;
+import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class ProblemPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ProblemPreTransformer.class);
+public class ConsultationPreTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ConsultationPreTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -32,11 +32,11 @@ public class ProblemPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
-            AbstractCsvParser parser = parsers.get(Problem.class);
+            AbstractCsvParser parser = parsers.get(Consultation.class);
             while (parser.nextRecord()) {
 
                 try {
-                    processLine((Problem) parser, fhirResourceFiler, csvHelper, version, threadPool);
+                    transform((Consultation)parser, fhirResourceFiler, csvHelper, threadPool);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -48,30 +48,22 @@ public class ProblemPreTransformer {
         }
     }
 
-    private static void processLine(Problem parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version,
-                                       ThreadPool threadPool) throws Exception {
+    public static void transform(Consultation parser,
+                                      FhirResourceFiler fhirResourceFiler,
+                                      EmisCsvHelper csvHelper,
+                                      ThreadPool threadPool) throws Exception {
 
+        String consultationGuid = parser.getConsultationGuid();
         String patientGuid = parser.getPatientGuid();
-        String observationGuid = parser.getObservationGuid();
 
-        //cache the observation GUIDs of problems, so
-        //that we know what is a problem when we run the observation pre-transformer
-        csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, null);
-
-        //also cache the IDs of any child items from previous instances of this problem, but
-        //use a thread pool so we can perform multiple lookups in parallel
-        String problemSourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
+        String encounterSourceId = EmisCsvHelper.createUniqueId(patientGuid, consultationGuid);
 
         CsvCurrentState parserState = parser.getCurrentState();
 
-        LookupTask task = new LookupTask(problemSourceId, fhirResourceFiler, csvHelper, parserState);
+        LookupTask task = new LookupTask(encounterSourceId, fhirResourceFiler, csvHelper, parserState);
         List<ThreadPoolError> errors = threadPool.submit(task);
         handleErrors(errors);
     }
-
 
     private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
         if (errors == null || errors.isEmpty()) {
@@ -88,17 +80,17 @@ public class ProblemPreTransformer {
 
     static class LookupTask implements Callable {
 
-        private String problemSourceId;
+        private String encounterSourceId;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
         private CsvCurrentState parserState;
 
-        public LookupTask(String problemSourceId,
+        public LookupTask(String encounterSourceId,
                           FhirResourceFiler fhirResourceFiler,
                           EmisCsvHelper csvHelper,
                           CsvCurrentState parserState) {
 
-            this.problemSourceId = problemSourceId;
+            this.encounterSourceId = encounterSourceId;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
             this.parserState = parserState;
@@ -108,9 +100,9 @@ public class ProblemPreTransformer {
         public Object call() throws Exception {
             try {
                 //carry over linked items from any previous instance of this problem
-                List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, problemSourceId, ResourceType.Condition);
+                List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, encounterSourceId, ResourceType.Encounter);
                 if (previousReferences != null && !previousReferences.isEmpty()) {
-                    csvHelper.cacheProblemPreviousLinkedResources(problemSourceId, previousReferences);
+                    csvHelper.cacheConsultationPreviousLinkedResources(encounterSourceId, previousReferences);
                 }
             } catch (Throwable t) {
                 LOG.error("", t);
