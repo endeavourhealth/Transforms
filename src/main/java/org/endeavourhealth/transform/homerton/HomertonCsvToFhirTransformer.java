@@ -29,7 +29,7 @@ public abstract class HomertonCsvToFhirTransformer {
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
-    public static final String PRIMARY_ORG_ODS_CODE = "R1H";
+    public static final String PRIMARY_ORG_ODS_CODE = "RQX";
     public static final String HOMERTON_RESOURCE_ID_SCOPE = "H";
     public static final int CODE_SYSTEM_SNOMED = 1000;
     public static final int CODE_SYSTEM_ICD_10 = 1001;
@@ -47,6 +47,8 @@ public abstract class HomertonCsvToFhirTransformer {
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
                                  String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
 
+        LOG.info("Invoking Homerton CSV transformer for shared storage " + sharedStoragePath);
+
         //for Barts CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
         String[] files = exchangeBody.split("\n");
@@ -54,6 +56,7 @@ public abstract class HomertonCsvToFhirTransformer {
             String file = files[i].trim();
             String filePath = FilenameUtils.concat(sharedStoragePath, file);
             files[i] = filePath;
+            LOG.info("Homerton CSV transformer adjusted file  " + file);
         }
 
         LOG.info("Invoking Homerton CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
@@ -74,6 +77,7 @@ public abstract class HomertonCsvToFhirTransformer {
     }
 
 
+    /*
     private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
         String organisationDir = null;
 
@@ -103,7 +107,7 @@ public abstract class HomertonCsvToFhirTransformer {
         }
         return new File(organisationDir);
     }
-
+    */
 
 
     private static void transformParsers(String[] files, String version,
