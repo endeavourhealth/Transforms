@@ -56,7 +56,7 @@ public abstract class HomertonCsvToFhirTransformer {
             String file = files[i].trim();
             String filePath = FilenameUtils.concat(sharedStoragePath, file);
             files[i] = filePath;
-            LOG.info("Homerton CSV transformer adjusted file  " + file);
+            LOG.info("Homerton CSV transformer adjusted file(" + file + "):" + filePath);
         }
 
         LOG.info("Invoking Homerton CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
