@@ -29,6 +29,7 @@ public class VisionCsvHelper {
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
+
     //some resources are referred to by others, so we cache them here for when we need them
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, List<String>> problemChildMap = new HashMap<>();
@@ -137,7 +138,8 @@ public class VisionCsvHelper {
             return null;
         }
 
-        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(resourceType.toString(), globallyUniqueId);
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), globallyUniqueId);
         if (resourceHistory == null) {
             return null;
         }
@@ -355,7 +357,7 @@ public class VisionCsvHelper {
 
                         //the reference we have has already been mapped to an EDS ID, so we need to un-map it
                         //back to the source ID, so the ID mapper can safely map it when we save the resource
-                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(previousReference);
+                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler.getServiceId(), previousReference);
                         if (unmappedReference != null) {
                             ret.add(unmappedReference);
                         }

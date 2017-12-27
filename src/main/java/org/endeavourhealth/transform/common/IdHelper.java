@@ -467,11 +467,11 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, globallyUniqueId);
     }
 
-    public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws Exception {
+    public static Reference convertEdsReferenceToLocallyUniqueReference(UUID serviceId, Reference edsReference) throws Exception {
         List<Reference> list = new ArrayList<>();
         list.add(edsReference);
 
-        List<Reference> ret = convertEdsReferencesToLocallyUniqueReferences(list);
+        List<Reference> ret = convertEdsReferencesToLocallyUniqueReferences(serviceId, list);
         if (ret.isEmpty()) {
             return null;
 
@@ -480,10 +480,10 @@ public class IdHelper {
         }
     }
 
-    public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(List<Reference> edsReferences) throws Exception {
+    public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(UUID serviceId, List<Reference> edsReferences) throws Exception {
         List<Reference> ret = new ArrayList<>();
 
-        Map<Reference, Reference> map = repository.findSourceReferencesFromEdsReferences(edsReferences);
+        Map<Reference, Reference> map = repository.findSourceReferencesFromEdsReferences(serviceId, edsReferences);
         for (Reference edsReference: edsReferences) {
             Reference sourceReference = map.get(edsReference);
 

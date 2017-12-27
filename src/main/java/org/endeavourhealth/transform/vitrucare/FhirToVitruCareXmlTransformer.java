@@ -49,7 +49,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     private static Set<String> emisCodeSet = null;
     private static Map<String, byte[]> saltCacheMap = new HashMap<>();
 
-    public static String transformFromFhir(UUID batchId,
+    public static String transformFromFhir(UUID serviceId, UUID batchId,
                                            List<ResourceWrapper> resources, String configName) throws Exception {
 
         //deserialise any patient-facing resources
@@ -93,10 +93,10 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         String vitruCareId = findVitruCareId(edsPatientId, configName);
 
         if (Strings.isNullOrEmpty(vitruCareId)) {
-            return createInitialPayload(edsPatientId, configName);
+            return createInitialPayload(serviceId, edsPatientId, configName);
 
         } else if (containsDeletes) {
-            return createReplacePayload(vitruCareId, edsPatientId, configName);
+            return createReplacePayload(serviceId, vitruCareId, edsPatientId, configName);
 
         } else {
             return createUpdatePayload(vitruCareId, patientResourceWrappers);
@@ -131,10 +131,10 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         return XmlSerializer.serializeToString(element, XSD);
     }
 
-    private static String createReplacePayload(String vitruCareId, UUID edsPatientId, String configName) throws Exception {
+    private static String createReplacePayload(UUID serviceId, String vitruCareId, UUID edsPatientId, String configName) throws Exception {
 
         Payload payload = new Payload();
-        if (!populateFullPayload(payload, edsPatientId, vitruCareId, configName)) {
+        if (!populateFullPayload(serviceId, payload, edsPatientId, vitruCareId, configName)) {
             return null;
         }
 
@@ -142,11 +142,11 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         return XmlSerializer.serializeToString(element, XSD);
     }
 
-    private static String createInitialPayload(UUID edsPatientId, String configName) throws Exception {
+    private static String createInitialPayload(UUID serviceId, UUID edsPatientId, String configName) throws Exception {
 
         //if we don't have a VitruCare ID, we need to get the full record from the DB to send a full payload
         Payload payload = new Payload();
-        if (!populateFullPayload(payload, edsPatientId, null, configName)) {
+        if (!populateFullPayload(serviceId, payload, edsPatientId, null, configName)) {
             return null;
         }
 
@@ -155,15 +155,14 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
     }
 
 
-    private static boolean populateFullPayload(Payload payload, UUID edsPatientId, String vitruCareId, String configName) throws Exception {
+    private static boolean populateFullPayload(UUID serviceId, Payload payload, UUID edsPatientId, String vitruCareId, String configName) throws Exception {
 
-        ResourceWrapper patientResourceWrapper = resourceRepository.getCurrentVersion(ResourceType.Patient.toString(), edsPatientId);
+        ResourceWrapper patientResourceWrapper = resourceRepository.getCurrentVersion(serviceId, ResourceType.Patient.toString(), edsPatientId);
         if (patientResourceWrapper == null
             || patientResourceWrapper.isDeleted()) {
             return false;
         }
 
-        UUID serviceId = patientResourceWrapper.getServiceId();
         UUID systemId = patientResourceWrapper.getSystemId();
         Patient fhirPatient = (Patient)FhirResourceHelper.deserialiseResouce(patientResourceWrapper);
 
@@ -462,7 +461,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
                 ret = saltCacheMap.get(configName);
                 if (ret == null) {
 
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
+                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
                     JsonNode saltNode = config.get("salt");
                     if (saltNode == null) {
                         throw new Exception("No 'Salt' element found in Enterprise config " + configName);

@@ -432,7 +432,7 @@ public class PatientTransformer extends AbstractTransformer {
                 ret = saltCacheMap.get(configName);
                 if (ret == null) {
 
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
+                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
                     JsonNode saltNode = config.get("salt");
                     if (saltNode == null) {
                         throw new Exception("No 'Salt' element found in Enterprise config " + configName);

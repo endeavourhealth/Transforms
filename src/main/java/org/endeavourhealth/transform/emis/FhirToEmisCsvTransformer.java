@@ -41,13 +41,13 @@ public class FhirToEmisCsvTransformer {
 
         //retrieve our resources
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourcesByExchangeBatch = resourceDal.getResourcesForBatch(batchId);
+        List<ResourceWrapper> resourcesByExchangeBatch = resourceDal.getResourcesForBatch(serviceId, batchId);
         List<ResourceWrapper> filteredResources = filterResources(resourcesByExchangeBatch, resourceIds);
 
         //create the CSV writers, to generate all the output files
         Map<Class, AbstractCsvWriter> writers = createWriters(CSV_FORMAT, DATE_FORMAT_YYYY_MM_DD, TIME_FORMAT);
 
-        tranformResources(filteredResources, orgId, writers);
+        tranformResources(serviceId, filteredResources, orgId, writers);
 
 
         //may as well zip the data, since it will compress well
@@ -143,7 +143,7 @@ public class FhirToEmisCsvTransformer {
         return ret;
     }
 
-    private static void tranformResources(List<ResourceWrapper> resources, UUID orgId, Map<Class, AbstractCsvWriter> writers) throws Exception {
+    private static void tranformResources(UUID serviceId, List<ResourceWrapper> resources, UUID orgId, Map<Class, AbstractCsvWriter> writers) throws Exception {
 
         //hash the resources by reference to them, so we can process in a specific order
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
@@ -161,11 +161,11 @@ public class FhirToEmisCsvTransformer {
         //Integer enterpriseOrganisationUuid = new EnterpriseIdMapRepository().getEnterpriseOrganisationIdMapping(orgNationalId);
         Integer enterpriseOrganisationUuid =null;
 
-                tranformResources(ResourceType.Location, new FhirLocationTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
+                tranformResources(serviceId, ResourceType.Location, new FhirLocationTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
 //        tranformResources(ResourceType.Practitioner, new PractitionerTransformer(), data, resources, resourcesMap, enterpriseOrganisationUuid);
-        tranformResources(ResourceType.Schedule, new FhirScheduleTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
+        tranformResources(serviceId, ResourceType.Schedule, new FhirScheduleTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
 //        tranformResources(ResourceType.EpisodeOfCare, new EpisodeOfCareTransformer(), data, resources, resourcesMap, enterpriseOrganisationUuid);
-        tranformResources(ResourceType.Patient, new FhirPatientTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
+        tranformResources(serviceId, ResourceType.Patient, new FhirPatientTransformer(), writers, resources, resourcesMap, enterpriseOrganisationUuid);
 //        tranformResources(ResourceType.Appointment, new AppointmentTransformer(), data, resources, resourcesMap, enterpriseOrganisationUuid);
 //        tranformResources(ResourceType.Encounter, new EncounterTransformer(), data, resources, resourcesMap, enterpriseOrganisationUuid);
 //        tranformResources(ResourceType.Condition, new ConditionTransformer(), data, resources, resourcesMap, enterpriseOrganisationUuid);
@@ -201,7 +201,8 @@ public class FhirToEmisCsvTransformer {
 
     }
 
-    private static void tranformResources(ResourceType resourceType,
+    private static void tranformResources(UUID serviceId,
+                                          ResourceType resourceType,
                                           AbstractTransformer transformer,
                                           Map<Class, AbstractCsvWriter> writers,
                                           List<ResourceWrapper> resources,
@@ -215,7 +216,7 @@ public class FhirToEmisCsvTransformer {
                 //we use this function with a null transformer for resources we want to ignore
                 if (transformer != null) {
                     try {
-                        transformer.transform(resource, writers);
+                        transformer.transform(serviceId, resource, writers);
                         //transformer.transform(resource, writers, resourcesMap, enterpriseOrganisationId);
                     } catch (Exception ex) {
                         throw new TransformException("Exception transforming " + resourceType + " " + resource.getResourceId(), ex);

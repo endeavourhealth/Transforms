@@ -11,17 +11,18 @@ import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.Map;
+import java.util.UUID;
 
 public abstract class AbstractTransformer {
 
     private ResourceIdTransformDalI idMapRepository = DalProvider.factoryResourceIdTransformDal();
     protected static final ParserPool PARSER_POOL = new ParserPool();
 
-    public void transform(ResourceWrapper resourceWrapper, Map<Class, AbstractCsvWriter> writers) throws Exception {
+    public void transform(UUID serviceId, ResourceWrapper resourceWrapper, Map<Class, AbstractCsvWriter> writers) throws Exception {
 
         //find the source local ID for our EDS ID
         Reference edsReference = ReferenceHelper.createReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceId().toString());
-        Reference rawReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(edsReference);
+        Reference rawReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(serviceId, edsReference);
         String sourceId = ReferenceHelper.getReferenceId(rawReference);
 
         if (resourceWrapper.isDeleted()) {

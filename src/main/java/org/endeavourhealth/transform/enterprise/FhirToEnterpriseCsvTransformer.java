@@ -51,7 +51,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "subscriber");
+        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
         boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
         //nasty workaround to handle a column missing from a table in AIMES
@@ -75,7 +75,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
         OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
-        EnterpriseTransformParams params = new EnterpriseTransformParams(protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
+        EnterpriseTransformParams params = new EnterpriseTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
@@ -139,7 +139,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         //if the first patient has been deleted, then we need to look at its history to find the JSON from when it wasn't deleted
         if (Strings.isNullOrEmpty(json)) {
-            List<ResourceWrapper> history = resourceRepository.getResourceHistory(resourceByService.getResourceType(), resourceByService.getResourceId());
+            List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceByService.getResourceType(), resourceByService.getResourceId());
             for (ResourceWrapper historyItem: history) {
                 json = historyItem.getResourceData();
                 if (!Strings.isNullOrEmpty(json)) {
@@ -167,7 +167,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
             //if we've not got a mapping, then we need to create one from our resource data
             if (mappedResourceId == null) {
-                Resource fhir = resourceRepository.getCurrentVersionAsResource(resourceType, resourceId.toString());
+                Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
                 String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
                 mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
             }
@@ -194,7 +194,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
             exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
 
-            ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(resourceType.toString(), resourceId);
+            ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
 
             //and actually add to the two collections of resources
             resources.add(resourceWrapper);

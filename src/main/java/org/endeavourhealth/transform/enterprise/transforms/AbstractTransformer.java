@@ -220,7 +220,7 @@ public abstract class AbstractTransformer {
             //if not in our map, then hit the DB
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-            return resourceDal.getCurrentVersionAsResource(comps.getResourceType(), comps.getId());
+            return resourceDal.getCurrentVersionAsResource(params.getServiceId(), comps.getResourceType(), comps.getId());
         }
     }
 

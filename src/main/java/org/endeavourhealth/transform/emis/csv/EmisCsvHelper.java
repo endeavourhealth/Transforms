@@ -8,9 +8,9 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherTransform.EmisTransformDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.EmisAdminResourceCache;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -363,7 +363,7 @@ public class EmisCsvHelper {
             return null;
         }
 
-        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(resourceType.toString(), globallyUniqueId);
+        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), globallyUniqueId);
 
         //if the resource has been deleted before, we'll have a null entry or one that says it's deleted
         if (resourceHistory == null
@@ -604,9 +604,11 @@ public class EmisCsvHelper {
             }
         }
 
+        UUID serviceId = fhirResourceFiler.getServiceId();
+
         //the reference we have has already been mapped to an EDS ID, so we need to un-map it
         //back to the source ID, so the ID mapper can safely map it when we save the resource
-        return IdHelper.convertEdsReferencesToLocallyUniqueReferences(edsReferences);
+        return IdHelper.convertEdsReferencesToLocallyUniqueReferences(serviceId, edsReferences);
     }
 
     public void cacheDrugRecordDate(String drugRecordGuid, String patientGuid, DateTimeType dateTime) {

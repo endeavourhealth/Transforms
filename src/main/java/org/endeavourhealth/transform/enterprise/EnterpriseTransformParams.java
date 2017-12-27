@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public class EnterpriseTransformParams {
 
+    private final UUID serviceId;
     private final UUID protocolId;
     private final UUID exchangeId;
     private final UUID batchId;
@@ -26,9 +27,10 @@ public class EnterpriseTransformParams {
     private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public EnterpriseTransformParams(UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+    public EnterpriseTransformParams(UUID serviceId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
                                      OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody,
                                      boolean useInstanceMapping) {
+        this.serviceId = serviceId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -46,6 +48,10 @@ public class EnterpriseTransformParams {
 
     public String getExchangeBody() {
         return exchangeBody;
+    }
+
+    public UUID getServiceId() {
+        return serviceId;
     }
 
     public UUID getProtocolId() {

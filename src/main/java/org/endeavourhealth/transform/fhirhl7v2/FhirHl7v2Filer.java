@@ -462,7 +462,7 @@ public class FhirHl7v2Filer {
             //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
             //sure that we don't lose any data in the old instance by just overwriting it
             if (resource instanceof Encounter) {
-                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(resource.getResourceType(), resource.getId());
+                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
             }
 
