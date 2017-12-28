@@ -70,6 +70,10 @@ public class EmisCsvHelper {
         return allowProcessingDisabledServices;
     }
 
+    public String getDataSharingAgreementGuid() {
+        return dataSharingAgreementGuid;
+    }
+
     /**
      * to ensure globally unique IDs for all resources, a new ID is created
      * from the patientGuid and sourceGuid (e.g. observationGuid)
@@ -901,29 +905,7 @@ public class EmisCsvHelper {
         }
     }
 
-    /**
-     * we store a copy of all Organisations, Locations and Practitioner resources in a separate
-     * table so that when new organisations are added to the extract, we can populate the db with
-     * all those resources for the new org
-     */
-    public void saveAdminResourceToCache(Resource fhirResource) throws Exception {
-        EmisAdminResourceCache cache = new EmisAdminResourceCache();
-        cache.setDataSharingAgreementGuid(dataSharingAgreementGuid);
-        cache.setResourceType(fhirResource.getResourceType().toString());
-        cache.setEmisGuid(fhirResource.getId());
-        cache.setResourceData(PARSER_POOL.composeString(fhirResource));
 
-        mappingRepository.save(cache);
-    }
-
-    public void deleteAdminResourceFromCache(Resource fhirResource) throws Exception {
-        EmisAdminResourceCache cache = new EmisAdminResourceCache();
-        cache.setDataSharingAgreementGuid(dataSharingAgreementGuid);
-        cache.setResourceType(fhirResource.getResourceType().toString());
-        cache.setEmisGuid(fhirResource.getId());
-
-        mappingRepository.delete(cache);
-    }
 
     /**
      * when we receive the first extract for an organisation, we need to copy all the contents of the admin

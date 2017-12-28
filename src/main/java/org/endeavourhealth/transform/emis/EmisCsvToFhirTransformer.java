@@ -484,9 +484,9 @@ public abstract class EmisCsvToFhirTransformer {
         LOG.trace("Starting admin transforms");
 
         //run the transforms for non-patient resources
-        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
         SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process

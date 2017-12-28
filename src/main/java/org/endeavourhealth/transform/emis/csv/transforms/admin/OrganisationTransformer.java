@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Organisation;
@@ -21,23 +22,29 @@ public class OrganisationTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper) throws Exception {
+                                 EmisCsvHelper csvHelper,
+                                 int maxFilingThreads) throws Exception {
+
+        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid(), maxFilingThreads);
 
         AbstractCsvParser parser = parsers.get(Organisation.class);
         while (parser.nextRecord()) {
 
             try {
-                createResource((Organisation)parser, fhirResourceFiler, csvHelper);
+                createResource((Organisation)parser, fhirResourceFiler, csvHelper, adminCacheFiler);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
+
+        adminCacheFiler.close();
      }
 
 
     private static void createResource(Organisation parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                       EmisCsvHelper csvHelper,
+                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         Organization fhirOrganisation = new Organization();
         fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
@@ -93,7 +100,7 @@ public class OrganisationTransformer {
 
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirOrganisation);
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirOrganisation);
     }
 
     private static OrganisationType convertOrganisationType(String csvOrganisationType) {

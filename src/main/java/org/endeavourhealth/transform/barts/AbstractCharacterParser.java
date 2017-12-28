@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.barts;
 
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.CsvCurrentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

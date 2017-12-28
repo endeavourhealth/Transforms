@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.admin.UserInRole;
@@ -18,22 +19,28 @@ public class UserInRoleTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper) throws Exception {
+                                 EmisCsvHelper csvHelper,
+                                 int maxFilingThreads) throws Exception {
+
+        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid(), maxFilingThreads);
 
         AbstractCsvParser parser = parsers.get(UserInRole.class);
         while (parser.nextRecord()) {
 
             try {
-                createResource((UserInRole)parser, fhirResourceFiler, csvHelper);
+                createResource((UserInRole)parser, fhirResourceFiler, csvHelper, adminCacheFiler);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
+
+        adminCacheFiler.close();
     }
 
     private static void createResource(UserInRole parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                       EmisCsvHelper csvHelper,
+                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         Practitioner fhirPractitioner = new Practitioner();
         fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
@@ -81,6 +88,6 @@ public class UserInRoleTransformer {
 
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirPractitioner);
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirPractitioner);
     }
 }

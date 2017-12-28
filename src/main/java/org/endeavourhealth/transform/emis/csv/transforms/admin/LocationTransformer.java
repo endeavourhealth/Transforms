@@ -2,9 +2,8 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Location;
@@ -19,23 +18,29 @@ public class LocationTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper) throws Exception {
+                                 EmisCsvHelper csvHelper,
+                                 int maxFilingThreads) throws Exception {
+
+        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid(), maxFilingThreads);
 
         AbstractCsvParser parser = parsers.get(Location.class);
         while (parser.nextRecord()) {
 
             try {
-                createResource((Location)parser, fhirResourceFiler, csvHelper);
+                createResource((Location)parser, fhirResourceFiler, csvHelper, adminCacheFiler);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
+
+        adminCacheFiler.close();
     }
 
 
     private static void createResource(Location parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                       EmisCsvHelper csvHelper,
+                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
         fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
@@ -48,7 +53,7 @@ public class LocationTransformer {
 
             //this resource exists in our admin resource cache, so we can populate the
             //main database when new practices come on, so we need to update that too
-            csvHelper.deleteAdminResourceFromCache(fhirLocation);
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), fhirLocation);
             return;
         }
 
@@ -111,6 +116,6 @@ public class LocationTransformer {
 
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
-        csvHelper.saveAdminResourceToCache(fhirLocation);
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirLocation);
     }
 }

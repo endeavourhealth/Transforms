@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.emis.csv;
+package org.endeavourhealth.transform.common;
 
 import org.apache.commons.io.FilenameUtils;
 
