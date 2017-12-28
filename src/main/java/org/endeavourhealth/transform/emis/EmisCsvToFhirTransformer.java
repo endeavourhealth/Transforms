@@ -470,12 +470,15 @@ public abstract class EmisCsvToFhirTransformer {
         DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
         OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-        ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+
+        if (processPatientData) {
+            ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+            ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+        }
 
         //before getting onto the files that actually create FHIR resources, we need to
         //work out what record numbers to process, if we're re-running a transform
