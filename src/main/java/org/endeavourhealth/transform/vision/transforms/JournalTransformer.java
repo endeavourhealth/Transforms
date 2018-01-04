@@ -213,7 +213,8 @@ public class JournalTransformer {
         if (Read2.isProcedure(readCode)
                 && !Read2.isBPCode(readCode)
                 && Strings.isNullOrEmpty(parser.getValue1AsText())
-                && !subset.equalsIgnoreCase("T")) {
+                && !subset.equalsIgnoreCase("T")
+                && !subset.equalsIgnoreCase("I")) {
             return ResourceType.Procedure;
         } else if (Read2.isDisorder(readCode) || subset.equalsIgnoreCase("P")) {
             return ResourceType.Condition;
@@ -450,11 +451,21 @@ public class JournalTransformer {
         String associatedText = parser.getAssociatedText();
         fhirAllergy.setNote(AnnotationHelper.createAnnotation(associatedText));
 
-        //TODO: add severity if available
         String severity = parser.getAllergySeverity();
+        if (Strings.isNullOrEmpty(severity)) {
+            AllergyIntolerance.AllergyIntoleranceSeverity allergyIntoleranceSeverity = convertSnomedToAllergySeverity(severity);
+            if (allergyIntoleranceSeverity != null) {
+                fhirAllergy.addReaction().setSeverity(allergyIntoleranceSeverity);
+            }
+        }
 
-        //TODO: add certainty if available
         String certainty = parser.getAllergyCertainty();
+        if (Strings.isNullOrEmpty(certainty)) {
+            AllergyIntolerance.AllergyIntoleranceCertainty allergyIntoleranceCertainty = convertSnomedToAllergyCertainty(certainty);
+            if (allergyIntoleranceCertainty != null) {
+                fhirAllergy.addReaction().setCertainty(allergyIntoleranceCertainty);
+            }
+        }
 
         addEncounterExtension(fhirAllergy, parser, csvHelper, patientID);
         addRecordedByExtension(fhirAllergy, parser, csvHelper);
@@ -689,11 +700,15 @@ public class JournalTransformer {
         //BP is a special case - create systolic and diastolic coded components
         if (isBPCode (parser.getReadCode()) && value1 != null && value2 != null) {
             Observation.ObservationComponentComponent componentSystolic = fhirObservation.addComponent();
-            componentSystolic.setCode(CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163030003"));
+            CodeableConcept comOneCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163030003");
+            TerminologyService.translateToSnomed(comOneCodeableConcept);
+            componentSystolic.setCode(comOneCodeableConcept);
             componentSystolic.setValue(QuantityHelper.createQuantity(value1, units1));
 
             Observation.ObservationComponentComponent componentDiastolic = fhirObservation.addComponent();
-            componentDiastolic.setCode(CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163031004"));
+            CodeableConcept comTwoCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163031004");
+            TerminologyService.translateToSnomed(comTwoCodeableConcept);
+            componentDiastolic.setCode(comTwoCodeableConcept);
             componentDiastolic.setValue(QuantityHelper.createQuantity(value2, units2));
         }
         else {
@@ -913,7 +928,7 @@ public class JournalTransformer {
         }
     }
 
-    //The consultation encounter link value is pre-fixed with E
+    // the consultation encounter link value is pre-fixed with E
     public static String extractEncounterLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("|");
@@ -926,7 +941,7 @@ public class JournalTransformer {
         return null;
     }
 
-    // TODO: if it is a medication issue, how determine linked drug statement? - Asked Vision
+    // TODO: if it is a medication issue, how determine linked drug statement? - Asked Vision - invesigating if LastIssueDate can be added
     public static String extractDrugRecordLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("|");
@@ -939,7 +954,7 @@ public class JournalTransformer {
         return null;
     }
 
-    //problem links are NOT pre-fixed with an E and exist in the problem observation cache
+    // problem links are NOT pre-fixed with an E and exist in the problem observation cache
     public static String extractProblemLinkIDs(String links, String patientID, VisionCsvHelper csvHelper) {
         String problemLinkIDs = "";
         if (!Strings.isNullOrEmpty(links)) {
@@ -958,7 +973,6 @@ public class JournalTransformer {
 
     private static void assertValueEmpty(Resource destinationResource, Journal parser) throws Exception {
         if (!Strings.isNullOrEmpty(parser.getValue1AsText()) && !parser.getValue1Name().equalsIgnoreCase("REVIEW_DAT")) {
-        //if (parser.getValue1() != null) {
             throw new FieldNotEmptyException("Value", destinationResource);
         }
     }
@@ -984,7 +998,7 @@ public class JournalTransformer {
 //            return;
 //        }
 
-        //if the codes are the same, our current observation is a review of the problem
+        // if the codes are the same, our current observation is a review of the problem
         Extension extension = ExtensionConverter.createExtension(FhirExtensionUri.IS_REVIEW, new BooleanType(true));
         resource.addExtension(extension);
     }
@@ -1014,16 +1028,20 @@ public class JournalTransformer {
         }
         //otherwise, perform a READ to Snomed translation
         else {
-            String readCode = parser.getReadCode();
-            if (readCode.equalsIgnoreCase("ZZZZZ"))
-                return null;
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-            TerminologyService.translateToSnomed(codeableConcept);
+            // after conversation with Vision, if no Snomed code exists, then it's a non coded item, so discard
+            return null;
+
+//            String readCode = parser.getReadCode();
+//            // Dirty test data exclusions
+//            if (readCode.equalsIgnoreCase("ZZZZZ") || readCode.equalsIgnoreCase("9i") )
+//                return null;
+//            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
+//            TerminologyService.translateToSnomed(codeableConcept);
         }
         return codeableConcept;
     }
 
-    //implements Appendix B - Special Cases for observations with two values
+    // implements Appendix B - Special Cases for observations with two values
     private static String convertSpecialCaseValues(Journal parser) {
         String readCode = parser.getReadCode();
         Double value2 = parser.getValue2();
@@ -1069,5 +1087,26 @@ public class JournalTransformer {
             }
         }
         return null;
+    }
+
+    // map Snomed code to FHIR allergy severity
+    private static AllergyIntolerance.AllergyIntoleranceSeverity convertSnomedToAllergySeverity(String severitySnomedCode) {
+        switch (severitySnomedCode) {
+            case "255604002" : return AllergyIntolerance.AllergyIntoleranceSeverity.MILD;
+            case "6736007" : return AllergyIntolerance.AllergyIntoleranceSeverity.MODERATE;
+            case "24484000" : return AllergyIntolerance.AllergyIntoleranceSeverity.SEVERE;
+            case "442452003" : return AllergyIntolerance.AllergyIntoleranceSeverity.SEVERE;  //life threatening severity
+            default: return null;
+        }
+    }
+
+    // map Snomed code to FHIR allergy certainty
+    private static AllergyIntolerance.AllergyIntoleranceCertainty convertSnomedToAllergyCertainty(String certaintySnomedCode) {
+        switch (certaintySnomedCode) {
+            case "255545003" : return AllergyIntolerance.AllergyIntoleranceCertainty.CONFIRMED;  //definite
+            case "385433004" : return AllergyIntolerance.AllergyIntoleranceCertainty.LIKELY;     //consitent with
+            case "385434005" : return AllergyIntolerance.AllergyIntoleranceCertainty.UNLIKELY;   //unlikely
+            default: return null;
+        }
     }
 }
