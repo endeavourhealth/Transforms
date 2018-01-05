@@ -136,6 +136,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
 
         String json = resourceByService.getResourceData();
+        //LOG.info("First resource for service " + serviceId + " is " + resourceByService.getResourceType() + " " + resourceByService.getResourceId());
 
         //if the first patient has been deleted, then we need to look at its history to find the JSON from when it wasn't deleted
         if (Strings.isNullOrEmpty(json)) {
@@ -157,6 +158,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(orgReference);
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
+        //LOG.info("Managing organisation is " + resourceType + " " + resourceId);
 
         if (params.isUseInstanceMapping()) {
 
@@ -181,14 +183,20 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         //generate (or find) an enterprise ID for our organization
         enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
         enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), systemId.toString(), enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
-        Reference reference = ReferenceHelper.createReference(resourceType, resourceId.toString());
+        String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
         Map<String, ResourceWrapper> map = params.getAllResources();
-        if (!map.containsKey(reference)) {
+        if (!map.containsKey(orgReferenceValue)) {
+            /*LOG.info("=====Reference map doesn't contain " + orgReferenceValue);
+            for (String key: map.keySet()) {
+                LOG.info("Key = " + key);
+            }
+            LOG.info("<<<<<Reference map doesn't contain " + orgReferenceValue);*/
 
             //record the audit of us adding a new resource to the batch
             ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
@@ -196,9 +204,13 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
             ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
 
+            if (resourceWrapper == null) {
+                throw new TransformException("Failed to find non-null version of " + resourceType + " " + resourceId);
+            }
+
             //and actually add to the two collections of resources
             resources.add(resourceWrapper);
-            map.put(reference.getReference(), resourceWrapper);
+            map.put(orgReferenceValue, resourceWrapper);
         }
 
         return enterpriseOrganisationId;

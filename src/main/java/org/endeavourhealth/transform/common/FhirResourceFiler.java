@@ -448,7 +448,9 @@ public class FhirResourceFiler {
             ex = null;
 
         } else {
-            LOG.error("Error at " + state, ex);
+            //don't log the exception here, since we've already logged it from the separate thread
+            LOG.error("Error at " + state + ": " + ex.getMessage());
+            //LOG.error("Error at " + state, ex);
         }
 
         //then add the error to our audit object

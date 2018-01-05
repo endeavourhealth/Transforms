@@ -53,7 +53,7 @@ public class EmisCsvHelper {
     private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
     private Map<String, List<Observation.ObservationComponentComponent>> bpComponentMap = new HashMap<>();
     private Map<String, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
-    private Map<String, List<String>> organisationLocationMap = new HashMap<>();
+    private Map<String, List<String>> locationOrganisationMap = new HashMap<>();
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
@@ -776,10 +776,10 @@ public class EmisCsvHelper {
 
     public void cacheOrganisationLocationMap(String locationGuid, String orgGuid, boolean mainLocation) {
 
-        List<String> orgGuids = organisationLocationMap.get(locationGuid);
+        List<String> orgGuids = locationOrganisationMap.get(locationGuid);
         if (orgGuids == null) {
             orgGuids = new ArrayList<>();
-            organisationLocationMap.put(locationGuid, orgGuids);
+            locationOrganisationMap.put(locationGuid, orgGuids);
         }
 
         //if this location link is for the main location of an organisation, then insert that
@@ -793,7 +793,7 @@ public class EmisCsvHelper {
     }
 
     public List<String> findOrganisationLocationMapping(String locationGuid) {
-        return organisationLocationMap.remove(locationGuid);
+        return locationOrganisationMap.remove(locationGuid);
     }
 
     /**
@@ -803,9 +803,9 @@ public class EmisCsvHelper {
      */
     public void processRemainingOrganisationLocationMappings(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        for (Map.Entry<String, List<String>> entry : organisationLocationMap.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : locationOrganisationMap.entrySet()) {
 
-            Location fhirLocation = (Location) retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
+            Location fhirLocation = (Location)retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
             if (fhirLocation == null) {
                 //if the location has been deleted, it doesn't matter, and the emis data integrity issues
                 //mean we may have references to unknown locations

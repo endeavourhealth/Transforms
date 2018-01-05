@@ -34,6 +34,8 @@ public class OrganisationTransformer extends AbstractTransformer {
 
         id = enterpriseId.longValue();
 
+        //LOG.trace("Transforming Organization " + fhir.getId() + " as enterprise ID " + id);
+
         if (fhir.hasIdentifier()) {
             odsCode = IdentifierHelper.findIdentifierValue(fhir.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
         }

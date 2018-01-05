@@ -164,9 +164,9 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{131AE556-8B50-4C17-9D7D-A4B19F7B1FEA}", "15/10/2017");
         map.put("{C0D2D0DF-EF78-444D-9A6D-B9EDEF5EF350}", "13/10/2017");
         map.put("{F174B354-4156-4BCB-960F-35D0145075EA}", "01/02/2017");
-        map.put("{38600D63-1DE0-4910-8ED6-A38DC28A9DAA}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{38600D63-1DE0-4910-8ED6-A38DC28A9DAA}", "02/01/2018"); //NOT FIXED YET - THE SPITALFIELDS PRACTICE (CDB 16);F84081
         map.put("{B3ECA2DE-D926-4594-B0EA-CF2F28057CE1}", "19/10/2017");
-        map.put("{18F7C28B-2A54-4F82-924B-38C60631FFFA}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{18F7C28B-2A54-4F82-924B-38C60631FFFA}", "02/01/2018"); //NOT FIXED YET - Rowans Surgery (CDB 18174);H85035
         map.put("{16FB5EE8-5039-4068-BC42-1DB56DC2A530}", "08/06/2017");
         map.put("{4BA4A5AC-7B25-40B2-B0EA-135702A72F9D}", "15/10/2017");
         map.put("{01B8341F-BC8F-450E-8AFA-4CDA344A5009}", "15/10/2017");
@@ -208,7 +208,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{B174A018-538D-4065-838C-023A245B53DA}", "14/02/2017");
         map.put("{43380A69-AE7D-4ED7-B014-0708675D0C02}", "08/06/2017");
         map.put("{E503F0E0-FE56-4CEF-BAB5-0D25B834D9BD}", "13/10/2017");
-        map.put("{08946F29-1A53-4AF2-814B-0B8758112F21}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{08946F29-1A53-4AF2-814B-0B8758112F21}", "02/01/2018"); //NOT FIXED YET - NEWHAM MEDICAL CENTRE (CDB 3461);F84669
         map.put("{09857684-535C-4ED6-8007-F91F366611C6}", "19/10/2017");
         map.put("{C409A597-009A-4E11-B828-A595755DE0EA}", "17/10/2017");
         map.put("{58945A1C-2628-4595-8F8C-F75D93045949}", "15/10/2017");
@@ -219,7 +219,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{A2BDB192-E79C-44C5-97A2-1FD4517C456F}", "21/08/2017");
         map.put("{73DFF193-E917-4DBC-B5CF-DD2797B29377}", "15/10/2017");
         map.put("{62825316-9107-4E2C-A22C-86211B4760DA}", "13/10/2017");
-        map.put("{006E8A30-2A45-4DBE-91D7-1C53FADF38B1}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{006E8A30-2A45-4DBE-91D7-1C53FADF38B1}", "02/01/2018"); //NOT FIXED YET - The Lawson Practice (CDB 4334);F84096
         map.put("{E32AA6A6-46B1-4198-AA13-058038AB8746}", "13/10/2017");
         map.put("{B51160F1-79E3-4BA7-AA3D-1112AB341146}", "30/09/2017");
         map.put("{234503E5-56B4-45A0-99DA-39854FBE78E9}", "01/02/2017");
@@ -228,20 +228,20 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{19BCC870-2704-4D21-BA7B-56F2F472AF35}", "15/10/2017");
         map.put("{FEF842DA-FD7C-480F-945A-D097910A81EB}", "13/10/2017");
         map.put("{1C980E19-4A39-4ACD-BA8A-925D3E525765}", "13/10/2017");
-        map.put("{AABDDC3A-93A4-4A87-9506-AAF52E74012B}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{AABDDC3A-93A4-4A87-9506-AAF52E74012B}", "02/01/2018"); //NOT FIXED YET - DR N DRIVER AND PARTNERS (CDB 4419);F84086
         map.put("{90C2959C-0C2D-43DC-A81B-4AD594C17999}", "20/04/2017");
         map.put("{1F1669CF-1BB0-47A7-8FBF-BE65651644C1}", "15/10/2017");
         map.put("{C1800BE8-4C1D-4340-B0F2-7ED208586ED3}", "15/10/2017");
-        map.put("{55A94703-4582-46FB-808A-1990E9CBCB6F}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{55A94703-4582-46FB-808A-1990E9CBCB6F}", "02/01/2018"); //NOT FIXED YET - Stamford Hill Group Practice (CDB 56);F84013
         map.put("{D4996E62-268F-4759-83A6-7A68D0B38CEC}", "27/04/2017");
         map.put("{3C843BBA-C507-4A95-9934-1A85B977C7B8}", "01/02/2017");
-        map.put("{2216253B-705D-4C46-ADB3-ED48493D6A39}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{2216253B-705D-4C46-ADB3-ED48493D6A39}", "02/01/2018"); //NOT FIXED YET - RIVERSIDE MEDICAL PRACTICE (CDB 14675);Y01962
         map.put("{00123F97-4557-44AD-81B5-D9902DD72EE9}", "28/04/2017");
         map.put("{E35D4D12-E7D2-484B-BFF6-4653B3FED228}", "15/10/2017");
         map.put("{6D8B4D28-838B-4915-A148-6FEC2CEBCE77}", "05/07/2017");
         map.put("{188D5B4D-4BF6-46E3-AF11-3AD32C68D251}", "19/10/2017");
         map.put("{16F7DDE1-3763-4D3A-A58D-F12F967718CF}", "02/11/2017");
-        map.put("{03148933-6E1C-4A8A-A6D2-A3D488E14DDD}", "24/08/2017");
+        map.put("{03148933-6E1C-4A8A-A6D2-A3D488E14DDD}", "30/12/2017");
         map.put("{16DE1A3C-875B-4AB2-B227-8A42604E029C}", "05/11/2017");
         map.put("{D628D1BC-D02E-4101-B8CD-5B3DB2D06FC1}", "05/05/2017");
         map.put("{1EA6259A-6A49-46DB-991D-D604675F87E2}", "15/10/2017");
@@ -251,9 +251,9 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{CC7D1781-1B85-4AD6-A5DD-9AD5E092E8DB}", "13/10/2017");
         map.put("{167CD5C8-148F-4D78-8997-3B22EC0AF6B6}", "13/10/2017");
         map.put("{9DD5D2CE-2585-49D8-AF04-2CB1BD137594}", "15/10/2017");
-        map.put("{D6696BB5-DE69-49D1-BC5E-C56799E42640}", "08/11/2017"); //note this is not the true start date, but it will be after this date
+        map.put("{D6696BB5-DE69-49D1-BC5E-C56799E42640}", "02/01/2018"); //NOT FIXED YET - BOLEYN MEDICAL CENTRE (CDB 4841);F84050
         map.put("{169375A9-C3AB-4C5E-82B0-DFF7656AD1FA}", "20/04/2017");
-        map.put("{0A8ECFDE-95EE-4811-BC05-668D49F5C799}", "10/10/2017");
+        map.put("{0A8ECFDE-95EE-4811-BC05-668D49F5C799}", "19/11/2017");
         map.put("{79C898A1-BB92-48F9-B0C3-6725370132B5}", "20/10/2017");
         map.put("{472AC9BA-AFFE-4E81-81CA-40DD8389784D}", "27/04/2017");
         map.put("{00121CB7-76A6-4D57-8260-E9CA62FFCD77}", "13/10/2017");
@@ -265,6 +265,11 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{F09E9CEF-2615-4C9D-AA3D-79E0AB10D0B3}", "13/10/2017");
         map.put("{CD7EF748-DB88-49CF-AA6E-24F65029391F}", "15/10/2017");
         map.put("{B22018CF-2B52-4A1A-9F6A-CEA13276DB2E}", "19/10/2017");
+        map.put("{0DF8CFC7-5DE6-4DDB-846A-7F28A2740A00}", "02/12/2017");
+        map.put("{50F439E5-DB18-43A0-9F25-825957013A07}", "02/01/2018"); //NOT FIXED YET - DR PI ABIOLA (CDB 5681);F84631
+        map.put("{00A3BA25-21C6-42DE-82AA-55FF0D85A6C3}", "02/01/2018"); //NOT FIXED YET - MARKET STREET HEALTH GROUP (CDB 381);F84004
+        map.put("{77B59D29-0FD9-4737-964F-5DBA49D94AB6}", "02/01/2018"); //NOT FIXED YET - Star Lane Medical Centre (CDB 40);F84017
+        map.put("{91239362-A105-4DEA-8E8E-239C3BCEDFD2}", "02/01/2018"); //NOT FIXED YET - BEECHWOOD MEDICAL CENTRE (CDB 5661);F84038
 
         String startDateStr = map.get(orgGuid);
         if (Strings.isNullOrEmpty(startDateStr)) {

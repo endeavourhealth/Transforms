@@ -61,10 +61,14 @@ public abstract class AbstractTransformer {
             try {
                 Long enterpriseId = enterpriseIds.get(resource);
                 if (enterpriseId == null) {
+
+                    /*f (resource.getResourceType().equals("Organization")) {
+                        LOG.trace("NOT transforming Organization " + resource.getResourceId() + " as no enterprise ID");
+                    }*/
+
                     //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
                     //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already transformed)
                     continue;
-
                 }
 
                 //check to see if we've already transformed this resource in this batch already,

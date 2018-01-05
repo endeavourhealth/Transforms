@@ -61,7 +61,7 @@ public class IdHelper {
         String sourceReferenceValue = sourceReference.getReference();
 
         //check our cache first
-        UUID edsId = checkCache(sourceReferenceValue);
+        UUID edsId = checkCache(serviceId, systemId, sourceReferenceValue);
         if (edsId == null) {
 
             //if not in the cache, hit the DB
@@ -85,24 +85,36 @@ public class IdHelper {
                 edsId = UUID.fromString(edsIdStr);
             }
 
-            addToCache(sourceReferenceValue, edsId);
+            addToCache(serviceId, systemId, sourceReferenceValue, edsId);
         }
 
         return edsId;
     }
 
-    private static UUID checkCache(String referenceValue) {
-        return (UUID)cache.get(referenceValue);
+    private static UUID checkCache(UUID serviceId, UUID systemId, String referenceValue) {
+        String cacheKey = createCacheKey(serviceId, systemId, referenceValue);
+        return (UUID)cache.get(cacheKey);
     }
 
-    private static void addToCache(String referenceValue, UUID id) {
+    private static void addToCache(UUID serviceId, UUID systemId, String referenceValue, UUID id) {
+        String cacheKey = createCacheKey(serviceId, systemId, referenceValue);
         try {
-            cache.put(referenceValue, id);
+            cache.put(cacheKey, id);
         } catch (Exception ex) {
             LOG.error("Error adding key ["+ referenceValue + "] value [" + id + "] to ID map cache", ex);
         }
     }
 
+    private static String createCacheKey(UUID serviceId, UUID systemId, String referenceValue) {
+        //quick optimisation to cut on string creation
+        StringBuilder sb = new StringBuilder();
+        sb.append(serviceId.toString());
+        sb.append("/");
+        sb.append(systemId.toString());
+        sb.append("/");
+        sb.append(referenceValue);
+        return sb.toString();
+    }
 
     /*private static String createCacheKey(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) {
         //quick optimisation to cut on string creation
@@ -279,7 +291,7 @@ public class IdHelper {
         for (String sourceReferenceValue: sourceReferencesToMap) {
             Reference sourceReference = new Reference().setReference(sourceReferenceValue);
 
-            UUID edsId = checkCache(sourceReferenceValue);
+            UUID edsId = checkCache(serviceId, systemId, sourceReferenceValue);
             if (edsId != null) {
                 //if in the cache, construct a new reference String with the ID and add to our map
                 ResourceType resourceType = ReferenceHelper.getResourceType(sourceReference);
@@ -329,7 +341,7 @@ public class IdHelper {
             mappingsToPopulate.put(sourceReferenceValue, mappedReferenceValue);
 
             //and add to our cache for next time
-            addToCache(sourceReferenceValue, edsId);
+            addToCache(serviceId, systemId, sourceReferenceValue, edsId);
         }
 
         return definitelyNewResourceIdSourceReferences;
