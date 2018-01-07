@@ -189,7 +189,7 @@ public class VisionCsvHelper {
         }
 
         //the EMIS patient GUID is part of the locallyUnique Id of the observation, to extract from that
-        String patientGuid = getPatientGuidFromUniqueId(locallyUniqueObservationId);
+        //String patientGuid = getPatientGuidFromUniqueId(locallyUniqueObservationId);
 
         boolean changed = false;
 
@@ -219,7 +219,7 @@ public class VisionCsvHelper {
 
         if (changed) {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirObservation);
+            fhirResourceFiler.savePatientResource(null, false, fhirObservation);
         }
     }
 
@@ -329,10 +329,10 @@ public class VisionCsvHelper {
 
         if (addLinkedItemsToResource(fhirResource, references, extensionUrl)) {
 
-            String patientGuid = getPatientGuidFromUniqueId(locallyUniqueResourceId);
+            //String patientGuid = getPatientGuidFromUniqueId(locallyUniqueResourceId);
 
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirResource);
+            fhirResourceFiler.savePatientResource(null, false, fhirResource);
         }
     }
 
@@ -575,8 +575,8 @@ public class VisionCsvHelper {
 
             //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
             if (changed) {
-                String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
-                fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
+                //String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
+                fhirResourceFiler.savePatientResource(null, false, fhirMedicationStatement);
             }
         }
     }

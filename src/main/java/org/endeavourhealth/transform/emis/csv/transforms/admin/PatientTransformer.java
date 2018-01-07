@@ -254,7 +254,7 @@ public class PatientTransformer {
         }
 
         //save both resources together, so the patient is defintiely saved before the episode
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirPatient, fhirEpisode);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirPatient, fhirEpisode);
     }
 
     /**
@@ -299,13 +299,13 @@ public class PatientTransformer {
                         continue;
                     }
 
-                    fhirResourceFiler.deletePatientResource(currentState, false, patientGuid, resource);
+                    fhirResourceFiler.deletePatientResource(currentState, false, resource);
                 }
             }
         }
 
         //and delete the patient and episode
-        fhirResourceFiler.deletePatientResource(currentState, patientGuid, fhirPatient, fhirEpisode);
+        fhirResourceFiler.deletePatientResource(currentState, fhirPatient, fhirEpisode);
     }
 
     private static void transformEthnicityAndMaritalStatus(org.hl7.fhir.instance.model.Patient fhirPatient,

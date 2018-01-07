@@ -3,8 +3,8 @@ package org.endeavourhealth.transform.adastra.transforms.admin;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.*;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
@@ -83,7 +83,7 @@ public class PatientTransformer {
 
         AdastraHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirPatient);
+        fhirResourceFiler.savePatientResource(null, fhirPatient);
     }
 
     private static ContactPoint convertPhoneNumber(PatientPhoneNumberType phoneNumber) throws Exception {

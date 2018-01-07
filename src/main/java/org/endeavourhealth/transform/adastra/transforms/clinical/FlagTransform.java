@@ -6,11 +6,12 @@ import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.CodeableConcept;
+import org.hl7.fhir.instance.model.Flag;
+import org.hl7.fhir.instance.model.Meta;
+import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
-
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class FlagTransform {
 
@@ -33,7 +34,7 @@ public class FlagTransform {
 
         fhirFlag.setCode(codeableConcept);
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirFlag);
+        fhirResourceFiler.savePatientResource(null, fhirFlag);
 
     }
 }

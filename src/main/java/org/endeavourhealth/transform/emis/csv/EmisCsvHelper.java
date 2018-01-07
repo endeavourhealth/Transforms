@@ -427,7 +427,7 @@ public class EmisCsvHelper {
         }
 
         //the EMIS patient GUID is part of the locallyUnique Id of the observation, to extract from that
-        String patientGuid = getPatientGuidFromUniqueId(locallyUniqueObservationId);
+        //String patientGuid = getPatientGuidFromUniqueId(locallyUniqueObservationId);
 
         boolean changed = false;
 
@@ -457,7 +457,7 @@ public class EmisCsvHelper {
 
         if (changed) {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirObservation);
+            fhirResourceFiler.savePatientResource(null, false, fhirObservation);
         }
     }
 
@@ -577,10 +577,10 @@ public class EmisCsvHelper {
 
         if (addLinkedItemsToResource(fhirResource, references, extensionUrl)) {
 
-            String patientGuid = getPatientGuidFromUniqueId(locallyUniqueResourceId);
+            //String patientGuid = getPatientGuidFromUniqueId(locallyUniqueResourceId);
 
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirResource);
+            fhirResourceFiler.savePatientResource(null, false, fhirResource);
         }
     }
 
@@ -901,7 +901,7 @@ public class EmisCsvHelper {
                 fhirPatient.setMaritalStatus(maritalStatus.getCodeableConcept());
             }
 
-            fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirPatient);
+            fhirResourceFiler.savePatientResource(null, false, fhirPatient);
         }
     }
 
@@ -1015,8 +1015,8 @@ public class EmisCsvHelper {
             }
         }
 
-        String patientId = getPatientGuidFromUniqueId(locallyUniqueId);
-        fhirResourceFiler.savePatientResource(null, false, patientId, existingProblem);
+        //String patientId = getPatientGuidFromUniqueId(locallyUniqueId);
+        fhirResourceFiler.savePatientResource(null, false, existingProblem);
     }
 
     /**
@@ -1036,8 +1036,8 @@ public class EmisCsvHelper {
 
         removeAllProblemSpecificFields(existingProblem);
 
-        String patientId = getPatientGuidFromUniqueId(locallyUniqueId);
-        fhirResourceFiler.savePatientResource(null, false, patientId, existingProblem);
+        //String patientId = getPatientGuidFromUniqueId(locallyUniqueId);
+        fhirResourceFiler.savePatientResource(null, false, existingProblem);
     }
     private void removeAllProblemSpecificFields(Condition fhirProblem) {
 
@@ -1213,8 +1213,8 @@ public class EmisCsvHelper {
 
             //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
             if (changed) {
-                String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
-                fhirResourceFiler.savePatientResource(null, false, patientGuid, fhirMedicationStatement);
+                //String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
+                fhirResourceFiler.savePatientResource(null, false, fhirMedicationStatement);
             }
         }
     }

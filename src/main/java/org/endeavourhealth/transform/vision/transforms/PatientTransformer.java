@@ -191,7 +191,7 @@ public class PatientTransformer {
         }
 
         //save both resources together, so the patient is saved before the episode
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirPatient, fhirEpisode);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirPatient, fhirEpisode);
     }
 
     /**
@@ -230,13 +230,13 @@ public class PatientTransformer {
                         continue;
                     }
 
-                    fhirResourceFiler.deletePatientResource(currentState, false, patientGuid, resource);
+                    fhirResourceFiler.deletePatientResource(currentState, false, resource);
                 }
             }
         }
 
         //and delete the patient and episode
-        fhirResourceFiler.deletePatientResource(currentState, patientGuid, fhirPatient, fhirEpisode);
+        fhirResourceFiler.deletePatientResource(currentState, fhirPatient, fhirEpisode);
     }
 
     private static RegistrationType convertRegistrationType(String csvRegTypeCode) {

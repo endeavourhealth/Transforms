@@ -249,7 +249,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirMedicationStatement);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirMedicationStatement);
             return;
         }
 
@@ -323,7 +323,7 @@ public class JournalTransformer {
 
         addEncounterExtension(fhirMedicationStatement, parser, csvHelper, patientID);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirMedicationStatement);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirMedicationStatement);
     }
 
     private static void createOrDeleteMedicationIssue  (Journal parser,
@@ -342,7 +342,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirMedicationOrder);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirMedicationOrder);
             return;
         }
 
@@ -404,7 +404,7 @@ public class JournalTransformer {
             fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirMedicationOrder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirMedicationOrder);
     }
 
     private static void createOrDeleteAllergy(Journal parser,
@@ -423,7 +423,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirAllergy);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirAllergy);
             return;
         }
 
@@ -474,7 +474,7 @@ public class JournalTransformer {
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(fhirAllergy, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirAllergy);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirAllergy);
     }
 
     private static void createOrDeleteProcedure(Journal parser,
@@ -493,7 +493,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirProcedure);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirProcedure);
             return;
         }
 
@@ -536,7 +536,7 @@ public class JournalTransformer {
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(fhirProcedure, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirProcedure);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProcedure);
     }
 
 
@@ -555,7 +555,7 @@ public class JournalTransformer {
         fhirProblem.setPatient(csvHelper.createPatientReference(patientID));
 
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirProblem);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirProblem);
             return;
         }
 
@@ -632,7 +632,7 @@ public class JournalTransformer {
 
         addDocumentExtension(fhirProblem, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirProblem);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProblem);
     }
 
     private static void createOrDeleteObservation(Journal parser,
@@ -651,7 +651,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirObservation);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirObservation);
             return;
         }
 
@@ -747,7 +747,7 @@ public class JournalTransformer {
 
         //addReviewExtension(fhirObservation, fhirObservation.getCode(), parser, csvHelper, fhirResourceFiler);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirObservation);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirObservation);
     }
 
     private static void createOrDeleteFamilyMemberHistory(Journal parser,
@@ -766,7 +766,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirFamilyHistory);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirFamilyHistory);
             return;
         }
 
@@ -811,7 +811,7 @@ public class JournalTransformer {
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(fhirFamilyHistory, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirFamilyHistory);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirFamilyHistory);
     }
 
     private static void createOrDeleteImmunization(Journal parser,
@@ -830,7 +830,7 @@ public class JournalTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirImmunisation);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirImmunisation);
             return;
         }
 
@@ -898,7 +898,7 @@ public class JournalTransformer {
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(fhirImmunisation, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirImmunisation);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirImmunisation);
     }
 
     private static void addRecordedByExtension(DomainResource resource, Journal parser, VisionCsvHelper csvHelper) throws Exception {

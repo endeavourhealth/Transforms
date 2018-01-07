@@ -720,15 +720,15 @@ public class BasisTransformer {
     }
 
     public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
-        fhirResourceFiler.deletePatientResource(parserState,false, groupId,resources);
+        fhirResourceFiler.deletePatientResource(parserState, false, resources);
     }
 
     public static void deletePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
-        fhirResourceFiler.deletePatientResource(parserState,true, groupId,resources);
+        fhirResourceFiler.deletePatientResource(parserState, true, resources);
     }
 
     public static void savePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
-        fhirResourceFiler.savePatientResource(parserState, false, groupId, resources);
+        fhirResourceFiler.savePatientResource(parserState, false, resources);
     }
 
     public static void saveAdminResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
@@ -737,7 +737,7 @@ public class BasisTransformer {
     }
 
     public static void savePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
-        fhirResourceFiler.savePatientResource(parserState, true, groupId, resources);
+        fhirResourceFiler.savePatientResource(parserState, true, resources);
     }
 
     public static void saveAdminResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {

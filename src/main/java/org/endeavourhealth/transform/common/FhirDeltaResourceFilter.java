@@ -58,13 +58,13 @@ public class FhirDeltaResourceFilter {
         }
 
         for (Resource resource: patientUpserts) {
-            String patientId = IdHelper.getPatientId(resource);
-            filer.savePatientResource(null, false, patientId, resource);
+            //String patientId = IdHelper.getPatientId(resource);
+            filer.savePatientResource(null, false, resource);
         }
 
         for (Resource resource: patientDeletes) {
-            String patientId = IdHelper.getPatientId(resource);
-            filer.deletePatientResource(null, false, patientId, resource);
+            //String patientId = IdHelper.getPatientId(resource);
+            filer.deletePatientResource(null, false, resource);
         }
 
         //must wait for everything to finish

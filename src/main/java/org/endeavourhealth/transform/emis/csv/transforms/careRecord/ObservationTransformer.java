@@ -449,7 +449,7 @@ public class ObservationTransformer {
         }
 
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirReferral);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirReferral);
             return;
         }
 
@@ -503,7 +503,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirReferral, parser);
         assertNumericRangeHighEmpty(fhirReferral, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirReferral);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirReferral);
 
     }
 
@@ -523,7 +523,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirOrder);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirOrder);
             return;
         }
 
@@ -570,7 +570,7 @@ public class ObservationTransformer {
                 fhirOrder.getResourceType());
 */
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirOrder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirOrder);
 
     }
 
@@ -588,7 +588,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirSpecimen);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirSpecimen);
             return;
         }
 
@@ -622,7 +622,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirSpecimen, parser);
         assertNumericRangeHighEmpty(fhirSpecimen, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirSpecimen);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirSpecimen);
     }
 
 
@@ -642,7 +642,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirAllergy);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirAllergy);
             return;
         }
 
@@ -682,7 +682,7 @@ public class ObservationTransformer {
                 fhirAllergy.getResourceType());
 */
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirAllergy);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirAllergy);
 
     }
 
@@ -701,7 +701,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirReport);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirReport);
             return;
         }
 
@@ -751,7 +751,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirReport, parser);
         assertNumericRangeHighEmpty(fhirReport, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirReport);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirReport);
 
     }
 
@@ -771,7 +771,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirProcedure);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirProcedure);
             return;
         }
 
@@ -809,7 +809,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirProcedure, parser);
         assertNumericRangeHighEmpty(fhirProcedure, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirProcedure);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProcedure);
     }
 
 
@@ -843,7 +843,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirCondition);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirCondition);
             return;
         }
 
@@ -900,7 +900,7 @@ public class ObservationTransformer {
             assertNumericRangeHighEmpty(fhirCondition, parser);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirCondition);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirCondition);
     }
 
     private static void createOrDeleteObservation(Observation parser,
@@ -919,7 +919,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirObservation);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirObservation);
             return;
         }
 
@@ -988,7 +988,7 @@ public class ObservationTransformer {
         addReviewExtension(fhirObservation, fhirObservation.getCode(), parser, csvHelper, fhirResourceFiler);
         addConfidentialExtension(fhirObservation, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirObservation);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirObservation);
     }
 
     private static void createOrDeleteFamilyMemberHistory(Observation parser,
@@ -1007,7 +1007,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirFamilyHistory);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirFamilyHistory);
             return;
         }
 
@@ -1047,7 +1047,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirFamilyHistory, parser);
         assertNumericRangeHighEmpty(fhirFamilyHistory, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirFamilyHistory);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirFamilyHistory);
     }
 
     private static void createOrDeleteImmunization(Observation parser,
@@ -1066,7 +1066,7 @@ public class ObservationTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirImmunisation);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirImmunisation);
             return;
         }
 
@@ -1107,7 +1107,7 @@ public class ObservationTransformer {
         assertNumericRangeLowEmpty(fhirImmunisation, parser);
         assertNumericRangeHighEmpty(fhirImmunisation, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirImmunisation);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirImmunisation);
     }
 
     private static void addDocumentExtension(DomainResource resource, Observation parser) {

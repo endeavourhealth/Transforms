@@ -455,7 +455,7 @@ public class FhirHl7v2Filer {
                 .filter(t -> t.getResourceType() == ResourceType.Patient)
                 .map(t -> (Patient)t)
                 .collect(StreamExtension.singleCollector());
-        String patientId = patient.getId();
+        //String patientId = patient.getId();
 
         for (Resource resource: patientResources) {
 
@@ -466,7 +466,7 @@ public class FhirHl7v2Filer {
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
             }
 
-            fhirResourceFiler.savePatientResource(null, false, patientId, resource);
+            fhirResourceFiler.savePatientResource(null, false, resource);
         }
     }
 

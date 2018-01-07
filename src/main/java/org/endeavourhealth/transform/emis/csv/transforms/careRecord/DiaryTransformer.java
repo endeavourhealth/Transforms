@@ -55,7 +55,7 @@ public class DiaryTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getDeleted()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientGuid, fhirRequest);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirRequest);
             return;
         }
 
@@ -128,6 +128,6 @@ public class DiaryTransformer {
             fhirRequest.addExtension(ExtensionConverter.createBooleanExtension(FhirExtensionUri.IS_CONFIDENTIAL, true));
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientGuid, fhirRequest);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirRequest);
     }
 }

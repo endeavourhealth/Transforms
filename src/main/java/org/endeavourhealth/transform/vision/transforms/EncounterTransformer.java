@@ -48,7 +48,7 @@ public class EncounterTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirEncounter);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirEncounter);
             return;
         }
 
@@ -106,7 +106,7 @@ public class EncounterTransformer {
             csvHelper.addLinkedItemsToResource(fhirEncounter, references, FhirExtensionUri.ENCOUNTER_COMPONENTS);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirEncounter);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirEncounter);
     }
 
 

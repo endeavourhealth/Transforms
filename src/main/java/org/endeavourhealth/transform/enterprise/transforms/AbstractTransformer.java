@@ -318,7 +318,7 @@ public abstract class AbstractTransformer {
             return false;
         }
 
-        UUID mappedResourceId = checkInstanceMapCache(resourceType, resourceId);
+        UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (mappedResourceId == null) {
 
             EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
@@ -330,7 +330,7 @@ public abstract class AbstractTransformer {
                 mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
             }
 
-            addToInstanceMapCache(resourceType, resourceId, mappedResourceId);
+            addToInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId, mappedResourceId);
         }
 
         //if the mapped ID is different to the resource ID then it's mapped to another instance
@@ -439,7 +439,7 @@ public abstract class AbstractTransformer {
                 && (resourceType == ResourceType.Organization
                     || resourceType == ResourceType.Practitioner)) {
 
-                UUID mappedResourceId = checkInstanceMapCache(resourceType, resourceId);
+                UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
                 if (mappedResourceId == null) {
 
                     EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
@@ -458,7 +458,7 @@ public abstract class AbstractTransformer {
                         mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
                     }
 
-                    addToInstanceMapCache(resourceType, resourceId, mappedResourceId);
+                    addToInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId, mappedResourceId);
                 }
 
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
@@ -472,7 +472,7 @@ public abstract class AbstractTransformer {
                         Thread.sleep(1000);
                         mappedInstanceEnterpriseId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
                         if (mappedInstanceEnterpriseId == null) {
-                            throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString());
+                            throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
                     }
                     return mappedInstanceEnterpriseId;
@@ -517,13 +517,13 @@ public abstract class AbstractTransformer {
         }
     }
 
-    private static UUID checkInstanceMapCache(ResourceType resourceType, UUID resourceId) {
-        Object key = createCacheKey(null, resourceType.toString(), resourceId.toString());
+    private static UUID checkInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
+        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
         return (UUID)instanceCache.get(key);
     }
 
-    private static void addToInstanceMapCache(ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
-        Object key = createCacheKey(null, resourceType.toString(), resourceId.toString());
+    private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
+        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
         instanceCache.put(key, mappedResourceId);
     }
 

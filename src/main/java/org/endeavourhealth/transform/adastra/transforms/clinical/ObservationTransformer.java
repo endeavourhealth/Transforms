@@ -3,17 +3,17 @@ package org.endeavourhealth.transform.adastra.transforms.clinical;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Meta;
+import org.hl7.fhir.instance.model.Observation;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
 import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.observationIds;
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public class ObservationTransformer {
 
@@ -38,7 +38,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(caseReport.getActiveDate()));
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
+        fhirResourceFiler.savePatientResource(null, fhirObservation);
     }
 
     public static void observationFromFreeText(String freeText, String consultationID,
@@ -60,7 +60,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
+        fhirResourceFiler.savePatientResource(null, fhirObservation);
 
     }
 
@@ -84,7 +84,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirObservation);
+        fhirResourceFiler.savePatientResource(null, fhirObservation);
     }
 
     private static Observation createStandardObservation() {

@@ -2,13 +2,15 @@ package org.endeavourhealth.transform.adastra.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Meta;
+import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
@@ -50,7 +52,7 @@ public class EncounterTransform {
             fhirEncounter.setStatus(Encounter.EncounterState.ARRIVED);
         }
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirEncounter);
+        fhirResourceFiler.savePatientResource(null, fhirEncounter);
     }
 
     public static void createChildEncountersFromConsultations(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -96,7 +98,7 @@ public class EncounterTransform {
         fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PRIMARY_PERFORMER));
         fhirParticipant.setIndividual(AdastraHelper.createUserReference(consultation.getConsultationBy().getName()));
 
-        fhirResourceFiler.savePatientResource(null, uniqueIdMapper.get("patient"), fhirEncounter);
+        fhirResourceFiler.savePatientResource(null, fhirEncounter);
 
         if (consultation.getSummary() != null) {
             ObservationTransformer.observationFromFreeText(consultation.getSummary(), consultationID,

@@ -477,6 +477,7 @@ public abstract class EmisCsvToFhirTransformer {
         SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         if (processPatientData) {
+            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
             ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
             ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

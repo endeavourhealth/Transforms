@@ -41,8 +41,9 @@ public class FhirResourceFiler {
 
     //batch IDs
     private ReentrantLock batchIdLock = new ReentrantLock();
-    private Map<String, ExchangeBatch> patientBatchIdMap = new ConcurrentHashMap<>();
     private ExchangeBatch adminBatchId = null;
+    private Map<UUID, ExchangeBatch> patientBatchIdMap = new ConcurrentHashMap<>();
+    private Map<String, UUID> sourcePatientIdMap = new ConcurrentHashMap<>();
 
     //threading
     private MapIdTask nextMapIdTask = new MapIdTask();
@@ -84,7 +85,23 @@ public class FhirResourceFiler {
         addResourceToQueue(parserState, false, mapIds, batch, true, resources);
     }
 
-    public void savePatientResource(CsvCurrentState parserState, String patientId, Resource... resources) throws Exception {
+    public void savePatientResource(CsvCurrentState parserState, Resource... resources) throws Exception {
+        savePatientResource(parserState, true, resources);
+    }
+    public void savePatientResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
+        ExchangeBatch batch = getPatientBatch(mapIds, resources);
+        addResourceToQueue(parserState, true, mapIds, batch, false, resources);
+    }
+
+    public void deletePatientResource(CsvCurrentState parserState, Resource... resources) throws Exception {
+        deletePatientResource(parserState, true, resources);
+    }
+    public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
+        ExchangeBatch batch = getPatientBatch(mapIds, resources);
+        addResourceToQueue(parserState, true, mapIds, batch, true, resources);
+    }
+
+    /*public void savePatientResource(CsvCurrentState parserState, String patientId, Resource... resources) throws Exception {
         savePatientResource(parserState, true, patientId, resources);
     }
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, String patientId, Resource... resources) throws Exception {
@@ -98,7 +115,7 @@ public class FhirResourceFiler {
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, String patientId, Resource... resources) throws Exception {
         ExchangeBatch batch = getPatientBatch(mapIds, patientId, resources);
         addResourceToQueue(parserState, true, mapIds, batch, true, resources);
-    }
+    }*/
 
     private void addResourceToQueue(CsvCurrentState parserState,
                                     boolean expectingPatientResource,
@@ -184,24 +201,25 @@ public class FhirResourceFiler {
         return adminBatchId;
     }
 
-    private ExchangeBatch getPatientBatch(boolean mapIds, String patientId, Resource... resources) throws Exception {
-        ExchangeBatch patientBatch = patientBatchIdMap.get(patientId);
+    private ExchangeBatch getPatientBatch(boolean mapIds, Resource... resources) throws Exception {
+
+        UUID edsPatientId = findEdsPatientId(mapIds, resources);
+
+        ExchangeBatch patientBatch = patientBatchIdMap.get(edsPatientId);
         if (patientBatch == null) {
 
             try {
                 batchIdLock.lock();
 
                 //make sure to check if it's still null, as another thread may have created the ID while we were waiting to batchIdLock
-                patientBatch = patientBatchIdMap.get(patientId);
+                patientBatch = patientBatchIdMap.get(edsPatientId);
 
                 if (patientBatch == null) {
-
                     //we need to generate/find the EDS patient UUID to go in the batch
-                    UUID edsPatientId = findEdsPatientId(mapIds, resources);
                     patientBatch = createAndSaveExchangeBatch(edsPatientId);
 
                     //but hash by the raw patient ID, so we can quickly look up the batch for subsequent resources
-                    patientBatchIdMap.put(patientId, patientBatch);
+                    patientBatchIdMap.put(edsPatientId, patientBatch);
                 }
             } finally {
                 batchIdLock.unlock();
@@ -210,19 +228,42 @@ public class FhirResourceFiler {
         return patientBatch;
     }
 
+    /**
+     * find or creates the EDS patient ID for the given resources, which may have EDS IDs
+     * already in them or may have local IDs and need ID mapping
+     */
     private UUID findEdsPatientId(boolean mapIds, Resource... resources) throws Exception {
+
         for (Resource resource: resources) {
 
             try {
-                //get the patient reference from the resource
-                String patientId = IdHelper.getPatientId(resource);
 
-                //if we need to map IDs, then the reference will be a raw source ID, so needs mapping
+                UUID ret = null;
+
+                //get the patient reference from the resource
+                String resourcePatientId = IdHelper.getPatientId(resource);
+
                 if (mapIds) {
-                    patientId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, ResourceType.Patient, patientId);
+                    //if we need to ID map, then the patient ID on the resource is the RAW patient ID (e.g. Emis GUID),
+                    //so we need to translate that to an EDS ID
+
+                    //check our local lookup cache first
+                    ret = sourcePatientIdMap.get(resourcePatientId);
+                    if (ret == null) {
+
+                        //if not in our local lookup, then use the ID mapper layer to lookup and then add to our local cache
+                        String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, ResourceType.Patient, resourcePatientId);
+                        ret = UUID.fromString(edsPatientIdStr);
+                        sourcePatientIdMap.put(resourcePatientId, ret);
+                    }
+
+                } else {
+                    //if we're not ID mapping, then the patient ID on the resource IS the EDS patient ID
+                    ret = UUID.fromString(resourcePatientId);
                 }
 
-                return UUID.fromString(patientId);
+                return ret;
+
             } catch (Exception ex) {
                 //if we try this on a Slot, it'll fail as it doesn't have a patient but we treat it like a patient resource, so just ignore any errors
             }

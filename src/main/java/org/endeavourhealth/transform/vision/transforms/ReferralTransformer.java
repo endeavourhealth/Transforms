@@ -55,7 +55,7 @@ public class ReferralTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientID, fhirReferral);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirReferral);
             return;
         }
 
@@ -105,7 +105,7 @@ public class ReferralTransformer {
         //TODO:  no linked documents ?
         //addDocumentExtension(fhirReferral, parser);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientID, fhirReferral);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirReferral);
     }
 
     private static ReferralType convertReferralType(String type) throws Exception {
