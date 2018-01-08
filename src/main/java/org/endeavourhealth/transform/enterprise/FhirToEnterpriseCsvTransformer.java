@@ -17,6 +17,7 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
@@ -234,13 +235,26 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                 continue;
             }
 
-            Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
-            String patientId = IdHelper.getPatientId(resource);
-            if (Strings.isNullOrEmpty(patientId)) {
-                continue;
-            }
+            try {
+                Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
+                String patientId = IdHelper.getPatientId(resource);
+                if (Strings.isNullOrEmpty(patientId)) {
+                    continue;
+                }
 
-            return patientId;
+                return patientId;
+
+            } catch (PatientResourceException ex) {
+                //we've had this exception because a batch has ended up containing JUST
+                //a Slot resource, which means we can't get the patient ID. The matching Appointment
+                //resource was created in a separate exchange_batch, but errors meant this data was
+                //split into a separate batch. This being the case, the Slot will already have been sent
+                //to the subscriber, because that's manually done when the appointment is done. So we
+                //can safely ignore this
+                if (resourceType != ResourceType.Slot) {
+                    throw ex;
+                }
+            }
         }
 
         return null;

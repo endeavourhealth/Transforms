@@ -51,6 +51,8 @@ public class SlotTransformer {
             return;
         }
 
+
+
         org.hl7.fhir.instance.model.Slot fhirSlot = new org.hl7.fhir.instance.model.Slot();
         fhirSlot.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SLOT));
 
