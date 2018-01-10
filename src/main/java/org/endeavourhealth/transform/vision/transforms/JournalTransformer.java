@@ -581,41 +581,14 @@ public class JournalTransformer {
             fhirProblem.setAbatement(EmisDateTimeHelper.createDateType(endDate, endDatePrecision));
         }
 
-        //TODO: Review Vision files for problem associations
-//        Date lastReviewDate = parser.getLastReviewDate();
-//        String lastReviewPrecision = parser.getLastReviewDatePrecision();
-//        DateType lastReviewDateType = EmisDateTimeHelper.createDateType(lastReviewDate, lastReviewPrecision);
-//        String lastReviewedByGuid = parser.getLastReviewUserInRoleGuid();
-//        if (lastReviewDateType != null
-//                || !Strings.isNullOrEmpty(lastReviewedByGuid)) {
-//
-//            //the review extension is a compound extension, containing who and when
-//            Extension fhirExtension = ExtensionConverter.createCompoundExtension(FhirExtensionUri.PROBLEM_LAST_REVIEWED);
-//
-//            if (lastReviewDateType != null) {
-//                fhirExtension.addExtension(ExtensionConverter.createExtension(FhirExtensionUri._PROBLEM_LAST_REVIEWED__DATE, lastReviewDateType));
-//            }
-//            if (!Strings.isNullOrEmpty(lastReviewedByGuid)) {
-//                fhirExtension.addExtension(ExtensionConverter.createExtension(FhirExtensionUri._PROBLEM_LAST_REVIEWED__PERFORMER, csvHelper.createPractitionerReference(lastReviewedByGuid)));
-//            }
-//            fhirProblem.addExtension(fhirExtension);
-//        }
-//
-//        ProblemSignificance fhirSignificance = convertSignificance(parser.getSignificanceDescription());
-//        CodeableConcept fhirConcept = CodeableConceptHelper.createCodeableConcept(fhirSignificance);
-//        fhirProblem.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PROBLEM_SIGNIFICANCE, fhirConcept));
-//
-//        String parentProblemGuid = parser.getParentProblemObservationGuid();
-//        String parentRelationship = parser.getParentProblemRelationship();
-//        if (!Strings.isNullOrEmpty(parentProblemGuid)) {
-//            ProblemRelationshipType fhirRelationshipType = convertRelationshipType(parentRelationship);
-//
-//            //this extension is composed of two separate extensions
-//            Extension typeExtension = ExtensionConverter.createExtension("type", new StringType(fhirRelationshipType.getCode()));
-//            Extension referenceExtension = ExtensionConverter.createExtension("target", csvHelper.createProblemReference(parentProblemGuid, patientGuid));
-//            fhirProblem.addExtension(ExtensionConverter.createCompoundExtension(FhirExtensionUri.PROBLEM_RELATED, typeExtension, referenceExtension));
-//        }
-//
+        Date effectiveDate = parser.getEffectiveDateTime();
+        String effectiveDatePrecision = "YMD";
+        fhirProblem.setOnset(EmisDateTimeHelper.createDateType(effectiveDate, effectiveDatePrecision));
+
+        String clinicianID = parser.getClinicianUserID();
+        if (!Strings.isNullOrEmpty(clinicianID)) {
+            fhirProblem.setAsserter(csvHelper.createPractitionerReference(clinicianID));
+        }
 
         //carry over linked items from any previous instance of this problem
         List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirProblem.getId(), ResourceType.Condition);
@@ -630,7 +603,10 @@ public class JournalTransformer {
             csvHelper.addLinkedItemsToResource(fhirProblem, references, FhirExtensionUri.PROBLEM_ASSOCIATED_RESOURCE);
         }
 
+        //the document, entered date and person are stored in extensions
         addDocumentExtension(fhirProblem, parser);
+        addRecordedByExtension(fhirProblem, parser, csvHelper);
+        addRecordedDateExtension(fhirProblem, parser);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirProblem);
     }
