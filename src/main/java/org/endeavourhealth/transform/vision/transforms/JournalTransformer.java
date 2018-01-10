@@ -907,7 +907,7 @@ public class JournalTransformer {
     // the consultation encounter link value is pre-fixed with E
     public static String extractEncounterLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
-            String[] linkIDs = links.split("|");
+            String[] linkIDs = links.split("[|]");
             for (String link : linkIDs) {
                 if (link.startsWith("E")) {
                     return link.replace("E", "");
@@ -920,7 +920,7 @@ public class JournalTransformer {
     // TODO: if it is a medication issue, how determine linked drug statement? - Asked Vision - invesigating if LastIssueDate can be added
     public static String extractDrugRecordLinkID(String links) {
         if (!Strings.isNullOrEmpty(links)) {
-            String[] linkIDs = links.split("|");
+            String[] linkIDs = links.split("[|]");
             for (String link : linkIDs) {
                 if (link.startsWith("D")) {
                     return link.replace("D", "");
@@ -934,7 +934,7 @@ public class JournalTransformer {
     public static String extractProblemLinkIDs(String links, String patientID, VisionCsvHelper csvHelper) {
         String problemLinkIDs = "";
         if (!Strings.isNullOrEmpty(links)) {
-            String[] linkIDs = links.split("|");
+            String[] linkIDs = links.split("[|]");
             for (String linkID : linkIDs) {
                 if (!linkID.startsWith("E")) {
                     //check if link is an actual problem previously cached in Problem Pre-transformer
@@ -982,13 +982,15 @@ public class JournalTransformer {
     private static void addDocumentExtension(DomainResource resource, Journal parser) {
         String documentID = parser.getDocumentID();
         if (!Strings.isNullOrEmpty(documentID)) {
-            String[] documentIDs = parser.getDocumentID().split("|");
-            String documentGuid = documentIDs[1];
-            if (Strings.isNullOrEmpty(documentGuid)) {
-                return;
+            String[] documentIDs = parser.getDocumentID().split("[|]");
+            if (documentIDs.length > 1) {
+                String documentGuid = documentIDs[1];
+                if (Strings.isNullOrEmpty(documentGuid)) {
+                    return;
+                }
+                Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
+                resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
             }
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
-            resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
         }
     }
 
@@ -1006,13 +1008,6 @@ public class JournalTransformer {
         else {
             // after conversation with Vision, if no Snomed code exists, then it's a non coded item, so discard
             return null;
-
-//            String readCode = parser.getReadCode();
-//            // Dirty test data exclusions
-//            if (readCode.equalsIgnoreCase("ZZZZZ") || readCode.equalsIgnoreCase("9i") )
-//                return null;
-//            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_READ2, term, readCode);
-//            TerminologyService.translateToSnomed(codeableConcept);
         }
         return codeableConcept;
     }
