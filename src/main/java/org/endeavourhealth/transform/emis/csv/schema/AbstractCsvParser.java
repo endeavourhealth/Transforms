@@ -33,8 +33,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     private CSVParser csvReader = null;
     private Iterator<CSVRecord> csvIterator = null;
     private CSVRecord csvRecord = null;
+    private long csvRecordLineNumber = -1;
     private Set<Long> recordNumbersToProcess = null;
-
 
     public AbstractCsvParser(String version, String filePath, boolean openParser, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
 
@@ -49,9 +49,9 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         }
     }
 
+
     private void open() throws Exception {
 
-        //withHeader() now set as part of the CSV_FORMAT in the specific transformer
         InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
         this.csvReader = new CSVParser(isr, csvFormat);
         try {
@@ -59,6 +59,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
             String[] expectedHeaders = getCsvHeaders(version);
             CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
+
+            csvRecordLineNumber = 0;
 
         } catch (Exception e) {
             //if we get any exception thrown during the constructor, make sure to close the reader
@@ -72,6 +74,11 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             csvReader.close();
             csvReader = null;
         }
+
+        //may as well clear these as well
+        this.csvIterator = null;
+        this.csvRecord = null;
+        this.csvRecordLineNumber = -1;
     }
 
     public List<String> testForValidVersions(List<String> possibleVersions) throws Exception {
@@ -129,35 +136,99 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             return false;
         }
 
-        while (csvIterator.hasNext()) {
-            this.csvRecord = csvIterator.next();
+        while (advanceToNextRow()) {
 
-            if (csvReader.getCurrentLineNumber() % 50000 == 0) {
-                LOG.trace("Line " + csvReader.getCurrentLineNumber() + " of " + filePath);
+            if (this.csvRecordLineNumber % 50000 == 0) {
+                LOG.trace("Line " + csvRecordLineNumber + " of " + filePath);
             }
 
             //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
             if (recordNumbersToProcess == null
-                || recordNumbersToProcess.contains(Long.valueOf(getCurrentLineNumber()))) {
+                || recordNumbersToProcess.contains(Long.valueOf(csvRecordLineNumber))) {
                 return true;
 
             } else {
                 continue;
-
             }
         }
 
         //only log out we "completed" the file if we read any rows from it
-        if (csvReader.getCurrentLineNumber() > 1) {
+        if (csvRecordLineNumber > 1) {
             LOG.info("Completed " + filePath);
         }
-
-        this.csvRecord = null;
 
         //automatically close the parser once we reach the end, to cut down on memory use
         close();
 
         return false;
+    }
+
+    /**
+     * moves to the next row in the CSV file, returning false if there is no new row
+     *
+     */
+    private boolean advanceToNextRow() throws Exception {
+
+        try {
+            this.csvRecord = this.csvIterator.next();
+            this.csvRecordLineNumber = this.csvReader.getCurrentLineNumber();
+            return true;
+
+        } catch (NoSuchElementException nse) {
+            //a NoSuchElementException is thrown if next() is called when there is no next
+            return false;
+
+        } catch (Throwable t) {
+            //if we get a throwable that wraps up an IO exception, then it's
+            //probably an S3 timeout, in which case we should re-open the file and read forward to where we left off
+
+            //if it's not an IO Exception, just throw it
+            if (t.getCause() == null
+                    || !(t.getCause() instanceof IOException)) {
+                throw t;
+            }
+
+            IOException ioe = (IOException)t.getCause();
+            LOG.error("Had an IO Exception reading " + filePath);
+            LOG.error("" + ioe.getClass().getName() + ": " + ioe.getMessage());
+
+            return reopenAndResumeOnNextLine();
+        }
+    }
+
+    /**
+     * if we had an S3 timeout, this function is called to resume where we left off
+     * returns false if there was no next line (i.e. we failed on the last line)
+     */
+    private boolean reopenAndResumeOnNextLine() throws Exception {
+
+        long nextDesiredRecordNumber = this.csvRecordLineNumber + 1;
+        LOG.info("Going to re-open and try to resume on line " + nextDesiredRecordNumber);
+
+        //close everything down
+        close();
+
+        //open the file again
+        open();
+
+        //now read through the rows until we reach the next line number after the last one
+        while (true) {
+            try {
+                this.csvRecord = this.csvIterator.next();
+            } catch (NoSuchElementException nse) {
+                //if we get this exception, we've actually reached the end of the file (i.e. we failed on the last line)
+                return false;
+            }
+
+            this.csvRecordLineNumber = this.csvReader.getCurrentLineNumber();
+
+            if (csvRecordLineNumber == nextDesiredRecordNumber) {
+                LOG.info("Resuming on line " + csvRecordLineNumber);
+                break;
+            }
+        }
+
+        return true;
     }
 
 
@@ -166,11 +237,11 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     }
 
     public long getCurrentLineNumber() {
-        return csvReader.getCurrentLineNumber();
+        return csvRecordLineNumber;
     }
 
     public CsvCurrentState getCurrentState() {
-        return new CsvCurrentState(filePath, getCurrentLineNumber());
+        return new CsvCurrentState(filePath, csvRecordLineNumber);
     }
 
     /**

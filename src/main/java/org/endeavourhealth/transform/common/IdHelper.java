@@ -61,7 +61,7 @@ public class IdHelper {
         String sourceReferenceValue = sourceReference.getReference();
 
         //check our cache first
-        UUID edsId = checkCache(serviceId, systemId, sourceReferenceValue);
+        UUID edsId = checkCache(serviceId, sourceReferenceValue);
         if (edsId == null) {
 
             //if not in the cache, hit the DB
@@ -85,19 +85,19 @@ public class IdHelper {
                 edsId = UUID.fromString(edsIdStr);
             }
 
-            addToCache(serviceId, systemId, sourceReferenceValue, edsId);
+            addToCache(serviceId, sourceReferenceValue, edsId);
         }
 
         return edsId;
     }
 
-    private static UUID checkCache(UUID serviceId, UUID systemId, String referenceValue) {
-        String cacheKey = createCacheKey(serviceId, systemId, referenceValue);
+    private static UUID checkCache(UUID serviceId, String referenceValue) {
+        String cacheKey = createCacheKey(serviceId, referenceValue);
         return (UUID)cache.get(cacheKey);
     }
 
-    private static void addToCache(UUID serviceId, UUID systemId, String referenceValue, UUID id) {
-        String cacheKey = createCacheKey(serviceId, systemId, referenceValue);
+    private static void addToCache(UUID serviceId, String referenceValue, UUID id) {
+        String cacheKey = createCacheKey(serviceId, referenceValue);
         try {
             cache.put(cacheKey, id);
         } catch (Exception ex) {
@@ -105,124 +105,15 @@ public class IdHelper {
         }
     }
 
-    private static String createCacheKey(UUID serviceId, UUID systemId, String referenceValue) {
+    private static String createCacheKey(UUID serviceId, String referenceValue) {
         //quick optimisation to cut on string creation
         StringBuilder sb = new StringBuilder();
         sb.append(serviceId.toString());
-        sb.append("/");
-        sb.append(systemId.toString());
         sb.append("/");
         sb.append(referenceValue);
         return sb.toString();
     }
 
-    /*private static String createCacheKey(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) {
-        //quick optimisation to cut on string creation
-        StringBuilder sb = new StringBuilder();
-        sb.append(serviceId.toString());
-        sb.append("/");
-        sb.append(systemId.toString());
-        sb.append("/");
-        sb.append(resourceType.toString());
-        sb.append("/");
-        sb.append(sourceId);
-        return sb.toString();
-    }
-
-    public static String getOrCreateEdsResourceIdString(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, systemId, resourceType, sourceId).toString();
-    }
-
-    public static UUID getOrCreateEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        String key = createCacheKey(serviceId, systemId, resourceType, sourceId);
-
-        //check out in-memory cache first
-        UUID edsId = (UUID)cache.get(key);
-        if (edsId == null) {
-
-            //if not in the memory cache, check the DB
-            ResourceIdMap mapping = repository.getResourceIdMap(serviceId, systemId, resourceType.toString(), sourceId);
-            if (mapping == null) {
-                //if definitely now mapping on the DB, create and save a new ID
-                edsId = createEdsResourceId(serviceId, systemId, resourceType, sourceId, key);
-
-            } else {
-                edsId = mapping.getEdsId();
-            }
-
-            //add to our memory cache, as we're likely to use this ID again soon
-            try {
-                cache.put(key, edsId);
-            } catch (Exception ex) {
-                LOG.error("Error adding key ["+key+"] value ["+edsId+"] to ID map cache", ex);
-            }
-        }
-        return edsId;
-    }
-
-    private static UUID createEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId, String cacheKey) throws Exception {
-
-        //we need to synch to prevent two threads generating an ID for the same source ID at the same time
-        //use an AtomicInt for each cache key as a synchronisation object and as a way to track
-        AtomicInteger atomicInteger = null;
-        synchronized (synchLocks) {
-            atomicInteger = synchLocks.get(cacheKey);
-            if (atomicInteger == null) {
-                atomicInteger = new AtomicInteger(0);
-                synchLocks.put(cacheKey, atomicInteger);
-            }
-
-            atomicInteger.incrementAndGet();
-        }
-
-        UUID ret = null;
-
-        synchronized (atomicInteger) {
-
-            //check the DB again, from within the sync block, just in case another was just created
-            ResourceIdMap mapping = repository.getResourceIdMap(serviceId, systemId, resourceType.toString(), sourceId);
-            if (mapping == null) {
-                mapping = new ResourceIdMap();
-                mapping.setServiceId(serviceId);
-                mapping.setSystemId(systemId);
-                mapping.setResourceType(resourceType.toString());
-                mapping.setSourceId(sourceId);
-                mapping.setEdsId(UUID.randomUUID());
-                repository.insert(mapping);
-            }
-
-            ret = mapping.getEdsId();
-        }
-
-        synchronized (synchLocks) {
-            int val = atomicInteger.decrementAndGet();
-            if (val == 0) {
-                synchLocks.remove(cacheKey);
-            }
-        }
-
-        return ret;
-    }
-
-    public static UUID getEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        String key = createCacheKey(serviceId, systemId, resourceType, sourceId);
-
-        UUID edsId = (UUID)cache.get(key);
-        if (edsId == null) {
-            ResourceIdMap mapping = repository.getResourceIdMap(serviceId, systemId, resourceType.toString(), sourceId);
-            if (mapping == null) {
-                return null;
-            }
-
-            edsId = mapping.getEdsId();
-            try {
-                cache.put(key, edsId);
-            } catch (Exception ex) {
-                LOG.error("Error adding key ["+key+"] value ["+edsId+"] to ID map cache", ex);
-            }
-        }
-        return edsId;
-    }*/
 
     /**
      * maps the ID and all IDs within references in a FHIR resource to unique ones in the EDS space
@@ -291,7 +182,7 @@ public class IdHelper {
         for (String sourceReferenceValue: sourceReferencesToMap) {
             Reference sourceReference = new Reference().setReference(sourceReferenceValue);
 
-            UUID edsId = checkCache(serviceId, systemId, sourceReferenceValue);
+            UUID edsId = checkCache(serviceId, sourceReferenceValue);
             if (edsId != null) {
                 //if in the cache, construct a new reference String with the ID and add to our map
                 ResourceType resourceType = ReferenceHelper.getResourceType(sourceReference);
@@ -341,106 +232,12 @@ public class IdHelper {
             mappingsToPopulate.put(sourceReferenceValue, mappedReferenceValue);
 
             //and add to our cache for next time
-            addToCache(serviceId, systemId, sourceReferenceValue, edsId);
+            addToCache(serviceId, sourceReferenceValue, edsId);
         }
 
         return definitelyNewResourceIdSourceReferences;
     }
 
-    /*public static boolean mapIds(UUID serviceId, UUID systemId, Resource resource) throws Exception {
-
-        //get a suitable mapper implementation for the resource type
-        BaseIdMapper idMapper = getIdMapper(resource);
-
-        //find all the references from the resource, using an ID mapper for that resource type
-        Set<String> referenceValues = new HashSet<>();
-        idMapper.getResourceReferences(resource, referenceValues);
-
-        //if we want to map the resource ID, add that to the list of references
-        Reference sourceReference = ReferenceHelper.createReferenceExternal(resource);
-        String sourceIdReferenceValue = sourceReference.getReference();
-        referenceValues.add(sourceIdReferenceValue);
-
-        Map<String, String> mappings = new HashMap<>();
-        boolean isNewResource = populateResourceIdMappings(serviceId, systemId, referenceValues, sourceIdReferenceValue, mappings);
-
-        //now apply the references
-        idMapper.applyReferenceMappings(resource, mappings, true);
-
-        //and map the ID if we're doing that
-        String edsIdReferenceValue = mappings.get(sourceIdReferenceValue);
-        Reference edsReference = new Reference().setReference(edsIdReferenceValue);
-        String edsId = ReferenceHelper.getReferenceId(edsReference);
-        resource.setId(edsId);
-
-        return isNewResource;
-    }
-
-    private static boolean populateResourceIdMappings(UUID serviceId, UUID systemId, Set<String> referenceValues, String sourceResourceId, Map<String, String> mappings) throws Exception {
-
-        boolean isNewResource = false;
-
-        //convert the set of reference Strings to a list of Reference objects
-        List<Reference> referencesToHitDb = new ArrayList<>();
-        for (String sourceReferenceValue: referenceValues) {
-            Reference sourceReference = new Reference().setReference(sourceReferenceValue);
-
-            UUID edsId = checkCache(sourceReferenceValue);
-            if (edsId == null) {
-                //if not found in the cache, we'll need to go to the DB
-                referencesToHitDb.add(sourceReference);
-
-            } else {
-                //if in the cache, construct a new reference String with the ID
-                ResourceType resourceType = ReferenceHelper.getResourceType(sourceReference);
-                String edsReferenveValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
-                mappings.put(sourceReferenceValue, edsReferenveValue);
-            }
-        }
-
-        //call to the cache and DB to find or create mappings
-        Map<Reference, Reference> referenceMappingsFromDb = repository.findEdsReferencesFromSourceReferences(serviceId, systemId, referencesToHitDb);
-
-        //ensure we've got a mapping for every reference we started with and create where not
-        for (Reference sourceReference: referencesToHitDb) {
-            String sourceReferenceValue = sourceReference.getReference();
-            Reference mappedReference = referenceMappingsFromDb.get(sourceReference);
-
-            UUID edsId = null;
-            String mappedReferenceValue = null;
-
-            //if we don't have a pre-existing mapping for this source reference, we need to create one
-            if (mappedReference == null) {
-
-                //if we failed to find a mapping for our resource ID, then it means we're saving a new resource
-                if (sourceResourceId != null
-                        && sourceReferenceValue.equals(sourceResourceId)) {
-                    isNewResource = true;
-                }
-
-                ReferenceComponents comps = ReferenceHelper.getReferenceComponents(sourceReference);
-                String resourceType = comps.getResourceType().toString();
-                String sourceId = comps.getId();
-
-                edsId = repository.findOrCreateThreadSafe(serviceId, systemId, resourceType, sourceId);
-                mappedReferenceValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
-
-            } else {
-                //if we do have a mapping, extract the ID as a UUID so we can cache it
-                String edsIdStr = ReferenceHelper.getReferenceId(mappedReference);
-                edsId = UUID.fromString(edsIdStr);
-                mappedReferenceValue = mappedReference.getReference();
-            }
-
-            //add to our map of mappings
-            mappings.put(sourceReferenceValue, mappedReferenceValue);
-
-            //and add to our cache for next time
-            addToCache(sourceReferenceValue, edsId);
-        }
-
-        return isNewResource;
-    }*/
 
     /**
      * returns the patient ID of the resource or null if it doesn't have one. If called with
@@ -510,20 +307,6 @@ public class IdHelper {
 
         return ret;
     }
-
-    /*public static Reference convertEdsReferenceToLocallyUniqueReference(Reference edsReference) throws Exception {
-        ReferenceComponents components = ReferenceHelper.getReferenceComponents(edsReference);
-        ResourceType resourceType = components.getResourceType();
-        ResourceIdMap mapping = repository.getResourceIdMapByEdsId(resourceType.toString(), components.getId());
-        if (mapping == null) {
-            LOG.warn("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
-            return null;
-            //throw new TransformException("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
-        }
-
-        String emisId = mapping.getSourceId();
-        return ReferenceHelper.createReference(resourceType, emisId);
-    }*/
 
     public static void applyExternalReferenceMappings(Resource resource, Map<String, String> idMappings, boolean failForMissingMappings) throws Exception {
         getIdMapper(resource).applyReferenceMappings(resource, idMappings, failForMissingMappings);
