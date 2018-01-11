@@ -383,14 +383,14 @@ public class JournalTransformer {
             }
         }
 
-        //TODO: Link issue to drug record - Is the drug record in the links field?
+        //TODO: Link issue to drug record - Is the drug record in the links field? - awaiting Vision
         if (!Strings.isNullOrEmpty(parser.getLinks())) {
-            String[] links = parser.getLinks().split("|");
-            String drugRecordID = links[0];
-            if (!Strings.isNullOrEmpty(drugRecordID)) {
-                Reference authorisationReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID);
-                fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, authorisationReference));
-            }
+//            String[] links = parser.getLinks().split("[|]");
+//            String drugRecordID = links[0];
+//            if (!Strings.isNullOrEmpty(drugRecordID)) {
+//                Reference authorisationReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID);
+//                fhirMedicationOrder.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, authorisationReference));
+//            }
         }
 
         String enteredByID = parser.getClinicianUserID();
@@ -575,15 +575,18 @@ public class JournalTransformer {
         String comments = parser.getAssociatedText();
         fhirProblem.setNotes(comments);
 
+        Date recordedDate = parser.getEnteredDateTime();
+        fhirProblem.setDateRecorded(recordedDate);
+
         Date endDate = parser.getEndDate();
         if (endDate != null) {
             String endDatePrecision = "YMD";
-            fhirProblem.setAbatement(EmisDateTimeHelper.createDateType(endDate, endDatePrecision));
+            fhirProblem.setAbatement(EmisDateTimeHelper.createDateTimeType(endDate, endDatePrecision));
         }
 
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
-        fhirProblem.setOnset(EmisDateTimeHelper.createDateType(effectiveDate, effectiveDatePrecision));
+        fhirProblem.setOnset(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
 
         String clinicianID = parser.getClinicianUserID();
         if (!Strings.isNullOrEmpty(clinicianID)) {
