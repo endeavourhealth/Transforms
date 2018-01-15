@@ -31,6 +31,7 @@ public class FhirResourceFiler {
 
     private static Set<ResourceType> patientResourceTypes = null;
 
+    private final long creationTime;
     private final UUID exchangeId;
     private final UUID serviceId;
     private final UUID systemId;
@@ -66,6 +67,7 @@ public class FhirResourceFiler {
         this.batchIdsCreated = batchIdsCreated;
         this.threadPoolIdMapper = new ThreadPool(maxFilingThreads, 25000);
         this.threadPoolFiler = new ThreadPool(maxFilingThreads, 25000);
+        this.creationTime = System.currentTimeMillis();
     }
 
 
@@ -400,7 +402,11 @@ public class FhirResourceFiler {
             patientDeleted += countResourcesDeleted.get(exchangeBatch).get();
         }
 
-        LOG.info("Resource filing completed: admin resources [saved " + adminSaved + ", deleted " + adminDeleted + "]"
+        long durationMillis = System.currentTimeMillis() - creationTime;
+        long durationSeconds = durationMillis / 1000L;
+        long durationMinutes = durationSeconds / 60L;
+
+        LOG.info("Resource filing completed in " + durationMinutes + " min: admin resources [saved " + adminSaved + ", deleted " + adminDeleted + "]"
                 + ", patient resources [saved " + patientSaved + ", deleted " + patientDeleted + " over " + patientCount + " patients]");
 
         //adding a slack alert so we proactively know when a practie has been deleted
