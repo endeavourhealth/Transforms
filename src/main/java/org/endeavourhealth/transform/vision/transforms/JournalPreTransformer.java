@@ -54,7 +54,7 @@ public class JournalPreTransformer {
             //extract actual problem links
             String problemLinkIDs = extractProblemLinkIDs(parser.getLinks(), patientID, csvHelper);
             if (!Strings.isNullOrEmpty(problemLinkIDs)) {
-                String[] linkIDs = problemLinkIDs.split("|");
+                String[] linkIDs = problemLinkIDs.split("[|]");
                 for (String problemID : linkIDs) {
                     //store the problem/observation relationship in the helper
                     csvHelper.cacheProblemRelationship(problemID,
