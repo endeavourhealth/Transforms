@@ -574,6 +574,11 @@ public class BasisTransformer {
         return getResourceId(scope, "Condition", uniqueId);
     }
 
+    public static ResourceId getObservationResourceId(String scope, String patientId, String observationDate, String observationCode) throws Exception {
+        String uniqueId = "PatientId=" + patientId + "-ObservationDate=" + observationDate + "-ObservationCode=" + observationCode;
+        return getObservationResourceId(scope, uniqueId);
+    }
+
     public static ResourceId getConditionResourceId(String scope, String uniqueId) throws Exception {
         ResourceId resourceId = getResourceId(scope, "Condition", uniqueId);
         if (resourceId == null) {
@@ -594,6 +599,19 @@ public class BasisTransformer {
             resourceId = new ResourceId();
             resourceId.setScopeId(scope);
             resourceId.setResourceType("Procedure");
+            resourceId.setUniqueId(uniqueId);
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+        return resourceId;
+    }
+
+    public static ResourceId getObservationResourceId(String scope, String uniqueId) throws Exception {
+        ResourceId resourceId = getResourceId(scope, "Observation", uniqueId);
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType("Observation");
             resourceId.setUniqueId(uniqueId);
             resourceId.setResourceId(UUID.randomUUID());
             saveResourceId(resourceId);

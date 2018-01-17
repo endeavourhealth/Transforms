@@ -8,14 +8,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class CLEVE extends AbstractCharacterParser {
-    private static final Logger LOG = LoggerFactory.getLogger(CLEVE.class);
+public class ClinicalEvent extends AbstractCharacterParser {
+    private static final Logger LOG = LoggerFactory.getLogger(ClinicalEvent.class);
 
     public static final String DATE_FORMAT = "dd/mm/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public CLEVE(String version, String filePath, boolean openParser) throws Exception {
+    public ClinicalEvent(String version, String filePath, boolean openParser) throws Exception {
         super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumEventId");
@@ -58,7 +58,7 @@ public class CLEVE extends AbstractCharacterParser {
 
     }
 
-    public String getMillenniumEventId() throws FileFormatException {
+    public String getEventId() throws FileFormatException {
         return super.getString("MillenniumEventId");
     }
 
@@ -79,6 +79,55 @@ public class CLEVE extends AbstractCharacterParser {
         }
     }
 
+    public String getPatientId() throws FileFormatException {
+        return super.getString("MillenniumPersonIdentifier");
+    }
 
+    public String getEncounterId() throws FileFormatException {
+        return super.getString("MillenniumEncounterIdentifier");
+    }
 
+    public String getEventCode() throws FileFormatException {
+        return super.getString("EventMillenniumCode");
+    }
+
+    public String getEventCodeClass() throws FileFormatException {
+        return super.getString("ClinicalEventClassMillenniumCode");
+    }
+
+    public String getEventResultAsText() throws FileFormatException {
+        return super.getString("ClinicalEventResult");
+    }
+
+    public String getEventUnitsCode() throws FileFormatException {
+        return super.getString("ClinicalEventResultUnitsMillenniumCode");
+    }
+
+    public String getEventNormalRangeLow() throws FileFormatException {
+        return super.getString("NormalValueLowerLimit");
+    }
+
+    public String getEventNormalRangeHigh() throws FileFormatException {
+        return super.getString("NormalValueUpperLimit");
+    }
+
+    public Date getEffectiveDateTime() throws TransformException {
+        return super.getDate("ClinicalEventPerformedDateTime");
+    }
+
+    public String getEffectiveDateTimeAsString() throws TransformException {
+        return super.getString("ClinicalEventPerformedDateTime");
+    }
+
+    public String getClinicianID() throws FileFormatException {
+            return super.getString("ClinicalEventPerformedMillenniumPersonnelIdentifier");
+    }
+
+    public String getEventTag() throws FileFormatException {   //use for display if EventTitleText is null
+        return super.getString("EventTag");
+    }
+
+    public String getEventTitleText() throws FileFormatException {
+        return super.getString("EventTitleText");
+    }
 }
