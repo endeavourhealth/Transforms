@@ -186,6 +186,7 @@ public class FhirHl7v2Filer {
                     for (Reference reference: encounter.getEpisodeOfCare()) {
                         if (reference.getReference().equals(minorEpisodeReference)) {
                             reference.setReference(majorEpisodeReference);
+                            changed = true;
                         }
                     }
                 }
