@@ -53,7 +53,7 @@ public abstract class EmisCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, int maxFilingThreads) throws Exception {
+                                 String sharedStoragePath) throws Exception {
 
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
@@ -64,7 +64,7 @@ public abstract class EmisCsvToFhirTransformer {
             files[i] = filePath;
         }
 
-        LOG.info("Invoking EMIS CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
+        LOG.info("Invoking EMIS CSV transformer for " + files.length + " files and service " + serviceId);
 
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
@@ -75,7 +75,7 @@ public abstract class EmisCsvToFhirTransformer {
         boolean processPatientData = shouldProcessPatientData(orgDirectory, files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
@@ -84,7 +84,7 @@ public abstract class EmisCsvToFhirTransformer {
             createParsers(files, version, parsers);
 
             LOG.trace("Transforming EMIS CSV content in " + orgDirectory);
-            transformParsers(version, parsers, processor, previousErrors, maxFilingThreads, processPatientData);
+            transformParsers(version, parsers, processor, previousErrors, processPatientData);
 
         } finally {
             closeParsers(parsers.values());
@@ -105,7 +105,6 @@ public abstract class EmisCsvToFhirTransformer {
 
         //our org GUID is the same as the directory name
         String orgGuid = new File(orgDirectory).getName();
-        //TODO - validate that this org GUID is correct
 
         Date startDate = findStartDate(orgGuid);
 
@@ -442,7 +441,6 @@ public abstract class EmisCsvToFhirTransformer {
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors,
-                                         int maxFilingThreads,
                                          boolean processPatientData) throws Exception {
 
         boolean allowProcessingDisabledServices = getAllowDisabledOrganisations();
@@ -471,19 +469,19 @@ public abstract class EmisCsvToFhirTransformer {
         SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
-        ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-        DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+        ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         if (processPatientData) {
-            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-            ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+            ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         }
 
         //before getting onto the files that actually create FHIR resources, we need to
@@ -493,9 +491,9 @@ public abstract class EmisCsvToFhirTransformer {
         LOG.trace("Starting admin transforms");
 
         //run the transforms for non-patient resources
-        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
-        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper, maxFilingThreads);
+        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process

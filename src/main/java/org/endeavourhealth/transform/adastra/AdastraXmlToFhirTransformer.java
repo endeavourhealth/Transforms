@@ -24,14 +24,14 @@ public abstract class AdastraXmlToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
+                                 String sharedStoragePath, String version) throws Exception {
 
         AdastraCaseDataExport caseReport = XmlHelper.deserialize(exchangeBody, AdastraCaseDataExport.class);
 
         checkMessageForIssues(caseReport);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         OrganisationTransformer.transform(caseReport, processor);
         LocationTransform.transform(caseReport, processor);

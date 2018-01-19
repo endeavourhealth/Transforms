@@ -8,6 +8,7 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -32,12 +33,12 @@ public abstract class ClinicalCodeTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
-                                 int maxFilingThreads) throws Exception {
+                                 EmisCsvHelper csvHelper) throws Exception {
 
         //because we have to hit a third party web resource, we use a thread pool to support
         //threading these calls to improve performance
-        ThreadPool threadPool = new ThreadPool(maxFilingThreads, 50000);
+        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error

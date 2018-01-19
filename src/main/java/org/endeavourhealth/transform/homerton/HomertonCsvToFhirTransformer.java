@@ -16,8 +16,6 @@ import org.endeavourhealth.transform.homerton.transforms.ProcedureTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,7 +43,7 @@ public abstract class HomertonCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
+                                 String sharedStoragePath, String version) throws Exception {
 
         LOG.info("Invoking Homerton CSV transformer for shared storage " + sharedStoragePath);
 
@@ -59,18 +57,18 @@ public abstract class HomertonCsvToFhirTransformer {
             LOG.info("Homerton CSV transformer adjusted file(" + file + "):" + filePath);
         }
 
-        LOG.info("Invoking Homerton CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
+        LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
-        transformParsers(files, version, processor, previousErrors, maxFilingThreads);
+        transformParsers(files, version, processor, previousErrors);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -112,8 +110,7 @@ public abstract class HomertonCsvToFhirTransformer {
 
     private static void transformParsers(String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors,
-                                         int maxFilingThreads) throws Exception {
+                                         TransformError previousErrors) throws Exception {
 
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);

@@ -36,8 +36,7 @@ public class FhirHl7v2Filer {
     public void file(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                      TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
 
-        final int maxFilingThreads = 1;
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         Resource bundleResource = FhirResourceHelper.deserialiseResouce(exchangeBody);
 

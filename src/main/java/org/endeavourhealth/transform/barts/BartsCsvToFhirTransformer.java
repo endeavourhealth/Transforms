@@ -41,7 +41,7 @@ public abstract class BartsCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
+                                 String sharedStoragePath, String version) throws Exception {
 
         //for Barts CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
@@ -52,18 +52,18 @@ public abstract class BartsCsvToFhirTransformer {
             files[i] = filePath;
         }
 
-        LOG.info("Invoking Barts CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
+        LOG.info("Invoking Barts CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Barts CSV content in {}", orgDirectory);
-        transformParsers(files, version, processor, previousErrors, maxFilingThreads);
+        transformParsers(files, version, processor, previousErrors);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -104,8 +104,7 @@ public abstract class BartsCsvToFhirTransformer {
 
     private static void transformParsers(String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors,
-                                         int maxFilingThreads) throws Exception {
+                                         TransformError previousErrors) throws Exception {
 
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);

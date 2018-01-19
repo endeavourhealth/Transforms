@@ -5,6 +5,7 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -18,15 +19,13 @@ import java.util.concurrent.Callable;
  */
 public class FhirDeltaResourceFilter {
 
-    private final int maxThreadsToUse;
     private final UUID serviceId;
     private final UUID systemId;
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    public FhirDeltaResourceFilter(UUID serviceId, UUID systemId, int maxFilingThreads) {
+    public FhirDeltaResourceFilter(UUID serviceId, UUID systemId) {
         this.serviceId = serviceId;
         this.systemId = systemId;
-        this.maxThreadsToUse = maxFilingThreads;
     }
 
     public void process(List<Resource> resources, UUID exchangeId, TransformError currentErrors, List<UUID> batchIdsToPopulate) throws Exception {
@@ -51,7 +50,7 @@ public class FhirDeltaResourceFilter {
                                List<Resource> patientUpserts,  List<Resource> patientDeletes,
                                List<UUID> batchIdsToPopulate) throws Exception {
 
-        FhirResourceFiler filer = new FhirResourceFiler(exchangeId, serviceId, systemId, currentErrors, batchIdsToPopulate, maxThreadsToUse);
+        FhirResourceFiler filer = new FhirResourceFiler(exchangeId, serviceId, systemId, currentErrors, batchIdsToPopulate);
 
         for (Resource resource: adminUpserts) {
             filer.saveAdminResource(null, false, resource);
@@ -194,7 +193,8 @@ public class FhirDeltaResourceFilter {
 
         //don't set a limit on the pool to start blocking, since the resources
         //are already in memory, so having them all in the queue won't use much more
-        ThreadPool idMappingPool = new ThreadPool(maxThreadsToUse, Integer.MAX_VALUE);
+        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+        ThreadPool idMappingPool = new ThreadPool(threadPoolSize, Integer.MAX_VALUE);
 
         for (Resource resource: resources) {
 

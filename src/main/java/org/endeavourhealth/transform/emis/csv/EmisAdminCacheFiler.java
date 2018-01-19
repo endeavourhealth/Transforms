@@ -6,6 +6,7 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Resource;
@@ -24,9 +25,11 @@ public class EmisAdminCacheFiler {
     private String dataSharingAgreementGuid = null;
     private ThreadPool threadPool = null;
 
-    public EmisAdminCacheFiler(String dataSharingAgreementGuid, int maxFilingThreads) {
+    public EmisAdminCacheFiler(String dataSharingAgreementGuid) throws Exception {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
-        this.threadPool = new ThreadPool(maxFilingThreads, 50000);
+
+        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
+        this.threadPool = new ThreadPool(threadPoolSize, 50000);
     }
 
     public void close() throws Exception {

@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -57,7 +58,7 @@ public class FhirResourceFiler {
 
 
     public FhirResourceFiler(UUID exchangeId, UUID serviceId, UUID systemId, TransformError transformError,
-                             List<UUID> batchIdsCreated, int maxFilingThreads) {
+                             List<UUID> batchIdsCreated) throws Exception {
         this.exchangeId = exchangeId;
         this.serviceId = serviceId;
         this.systemId = systemId;
@@ -65,6 +66,9 @@ public class FhirResourceFiler {
         this.exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
         this.transformError = transformError;
         this.batchIdsCreated = batchIdsCreated;
+
+        //base the thread pools on the connection pool max size minus a bit of room
+        int maxFilingThreads = ConnectionManager.getEhrConnectionPoolMaxSize(serviceId) - 2;
         this.threadPoolIdMapper = new ThreadPool(maxFilingThreads, 25000);
         this.threadPoolFiler = new ThreadPool(maxFilingThreads, 25000);
         this.creationTime = System.currentTimeMillis();

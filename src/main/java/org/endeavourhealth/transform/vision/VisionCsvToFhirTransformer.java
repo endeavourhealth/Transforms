@@ -33,7 +33,7 @@ public abstract class VisionCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, int maxFilingThreads, String version) throws Exception {
+                                 String sharedStoragePath, String version) throws Exception {
 
         //the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
@@ -45,13 +45,13 @@ public abstract class VisionCsvToFhirTransformer {
         }
         //String[] files = exchangeBody.split(java.lang.System.lineSeparator());
 
-        LOG.info("Invoking Vision CSV transformer for {} files using {} threads and service {}", files.length, maxFilingThreads, serviceId);
+        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds, maxFilingThreads);
+        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
@@ -60,7 +60,7 @@ public abstract class VisionCsvToFhirTransformer {
             validateAndOpenParsers(files, version, true, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
-            transformParsers(version, allParsers, processor, previousErrors, maxFilingThreads);
+            transformParsers(version, allParsers, processor, previousErrors);
 
         } finally {
 
@@ -160,8 +160,7 @@ public abstract class VisionCsvToFhirTransformer {
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors,
-                                         int maxFilingThreads) throws Exception {
+                                         TransformError previousErrors) throws Exception {
 
         VisionCsvHelper csvHelper = new VisionCsvHelper();
 

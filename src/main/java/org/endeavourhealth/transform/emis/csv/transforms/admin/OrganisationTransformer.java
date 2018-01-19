@@ -22,10 +22,9 @@ public class OrganisationTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
-                                 int maxFilingThreads) throws Exception {
+                                 EmisCsvHelper csvHelper) throws Exception {
 
-        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid(), maxFilingThreads);
+        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
 
         AbstractCsvParser parser = parsers.get(Organisation.class);
         while (parser.nextRecord()) {

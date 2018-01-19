@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
@@ -24,12 +25,12 @@ public class DrugCodeTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
-                                 int maxFilingThreads) throws Exception {
+                                 EmisCsvHelper csvHelper) throws Exception {
 
         //inserting the entries into the IdCodeMap table is a lot slower than the rest of this
         //file, so split up the saving over a few threads
-        ThreadPool threadPool = new ThreadPool(maxFilingThreads, 50000);
+        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error

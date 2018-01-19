@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -23,11 +24,11 @@ public class PatientPreTransformer {
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
-                                 int maxFilingThreads) throws Exception {
+                                 EmisCsvHelper csvHelper) throws Exception {
 
         //use a thread pool to perform multiple lookups in parallel
-        ThreadPool threadPool = new ThreadPool(maxFilingThreads, 50000);
+        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(fhirResourceFiler.getServiceId());
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
