@@ -86,8 +86,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         List<String> ret = new ArrayList<>();
 
         String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1000); //assuming we never have headers longer than 1000 bytes
-        LOG.trace("Read first 1000 chars from " + filePath);
-        LOG.trace(firstChars);
+        //LOG.trace("Read first 1000 chars from " + filePath);
+        //LOG.trace(firstChars);
 
         StringReader stringReader = new StringReader(firstChars);
         CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation
@@ -100,16 +100,20 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
                     //if we call the above and don't get an exception, the possible versio is valid for the headers found
                     ret.add(possibleVersion);
-                    LOG.trace("Valid version " + possibleVersion);
+                    //LOG.trace("Valid version " + possibleVersion);
 
                 } catch (IllegalArgumentException ex) {
                     //if we get this exception, the headers don't match the possible version
-                    LOG.trace("Not valid version " + possibleVersion);
+                    //LOG.trace("Not valid version " + possibleVersion);
                 }
             }
 
         } finally {
             stringReader.close();
+        }
+
+        if (possibleVersions.isEmpty()) {
+            LOG.error("Ruled out all possible versions because of file " + filePath);
         }
 
         return ret;
