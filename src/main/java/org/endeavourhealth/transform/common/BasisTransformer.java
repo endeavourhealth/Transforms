@@ -5,7 +5,11 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsBartsSusResourceMapDal;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsResourceMergeDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.exceptions.TransformException;
 import org.hl7.fhir.instance.model.*;
@@ -16,6 +20,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -31,6 +36,7 @@ public class BasisTransformer {
     private static HashMap<Integer, String> codeSystemCache = new HashMap<Integer, String>();
     private static int lastLookupCodeSystemId = 0;
     private static String lastLookupCodeSystemIdentifier = "";
+    private static ResourceMergeDalI mergeDAL = null;
 
     /*
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
@@ -540,6 +546,13 @@ public class BasisTransformer {
 
             LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
             savePatientResource(fhirResourceFiler, currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
+        } else {
+            // Check merge history
+            if (mergeDAL == null) {
+                mergeDAL = DalProvider.factoryResourceMergeDal();
+            }
+            UUID newResourceId = mergeDAL.resolveMergeUUID(fhirResourceFiler.getServiceId(),"Patient", patientResourceId.getResourceId());
+            patientResourceId.setResourceId(newResourceId);
         }
         return patientResourceId;
     }

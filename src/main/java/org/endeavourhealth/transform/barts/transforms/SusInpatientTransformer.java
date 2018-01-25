@@ -80,33 +80,6 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID) throws Exception {
-        /*
-        if (mapper == null) {
-            // **************************************************************************************************
-            HikariDataSource hikariDataSource = new HikariDataSource();
-            hikariDataSource.setJdbcUrl("jdbc:postgresql://localhost:5432/hl7receiver");
-            hikariDataSource.setUsername("postgres");
-            hikariDataSource.setPassword("roskilde");
-            hikariDataSource.setMaximumPoolSize(15);
-            hikariDataSource.setMinimumIdle(2);
-            hikariDataSource.setIdleTimeout(60000);
-            hikariDataSource.setConnectionTimeout(5000L);
-            hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
-            Mapper mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(hikariDataSource));
-
-
-        PGPoolingDataSource source = new PGPoolingDataSource();
-        source.setDataSourceName("SFTPReaderDBConnectionPool");
-        source.setServerName("localhost");
-        source.setDatabaseName("hl7receiver");
-        source.setUser("postgres");
-        source.setPassword("roskilde");
-        source.setMaxConnections(2);
-        Mapper mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(source));
-
-            mapper = new Mapper("2.16.840.1.113883.3.2540", new DataLayer(hikariDataSource));
-        }
-        */
 
         LOG.debug("Current patient:" + parser.getLocalPatientId() + "/" + parser.getCDSUniqueID());
 
