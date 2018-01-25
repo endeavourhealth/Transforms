@@ -16,7 +16,7 @@ import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

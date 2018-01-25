@@ -7,7 +7,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;

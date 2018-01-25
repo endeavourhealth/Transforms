@@ -8,7 +8,7 @@ import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.IntegerCodeType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.StringCodeType;
 import org.hl7.fhir.instance.model.CodeableConcept;

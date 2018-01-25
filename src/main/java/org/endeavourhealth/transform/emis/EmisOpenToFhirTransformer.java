@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.emis;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.XmlHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomappointmentsessions.AppointmentSessionList;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomgetpatientappointments.PatientAppointmentList;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.MedicalRecordType;

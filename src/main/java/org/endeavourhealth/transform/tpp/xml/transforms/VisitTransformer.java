@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ParticipantHelper;
 import org.endeavourhealth.transform.common.FhirHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.tpp.xml.schema.Visit;
 import org.endeavourhealth.transform.tpp.xml.schema.VisitStatus;
 import org.hl7.fhir.instance.model.*;

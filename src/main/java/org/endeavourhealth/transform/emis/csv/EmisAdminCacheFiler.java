@@ -8,7 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

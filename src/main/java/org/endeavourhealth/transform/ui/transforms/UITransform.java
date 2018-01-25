@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
 import org.endeavourhealth.transform.ui.models.resources.UIResource;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPatient;

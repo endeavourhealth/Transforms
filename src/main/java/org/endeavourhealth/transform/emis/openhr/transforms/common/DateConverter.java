@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.openhr.transforms.common;
 
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.DtDatePart;
 import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
 import org.hl7.fhir.instance.model.DateTimeType;

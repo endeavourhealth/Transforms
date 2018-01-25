@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.openhr.transforms.common;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001Component;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001Encounter;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001HealthDomain;

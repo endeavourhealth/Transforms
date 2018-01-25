@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.common.exceptions;
 
+import org.endeavourhealth.core.exceptions.TransformException;
+
 import java.io.File;
 
 public class FileFormatException extends TransformException {

@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.FhirHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.tpp.xml.schema.Metadata;
 import org.endeavourhealth.transform.tpp.xml.schema.Site;
 import org.endeavourhealth.transform.tpp.xml.schema.User;

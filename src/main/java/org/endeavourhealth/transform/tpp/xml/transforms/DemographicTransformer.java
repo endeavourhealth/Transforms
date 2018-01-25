@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.transform.common.FhirHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.tpp.xml.schema.Address;
 import org.endeavourhealth.transform.tpp.xml.schema.*;
 import org.hl7.fhir.instance.model.*;

@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.*;

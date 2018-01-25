@@ -7,7 +7,7 @@ import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Observation;
 

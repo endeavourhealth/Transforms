@@ -6,13 +6,13 @@ import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.terminology.Read2;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
-import org.endeavourhealth.transform.terminology.Read2;
-import org.endeavourhealth.transform.terminology.TerminologyService;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
 import org.hl7.fhir.instance.model.*;
@@ -25,7 +25,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import static org.endeavourhealth.transform.terminology.Read2.isBPCode;
+import static org.endeavourhealth.core.terminology.Read2.isBPCode;
+
 
 public class JournalTransformer {
 
@@ -211,7 +212,7 @@ public class JournalTransformer {
         */
         String readCode = parser.getReadCode();
         if (Read2.isProcedure(readCode)
-                && !Read2.isBPCode(readCode)
+                && !isBPCode(readCode)
                 && Strings.isNullOrEmpty(parser.getValue1AsText())
                 && !subset.equalsIgnoreCase("T")
                 && !subset.equalsIgnoreCase("I")) {

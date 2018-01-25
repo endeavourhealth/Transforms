@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
+import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
@@ -15,7 +16,6 @@ import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
-import org.endeavourhealth.transform.terminology.Read2;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;

@@ -13,7 +13,7 @@ import org.endeavourhealth.transform.adastra.transforms.clinical.EpisodeTransfor
 import org.endeavourhealth.transform.adastra.transforms.clinical.FlagTransform;
 import org.endeavourhealth.transform.adastra.transforms.clinical.ObservationTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 
 import java.util.List;
 import java.util.UUID;

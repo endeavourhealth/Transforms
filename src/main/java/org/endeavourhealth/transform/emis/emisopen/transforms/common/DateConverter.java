@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.common;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.NotImplementedException;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;

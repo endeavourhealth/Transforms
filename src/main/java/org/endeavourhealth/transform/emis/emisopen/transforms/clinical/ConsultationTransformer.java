@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.*;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.DateConverter;

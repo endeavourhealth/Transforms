@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomgetpatientappointments.AppointmentStruct;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomgetpatientappointments.HolderStruct;

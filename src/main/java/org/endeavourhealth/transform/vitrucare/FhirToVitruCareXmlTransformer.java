@@ -18,7 +18,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.VitruCareTransf
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.vitrucare.model.ClinicalTerm;
 import org.endeavourhealth.transform.vitrucare.model.ObjectFactory;
 import org.endeavourhealth.transform.vitrucare.model.Payload;

@@ -8,7 +8,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.csv.CsvHelper;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

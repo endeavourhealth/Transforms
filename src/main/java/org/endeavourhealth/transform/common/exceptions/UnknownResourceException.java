@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.exceptions;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.UUID;

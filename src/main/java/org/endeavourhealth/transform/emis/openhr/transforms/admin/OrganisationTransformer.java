@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001Organisation;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.DateConverter;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.OpenHRHelper;

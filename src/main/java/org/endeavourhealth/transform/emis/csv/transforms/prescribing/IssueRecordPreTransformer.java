@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
