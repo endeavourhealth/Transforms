@@ -584,6 +584,12 @@ public class JournalTransformer {
             fhirProblem.setAbatement(EmisDateTimeHelper.createDateTimeType(endDate, endDatePrecision));
         }
 
+        String episodicity = convertEpisodicityCode(parser.getProblemEpisodicity());
+        if (!Strings.isNullOrEmpty(episodicity)) {
+            Extension extension = ExtensionConverter.createExtension(FhirExtensionUri.PROBLEM_EPISODICITY, new StringType(episodicity));
+            fhirProblem.addExtension(extension);
+        }
+
         Date effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
         fhirProblem.setOnset(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
@@ -1081,6 +1087,17 @@ public class JournalTransformer {
             case "385433004" : return AllergyIntolerance.AllergyIntoleranceCertainty.LIKELY;     //consitent with
             case "385434005" : return AllergyIntolerance.AllergyIntoleranceCertainty.UNLIKELY;   //unlikely
             default: return null;
+        }
+    }
+
+    // convert Problem/Condition episodicity letter/code to it's name
+    private static String convertEpisodicityCode(String episodicityCode) {
+        switch (episodicityCode) {
+            case "F" : return "First";
+            case "N" : return "New";
+            case "O" : return "Other";
+            case "D" : return "Cause of Death";
+            default : return null;
         }
     }
 }
