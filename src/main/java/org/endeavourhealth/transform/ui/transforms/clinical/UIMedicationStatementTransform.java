@@ -19,19 +19,19 @@ import java.util.stream.Collectors;
 
 public class UIMedicationStatementTransform extends UIClinicalTransform<MedicationStatement, UIMedicationStatement> {
     @Override
-    public List<UIMedicationStatement> transform(UUID serviceId, UUID systemId, List<MedicationStatement> resources, ReferencedResources referencedResources) {
+    public List<UIMedicationStatement> transform(UUID serviceId, List<MedicationStatement> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    public static UIMedicationStatement transform(UUID serviceId, UUID systemId, MedicationStatement medicationStatement, ReferencedResources referencedResources) {
+    public static UIMedicationStatement transform(UUID serviceId, MedicationStatement medicationStatement, ReferencedResources referencedResources) {
         return new UIMedicationStatement()
             .setId(medicationStatement.getId())
 			.setDateAuthorised(getDateAsserted(medicationStatement)) //the asserted date is more relevant
             //.setDateAuthorised(getRecordedDateExtensionValue(medicationStatement))
-            .setPrescriber(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(medicationStatement)))
+            .setPrescriber(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(medicationStatement)))
             .setMedication(getMedication(medicationStatement, referencedResources))
 						.setDosage(getDosage(medicationStatement))
 						.setStatus(medicationStatement.getStatus().getDisplay())

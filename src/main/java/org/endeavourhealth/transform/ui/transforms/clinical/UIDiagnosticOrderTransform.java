@@ -25,19 +25,19 @@ import java.util.stream.Collectors;
 public class UIDiagnosticOrderTransform extends UIClinicalTransform<DiagnosticOrder, UIDiagnosticOrder> {
 
     @Override
-    public List<UIDiagnosticOrder> transform(UUID serviceId, UUID systemId, List<DiagnosticOrder> resources, ReferencedResources referencedResources) {
+    public List<UIDiagnosticOrder> transform(UUID serviceId, List<DiagnosticOrder> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    public static UIDiagnosticOrder transform(UUID serviceId, UUID systemId, DiagnosticOrder diagnosticOrder, ReferencedResources referencedResources) {
+    public static UIDiagnosticOrder transform(UUID serviceId, DiagnosticOrder diagnosticOrder) {
         try {
             return new UIDiagnosticOrder()
                     .setId(diagnosticOrder.getId())
                     .setEffectiveDate(getRecordedDateExtensionValue(diagnosticOrder))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getFiledByExtensionValue(diagnosticOrder)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getFiledByExtensionValue(diagnosticOrder)))
                     .setCode(getCode(diagnosticOrder.getItem()))
                     .setEvents(getEvents(diagnosticOrder.getEvent()))
                     .setStatus(getLatestStatus(diagnosticOrder.getEvent()));

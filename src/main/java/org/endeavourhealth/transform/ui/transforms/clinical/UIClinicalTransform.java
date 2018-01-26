@@ -19,11 +19,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public abstract class UIClinicalTransform<T extends Resource, U extends UIResource> {
-    public abstract List<U> transform(UUID serviceId, UUID systemId, List<T> resources, ReferencedResources referencedResources);
+    public abstract List<U> transform(UUID serviceId, List<T> resources, ReferencedResources referencedResources);
 
     public abstract List<Reference> getReferences(List<T> resources);
 
-    protected static UIInternalIdentifier getPractitionerInternalIdentifer(UUID serviceId, UUID systemId, Reference reference) {
+    protected static UIInternalIdentifier getPractitionerInternalIdentifer(UUID serviceId, Reference reference) {
     	if (reference == null)
     		return null;
 
@@ -39,9 +39,9 @@ public abstract class UIClinicalTransform<T extends Resource, U extends UIResour
                     && referenceId.endsWith("}")) {
                 ResourceType resourceType = comps.getResourceType();
                 try {
-                    referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, resourceType, referenceId);
+                    referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, null, resourceType, referenceId);
                 } catch (Exception ex) {
-                    throw new RuntimeException("Failed to look up ID for service " + serviceId + " system " + systemId + " type " + resourceType + " and ID " + referenceId, ex);
+                    throw new RuntimeException("Failed to look up ID for service " + serviceId + " system " + resourceType + " and ID " + referenceId, ex);
                 }
 
             }
@@ -52,7 +52,6 @@ public abstract class UIClinicalTransform<T extends Resource, U extends UIResour
 
         return new UIInternalIdentifier()
 						.setServiceId(serviceId)
-						.setSystemId(systemId)
 						.setResourceId(UUID.fromString(referenceId));
     }
 

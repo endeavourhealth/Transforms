@@ -13,21 +13,21 @@ import java.util.stream.Collectors;
 
 public class UIEpisodeOfCareTransform extends UIClinicalTransform<EpisodeOfCare, UIEpisodeOfCare> {
 
-    public List<UIEpisodeOfCare> transform(UUID serviceId, UUID systemId, List<EpisodeOfCare> episodesOfCare, ReferencedResources referencedResources) {
+    public List<UIEpisodeOfCare> transform(UUID serviceId, List<EpisodeOfCare> episodesOfCare, ReferencedResources referencedResources) {
         return episodesOfCare
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    private static UIEpisodeOfCare transform(UUID serviceId, UUID systemId, EpisodeOfCare episodeOfCare, ReferencedResources referencedResources) {
+    private static UIEpisodeOfCare transform(UUID serviceId, EpisodeOfCare episodeOfCare, ReferencedResources referencedResources) {
 
         return new UIEpisodeOfCare()
                 .setId(episodeOfCare.getId())
                 .setStatus(getStatus(episodeOfCare))
                 .setManagingOrganisation(getManagingOrganisation(episodeOfCare, referencedResources))
                 .setPeriod(getPeriod(episodeOfCare.getPeriod()))
-                .setCareManager(getPractitionerInternalIdentifer(serviceId, systemId, episodeOfCare.getCareManager()));
+                .setCareManager(getPractitionerInternalIdentifer(serviceId, episodeOfCare.getCareManager()));
     }
 
     private static String getStatus(EpisodeOfCare episodeOfCare) {

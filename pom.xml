@@ -4,7 +4,7 @@
 
     <groupId>org.endeavourhealth.common</groupId>
     <artifactId>transforms</artifactId>
-    <version>1.152-SNAPSHOT</version>
+    <version>1.153-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -14,7 +14,7 @@
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
         <eds-cache.version>1.1-SNAPSHOT</eds-cache.version>
-        <eds-core.version>1.94-SNAPSHOT</eds-core.version>
+        <eds-core.version>1.95-SNAPSHOT</eds-core.version>
         <eds-fhir.version>1.23-SNAPSHOT</eds-fhir.version>
         <eds-utility.version>1.19-SNAPSHOT</eds-utility.version>
         <eds-postgres.version>1.08-SNAPSHOT</eds-postgres.version>

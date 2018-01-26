@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 
 public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOrder, UIMedicationOrder> {
 		@Override
-		public List<UIMedicationOrder> transform (UUID serviceId, UUID systemId, List <MedicationOrder> resources, ReferencedResources referencedResources){
+		public List<UIMedicationOrder> transform (UUID serviceId, List <MedicationOrder> resources, ReferencedResources referencedResources){
 		return resources
 				.stream()
-				.map(t -> transform(serviceId, systemId, t, referencedResources))
+				.map(t -> transform(serviceId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 
@@ -28,12 +28,12 @@ public class UIMedicationOrderTransform extends UIClinicalTransform<MedicationOr
 		return ExtensionHelper.getExtensionValue(resource, FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, Reference.class);
 	}
 
-	private UIMedicationOrder transform(UUID serviceId, UUID systemId, MedicationOrder medicationOrder, ReferencedResources referencedResources) {
+	private UIMedicationOrder transform(UUID serviceId, MedicationOrder medicationOrder, ReferencedResources referencedResources) {
 		return new UIMedicationOrder()
 				.setId(medicationOrder.getId())
 				.setMedicationStatement(getMedicationStatement(medicationOrder, referencedResources))
 				.setDate(DateHelper.convert(medicationOrder.getDateWritten()))
-				.setPrescriber(getPractitionerInternalIdentifer(serviceId, systemId, medicationOrder.getPrescriber()))
+				.setPrescriber(getPractitionerInternalIdentifer(serviceId, medicationOrder.getPrescriber()))
 				.setQuantity(getQuantity(medicationOrder.getDispenseRequest()))
 				.setExpectedDuration(getExpectedDuration(medicationOrder.getDispenseRequest()));
 	}

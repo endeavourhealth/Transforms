@@ -100,12 +100,12 @@ public class ReferencedResources {
 				.collect(StreamExtension.firstOrNullCollector());
 	}
 
-	public void setMedicationStatements(UUID serviceId, UUID systemId, List<MedicationStatement> medicationStatements, ReferencedResources referencedResources) {
+	public void setMedicationStatements(UUID serviceId, List<MedicationStatement> medicationStatements, ReferencedResources referencedResources) {
 		this.medicationStatements = medicationStatements;
 
 		this.uiMedicationStatements = medicationStatements
 				.stream()
-				.map(t -> UIMedicationStatementTransform.transform(serviceId, systemId, t, referencedResources))
+				.map(t -> UIMedicationStatementTransform.transform(serviceId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 
@@ -122,11 +122,11 @@ public class ReferencedResources {
 				.collect(StreamExtension.firstOrNullCollector());
 	}
 
-	public void setObservations(UUID serviceId, UUID systemId, List<Observation> observations, ReferencedResources referencedResources) {
+	public void setObservations(UUID serviceId, List<Observation> observations, ReferencedResources referencedResources) {
 		this.observations = observations;
 		this.uiObservations = observations
 				.stream()
-				.map(t -> UIObservationTransform.transform(serviceId, systemId, t, referencedResources))
+				.map(t -> UIObservationTransform.transform(serviceId, t, referencedResources))
 				.collect(Collectors.toList());
 	}
 

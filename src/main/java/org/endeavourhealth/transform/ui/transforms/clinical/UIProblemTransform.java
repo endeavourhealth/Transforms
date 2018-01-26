@@ -19,11 +19,11 @@ import java.util.stream.Collectors;
 public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem> {
 
     @Override
-    public List<UIProblem> transform(UUID serviceId, UUID systemId, List<Condition> resources, ReferencedResources referencedResources) {
+    public List<UIProblem> transform(UUID serviceId, List<Condition> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
                 .filter(c -> isProblem(c))
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
@@ -41,13 +41,13 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
         return false;
     }
 
-    private UIProblem transform(UUID serviceId, UUID systemId, Condition condition, ReferencedResources referencedResources) {
-        UIProblem uiProblem = (UIProblem) UIConditionTransform.transform(serviceId, systemId, condition, referencedResources, true);
+    private UIProblem transform(UUID serviceId, Condition condition) {
+        UIProblem uiProblem = (UIProblem) UIConditionTransform.transform(serviceId, condition, true);
 
         return uiProblem
                 .setExpectedDuration(getExpectedDuration(condition))
                 .setLastReviewDate(getLastReviewDate(condition))
-                .setLastReviewer(getPractitionerInternalIdentifer(serviceId, systemId, getLastReviewerReference(condition)))
+                .setLastReviewer(getPractitionerInternalIdentifer(serviceId, getLastReviewerReference(condition)))
                 .setSignificance(getSignificance(condition))
                 .setIsReview(getIsReview(condition));
 

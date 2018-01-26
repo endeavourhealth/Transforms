@@ -19,22 +19,22 @@ import java.util.stream.Collectors;
 public class UIProcedureTransform extends UIClinicalTransform<Procedure, UIProcedure> {
 
     @Override
-    public List<UIProcedure> transform(UUID serviceId, UUID systemId, List<Procedure> resources, ReferencedResources referencedResources) {
+    public List<UIProcedure> transform(UUID serviceId, List<Procedure> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    private static UIProcedure transform(UUID serviceId, UUID systemId, Procedure procedure, ReferencedResources referencedResources) {
+    private static UIProcedure transform(UUID serviceId, Procedure procedure) {
         try {
             return new UIProcedure()
                     .setId(procedure.getId())
                     .setCode(CodeHelper.convert(procedure.getCode()))
                     .setEffectiveDate(getPerformedDate(procedure))
-                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getPerformer(procedure)))
+                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, getPerformer(procedure)))
                     .setRecordedDate(getRecordedDateExtensionValue(procedure))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(procedure)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(procedure)))
                     .setNotes(getNotes(procedure.getNotes()));
 
         } catch (Exception e) {

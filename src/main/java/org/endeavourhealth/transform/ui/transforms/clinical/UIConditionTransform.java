@@ -19,11 +19,11 @@ import java.util.stream.Collectors;
 public class UIConditionTransform extends UIClinicalTransform<Condition, UICondition> {
 
     @Override
-    public List<UICondition> transform(UUID serviceId, UUID systemId, List<Condition> resources, ReferencedResources referencedResources) {
+    public List<UICondition> transform(UUID serviceId, List<Condition> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
                 .filter(c -> !isProblem(c))
-                .map(t -> transform(serviceId, systemId, t, referencedResources, false))
+                .map(t -> transform(serviceId, t, false))
                 .collect(Collectors.toList());
     }
 
@@ -41,7 +41,7 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
         return false;
     }
 
-    static UICondition transform(UUID serviceId, UUID systemId, Condition condition, ReferencedResources referencedResources, boolean createProblem) {
+    static UICondition transform(UUID serviceId, Condition condition, boolean createProblem) {
         try {
             UICondition uiCondition = new UICondition();
 
@@ -51,9 +51,9 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
             return uiCondition
                     .setId(condition.getId())
                     .setCode(CodeHelper.convert(condition.getCode()))
-                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, condition.getAsserter()))
+                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, condition.getAsserter()))
                     .setEffectiveDate(getOnsetDateTime(condition))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(condition)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(condition)))
                     .setRecordedDate(getDateRecorded(condition))
                     .setClinicalStatus(condition.getClinicalStatus())
                     .setVerificationStatus(getConditionVerificationStatus(condition))

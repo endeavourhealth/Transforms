@@ -22,19 +22,19 @@ import java.util.stream.Collectors;
 public class UISpecimenTransform extends UIClinicalTransform<Specimen, UISpecimen> {
 
     @Override
-    public List<UISpecimen> transform(UUID serviceId, UUID systemId, List<Specimen> resources, ReferencedResources referencedResources) {
+    public List<UISpecimen> transform(UUID serviceId, List<Specimen> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    public static UISpecimen transform(UUID serviceId, UUID systemId, Specimen specimen, ReferencedResources referencedResources) {
+    public static UISpecimen transform(UUID serviceId, Specimen specimen) {
         try {
             return new UISpecimen()
                     .setId(specimen.getId())
                     .setEffectiveDate(getRecordedDateExtensionValue(specimen))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getFiledByExtensionValue(specimen)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getFiledByExtensionValue(specimen)))
                     .setCode(CodeHelper.convert(specimen.getType()))
                     .setStatus(getStatus(specimen));
         } catch (Exception e) {

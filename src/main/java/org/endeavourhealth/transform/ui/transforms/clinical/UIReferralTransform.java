@@ -21,19 +21,19 @@ import java.util.stream.Collectors;
 public class UIReferralTransform extends UIClinicalTransform<ReferralRequest, UIReferral> {
 
     @Override
-    public List<UIReferral> transform(UUID serviceId, UUID systemId, List<ReferralRequest> resources, ReferencedResources referencedResources) {
+    public List<UIReferral> transform(UUID serviceId, List<ReferralRequest> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    public static UIReferral transform(UUID serviceId, UUID systemId, ReferralRequest referralRequest, ReferencedResources referencedResources) {
+    public static UIReferral transform(UUID serviceId, ReferralRequest referralRequest) {
         try {
             return new UIReferral()
                     .setId(referralRequest.getId())
                     .setEffectiveDate(getRecordedDateExtensionValue(referralRequest))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getFiledByExtensionValue(referralRequest)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getFiledByExtensionValue(referralRequest)))
                     .setCode(getCode(referralRequest.getServiceRequested()));
         } catch (Exception e) {
             throw new TransformRuntimeException(e);

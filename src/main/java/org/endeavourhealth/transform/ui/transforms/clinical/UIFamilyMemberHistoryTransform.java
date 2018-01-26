@@ -16,19 +16,19 @@ import java.util.stream.Collectors;
 public class UIFamilyMemberHistoryTransform extends UIClinicalTransform<FamilyMemberHistory, UIFamilyMemberHistory> {
 
     @Override
-    public List<UIFamilyMemberHistory> transform(UUID serviceId, UUID systemId, List<FamilyMemberHistory> resources, ReferencedResources referencedResources) {
+    public List<UIFamilyMemberHistory> transform(UUID serviceId, List<FamilyMemberHistory> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    private static UIFamilyMemberHistory transform(UUID serviceId, UUID systemId, FamilyMemberHistory familyMemberHistory, ReferencedResources referencedResources) {
+    private static UIFamilyMemberHistory transform(UUID serviceId, FamilyMemberHistory familyMemberHistory) {
 
         return new UIFamilyMemberHistory()
                 .setId(familyMemberHistory.getId())
                 .setCode(CodeHelper.convert(familyMemberHistory.getRelationship()))
-                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(familyMemberHistory)))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(familyMemberHistory)))
                 .setRecordedDate(getRecordedDate(familyMemberHistory))
                 .setNotes(getNotes(familyMemberHistory.getNote()))
                 .setConditions(getConditions(familyMemberHistory.getCondition()));

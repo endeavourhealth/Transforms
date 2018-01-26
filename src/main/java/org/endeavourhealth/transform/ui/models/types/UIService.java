@@ -4,7 +4,6 @@ import java.util.UUID;
 
 public class UIService {
     private UUID serviceId;
-    private UUID systemId;
     private String name;
     private String localIdentifier;
 
@@ -14,15 +13,6 @@ public class UIService {
 
     public UIService setServiceId(UUID serviceId) {
         this.serviceId = serviceId;
-        return this;
-    }
-
-    public UUID getSystemId() {
-        return systemId;
-    }
-
-    public UIService setSystemId(UUID systemId) {
-        this.systemId = systemId;
         return this;
     }
 

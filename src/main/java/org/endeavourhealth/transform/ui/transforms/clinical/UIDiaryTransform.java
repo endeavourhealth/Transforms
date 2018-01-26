@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 
 public class UIDiaryTransform extends UIClinicalTransform<ProcedureRequest, UIDiary> {
     @Override
-    public List<UIDiary> transform(UUID serviceId, UUID systemId, List<ProcedureRequest> resources, ReferencedResources referencedResources) {
+    public List<UIDiary> transform(UUID serviceId, List<ProcedureRequest> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(t))
                 .collect(Collectors.toList());
     }
 
-    private UIDiary transform(UUID serviceId, UUID systemId, ProcedureRequest procedureRequest, ReferencedResources referencedResources) {
+    private UIDiary transform(ProcedureRequest procedureRequest) {
         return new UIDiary()
                 .setId(procedureRequest.getId())
                 .setCode(CodeHelper.convert(procedureRequest.getCode()))

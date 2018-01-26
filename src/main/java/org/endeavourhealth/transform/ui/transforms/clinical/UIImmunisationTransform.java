@@ -16,21 +16,21 @@ import java.util.stream.Collectors;
 public class UIImmunisationTransform extends UIClinicalTransform<Immunization, UIImmunisation> {
 
     @Override
-    public List<UIImmunisation> transform(UUID serviceId, UUID systemId, List<Immunization> resources, ReferencedResources referencedResources) {
+    public List<UIImmunisation> transform(UUID serviceId, List<Immunization> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    private static UIImmunisation transform(UUID serviceId, UUID systemId, Immunization immunization, ReferencedResources referencedResources) {
+    private static UIImmunisation transform(UUID serviceId, Immunization immunization) {
         return new UIImmunisation()
                 .setId(immunization.getId())
                 .setCode(CodeHelper.convert(immunization.getVaccineCode()))
                 .setEffectiveDate(getDate(immunization))
-                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, immunization.getPerformer()))
+                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, immunization.getPerformer()))
                 .setRecordedDate(getRecordedDateExtensionValue(immunization))
-                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(immunization)))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(immunization)))
                 .setNotes(getNotes(immunization.getNote()));
     }
 

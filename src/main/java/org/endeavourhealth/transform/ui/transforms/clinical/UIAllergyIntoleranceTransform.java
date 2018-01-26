@@ -15,21 +15,21 @@ import java.util.stream.Collectors;
 public class UIAllergyIntoleranceTransform extends UIClinicalTransform<AllergyIntolerance, UIAllergyIntolerance> {
 
     @Override
-    public List<UIAllergyIntolerance> transform(UUID serviceId, UUID systemId, List<AllergyIntolerance> resources, ReferencedResources referencedResources) {
+    public List<UIAllergyIntolerance> transform(UUID serviceId, List<AllergyIntolerance> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t))
                 .collect(Collectors.toList());
     }
 
-    private static UIAllergyIntolerance transform(UUID serviceId, UUID systemId, AllergyIntolerance allergyIntolerance, ReferencedResources referencedResources) {
+    private static UIAllergyIntolerance transform(UUID serviceId, AllergyIntolerance allergyIntolerance) {
 
         return new UIAllergyIntolerance()
                 .setId(allergyIntolerance.getId())
                 .setCode(CodeHelper.convert(allergyIntolerance.getSubstance()))
-                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, allergyIntolerance.getRecorder()))
+                .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, allergyIntolerance.getRecorder()))
                 .setEffectiveDate(getOnsetDate(allergyIntolerance))
-                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(allergyIntolerance)))
+                .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(allergyIntolerance)))
                 .setRecordedDate(getRecordedDate(allergyIntolerance))
                 .setNotes(getNotes(allergyIntolerance.getNote()));
     }

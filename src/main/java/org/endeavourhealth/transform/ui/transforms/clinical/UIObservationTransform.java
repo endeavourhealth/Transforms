@@ -23,21 +23,21 @@ import java.util.stream.Collectors;
 public class UIObservationTransform extends UIClinicalTransform<Observation, UIObservation> {
 
     @Override
-    public List<UIObservation> transform(UUID serviceId, UUID systemId, List<Observation> resources, ReferencedResources referencedResources) {
+    public List<UIObservation> transform(UUID serviceId, List<Observation> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    public static UIObservation transform(UUID serviceId, UUID systemId, Observation observation, ReferencedResources referencedResources) {
+    public static UIObservation transform(UUID serviceId, Observation observation, ReferencedResources referencedResources) {
         try {
             return new UIObservation()
                     .setId(observation.getId())
                     .setCode(CodeHelper.convert(observation.getCode()))
-                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getPerformer(observation)))
+                    .setEffectivePractitioner(getPractitionerInternalIdentifer(serviceId, getPerformer(observation)))
                     .setEffectiveDate(getEffectiveDateTime(observation))
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getRecordedByExtensionValue(observation)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getRecordedByExtensionValue(observation)))
                     .setRecordedDate(getRecordedDateExtensionValue(observation))
                     .setNotes(observation.getComments())
                     .setStatus(getStatus(observation))

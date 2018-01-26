@@ -24,21 +24,21 @@ import java.util.stream.Collectors;
 public class UIDiagnosticReportTransform extends UIClinicalTransform<DiagnosticReport, UIDiagnosticReport> {
 
     @Override
-    public List<UIDiagnosticReport> transform(UUID serviceId, UUID systemId, List<DiagnosticReport> resources, ReferencedResources referencedResources) {
+    public List<UIDiagnosticReport> transform(UUID serviceId, List<DiagnosticReport> resources, ReferencedResources referencedResources) {
         return resources
                 .stream()
-                .map(t -> transform(serviceId, systemId, t, referencedResources))
+                .map(t -> transform(serviceId, t, referencedResources))
                 .collect(Collectors.toList());
     }
 
-    public static UIDiagnosticReport transform(UUID serviceId, UUID systemId, DiagnosticReport diagnosticReport, ReferencedResources referencedResources) {
+    public static UIDiagnosticReport transform(UUID serviceId, DiagnosticReport diagnosticReport, ReferencedResources referencedResources) {
         try {
             return new UIDiagnosticReport()
                     .setId(diagnosticReport.getId())
                     .setEffectiveDate(getEffectiveDateTime(diagnosticReport))
                     .setCode(CodeHelper.convert(diagnosticReport.getCode()))
                     .setStatus(diagnosticReport.getStatus().getDisplay())
-                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, systemId, getFiledByExtensionValue(diagnosticReport)))
+                    .setRecordingPractitioner(getPractitionerInternalIdentifer(serviceId, getFiledByExtensionValue(diagnosticReport)))
                     .setConclusion(diagnosticReport.getConclusion())
                     .setRelated(getRelated(diagnosticReport, referencedResources));
         } catch (Exception e) {

@@ -17,7 +17,7 @@ public class UIPatientTransform {
 			FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
 			FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID));
 
-	public static UIPatient transform(UUID serviceId, UUID systemId, Patient patient, ReferencedResources referencedResources) {
+	public static UIPatient transform(UUID serviceId, Patient patient, ReferencedResources referencedResources) {
 
 		UIHumanName name = NameHelper.getUsualOrOfficialName(patient.getName());
 		UIAddress homeAddress = AddressHelper.getHomeAddress(patient.getAddress());
@@ -40,7 +40,7 @@ public class UIPatientTransform {
 				.setLanguage(getLanguage(patient.getCommunication()))
 				.setReligion(getReligion(patient))
 				.setCarerOrganisations(getCarerOrganisations(patient.getCareProvider(), referencedResources))
-				.setCarerPractitioners(getCarerPractitioners(serviceId, systemId, patient.getCareProvider()));
+				.setCarerPractitioners(getCarerPractitioners(serviceId, patient.getCareProvider()));
 	}
 
 	private static List<UIHumanName> getAllNames(List<HumanName> names) {
@@ -66,7 +66,7 @@ public class UIPatientTransform {
 		return uiOrganisations;
 	}
 
-	private static List<UIInternalIdentifier> getCarerPractitioners(UUID serviceId, UUID systemId, List<Reference> careProviders) {
+	private static List<UIInternalIdentifier> getCarerPractitioners(UUID serviceId, List<Reference> careProviders) {
 		List<UIInternalIdentifier> uiPractitioners = new ArrayList<>();
 
 		for(Reference reference : careProviders) {
@@ -77,7 +77,6 @@ public class UIPatientTransform {
 				if (referenceId != null) {
 					UIInternalIdentifier practitioner = new UIInternalIdentifier()
 							.setServiceId(serviceId)
-							.setSystemId(systemId)
 							.setResourceId(UUID.fromString(referenceId));
 
 					uiPractitioners.add(practitioner);
