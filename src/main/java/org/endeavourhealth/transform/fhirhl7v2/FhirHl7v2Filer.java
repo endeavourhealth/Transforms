@@ -5,19 +5,18 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,7 @@ public class FhirHl7v2Filer {
     private static final String ADT_A44 = "ADT^A44";
 
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-    private static final ResourceMergeDalI resourceMergeRepository = DalProvider.factoryResourceMergeDal();
+
 
     public void file(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                      TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
@@ -80,6 +79,9 @@ public class FhirHl7v2Filer {
         }
     }
 
+
+
+
     //A44 messages move an entire episode and all its dependant data from one patient to another
     private void performA44EpisodeMove(UUID exchangeId, UUID serviceId, UUID systemId, List<UUID> batchIds, Bundle bundle) throws Exception {
         Parameters parameters = findParameters(bundle);
@@ -98,9 +100,12 @@ public class FhirHl7v2Filer {
         }
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
-        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId.toString());
-        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId.toString());
+        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorPatientId.toString());
+        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorPatientId.toString());
         idMappings.put(minorPatientReference, majorPatientReference);
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
 
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
@@ -154,6 +159,9 @@ public class FhirHl7v2Filer {
 
         String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorEpisodeOfCareId);
         String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorEpisodeOfCareId);
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, majorEpisodeReference, minorEpisodeReference);
 
         UUID batchId = findOrCreateBatchId(exchangeId, batchIds, patientId);
 
@@ -214,8 +222,6 @@ public class FhirHl7v2Filer {
 
         LOG.debug("Doing A34 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
-        resourceMergeRepository.upsertMergeRecord(serviceId, "Patient", UUID.fromString(minorPatientId), UUID.fromString(majorPatientId));
-
         Map<String, String> idMappings = createIdMappings(parameters);
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
@@ -228,6 +234,9 @@ public class FhirHl7v2Filer {
             String value = idMappings.get(key);
             LOG.debug(key + " -> " + value);
         }
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
 
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
@@ -453,13 +462,13 @@ public class FhirHl7v2Filer {
                 .filter(t -> FhirResourceFiler.isPatientResource(t))
                 .collect(Collectors.toList());
 
-        //need to find the Patient resource so we can find it's ID
+        /*//need to find the Patient resource so we can find it's ID
         Patient patient = patientResources
                 .stream()
                 .filter(t -> t.getResourceType() == ResourceType.Patient)
                 .map(t -> (Patient)t)
                 .collect(StreamExtension.singleCollector());
-        //String patientId = patient.getId();
+        String patientId = patient.getId();*/
 
         for (Resource resource: patientResources) {
 
@@ -468,14 +477,9 @@ public class FhirHl7v2Filer {
             if (resource instanceof Encounter) {
                 Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
-
-                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "Encounter", resource.getId()));
-            } else if (resource instanceof EpisodeOfCare) {
-                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "EpisodeOfCare", resource.getId()));
-            } else if (resource instanceof Patient) {
-                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "Patient", resource.getId()));
             }
 
+            //and save the resource
             fhirResourceFiler.savePatientResource(null, false, resource);
         }
     }

@@ -10,11 +10,11 @@ import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -677,6 +677,12 @@ public class FhirResourceFiler {
         public Object call() throws Exception {
 
             try {
+
+                //apply any existing merge mappings to the resource
+                Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
+                IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
+
+                //save or delete the resource
                 UUID batchUuid = exchangeBatch.getBatchId();
                 if (isDelete) {
                     storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
