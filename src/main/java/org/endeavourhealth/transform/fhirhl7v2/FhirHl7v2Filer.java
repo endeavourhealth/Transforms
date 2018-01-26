@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -32,6 +33,7 @@ public class FhirHl7v2Filer {
     private static final String ADT_A44 = "ADT^A44";
 
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private static final ResourceMergeDalI resourceMergeRepository = DalProvider.factoryResourceMergeDal();
 
     public void file(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                      TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
@@ -211,6 +213,8 @@ public class FhirHl7v2Filer {
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
 
         LOG.debug("Doing A34 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
+
+        resourceMergeRepository.upsertMergeRecord(serviceId, "Patient", UUID.fromString(minorPatientId), UUID.fromString(majorPatientId));
 
         Map<String, String> idMappings = createIdMappings(parameters);
 
@@ -464,6 +468,12 @@ public class FhirHl7v2Filer {
             if (resource instanceof Encounter) {
                 Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
+
+                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "Encounter", resource.getId()));
+            } else if (resource instanceof EpisodeOfCare) {
+                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "EpisodeOfCare", resource.getId()));
+            } else if (resource instanceof Patient) {
+                resource.setId(resourceMergeRepository.resolveMerge(fhirResourceFiler.getServiceId().toString(), "Patient", resource.getId()));
             }
 
             fhirResourceFiler.savePatientResource(null, false, resource);
