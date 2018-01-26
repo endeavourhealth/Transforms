@@ -100,8 +100,8 @@ public class FhirHl7v2Filer {
         }
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
-        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorPatientId.toString());
-        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorPatientId.toString());
+        String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId.toString());
+        String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId.toString());
         idMappings.put(minorPatientReference, majorPatientReference);
 
         //save these resource mappings for the future
@@ -157,8 +157,8 @@ public class FhirHl7v2Filer {
 
         LOG.debug("Doing A35 merge for patient " + patientId + " and minor episode " + minorEpisodeOfCareId + " to major episode " + majorEpisodeOfCareId);
 
-        String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorEpisodeOfCareId);
-        String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorEpisodeOfCareId);
+        String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorEpisodeOfCareId);
+        String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorEpisodeOfCareId);
 
         //save these resource mappings for the future
         ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, majorEpisodeReference, minorEpisodeReference);
