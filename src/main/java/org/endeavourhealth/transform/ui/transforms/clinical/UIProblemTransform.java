@@ -48,7 +48,8 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
                 .setExpectedDuration(getExpectedDuration(condition))
                 .setLastReviewDate(getLastReviewDate(condition))
                 .setLastReviewer(getPractitionerInternalIdentifer(serviceId, systemId, getLastReviewerReference(condition)))
-                .setSignificance(getSignificance(condition));
+                .setSignificance(getSignificance(condition))
+                .setIsReview(getIsReview(condition));
 
 //        UICondition fields plus
 //
@@ -93,6 +94,14 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
     private static Reference getLastReviewerReference(Condition condition) {
         Extension extension = ExtensionHelper.getExtension(condition, FhirExtensionUri.PROBLEM_LAST_REVIEWED);
         return ExtensionHelper.getExtensionValue(extension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__PERFORMER, Reference.class);
+    }
+
+    private static Boolean getIsReview(Condition condition) {
+        BooleanType isReview = ExtensionHelper.getExtensionValue(condition, FhirExtensionUri.IS_REVIEW, BooleanType.class);
+        if (isReview == null)
+            return false;
+        else
+            return isReview.getValue();
     }
 
     @Override

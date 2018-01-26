@@ -14,6 +14,7 @@ public class UIProblem extends UICondition {
     private UICode significance;
     private UIProblem relatedProblem;
     private String relationshipType;
+    private Boolean isReview;
 
     public UICode getSignificance() {
         return significance;
@@ -66,6 +67,15 @@ public class UIProblem extends UICondition {
 
     public UIProblem setRelationshipType(String relationshipType) {
         this.relationshipType = relationshipType;
+        return this;
+    }
+
+    public Boolean getIsReview() {
+        return isReview;
+    }
+
+    public UIProblem setIsReview(Boolean review) {
+        isReview = review;
         return this;
     }
 }
