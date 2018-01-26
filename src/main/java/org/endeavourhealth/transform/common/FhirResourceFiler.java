@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.common;
 
 import com.datastax.driver.core.utils.UUIDs;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
@@ -15,6 +17,7 @@ import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -260,6 +263,17 @@ public class FhirResourceFiler {
                         //if not in our local lookup, then use the ID mapper layer to lookup and then add to our local cache
                         String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, ResourceType.Patient, resourcePatientId);
                         ret = UUID.fromString(edsPatientIdStr);
+
+                        //apply any merged resource mapping
+                        String patientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, edsPatientIdStr);
+                        Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
+                        String mappedPatientReference = pastMergeReferences.get(patientReference);
+                        if (mappedPatientReference != null) {
+                            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(new Reference().setReference(mappedPatientReference));
+                            String newPatientReference = comps.getId();
+                            ret = UUID.fromString(newPatientReference);
+                        }
+
                         sourcePatientIdMap.put(resourcePatientId, ret);
                     }
 
