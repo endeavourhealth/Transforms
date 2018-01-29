@@ -10,7 +10,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
@@ -126,9 +125,6 @@ public class EncounterTransformer extends AbstractTransformer {
         }*/
 
         if (fhir.hasEpisodeOfCare()) {
-            if (fhir.getEpisodeOfCare().size() > 1) {
-                throw new TransformException("Can't handle encounters linked to more than one episode of care");
-            }
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = findEnterpriseId(params, episodeReference);
         }
