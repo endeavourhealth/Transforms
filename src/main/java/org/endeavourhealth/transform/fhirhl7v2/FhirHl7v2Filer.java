@@ -89,23 +89,24 @@ public class FhirHl7v2Filer {
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
         String majorPatientId = findParameterValue(parameters, "MajorPatientUuid");
 
-        LOG.debug("Doing A44 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
+        LOG.debug("Doing A44 move episode from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
-        Map<String, String> idMappings = createIdMappings(parameters);
+        Map<String, String> originalIdMappings = createIdMappings(parameters);
 
         LOG.debug("Id mappings are");
-        for (String key: idMappings.keySet()) {
-            String value = idMappings.get(key);
+        for (String key: originalIdMappings.keySet()) {
+            String value = originalIdMappings.get(key);
             LOG.debug(key + " -> " + value);
         }
+
+        //copy the ID mappings map and add the patient to it. Note we keep the original map without the patient as
+        //we use that to store in our resource merge map table
+        Map<String, String> idMappings = new HashMap<>(originalIdMappings);
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
         String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId.toString());
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId.toString());
         idMappings.put(minorPatientReference, majorPatientReference);
-
-        //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
 
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
@@ -144,6 +145,10 @@ public class FhirHl7v2Filer {
 
             LOG.debug("Moved " + resourceType + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, originalIdMappings);
+
     }
 
     //A35 messages merge the contents of one episode (minor) into another one (major) for the same patient
@@ -159,9 +164,6 @@ public class FhirHl7v2Filer {
 
         String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorEpisodeOfCareId);
         String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorEpisodeOfCareId);
-
-        //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, majorEpisodeReference, minorEpisodeReference);
 
         UUID batchId = findOrCreateBatchId(exchangeId, batchIds, patientId);
 
@@ -210,6 +212,9 @@ public class FhirHl7v2Filer {
                 throw new TransformException("Cannot perform A35 episode merge for " + resourceType + " " + patientResource.getResourceId());
             }
         }
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, majorEpisodeReference, minorEpisodeReference);
     }
 
     //A34 messages merge all content from one patient (minor patient) to another (the major patient)
@@ -234,9 +239,6 @@ public class FhirHl7v2Filer {
             String value = idMappings.get(key);
             LOG.debug(key + " -> " + value);
         }
-
-        //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
 
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
@@ -283,6 +285,9 @@ public class FhirHl7v2Filer {
 
             LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
+
+        //save these resource mappings for the future
+        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
     }
 
     //returns a map of old Ids to new, formatted as FHIR references (e.g. Patient/<guid>)

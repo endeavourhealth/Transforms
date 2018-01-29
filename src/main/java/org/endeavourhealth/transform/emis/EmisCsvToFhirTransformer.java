@@ -8,10 +8,10 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
@@ -218,7 +218,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{A2BDB192-E79C-44C5-97A2-1FD4517C456F}", "21/08/2017");
         map.put("{73DFF193-E917-4DBC-B5CF-DD2797B29377}", "15/10/2017");
         map.put("{62825316-9107-4E2C-A22C-86211B4760DA}", "13/10/2017");
-        map.put("{006E8A30-2A45-4DBE-91D7-1C53FADF38B1}", "02/01/2018"); //NOT FIXED YET - The Lawson Practice (CDB 4334);F84096
+        map.put("{006E8A30-2A45-4DBE-91D7-1C53FADF38B1}", "28/01/2018"); //The Lawson Practice (CDB 4334);F84096
         map.put("{E32AA6A6-46B1-4198-AA13-058038AB8746}", "13/10/2017");
         map.put("{B51160F1-79E3-4BA7-AA3D-1112AB341146}", "30/09/2017");
         map.put("{234503E5-56B4-45A0-99DA-39854FBE78E9}", "01/02/2017");
