@@ -6,9 +6,9 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.csv.CsvHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +35,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
     private CSVRecord csvRecord = null;
     private long csvRecordLineNumber = -1;
     private Set<Long> recordNumbersToProcess = null;
+    private Integer fileAuditId = null;
 
     public AbstractCsvParser(String version, String filePath, boolean openParser, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
 
@@ -59,6 +60,11 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
             String[] expectedHeaders = getCsvHeaders(version);
             CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
+
+//            if (this.fileAuditId == null) {
+//                SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
+//                dal.auditFile(serviceId, UUID systemId, UUID exchangeId, filePath, String typeDescription, List<String> columns)
+//            }
 
             csvRecordLineNumber = 0;
 

@@ -936,11 +936,12 @@ public class FhirHl7v2Filer {
             throw new TransformException("No patient on NEW " + newEncounter.getResourceType() + " " + newEncounter.getId());
         }
 
-        String oldPatientRef = oldEncounter.getPatient().getReference();
+        //this validation doesn't work now that we persist merge mappings and automatically apply them
+        /*String oldPatientRef = oldEncounter.getPatient().getReference();
         String newPatientRef = newEncounter.getPatient().getReference();
         if (!oldPatientRef.equals(newPatientRef)) {
             throw new TransformException("Old " + oldEncounter.getResourceType() + " " + oldEncounter.getId() + " links to " + oldPatientRef + " but new version to " + newPatientRef);
-        }
+        }*/
     }
 
     private static void updateEncounterPriority(Encounter oldEncounter, Encounter newEncounter) {
