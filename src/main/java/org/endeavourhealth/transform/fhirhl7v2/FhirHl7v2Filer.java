@@ -249,13 +249,13 @@ public class FhirHl7v2Filer {
         List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
-        for (ResourceWrapper minorPatientResource: minorPatientResources) {
+        /*for (ResourceWrapper minorPatientResource: minorPatientResources) {
             String referenceValue = createResourceReferenceValue(minorPatientResource);
 
             if (!idMappings.containsKey(referenceValue)) {
                 throw new TransformException("Parameters doesn't contain new ID for " + referenceValue);
             }
-        }
+        }*/
 
         //copy the resources to the major patient
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
