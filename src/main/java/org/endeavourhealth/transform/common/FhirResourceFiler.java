@@ -508,14 +508,14 @@ public class FhirResourceFiler {
     public void logTransformRecordError(Throwable ex, CsvCurrentState state) {
 
         //if we've had more than 100 errors, don't bother logging or adding any more exceptions to the audit trail
-        if (transformError.getError().size() > 100) {
-            LOG.error("Error at " + state + ": " + ex.getMessage() + " (had over 100 exceptions, so not logging any more)");
+        if (transformError.getError().size() > 50) {
+            LOG.error("Error at " + state + ": " + ex.getMessage() + " (had over 50 exceptions, so not logging any more)");
             ex = null;
 
         } else {
             //don't log the exception here, since we've already logged it from the separate thread
-            LOG.error("Error at " + state + ": " + ex.getMessage());
-            //LOG.error("Error at " + state, ex);
+            //LOG.error("Error at " + state + ": " + ex.getMessage());
+            LOG.error("Error at " + state, ex);
         }
 
         //then add the error to our audit object
