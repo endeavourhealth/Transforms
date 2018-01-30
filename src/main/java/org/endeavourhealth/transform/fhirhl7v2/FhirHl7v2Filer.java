@@ -209,7 +209,9 @@ public class FhirHl7v2Filer {
 
             } else {
                 //if we have any other resource type, then something is wrong
-                throw new TransformException("Cannot perform A35 episode merge for " + resourceType + " " + patientResource.getResourceId());
+                //in DSTU2, there are no other resources that seem to reference episodes of care, so removing this
+                //now we've got additional Cerner resource types
+                //throw new TransformException("Cannot perform A35 episode merge for " + resourceType + " " + patientResource.getResourceId());
             }
         }
 
