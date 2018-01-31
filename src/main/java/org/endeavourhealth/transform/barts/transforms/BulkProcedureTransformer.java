@@ -74,7 +74,7 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
         // this Diagnosis resource id
         ResourceId procedureResourceId = readProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
         if (procedureResourceId == null) {
-            procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+            procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode(), 0);
 
             // Procedure Code
             //CodeableConcept procedureCode = new CodeableConcept();

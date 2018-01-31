@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsBartsSusResourceMapDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -195,9 +197,9 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
                                     ResourceId patientResourceId,
                                     ResourceId encounterResourceId) throws Exception {
 
-        //CodeableConcept cc = null;
-        //Date d = null;
-        //String uniqueId;
+        HashMap<String, Integer> codeDuplicateCountList = new HashMap<String, Integer>();
+        Integer currCodeDuplicateCount = 0;
+
         List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Diagnosis from file entry (" + entryCount + ")");
 
@@ -205,7 +207,9 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.CONDITION);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
 
-        ResourceId resourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis());
+        currCodeDuplicateCount = 1;
+        codeDuplicateCountList.put(parser.getICDPrimaryDiagnosis(), currCodeDuplicateCount);
+        ResourceId resourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDPrimaryDiagnosis(), currCodeDuplicateCount);
 
         Condition fhirCondition = new Condition();
 
@@ -213,7 +217,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
 
         //CodeableConcept diagnosisCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDPrimaryDiagnosis(), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "", false);
-        CodeableConcept diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_ICD10, "", parser.getICDPrimaryDiagnosis());
+        CodeableConcept diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_ICD10, TerminologyService.lookupIcd10CodeDescription(parser.getICDPrimaryDiagnosis()), parser.getICDPrimaryDiagnosis());
 
         Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "cds coding")};
 
@@ -240,11 +244,19 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         LOG.debug("Secondary diagnosis list=" + parser.getICDSecondaryDiagnosisList());
         LOG.debug("Secondary diagnosis count=" + parser.getICDSecondaryDiagnosisCount());
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
+            if (codeDuplicateCountList.containsKey(parser.getICDSecondaryDiagnosis(i))) {
+                currCodeDuplicateCount = codeDuplicateCountList.get(parser.getICDSecondaryDiagnosis(i));
+                currCodeDuplicateCount++;
+                codeDuplicateCountList.replace(parser.getICDSecondaryDiagnosis(i), currCodeDuplicateCount);
+            } else {
+                currCodeDuplicateCount = 1;
+                codeDuplicateCountList.put(parser.getICDSecondaryDiagnosis(i), currCodeDuplicateCount);
+            }
 
-            resourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i));
+            resourceId = getDiagnosisResourceIdFromCDSData(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCDSUniqueID(), parser.getICDSecondaryDiagnosis(i), currCodeDuplicateCount);
 
             //diagnosisCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_DIAGNOSIS, parser.getICDSecondaryDiagnosis(i), BartsCsvToFhirTransformer.CODE_SYSTEM_ICD_10, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "", false);
-            diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_ICD10, "", parser.getICDSecondaryDiagnosis(i));
+            diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_ICD10, TerminologyService.lookupIcd10CodeDescription(parser.getICDSecondaryDiagnosis(i)), parser.getICDSecondaryDiagnosis(i));
 
             fhirCondition = new Condition();
             createDiagnosis(fhirCondition, resourceId,encounterResourceId, patientResourceId, parser.getAdmissionDateTime(), new DateTimeType(parser.getAdmissionDate()), diagnosisCode, null, identifiers, Condition.ConditionVerificationStatus.CONFIRMED, null, ex);
@@ -299,9 +311,8 @@ Data line is of type Inpatient
                                     ResourceId encounterResourceId,
                                     TailsRecord tr) throws Exception {
 
-        //CodeableConcept cc = null;
-        //Date d = null;
-        //String uniqueId;
+        HashMap<String, Integer> codeDuplicateCountList = new HashMap<String, Integer>();
+        Integer currCodeDuplicateCount = 0;
         List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Procedure from file entry (" + entryCount + ")");
 
@@ -309,7 +320,9 @@ Data line is of type Inpatient
         List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
 
-        ResourceId resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode());
+        currCodeDuplicateCount = 1;
+        codeDuplicateCountList.put(parser.getOPCSPrimaryProcedureCode(), currCodeDuplicateCount);
+        ResourceId resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode(), currCodeDuplicateCount);
 
         // status
         // CDS V6-2 Type 120 - Admitted Patient Care - Finished Birth Episode CDS
@@ -325,7 +338,7 @@ Data line is of type Inpatient
         // Code
         //CodeableConcept procedureCode = new CodeableConcept();
         //procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), BartsCsvToFhirTransformer.CODE_SYSTEM_OPCS_4, BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED, "", false);
-        CodeableConcept procedureCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_OPCS4, "", parser.getOPCSPrimaryProcedureCode());
+        CodeableConcept procedureCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_OPCS4, TerminologyService.lookupOpcs4ProcedureName(parser.getOPCSPrimaryProcedureCode()), parser.getOPCSPrimaryProcedureCode());
 
         //Identifiers
         Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
@@ -356,11 +369,20 @@ Data line is of type Inpatient
         LOG.debug("Secondary procedure list=" + parser.getOPCSecondaryProcedureList());
         LOG.debug("Secondary procedure count=" + parser.getOPCSecondaryProcedureCodeCount());
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
+            if (codeDuplicateCountList.containsKey(parser.getOPCSecondaryProcedureCode(i))) {
+                currCodeDuplicateCount = codeDuplicateCountList.get(parser.getOPCSecondaryProcedureCode(i));
+                currCodeDuplicateCount++;
+                codeDuplicateCountList.replace(parser.getOPCSecondaryProcedureCode(i), currCodeDuplicateCount);
+            } else {
+                currCodeDuplicateCount = 1;
+                codeDuplicateCountList.put(parser.getOPCSecondaryProcedureCode(i), currCodeDuplicateCount);
+            }
+
             // New resource id
-            resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i));
+            resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i), currCodeDuplicateCount);
 
             // Code
-            procedureCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_OPCS4, "", parser.getOPCSecondaryProcedureCode(i));
+            procedureCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_OPCS4, TerminologyService.lookupOpcs4ProcedureName(parser.getOPCSecondaryProcedureCode(i)), parser.getOPCSecondaryProcedureCode(i));
 
             fhirProcedure = new Procedure ();
             ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procedureStatus, procedureCode, parser.getOPCSecondaryProcedureDate(i), null, identifiers, null, ex);

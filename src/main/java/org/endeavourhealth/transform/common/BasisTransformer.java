@@ -569,8 +569,8 @@ public class BasisTransformer {
         return getResourceId(scope, "Condition", uniqueId);
     }
 
-    public static ResourceId getDiagnosisResourceIdFromCDSData(String scope, String CDSUniqueID, String diagnosis) throws Exception {
-        String uniqueId = "CDSIdValue=" + CDSUniqueID + "-DiagnosisCode=" + diagnosis;
+    public static ResourceId getDiagnosisResourceIdFromCDSData(String scope, String CDSUniqueID, String diagnosis, Integer repetition) throws Exception {
+        String uniqueId = "CDSIdValue=" + CDSUniqueID + "-DiagnosisCode=" + diagnosis + "-Repetition=" + repetition.toString();
         return getConditionResourceId(scope, uniqueId);
     }
 
@@ -602,8 +602,13 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    public static ResourceId getProcedureResourceId(String scope, String encounterId, String procedureDateTime, String procedureCode) throws Exception {
-        String uniqueId = "EncounterId=" + encounterId + "-ProcedureDateTime=" + procedureDateTime + "-ProcedureCode=" + procedureCode;
+    public static ResourceId getProcedureResourceId(String scope, String encounterId, String procedureDateTime, String procedureCode, Integer repetition) throws Exception {
+        String uniqueId = null;
+        if (repetition.intValue() == 0) {
+            uniqueId = "EncounterId=" + encounterId + "-ProcedureDateTime=" + procedureDateTime + "-ProcedureCode=" + procedureCode;
+        } else {
+            uniqueId = "EncounterId=" + encounterId + "-ProcedureDateTime=" + procedureDateTime + "-ProcedureCode=" + procedureCode + "-Repetition=" + repetition.toString();
+        }
         ResourceId resourceId = getResourceId(scope, "Procedure", uniqueId);
         if (resourceId == null) {
             resourceId = new ResourceId();
