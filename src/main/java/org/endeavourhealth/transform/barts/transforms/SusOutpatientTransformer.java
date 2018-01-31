@@ -328,10 +328,11 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
 
         // Turn key into Resource id
         currCodeDuplicateCount = 1;
-        codeDuplicateCountList.put(parser.getOPCSPrimaryProcedureCode(), currCodeDuplicateCount);
         LOG.debug("currCodeDuplicateCount:" + currCodeDuplicateCount);
+        codeDuplicateCountList.put(parser.getOPCSPrimaryProcedureCode(), currCodeDuplicateCount);
         LOG.debug("parser.getOPCSPrimaryProcedureCode():" + parser.getOPCSPrimaryProcedureCode());
         LOG.debug("parser.getOPCSPrimaryProcedureDateAsString():" + parser.getOPCSPrimaryProcedureDateAsString());
+        LOG.debug("currCodeDuplicateCount:" + currCodeDuplicateCount);
         LOG.debug("tr.getEncounterId():" + tr.getEncounterId());
         ResourceId resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSPrimaryProcedureDateAsString(), parser.getOPCSPrimaryProcedureCode(), currCodeDuplicateCount);
 
