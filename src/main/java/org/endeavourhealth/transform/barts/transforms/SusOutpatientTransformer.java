@@ -321,10 +321,17 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
 
         List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Procedure from file entry (" + entryCount + ")");
+        LOG.debug("Testing-Deployment");
 
         RdbmsBartsSusResourceMapDal database = DalProvider.factoryBartsSusResourceMapDal();
         List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
+        if (currentMappings != null) {
+            Iterator it = currentMappings.iterator();
+            while (it.hasNext()) {
+                LOG.debug("Resource id (multi-mappings):" + ((UUID) it.next()).toString());
+            }
+        }
 
         // Turn key into Resource id
         currCodeDuplicateCount = 1;
