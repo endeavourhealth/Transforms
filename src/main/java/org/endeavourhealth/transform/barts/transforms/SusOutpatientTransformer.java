@@ -171,7 +171,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
         }
 
         // Map procedure codes ?
-        if (parser.getOPCSPrimaryProcedureCode().length() > 0) {
+        if (parser.getOPCSPrimaryProcedureCode().length() > 0 && tr != null && tr.getEncounterId() != null && tr.getEncounterId().length() > 0) {
             // Procedure
             mapProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID, patientResourceId, encounterResourceId, tr);
         }
