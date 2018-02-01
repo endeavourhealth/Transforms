@@ -66,8 +66,8 @@ public class SusOutpatient extends SusBaseParser {
         return super.getString("ConsultantCode");
     }
 
-    public int geOutcomeCode() {
-        return super.getInt("OutcomeCode");
+    public String getOutcomeCode() {
+        return super.getString("OutcomeCode");
     }
 
     public Date getAppointmentDate() throws TransformException {

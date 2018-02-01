@@ -137,7 +137,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
                     episodeOfCareResourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEpisodeId());
                 }
                 EpisodeOfCare.EpisodeOfCareStatus episodeStatus;
-                if (parser.geOutcomeCode() == 1) {
+                if (parser.getOutcomeCode().compareTo("1") == 0) {
                     episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
                 } else {
                     episodeStatus = EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
