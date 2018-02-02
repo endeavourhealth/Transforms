@@ -7,6 +7,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
@@ -33,18 +34,10 @@ public abstract class VisionCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, String version) throws Exception {
+                                 String version) throws Exception {
 
         //the exchange body will be a list of files received
-        //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = exchangeBody.split("\n");
-        for (int i=0; i<files.length; i++) {
-            String file = files[i].trim();
-            String filePath = FilenameUtils.concat(sharedStoragePath, file);
-            files[i] = filePath;
-        }
-        //String[] files = exchangeBody.split(java.lang.System.lineSeparator());
-
+        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
         LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

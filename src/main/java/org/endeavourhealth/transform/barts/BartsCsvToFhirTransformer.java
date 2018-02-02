@@ -3,16 +3,15 @@ package org.endeavourhealth.transform.barts;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
+import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,17 +40,9 @@ public abstract class BartsCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, String version) throws Exception {
+                                 String version) throws Exception {
 
-        //for Barts CSV, the exchange body will be a list of files received
-        //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = exchangeBody.split("\n");
-        for (int i=0; i<files.length; i++) {
-            String file = files[i].trim();
-            String filePath = FilenameUtils.concat(sharedStoragePath, file);
-            files[i] = filePath;
-        }
-
+        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
         LOG.info("Invoking Barts CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
@@ -70,7 +61,7 @@ public abstract class BartsCsvToFhirTransformer {
     }
 
 
-    private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
+    /*private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
         String organisationDir = null;
 
         for (String file: files) {
@@ -98,7 +89,7 @@ public abstract class BartsCsvToFhirTransformer {
 
         }
         return new File(organisationDir);
-    }
+    }*/
 
 
 

@@ -8,8 +8,8 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -448,9 +448,11 @@ public class BasisTransformer {
         fhirProcedure.setCode(procedureCode);
 
         // Performed date/time
-        //Timing t = new Timing().addEvent(procedureDate);
-        DateTimeType dateDt = new DateTimeType(procedureDate);
-        fhirProcedure.setPerformed(dateDt);
+        if (procedureDate != null) {
+            //Timing t = new Timing().addEvent(procedureDate);
+            DateTimeType dateDt = new DateTimeType(procedureDate);
+            fhirProcedure.setPerformed(dateDt);
+        }
 
         // set notes
         if (notes != null) {

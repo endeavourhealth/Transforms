@@ -4,6 +4,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.homerton.schema.Diagnosis;
 import org.endeavourhealth.transform.homerton.schema.Patient;
@@ -43,20 +44,9 @@ public abstract class HomertonCsvToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath, String version) throws Exception {
+                                 String version) throws Exception {
 
-        LOG.info("Invoking Homerton CSV transformer for shared storage " + sharedStoragePath);
-
-        //for Barts CSV, the exchange body will be a list of files received
-        //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = exchangeBody.split("\n");
-        for (int i=0; i<files.length; i++) {
-            String file = files[i].trim();
-            String filePath = FilenameUtils.concat(sharedStoragePath, file);
-            files[i] = filePath;
-            LOG.info("Homerton CSV transformer adjusted file(" + file + "):" + filePath);
-        }
-
+        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
         LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

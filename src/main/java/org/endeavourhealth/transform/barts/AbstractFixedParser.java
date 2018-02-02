@@ -1,9 +1,10 @@
 package org.endeavourhealth.transform.barts;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +144,21 @@ public abstract class AbstractFixedParser implements AutoCloseable {
     }
 
     public Date parseDate(String date) throws TransformException {
+        if (date != null) {
+            date = date.trim();
+        }
+
+        if (Strings.isNullOrEmpty(date)) {
+            return null;
+        }
+
+        try {
+            return dateFormat.parse(date);
+        } catch (ParseException pe) {
+            throw new FileFormatException(filePath, "Invalid date format [" + date + "]", pe);
+        }
+    }
+    /*public Date parseDate(String date) throws TransformException {
         Date ret = null;
         if (date != null && date.length() > 0) {
             try {
@@ -152,7 +168,7 @@ public abstract class AbstractFixedParser implements AutoCloseable {
             }
         }
         return ret;
-    }
+    }*/
 
     public Date getTime(String column) throws TransformException {
         Date ret = null;

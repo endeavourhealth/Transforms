@@ -1,17 +1,17 @@
 package org.endeavourhealth.transform.emis;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
@@ -48,21 +48,12 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
-    private static Boolean cachedAllowDisabledOrganisations = null;
-    private static Boolean cachedAllowMissingCodes = null;
-
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String sharedStoragePath) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
 
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = exchangeBody.split("\n");
-        for (int i=0; i<files.length; i++) {
-            String file = files[i].trim();
-            String filePath = FilenameUtils.concat(sharedStoragePath, file);
-            files[i] = filePath;
-        }
+        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
 
         LOG.info("Invoking EMIS CSV transformer for " + files.length + " files and service " + serviceId);
 
@@ -443,8 +434,8 @@ public abstract class EmisCsvToFhirTransformer {
                                          TransformError previousErrors,
                                          boolean processPatientData) throws Exception {
 
-        boolean allowProcessingDisabledServices = getAllowDisabledOrganisations();
-        boolean allowMissingCodes = getAllowMissingCodes();
+        boolean allowProcessingDisabledServices = TransformConfig.instance().isEmisAllowDisabledOrganisations();
+        boolean allowMissingCodes = TransformConfig.instance().isEmisAllowMissingCodes();
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
         if (!processPatientData) {
@@ -567,37 +558,4 @@ public abstract class EmisCsvToFhirTransformer {
     }
 
 
-    private static boolean getAllowDisabledOrganisations() {
-        if (cachedAllowDisabledOrganisations == null) {
-            readConfig();
-        }
-        return cachedAllowDisabledOrganisations.booleanValue();
-    }
-
-    private static boolean getAllowMissingCodes() {
-        if (cachedAllowMissingCodes == null) {
-            readConfig();
-        }
-        return cachedAllowMissingCodes.booleanValue();
-    }
-
-    private static void readConfig() {
-        boolean b1;
-        boolean b2;
-        try {
-            JsonNode json = ConfigManager.getConfigurationAsJson("emis", "queuereader");
-            b1 = json.get("process_disabled").asBoolean();
-            b2 = json.get("missing_codees").asBoolean();
-        } catch (Exception var4) {
-            b1 = false;
-            b2 = false;
-        }
-
-        cachedAllowDisabledOrganisations = new Boolean(b1);
-        cachedAllowMissingCodes = new Boolean(b2);
-
-        LOG.info("Allowing Disabled Emis Organisations = " + cachedAllowDisabledOrganisations);
-        LOG.info("Allowing Missing Codes = " + cachedAllowMissingCodes);
-
-    }
 }
