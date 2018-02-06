@@ -31,10 +31,15 @@ public abstract class BartsCsvToFhirTransformer {
     //public static final int CODE_SYSTEM_OPCS_4 = 1002;
     public static final String CODE_SYSTEM_CDS_UNIQUE_ID = "http://cerner.com/fhir/cds-unique-id";
     public static final String CODE_SYSTEM_DIAGNOSIS_ID = "http://cerner.com/fhir/diagnosis-id";
+    public static final String CODE_SYSTEM_DIAGNOSIS_TYPE = "http://cerner.com/fhir/diagnosis-type";
+    public static final String CODE_SYSTEM_PROCEDURE_ID = "http://cerner.com/fhir/procedure-id";
+    public static final String CODE_SYSTEM_PROCEDURE_TYPE = "http://cerner.com/fhir/procedure-type";
     public static final String CODE_SYSTEM_OBSERVATION_ID = "http://cerner.com/fhir/observation-id";
     public static final String CODE_SYSTEM_PROBLEM_ID = "http://cerner.com/fhir/problem-id";
     public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
     public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
+    public static final String CODE_SYSTEM_ENCOUNTER_SLICE_ID = "http://cerner.com/fhir/encounter-slice-id";
+    public static final String CODE_SYSTEM_NOMENCLATURE_ID = "http://cerner.com/identifier/nomenclature-id";
     public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
     public static final String CODE_CONTEXT_PROCEDURE = "BARTSCSV_CLIN_PROCEDURE";
 
