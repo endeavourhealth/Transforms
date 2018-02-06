@@ -8,14 +8,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ClinicalEvent extends AbstractCharacterParser {
-    private static final Logger LOG = LoggerFactory.getLogger(ClinicalEvent.class);
+public class CLEVE extends AbstractCharacterParser {
+    private static final Logger LOG = LoggerFactory.getLogger(CLEVE.class);
 
     public static final String DATE_FORMAT = "dd/mm/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public ClinicalEvent(String version, String filePath, boolean openParser) throws Exception {
+    public CLEVE(String version, String filePath, boolean openParser) throws Exception {
         super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumEventId");

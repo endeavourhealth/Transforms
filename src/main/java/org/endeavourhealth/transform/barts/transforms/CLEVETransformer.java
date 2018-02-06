@@ -8,7 +8,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.schema.ClinicalEvent;
+import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
@@ -18,14 +18,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ClinicalEventTransformer extends BartsBasisTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ClinicalEventTransformer.class);
+public class CLEVETransformer extends BartsBasisTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
     /*
      *
      */
     public static void transform(String version,
-                                 ClinicalEvent parser,
+                                 CLEVE parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
@@ -52,7 +52,7 @@ public class ClinicalEventTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    public static String validateEntry(ClinicalEvent parser) {
+    public static String validateEntry(CLEVE parser) {
         return null;
     }
 
@@ -60,7 +60,7 @@ public class ClinicalEventTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    public static void createObservation(ClinicalEvent parser,
+    public static void createObservation(CLEVE parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
