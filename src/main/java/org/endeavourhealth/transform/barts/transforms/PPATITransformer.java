@@ -2,7 +2,9 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class PPATITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
+    private static InternalIdDalI internalIdDalI = null;
 
     public static void transform(String version,
                                  PPATI parser,
@@ -49,9 +52,17 @@ public class PPATITransformer extends BartsBasisTransformer {
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
+        if (internalIdDalI == null) {
+            internalIdDalI = DalProvider.factoryInternalIdDal();
+        }
+
+        String mrn = internalIdDalI.getDestinationId(fhirResourceFiler.getServiceId(), "PATIENT", parser.getPersonId());
+
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+
+
     }
 }
