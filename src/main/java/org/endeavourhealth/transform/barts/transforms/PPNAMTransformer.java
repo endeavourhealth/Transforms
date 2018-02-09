@@ -1,18 +1,15 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +52,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
+        Patient fhirPatient = (Patient)PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
@@ -66,6 +64,10 @@ public class PPNAMTransformer extends BartsBasisTransformer {
                 HumanName.NameUse.OFFICIAL,
                 parser.getTitle(), parser.getFirstName(), parser.getMiddleName(),
                 parser.getLastName(), parser.getSuffix());
+
+        fhirPatient.addName(name);
+
+        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
         /*
         Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME,

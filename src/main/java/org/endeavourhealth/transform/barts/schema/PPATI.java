@@ -41,7 +41,7 @@ public class PPATI extends AbstractCharacterParser {
 
     }
 
-    public String getPersonId() throws FileFormatException {
+    public String getMillenniumPersonId() throws FileFormatException {
         return super.getString("MillenniumPersonId");
     }
 
