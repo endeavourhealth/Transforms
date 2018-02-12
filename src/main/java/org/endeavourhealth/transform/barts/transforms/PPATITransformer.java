@@ -1,13 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +19,9 @@ import org.slf4j.LoggerFactory;
 public class PPATITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
     private static InternalIdDalI internalIdDalI = null;
+    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+    private static Long nhsNumberStatusCodeSet = 29882L;
+    private static Long genderCodeSet = 57L;
 
     public static void transform(String version,
                                  PPATI parser,
@@ -56,6 +63,10 @@ public class PPATITransformer extends BartsBasisTransformer {
             internalIdDalI = DalProvider.factoryInternalIdDal();
         }
 
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
         String mrn = internalIdDalI.getDestinationId(fhirResourceFiler.getServiceId(), "PATIENT", parser.getMillenniumPersonId());
 
         Patient fhirPatient = new Patient();
@@ -65,9 +76,23 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (parser.getNhsNumber() != null) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
         }
-        // TODO get the verification code and process
-        //fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS, parser.getActiveIndicator()));
 
+        if (parser.getNhsNumberStatus() != null) {
+
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(nhsNumberStatusCodeSet, Long.parseLong(parser.getActiveIndicator()), fhirResourceFiler.getServiceId());
+            if (cernerCodeValueRef != null) {
+                CodeableConcept fhirCodeableConcept = null;
+                //convert the String to one of the official statuses. If it can't be converted, insert free-text in the codeable concept
+                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerCodeValueRef.getCodeDescTxt());
+                if (verificationStatus != null) {
+                    fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(verificationStatus);
+
+                } else {
+                    fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(cernerCodeValueRef.getCodeDescTxt());
+                }
+                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS, fhirCodeableConcept));
+            }
+        }
 
         // TODO check for inactives and whether they are deletions with just the active flag populated and need to be handled differently
         if (parser.getActiveIndicator() != null) {
@@ -78,9 +103,10 @@ public class PPATITransformer extends BartsBasisTransformer {
             fhirPatient.setBirthDate(parser.getDateOfBirth());
         }
 
-        // TODO get the gender code and process
         if (parser.getGenderCode() != null) {
-            //fhirPatient.setGender()
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(genderCodeSet, Long.parseLong(parser.getGenderCode()), fhirResourceFiler.getServiceId());
+            Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
+            fhirPatient.setGender(gender);
         }
 
         // TODO get the marital status code and process
@@ -125,5 +151,28 @@ public class PPATITransformer extends BartsBasisTransformer {
             //LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
         }*/
 
+    }
+
+    private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus) {
+        switch (nhsNumberStatus) {
+            case "Present and verified":
+                return NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
+            case "Needs Resolution":
+                return NhsNumberVerificationStatus.TRACE_NEEDS_TO_BE_RESOLVED;
+            case "Present not Traced":
+                return NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED;
+            case "Traced Attempted":
+                return NhsNumberVerificationStatus.TRACE_ATTEMPTED_NO_MATCH;
+            case "Traced Required":
+                return NhsNumberVerificationStatus.TRACE_REQUIRED;
+            case "Trace in Progress":
+                return NhsNumberVerificationStatus.TRACE_IN_PROGRESS;
+            case "Trace not Required":
+                return NhsNumberVerificationStatus.NUMBER_NOT_PRESENT_NO_TRACE_REQUIRED;
+            case "Trace Postponed":
+                return NhsNumberVerificationStatus.TRACE_POSTPONED;
+            default:
+                return null;
+        }
     }
 }

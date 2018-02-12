@@ -23,6 +23,24 @@ public class SexConverter
         }
     }
 
+    public static Enumerations.AdministrativeGender convertCernerSexToFhir(String sex) throws TransformException
+    {
+        switch (sex)
+        {
+            case "UNKNOWN":
+            case "UNSPECIFIED":
+                return Enumerations.AdministrativeGender.UNKNOWN;
+            case "MALE":
+                return Enumerations.AdministrativeGender.MALE;
+            case "FEMALE":
+                return Enumerations.AdministrativeGender.FEMALE;
+            case "INDETERMINAT":
+                return Enumerations.AdministrativeGender.OTHER;
+            default:
+                throw new TransformException("Cerner Sex vocabulary of " + sex.toString());
+        }
+    }
+
     public static VocSex convertSexFromFhir(Enumerations.AdministrativeGender sex) throws TransformException
     {
         switch (sex)
