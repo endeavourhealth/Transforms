@@ -81,8 +81,8 @@ public class PROCE extends AbstractCharacterParser {
         return super.getString("ProcedureMillenniumPersonnelIdentifier");
     }
 
-    public String getProcedureTypeCode() throws FileFormatException {
-        return super.getString("ProcedureTypeMillenniumCode");
+    public Long getProcedureTypeCode() throws FileFormatException {
+        return super.getLong("ProcedureTypeMillenniumCode");
     }
 
     public String getConceptCodeIdentifier() throws FileFormatException {

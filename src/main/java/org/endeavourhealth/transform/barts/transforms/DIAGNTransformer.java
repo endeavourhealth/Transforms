@@ -3,7 +3,10 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -120,7 +123,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             fhirCondition.setAsserter(csvHelper.createPractitionerReference(clinicianID));
         }
 
-        // Procedure is coded either Snomed or OPCS4
+        // Condition(Diagnosis) is coded either Snomed or ICD10
         String conceptCodeType = parser.getConceptCodeType();
         String conceptCode = parser.getConceptCode();
         if (!Strings.isNullOrEmpty(conceptCodeType) && !Strings.isNullOrEmpty(conceptCode)) {
@@ -139,11 +142,13 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // Diagnosis type (category) is Cerner Millenium code
-        String diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        if (!Strings.isNullOrEmpty(diagnosisTypeCode)) {
-            //TODO: lookup DB and function for Millenium code types
-            String diagnosisTypeTerm = "TODO"; //TerminologyService.lookupTermFromMilleniumCodeType(diagnosisTypeCode);
-            CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode);
+        Long diagnosisTypeCode = parser.getDiagnosisTypeCode();
+        if (diagnosisTypeCode != null) {
+            CernerCodeValueRefDalI DAL = DalProvider.factoryCernerCodeValueRefDal();
+            Integer codeSet = 17;
+            CernerCodeValueRef cernerCodeValueRef = DAL.getCodeFromCodeSet(Long.valueOf(codeSet.longValue()), diagnosisTypeCode, fhirResourceFiler.getServiceId());
+            String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+            CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
             fhirCondition.setCategory(diagTypeCode);
         }
 

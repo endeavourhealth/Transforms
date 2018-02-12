@@ -82,8 +82,8 @@ public class DIAGN extends AbstractCharacterParser {
         return super.getString("DiagnosisMillenniumPersonnelIdentifier");
     }
 
-    public String getDiagnosisTypeCode() throws FileFormatException {
-        return super.getString("DiagnosisTypeMillenniumCode");
+    public Long getDiagnosisTypeCode() throws FileFormatException {
+        return super.getLong("DiagnosisTypeMillenniumCode");
     }
 
     public String getConceptCodeIdentifier() throws FileFormatException {
