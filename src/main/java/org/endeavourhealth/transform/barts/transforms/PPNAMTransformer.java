@@ -76,12 +76,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
 
-        CodeableConcept ethnicGroup = null;
-        if (parser.getEthnicCategory() != null && parser.getEthnicCategory().length() > 0) {
-            ethnicGroup = new CodeableConcept();
-            ethnicGroup.addCoding().setCode(parser.getEthnicCategory()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY).setDisplay(getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-            //LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-        }
+
         */
     }
 

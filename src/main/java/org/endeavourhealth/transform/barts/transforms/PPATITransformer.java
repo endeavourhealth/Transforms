@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -22,6 +23,10 @@ public class PPATITransformer extends BartsBasisTransformer {
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
     private static Long nhsNumberStatusCodeSet = 29882L;
     private static Long genderCodeSet = 57L;
+    private static Long ethnicGroupCodeSet = 27L;
+    private static Long languageGroupCodeSet = 36L;
+    private static Long religionGroupCodeSet = 49L;
+    private static Long maritalStatusGroupCodeSet = 38L;
 
     public static void transform(String version,
                                  PPATI parser,
@@ -65,6 +70,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (cernerCodeValueRefDalI == null) {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+
         }
 
         String mrn = internalIdDalI.getDestinationId(fhirResourceFiler.getServiceId(), "PATIENT", parser.getMillenniumPersonId());
@@ -73,11 +79,11 @@ public class PPATITransformer extends BartsBasisTransformer {
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
         fhirPatient.setId(mrn);
 
-        if (parser.getNhsNumber() != null) {
+        if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
         }
 
-        if (parser.getNhsNumberStatus() != null) {
+        if (parser.getNhsNumberStatus() != null && parser.getNhsNumberStatus().length() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(nhsNumberStatusCodeSet, Long.parseLong(parser.getActiveIndicator()), fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
@@ -95,38 +101,53 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         // TODO check for inactives and whether they are deletions with just the active flag populated and need to be handled differently
-        if (parser.getActiveIndicator() != null) {
+        if (parser.getActiveIndicator() != null && parser.getActiveIndicator().length() > 0) {
             fhirPatient.setActive(parser.isActive());
         }
 
-        if (parser.getDateOfBirth() != null) {
+        if (parser.getDateOfBirth() != null && parser.getDateOfBirth().toString().length() > 0) {
             fhirPatient.setBirthDate(parser.getDateOfBirth());
         }
 
-        if (parser.getGenderCode() != null) {
+        if (parser.getGenderCode() != null && parser.getGenderCode().length() > 0) {
             CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(genderCodeSet, Long.parseLong(parser.getGenderCode()), fhirResourceFiler.getServiceId());
             Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
             fhirPatient.setGender(gender);
         }
 
-        // TODO get the marital status code and process
-        if (parser.getMaritalStatusCode() != null) {
-            //fhirPatient.setMaritalStatus();
+        if (parser.getMaritalStatusCode() != null && parser.getMaritalStatusCode().length() > 0) {
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(maritalStatusGroupCodeSet, Long.parseLong(parser.getMaritalStatusCode()), fhirResourceFiler.getServiceId());
+            MaritalStatus maritalStatus = convertMaritalStatus (cernerCodeValueRef.getCodeMeaningTxt());
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
+            fhirPatient.setMaritalStatus(codeableConcept);
         }
 
-        // TODO get the ethnic group code and process
-        if (parser.getEthnicGroupCode() != null) {
-            //fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_ETHNICITY, ));
+        if (parser.getEthnicGroupCode() != null && parser.getEthnicGroupCode().length() > 0) {
+            CodeableConcept ethnicGroup = new CodeableConcept();
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(ethnicGroupCodeSet, Long.parseLong(parser.getEthnicGroupCode()), fhirResourceFiler.getServiceId());
+            ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
+                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
         }
 
-        // TODO get the first language code and process
-        if (parser.getFirstLanguageCode() != null) {
-            //fhirPatient.setLanguage();
+        if (parser.getFirstLanguageCode() != null && parser.getFirstLanguageCode().length() > 0) {
+            CodeableConcept languageConcept = new CodeableConcept();
+            Patient.PatientCommunicationComponent fhirCommunication = fhirPatient.addCommunication();
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(languageGroupCodeSet, Long.parseLong(parser.getFirstLanguageCode()), fhirResourceFiler.getServiceId());
+            languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+            fhirCommunication.setLanguage(languageConcept);
+            fhirCommunication.setPreferred(true);
+
+            fhirPatient.addCommunication(fhirCommunication);
         }
 
-        // TODO get the religion code and process
-        if (parser.getReligionCode() != null) {
-            //fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, ));
+        if (parser.getReligionCode() != null && parser.getReligionCode().length() > 0) {
+            CodeableConcept religionConcept = new CodeableConcept();
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(religionGroupCodeSet, Long.parseLong(parser.getReligionCode()), fhirResourceFiler.getServiceId());
+            religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+
+            fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
         }
 
         if (parser.getDeceasedDateTime() != null || parser.getDeceasedMethodCode() != null) {
@@ -143,13 +164,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-        /*
-        CodeableConcept ethnicGroup = null;
-        if (!Strings.isNullOrEmpty(parser.getEthnicGroupCode())) {
-            ethnicGroup = new CodeableConcept();
-            ethnicGroup.addCoding().setCode(parser.getEthnicCategory()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY).setDisplay(getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-            //LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-        }*/
+
 
     }
 
@@ -173,6 +188,19 @@ public class PPATITransformer extends BartsBasisTransformer {
                 return NhsNumberVerificationStatus.TRACE_POSTPONED;
             default:
                 return null;
+        }
+    }
+
+    private static MaritalStatus convertMaritalStatus(String statusCode) {
+        switch (statusCode) {
+            case "DIVORCED": return MaritalStatus.DIVORCED;
+            case "MARRIED": return MaritalStatus.MARRIED;
+            case "LGL_SPRTN": return MaritalStatus.LEGALLY_SEPARATED;
+            case "SINGLE": return MaritalStatus.NEVER_MARRIED;
+            case "UNKNOWN": return null;
+            case "WIDOW": return MaritalStatus.WIDOWED;
+            case "LIFE_PTNR": return MaritalStatus.DOMESTIC_PARTNER;
+            default: return null;
         }
     }
 }
