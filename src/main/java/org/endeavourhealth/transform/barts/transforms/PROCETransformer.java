@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -21,10 +22,8 @@ import java.util.Date;
 
 public class PROCETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
+    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
-    /*
-     *
-     */
     public static void transform(String version,
                                  PROCE parser,
                                  FhirResourceFiler fhirResourceFiler,
@@ -66,20 +65,20 @@ public class PROCETransformer extends BartsBasisTransformer {
                                        EmisCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Encounter (should already have been created previously)
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterID());
-        //if (encounterResourceId == null) {
-        //    encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterID());
-        //    createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getProcedureDateTime(), parser.getProcedureDateTime(), null, Encounter.EncounterClass.OTHER);
-        //}
 
-        // Patient
-        //TODO: get patient from encounter
-        String patientId = "TODO";
+        // get patient from encounter
+        Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
+        String patientId = fhirEncounter.getPatient().getId();
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(patientId)};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, patientId, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
 
@@ -93,8 +92,8 @@ public class PROCETransformer extends BartsBasisTransformer {
         String procedureID = parser.getProcedureID();
         fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID, procedureID));
 
-        //TODO: get patient from encounter
-        //fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+        // set the patient reference
+        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
         if (parser.isActive()) {
             fhirProcedure.setStatus(Procedure.ProcedureStatus.COMPLETED);
         } else {
@@ -117,9 +116,8 @@ public class PROCETransformer extends BartsBasisTransformer {
         String nomenClatureID = parser.getNomenclatureID();
         fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenClatureID));
 
-        String clinicianID = parser.getClinicianID();
+        String clinicianID = parser.getPersonnelID();
         if (!Strings.isNullOrEmpty(clinicianID)) {
-            //TODO: need to map to person resource
             Procedure.ProcedurePerformerComponent fhirPerformer = fhirProcedure.addPerformer();
             fhirPerformer.setActor(csvHelper.createPractitionerReference(clinicianID));
         }
@@ -142,12 +140,10 @@ public class PROCETransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Procedure type (category) is Cerner Millenium code
+        // Procedure type (category) is a Cerner Millenium code so lookup
         Long procedureTypeCode = parser.getProcedureTypeCode();
         if (procedureTypeCode != null) {
-            CernerCodeValueRefDalI DAL = DalProvider.factoryCernerCodeValueRefDal();
-            Integer codeSet = 401;
-            CernerCodeValueRef cernerCodeValueRef = DAL.getCodeFromCodeSet(Long.valueOf(codeSet.longValue()), procedureTypeCode, fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCode, fhirResourceFiler.getServiceId());
             String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
             CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
             fhirProcedure.setCategory(procTypeCode);

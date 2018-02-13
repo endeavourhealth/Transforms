@@ -78,7 +78,7 @@ public class DIAGN extends AbstractCharacterParser {
         return super.getString("DiagnosisDateTime");
     }
 
-    public String getClinicianID() throws FileFormatException {
+    public String getPersonnel() throws FileFormatException {
         return super.getString("DiagnosisMillenniumPersonnelIdentifier");
     }
 
