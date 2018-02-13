@@ -65,7 +65,6 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (cernerCodeValueRefDalI == null) {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-
         }
 
         String mrn = internalIdDalI.getDestinationId(fhirResourceFiler.getServiceId(), "PATIENT", parser.getMillenniumPersonId());
