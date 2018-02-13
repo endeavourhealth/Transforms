@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -21,12 +22,6 @@ public class PPATITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
     private static InternalIdDalI internalIdDalI = null;
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
-    private static Long nhsNumberStatusCodeSet = 29882L;
-    private static Long genderCodeSet = 57L;
-    private static Long ethnicGroupCodeSet = 27L;
-    private static Long languageGroupCodeSet = 36L;
-    private static Long religionGroupCodeSet = 49L;
-    private static Long maritalStatusGroupCodeSet = 38L;
 
     public static void transform(String version,
                                  PPATI parser,
@@ -85,7 +80,11 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getNhsNumberStatus() != null && parser.getNhsNumberStatus().length() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(nhsNumberStatusCodeSet, Long.parseLong(parser.getActiveIndicator()), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.NHS_NUMBER_STATUS,
+                    Long.parseLong(parser.getActiveIndicator()),
+                    fhirResourceFiler.getServiceId());
+
             if (cernerCodeValueRef != null) {
                 CodeableConcept fhirCodeableConcept = null;
                 //convert the String to one of the official statuses. If it can't be converted, insert free-text in the codeable concept
@@ -96,7 +95,8 @@ public class PPATITransformer extends BartsBasisTransformer {
                 } else {
                     fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(cernerCodeValueRef.getCodeDescTxt());
                 }
-                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS, fhirCodeableConcept));
+                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS,
+                        fhirCodeableConcept));
             }
         }
 
@@ -110,13 +110,21 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         if (parser.getGenderCode() != null && parser.getGenderCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(genderCodeSet, Long.parseLong(parser.getGenderCode()), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.GENDER,
+                    Long.parseLong(parser.getGenderCode()),
+                    fhirResourceFiler.getServiceId());
+
             Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
             fhirPatient.setGender(gender);
         }
 
         if (parser.getMaritalStatusCode() != null && parser.getMaritalStatusCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(maritalStatusGroupCodeSet, Long.parseLong(parser.getMaritalStatusCode()), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.MARITAL_STATUS,
+                    Long.parseLong(parser.getMaritalStatusCode()),
+                    fhirResourceFiler.getServiceId());
+
             MaritalStatus maritalStatus = convertMaritalStatus (cernerCodeValueRef.getCodeMeaningTxt());
             CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
             fhirPatient.setMaritalStatus(codeableConcept);
@@ -124,7 +132,11 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getEthnicGroupCode() != null && parser.getEthnicGroupCode().length() > 0) {
             CodeableConcept ethnicGroup = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(ethnicGroupCodeSet, Long.parseLong(parser.getEthnicGroupCode()), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.ETHNIC_GROUP,
+                    Long.parseLong(parser.getEthnicGroupCode()),
+                    fhirResourceFiler.getServiceId());
+
             ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
                     .setDisplay(cernerCodeValueRef.getCodeDescTxt());
         }
@@ -132,9 +144,15 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (parser.getFirstLanguageCode() != null && parser.getFirstLanguageCode().length() > 0) {
             CodeableConcept languageConcept = new CodeableConcept();
             Patient.PatientCommunicationComponent fhirCommunication = fhirPatient.addCommunication();
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(languageGroupCodeSet, Long.parseLong(parser.getFirstLanguageCode()), fhirResourceFiler.getServiceId());
+
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.LANGUAGE,
+                    Long.parseLong(parser.getFirstLanguageCode()),
+                    fhirResourceFiler.getServiceId());
+
             languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
                     .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+
             fhirCommunication.setLanguage(languageConcept);
             fhirCommunication.setPreferred(true);
 
@@ -143,7 +161,11 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getReligionCode() != null && parser.getReligionCode().length() > 0) {
             CodeableConcept religionConcept = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(religionGroupCodeSet, Long.parseLong(parser.getReligionCode()), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.RELIGION,
+                    Long.parseLong(parser.getReligionCode()),
+                    fhirResourceFiler.getServiceId());
+
             religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
                     .setDisplay(cernerCodeValueRef.getCodeDescTxt());
 
