@@ -82,13 +82,14 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(patientId)};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, patientId, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
 
-        // this Procedure resource id
-        ResourceId procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterID().toString(), parser.getDiagnosisDateTimeAsString(), parser.getConceptCode(), 0);
+        // this Condition resource id
+        ResourceId conditionResourceId = getDiagnosisResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, patientId, parser.getDiagnosisDateTimeAsString(), parser.getConceptCode());
 
         Condition fhirCondition = new Condition();
-        fhirCondition.setId(procedureResourceId.getResourceId().toString());
+        fhirCondition.setId(conditionResourceId.getResourceId().toString());
         fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
         String diagnosisID = parser.getDiagnosisID();
         fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID, diagnosisID));
 
@@ -152,7 +153,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         fhirCondition.setNotes(diagnosisFreeText);
 
         // save the resource
-        LOG.debug("Save Procedure (PatId=" + patientId + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
+        LOG.debug("Save Condition (PatId=" + patientId + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
     }
 }

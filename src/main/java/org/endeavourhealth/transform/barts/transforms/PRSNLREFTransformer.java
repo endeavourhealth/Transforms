@@ -4,9 +4,11 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PRSNLREF;
@@ -51,7 +53,12 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
 
         String personnelID = parser.getPersonnelID();
-        fhirPractitioner.setId(personnelID);
+        // this Practitioner resource id
+        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelID);
+        if (practitionerResourceId == null) {
+            practitionerResourceId = createPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelID);
+        }
+        fhirPractitioner.setId(practitionerResourceId.getResourceId().toString());
         fhirPractitioner.setActive(parser.isActive());
 
         Long positionCode = parser.getMilleniumPositionCode();
@@ -129,6 +136,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
             fhirPractitioner.addIdentifier(identifier);
         }
 
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirPractitioner);
+        LOG.debug("Save Practitioner (PersonnelId=" + personnelID + "):" + FhirSerializationHelper.serializeResource(fhirPractitioner));
+        saveAdminResource(fhirResourceFiler, parser.getCurrentState(), fhirPractitioner);
     }
 }

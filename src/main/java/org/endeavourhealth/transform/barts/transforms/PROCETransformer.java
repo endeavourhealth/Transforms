@@ -116,10 +116,10 @@ public class PROCETransformer extends BartsBasisTransformer {
         String nomenClatureID = parser.getNomenclatureID();
         fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenClatureID));
 
-        String clinicianID = parser.getPersonnelID();
-        if (!Strings.isNullOrEmpty(clinicianID)) {
+        String personnelID = parser.getPersonnelID();
+        if (!Strings.isNullOrEmpty(personnelID)) {
             Procedure.ProcedurePerformerComponent fhirPerformer = fhirProcedure.addPerformer();
-            fhirPerformer.setActor(csvHelper.createPractitionerReference(clinicianID));
+            fhirPerformer.setActor(csvHelper.createPractitionerReference(personnelID));
         }
 
         // Procedure is coded either Snomed or OPCS4
