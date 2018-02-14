@@ -2,20 +2,25 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PPADDTransformer extends BartsBasisTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
+    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
     public static void transform(String version,
                                  PPADD parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -44,24 +49,28 @@ public class PPADDTransformer extends BartsBasisTransformer {
 
     public static void createPatientAddress(PPADD parser,
                                          FhirResourceFiler fhirResourceFiler,
-                                         EmisCsvHelper csvHelper,
+                                        BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
-
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME,
-                parser.getAddressLine1(), parser.getAddressLine2(), parser.getAddressLine3(),
-                parser.getAddressLine4(), parser.getCountyText(), parser.getPostcode());
-
-        /*
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
+        // Patient Address
+        Patient.ContactComponent fhirContactComponent = new Patient.ContactComponent();
 
 
-        */
+        Address fhirRelationAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddressLine1(),
+                parser.getAddressLine2(), parser.getAddressLine3(), parser.getAddressLine4(), parser.getCountyText(), parser.getPostcode());
+
+        fhirContactComponent.setAddress(fhirRelationAddress);
+
     }
 }

@@ -2,17 +2,18 @@ package org.endeavourhealth.transform.vision.schema;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
 import java.util.Date;
+import java.util.UUID;
 
 import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
 
 public class Journal extends AbstractCsvParser {
 
-    public Journal(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Journal(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "PID",
                 "ID",
                 "DATE",
@@ -105,6 +106,16 @@ public class Journal extends AbstractCsvParser {
                 "SUBSET",
                 "DOCUMENT_ID"
            };
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Vision journal file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 
     public String getObservationID() {return super.getString("ID"); }

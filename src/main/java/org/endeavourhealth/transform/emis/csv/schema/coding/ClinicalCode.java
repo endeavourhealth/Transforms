@@ -1,12 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.coding;
 
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+
+import java.util.UUID;
 
 public class ClinicalCode extends AbstractCsvParser {
 
-    public ClinicalCode(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public ClinicalCode(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -44,7 +47,51 @@ public class ClinicalCode extends AbstractCsvParser {
         }
     }
 
-    public Long getCodeId() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis clinical code reference file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getTerm() {
+        return super.getCell("Term");
+    }
+    public CsvCell getReadTermId() {
+        return super.getCell("ReadTermId");
+    }
+    public CsvCell getSnomedCTConceptId() {
+        return super.getCell("SnomedCTConceptId");
+    }
+    public CsvCell getSnomedCTDescriptionId() {
+        return super.getCell("SnomedCTDescriptionId");
+    }
+    public CsvCell getNationalCode() {
+        return super.getCell("NationalCode");
+    }
+    public CsvCell getNationalCodeCategory() {
+        return super.getCell("NationalCodeCategory");
+    }
+    public CsvCell getNationalDescription() {
+        return super.getCell("NationalDescription");
+    }
+    public CsvCell getEmisCodeCategoryDescription() {
+        return super.getCell("EmisCodeCategoryDescription");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+    public CsvCell getParentCodeId() {
+        return super.getCell("ParentCodeId");
+    }
+
+    /*public Long getCodeId() {
         return super.getLong("CodeId");
     }
     public String getTerm() {
@@ -76,5 +123,5 @@ public class ClinicalCode extends AbstractCsvParser {
     }
     public Long getParentCodeId() {
         return super.getLong("ParentCodeId");
-    }
+    }*/
 }

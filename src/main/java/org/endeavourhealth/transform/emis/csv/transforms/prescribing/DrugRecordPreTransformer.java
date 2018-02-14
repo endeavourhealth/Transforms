@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
 import org.hl7.fhir.instance.model.ResourceType;
 
@@ -35,17 +35,17 @@ public class DrugRecordPreTransformer {
                                     FhirResourceFiler fhirResourceFiler,
                                     EmisCsvHelper csvHelper) throws Exception {
 
-        if (parser.getDeleted()) {
+        CsvCell deleted = parser.getDeleted();
+        if (deleted.getBoolean()) {
             return;
         }
 
-        String problemGuid = parser.getProblemObservationGuid();
-        if (!Strings.isNullOrEmpty(problemGuid)) {
+        //if this record is linked to a problem, store this relationship in the helper
+        CsvCell problemGuid = parser.getProblemObservationGuid();
+        if (!problemGuid.isEmpty()) {
 
-            //if this record is linked to a problem, store this relationship in the helper
-            String drugRecordGuid = parser.getDrugRecordGuid();
-            String patientGuid = parser.getPatientGuid();
-
+            CsvCell drugRecordGuid = parser.getDrugRecordGuid();
+            CsvCell patientGuid = parser.getPatientGuid();
 
             csvHelper.cacheProblemRelationship(problemGuid,
                     patientGuid,

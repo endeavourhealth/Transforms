@@ -1,12 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.admin;
 
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+
+import java.util.UUID;
 
 public class OrganisationLocation extends AbstractCsvParser {
 
-    public OrganisationLocation(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public OrganisationLocation(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -20,7 +23,33 @@ public class OrganisationLocation extends AbstractCsvParser {
         };
     }
 
-    public String getOrgansationGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis organisation-location link file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getOrgansationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getLocationGuid() {
+        return super.getCell("LocationGuid");
+    }
+    public CsvCell getIsMainLocation() {
+        return super.getCell("IsMainLocation");
+    }
+    public CsvCell getDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+
+    /*public String getOrgansationGuid() {
         return super.getString("OrganisationGuid");
     }
     public String getLocationGuid() {
@@ -37,5 +66,5 @@ public class OrganisationLocation extends AbstractCsvParser {
     }
     public Integer getProcessingId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 }

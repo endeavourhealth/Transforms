@@ -2,9 +2,9 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ public class PPAGPTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPAGP parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -43,9 +43,9 @@ public class PPAGPTransformer extends BartsBasisTransformer {
 
 
     public static void createPatientGP(PPAGP parser,
-                                            FhirResourceFiler fhirResourceFiler,
-                                            EmisCsvHelper csvHelper,
-                                            String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
         // Organisation

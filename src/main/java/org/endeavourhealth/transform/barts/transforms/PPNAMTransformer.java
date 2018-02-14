@@ -2,24 +2,31 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PPNAMTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
+    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
     public static void transform(String version,
                                  PPNAM parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -48,11 +55,16 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
     public static void createPatientName(PPNAM parser,
                                      FhirResourceFiler fhirResourceFiler,
-                                     EmisCsvHelper csvHelper,
+                                     BartsCsvHelper csvHelper,
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-        Patient fhirPatient = (Patient)PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
@@ -60,10 +72,27 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
 
         // Patient Name
+
+        HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
+
+        if (parser.getNameTypeCode() != null) {
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.NAME_USE,
+                    Long.parseLong(parser.getNameTypeCode()),
+                    fhirResourceFiler.getServiceId());
+
+            nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
+        }
+
         HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(
-                HumanName.NameUse.OFFICIAL,
+                nameUse,
                 parser.getTitle(), parser.getFirstName(), parser.getMiddleName(),
                 parser.getLastName(), parser.getSuffix());
+
+        if (parser.getBeginEffectiveDate() != null || parser.getEndEffectiveDater() != null) {
+            Period fhirPeriod = PeriodHelper.createPeriod(parser.getBeginEffectiveDate(), parser.getEndEffectiveDater());
+            name.setPeriod(fhirPeriod);
+        }
 
         fhirPatient.addName(name);
 
@@ -76,12 +105,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
 
-        CodeableConcept ethnicGroup = null;
-        if (parser.getEthnicCategory() != null && parser.getEthnicCategory().length() > 0) {
-            ethnicGroup = new CodeableConcept();
-            ethnicGroup.addCoding().setCode(parser.getEthnicCategory()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY).setDisplay(getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-            //LOG.debug("Ethnic group:" + parser.getEthnicCategory() + "==>" + getSusEthnicCategoryDisplay(parser.getEthnicCategory()));
-        }
+
         */
     }
 
@@ -126,5 +150,27 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         }
 
         return prefix + " " + title ;
+    }
+
+    private static HumanName.NameUse convertNameUse(String statusCode) {
+        switch (statusCode) {
+            case "ADOPTED": return HumanName.NameUse.OFFICIAL;
+            case "ALTERNATE": return HumanName.NameUse.NICKNAME;
+            case "CURRENT": return HumanName.NameUse.OFFICIAL;
+            case "LEGAL": return HumanName.NameUse.OFFICIAL;
+            case "MAIDEN": return HumanName.NameUse.MAIDEN;
+            case "OTHER": return HumanName.NameUse.TEMP;
+            case "PREFERRED": return HumanName.NameUse.USUAL;
+            case "PREVIOUS": return HumanName.NameUse.OLD;
+            case "PRSNL": return HumanName.NameUse.TEMP;
+            case "NYSIIS": return HumanName.NameUse.TEMP;
+            case "ALT_CHAR_CUR": return HumanName.NameUse.NICKNAME;
+            case "USUAL": return HumanName.NameUse.USUAL;
+            case "HEALTHCARD": return HumanName.NameUse.TEMP;
+            case "BACHELOR": return HumanName.NameUse.OLD;
+            case "BIRTH": return HumanName.NameUse.OLD;
+            case "NONHIST": return HumanName.NameUse.OLD;
+            default: return null;
+        }
     }
 }

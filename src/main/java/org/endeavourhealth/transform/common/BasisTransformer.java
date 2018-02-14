@@ -54,6 +54,7 @@ public class BasisTransformer {
             ret.setScopeId(scope);
             ret.setResourceType(resourceType);
             ret.setResourceId((UUID) rs.getObject(1));
+            ret.setUniqueId(uniqueId);
         }
         rs.close();
 

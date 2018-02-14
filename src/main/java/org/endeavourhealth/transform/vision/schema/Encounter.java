@@ -1,17 +1,18 @@
 package org.endeavourhealth.transform.vision.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
 import java.util.Date;
+import java.util.UUID;
 
 import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
 
 public class Encounter extends AbstractCsvParser {
 
-    public Encounter(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Encounter(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "PID",
                 "ID",
                 "DATE",
@@ -49,6 +50,16 @@ public class Encounter extends AbstractCsvParser {
                 "SERVICE_ID",
                 "ACTION"
         };
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Vision encounter file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 
     public String getPatientID() {

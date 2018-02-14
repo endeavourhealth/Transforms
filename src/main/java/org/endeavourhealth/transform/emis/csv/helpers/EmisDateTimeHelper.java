@@ -1,5 +1,6 @@
-package org.endeavourhealth.transform.emis.csv;
+package org.endeavourhealth.transform.emis.csv.helpers;
 
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.DateType;
@@ -9,6 +10,10 @@ import java.util.Date;
 
 public class EmisDateTimeHelper {
 
+
+    public static DateTimeType createDateTimeType(CsvCell date, CsvCell precision) throws Exception {
+        return createDateTimeType(date.getDate(), precision.getString());
+    }
 
     public static DateTimeType createDateTimeType(Date date, String precision) throws Exception {
 
@@ -36,6 +41,10 @@ public class EmisDateTimeHelper {
             default:
                 throw new IllegalArgumentException("Unknown date precision [" + vocPrecision + "]");
         }
+    }
+
+    public static DateType createDateType(CsvCell date, CsvCell precision) throws Exception {
+        return createDateType(date.getDate(), precision.getString());
     }
 
     public static DateType createDateType(Date date, String precision) throws Exception {

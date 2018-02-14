@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.emis.csv.schema;
+package org.endeavourhealth.transform.common;
 
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
@@ -6,8 +6,9 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.csv.CsvHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,21 +25,34 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCsvParser.class);
 
+    private final UUID serviceId;
+    private final UUID systemId;
+    private final UUID exchangeId;
     private final String version;
     private final String filePath;
     private final CSVFormat csvFormat;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
+    private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
 
     private CSVParser csvReader = null;
     private Iterator<CSVRecord> csvIterator = null;
     private CSVRecord csvRecord = null;
-    private long csvRecordLineNumber = -1;
+    private int csvRecordLineNumber = -1;
     private Set<Long> recordNumbersToProcess = null;
+
+    //audit data
     private Integer fileAuditId = null;
+    private boolean haveProcessedFileBefore = false;
+    private long[] cellAuditIds = null;
 
-    public AbstractCsvParser(String version, String filePath, boolean openParser, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+    public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
+                             String version, String filePath, boolean openParser,
+                             CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
 
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.exchangeId = exchangeId;
         this.version = version;
         this.filePath = filePath;
         this.csvFormat = csvFormat;
@@ -53,6 +67,8 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
     private void open() throws Exception {
 
+        LOG.info("Starting " + filePath);
+
         InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
         this.csvReader = new CSVParser(isr, csvFormat);
         try {
@@ -61,10 +77,10 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             String[] expectedHeaders = getCsvHeaders(version);
             CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
 
-//            if (this.fileAuditId == null) {
-//                SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
-//                dal.auditFile(serviceId, UUID systemId, UUID exchangeId, filePath, String typeDescription, List<String> columns)
-//            }
+            //create (or find if re-processing) an audit entry for this file
+            if (this.isFileAudited()) {
+                ensureFileAudited();
+            }
 
             csvRecordLineNumber = 0;
 
@@ -72,6 +88,29 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             //if we get any exception thrown during the constructor, make sure to close the reader
             close();
             throw e;
+        }
+    }
+
+    private void ensureFileAudited() throws Exception {
+        if (this.fileAuditId != null) {
+            return;
+        }
+
+        String[] headers = CsvHelper.getHeaderMapAsArray(this.csvReader);
+        List<String> headersList = Arrays.asList(headers);
+
+        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, getFileTypeDescription(), headersList);
+
+        Integer existingId = dal.findFileAudit(serviceId, systemId, exchangeId, fileTypeId, filePath);
+        if (existingId != null) {
+            this.fileAuditId = existingId.intValue();
+
+            //if we've already been through this file at some point, then we need to re-load the audit IDs
+            //for each of the cells in this file, so set this to true
+            this.haveProcessedFileBefore = true;
+
+        } else {
+            this.fileAuditId = dal.auditFile(serviceId, systemId, exchangeId, fileTypeId, filePath);
         }
     }
 
@@ -138,6 +177,9 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
     protected abstract String[] getCsvHeaders(String version);
 
+    protected abstract String getFileTypeDescription();
+    protected abstract boolean isFileAudited();
+
     public boolean nextRecord() throws Exception {
 
         //we now only open the first set of parsers when starting a transform, so
@@ -160,6 +202,12 @@ public abstract class AbstractCsvParser implements AutoCloseable {
             //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
             if (recordNumbersToProcess == null
                 || recordNumbersToProcess.contains(Long.valueOf(csvRecordLineNumber))) {
+
+                //ensure we've audited this row
+                if (this.isFileAudited()) {
+                    ensureRowAudited();
+                }
+
                 return true;
 
             } else {
@@ -168,7 +216,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         }
 
         //only log out we "completed" the file if we read any rows from it
-        if (csvRecordLineNumber > 1) {
+        if (csvRecordLineNumber >= 1) {
             LOG.info("Completed " + filePath);
         }
 
@@ -178,6 +226,67 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         return false;
     }
 
+
+    private void ensureRowAudited() throws Exception {
+
+        //ensure our array has enough capaticy
+        if (cellAuditIds == null
+                || csvRecordLineNumber >= cellAuditIds.length) {
+            growCellAuditIdsArray();
+        }
+
+        long rowAuditId = cellAuditIds[csvRecordLineNumber];
+
+        //because it's a 2D array of primatives, check for zero rather than null
+        //if (rowAuditIds != null) {
+        if (rowAuditId > 0) {
+            return;
+        }
+
+        //if we've done this file before, re-load the past audit
+        if (this.haveProcessedFileBefore) {
+            Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, csvRecordLineNumber);
+            if (existingId != null) {
+                rowAuditId = existingId.longValue();
+            }
+        }
+
+        //if we still don't have audits, create new ones
+        //because it's a 2D array of primatives, check for zero rather than null
+        if (rowAuditId == 0) {
+
+            Map<String, Integer> headers = csvReader.getHeaderMap();
+            String[] values = new String[headers.size()];
+
+            for (String header: headers.keySet()) {
+                Integer colIndex = headers.get(header);
+                String value = csvRecord.get(colIndex);
+                values[colIndex.intValue()] = value;
+            }
+
+            rowAuditId = dal.auditFileRow(serviceId, values, csvRecordLineNumber, fileAuditId);
+        }
+
+        cellAuditIds[csvRecordLineNumber] = rowAuditId;
+    }
+
+    private void growCellAuditIdsArray() {
+
+        //start at 10k in the array and grow by 50% each time
+        if (cellAuditIds == null) {
+            this.cellAuditIds = new long[10000];
+
+        } else {
+
+            int nextRowCount = (int)((double)cellAuditIds.length * 2d);
+
+            long[] tmp = new long[nextRowCount];
+            System.arraycopy(cellAuditIds, 0, tmp, 0, cellAuditIds.length);
+            this.cellAuditIds = tmp;
+        }
+    }
+
+
     /**
      * moves to the next row in the CSV file, returning false if there is no new row
      *
@@ -186,7 +295,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
 
         try {
             this.csvRecord = this.csvIterator.next();
-            this.csvRecordLineNumber = this.csvReader.getCurrentLineNumber();
+            this.csvRecordLineNumber = (int)this.csvReader.getCurrentLineNumber(); //safe cast as no CSV file is 2B rows
             return true;
 
         } catch (NoSuchElementException nse) {
@@ -217,7 +326,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
      */
     private boolean reopenAndResumeOnNextLine() throws Exception {
 
-        long nextDesiredRecordNumber = this.csvRecordLineNumber + 1;
+        int nextDesiredRecordNumber = this.csvRecordLineNumber + 1;
         LOG.info("Going to re-open and try to resume on line " + nextDesiredRecordNumber);
 
         //close everything down
@@ -235,7 +344,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
                 return false;
             }
 
-            this.csvRecordLineNumber = this.csvReader.getCurrentLineNumber();
+            this.csvRecordLineNumber = (int)this.csvReader.getCurrentLineNumber();
 
             if (csvRecordLineNumber == nextDesiredRecordNumber) {
                 LOG.info("Resuming on line " + csvRecordLineNumber);
@@ -251,7 +360,7 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         return filePath;
     }
 
-    public long getCurrentLineNumber() {
+    public int getCurrentLineNumber() {
         return csvRecordLineNumber;
     }
 
@@ -266,6 +375,33 @@ public abstract class AbstractCsvParser implements AutoCloseable {
         this.recordNumbersToProcess = recordNumbersToProcess;
     }
 
+
+
+
+
+
+
+    public CsvCell getCell(String column) {
+        String value = csvRecord.get(column);
+
+        //to save messy handling of non-empty but "empty" strings, trim whitespace of any non-null value
+        if (value != null) {
+            value = value.trim();
+        }
+
+        long rowAuditId = -1;
+        if (isFileAudited()) {
+            rowAuditId = cellAuditIds[csvRecordLineNumber];
+        }
+
+        Integer colIndexObj = csvReader.getHeaderMap().get(column);
+        int colIndex = colIndexObj.intValue();
+
+        return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
+    }
+
+
+    //remove all the below fns
 
     public String getString(String column) {
         return csvRecord.get(column);

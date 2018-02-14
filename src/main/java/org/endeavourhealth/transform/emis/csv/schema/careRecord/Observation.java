@@ -1,15 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.careRecord;
 
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.util.Date;
+import java.util.UUID;
 
 public class Observation extends AbstractCsvParser {
 
-    public Observation(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public Observation(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -42,7 +42,88 @@ public class Observation extends AbstractCsvParser {
         };
     }
 
-    public String getObservationGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis observations file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getObservationGuid() {
+        return super.getCell("ObservationGuid");
+    }
+    public CsvCell getPatientGuid() {
+        return super.getCell("PatientGuid");
+    }
+    public CsvCell getOrganisationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getEffectiveDate() {
+        return super.getCell("EffectiveDate");
+    }
+    public CsvCell getEffectiveDatePrecision() {
+        return super.getCell("EffectiveDatePrecision");
+    }
+    public CsvCell getEnteredDate() {
+        return super.getCell("EnteredDate");
+    }
+    public CsvCell getEnteredTime() {
+        return super.getCell("EnteredTime");
+    }
+    public CsvCell getClinicianUserInRoleGuid() {
+        return super.getCell("ClinicianUserInRoleGuid");
+    }
+    public CsvCell getEnteredByUserInRoleGuid() {
+        return super.getCell("EnteredByUserInRoleGuid");
+    }
+    public CsvCell getParentObservationGuid() {
+        return super.getCell("ParentObservationGuid");
+    }
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getProblemGuid() {
+        return super.getCell("ProblemGuid");
+    }
+    public CsvCell getAssociatedText() {
+        return super.getCell("AssociatedText");
+    }
+    public CsvCell getConsultationGuid() {
+        return super.getCell("ConsultationGuid");
+    }
+    public CsvCell getValue() {
+        return super.getCell("Value");
+    }
+    public CsvCell getNumericUnit() {
+        return super.getCell("NumericUnit");
+    }
+    public CsvCell getObservationType() {
+        return super.getCell("ObservationType");
+    }
+    public CsvCell getNumericRangeLow() {
+        return super.getCell("NumericRangeLow");
+    }
+    public CsvCell getNumericRangeHigh() {
+        return super.getCell("NumericRangeHigh");
+    }
+    public CsvCell getDocumentGuid() {
+        return super.getCell("DocumentGuid");
+    }
+    public CsvCell getDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getIsConfidential() {
+        return super.getCell("IsConfidential");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+
+
+    /*public String getObservationGuid() {
         return super.getString("ObservationGuid");
     }
     public String getPatientGuid() {
@@ -107,5 +188,5 @@ public class Observation extends AbstractCsvParser {
     }
     public Integer getProcessingId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 }

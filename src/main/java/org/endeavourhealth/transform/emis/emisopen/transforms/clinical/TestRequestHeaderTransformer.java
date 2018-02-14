@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.*;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.CodeConverter;
@@ -39,7 +38,7 @@ public class TestRequestHeaderTransformer extends ClinicalTransformerBase {
         fhirOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_ORDER));
 
         String requestGuid = testRequest.getGUID();
-        EmisCsvHelper.setUniqueId(fhirOrder, patientGuid, requestGuid);
+        EmisOpenHelper.setUniqueId(fhirOrder, patientGuid, requestGuid);
 
         fhirOrder.setSubject(EmisOpenHelper.createPatientReference(patientGuid));
 
@@ -146,7 +145,7 @@ public class TestRequestHeaderTransformer extends ClinicalTransformerBase {
         fhirSpecimen.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SPECIMIN));
 
         String requestGuid = request.getGUID();
-        EmisCsvHelper.setUniqueId(fhirSpecimen, patientGuid, requestGuid);
+        EmisOpenHelper.setUniqueId(fhirSpecimen, patientGuid, requestGuid);
 
         fhirSpecimen.setSubject(EmisOpenHelper.createPatientReference(patientGuid));
 

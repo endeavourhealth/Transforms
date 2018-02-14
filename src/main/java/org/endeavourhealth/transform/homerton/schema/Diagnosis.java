@@ -1,12 +1,14 @@
 package org.endeavourhealth.transform.homerton.schema;
 
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+
+import java.util.UUID;
 
 public class Diagnosis extends AbstractCsvParser {
 
-    public Diagnosis(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public Diagnosis(UUID serviceId, UUID systemId, UUID exchangeId,  String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -83,6 +85,16 @@ public class Diagnosis extends AbstractCsvParser {
                 "principle_type"
         };
 
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Homerton diagnosis file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 
     public Long getDiagnosisId()  {

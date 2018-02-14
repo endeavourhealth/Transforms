@@ -3,11 +3,11 @@ package org.endeavourhealth.transform.barts.schema;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class PPALI extends AbstractCharacterParser {
 
@@ -17,8 +17,8 @@ public class PPALI extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public PPALI(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public PPALI(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumPersonAliasId");
         addFieldList("ExtractDateTime");
@@ -100,5 +100,10 @@ public class PPALI extends AbstractCharacterParser {
 
     public Date getHealthCardExpiryDateTime() throws TransformException {
         return super.getDateTime("HealthCardExpiryDateTime");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner person ID file";
     }
 }

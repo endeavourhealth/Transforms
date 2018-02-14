@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.DiaryListType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.DiaryType;
@@ -43,7 +42,7 @@ public class DiaryTransformer extends ClinicalTransformerBase {
         fhirRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE_REQUEST));
 
         String diaryGuid = diaryEntry.getGUID();
-        EmisCsvHelper.setUniqueId(fhirRequest, patientGuid, diaryGuid);
+        EmisOpenHelper.setUniqueId(fhirRequest, patientGuid, diaryGuid);
 
         fhirRequest.setSubject(EmisOpenHelper.createPatientReference(patientGuid));
 

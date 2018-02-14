@@ -1,17 +1,18 @@
 package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
-import org.hl7.fhir.instance.model.CodeableConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,22 +57,11 @@ public class DrugCodeTransformer {
                                   EmisCsvHelper csvHelper,
                                   ThreadPool threadPool) throws Exception {
 
-        final Long codeId = parser.getCodeId();
-        final String term = parser.getTerm();
-        final Long dmdId = parser.getDmdProductCodeId();
+        CsvCell codeId = parser.getCodeId();
+        CsvCell term = parser.getTerm();
+        CsvCell dmdId = parser.getDmdProductCodeId();
 
-        final CodeableConcept fhirConcept;
-        if (dmdId == null) {
-            //if there's no DM+D ID, create a textual codeable concept for the term
-            fhirConcept = CodeableConceptHelper.createCodeableConcept(term);
-        } else {
-            fhirConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, dmdId.toString());
-        }
-
-        //always set the selected term as the text
-        fhirConcept.setText(term);
-
-        List<ThreadPoolError> errors = threadPool.submit(new DrugSaveCallable(parser.getCurrentState(), csvHelper, codeId, fhirConcept, dmdId, term));
+        List<ThreadPoolError> errors = threadPool.submit(new DrugSaveCallable(parser.getCurrentState(), csvHelper, codeId, dmdId, term));
         handleErrors(errors);
     }
 
@@ -92,30 +82,46 @@ public class DrugCodeTransformer {
 
         private CsvCurrentState parserState = null;
         private EmisCsvHelper csvHelper = null;
-        private Long codeId = null;
-        private CodeableConcept fhirConcept = null;
-        private Long dmdId = null;
-        private String term = null;
+        private CsvCell codeId = null;
+        private CsvCell dmdId = null;
+        private CsvCell term = null;
 
         public DrugSaveCallable(CsvCurrentState parserState,
                                 EmisCsvHelper csvHelper,
-                                Long codeId,
-                                CodeableConcept fhirConcept,
-                                Long dmdId,
-                                String term) {
+                                CsvCell codeId,
+                                CsvCell dmdId,
+                                CsvCell term) {
 
             this.parserState = parserState;
             this.csvHelper = csvHelper;
             this.codeId = codeId;
-            this.fhirConcept = fhirConcept;
             this.dmdId = dmdId;
             this.term = term;
         }
 
         @Override
         public Object call() throws Exception {
+
             try {
-                csvHelper.addMedication(codeId, fhirConcept, dmdId, term);
+                //we need to generate the audit of the source cells to FHIR so we can apply it when we create resources
+                ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+
+                //audit where the code came from, if we have one
+                if (!dmdId.isEmpty()) {
+                    auditWrapper.auditValue(dmdId.getRowAuditId(), dmdId.getColIndex(), EmisCodeHelper.AUDIT_DRUG_CODE);
+                }
+
+                //audit where the term came from
+                auditWrapper.auditValue(term.getRowAuditId(), term.getColIndex(), EmisCodeHelper.AUDIT_DRUG_TERM);
+
+                EmisCsvCodeMap mapping = new EmisCsvCodeMap();
+                mapping.setMedication(true);
+                mapping.setCodeId(codeId.getLong());
+                mapping.setSnomedConceptId(dmdId.getLong());
+                mapping.setSnomedTerm(term.getString());
+                mapping.setAudit(auditWrapper);
+
+                csvHelper.saveClinicalOrDrugCode(mapping);
 
             } catch (Throwable t) {
                 LOG.error("", t);

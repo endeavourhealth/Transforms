@@ -3,11 +3,11 @@ package org.endeavourhealth.transform.barts.schema;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class PPATI extends AbstractCharacterParser {
 
@@ -17,8 +17,8 @@ public class PPATI extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public PPATI(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public PPATI(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumPersonId");
         addFieldList("ExtractDateTime");
@@ -120,5 +120,10 @@ public class PPATI extends AbstractCharacterParser {
 
     public String getConsentToReleaseReligionCode() throws FileFormatException {
         return super.getString("ConsentToReleaseReligionCode");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner person file";
     }
 }

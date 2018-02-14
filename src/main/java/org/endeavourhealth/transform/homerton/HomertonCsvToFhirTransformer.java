@@ -58,7 +58,7 @@ public abstract class HomertonCsvToFhirTransformer {
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
-        transformParsers(files, version, processor, previousErrors);
+        transformParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -98,7 +98,8 @@ public abstract class HomertonCsvToFhirTransformer {
     */
 
 
-    private static void transformParsers(String[] files, String version,
+    private static void transformParsers(UUID serviceId, UUID systemId, UUID exchangeId,
+                                         String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors) throws Exception {
 
@@ -108,19 +109,19 @@ public abstract class HomertonCsvToFhirTransformer {
             LOG.debug("currFile:" + filePath + " Type:" + fileType);
 
             if (fileType.compareTo("PATIENT") == 0) {
-                Patient parser = new Patient(version, filePath, true);
+                Patient parser = new Patient(serviceId, systemId, exchangeId, version, filePath, true);
                 PatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROBLEM") == 0) {
-                Problem parser = new Problem(version, filePath, true);
+                Problem parser = new Problem(serviceId, systemId, exchangeId, version, filePath, true);
                 ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
-                Diagnosis parser = new Diagnosis(version, filePath, true);
+                Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath, true);
                 DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
-                Procedure parser = new Procedure(version, filePath, true);
+                Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath, true);
                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             }

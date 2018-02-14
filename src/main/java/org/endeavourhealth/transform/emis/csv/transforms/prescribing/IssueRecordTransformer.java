@@ -1,17 +1,17 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.QuantityHelper;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.IssueRecordIssueDate;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Date;
 import java.util.Map;
@@ -34,8 +34,106 @@ public class IssueRecordTransformer {
         }
     }
 
-
     public static void createResource(IssueRecord parser,
+                                      FhirResourceFiler fhirResourceFiler,
+                                      EmisCsvHelper csvHelper,
+                                      String version) throws Exception {
+
+        MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder();
+
+        CsvCell issueRecordGuid = parser.getIssueRecordGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
+
+        EmisCsvHelper.setUniqueId(medicationOrderBuilder, patientGuid, issueRecordGuid);
+
+        Reference patientReference = csvHelper.createPatientReference(patientGuid);
+        medicationOrderBuilder.setPatient(patientReference, patientGuid);
+
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        CsvCell deleted = parser.getDeleted();
+        if (deleted.getBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
+            return;
+        }
+
+        CsvCell effectiveDate = parser.getEffectiveDate();
+        CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
+        DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
+        medicationOrderBuilder.setDateWritten(dateTime, effectiveDate, effectiveDatePrecision);
+
+        //cache the date against the drug record GUID, so we can pick it up when processing the DrugRecord CSV
+        CsvCell drugRecordGuid = parser.getDrugRecordGuid();
+        csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, effectiveDate, effectiveDatePrecision));
+
+        //need to handle mis-spelt column name in EMIS test pack
+        //String clinicianGuid = parser.getClinicianUserInRoleGuid();
+        CsvCell clinicianGuid = null;
+        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+            clinicianGuid = parser.getClinicanUserInRoleGuid();
+        } else {
+            clinicianGuid = parser.getClinicianUserInRoleGuid();
+        }
+
+        Reference practitionerReference = csvHelper.createPractitionerReference(clinicianGuid);
+        medicationOrderBuilder.setPrescriber(practitionerReference, clinicianGuid);
+
+        CsvCell codeId = parser.getCodeId();
+        EmisCodeHelper.createCodeableConcept(medicationOrderBuilder, true, codeId, null, csvHelper);
+
+        CsvCell dose = parser.getDosage();
+        medicationOrderBuilder.setDose(dose.getString(), dose);
+
+        CsvCell cost = parser.getEstimatedNhsCost();
+        if (!cost.isEmpty()) {
+            medicationOrderBuilder.setNhsCost(cost.getDouble(), cost);
+        }
+
+        CsvCell quantity = parser.getQuantity();
+        medicationOrderBuilder.setQuantityValue(quantity.getDouble(), quantity);
+
+        CsvCell quantityUnit = parser.getQuantityUnit();
+        medicationOrderBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+
+        CsvCell courseDuration = parser.getCourseDurationInDays();
+        medicationOrderBuilder.setDurationDays(courseDuration.getInt(), courseDuration);
+
+        //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
+        CsvCell problemObservationGuid = parser.getProblemObservationGuid();
+        if (!problemObservationGuid.isEmpty()) {
+            Reference conditionReference = csvHelper.createConditionReference(problemObservationGuid, patientGuid);
+            medicationOrderBuilder.setReason(conditionReference, problemObservationGuid);
+        }
+
+        Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordGuid, patientGuid);
+        medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, drugRecordGuid);
+
+        CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
+        if (!enteredByGuid.isEmpty()) {
+            Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
+            medicationOrderBuilder.setRecordedBy(reference, enteredByGuid);
+        }
+
+        //in the earliest version of the extract, we only got the entered date and not time
+        CsvCell enteredDate = parser.getEnteredDate();
+        CsvCell enteredTime = null;
+        if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+            enteredTime = parser.getEnteredTime();
+        }
+        Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(enteredDate, enteredTime);
+        if (enteredDateTime != null) {
+            medicationOrderBuilder.setRecordedDate(enteredDateTime, enteredDate, enteredTime);
+        }
+
+        CsvCell isConfidential = parser.getIsConfidential();
+        if (isConfidential.getBoolean()) {
+            medicationOrderBuilder.setIsConfidential(true, isConfidential);
+        }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);
+    }
+
+    /*public static void createResource(IssueRecord parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        String version) throws Exception {
@@ -127,6 +225,6 @@ public class IssueRecordTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirMedication);
-    }
+    }*/
 
 }

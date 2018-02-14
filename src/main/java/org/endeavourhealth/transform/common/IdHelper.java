@@ -159,6 +159,7 @@ public class IdHelper {
             Reference edsReference = new Reference().setReference(edsIdReferenceValue);
             String edsId = ReferenceHelper.getReferenceId(edsReference);
             resource.setId(edsId);
+            //LOG.debug("Mapped " + resource.getResourceType() + " ID from " + sourceIdReferenceValue + " to " + edsIdReferenceValue);
 
             //also find out if our resource is new or not
             boolean isNewResource = definitelyNewResourceIdSourceReferences.contains(sourceIdReferenceValue);

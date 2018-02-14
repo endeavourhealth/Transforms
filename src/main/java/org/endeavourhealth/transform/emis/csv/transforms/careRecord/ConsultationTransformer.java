@@ -1,18 +1,22 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
-import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 public class ConsultationTransformer {
@@ -34,6 +38,107 @@ public class ConsultationTransformer {
     }
 
     public static void createResource(Consultation parser,
+                                      FhirResourceFiler fhirResourceFiler,
+                                      EmisCsvHelper csvHelper,
+                                      String version) throws Exception {
+
+        EncounterBuilder encounterBuilder = new EncounterBuilder();
+
+        CsvCell consultationGuid = parser.getConsultationGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
+
+        EmisCsvHelper.setUniqueId(encounterBuilder, patientGuid, consultationGuid);
+
+        Reference patientReference = csvHelper.createPatientReference(patientGuid);
+        encounterBuilder.setPatient(patientReference, patientGuid);
+
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        if (parser.getDeleted().getBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            return;
+        }
+
+        //link the consultation to our episode of care
+        Reference episodeReference = csvHelper.createEpisodeReference(patientGuid);
+        encounterBuilder.addEpisodeOfCare(episodeReference, patientGuid);
+
+        //we have no status field in the source data, but will only receive completed encounters, so we can infer this
+        encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+        CsvCell appointmentGuid = parser.getAppointmentSlotGuid();
+        if (!appointmentGuid.isEmpty()) {
+            Reference apptReference = csvHelper.createAppointmentReference(appointmentGuid, patientGuid);
+            encounterBuilder.setAppointment(apptReference);
+        }
+
+        CsvCell clinicianUuid = parser.getClinicianUserInRoleGuid();
+        if (!clinicianUuid.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(clinicianUuid);
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, clinicianUuid);
+        }
+
+        CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
+        if (!enteredByGuid.isEmpty()) {
+            Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
+            encounterBuilder.setRecordedBy(reference);
+        }
+
+        //in the earliest version of the extract, we only got the entered date and not time
+        CsvCell dateCell = parser.getEnteredDate();
+        CsvCell timeCell = null;
+        if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+            timeCell = parser.getEnteredTime();
+        }
+        Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(dateCell, timeCell);
+        if (enteredDateTime != null) {
+            encounterBuilder.setRecordedDate(enteredDateTime, dateCell, timeCell);
+        }
+
+        CsvCell effectiveDateCell = parser.getEffectiveDate();
+        CsvCell precisionCell = parser.getEffectiveDatePrecision();
+        DateTimeType effectiveDate = EmisDateTimeHelper.createDateTimeType(effectiveDateCell, precisionCell);
+        if (effectiveDate != null) {
+            encounterBuilder.setPeriodStart(effectiveDate, effectiveDateCell, precisionCell);
+        }
+
+        CsvCell organisationGuid = parser.getOrganisationGuid();
+        Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
+        encounterBuilder.setServiceProvider(organisationReference);
+
+        CsvCell codeId = parser.getConsultationSourceCodeId();
+        EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, null, csvHelper);
+
+        CsvCell termCell = parser.getConsultationSourceTerm();
+        if (!termCell.isEmpty()) {
+            String term = termCell.getString();
+            encounterBuilder.setEncounterSourceTerm(term, termCell);
+        }
+
+        //since complete consultations are by far the default, only record the incomplete extension if it's not complete
+        CsvCell completeCell = parser.getComplete();
+        if (!completeCell.getBoolean()) {
+            encounterBuilder.setIncomplete(completeCell);
+        }
+
+        CsvCell confidentialCell = parser.getIsConfidential();
+        if (confidentialCell.getBoolean()) {
+            encounterBuilder.setConfidential(true, confidentialCell);
+        }
+
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+        //carry over linked items from any previous instance of this consultation
+        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(previousReferences);
+
+        //apply any new linked items from this extract
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(newLinkedResources);
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+    }
+
+    /*public static void createResource(Consultation parser,
                                         FhirResourceFiler fhirResourceFiler,
                                         EmisCsvHelper csvHelper,
                                         String version) throws Exception {
@@ -180,5 +285,6 @@ public class ConsultationTransformer {
                 throw new IllegalArgumentException("Unexpected date precision " + vocPrecision);
         }
         return fhirPeriod;
-    }
+    }*/
+
 }

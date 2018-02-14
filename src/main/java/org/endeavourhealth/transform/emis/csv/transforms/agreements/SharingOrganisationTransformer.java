@@ -1,9 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.agreements;
 
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.agreements.SharingOrganisation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +28,8 @@ public class SharingOrganisationTransformer {
         //fix the problem then this will need removing to allow those messages to be processed.
         parser.nextRecord();
 
-        boolean isDisabled = parser.getDisabled();
-        if (isDisabled) {
+        CsvCell disabled = parser.getDisabled();
+        if (disabled.getBoolean()) {
             if (!csvHelper.isAllowProcessingDisabledServices()) {
                 throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
             }

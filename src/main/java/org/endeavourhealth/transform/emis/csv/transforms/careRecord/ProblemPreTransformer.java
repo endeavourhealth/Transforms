@@ -3,12 +3,13 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Problem;
+import org.hl7.fhir.instance.model.Condition;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -55,8 +56,9 @@ public class ProblemPreTransformer {
                                        String version,
                                        ThreadPool threadPool) throws Exception {
 
-        String patientGuid = parser.getPatientGuid();
-        String observationGuid = parser.getObservationGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
+        CsvCell observationGuid = parser.getObservationGuid();
+        CsvCurrentState parserState = parser.getCurrentState();
 
         //cache the observation GUIDs of problems, so
         //that we know what is a problem when we run the observation pre-transformer
@@ -64,11 +66,7 @@ public class ProblemPreTransformer {
 
         //also cache the IDs of any child items from previous instances of this problem, but
         //use a thread pool so we can perform multiple lookups in parallel
-        String problemSourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
-
-        CsvCurrentState parserState = parser.getCurrentState();
-
-        LookupTask task = new LookupTask(problemSourceId, fhirResourceFiler, csvHelper, parserState);
+        LookupTask task = new LookupTask(patientGuid, observationGuid, fhirResourceFiler, csvHelper, parserState);
         List<ThreadPoolError> errors = threadPool.submit(task);
         handleErrors(errors);
     }
@@ -89,17 +87,20 @@ public class ProblemPreTransformer {
 
     static class LookupTask implements Callable {
 
-        private String problemSourceId;
+        private CsvCell patientGuid;
+        private CsvCell observationGuid;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
         private CsvCurrentState parserState;
 
-        public LookupTask(String problemSourceId,
+        public LookupTask(CsvCell patientGuid,
+                          CsvCell observationGuid,
                           FhirResourceFiler fhirResourceFiler,
                           EmisCsvHelper csvHelper,
                           CsvCurrentState parserState) {
 
-            this.problemSourceId = problemSourceId;
+            this.patientGuid = patientGuid;
+            this.observationGuid = observationGuid;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
             this.parserState = parserState;
@@ -108,11 +109,25 @@ public class ProblemPreTransformer {
         @Override
         public Object call() throws Exception {
             try {
+                String locallyUniqueId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
+
                 //carry over linked items from any previous instance of this problem
-                List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, problemSourceId, ResourceType.Condition);
-                if (previousReferences != null && !previousReferences.isEmpty()) {
-                    csvHelper.cacheProblemPreviousLinkedResources(problemSourceId, previousReferences);
+                Condition previousVersion = (Condition)csvHelper.retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+                if (previousVersion == null) {
+                    //if this is the first time, then we'll have a null resource
+                    return null;
                 }
+
+                ConditionBuilder conditionBuilder = new ConditionBuilder(previousVersion);
+                ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
+
+                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+
+                //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
+                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(fhirResourceFiler.getServiceId(), previousReferencesDiscoveryIds);
+
+                csvHelper.cacheProblemPreviousLinkedResources(locallyUniqueId, previousReferencesLocalIds);
+
             } catch (Throwable t) {
                 LOG.error("", t);
                 throw t;

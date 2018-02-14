@@ -1,17 +1,17 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.ObservationReferral;
-import org.hl7.fhir.instance.model.CodeableConcept;
-import org.hl7.fhir.instance.model.Meta;
-import org.hl7.fhir.instance.model.ReferralRequest;
+import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +38,104 @@ public class ObservationReferralTransformer {
     }
 
     private static void createResource(ObservationReferral parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       EmisCsvHelper csvHelper) throws Exception {
+
+        ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder();
+
+        CsvCell observationGuid = parser.getObservationGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
+
+        EmisCsvHelper.setUniqueId(referralRequestBuilder, patientGuid, observationGuid);
+
+        Reference patientReference = csvHelper.createPatientReference(patientGuid);
+        referralRequestBuilder.setPatient(patientReference);
+
+        CsvCell ubrn = parser.getReferralUBRN();
+        if (!ubrn.isEmpty()) {
+            Identifier identifier = IdentifierHelper.createUbrnIdentifier(ubrn.getString());
+            referralRequestBuilder.addIdentifier(identifier, ubrn);
+        }
+
+        CsvCell urgency = parser.getReferralUrgency();
+        if (!urgency.isEmpty()) {
+            ReferralPriority fhirPriority = convertUrgency(urgency.getString());
+            if (fhirPriority != null) {
+                referralRequestBuilder.setPriority(fhirPriority, urgency);
+
+            } else {
+                //if the CSV urgency couldn't be mapped to a FHIR priority, then we can use free-text
+                LOG.warn("Unmapped Emis referral priority {}", urgency);
+                referralRequestBuilder.setPriorityFreeText(urgency.getString(), urgency);
+            }
+        }
+
+        CsvCell serviceType = parser.getReferralServiceType();
+        if (!serviceType.isEmpty()) {
+            ReferralType type = convertTye(serviceType.getString());
+            if (type != null) {
+                referralRequestBuilder.setType(type, serviceType);
+
+            } else {
+                LOG.warn("Unmapped Emis referral type {}", serviceType);
+                referralRequestBuilder.setTypeFreeText(serviceType.getString(), serviceType);
+            }
+        }
+
+        CsvCell mode = parser.getReferralMode();
+        if (!mode.isEmpty()) {
+            ReferralRequestSendMode fhirMode = convertMode(mode.getString());
+            if (fhirMode != null) {
+                referralRequestBuilder.setMode(fhirMode, mode);
+
+            } else {
+                LOG.warn("Unmapped Emis referral mode " + mode.getString());
+                referralRequestBuilder.setModeFreeText(mode.getString(), mode);
+            }
+        }
+
+        CsvCell recipientOrgGuid = parser.getReferalTargetOrganisationGuid();
+        //the spec. states that this value will always be present, but there's some live data with a missing value
+        if (!recipientOrgGuid.isEmpty()) {
+            Reference orgReference = csvHelper.createOrganisationReference(recipientOrgGuid);
+            referralRequestBuilder.addRecipient(orgReference, recipientOrgGuid);
+        }
+
+        //the below values are defined in the spec., but the spec also states that they'll be empty, so
+        //none of the below will probably be used
+        CsvCell sendingOrgGuid = parser.getReferralSourceOrganisationGuid();
+        if (sendingOrgGuid.isEmpty()) {
+            //in the absence of any data, treat the referral as though it was FROM this service so long as it wasn't TO this service
+            CsvCell orgGuid = parser.getOrganisationGuid();
+            if (!orgGuid.equalsValue(recipientOrgGuid)) {
+                sendingOrgGuid = orgGuid;
+            }
+        }
+
+        if (!sendingOrgGuid.isEmpty()) {
+            Reference orgReference = csvHelper.createOrganisationReference(sendingOrgGuid);
+            referralRequestBuilder.setRequester(orgReference, sendingOrgGuid);
+        }
+
+        //although the columns exist in the CSV, the spec. states that they'll always be empty
+        //ReferralReceivedDateTime
+        //ReferralEndDate
+        //ReferralSourceId - links to Coding_ClinicalCode
+        //ReferralReasonCodeId - links to Coding_ClinicalCode
+        //ReferringCareProfessionalStaffGroupCodeId - links to Coding_ClinicalCode
+        //ReferralEpisodeRTTMeasurementTypeId - links to Coding_ClinicalCode
+        //ReferralEpisodeClosureDate
+        //ReferralEpisideDischargeLetterIssuedDate
+        //ReferralClosureReasonCodeId - links to Coding_ClinicalCode
+
+        //unlike other resources, we don't save the Referral immediately, as there's data we
+        //require on the corresponding row in the Observation file. So cache in the helper
+        //and we'll finish the job when we get to that.
+        csvHelper.cacheReferral(observationGuid, patientGuid, referralRequestBuilder);
+
+    }
+
+    /*private static void createResource(ObservationReferral parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper) throws Exception {
 
@@ -129,7 +227,7 @@ public class ObservationReferralTransformer {
         //and we'll finish the job when we get to that.
         csvHelper.cacheReferral(observationGuid, patientGuid, fhirReferral);
 
-    }
+    }*/
 
     private static ReferralType convertTye(String type) throws Exception {
 
@@ -196,5 +294,21 @@ public class ObservationReferralTransformer {
             return null;
         }
     }
+
+    private static ReferralRequestSendMode convertMode(String mode) {
+        ReferralRequestSendMode ret = ReferralRequestSendMode.fromDescription(mode);
+        if (ret != null) {
+            return ret;
+        }
+
+        if (mode.equalsIgnoreCase("Choose and Book")) {
+            //ERS is the new name for Choose and Book
+            return ReferralRequestSendMode.ERS;
+
+        } else {
+            return null;
+        }
+    }
+
 
 }

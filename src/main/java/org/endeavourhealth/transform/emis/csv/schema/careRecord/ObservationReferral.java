@@ -1,15 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.careRecord;
 
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.util.Date;
+import java.util.UUID;
 
 public class ObservationReferral extends AbstractCsvParser {
 
-    public ObservationReferral(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public ObservationReferral(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
 
@@ -39,7 +39,78 @@ public class ObservationReferral extends AbstractCsvParser {
         };
     }
 
-    public String getObservationGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis referrals file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getObservationGuid() {
+        return super.getCell("ObservationGuid");
+    }
+    public CsvCell getPatientGuid() {
+        return super.getCell("PatientGuid");
+    }
+    public CsvCell getOrganisationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getReferalTargetOrganisationGuid() {
+        return super.getCell("ReferralTargetOrganisationGuid");
+    }
+    public CsvCell getReferralUrgency() {
+        return super.getCell("ReferralUrgency");
+    }
+    public CsvCell getReferralMode() {
+        return super.getCell("ReferralMode");
+    }
+    public CsvCell getReferralServiceType() {
+        return super.getCell("ReferralServiceType");
+    }
+    public CsvCell getReferralReceivedDate() {
+        return super.getCell("ReferralReceivedDate");
+    }
+    public CsvCell getReferralReceivedTime() {
+        return super.getCell("ReferralReceivedTime");
+    }
+    public CsvCell getReferralEndDate() {
+        return super.getCell("ReferralEndDate");
+    }
+    public CsvCell getReferralSourceId() {
+        return super.getCell("ReferralSourceId");
+    }
+    public CsvCell getReferralSourceOrganisationGuid() {
+        return super.getCell("ReferralSourceOrganisationGuid");
+    }
+    public CsvCell getReferralUBRN() {
+        return super.getCell("ReferralUBRN");
+    }
+    public CsvCell getReferralReasonCodeId() {
+        return super.getCell("ReferralReasonCodeId");
+    }
+    public CsvCell getReferringCareProfessionalStaffGroupCodeId() {
+        return super.getCell("ReferringCareProfessionalStaffGroupCodeId");
+    }
+    public CsvCell getReferralEpisodeRTTMeasurmentTypeId() {
+        return super.getCell("ReferralEpisodeRTTMeasurementTypeId");
+    }
+    public CsvCell getReferralEpisodeClosureDate() {
+        return super.getCell("ReferralEpisodeClosureDate");
+    }
+    public CsvCell getReferralEpisideDischargeLetterIssuedDate() {
+        return super.getCell("ReferralEpisodeDischargeLetterIssuedDate");
+    }
+    public CsvCell getReferralClosureReasonCodeId() {
+        return super.getCell("ReferralClosureReasonCodeId");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+    
+    /*public String getObservationGuid() {
         return super.getString("ObservationGuid");
     }
     public String getPatientGuid() {
@@ -95,5 +166,5 @@ public class ObservationReferral extends AbstractCsvParser {
     }
     public Integer getProcessingId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 }

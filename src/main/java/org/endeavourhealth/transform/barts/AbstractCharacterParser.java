@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.barts;
 
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +18,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.UUID;
 
 public abstract class AbstractCharacterParser implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCharacterParser.class);
 
+    private final UUID serviceId;
+    private final UUID systemId;
+    private final UUID exchangeId;
     private final String version;
     private final String delimiter;
     private final String filePath;
@@ -28,12 +35,23 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
     private String curentLine;
     private String[] curentLineSplit;
     private BufferedReader br;
-    private long currentLineNumber;
-    private ArrayList<String> fieldList = new ArrayList<String>();
+    private int currentLineNumber;
+    private ArrayList<String> fieldList = new ArrayList<>();
     private int fieldPositionAdjuster = 1; // Assumes first field is defined as starting in position 1
 
-    public AbstractCharacterParser(String version, String filePath, String delimiter, boolean openParser, String dateFormat, String timeFormat) throws Exception {
+    //audit data
+    private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
+    private Integer fileAuditId = null;
+    private boolean haveProcessedFileBefore = false;
+    private long[] cellAuditIds = null;
 
+    public AbstractCharacterParser(UUID serviceId, UUID systemId, UUID exchangeId,
+                                   String version, String filePath, String delimiter,
+                                   boolean openParser, String dateFormat, String timeFormat) throws Exception {
+
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.exchangeId = exchangeId;
         this.version = version;
         this.filePath = filePath;
         this.dateFormat = new SimpleDateFormat(dateFormat);
@@ -52,12 +70,36 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
             this.br = new BufferedReader(reader);
             currentLineNumber = 0;
 
+            //create (or find if re-processing) an audit entry for this file
+            ensureFileAudited();
+
         } catch (Exception e) {
             //if we get any exception thrown during the constructor, make sure to close the reader
             close();
             throw e;
         }
     }
+
+    private void ensureFileAudited() throws Exception {
+        if (this.fileAuditId != null) {
+            return;
+        }
+
+        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, getFileTypeDescription(), fieldList);
+
+        Integer existingId = dal.findFileAudit(serviceId, systemId, exchangeId, fileTypeId, filePath);
+        if (existingId != null) {
+            this.fileAuditId = existingId.intValue();
+
+            //if we've already been through this file at some point, then we need to re-load the audit IDs
+            //for each of the cells in this file, so set this to true
+            this.haveProcessedFileBefore = true;
+
+        } else {
+            this.fileAuditId = dal.auditFile(serviceId, systemId, exchangeId, fileTypeId, filePath);
+        }
+    }
+
 
     public void close() throws IOException {
         if (br != null) {
@@ -78,6 +120,9 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
         if (curentLine != null && curentLine.length() > 0) {
             currentLineNumber++;
             curentLineSplit = curentLine.split(delimiter);
+
+            ensureRowAudited();
+
             return true;
         } else {
             //only log out we "completed" the file if we read any rows from it
@@ -89,6 +134,56 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
             //automatically close the parser once we reach the end, to cut down on memory use
             close();
             return false;
+        }
+    }
+
+    private void ensureRowAudited() throws Exception {
+
+        //ensure our array has enough capaticy
+        if (cellAuditIds == null
+                || currentLineNumber >= cellAuditIds.length) {
+            growCellAuditIdsArray();
+        }
+
+        long rowAuditId = cellAuditIds[currentLineNumber];
+
+        //because it's a 2D array of primatives, check for zero rather than null
+        //if (rowAuditIds != null) {
+        if (rowAuditId > 0) {
+            return;
+        }
+
+        //if we've done this file before, re-load the past audit
+        if (this.haveProcessedFileBefore) {
+            Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, currentLineNumber);
+            if (existingId != null) {
+                rowAuditId = existingId.longValue();
+            }
+        }
+
+        //if we still don't have audits, create new ones
+        //because it's a 2D array of primatives, check for zero rather than null
+        if (rowAuditId == 0) {
+            rowAuditId = dal.auditFileRow(serviceId, curentLineSplit, currentLineNumber, fileAuditId);
+        }
+
+        cellAuditIds[currentLineNumber] = rowAuditId;
+    }
+
+
+    private void growCellAuditIdsArray() {
+
+        //start at 10k in the array and grow by 50% each time
+        if (cellAuditIds == null) {
+            this.cellAuditIds = new long[10000];
+
+        } else {
+
+            int nextRowCount = (int)((double)cellAuditIds.length * 2d);
+
+            long[] tmp = new long[nextRowCount];
+            System.arraycopy(cellAuditIds, 0, tmp, 0, cellAuditIds.length);
+            this.cellAuditIds = tmp;
         }
     }
 
@@ -202,4 +297,28 @@ public abstract class AbstractCharacterParser implements AutoCloseable {
         return filePath;
     }
 
+
+    public CsvCell getCell(String column) throws FileFormatException {
+
+        String value;
+
+        int colIndex = fieldList.indexOf(column);
+        if (colIndex >= 0) {
+            value = curentLineSplit[colIndex];
+
+        } else {
+            throw new FileFormatException(filePath, "Field not defined [" + column + "]");
+        }
+
+        //to save messy handling of non-empty but "empty" strings, trim whitespace of any non-null value
+        if (value != null) {
+            value = value.trim();
+        }
+
+        long rowAuditId = cellAuditIds[currentLineNumber];
+
+        return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
+    }
+
+    protected abstract String getFileTypeDescription();
 }

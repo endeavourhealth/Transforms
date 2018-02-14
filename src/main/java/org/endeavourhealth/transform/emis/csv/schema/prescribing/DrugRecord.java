@@ -1,14 +1,16 @@
 package org.endeavourhealth.transform.emis.csv.schema.prescribing;
 
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.util.Date;
+import java.util.UUID;
 
 public class DrugRecord extends AbstractCsvParser {
-    public DrugRecord(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+
+    public DrugRecord(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -92,7 +94,91 @@ public class DrugRecord extends AbstractCsvParser {
         }
     }
 
-    public String getDrugRecordGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis drug record file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getDrugRecordGuid() {
+        return super.getCell("DrugRecordGuid");
+    }
+    public CsvCell getPatientGuid() {
+        return super.getCell("PatientGuid");
+    }
+    public CsvCell getOrganisationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getEffectiveDate() throws TransformException {
+        return super.getCell("EffectiveDate");
+    }
+    public CsvCell getEffectiveDatePrecision() {
+        return super.getCell("EffectiveDatePrecision");
+    }
+    public CsvCell getEnteredDate() {
+        return super.getCell("EnteredDate");
+    }
+    public CsvCell getEnteredTime() {
+        return super.getCell("EnteredTime");
+    }
+    public CsvCell getClinicianUserInRoleGuid() {
+        return super.getCell("ClinicianUserInRoleGuid");
+    }
+    public CsvCell getEnteredByUserInRoleGuid() {
+        return super.getCell("EnteredByUserInRoleGuid");
+    }
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getDosage() {
+        return super.getCell("Dosage");
+    }
+    public CsvCell getQuantity() {
+        return super.getCell("Quantity");
+    }
+    public CsvCell getQuantityUnit() {
+        return super.getCell("QuantityUnit");
+    }
+    public CsvCell getProblemObservationGuid() {
+        return super.getCell("ProblemObservationGuid");
+    }
+    public CsvCell getPrescriptionType() {
+        return super.getCell("PrescriptionType");
+    }
+    public CsvCell getIsActive() {
+        return super.getCell("IsActive");
+    }
+    public CsvCell getCancellationDate() {
+        return super.getCell("CancellationDate");
+    }
+    public CsvCell getNumberOfIssues() {
+        return super.getCell("NumberOfIssues");
+    }
+    public CsvCell getNumberOfIssuesAuthorised() {
+        return super.getCell("NumberOfIssuesAuthorised");
+    }
+    public CsvCell getDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+    public CsvCell getIsConfidential() {
+        return super.getCell("IsConfidential");
+    }
+
+    /**
+     * special function to handle mis-spelt column name in EMIS test pack
+     */
+    public CsvCell getClinicanUserInRoleGuid() {
+        return super.getCell("ClinicanUserInRoleGuid");
+    }
+
+    /*public String getDrugRecordGuid() {
         return super.getString("DrugRecordGuid");
     }
     public String getPatientGuid() {
@@ -159,10 +245,10 @@ public class DrugRecord extends AbstractCsvParser {
         return super.getBoolean("IsConfidential");
     }
 
-    /**
+    *//**
      * special function to handle mis-spelt column name in EMIS test pack
-     */
+     *//*
     public String getClinicanUserInRoleGuid() {
         return super.getString("ClinicanUserInRoleGuid");
-    }
+    }*/
 }

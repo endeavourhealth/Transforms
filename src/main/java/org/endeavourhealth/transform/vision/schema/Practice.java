@@ -1,12 +1,14 @@
 package org.endeavourhealth.transform.vision.schema;
 
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
+
+import java.util.UUID;
 
 public class Practice extends AbstractCsvParser {
 
-    public Practice(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Practice(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "ID",
                 "NAME",
                 "IDENTIFIER",
@@ -43,6 +45,16 @@ public class Practice extends AbstractCsvParser {
                 "EMAIL",
                 "FAX"
         };
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Vision organisations file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 
     public String getOrganisationID() {
