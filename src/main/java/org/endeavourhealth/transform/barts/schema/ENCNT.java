@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class ENCNT extends AbstractCharacterParser {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNT.class);
@@ -15,8 +16,8 @@ public class ENCNT extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public ENCNT(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public ENCNT(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumEncounterIdentifier");
         addFieldList("ExtractDateTime");
@@ -125,4 +126,8 @@ public class ENCNT extends AbstractCharacterParser {
     public String getCurrentLocationIdentifier() throws FileFormatException {
         return super.getString("CurrentLocationIdentifier");}
 
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner encounter file";
+    }
 }
