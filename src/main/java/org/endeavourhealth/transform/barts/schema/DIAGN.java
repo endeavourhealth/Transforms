@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class DIAGN extends AbstractCharacterParser {
     private static final Logger LOG = LoggerFactory.getLogger(DIAGN.class);
@@ -15,8 +16,8 @@ public class DIAGN extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public DIAGN(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public DIAGN(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumDiagnosisId");
         addFieldList("ActiveIndicator");
@@ -116,5 +117,10 @@ public class DIAGN extends AbstractCharacterParser {
 
     public String getProcedureCodeSequenceEntryOrder() throws FileFormatException {
         return super.getString("DiagnosisCodeSequenceEntryOrder");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner diagnosis file";
     }
 }

@@ -53,6 +53,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             }
         }
 
+        //note that the "recorder" field is actually used to store the named clinician,
+        //and the standard "recorded by" extension is used to store who physically entered it into the source software
         if (fhir.hasRecorder()) {
             Reference practitionerReference = fhir.getRecorder();
             practitionerId = transformOnDemandAndMapId(practitionerReference, params);

@@ -7,10 +7,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 import org.endeavourhealth.transform.vision.schema.*;
 import org.endeavourhealth.transform.vision.transforms.*;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public abstract class VisionCsvToFhirTransformer {
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(files, version, true, allParsers);
+            validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, true, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor, previousErrors);
@@ -75,19 +75,19 @@ public abstract class VisionCsvToFhirTransformer {
         }
     }
 
-    private static void validateAndOpenParsers(String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
-        findFileAndOpenParser(Practice.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Practice.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
         //admin - staff
-        findFileAndOpenParser(Staff.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Staff.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
         //patient - demographics
-        findFileAndOpenParser(Patient.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Patient.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
         //clinical - encounters
-        findFileAndOpenParser(Encounter.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Encounter.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
         //clinical - referrals
-        findFileAndOpenParser(Referral.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Referral.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
         //clinical - journal (observations, medication, problems etc.)
-        findFileAndOpenParser(Journal.class, files, version, openParser, parsers);
+        findFileAndOpenParser(Journal.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
         //Set<File> sh = new HashSet<>(parsers);
@@ -114,7 +114,7 @@ public abstract class VisionCsvToFhirTransformer {
         return name.contains("active_user_data") || name.contains("patient_check_sum_data");
     }
 
-    public static void findFileAndOpenParser(Class parserCls, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
+    public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();
 
@@ -139,8 +139,8 @@ public abstract class VisionCsvToFhirTransformer {
             }
 
             //now construct an instance of the parser for the file we've found
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(String.class, String.class, Boolean.TYPE);
-            AbstractCsvParser parser = constructor.newInstance(version, filePath, openParser);
+            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class, Boolean.TYPE);
+            AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath, openParser);
 
             ret.put(parserCls, parser);
             return;

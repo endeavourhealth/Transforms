@@ -1,15 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.careRecord;
 
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.util.Date;
+import java.util.UUID;
 
 public class Diary extends AbstractCsvParser {
 
-    public Diary(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public Diary(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -65,7 +65,87 @@ public class Diary extends AbstractCsvParser {
 
     }
 
-    public String getDiaryGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis diary file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getDiaryGuid() {
+        return super.getCell("DiaryGuid");
+    }
+    public CsvCell getPatientGuid() {
+        return super.getCell("PatientGuid");
+    }
+    public CsvCell getOrganisationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getEffectiveDate() {
+        return super.getCell("EffectiveDate");
+    }
+    public CsvCell getEffectiveDatePrecision() {
+        return super.getCell("EffectiveDatePrecision");
+    }
+    public CsvCell getEnteredDate() {
+        return super.getCell("EnteredDate");
+    }
+    public CsvCell getEnteredTime() {
+        return super.getCell("EnteredTime");
+    }
+    public CsvCell getClinicianUserInRoleGuid() {
+        return super.getCell("ClinicianUserInRoleGuid");
+    }
+    public CsvCell getEnteredByUserInRoleGuid() {
+        return super.getCell("EnteredByUserInRoleGuid");
+    }
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getOriginalTerm() {
+        return super.getCell("OriginalTerm");
+    }
+    public CsvCell getAssociatedText() {
+        return super.getCell("AssociatedText");
+    }
+    public CsvCell getDurationTerm() {
+        return super.getCell("DurationTerm");
+    }
+    public CsvCell getLocationTypeDescription() {
+        return super.getCell("LocationTypeDescription");
+    }
+    public CsvCell getConsultationGuid() {
+        return super.getCell("ConsultationGuid");
+    }
+    public CsvCell getIsConfidential() {
+        return super.getCell("IsConfidential");
+    }
+    public CsvCell getIsActive() {
+        return super.getCell("IsActive");
+    }
+    public CsvCell getIsComplete() {
+        return super.getCell("IsComplete");
+    }
+    public CsvCell getDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+
+    /**
+     * special function for mis-spelt column name in EMIS test pack
+     */
+    public CsvCell getClinicanUserInRoleGuid() {
+        return super.getCell("ClinicanUserInRoleGuid");
+    }
+
+
+
+    /*public String getDiaryGuid() {
         return super.getString("DiaryGuid");
     }
     public String getPatientGuid() {
@@ -123,11 +203,11 @@ public class Diary extends AbstractCsvParser {
         return super.getInt("ProcessingId");
     }
 
-    /**
+    *//**
      * special function for mis-spelt column name in EMIS test pack
-     */
+     *//*
     public String getClinicanUserInRoleGuid() {
         return super.getString("ClinicanUserInRoleGuid");
-    }
+    }*/
 
 }

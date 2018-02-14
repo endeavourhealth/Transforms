@@ -7,11 +7,13 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +24,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPPHO parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -50,7 +52,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
     public static void createPatientPhone(PPPHO parser,
                                           FhirResourceFiler fhirResourceFiler,
-                                          EmisCsvHelper csvHelper,
+                                          BartsCsvHelper csvHelper,
                                           String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 

@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.emis.csv;
+package org.endeavourhealth.transform.emis.csv.helpers;
 
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -7,8 +7,9 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,12 +43,16 @@ public class EmisAdminCacheFiler {
      * table so that when new organisations are added to the extract, we can populate the db with
      * all those resources for the new org
      */
-    public void saveAdminResourceToCache(CsvCurrentState parserState, Resource fhirResource) throws Exception {
+    public void saveAdminResourceToCache(CsvCurrentState parserState, ResourceBuilderBase resourceBuilder) throws Exception {
+
+        Resource fhirResource = resourceBuilder.getResource();
+
         EmisAdminResourceCache cache = new EmisAdminResourceCache();
         cache.setDataSharingAgreementGuid(dataSharingAgreementGuid);
         cache.setResourceType(fhirResource.getResourceType().toString());
         cache.setEmisGuid(fhirResource.getId());
         cache.setResourceData(parser.composeString(fhirResource));
+        cache.setAudit(resourceBuilder.getAuditWrapper());
 
         SaveAdminTask task = new SaveAdminTask(cache, false, parserState);
         List<ThreadPoolError> errors = threadPool.submit(task);

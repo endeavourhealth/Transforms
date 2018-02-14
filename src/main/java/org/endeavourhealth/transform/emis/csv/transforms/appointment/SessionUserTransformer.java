@@ -1,9 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.appointment.SessionUser;
 
 import java.util.Map;
@@ -33,11 +34,12 @@ public class SessionUserTransformer {
                                                  FhirResourceFiler fhirResourceFiler,
                                                  EmisCsvHelper csvHelper) throws Exception {
 
-        boolean deleted = parser.getdDeleted();
-        String sessionGuid = parser.getSessionGuid();
-        String userGuid = parser.getUserInRoleGuid();
+        CsvCell deleted = parser.getdDeleted();
+        CsvCell sessionGuid = parser.getSessionGuid();
+        CsvCell userGuid = parser.getUserInRoleGuid();
+        boolean isDeleted = deleted.getBoolean();
 
-        csvHelper.cacheSessionPractitionerMap(sessionGuid, userGuid, deleted);
+        csvHelper.cacheSessionPractitionerMap(sessionGuid, userGuid, isDeleted);
     }
 }
 

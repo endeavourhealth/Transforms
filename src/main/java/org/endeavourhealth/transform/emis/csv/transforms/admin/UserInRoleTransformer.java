@@ -1,15 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisAdminCacheFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.UserInRole;
-import org.hl7.fhir.instance.model.Meta;
-import org.hl7.fhir.instance.model.Period;
-import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Date;
 import java.util.Map;
@@ -37,6 +37,62 @@ public class UserInRoleTransformer {
     }
 
     private static void createResource(UserInRole parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       EmisCsvHelper csvHelper,
+                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
+
+        PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
+
+        CsvCell userInRoleGuid = parser.getUserInRoleGuid();
+        practitionerBuilder.setId(userInRoleGuid.getString(), userInRoleGuid);
+
+        CsvCell title = parser.getTitle();
+        CsvCell givenName = parser.getGivenName();
+        CsvCell surname = parser.getSurname();
+
+        NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
+        nameBuilder.beginName(HumanName.NameUse.OFFICIAL);
+        nameBuilder.addPrefix(title.getString(), title);
+        nameBuilder.addGiven(givenName.getString(), givenName);
+        nameBuilder.addFamily(surname.getString(), surname);
+
+        //need to call this to generate the role in the practitioner, as all the following fields are set on that
+        practitionerBuilder.addRole();
+
+        CsvCell startDate = parser.getContractStartDate();
+        if (!startDate.isEmpty()) {
+            Date date = startDate.getDate();
+            practitionerBuilder.setRoleStartDate(date, startDate);
+        }
+
+        CsvCell endDate = parser.getContractEndDate();
+        if (!endDate.isEmpty()) {
+            Date date = endDate.getDate();
+            practitionerBuilder.setRoleEndDate(date, endDate);
+        }
+
+        CsvCell orgUuid = parser.getOrganisationGuid();
+        Reference organisationReference = csvHelper.createOrganisationReference(orgUuid);
+        practitionerBuilder.setRoleManagingOrganisation(organisationReference, orgUuid);
+
+        CsvCell roleName = parser.getJobCategoryName();
+        if (!roleName.isEmpty()) {
+            practitionerBuilder.setRoleName(roleName.getString(), roleName);
+        }
+
+        CsvCell roleCode = parser.getJobCategoryCode();
+        if (!roleCode.isEmpty()) {
+            practitionerBuilder.setRoleCode(roleCode.getString(), roleCode);
+        }
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
+
+        //this resource exists in our admin resource cache, so we can populate the
+        //main database when new practices come on, so we need to update that too
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), practitionerBuilder);
+    }
+
+    /*private static void createResource(UserInRole parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        EmisCsvHelper csvHelper,
                                        EmisAdminCacheFiler adminCacheFiler) throws Exception {
@@ -88,5 +144,5 @@ public class UserInRoleTransformer {
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
         adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirPractitioner);
-    }
+    }*/
 }

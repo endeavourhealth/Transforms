@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class PPADD extends AbstractCharacterParser {
 
@@ -16,8 +17,8 @@ public class PPADD extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public PPADD(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public PPADD(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumAddressId");
         addFieldList("ExtractDateTime");
@@ -124,5 +125,10 @@ public class PPADD extends AbstractCharacterParser {
 
     public String getResidencePCTCodeValue() throws FileFormatException {
         return super.getString("ResidencePCTCodeValue");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner address file";
     }
 }

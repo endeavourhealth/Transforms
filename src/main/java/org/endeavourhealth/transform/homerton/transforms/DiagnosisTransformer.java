@@ -1,25 +1,14 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
-import org.endeavourhealth.transform.homerton.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.hl7.fhir.instance.model.CodeableConcept;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.homerton.schema.Diagnosis;
 import org.hl7.fhir.instance.model.Condition;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Date;
 
 public class DiagnosisTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);

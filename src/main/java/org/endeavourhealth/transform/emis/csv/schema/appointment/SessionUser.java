@@ -1,12 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.appointment;
 
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+
+import java.util.UUID;
 
 public class SessionUser extends AbstractCsvParser {
 
-    public SessionUser(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public SessionUser(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -19,7 +22,30 @@ public class SessionUser extends AbstractCsvParser {
         };
     }
 
-    public String getSessionGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis session-user link file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getSessionGuid() {
+        return super.getCell("SessionGuid");
+    }
+    public CsvCell getUserInRoleGuid() {
+        return super.getCell("UserInRoleGuid");
+    }
+    public CsvCell getdDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+
+    /*public String getSessionGuid() {
         return super.getString("SessionGuid");
     }
     public String getUserInRoleGuid() {
@@ -30,5 +56,5 @@ public class SessionUser extends AbstractCsvParser {
     }
     public int getProcessingId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 }

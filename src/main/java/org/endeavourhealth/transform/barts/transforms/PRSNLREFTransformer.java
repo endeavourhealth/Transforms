@@ -7,10 +7,10 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PRSNLREF;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PRSNLREF parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         // Skip header line
         parser.nextRecord();
@@ -41,7 +41,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
 
     private static void createPractitioner(PRSNLREF parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                       BartsCsvHelper csvHelper) throws Exception {
 
         if (cernerCodeValueRefDalI == null) {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();

@@ -1,22 +1,22 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.EmisDateTimeHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.emis.csv.helpers.BpComponent;
+import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.ResourceType;
 
-import java.util.Date;
 import java.util.Map;
 
 public class ObservationPreTransformer {
@@ -42,57 +42,55 @@ public class ObservationPreTransformer {
 
     private static void processLine(Observation parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
-        if (parser.getDeleted()) {
+        CsvCell deleted = parser.getDeleted();
+        if (deleted.getBoolean()) {
             return;
         }
 
         //the test pack has non-deleted rows with missing CodeIds, so skip these rows
         if ((version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
                 || version.equals(EmisCsvToFhirTransformer.VERSION_5_1))
-            && parser.getCodeId() == null) {
+            && parser.getCodeId().isEmpty()) {
             return;
         }
 
-        String parentGuid = parser.getParentObservationGuid();
-        if (!Strings.isNullOrEmpty(parentGuid)) {
+        ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
 
-            String observationGuid = parser.getObservationGuid();
-            String patientGuid = parser.getPatientGuid();
+        CsvCell parentGuid = parser.getParentObservationGuid();
+        if (!parentGuid.isEmpty()) {
+
+            CsvCell observationGuid = parser.getObservationGuid();
+            CsvCell patientGuid = parser.getPatientGuid();
 
             //if the observation links to a parent observation, store this relationship in the
             //helper class, so when processing later, we can set the Has Member reference in the FHIR observation
-            csvHelper.cacheObservationParentRelationship(parentGuid, patientGuid, observationGuid);
+            csvHelper.cacheObservationParentRelationship(parentGuid, patientGuid, observationGuid, resourceType);
 
             //if the observation is a BP reading, then cache in the helper
-            String unit = parser.getNumericUnit();
-            if (!Strings.isNullOrEmpty(unit)) {
-                unit = unit.trim();
+            CsvCell unit = parser.getNumericUnit();
+            CsvCell value = parser.getValue();
+            if (!unit.isEmpty()
+                    && !value.isEmpty()) {
 
                 //BP readings uniquely use mmHg for the units, so detect them using that
-                if (unit.equalsIgnoreCase("mmHg")
-                        || unit.equalsIgnoreCase("mm Hg")) {
+                String unitStr = unit.getString();
+                if (unitStr.equalsIgnoreCase("mmHg")
+                        || unitStr.equalsIgnoreCase("mm Hg")) {
 
-                    Long codeId = parser.getCodeId();
-                    Double value = parser.getValue();
-                    Quantity quantity = QuantityHelper.createQuantity(value, unit);
-                    CodeableConcept codeableConcept = csvHelper.findClinicalCode(codeId);
+                    CsvCell codeId = parser.getCodeId();
 
-                    org.hl7.fhir.instance.model.Observation.ObservationComponentComponent component = new org.hl7.fhir.instance.model.Observation.ObservationComponentComponent();
-                    component.setCode(codeableConcept);
-                    component.setValue(quantity);
-
-                    csvHelper.cacheBpComponent(parentGuid, patientGuid, component);
+                    BpComponent bpComponent = new BpComponent(codeId, value, unit);
+                    csvHelper.cacheBpComponent(parentGuid, patientGuid, bpComponent);
                 }
             }
         }
 
-        String problemGuid = parser.getProblemGuid();
-        if (!Strings.isNullOrEmpty(problemGuid)) {
+        //if this record is linked to a problem, store this relationship in the helper
+        CsvCell problemGuid = parser.getProblemGuid();
+        if (!problemGuid.isEmpty()) {
 
-            //if this record is linked to a problem, store this relationship in the helper
-            String observationGuid = parser.getObservationGuid();
-            String patientGuid = parser.getPatientGuid();
-            ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
+            CsvCell observationGuid = parser.getObservationGuid();
+            CsvCell patientGuid = parser.getPatientGuid();
 
             csvHelper.cacheProblemRelationship(problemGuid,
                     patientGuid,
@@ -100,62 +98,61 @@ public class ObservationPreTransformer {
                     resourceType);
         }
 
-        String consultationGuid = parser.getConsultationGuid();
-        if (!Strings.isNullOrEmpty(consultationGuid)) {
-            String observationGuid = parser.getObservationGuid();
-            String patientGuid = parser.getPatientGuid();
-            ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
+        CsvCell consultationGuid = parser.getConsultationGuid();
+        if (!consultationGuid.isEmpty()) {
+            CsvCell observationGuid = parser.getObservationGuid();
+            CsvCell patientGuid = parser.getPatientGuid();
 
-            csvHelper.cacheConsultationRelationship(consultationGuid,
+            csvHelper.cacheNewConsultationChildRelationship(consultationGuid,
                     patientGuid,
                     observationGuid,
                     resourceType);
         }
 
-        Long codeId = parser.getCodeId();
+        CsvCell codeId = parser.getCodeId();
         ClinicalCodeType codeType = csvHelper.findClinicalCodeType(codeId);
         if (codeType == ClinicalCodeType.Ethnicity) {
 
-            Date effectiveDate = parser.getEffectiveDate();
-            String effectiveDatePrecision = parser.getEffectiveDatePrecision();
+            CsvCell effectiveDate = parser.getEffectiveDate();
+            CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            CodeableConcept codeableConcept = csvHelper.findClinicalCode(codeId);
-            EthnicCategory ethnicCategory = findEthnicityCode(codeableConcept);
+            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            EthnicCategory ethnicCategory = findEthnicityCode(codeMapping);
             if (ethnicCategory != null) {
-
-                String patientGuid = parser.getPatientGuid();
-                csvHelper.cacheEthnicity(patientGuid, fhirDate, ethnicCategory);
+                CsvCell patientGuid = parser.getPatientGuid();
+                CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
+                csvHelper.cacheEthnicity(patientGuid, codeAndDate);
             }
 
         } else if (codeType == ClinicalCodeType.Marital_Status) {
 
-            Date effectiveDate = parser.getEffectiveDate();
-            String effectiveDatePrecision = parser.getEffectiveDatePrecision();
+            CsvCell effectiveDate = parser.getEffectiveDate();
+            CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            CodeableConcept codeableConcept = csvHelper.findClinicalCode(codeId);
-            MaritalStatus maritalStatus = findMaritalStatus(codeableConcept);
+            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            MaritalStatus maritalStatus = findMaritalStatus(codeMapping);
             if (maritalStatus != null) {
-
-                String patientGuid = parser.getPatientGuid();
-                csvHelper.cacheMaritalStatus(patientGuid, fhirDate, maritalStatus);
+                CsvCell patientGuid = parser.getPatientGuid();
+                CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
+                csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
             }
         }
 
         //if we've previously found that our observation is a problem (via the problem pre-transformer)
-        //then we need to cache the code ID of our observation
-        String patientGuid = parser.getPatientGuid();
-        String observationGuid = parser.getObservationGuid();
+        //then cache the read code of the observation
+        CsvCell patientGuid = parser.getPatientGuid();
+        CsvCell observationGuid = parser.getObservationGuid();
         if (csvHelper.isProblemObservationGuid(patientGuid, observationGuid)) {
-            CodeableConcept codeableConcept = csvHelper.findClinicalCode(codeId);
-            String readCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
+            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            String readCode = codeMapping.getReadCode();
             csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, readCode);
         }
     }
 
-    private static MaritalStatus findMaritalStatus(CodeableConcept codeableConcept) {
-        String code = findRead2Code(codeableConcept);
+    private static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) {
+        String code = findRead2Code(codeMapping);
         if (code == null) {
             return null;
         }
@@ -193,8 +190,8 @@ public class ObservationPreTransformer {
         return null;
     }
 
-    private static EthnicCategory findEthnicityCode(CodeableConcept codeableConcept) {
-        String code = findRead2Code(codeableConcept);
+    private static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
+        String code = findRead2Code(codeMapping);
         if (code == null) {
             return null;
         }
@@ -238,17 +235,8 @@ public class ObservationPreTransformer {
         }
     }
 
-    private static String findRead2Code(CodeableConcept codeableConcept) {
-        for (Coding coding: codeableConcept.getCoding()) {
-
-            //would prefer to check for procedures using Snomed, but this Read2 is simple and works
-            if (coding.getSystem().equals(FhirUri.CODE_SYSTEM_READ2)
-                    || coding.getSystem().equals(FhirUri.CODE_SYSTEM_EMIS_CODE)) {
-                return coding.getCode();
-            }
-        }
-
-        return null;
+    private static String findRead2Code(EmisCsvCodeMap codeMapping) {
+        return codeMapping.getReadCode();
     }
 }
 

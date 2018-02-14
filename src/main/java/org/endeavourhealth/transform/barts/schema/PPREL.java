@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class PPREL extends AbstractCharacterParser {
 
@@ -16,8 +17,8 @@ public class PPREL extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public PPREL(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public PPREL(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumPersonRelationId");
         addFieldList("ExtractDateTime");
@@ -149,5 +150,10 @@ public class PPREL extends AbstractCharacterParser {
 
     public Date getEndEffectiveDateTime() throws TransformException {
         return super.getDateTime("EndEffectiveDateTime");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner person relationship file";
     }
 }

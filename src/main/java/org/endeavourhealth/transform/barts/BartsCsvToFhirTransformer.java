@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,7 @@ public abstract class BartsCsvToFhirTransformer {
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Barts CSV content in {}", orgDirectory);
-        transformParsers(files, version, processor, previousErrors);
+        transformParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -101,11 +100,11 @@ public abstract class BartsCsvToFhirTransformer {
 
 
 
-    private static void transformParsers(String[] files, String version,
+    private static void transformParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors) throws Exception {
 
-        EmisCsvHelper csvHelper = new EmisCsvHelper("", false, false);
+        BartsCsvHelper csvHelper = new BartsCsvHelper();
 
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);
@@ -115,7 +114,7 @@ public abstract class BartsCsvToFhirTransformer {
             // 2.2 files
             if (fileType.compareTo("PRSNLREF") == 0) {
                 //call into 2.2 personnel transform
-                PRSNLREF parser = new PRSNLREF(version, filePath, true);
+                PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath, true);
                 PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
                 parser.close();
 
@@ -129,13 +128,13 @@ public abstract class BartsCsvToFhirTransformer {
 
             } else if (fileType.compareTo("DIAGN") == 0) {
                 //call into 2.2 diagnosis transform
-                DIAGN parser = new DIAGN(version, filePath, true);
+                DIAGN parser = new DIAGN(serviceId, systemId, exchangeId, version, filePath, true);
                 DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
 
             } else if (fileType.compareTo("PROCE") == 0) {
                 //call into 2.2 procedure transform
-                PROCE parser = new PROCE(version, filePath, true);
+                PROCE parser = new PROCE(serviceId, systemId, exchangeId, version, filePath, true);
                 PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("CLEVE") == 0) {
@@ -144,15 +143,15 @@ public abstract class BartsCsvToFhirTransformer {
 
             // 2.1 files
             else if (fileType.compareTo("BULKPROBLEMS") == 0) {
-                BulkProblem parser = new BulkProblem(version, filePath, true);
+                BulkProblem parser = new BulkProblem(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("BULKDIAGNOSES") == 0) {
-                BulkDiagnosis parser = new BulkDiagnosis(version, filePath, true);
+                BulkDiagnosis parser = new BulkDiagnosis(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkDiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("BULKPROCEDURES") == 0) {
-                BulkProcedure parser = new BulkProcedure(version, filePath, true);
+                BulkProcedure parser = new BulkProcedure(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("SUSOPA") == 0) {

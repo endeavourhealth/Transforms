@@ -3,12 +3,13 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
+import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -54,8 +55,8 @@ public class ConsultationPreTransformer {
                                       EmisCsvHelper csvHelper,
                                       ThreadPool threadPool) throws Exception {
 
-        String consultationGuid = parser.getConsultationGuid();
-        String patientGuid = parser.getPatientGuid();
+        CsvCell consultationGuid = parser.getConsultationGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
 
         String encounterSourceId = EmisCsvHelper.createUniqueId(patientGuid, consultationGuid);
 
@@ -101,10 +102,22 @@ public class ConsultationPreTransformer {
         public Object call() throws Exception {
             try {
                 //carry over linked items from any previous instance of this problem
-                List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(fhirResourceFiler, encounterSourceId, ResourceType.Encounter);
-                if (previousReferences != null && !previousReferences.isEmpty()) {
-                    csvHelper.cacheConsultationPreviousLinkedResources(encounterSourceId, previousReferences);
+                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter, fhirResourceFiler);
+                if (previousVersion == null) {
+                    //if this is the first time, then we'll have a null resource
+                    return null;
                 }
+
+                EncounterBuilder encounterBuilder = new EncounterBuilder(previousVersion);
+                ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+
+                //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
+                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(fhirResourceFiler.getServiceId(), previousReferencesDiscoveryIds);
+
+                csvHelper.cacheConsultationPreviousLinkedResources(encounterSourceId, previousReferencesLocalIds);
+
             } catch (Throwable t) {
                 LOG.error("", t);
                 throw t;

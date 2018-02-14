@@ -1,12 +1,13 @@
 package org.endeavourhealth.transform.barts.schema;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.AbstractCharacterParser;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class BulkDiagnosis extends AbstractCharacterParser {
     private static final Logger LOG = LoggerFactory.getLogger(BulkDiagnosis.class);
@@ -15,8 +16,8 @@ public class BulkDiagnosis extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public BulkDiagnosis(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public BulkDiagnosis(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("DiagnosisId");
         addFieldList("Update_DT_TM");
@@ -102,6 +103,11 @@ public class BulkDiagnosis extends AbstractCharacterParser {
     }
     public String getSecondaryDescription() throws FileFormatException {
         return super.getString("SecondaryDescription").trim();
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner 2.1 diagnosis file";
     }
 
 }

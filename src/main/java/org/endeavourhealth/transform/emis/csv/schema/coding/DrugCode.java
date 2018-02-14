@@ -1,12 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.coding;
 
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+
+import java.util.UUID;
 
 public class DrugCode extends AbstractCsvParser {
 
-    public DrugCode(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public DrugCode(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -19,7 +22,30 @@ public class DrugCode extends AbstractCsvParser {
         };
     }
 
-    public Long getCodeId() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis drug code reference file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getTerm() {
+        return super.getCell("Term");
+    }
+    public CsvCell getDmdProductCodeId() {
+        return super.getCell("DmdProductCodeId");
+    }
+    public CsvCell getProcessigId() {
+        return super.getCell("ProcessingId");
+    }
+
+    /*public Long getCodeId() {
         return super.getLong("CodeId");
     }
     public String getTerm() {
@@ -30,5 +56,5 @@ public class DrugCode extends AbstractCsvParser {
     }
     public Integer getProcessigId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 }

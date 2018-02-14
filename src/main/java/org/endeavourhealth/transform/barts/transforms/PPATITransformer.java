@@ -12,7 +12,6 @@ import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCod
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -26,7 +25,6 @@ public class PPATITransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPATI parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -37,7 +35,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             try {
                 String valStr = validateEntry(parser);
                 if (valStr == null) {
-                    createPatient(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatient(parser, fhirResourceFiler, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                 } else {
                     LOG.debug("Validation error:" + valStr);
                     SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
@@ -55,7 +53,6 @@ public class PPATITransformer extends BartsBasisTransformer {
 
     public static void createPatient(PPATI parser,
                                      FhirResourceFiler fhirResourceFiler,
-                                     EmisCsvHelper csvHelper,
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 

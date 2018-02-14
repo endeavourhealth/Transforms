@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class PPNAM extends AbstractCharacterParser {
 
@@ -16,8 +17,8 @@ public class PPNAM extends AbstractCharacterParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public PPNAM(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public PPNAM(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
 
         addFieldList("MillenniumPersonNameId");
         addFieldList("ExtractDateTime");
@@ -99,5 +100,10 @@ public class PPNAM extends AbstractCharacterParser {
 
     public String getNameTypeSequence() throws FileFormatException {
         return super.getString("NameTypeSequence");
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner person name file";
     }
 }

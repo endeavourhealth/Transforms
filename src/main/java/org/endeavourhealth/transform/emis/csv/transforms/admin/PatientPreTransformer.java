@@ -3,12 +3,9 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -55,7 +52,8 @@ public class PatientPreTransformer {
                                     String version,
                                     ThreadPool threadPool) throws Exception {
 
-        String patientGuid = parser.getPatientGuid();
+        CsvCell patientGuidCell = parser.getPatientGuid();
+        String patientGuid = patientGuidCell.getString();
         CsvCurrentState parserState = parser.getCurrentState();
 
         PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(patientGuid, fhirResourceFiler, parserState);

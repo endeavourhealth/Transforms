@@ -10,10 +10,10 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPREL parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -53,7 +53,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
     public static void createPatientRelationship(PPREL parser,
                                                  FhirResourceFiler fhirResourceFiler,
-                                                 EmisCsvHelper csvHelper,
+                                                 BartsCsvHelper csvHelper,
                                                  String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 

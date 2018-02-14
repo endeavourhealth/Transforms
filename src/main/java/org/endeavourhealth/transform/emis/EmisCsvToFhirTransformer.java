@@ -9,11 +9,11 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
@@ -72,7 +72,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            createParsers(files, version, parsers);
+            createParsers(serviceId, systemId, exchangeId, files, version, parsers);
 
             LOG.trace("Transforming EMIS CSV content in " + orgDirectory);
             transformParsers(version, parsers, processor, previousErrors, processPatientData);
@@ -296,7 +296,7 @@ public abstract class EmisCsvToFhirTransformer {
         for (String filePath: files) {
 
             //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
-            AbstractCsvParser parser = createParserForFile(null, filePath);
+            AbstractCsvParser parser = createParserForFile(null, null, null, null, filePath);
 
             //calling this will return the possible versions that apply to this parser
             possibleVersions = parser.testForValidVersions(possibleVersions);
@@ -369,17 +369,17 @@ public abstract class EmisCsvToFhirTransformer {
     }*/
 
 
-    private static void createParsers(String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    private static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath: files) {
 
-            AbstractCsvParser parser = createParserForFile(version, filePath);
+            AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
             Class cls = parser.getClass();
             parsers.put(cls, parser);
         }
     }
 
-    private static AbstractCsvParser createParserForFile(String version, String filePath) throws Exception {
+    private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         String fName = FilenameUtils.getName(filePath);
         String[] toks = fName.split("_");
 
@@ -395,8 +395,8 @@ public abstract class EmisCsvToFhirTransformer {
         Class cls = Class.forName(clsName);
 
         //now construct an instance of the parser for the file we've found
-        Constructor<AbstractCsvParser> constructor = cls.getConstructor(String.class, String.class, Boolean.TYPE);
-        return constructor.newInstance(version, filePath, false);
+        Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class, Boolean.TYPE);
+        return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath, false);
     }
 
 
@@ -512,13 +512,11 @@ public abstract class EmisCsvToFhirTransformer {
                 csvHelper.processRemainingObservationParentChildLinks(fhirResourceFiler);
 
                 //process any new items linked to past consultations
-                csvHelper.processRemainingConsultationRelationships(fhirResourceFiler);
-
-                //if we have any new Obs etc. that refer to pre-existing problems, we need to update the existing FHIR Problem
-                csvHelper.processRemainingProblemRelationships(fhirResourceFiler);
+                csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
                 //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-                csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
+                //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
+                //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
 
                 //process any changes to ethnicity or marital status, without a change to the Patient
                 csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
@@ -528,6 +526,9 @@ public abstract class EmisCsvToFhirTransformer {
 
                 //process any changes to Problems that didn't have an associated Observation change too
                 csvHelper.processRemainingProblems(fhirResourceFiler);
+
+                //if we have any new Obs etc. that refer to pre-existing problems, we need to update the existing FHIR Problem
+                csvHelper.processRemainingProblemRelationships(fhirResourceFiler);
 
                 //update any MedicationStatements to set the last issue date on them
                 csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);

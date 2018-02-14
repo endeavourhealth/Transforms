@@ -1,15 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.schema.prescribing;
 
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.schema.AbstractCsvParser;
 
-import java.util.Date;
+import java.util.UUID;
 
 public class IssueRecord extends AbstractCsvParser {
 
-    public IssueRecord(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+    public IssueRecord(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, openParser, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -87,7 +87,85 @@ public class IssueRecord extends AbstractCsvParser {
         }
     }
 
-    public String getIssueRecordGuid() {
+    @Override
+    protected String getFileTypeDescription() {
+        return "Emis issue records file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    public CsvCell getIssueRecordGuid() {
+        return super.getCell("IssueRecordGuid");
+    }
+    public CsvCell getPatientGuid() {
+        return super.getCell("PatientGuid");
+    }
+    public CsvCell getOrganisationGuid() {
+        return super.getCell("OrganisationGuid");
+    }
+    public CsvCell getEffectiveDate() {
+        return super.getCell("EffectiveDate");
+    }
+    public CsvCell getEffectiveDatePrecision() {
+        return super.getCell("EffectiveDatePrecision");
+    }
+    public CsvCell getEnteredDate() {
+        return super.getCell("EnteredDate");
+    }
+    public CsvCell getEnteredTime() {
+        return super.getCell("EnteredTime");
+    }
+    public CsvCell getClinicianUserInRoleGuid() {
+        return super.getCell("ClinicianUserInRoleGuid");
+    }
+    public CsvCell getEnteredByUserInRoleGuid() {
+        return super.getCell("EnteredByUserInRoleGuid");
+    }
+    public CsvCell getCodeId() {
+        return super.getCell("CodeId");
+    }
+    public CsvCell getQuantity() {
+        return super.getCell("Quantity");
+    }
+    public CsvCell getCourseDurationInDays() {
+        return super.getCell("CourseDurationInDays");
+    }
+    public CsvCell getEstimatedNhsCost() {
+        return super.getCell("EstimatedNhsCost");
+    }
+    public CsvCell getProblemObservationGuid() {
+        return super.getCell("ProblemObservationGuid");
+    }
+    public CsvCell getDosage() {
+        return super.getCell("Dosage");
+    }
+    public CsvCell getQuantityUnit() {
+        return super.getCell("QuantityUnit");
+    }
+    public CsvCell getDrugRecordGuid() {
+        return super.getCell("DrugRecordGuid");
+    }
+    public CsvCell getDeleted() {
+        return super.getCell("Deleted");
+    }
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+    public CsvCell getIsConfidential() {
+        return super.getCell("IsConfidential");
+    }
+
+    /**
+     * special function for handling mis-spelt column in EMIS test pack
+     */
+    public CsvCell getClinicanUserInRoleGuid() {
+        return super.getCell("ClinicanUserInRoleGuid");
+    }
+
+    /*public String getIssueRecordGuid() {
         return super.getString("IssueRecordGuid");
     }
     public String getPatientGuid() {
@@ -148,10 +226,10 @@ public class IssueRecord extends AbstractCsvParser {
         return super.getBoolean("IsConfidential");
     }
 
-    /**
+    *//**
      * special function for handling mis-spelt column in EMIS test pack
-     */
+     *//*
     public String getClinicanUserInRoleGuid() {
         return super.getString("ClinicanUserInRoleGuid");
-    }
+    }*/
 }

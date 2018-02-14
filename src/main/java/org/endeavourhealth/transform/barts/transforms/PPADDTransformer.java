@@ -4,10 +4,10 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ public class PPADDTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPADD parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -49,7 +49,7 @@ public class PPADDTransformer extends BartsBasisTransformer {
 
     public static void createPatientAddress(PPADD parser,
                                          FhirResourceFiler fhirResourceFiler,
-                                         EmisCsvHelper csvHelper,
+                                        BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 

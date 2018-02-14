@@ -8,10 +8,10 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
@@ -26,7 +26,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  PPNAM parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -55,7 +55,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
     public static void createPatientName(PPNAM parser,
                                      FhirResourceFiler fhirResourceFiler,
-                                     EmisCsvHelper csvHelper,
+                                     BartsCsvHelper csvHelper,
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
