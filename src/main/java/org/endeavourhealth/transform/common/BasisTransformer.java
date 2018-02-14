@@ -665,6 +665,28 @@ public class BasisTransformer {
     }
 
     /*
+     *
+     */
+    public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
+        String uniqueId = "PersonnelId=" + personnelId;
+        return getResourceId(scope, "Practitioner", uniqueId);
+    }
+
+    /*
+     *
+     */
+    public static ResourceId createPractitionerResourceId(String scope, String personnelId) throws Exception {
+        String uniqueId = "PersonnelId=" + personnelId;
+        ResourceId resourceId = new ResourceId();
+        resourceId.setScopeId(scope);
+        resourceId.setResourceType("Practitioner");
+        resourceId.setUniqueId(uniqueId);
+        resourceId.setResourceId(UUID.randomUUID());
+        saveResourceId(resourceId);
+        return resourceId;
+    }
+
+    /*
  *
  */
     public static ResourceId getGlobalOrgResourceId(String odsCode) throws Exception {
