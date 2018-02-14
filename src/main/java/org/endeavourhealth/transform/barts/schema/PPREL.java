@@ -143,11 +143,11 @@ public class PPREL extends AbstractCharacterParser {
         return super.getString("EmailAddress");
     }
 
-    public String getBeginEffectiveDateTime() throws TransformException {
-        return super.getString("BeginEffectiveDateTime");
+    public Date getBeginEffectiveDateTime() throws TransformException {
+        return super.getDateTime("BeginEffectiveDateTime");
     }
 
-    public String getEndEffectiveDateTime() throws FileFormatException {
-        return super.getString("EndEffectiveDateTime");
+    public Date getEndEffectiveDateTime() throws TransformException {
+        return super.getDateTime("EndEffectiveDateTime");
     }
 }
