@@ -77,7 +77,7 @@ public class PROCE extends AbstractCharacterParser {
         return super.getString("ProcedureDateTime");
     }
 
-    public String getClinicianID() throws FileFormatException {
+    public String getPersonnelID() throws FileFormatException {
         return super.getString("ProcedureMillenniumPersonnelIdentifier");
     }
 

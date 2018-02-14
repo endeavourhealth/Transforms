@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.EmisCsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,9 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
     public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
     public static final String CODE_SYSTEM_ENCOUNTER_SLICE_ID = "http://cerner.com/fhir/encounter-slice-id";
-    public static final String CODE_SYSTEM_NOMENCLATURE_ID = "http://cerner.com/identifier/nomenclature-id";
+    public static final String CODE_SYSTEM_NOMENCLATURE_ID = "http://cerner.com/fhir/nomenclature-id";
+    public static final String CODE_SYSTEM_PERSONNEL_POSITION_TYPE = "http://cerner.com/fhir/personnel-position-type";
+    public static final String CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE = "http://cerner.com/fhir/speciality-type";
     public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
     public static final String CODE_CONTEXT_PROCEDURE = "BARTSCSV_CLIN_PROCEDURE";
 
@@ -102,12 +105,45 @@ public abstract class BartsCsvToFhirTransformer {
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors) throws Exception {
 
+        EmisCsvHelper csvHelper = new EmisCsvHelper("", false, false);
+
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);
             String fileType = identifyFileType(fName);
             //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
-            if (fileType.compareTo("BULKPROBLEMS") == 0) {
+            // 2.2 files
+            if (fileType.compareTo("PRSNLREF") == 0) {
+                //call into 2.2 personnel transform
+                PRSNLREF parser = new PRSNLREF(version, filePath, true);
+                PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
+                parser.close();
+
+            } else if (fileType.compareTo("PPNAM") == 0) {
+                //call into 2.2 patient transforms
+
+
+            } else if (fileType.compareTo("ENCNT") == 0) {
+                //call into 2.2 encounter transform
+
+
+            } else if (fileType.compareTo("DIAGN") == 0) {
+                //call into 2.2 diagnosis transform
+                DIAGN parser = new DIAGN(version, filePath, true);
+                DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
+
+            } else if (fileType.compareTo("PROCE") == 0) {
+                //call into 2.2 procedure transform
+                PROCE parser = new PROCE(version, filePath, true);
+                PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
+            } else if (fileType.compareTo("CLEVE") == 0) {
+                //call into 2.2 clinical events transform
+            }
+
+            // 2.1 files
+            else if (fileType.compareTo("BULKPROBLEMS") == 0) {
                 BulkProblem parser = new BulkProblem(version, filePath, true);
                 BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
