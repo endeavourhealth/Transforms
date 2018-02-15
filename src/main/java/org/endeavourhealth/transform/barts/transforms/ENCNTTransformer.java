@@ -168,6 +168,21 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // EpisodeOfCare
             fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));
 
+            // Referrer
+            if (!Strings.isNullOrEmpty(parser.getReferrerMillenniumPersonnelIdentifier())) {
+                ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getReferrerMillenniumPersonnelIdentifier());
+                if (referrerPersonResourceId != null) {
+                    Encounter.EncounterParticipantComponent fhirParticipant = fhirEncounter.addParticipant();
+                    fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.REFERRER));
+                    fhirParticipant.setIndividual(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()));
+                    fhirEncounter.addParticipant(fhirParticipant);
+                } else {
+                    String valStr = "Practitioner Resource not found for Referrer-id " + parser.getReferrerMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                    LOG.debug(valStr);
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                }
+            }
+
             // responsible person
             ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getResponsibleHealthCareprovidingPersonnelIdentifier());
             if (respPersonResourceId != null) {
