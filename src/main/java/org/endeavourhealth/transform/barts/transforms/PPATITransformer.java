@@ -169,7 +169,10 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         if (parser.getDeceasedDateTime() != null || parser.getDeceasedMethodCode() != null) {
-            fhirPatient.setDeceased(new DateTimeType(parser.getDeceasedDateTime()));
+            if (parser.getDeceasedDateTime() != null)
+                fhirPatient.setDeceased(new DateTimeType(parser.getDeceasedDateTime()));
+            else  // TODO check this?
+                fhirPatient.setDeceased(new BooleanType(true));
             // TODO check if both are set and if not only add one.  Need to process the deceased method code
             //fhirPatient.setDeceased(new BooleanType())
         }
