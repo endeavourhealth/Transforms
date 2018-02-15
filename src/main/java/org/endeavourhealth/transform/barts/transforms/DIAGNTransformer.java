@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,22 +70,24 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
         }
 
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
         // get encounter details (should already have been created previously)
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterID());
+        if (encounterResourceId == null) {
+            throw new TransformRuntimeException("Encounter ResourceId not found for EncounterId " + parser.getEncounterID() + " in file " + parser.getFilePath());
+        }
 
         // get patient from encounter
         Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
         String patientId = fhirEncounter.getPatient().getId();
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(patientId)};
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, patientId, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
+        ResourceId patientResourceId =  getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, patientId);
+        if (patientResourceId == null) {
+            throw new TransformRuntimeException("Patient ResourceId not found for PatientId " + patientId + " from Encounter ResourceId "+encounterResourceId.getUniqueId()+" in file " + parser.getFilePath());
+        }
 
         // this Condition resource id
         ResourceId conditionResourceId = getDiagnosisResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, patientId, parser.getDiagnosisDateTimeAsString(), parser.getConceptCode());
 
+        // create the FHIR Condition
         Condition fhirCondition = new Condition();
         fhirCondition.setId(conditionResourceId.getResourceId().toString());
         fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
