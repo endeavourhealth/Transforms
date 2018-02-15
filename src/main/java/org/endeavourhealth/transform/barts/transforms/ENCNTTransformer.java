@@ -1,14 +1,22 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -19,9 +27,12 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY;
+
 public class ENCNTTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
+    private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
 
     /*
      *
@@ -79,6 +90,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Get MRN (using person-id)
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
+            cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
         }
         String mrn = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(),"???type???", parser.getMillenniumPersonIdentifier());
         if (mrn == null) {
@@ -107,10 +119,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (parser.isActive() == false) {
             fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
-            if (episodeResourceId != null) {
-                // TODO Check if Episode is to be removed (no more encounters for this episode)
-            }
-
             LOG.debug("Delete Encounter (PatId=" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(fhirEncounter));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirEncounter);
         } else {
@@ -133,29 +141,119 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
             // class
+            fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
 
             // status
+            fhirEncounter.setStatus(getEncounterStatus(parser.getEncounterStatusMillenniumCode()));
 
             //Reason
             CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(parser.getReasonForVisitText());
             fhirEncounter.addReason(reasonForVisitText);
 
             // specialty
+            if (!Strings.isNullOrEmpty(parser.getEncounterTypeMillenniumCode())) {
+                CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, Long.valueOf(parser.getEncounterTypeMillenniumCode()), fhirResourceFiler.getServiceId());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, ret.getCodeDispTxt(), parser.getEncounterTypeMillenniumCode());
+                fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept));
+            }
 
             // treatment function
+            //
+            if (!Strings.isNullOrEmpty(parser.getCurrentTreatmentFunctionMillenniumCode())) {
+                CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION, Long.valueOf(parser.getCurrentTreatmentFunctionMillenniumCode()), fhirResourceFiler.getServiceId());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, ret.getCodeDispTxt(), parser.getCurrentTreatmentFunctionMillenniumCode());
+                fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept));
+            }
 
+            // EpisodeOfCare
             fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));
 
             // responsible person
-            //fhirEncounter.addParticipant(csvHelper.createPractitionerReference("xxxxxxx"));
+            ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getResponsibleHealthCareprovidingPersonnelIdentifier());
+            if (respPersonResourceId != null) {
+                Encounter.EncounterParticipantComponent fhirParticipant = fhirEncounter.addParticipant();
+                fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PRIMARY_PERFORMER));
+                fhirParticipant.setIndividual(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()));
+                fhirEncounter.addParticipant(fhirParticipant);
+            } else {
+                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getResponsibleHealthCareprovidingPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                LOG.debug(valStr);
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            }
 
             // registering person
-            //fhirEncounter.addParticipant(csvHelper.createPractitionerReference("xxxxxxx"));
+            ResourceId regPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getRegisteringMillenniumPersonnelIdentifier());
+            if (regPersonResourceId != null) {
+                Encounter.EncounterParticipantComponent fhirParticipant = fhirEncounter.addParticipant();
+                fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PARTICIPANT));
+                fhirParticipant.setIndividual(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()));
+                fhirEncounter.addParticipant(fhirParticipant);
+            } else {
+                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getRegisteringMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                LOG.debug(valStr);
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            }
+
+            // Location
+            if (!Strings.isNullOrEmpty(parser.getCurrentLocationIdentifier())) {
+                ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getCurrentLocationIdentifier());
+                if (locationResourceId != null) {
+                    fhirEncounter.addLocation().setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()));
+                } else {
+                    String valStr = "Location Resource not found for Location-id " + parser.getCurrentLocationIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                    LOG.debug(valStr);
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                }
+            }
 
             LOG.debug("Save Encounter (PatId=" + mrn + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(fhirEncounter));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirEncounter);
         }
 
+    }
+
+    /*
+    *
+     */
+    private static Encounter.EncounterClass getEncounterClass(String millenniumCode) {
+        if (millenniumCode.compareTo("309308") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("309309") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
+        else if (millenniumCode.compareTo("309313") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767801") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767802") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767803") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
+        else if (millenniumCode.compareTo("3767804") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767806") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
+        else if (millenniumCode.compareTo("3767807") == 0) { return Encounter.EncounterClass.EMERGENCY; }
+        else if (millenniumCode.compareTo("3767808") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767809") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
+        else if (millenniumCode.compareTo("3767810") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767811") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3767812") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else if (millenniumCode.compareTo("3768747") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
+        else if (millenniumCode.compareTo("3768748") == 0) { return Encounter.EncounterClass.INPATIENT; }
+        else {
+            return Encounter.EncounterClass.OTHER;
+        }
+    }
+
+    /*
+    *
+     */
+    private static Encounter.EncounterState getEncounterStatus(String millenniumCode) {
+        if (millenniumCode.compareTo("666807") == 0) { return Encounter.EncounterState.CANCELLED; }
+        else if (millenniumCode.compareTo("666808") == 0) { return Encounter.EncounterState.PLANNED; }
+        else if (millenniumCode.compareTo("666809") == 0) { return Encounter.EncounterState.PLANNED; }
+        else if (millenniumCode.compareTo("854") == 0) { return Encounter.EncounterState.INPROGRESS; }
+        else if (millenniumCode.compareTo("855") == 0) { return Encounter.EncounterState.CANCELLED; }
+        else if (millenniumCode.compareTo("856") == 0) { return Encounter.EncounterState.FINISHED; }
+        else if (millenniumCode.compareTo("857") == 0) { return Encounter.EncounterState.INPROGRESS; }
+        else if (millenniumCode.compareTo("858") == 0) { return Encounter.EncounterState.ARRIVED; }
+        else if (millenniumCode.compareTo("859") == 0) { return Encounter.EncounterState.PLANNED; }
+        else if (millenniumCode.compareTo("860") == 0) { return Encounter.EncounterState.INPROGRESS; }
+        else {
+            return Encounter.EncounterState.NULL;
+        }
     }
 
 }

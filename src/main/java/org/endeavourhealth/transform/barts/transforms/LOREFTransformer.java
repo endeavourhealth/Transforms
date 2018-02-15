@@ -1,0 +1,316 @@
+package org.endeavourhealth.transform.barts.transforms;
+
+import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.schema.LOREF;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.CodeableConcept;
+import org.hl7.fhir.instance.model.Location;
+import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.valuesets.LocationPhysicalType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.UUID;
+
+public class LOREFTransformer extends BartsBasisTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
+    private static InternalIdDalI internalIdDAL = null;
+    private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
+
+    /*
+     *
+     */
+    public static void transform(String version,
+                                 LOREF parser,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper,
+                                 String primaryOrgOdsCode,
+                                 String primaryOrgHL7OrgOID) throws Exception {
+
+        // Skip header line
+        parser.nextRecord();
+
+        while (parser.nextRecord()) {
+            try {
+                String valStr = validateEntry(parser);
+                if (valStr == null) {
+                    createEncounter(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                } else {
+                    LOG.debug("Validation error:" + valStr);
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                }
+            } catch (Exception ex) {
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            }
+        }
+    }
+
+    /*
+     *
+     */
+    public static String validateEntry(LOREF parser) {
+        return null;
+    }
+
+
+    /*
+     *
+     */
+    public static void createEncounter(LOREF parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+        String parentLocationResourceId = null;
+
+        // Location resource id
+        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocationId());
+        if (locationResourceId == null) {
+            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocationId());
+
+            if (internalIdDAL == null) {
+                internalIdDAL = DalProvider.factoryInternalIdDal();
+                cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
+            }
+
+            // Try secondary key
+            String uniqueId = createSecondaryKey(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation());
+            String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId);
+            // Create main resource key
+            if (alternateResourceId == null) {
+                locationResourceId.setResourceId(UUID.randomUUID());
+
+                // Create alternate keys for all parents (if missing)
+                String parentUniqueId = createParentKey(uniqueId);
+                while (parentUniqueId != null) {
+                    try {
+                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId, UUID.randomUUID().toString());
+                    }
+                    catch (Exception ex) {
+                        // ignore duplicates
+                    }
+                    parentUniqueId = createParentKey(parentUniqueId);
+                }
+            } else {
+                locationResourceId.setResourceId(UUID.fromString(alternateResourceId));
+                // Alternate keys for all parents should already exist
+            }
+            saveResourceId(locationResourceId);
+        }
+
+        // Get parent resoruce id using alternate key
+        String uniqueId = createSecondaryKey(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation());
+        String parentUniqueId = createParentKey(uniqueId);
+        parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
+
+        // Organisation
+        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+
+        // Create Location resource
+        Location fhirLocation = new Location();
+        fhirLocation.setId(locationResourceId.getResourceId().toString());
+
+        fhirLocation.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
+
+        // Status
+        Date now = new Date();
+        if (now.after(parser.getBeginEffectiveDateTime()) && now.before(parser.getEndEffectiveDateTime())) {
+            fhirLocation.setStatus(Location.LocationStatus.ACTIVE);
+        } else {
+            fhirLocation.setStatus(Location.LocationStatus.INACTIVE);
+        }
+
+        // Physical type
+        fhirLocation.setPhysicalType(getPhysicalType(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
+
+        fhirLocation.setMode(Location.LocationMode.INSTANCE);
+
+        fhirLocation.setDescription(createDescription(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
+
+        fhirLocation.setName(getName(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
+
+        fhirLocation.setManagingOrganization(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
+
+        if (parentLocationResourceId != null) {
+            fhirLocation.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
+        }
+
+        LOG.debug("Save Location (LocationId=" + parser.getLocationId());
+        saveAdminResource(fhirResourceFiler, parser.getCurrentState(), fhirLocation);
+
+    }
+
+    /*
+    *
+     */
+    private static String createSecondaryKey(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("FacilityLocCode=");
+        sb.append(facilityCode);
+
+        if (buildingCode != null && buildingCode.length() > 0) {
+            sb.append("-");
+            sb.append("BuildingLocCode=");
+            sb.append(buildingCode);
+        }
+
+        if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
+            sb.append("-");
+            sb.append("AmbulatoryLocCode=");
+            sb.append(ambulatoryCode);
+        }
+
+        if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
+            sb.append("-");
+            sb.append("NurseUnitLocCode=");
+            sb.append(nurseUnitCode);
+        }
+
+        if (roomCode != null && roomCode.length() > 0) {
+            sb.append("-");
+            sb.append("RoomLocCode=");
+            sb.append(roomCode);
+        }
+
+        if (bedCode != null && bedCode.length() > 0) {
+            sb.append("-");
+            sb.append("BedLocCode=");
+            sb.append(bedCode);
+        }
+
+        return sb.toString();
+    }
+
+    /*
+     *
+     */
+    private static String createParentKey(String uniqueKey) {
+        // remove current level
+        int lastpos = uniqueKey.lastIndexOf("-");
+        if (lastpos == -1) {
+            return null;
+        } else {
+            return uniqueKey.substring(0, lastpos);
+        }
+    }
+
+    /*
+     *
+     */
+    private static String createDescription(FhirResourceFiler fhirResourceFiler, String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) throws Exception {
+        StringBuffer sb = new StringBuffer();
+        if (bedCode != null && bedCode.length() > 0) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getCodeRefValue(fhirResourceFiler, bedCode));
+        }
+
+        if (roomCode != null && roomCode.length() > 0) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getCodeRefValue(fhirResourceFiler, roomCode));
+        }
+
+        if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getCodeRefValue(fhirResourceFiler, nurseUnitCode));
+        }
+
+        if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getCodeRefValue(fhirResourceFiler, ambulatoryCode));
+        }
+
+        if (buildingCode != null && buildingCode.length() > 0) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getCodeRefValue(fhirResourceFiler, buildingCode));
+        }
+
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        sb.append(getCodeRefValue(fhirResourceFiler, facilityCode));
+
+        return sb.toString();
+    }
+
+    /*
+     *
+     */
+    private static String getName(FhirResourceFiler fhirResourceFiler, String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) throws Exception {
+        if (bedCode != null && bedCode.length() > 0) {
+            return getCodeRefValue(fhirResourceFiler, bedCode);
+        } else if (roomCode != null && roomCode.length() > 0) {
+            return getCodeRefValue(fhirResourceFiler, roomCode);
+        } else if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
+            return getCodeRefValue(fhirResourceFiler, nurseUnitCode);
+        } else if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
+            return getCodeRefValue(fhirResourceFiler, ambulatoryCode);
+        } else if (buildingCode != null && buildingCode.length() > 0) {
+            return getCodeRefValue(fhirResourceFiler, buildingCode);
+        } else {
+            return getCodeRefValue(fhirResourceFiler, facilityCode);
+        }
+    }
+
+    /*
+     *
+     */
+    private static CodeableConcept getPhysicalType(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
+        CodeableConcept ret = null;
+        if (bedCode != null && bedCode.length() > 0) {
+            ret.addCoding().setCode(LocationPhysicalType.BD.getDefinition()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDisplay());
+            return ret;
+        } else if (roomCode != null && roomCode.length() > 0) {
+            ret.addCoding().setCode(LocationPhysicalType.RO.getDefinition()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDisplay());
+            return ret;
+        } else if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
+            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
+            return ret;
+        } else if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
+            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
+            return ret;
+        } else if (buildingCode != null && buildingCode.length() > 0) {
+            ret.addCoding().setCode(LocationPhysicalType.BU.getDefinition()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDisplay());
+            return ret;
+        } else {
+            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
+            return ret;
+        }
+    }
+
+    /*
+     *
+     */
+    private static String getCodeRefValue(FhirResourceFiler fhirResourceFiler, String code) throws Exception {
+        CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
+        return ret.getCodeDispTxt();
+    }
+}
