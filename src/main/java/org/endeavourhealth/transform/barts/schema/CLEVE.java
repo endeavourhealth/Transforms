@@ -120,7 +120,7 @@ public class CLEVE extends AbstractCharacterParser {
         return super.getString("ClinicalEventPerformedDateTime");
     }
 
-    public String getClinicianID() throws FileFormatException {
+    public String getPersonnel() throws FileFormatException {
             return super.getString("ClinicalEventPerformedMillenniumPersonnelIdentifier");
     }
 

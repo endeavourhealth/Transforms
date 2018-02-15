@@ -7,10 +7,10 @@ import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  CLEVE parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -62,7 +62,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
      */
     public static void createObservation(CLEVE parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation
@@ -82,8 +82,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
         // this Observation resource id
         ResourceId observationResourceId = getObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getPatientId(), parser.getEffectiveDateTimeAsString(), parser.getEventCode());
 
-        //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-
         String observationID = parser.getEventId();
         Observation fhirObservation = new Observation();
         fhirObservation.setId(observationResourceId.getResourceId().toString());
@@ -98,10 +96,9 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         fhirObservation.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
 
-        String clinicianID = parser.getClinicianID();
-        if (!Strings.isNullOrEmpty(clinicianID)) {
-            //TODO - need to map to person resources
-            //fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
+        String personnelID = parser.getPersonnel();
+        if (!Strings.isNullOrEmpty(personnelID)) {
+            fhirObservation.addPerformer(csvHelper.createPractitionerReference(personnelID));
         }
 
         String term = parser.getEventTitleText();
