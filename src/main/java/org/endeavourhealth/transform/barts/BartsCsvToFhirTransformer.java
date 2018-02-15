@@ -212,8 +212,9 @@ public abstract class BartsCsvToFhirTransformer {
             String fileType = identifyFileType(fName);
 
             if (fileType.compareTo("LOREF") == 0) {
-                //TODO: call into 2.2 location transform
-
+                LOREF parser = new LOREF(serviceId, systemId, exchangeId, version, filePath, true);
+                LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                parser.close();
             } else if (fileType.compareTo("PRSNLREF") == 0) {
                 //call into 2.2 personnel transforms
                 PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath, true);
