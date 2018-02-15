@@ -191,6 +191,4 @@ public abstract class ResourceBuilderBase {
         auditReferenceExtension(extension, sourceCells);
     }
 
-
-
 }

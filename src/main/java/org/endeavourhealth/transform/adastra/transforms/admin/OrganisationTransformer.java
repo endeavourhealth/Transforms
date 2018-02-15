@@ -17,7 +17,7 @@ public class OrganisationTransformer {
         Organization fhirOrganisation = new Organization();
         fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
 
-        fhirOrganisation.addIdentifier().setSystem("http://fhir.nhs.net/Id/ods-organization-code").setValue(gpRegistration.getSurgeryNationalCode());
+        fhirOrganisation.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_ODS_CODE).setValue(gpRegistration.getSurgeryNationalCode());
         fhirOrganisation.addAddress().setPostalCode(gpRegistration.getSurgeryPostcode());
 
         fhirOrganisation.setId(gpRegistration.getSurgeryNationalCode() + ":" + gpRegistration.getSurgeryPostcode());

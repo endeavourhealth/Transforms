@@ -838,13 +838,13 @@ public class EmisCsvHelper {
             if (newEthnicity != null) {
                 EmisCsvCodeMap codeMapping = newEthnicity.getCodeMapping();
                 CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-                EmisCodeHelper.applyCodeMap(patientBuilder, codeMapping, PatientBuilder.TAG_ETHNICITY_CODEABLE_CONCEPT, additionalSourceCells);
+                EmisCodeHelper.applyEthnicity(patientBuilder, codeMapping, additionalSourceCells);
             }
 
             if (newMaritalStatus != null) {
                 EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
                 CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-                EmisCodeHelper.applyCodeMap(patientBuilder, codeMapping, PatientBuilder.TAG_MARITAL_STATUS_CODEABLE_CONCEPT, additionalSourceCells);
+                EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
             }
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);

@@ -1,11 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
 import java.text.SimpleDateFormat;
@@ -158,5 +162,113 @@ public class EmisCodeHelper {
         }
 
         return list.toArray(new CsvCell[0]);
+    }
+
+    public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
+        EthnicCategory ethnicCategory = findEthnicityCode(codeMap);
+        if (ethnicCategory != null) {
+            patientBuilder.setEthnicity(ethnicCategory, sourceCells);
+        }
+    }
+
+    public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
+        MaritalStatus maritalStatus = findMaritalStatus(codeMap);
+        if (maritalStatus != null) {
+            patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
+        }
+    }
+
+
+    public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) {
+        String read2Code = codeMapping.getReadCode();
+        if (Strings.isNullOrEmpty(read2Code)) {
+            return null;
+        }
+
+        if (read2Code.equals("1331.")) {
+            //single
+
+        } else if (read2Code.equals("1332.")
+                || read2Code.equals("EMISNQHO15")
+                || read2Code.equals("EMISNQHO16")
+                || read2Code.equals("133S.")) {
+            return MaritalStatus.MARRIED;
+
+        } else if (read2Code.equals("1334.")
+                || read2Code.equals("133T.")) {
+            return MaritalStatus.DIVORCED;
+
+        } else if (read2Code.equals("1335.")
+                || read2Code.equals("133C.")
+                || read2Code.equals("133V.")) {
+            return MaritalStatus.WIDOWED;
+
+        } else if (read2Code.equals("1333.")) {
+            return MaritalStatus.LEGALLY_SEPARATED;
+
+        } else if (read2Code.equals("1336.")
+                || read2Code.equals("133e.")
+                || read2Code.equals("133G.")
+                || read2Code.equals("133H.")
+                || read2Code.equals("EMISNQCO47")) {
+            return MaritalStatus.DOMESTIC_PARTNER;
+
+        }
+
+        return null;
+    }
+
+    public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
+        String read2Code = codeMapping.getReadCode();
+        if (Strings.isNullOrEmpty(read2Code)) {
+            return null;
+        }
+
+        if (read2Code.startsWith("9i0")) {
+            return EthnicCategory.WHITE_BRITISH;
+        } else if (read2Code.startsWith("9i1")) {
+            return EthnicCategory.WHITE_IRISH;
+        } else if (read2Code.startsWith("9i2")) {
+            return EthnicCategory.OTHER_WHITE;
+        } else if (read2Code.startsWith("9i3")) {
+            return EthnicCategory.MIXED_CARIBBEAN;
+        } else if (read2Code.startsWith("9i4")) {
+            return EthnicCategory.MIXED_AFRICAN;
+        } else if (read2Code.startsWith("9i5")) {
+            return EthnicCategory.MIXED_ASIAN;
+        } else if (read2Code.startsWith("9i6")) {
+            return EthnicCategory.OTHER_MIXED;
+        } else if (read2Code.startsWith("9i7")) {
+            return EthnicCategory.ASIAN_INDIAN;
+        } else if (read2Code.startsWith("9i8")) {
+            return EthnicCategory.ASIAN_PAKISTANI;
+        } else if (read2Code.startsWith("9i9")) {
+            return EthnicCategory.ASIAN_BANGLADESHI;
+        } else if (read2Code.startsWith("9iA")) {
+            return EthnicCategory.OTHER_ASIAN;
+        } else if (read2Code.startsWith("9iB")) {
+            return EthnicCategory.BLACK_CARIBBEAN;
+        } else if (read2Code.startsWith("9iC")) {
+            return EthnicCategory.BLACK_AFRICAN;
+        } else if (read2Code.startsWith("9iD")) {
+            return EthnicCategory.OTHER_BLACK;
+        } else if (read2Code.startsWith("9iE")) {
+            return EthnicCategory.CHINESE;
+        } else if (read2Code.startsWith("9iF")) {
+            return EthnicCategory.OTHER;
+        } else if (read2Code.startsWith("9iG")) {
+            return EthnicCategory.NOT_STATED;
+        } else {
+            return null;
+        }
+    }
+
+
+    public static boolean isEthnicity(EmisCsvCodeMap codeMapping) {
+        return findEthnicityCode(codeMapping) != null;
+    }
+
+    public static boolean isMaritalStatus(EmisCsvCodeMap codeMapping) {
+        return findMaritalStatus(codeMapping) != null;
     }
 }

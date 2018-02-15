@@ -1,17 +1,12 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.helpers.BpComponent;
-import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.*;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -118,8 +113,7 @@ public class ObservationPreTransformer {
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            EthnicCategory ethnicCategory = findEthnicityCode(codeMapping);
-            if (ethnicCategory != null) {
+            if (EmisCodeHelper.isEthnicity(codeMapping)) {
                 CsvCell patientGuid = parser.getPatientGuid();
                 CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
                 csvHelper.cacheEthnicity(patientGuid, codeAndDate);
@@ -132,8 +126,7 @@ public class ObservationPreTransformer {
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            MaritalStatus maritalStatus = findMaritalStatus(codeMapping);
-            if (maritalStatus != null) {
+            if (EmisCodeHelper.isMaritalStatus(codeMapping)) {
                 CsvCell patientGuid = parser.getPatientGuid();
                 CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
                 csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
@@ -151,93 +144,6 @@ public class ObservationPreTransformer {
         }
     }
 
-    private static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) {
-        String code = findRead2Code(codeMapping);
-        if (code == null) {
-            return null;
-        }
-
-        if (code.equals("1331.")) {
-            //single
-
-        } else if (code.equals("1332.")
-            || code.equals("EMISNQHO15")
-            || code.equals("EMISNQHO16")
-            || code.equals("133S.")) {
-            return MaritalStatus.MARRIED;
-
-        } else if (code.equals("1334.")
-            || code.equals("133T.")) {
-            return MaritalStatus.DIVORCED;
-
-        } else if (code.equals("1335.")
-            || code.equals("133C.")
-            || code.equals("133V.")) {
-            return MaritalStatus.WIDOWED;
-
-        } else if (code.equals("1333.")) {
-            return MaritalStatus.LEGALLY_SEPARATED;
-
-        } else if (code.equals("1336.")
-            || code.equals("133e.")
-                || code.equals("133G.")
-                || code.equals("133H.")
-                || code.equals("EMISNQCO47")) {
-            return MaritalStatus.DOMESTIC_PARTNER;
-
-        }
-
-        return null;
-    }
-
-    private static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
-        String code = findRead2Code(codeMapping);
-        if (code == null) {
-            return null;
-        }
-
-        if (code.startsWith("9i0")) {
-            return EthnicCategory.WHITE_BRITISH;
-        } else if (code.startsWith("9i1")) {
-            return EthnicCategory.WHITE_IRISH;
-        } else if (code.startsWith("9i2")) {
-            return EthnicCategory.OTHER_WHITE;
-        } else if (code.startsWith("9i3")) {
-            return EthnicCategory.MIXED_CARIBBEAN;
-        } else if (code.startsWith("9i4")) {
-            return EthnicCategory.MIXED_AFRICAN;
-        } else if (code.startsWith("9i5")) {
-            return EthnicCategory.MIXED_ASIAN;
-        } else if (code.startsWith("9i6")) {
-            return EthnicCategory.OTHER_MIXED;
-        } else if (code.startsWith("9i7")) {
-            return EthnicCategory.ASIAN_INDIAN;
-        } else if (code.startsWith("9i8")) {
-            return EthnicCategory.ASIAN_PAKISTANI;
-        } else if (code.startsWith("9i9")) {
-            return EthnicCategory.ASIAN_BANGLADESHI;
-        } else if (code.startsWith("9iA")) {
-            return EthnicCategory.OTHER_ASIAN;
-        } else if (code.startsWith("9iB")) {
-            return EthnicCategory.BLACK_CARIBBEAN;
-        } else if (code.startsWith("9iC")) {
-            return EthnicCategory.BLACK_AFRICAN;
-        } else if (code.startsWith("9iD")) {
-            return EthnicCategory.OTHER_BLACK;
-        } else if (code.startsWith("9iE")) {
-            return EthnicCategory.CHINESE;
-        } else if (code.startsWith("9iF")) {
-            return EthnicCategory.OTHER;
-        } else if (code.startsWith("9iG")) {
-            return EthnicCategory.NOT_STATED;
-        } else {
-            return null;
-        }
-    }
-
-    private static String findRead2Code(EmisCsvCodeMap codeMapping) {
-        return codeMapping.getReadCode();
-    }
 }
 
 

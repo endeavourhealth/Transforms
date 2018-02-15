@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.emis.csv.schema.prescribing;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -113,7 +112,7 @@ public class DrugRecord extends AbstractCsvParser {
     public CsvCell getOrganisationGuid() {
         return super.getCell("OrganisationGuid");
     }
-    public CsvCell getEffectiveDate() throws TransformException {
+    public CsvCell getEffectiveDate() {
         return super.getCell("EffectiveDate");
     }
     public CsvCell getEffectiveDatePrecision() {

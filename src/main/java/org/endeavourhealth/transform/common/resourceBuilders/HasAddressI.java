@@ -11,4 +11,5 @@ public interface HasAddressI {
     void addAddressDistrict(String district, CsvCell... sourceCells);
     void addAddressPostcode(String postcode, CsvCell... sourceCells);
     void addAddressDisplayText(String displayText, CsvCell... sourceCells);
+    Address getLastAddress();
 }

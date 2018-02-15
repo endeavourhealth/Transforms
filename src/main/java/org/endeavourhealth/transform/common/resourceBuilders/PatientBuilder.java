@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.schema.ContactRelationship;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -13,11 +15,7 @@ import java.util.Date;
 
 public class PatientBuilder extends ResourceBuilderBase
                             implements HasNameI,
-                                       HasAddressI,
-                                       HasCodeableConceptI {
-
-    public static final String TAG_ETHNICITY_CODEABLE_CONCEPT = "Ethnicity";
-    public static final String TAG_MARITAL_STATUS_CODEABLE_CONCEPT = "MaritalStatus";
+                                       HasAddressI {
 
     private Patient patient = null;
 
@@ -168,7 +166,8 @@ public class PatientBuilder extends ResourceBuilderBase
         patient.getAddress().add(address);
     }
 
-    private Address getLastAddress() {
+    @Override
+    public Address getLastAddress() {
         return this.patient.getAddress().get(getLastAddressIndex());
     }
 
@@ -270,50 +269,18 @@ public class PatientBuilder extends ResourceBuilderBase
         auditValue("contact[" + getLastAddressIndex() + "].relationship.text", sourceCells);
     }
 
-    public void setMaritalStatus(CodeableConcept fhirMaritalStatus, CsvCell... sourceCells) {
-        this.patient.setMaritalStatus(fhirMaritalStatus);
+    public void setMaritalStatus(MaritalStatus fhirMaritalStatus, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMaritalStatus);
+        this.patient.setMaritalStatus(codeableConcept);
 
         auditValue("maritalStatus.coding[0]", sourceCells);
     }
 
-    public void setEthnicity(CodeableConcept fhirEthnicity, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, fhirEthnicity);
+    public void setEthnicity(EthnicCategory fhirEthnicity, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirEthnicity);
+        Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, codeableConcept);
 
         auditCodeableConceptExtension(extension, sourceCells);
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (tag.equals(TAG_ETHNICITY_CODEABLE_CONCEPT)) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(patient, FhirExtensionUri.PATIENT_ETHNICITY);
-            if (extension.getValue() == null) {
-                extension.setValue(new CodeableConcept());
-            }
-            return (CodeableConcept)extension.getValue();
-
-        } else if (tag.equals(TAG_MARITAL_STATUS_CODEABLE_CONCEPT)) {
-            if (!patient.hasMaritalStatus()) {
-                patient.setMaritalStatus(new CodeableConcept());
-            }
-            return patient.getMaritalStatus();
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag " + tag);
-        }
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        if (tag.equals(TAG_ETHNICITY_CODEABLE_CONCEPT)) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(patient, FhirExtensionUri.PATIENT_ETHNICITY);
-            int index = patient.getExtension().indexOf(extension);
-            return "extension[" + index + "].valueCodeableConcept";
-
-        } else if (tag.equals(TAG_MARITAL_STATUS_CODEABLE_CONCEPT)) {
-            return "maritalStatus";
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag " + tag);
-        }
-    }
 }

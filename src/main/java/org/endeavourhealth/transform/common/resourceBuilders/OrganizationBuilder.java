@@ -7,7 +7,8 @@ import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
 
-public class OrganizationBuilder extends ResourceBuilderBase {
+public class OrganizationBuilder extends ResourceBuilderBase
+                                implements HasAddressI {
 
     private Organization organization = null;
 
@@ -101,5 +102,67 @@ public class OrganizationBuilder extends ResourceBuilderBase {
         updateActiveStatus(extension);
 
         auditPeriodEndExtension(extension, sourceCells);
+    }
+
+
+    @Override
+    public void addAddress(Address.AddressUse use) {
+        Address address = new Address();
+        address.setUse(use);
+        this.organization.addAddress(address);
+    }
+
+    private int getLastAddressIndex() {
+        if (!this.organization.hasAddress()) {
+            throw new IllegalArgumentException("Need to call addAddress before setting address fields");
+        }
+        return this.organization.getAddress().size()-1;
+    }
+
+    @Override
+    public Address getLastAddress() {
+        int index = getLastAddressIndex();
+        return this.organization.getAddress().get(index);
+    }
+
+    @Override
+    public void addAddressLine(String line, CsvCell... sourceCells) {
+        Address address = getLastAddress();
+        address.addLine(line);
+
+        int index = address.getLine().size()-1;
+        auditValue("address[" + getLastAddressIndex() + "].line[" + index + "]", sourceCells);
+    }
+
+    @Override
+    public void addAddressTown(String town, CsvCell... sourceCells) {
+        Address address = getLastAddress();
+        address.setCity(town);
+
+        auditValue("address[" + getLastAddressIndex() + "].city", sourceCells);
+    }
+
+    @Override
+    public void addAddressDistrict(String district, CsvCell... sourceCells) {
+        Address address = getLastAddress();
+        address.setDistrict(district);
+
+        auditValue("address[" + getLastAddressIndex() + "].district", sourceCells);
+    }
+
+    @Override
+    public void addAddressPostcode(String postcode, CsvCell... sourceCells) {
+        Address address = getLastAddress();
+        address.setPostalCode(postcode);
+
+        auditValue("address[" + getLastAddressIndex() + "].postalCode", sourceCells);
+    }
+
+    @Override
+    public void addAddressDisplayText(String displayText, CsvCell... sourceCells) {
+        Address address = getLastAddress();
+        address.setText(displayText);
+
+        auditValue("address[" + getLastAddressIndex() + "].text", sourceCells);
     }
 }

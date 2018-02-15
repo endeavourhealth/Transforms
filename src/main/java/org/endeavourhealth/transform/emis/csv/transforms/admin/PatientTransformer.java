@@ -1,9 +1,8 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.ContactRelationship;
-import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.common.fhir.schema.*;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -119,7 +118,13 @@ public class PatientTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.populateAddress(Address.AddressUse.HOME, houseNameFlat, numberAndStreet, village, town, county, postcode);
+        addressBuilder.beginAddress(Address.AddressUse.HOME);
+        addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
+        addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
+        addressBuilder.addLine(village.getString(), village);
+        addressBuilder.setTown(town.getString(), town);
+        addressBuilder.setDistrict(county.getString(), county);
+        addressBuilder.setPostcode(postcode.getString(), postcode);
 
         CsvCell residentialInstituteCode = parser.getResidentialInstituteCode();
         if (!residentialInstituteCode.isEmpty()) {
@@ -600,9 +605,11 @@ public class PatientTransformer {
                 if (newEthnicity == null) {
                     CodeableConcept oldEthnicity = (CodeableConcept)ExtensionConverter.findExtensionValue(existingPatient, FhirExtensionUri.PATIENT_ETHNICITY);
                     if (oldEthnicity != null) {
-
-                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_ETHNICITY_CODEABLE_CONCEPT);
-                        codeableConceptBuilder.addCodeableConceptNoAudit(oldEthnicity);
+                        String oldEthnicityCode = CodeableConceptHelper.findCodingCode(oldEthnicity, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+                        if (!Strings.isNullOrEmpty(oldEthnicityCode)) {
+                            EthnicCategory ethnicCategory = EthnicCategory.fromCode(oldEthnicityCode);
+                            patientBuilder.setEthnicity(ethnicCategory);
+                        }
                     }
                 }
 
@@ -610,8 +617,11 @@ public class PatientTransformer {
                         && existingPatient.hasMaritalStatus()) {
                     CodeableConcept oldMaritalStatus = existingPatient.getMaritalStatus();
 
-                    CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_MARITAL_STATUS_CODEABLE_CONCEPT);
-                    codeableConceptBuilder.addCodeableConceptNoAudit(oldMaritalStatus);
+                    String oldMaritalStatusCode = CodeableConceptHelper.findCodingCode(oldMaritalStatus, FhirValueSetUri.VALUE_SET_MARITAL_STATUS);
+                    if (!Strings.isNullOrEmpty(oldMaritalStatusCode)) {
+                        MaritalStatus maritalStatus = MaritalStatus.fromCode(oldMaritalStatusCode);
+                        patientBuilder.setMaritalStatus(maritalStatus);
+                    }
                 }
             }
         }
@@ -619,13 +629,13 @@ public class PatientTransformer {
         if (newEthnicity != null) {
             EmisCsvCodeMap codeMapping = newEthnicity.getCodeMapping();
             CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-            EmisCodeHelper.applyCodeMap(patientBuilder, codeMapping, PatientBuilder.TAG_ETHNICITY_CODEABLE_CONCEPT, additionalSourceCells);
+            EmisCodeHelper.applyEthnicity(patientBuilder, codeMapping, additionalSourceCells);
         }
 
         if (newMaritalStatus != null) {
             EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
             CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-            EmisCodeHelper.applyCodeMap(patientBuilder, codeMapping, PatientBuilder.TAG_MARITAL_STATUS_CODEABLE_CONCEPT, additionalSourceCells);
+            EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
         }
     }
 

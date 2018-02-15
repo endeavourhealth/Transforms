@@ -252,4 +252,11 @@ public class ObservationBuilder extends ResourceBuilderBase
 
         auditValue("component[" + getLastComponentIndex() + "].valueQuantity.unit", sourceCells);
     }
+
+    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+        this.observation.addIdentifier(identifier);
+
+        int index = this.observation.getIdentifier().size()-1;
+        auditValue("identifier[" + index + "].value", sourceCells);
+    }
 }

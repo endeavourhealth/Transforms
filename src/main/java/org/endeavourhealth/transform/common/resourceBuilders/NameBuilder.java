@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.NameConverter;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.HumanName;
 
+import java.util.Date;
+
 public class NameBuilder {
 
     private HasNameI parentBuilder = null;
@@ -95,4 +97,11 @@ public class NameBuilder {
     }
 
 
+    public void setStartDate(Date date, CsvCell... sourceCells) {
+        //TODO - need to implement
+    }
+
+    public void setEndDate(Date date, CsvCell... sourceCells) {
+        //TODO - need to implement
+    }
 }

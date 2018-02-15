@@ -97,17 +97,25 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("participant[" + index + "].individual.reference", sourceCells);
     }
 
-    public void setPeriodStart(DateTimeType startDateTime, CsvCell... sourceCells) {
-        Period period = null;
-        if (this.encounter.hasPeriod()) {
-            period = this.encounter.getPeriod();
-        } else {
+    private Period getOrCreatePeriod() {
+        Period period = this.encounter.getPeriod();
+        if (period == null) {
             period = new Period();
             this.encounter.setPeriod(period);
         }
-        period.setStartElement(startDateTime);
+        return period;
+    }
+
+    public void setPeriodStart(DateTimeType startDateTime, CsvCell... sourceCells) {
+        getOrCreatePeriod().setStartElement(startDateTime);
 
         auditValue("period.start", sourceCells);
+    }
+
+    public void setPeriodEnd(DateTimeType endDateTime, CsvCell... sourceCells) {
+        getOrCreatePeriod().setStartElement(endDateTime);
+
+        auditValue("period.end", sourceCells);
     }
 
     public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
@@ -115,12 +123,6 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         auditValue(getCodeableConceptJsonPath(null) + ".text", sourceCells);
     }
-
-
-    public Encounter getEncounter() {
-        return encounter;
-    }
-
 
     @Override
     public CodeableConcept getOrCreateCodeableConcept(String tag) {
@@ -142,5 +144,18 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getExtension().indexOf(extension);
         return "extension[" + index + "].valueCodeableConcept";
+    }
+
+    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+        this.encounter.addIdentifier(identifier);
+
+        int index = this.encounter.getIdentifier().size()-1;
+        auditValue("identifier[" + index + "].value", sourceCells);
+    }
+
+    public void setClass(Encounter.EncounterClass encounterClass, CsvCell... sourceCells) {
+        this.encounter.setClass_(encounterClass);
+
+        auditValue("class", sourceCells);
     }
 }

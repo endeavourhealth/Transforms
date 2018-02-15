@@ -66,7 +66,13 @@ public class LocationTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.populateAddress(Address.AddressUse.WORK, houseNameFlat, numberAndStreet, village, town, county, postcode);
+        addressBuilder.beginAddress(Address.AddressUse.WORK);
+        addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
+        addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
+        addressBuilder.addLine(village.getString(), village);
+        addressBuilder.setTown(town.getString(), town);
+        addressBuilder.setDistrict(county.getString(), county);
+        addressBuilder.setPostcode(postcode.getString(), postcode);
 
         CsvCell phoneNumber = parser.getPhoneNumber();
         if (!phoneNumber.isEmpty()) {

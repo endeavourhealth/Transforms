@@ -105,6 +105,14 @@ public class CsvCell {
 
         return Boolean.parseBoolean(value);
     }
+    public boolean getIntAsBoolean() {
+        Integer i = getInt();
+        if (i == null) {
+            return false;
+        }
+        return i.intValue() == 1;
+    }
+
 
     public static Date getDateTimeFromTwoCells(CsvCell dateCell, CsvCell timeCell) throws TransformException {
         Date d = null;

@@ -44,6 +44,11 @@ public class LocationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public Address getLastAddress() {
+        return this.location.getAddress();
+    }
+
+    @Override
     public void addAddressLine(String line, CsvCell... sourceCells) {
         Address address = this.location.getAddress();
         address.addLine(line);
