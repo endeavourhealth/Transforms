@@ -46,7 +46,7 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
     public static final String CODE_CONTEXT_PROCEDURE = "BARTSCSV_CLIN_PROCEDURE";
 
-    public static final int VERSION_2_2_FILE_COUNT = 15;
+    public static final int VERSION_2_2_FILE_COUNT = 14;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
@@ -143,10 +143,8 @@ public abstract class BartsCsvToFhirTransformer {
                 v2_2Files [11] = filePath;
             } else if (fileType.compareTo("PROCE") == 0) {
                 v2_2Files [12] = filePath;
-            } else if (fileType.compareTo("ORDER") == 0) {
-                v2_2Files [13] = filePath;
             } else if (fileType.compareTo("CLEVE") == 0) {
-                v2_2Files [14] = filePath;
+                v2_2Files [13] = filePath;
             }
             // 2.1 files
             else if (fileType.compareTo("BULKPROBLEMS") == 0) {
@@ -212,51 +210,52 @@ public abstract class BartsCsvToFhirTransformer {
             String fileType = identifyFileType(fName);
 
             if (fileType.compareTo("LOREF") == 0) {
+                // call into 2.2 location transform
                 LOREF parser = new LOREF(serviceId, systemId, exchangeId, version, filePath, true);
                 LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PRSNLREF") == 0) {
-                //call into 2.2 personnel transforms
+                //call into 2.2 personnel transform
                 PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath, true);
                 PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
                 parser.close();
             } else if (fileType.compareTo("PPATI") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 main person/patient transform
                 PPATI parser = new PPATI(serviceId, systemId, exchangeId, version, filePath, true);
                 PPATITransformer.transform(version, parser, fhirResourceFiler, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPADD") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 patient address transform
                 PPADD parser = new PPADD(serviceId, systemId, exchangeId, version, filePath, true);
                 PPADDTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPALI") == 0) {
-                //TODO: call into 2.2 patient transforms
+                //call into 2.2 patient alias transform
                 PPALI parser = new PPALI(serviceId, systemId, exchangeId, version, filePath, true);
-                //PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPINF") == 0) {
-                //TODO: call into 2.2 patient transforms
+                //TODO: call into 2.2 patient info transform
                 PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath, true);
                 //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPNAM") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 patient name transform
                 PPNAM parser = new PPNAM(serviceId, systemId, exchangeId, version, filePath, true);
                 PPNAMTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPPHO") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 patient phone transform
                 PPPHO parser = new PPPHO(serviceId, systemId, exchangeId, version, filePath, true);
                 PPPHOTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPREL") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 patient relation transform
                 PPREL parser = new PPREL(serviceId, systemId, exchangeId, version, filePath, true);
                 PPRELTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPAGP") == 0) {
-                //call into 2.2 patient transforms
+                //call into 2.2 patient GP transform
                 PPAGP parser = new PPAGP(serviceId, systemId, exchangeId, version, filePath, true);
                 PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
@@ -275,10 +274,8 @@ public abstract class BartsCsvToFhirTransformer {
                 PROCE parser = new PROCE(serviceId, systemId, exchangeId, version, filePath, true);
                 PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("ORDER") == 0) {
-                //TODO: call into 2.2 Orders transform
-
             } else if (fileType.compareTo("CLEVE") == 0) {
+                //call into 2.2 clinical events transform
                 CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, filePath, true);
                 CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
