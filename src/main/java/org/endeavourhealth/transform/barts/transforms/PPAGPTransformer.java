@@ -3,14 +3,16 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PPAGPTransformer extends BartsBasisTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PPAGPTransformer.class);
 
     public static void transform(String version,
                                  PPAGP parser,
@@ -51,16 +53,11 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
-        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
 
+        fhirPatient.addCareProvider(csvHelper.createPractitionerReference(parser.getRegisteredGPMillenniumPersonnelId()));
 
-        // GP
-        /*
-        ResourceId gpResourceId = getGPResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.get());
-        if (gpResourceId == null) {
-            gpResourceId = createGPResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getGP());
-        }
+        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-        */
     }
 }

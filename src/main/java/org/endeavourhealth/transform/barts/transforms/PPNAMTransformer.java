@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PPNAMTransformer extends BartsBasisTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PPNAMTransformer.class);
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
     public static void transform(String version,

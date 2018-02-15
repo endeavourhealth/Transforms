@@ -26,7 +26,7 @@ public class PPAGP extends AbstractCharacterParser {
         addFieldList("MillenniumPersonIdentifier");
         addFieldList("BeginEffectiveDate");
         addFieldList("EndEffectiveDate");
-        addFieldList("RegisteredGPMillenniumId");
+        addFieldList("RegisteredGPMillenniumPersonnelId");
         addFieldList("RegisteredGPPracticeMillenniumIdOrganisationCode");
         addFieldList("PersonPersonnelRelationCode");
 
@@ -65,8 +65,8 @@ public class PPAGP extends AbstractCharacterParser {
         return super.getDateTime("EndEffectiveDate");
     }
 
-    public String getRegisteredGPMillenniumId() throws FileFormatException {
-        return super.getString("RegisteredGPMillenniumId");
+    public String getRegisteredGPMillenniumPersonnelId() throws FileFormatException {
+        return super.getString("RegisteredGPMillenniumPersonnelId");
     }
 
     public String getRegisteredGPPracticeMillenniumIdOrganisationCode() throws FileFormatException {
