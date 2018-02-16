@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -64,11 +65,16 @@ public class PPATITransformer extends BartsBasisTransformer {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
         }
 
-        String mrn = internalIdDalI.getDestinationId(fhirResourceFiler.getServiceId(), "PATIENT", parser.getMillenniumPersonId());
+        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID,
+                parser.getLocalPatientId(), parser.getMillenniumPersonId());
+
 
         Patient fhirPatient = new Patient();
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
-        fhirPatient.setId(mrn);
+        fhirPatient.setId(parser.getMillenniumPersonId());
+
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
+                parser.getMillenniumPersonId()));
 
         if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
@@ -168,13 +174,14 @@ public class PPATITransformer extends BartsBasisTransformer {
             fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
         }
 
+        // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         if (parser.getDeceasedDateTime() != null || parser.getDeceasedMethodCode() != null) {
-            if (parser.getDeceasedDateTime() != null)
+            if (parser.getDeceasedDateTime() != null) {
                 fhirPatient.setDeceased(new DateTimeType(parser.getDeceasedDateTime()));
-            else  // TODO check this?
+            }  // 684730 = No for deceased method!
+            else if (!parser.getDeceasedMethodCode().equals("0") || !parser.getDeceasedMethodCode().equals("684730")) {
                 fhirPatient.setDeceased(new BooleanType(true));
-            // TODO check if both are set and if not only add one.  Need to process the deceased method code
-            //fhirPatient.setDeceased(new BooleanType())
+            }
         }
 
 

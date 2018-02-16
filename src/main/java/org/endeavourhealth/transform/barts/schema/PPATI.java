@@ -107,6 +107,8 @@ public class PPATI extends AbstractCharacterParser {
     }
 
     public Date getDeceasedDateTime() throws TransformException {
+        if (super.getString("DeceasedDateTime").equals("0000-00-00 00:00:00"))
+            return null;
         return super.getDateTime("DeceasedDateTime");
     }
 
