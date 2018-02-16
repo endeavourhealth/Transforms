@@ -25,7 +25,7 @@ public class PatientResourceCache {
         return patientResources.get(millenniumId);
     }
 
-    private static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCurrentState parserState = new CsvCurrentState("PPATI", 0);
 
