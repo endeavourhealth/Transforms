@@ -15,6 +15,7 @@ public class CLEVE extends AbstractCharacterParser {
     public static final String DATE_FORMAT = "dd/mm/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
+    public static final int RECORD_ACTIVE = 1;
 
     public CLEVE(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
@@ -72,12 +73,7 @@ public class CLEVE extends AbstractCharacterParser {
     }
 
     public boolean isActive() throws FileFormatException {
-        int val = super.getInt("ActiveIndicator");
-        if (val == 1) {
-            return true;
-        } else {
-            return false;
-        }
+        return (super.getInt("ActiveIndicator") == RECORD_ACTIVE);
     }
 
     public String getPatientId() throws FileFormatException {
@@ -96,6 +92,10 @@ public class CLEVE extends AbstractCharacterParser {
         return super.getString("ClinicalEventClassMillenniumCode");
     }
 
+    public String getEventResultClassCode() throws FileFormatException {
+        return super.getString("ClinicalEventResultStatusMillenniumCode");
+    }
+
     public String getEventResultAsText() throws FileFormatException {
         return super.getString("ClinicalEventResult");
     }
@@ -108,20 +108,23 @@ public class CLEVE extends AbstractCharacterParser {
         return super.getString("NormalValueLowerLimit");
     }
 
+    public String getEventNormalcyCode() throws  FileFormatException {
+        return super.getString("NormalcyMillenniumCode");
+    }
     public String getEventNormalRangeHigh() throws FileFormatException {
         return super.getString("NormalValueUpperLimit");
     }
 
     public Date getEffectiveDateTime() throws TransformException {
-        return super.getDate("ClinicalEventPerformedDateTime");
+        return super.getDate("ClinicalSignificanceDateTime");
     }
 
     public String getEffectiveDateTimeAsString() throws TransformException {
         return super.getString("ClinicalEventPerformedDateTime");
     }
 
-    public String getPersonnel() throws FileFormatException {
-            return super.getString("ClinicalEventPerformedMillenniumPersonnelIdentifier");
+    public String getClinicianID() throws FileFormatException {
+        return super.getString("ClinicalEventPerformedMillenniumPersonnelIdentifier");
     }
 
     public String getEventTag() throws FileFormatException {   //use for display if EventTitleText is null
@@ -132,6 +135,26 @@ public class CLEVE extends AbstractCharacterParser {
         return super.getString("EventTitleText");
     }
 
+    public String getRecordStatusreference() throws FileFormatException {
+        return super.getString("RecordStatusMillenniumCode");
+    }
+
+    //TODO Do we need some boolean methods on status?
+    public String getReferenceNumber() throws FileFormatException {
+        return super.getString("ReferenceNumber");
+    }
+
+    public Date getValidFromDateTime() throws TransformException {
+        return super.getDate("ValidFromDateTime");
+    }
+
+    public String getValidFromDateTimeasString() throws TransformException {
+        return super.getString("ValidFromDateTime");
+    }
+
+    public String getContributorSystemMillenniumCode() throws FileFormatException {
+        return super.getString("ContributorSystemMillenniumCode");
+    }
     @Override
     protected String getFileTypeDescription() {
         return "Cerner clinical events file";
