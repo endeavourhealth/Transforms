@@ -7,6 +7,7 @@ import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -39,7 +40,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
     public static void transform(String version,
                                  CLEVE parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -85,7 +86,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
      */
     public static void createObservation(CLEVE parser,
                                          FhirResourceFiler fhirResourceFiler,
-                                         EmisCsvHelper csvHelper,
+                                         BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation
