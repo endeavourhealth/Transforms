@@ -381,16 +381,11 @@ public abstract class BartsCsvToFhirTransformer {
             if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
                 return filenamePart1.toUpperCase();
             } else {
-                String filenamePart4 = parts[3];
-
                 if (filenamePart1.compareToIgnoreCase("ip") == 0) {
                     return "SUSIP";
                 } else if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
                     return filenamePart3.toUpperCase();
                 } else {
-                    //String filenamePart5 = parts[4];
-                    String filenamePart6 = parts[5];
-
                     if (filenamePart1.compareToIgnoreCase("GETL") == 0) {
                         return filenamePart3.toUpperCase();
                     } else {
