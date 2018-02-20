@@ -71,9 +71,16 @@ public class PPALITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getAliasTypeCode()),
                     fhirResourceFiler.getServiceId());
 
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
-                    convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt()), parser.getAlias());
+            String aliasCode = FhirUri.IDENTIFIER_SYSTEM_CERNER_OTHER_PERSON_ID;
 
+            if (cernerCodeValueRef != null) {
+                aliasCode = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
+            } else {
+                LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
+            }
+
+            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
+                    aliasCode, parser.getAlias());
 
             if (parser.getBeginEffectiveDate() != null || parser.getEndEffectiveDater() != null) {
                 Period fhirPeriod = PeriodHelper.createPeriod(parser.getBeginEffectiveDate(), parser.getEndEffectiveDater());

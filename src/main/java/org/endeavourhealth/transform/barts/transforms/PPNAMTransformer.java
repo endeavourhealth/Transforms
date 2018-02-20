@@ -81,7 +81,11 @@ public class PPNAMTransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getNameTypeCode()),
                     fhirResourceFiler.getServiceId());
 
-            nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
+            if (cernerCodeValueRef != null) {
+                nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
+            } else {
+                LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
+            }
         }
 
         HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(
@@ -98,15 +102,6 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-        /*
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME,
-                parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
-
-
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
-
-
-        */
     }
 
     private static String parseTitleAndPrefix(String title, String prefix) throws Exception {

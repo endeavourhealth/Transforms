@@ -126,8 +126,12 @@ public class PPRELTransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getRelationshipToPatientCode()),
                     fhirResourceFiler.getServiceId());
 
-            ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
-            fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
+            if (cernerCodeValueRef != null) {
+                ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
+                fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
+            } else {
+                LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
+            }
         }
 
         if (parser.getPersonRelationTypeCode() != null && parser.getPersonRelationTypeCode().length() > 0) {
@@ -137,8 +141,12 @@ public class PPRELTransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getPersonRelationTypeCode()),
                     fhirResourceFiler.getServiceId());
 
-            ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
-            fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
+            if (cernerCodeValueRef != null) {
+                ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
+                fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
+            } else {
+                LOG.warn("Person Relation Type code: " + parser.getPersonRelationTypeCode() + " not found in Code Value lookup");
+            }
         }
 
         fhirPatient.addContact(fhirContactComponent);

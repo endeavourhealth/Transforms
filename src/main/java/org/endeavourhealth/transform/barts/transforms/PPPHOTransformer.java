@@ -81,9 +81,16 @@ public class PPPHOTransformer extends BartsBasisTransformer {
                         Long.parseLong(parser.getPhoneTypeCode()),
                         fhirResourceFiler.getServiceId());
 
-                ContactPoint.ContactPointUse use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
+                ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
+                ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
 
-                ContactPoint.ContactPointSystem system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
+                if (cernerCodeValueRef != null) {
+                    use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
+
+                    system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
+                } else {
+                    LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
+                }
 
                 ContactPoint contactPoint = ContactPointHelper.create(system, use, phoneNumber);
 
