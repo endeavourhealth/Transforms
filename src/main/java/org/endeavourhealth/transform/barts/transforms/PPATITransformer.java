@@ -5,11 +5,13 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -71,10 +73,17 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         Patient fhirPatient = new Patient();
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
-        fhirPatient.setId(parser.getMillenniumPersonId());
+
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + parser.getMillenniumPersonId();
+        ResourceId patientResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Patient", uniqueId);
+
+        fhirPatient.setId(patientResourceId.toString());
+
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
+                parser.getMillenniumPersonId()));
 
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
-                parser.getMillenniumPersonId()));
+                parser.getLocalPatientId()));
 
         if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
