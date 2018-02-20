@@ -180,14 +180,28 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // specialty
             if (!encounterTypeCodeCell.isEmpty()) {
                 CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, encounterTypeCodeCell.getLong(), fhirResourceFiler.getServiceId());
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, ret.getCodeDispTxt(), encounterTypeCodeCell.getString());
+                String encounterDispTxt;
+                if (ret != null) {
+                    encounterDispTxt = ret.getCodeDispTxt();
+                } else {
+                    encounterDispTxt = "??Unknown encounter type " + encounterTypeCodeCell.getString();
+                    LOG.warn("Code not found in Code Value lookup:" + encounterDispTxt);
+                }
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
                 encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept, encounterTypeCodeCell);
             }
 
             // treatment function
             if (!treatmentFunctionCodeCell.isEmpty()) {
                 CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION, treatmentFunctionCodeCell.getLong(), fhirResourceFiler.getServiceId());
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, ret.getCodeDispTxt(), treatmentFunctionCodeCell.getString());
+                String treatFuncDispTxt;
+                if (ret != null) {
+                    treatFuncDispTxt = ret.getCodeDispTxt();
+                } else {
+                    treatFuncDispTxt = "??Unknown treatment function type " + treatmentFunctionCodeCell.getString();
+                    LOG.warn("Code not found in Code Value lookup:" + treatFuncDispTxt);
+                }
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
                 encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept);
             }
 

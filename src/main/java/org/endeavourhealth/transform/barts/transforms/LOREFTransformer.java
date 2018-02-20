@@ -465,7 +465,13 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
-        CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
-        return ret.getCodeDispTxt();
+        CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
+        if (cernerCodeDef != null) {
+            return cernerCodeDef.getCodeDispTxt();
+        } else {
+            String ret = "??Unknown location " + code;
+            LOG.warn("Code not found in Code Value lookup:" + ret);
+            return ret;
+        }
     }
 }
