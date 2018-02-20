@@ -23,7 +23,7 @@ public class PPATI extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
         return new String[]{
-                "PERSON_ID",
+                "#PERSON_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "LOCAL_PATIENT_IDENT",
@@ -45,7 +45,7 @@ public class PPATI extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonId() {
-        return super.getString("PERSON_ID");
+        return super.getString("#PERSON_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

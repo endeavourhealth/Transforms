@@ -23,7 +23,7 @@ public class PPPHO extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PHONE_ID",
+                "#PHONE_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -38,7 +38,7 @@ public class PPPHO extends AbstractCsvParser {
     }
 
     public String getMillenniumPhoneId() {
-        return super.getString("PHONE_ID");
+        return super.getString("#PHONE_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

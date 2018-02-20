@@ -23,7 +23,7 @@ public class PPADD extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "ADDRESS_ID",
+                "#ADDRESS_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -46,7 +46,7 @@ public class PPADD extends AbstractCsvParser {
     }
 
     public String getMillenniumAddressId() {
-        return super.getString("ADDRESS_ID");
+        return super.getString("#ADDRESS_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

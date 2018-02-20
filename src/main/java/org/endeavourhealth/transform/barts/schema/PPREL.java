@@ -24,7 +24,7 @@ public class PPREL extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSON_PERSON_RELTN_ID",
+                "#PERSON_PERSON_RELTN_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -53,7 +53,7 @@ public class PPREL extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonRelationId() {
-        return super.getString("PERSON_PERSON_RELTN_ID");
+        return super.getString("#PERSON_PERSON_RELTN_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

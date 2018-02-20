@@ -23,7 +23,7 @@ public class PPINF extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSON_INFO_ID",
+                "#PERSON_INFO_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -40,7 +40,7 @@ public class PPINF extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonInformationId() {
-        return super.getString("PERSON_INFO_ID");
+        return super.getString("#PERSON_INFO_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

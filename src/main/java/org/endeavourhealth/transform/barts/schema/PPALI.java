@@ -24,7 +24,7 @@ public class PPALI extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSON_ALIAS_ID",
+                "#PERSON_ALIAS_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -43,7 +43,7 @@ public class PPALI extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonAliasId() {
-        return super.getString("PERSON_ALIAS_ID");
+        return super.getString("#PERSON_ALIAS_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

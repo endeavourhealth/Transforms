@@ -23,7 +23,7 @@ public class PPNAM extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSON_NAME_ID",
+                "#PERSON_NAME_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -42,7 +42,7 @@ public class PPNAM extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonNameId() {
-        return super.getString("PERSON_NAME_ID");
+        return super.getString("#PERSON_NAME_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

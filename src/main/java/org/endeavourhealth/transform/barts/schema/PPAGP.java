@@ -23,7 +23,7 @@ public class PPAGP extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSON_PRSNL_RELTN_ID",
+                "#PERSON_PRSNL_RELTN_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -36,7 +36,7 @@ public class PPAGP extends AbstractCsvParser {
     }
 
     public String getMillenniumPersonPersonnelRelationId() {
-        return super.getString("PERSON_PRSNL_RELTN_ID");
+        return super.getString("#PERSON_PRSNL_RELTN_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
