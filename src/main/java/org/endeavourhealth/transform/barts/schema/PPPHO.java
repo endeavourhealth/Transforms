@@ -1,53 +1,56 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
 
-public class PPPHO extends AbstractCharacterParser {
+public class PPPHO extends AbstractCsvParser {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PPATI.class);
-
-    public static final String DATE_FORMAT = "dd/mm/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
+    private static final Logger LOG = LoggerFactory.getLogger(PPPHO.class);
 
     public PPPHO(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
-
-        addFieldList("MillenniumPhoneId");
-        addFieldList("ExtractDateTime");
-        addFieldList("ActiveIndicator");
-        addFieldList("MillenniumPersonIdentifier");
-        addFieldList("BeginEffectiveDateTime");
-        addFieldList("EndEffectiveDateTime");
-        addFieldList("PhoneTypeCode");
-        addFieldList("PhoneTypeSequence");
-        addFieldList("PhoneNumber");
-        addFieldList("Extension");
-        addFieldList("ContactMethodCode");
-
+        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+                BartsCsvToFhirTransformer.CSV_FORMAT,
+                BartsCsvToFhirTransformer.DATE_FORMAT,
+                BartsCsvToFhirTransformer.TIME_FORMAT);
     }
 
-    public String getMillenniumPhoneId() throws FileFormatException {
-        return super.getString("MillenniumPhoneId");
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[]{
+                "#PHONE_ID",
+                "EXTRACT_DT_TM",
+                "ACTIVE_IND",
+                "PERSON_ID",
+                "BEG_EFFECTIVE_DT_TM",
+                "END_EFFECTIVE_DT_TM",
+                "PHONE_TYPE_CD",
+                "PHONE_TYPE_SEQ_NBR",
+                "PHONE_NBR_TXT",
+                "EXTENSION_TXT",
+                "CONTACT_METHOD_CD",
+        };
+    }
+
+    public String getMillenniumPhoneId() {
+        return super.getString("#PHONE_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
-        return super.getDateTime("ExtractDateTime");
+        return super.getDate("EXTRACT_DT_TM");
     }
 
-    public String getActiveIndicator() throws FileFormatException {
-        return super.getString("ActiveIndicator");
+    public String getActiveIndicator() {
+        return super.getString("ACTIVE_IND");
     }
 
-    public boolean isActive() throws FileFormatException {
-        int val = super.getInt("ActiveIndicator");
+    public boolean isActive() {
+        int val = super.getInt("ACTIVE_IND");
         if (val == 1) {
             return true;
         } else {
@@ -55,40 +58,45 @@ public class PPPHO extends AbstractCharacterParser {
         }
     }
 
-    public String getMillenniumPersonIdentifier() throws FileFormatException {
-        return super.getString("MillenniumPersonIdentifier");
+    public String getMillenniumPersonIdentifier() {
+        return super.getString("PERSON_ID");
     }
 
     public Date getBeginEffectiveDateTime() throws TransformException {
-        return super.getDateTime("BeginEffectiveDateTime");
+        return super.getDate("BEG_EFFECTIVE_DT_TM");
     }
 
     public Date getEndEffectiveDateTime() throws TransformException {
-        return super.getDateTime("EndEffectiveDateTime");
+        return super.getDate("END_EFFECTIVE_DT_TM");
     }
 
-    public String getPhoneTypeCode() throws FileFormatException {
-        return super.getString("PhoneTypeCode");
+    public String getPhoneTypeCode() {
+        return super.getString("PHONE_TYPE_CD");
     }
 
-    public String getPhoneTypeSequence() throws FileFormatException {
-        return super.getString("PhoneTypeSequence");
+    public String getPhoneTypeSequence() {
+        return super.getString("PHONE_TYPE_SEQ_NBR");
     }
 
-    public String getPhoneNumber() throws FileFormatException {
-        return super.getString("PhoneNumber");
+    public String getPhoneNumber() {
+        return super.getString("PHONE_NBR_TXT");
     }
 
-    public String getExtension() throws FileFormatException {
-        return super.getString("Extension");
+    public String getExtension() {
+        return super.getString("EXTENSION_TXT");
     }
 
-    public String getContactMethodCode() throws FileFormatException {
-        return super.getString("ContactMethodCode");
+    public String getContactMethodCode() {
+        return super.getString("CONTACT_METHOD_CD");
     }
 
     @Override
     protected String getFileTypeDescription() {
         return "Cerner person phone file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 }

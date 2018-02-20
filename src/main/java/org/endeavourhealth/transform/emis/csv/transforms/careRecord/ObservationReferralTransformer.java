@@ -296,19 +296,18 @@ public class ObservationReferralTransformer {
     }
 
     private static ReferralRequestSendMode convertMode(String mode) {
-        ReferralRequestSendMode ret = ReferralRequestSendMode.fromDescription(mode);
-        if (ret != null) {
-            return ret;
-        }
+        try {
+            return ReferralRequestSendMode.fromDescription(mode);
 
-        if (mode.equalsIgnoreCase("Choose and Book")) {
-            //ERS is the new name for Choose and Book
-            return ReferralRequestSendMode.ERS;
+        } catch (IllegalArgumentException ex) {
+            //if it can't be mapped directly by name, we can attempt an alternative lookup
+            if (mode.equalsIgnoreCase("Choose and Book")) {
+                //ERS is the new name for Choose and Book
+                return ReferralRequestSendMode.ERS;
 
-        } else {
-            return null;
+            } else {
+                return null;
+            }
         }
     }
-
-
 }

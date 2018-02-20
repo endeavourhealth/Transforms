@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts;
 
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -22,9 +23,14 @@ public abstract class BartsCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
+    public static final String DATE_FORMAT = "dd/MM/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
+                                                .withHeader()
+                                                .withDelimiter('|')
+                                                .withEscape('^')
+                                                .withQuoteMode(QuoteMode.NONE)
+                                                .withQuote((Character)null);
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
@@ -381,16 +387,11 @@ public abstract class BartsCsvToFhirTransformer {
             if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
                 return filenamePart1.toUpperCase();
             } else {
-                String filenamePart4 = parts[3];
-
                 if (filenamePart1.compareToIgnoreCase("ip") == 0) {
                     return "SUSIP";
                 } else if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
                     return filenamePart3.toUpperCase();
                 } else {
-                    //String filenamePart5 = parts[4];
-                    String filenamePart6 = parts[5];
-
                     if (filenamePart1.compareToIgnoreCase("GETL") == 0) {
                         return filenamePart3.toUpperCase();
                     } else {

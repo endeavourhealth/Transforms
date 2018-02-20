@@ -99,6 +99,8 @@ public class PPATITransformer extends BartsBasisTransformer {
                 }
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS,
                         fhirCodeableConcept));
+            } else {
+                LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
             }
         }
 
@@ -117,8 +119,12 @@ public class PPATITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getGenderCode()),
                     fhirResourceFiler.getServiceId());
 
-            Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
-            fhirPatient.setGender(gender);
+            if (cernerCodeValueRef != null) {
+                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
+                fhirPatient.setGender(gender);
+            } else {
+                LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
+            }
         }
 
         if (parser.getMaritalStatusCode() != null && parser.getMaritalStatusCode().length() > 0) {
@@ -127,9 +133,13 @@ public class PPATITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getMaritalStatusCode()),
                     fhirResourceFiler.getServiceId());
 
-            MaritalStatus maritalStatus = convertMaritalStatus (cernerCodeValueRef.getCodeMeaningTxt());
-            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
-            fhirPatient.setMaritalStatus(codeableConcept);
+            if (cernerCodeValueRef != null) {
+                MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
+                fhirPatient.setMaritalStatus(codeableConcept);
+            } else {
+                LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
+            }
         }
 
         if (parser.getEthnicGroupCode() != null && parser.getEthnicGroupCode().length() > 0) {
@@ -139,8 +149,12 @@ public class PPATITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getEthnicGroupCode()),
                     fhirResourceFiler.getServiceId());
 
-            ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
-                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+            if (cernerCodeValueRef != null) {
+                ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
+                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+            } else {
+                LOG.warn("Ethnic Group code: " + parser.getEthnicGroupCode() + " not found in Code Value lookup");
+            }
         }
 
         if (parser.getFirstLanguageCode() != null && parser.getFirstLanguageCode().length() > 0) {
@@ -152,13 +166,17 @@ public class PPATITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getFirstLanguageCode()),
                     fhirResourceFiler.getServiceId());
 
-            languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
-                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+            if (cernerCodeValueRef != null) {
+                languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
 
-            fhirCommunication.setLanguage(languageConcept);
-            fhirCommunication.setPreferred(true);
+                fhirCommunication.setLanguage(languageConcept);
+                fhirCommunication.setPreferred(true);
 
-            fhirPatient.addCommunication(fhirCommunication);
+                fhirPatient.addCommunication(fhirCommunication);
+            } else {
+                LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
+            }
         }
 
         if (parser.getReligionCode() != null && parser.getReligionCode().length() > 0) {
@@ -168,10 +186,14 @@ public class PPATITransformer extends BartsBasisTransformer {
                     Long.parseLong(parser.getReligionCode()),
                     fhirResourceFiler.getServiceId());
 
-            religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
-                    .setDisplay(cernerCodeValueRef.getCodeDescTxt());
+            if (cernerCodeValueRef != null) {
+                religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
 
-            fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
+                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
+            } else {
+                LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
+            }
         }
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag

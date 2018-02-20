@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class FhirResourceFiler {
+public class FhirResourceFiler implements FhirResourceFilerI {
 
     private static final Logger LOG = LoggerFactory.getLogger(FhirResourceFiler.class);
 

@@ -153,9 +153,30 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("identifier[" + index + "].value", sourceCells);
     }
 
+    public void addReason(CodeableConcept reason, CsvCell... sourceCells) {
+        this.encounter.addReason(reason);
+
+        int index = this.encounter.getReason().size()-1;
+        auditValue("reason[" + index + "].value", sourceCells);
+    }
+
     public void setClass(Encounter.EncounterClass encounterClass, CsvCell... sourceCells) {
         this.encounter.setClass_(encounterClass);
 
         auditValue("class", sourceCells);
     }
+
+    public void addExtension(String typeDesc, CodeableConcept fhirCodeableConcept, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createExtension(typeDesc, fhirCodeableConcept);
+
+        auditStringExtension(extension, sourceCells);
+    }
+
+    public void addLocation(Reference referenceValue, CsvCell... sourceCells) {
+        this.encounter.addLocation().setLocation(referenceValue);
+
+        int index = this.encounter.getLocation().size()-1;
+        auditValue("location[" + index + "].location", sourceCells);
+    }
+
 }

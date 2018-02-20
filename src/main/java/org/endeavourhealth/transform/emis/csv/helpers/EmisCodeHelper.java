@@ -146,17 +146,20 @@ public class EmisCodeHelper {
         List<CsvCell> list = new ArrayList<>(Arrays.asList(additionalSourceCells));
 
         ResourceFieldMappingAudit audit = codeMap.getAudit();
-        Map<Long, ResourceFieldMappingAudit.ResourceFieldMappingAuditRow> auditMap = audit.getAudits();
-        for (Long key: auditMap.keySet()) {
-            ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit = auditMap.get(key);
-            for (ResourceFieldMappingAudit.ResourceFieldMappingAuditCol colAudit: rowAudit.getCols()) {
-                String field = colAudit.getField();
-                if (field.equals(fieldName)) {
-                    int colIndex = colAudit.getCol();
-                    long rowAuditId = rowAudit.getAuditId();
+        //audit may be null if the coding file was processed before the audit was added
+        if (audit != null) {
+            Map<Long, ResourceFieldMappingAudit.ResourceFieldMappingAuditRow> auditMap = audit.getAudits();
+            for (Long key : auditMap.keySet()) {
+                ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit = auditMap.get(key);
+                for (ResourceFieldMappingAudit.ResourceFieldMappingAuditCol colAudit : rowAudit.getCols()) {
+                    String field = colAudit.getField();
+                    if (field.equals(fieldName)) {
+                        int colIndex = colAudit.getCol();
+                        long rowAuditId = rowAudit.getAuditId();
 
-                    CsvCell cell = new CsvCell(rowAuditId, colIndex, value.toString(), new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD), new SimpleDateFormat(EmisCsvToFhirTransformer.TIME_FORMAT));
-                    list.add(cell);
+                        CsvCell cell = new CsvCell(rowAuditId, colIndex, value.toString(), new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD), new SimpleDateFormat(EmisCsvToFhirTransformer.TIME_FORMAT));
+                        list.add(cell);
+                    }
                 }
             }
         }

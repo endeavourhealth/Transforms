@@ -1,66 +1,71 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
 
-public class PPREL extends AbstractCharacterParser {
+public class PPREL extends AbstractCsvParser {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PPATI.class);
-
-    public static final String DATE_FORMAT = "dd/mm/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
-
+    private static final Logger LOG = LoggerFactory.getLogger(PPREL.class);
+    
     public PPREL(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+                BartsCsvToFhirTransformer.CSV_FORMAT,
+                BartsCsvToFhirTransformer.DATE_FORMAT,
+                BartsCsvToFhirTransformer.TIME_FORMAT);
+    }
 
-        addFieldList("MillenniumPersonRelationId");
-        addFieldList("ExtractDateTime");
-        addFieldList("ActiveIndicator");
-        addFieldList("MillenniumPersonIdentifier");
-        addFieldList("RelatedPersonMillenniumIdentifier");
-        addFieldList("RelationshipToPatientCode");
-        addFieldList("PersonRelationTypeCode");
-        addFieldList("Title");
-        addFieldList("FirstName");
-        addFieldList("MiddleName");
-        addFieldList("LastName");
-        addFieldList("AddressLine1");
-        addFieldList("AddressLine2");
-        addFieldList("AddressLine3");
-        addFieldList("AddressLine4");
-        addFieldList("City");
-        addFieldList("Country");
-        addFieldList("Postcode");
-        addFieldList("HomePhoneNumber");
-        addFieldList("MobilePhoneNumber");
-        addFieldList("WorkPhoneNumber");
-        addFieldList("EmailAddress");
-        addFieldList("BeginEffectiveDateTime");
-        addFieldList("EndEffectiveDateTime");
+
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[]{
+                "#PERSON_PERSON_RELTN_ID",
+                "EXTRACT_DT_TM",
+                "ACTIVE_IND",
+                "PERSON_ID",
+                "RELATED_PERSON_ID",
+                "RELATION_CD",
+                "RELATION_TYPE_CD",
+                "TITLE_TXT",
+                "FIRST_NAME_TXT",
+                "MIDDLE_NAME_TXT",
+                "LAST_NAME_TXT",
+                "HOME_ADDR_LINE1_TXT",
+                "HOME_ADDR_LINE2_TXT",
+                "HOME_ADDR_LINE3_TXT",
+                "HOME_ADDR_LINE4_TXT",
+                "HOME_CITY_TXT",
+                "HOME_COUNTRY_TXT",
+                "HOME_POSTCODE_TXT",
+                "HOME_PHONE_NBR_TXT",
+                "MOB_PHONE_NBR_TXT",
+                "WORK_PHONE_NBR_TXT",
+                "EMAIL_TXT",
+                "BEG_EFFECTIVE_DT_TM",
+                "END_EFFECTIVE_DT_TM",
+        };
 
     }
 
-    public String getMillenniumPersonRelationId() throws FileFormatException {
-        return super.getString("MillenniumPersonRelationId");
+    public String getMillenniumPersonRelationId() {
+        return super.getString("#PERSON_PERSON_RELTN_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
-        return super.getDateTime("ExtractDateTime");
+        return super.getDate("EXTRACT_DT_TM");
     }
 
-    public String getActiveIndicator() throws FileFormatException {
-        return super.getString("ActiveIndicator");
+    public String getActiveIndicator() {
+        return super.getString("ACTIVE_IND");
     }
 
-    public boolean isActive() throws FileFormatException {
-        int val = super.getInt("ActiveIndicator");
+    public boolean isActive() {
+        int val = super.getInt("ACTIVE_IND");
         if (val == 1) {
             return true;
         } else {
@@ -68,92 +73,97 @@ public class PPREL extends AbstractCharacterParser {
         }
     }
 
-    public String getMillenniumPersonIdentifier() throws FileFormatException {
-        return super.getString("MillenniumPersonIdentifier");
+    public String getMillenniumPersonIdentifier() {
+        return super.getString("PERSON_ID");
     }
 
-    public String getRelatedPersonMillenniumIdentifier() throws FileFormatException {
-        return super.getString("RelatedPersonMillenniumIdentifier");
+    public String getRelatedPersonMillenniumIdentifier() {
+        return super.getString("RELATED_PERSON_ID");
     }
 
-    public String  getRelationshipToPatientCode() throws FileFormatException {
-        return super.getString("RelationshipToPatientCode");
+    public String  getRelationshipToPatientCode() {
+        return super.getString("RELATION_CD");
     }
 
-    public String getPersonRelationTypeCode() throws FileFormatException {
-        return super.getString("PersonRelationTypeCode");
+    public String getPersonRelationTypeCode() {
+        return super.getString("RELATION_TYPE_CD");
     }
 
-    public String getTitle() throws FileFormatException {
-        return super.getString("Title");
+    public String getTitle() {
+        return super.getString("TITLE_TXT");
     }
 
-    public String getFirstName() throws FileFormatException {
-        return super.getString("FirstName");
+    public String getFirstName() {
+        return super.getString("FIRST_NAME_TXT");
     }
 
-    public String getMiddleName() throws FileFormatException {
-        return super.getString("MiddleName");
+    public String getMiddleName() {
+        return super.getString("MIDDLE_NAME_TXT");
     }
 
-    public String getLastName() throws FileFormatException {
-        return super.getString("LastName");
+    public String getLastName() {
+        return super.getString("LAST_NAME_TXT");
     }
 
-    public String getAddressLine1() throws TransformException {
-        return super.getString("AddressLine1");
+    public String getAddressLine1() {
+        return super.getString("HOME_ADDR_LINE1_TXT");
     }
 
-    public String getAddressLine2() throws TransformException {
-        return super.getString("AddressLine2");
+    public String getAddressLine2() {
+        return super.getString("HOME_ADDR_LINE2_TXT");
     }
 
-    public String getAddressLine3() throws FileFormatException {
-        return super.getString("AddressLine3");
+    public String getAddressLine3() {
+        return super.getString("HOME_ADDR_LINE3_TXT");
     }
 
-    public String getAddressLine4() throws FileFormatException {
-        return super.getString("AddressLine4");
+    public String getAddressLine4() {
+        return super.getString("HOME_ADDR_LINE4_TXT");
     }
 
-    public String getCity() throws FileFormatException {
-        return super.getString("City");
+    public String getCity() {
+        return super.getString("HOME_CITY_TXT");
     }
 
-    public String getCountry() throws TransformException {
-        return super.getString("Country");
+    public String getCountry() {
+        return super.getString("HOME_COUNTRY_TXT");
     }
 
-    public String getPostcode() throws TransformException {
-        return super.getString("Postcode");
+    public String getPostcode() {
+        return super.getString("HOME_POSTCODE_TXT");
     }
 
-    public String getHomePhoneNumber() throws FileFormatException {
-        return super.getString("HomePhoneNumber");
+    public String getHomePhoneNumber() {
+        return super.getString("HOME_PHONE_NBR_TXT");
     }
 
-    public String getMobilePhoneNumber() throws FileFormatException {
-        return super.getString("MobilePhoneNumber");
+    public String getMobilePhoneNumber() {
+        return super.getString("MOB_PHONE_NBR_TXT");
     }
 
-    public String getWorkPhoneNumber() throws FileFormatException {
-        return super.getString("WorkPhoneNumber");
+    public String getWorkPhoneNumber() {
+        return super.getString("WORK_PHONE_NBR_TXT");
     }
 
-    public String getEmailAddress() throws TransformException {
-        return super.getString("EmailAddress");
+    public String getEmailAddress() {
+        return super.getString("EMAIL_TXT");
     }
 
     public Date getBeginEffectiveDateTime() throws TransformException {
-        return super.getDateTime("BeginEffectiveDateTime");
+        return super.getDate("BEG_EFFECTIVE_DT_TM");
     }
 
     public Date getEndEffectiveDateTime() throws TransformException {
-        return super.getDateTime("EndEffectiveDateTime");
+        return super.getDate("END_EFFECTIVE_DT_TM");
     }
 
     @Override
     protected String getFileTypeDescription() {
         return "Cerner person relationship file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 }

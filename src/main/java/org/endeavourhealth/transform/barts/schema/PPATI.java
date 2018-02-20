@@ -1,60 +1,63 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
 
-public class PPATI extends AbstractCharacterParser {
+public class PPATI extends AbstractCsvParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(PPATI.class);
 
-    public static final String DATE_FORMAT = "dd/mm/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
-
     public PPATI(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
-
-        addFieldList("MillenniumPersonId");
-        addFieldList("ExtractDateTime");
-        addFieldList("ActiveIndicator");
-        addFieldList("LocalPatientIdentifier");
-        addFieldList("MillenniumOrganisationIdentifier");
-        addFieldList("NhsNumber");
-        addFieldList("NhsNumberStatus");
-        addFieldList("DateOfBirth");
-        addFieldList("EstimatedBirthDateIndicator");
-        addFieldList("GenderCode");
-        addFieldList("MaritalStatusCode");
-        addFieldList("EthnicGroupCode");
-        addFieldList("FirstLanguageCode");
-        addFieldList("ReligionCode");
-        addFieldList("DeceasedDateTime");
-        addFieldList("CauseOfDeathCode");
-        addFieldList("DeceasedMethodCode");
-        addFieldList("ConsentToReleaseReligionCode");
-
+        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+                BartsCsvToFhirTransformer.CSV_FORMAT,
+                BartsCsvToFhirTransformer.DATE_FORMAT,
+                BartsCsvToFhirTransformer.TIME_FORMAT);
     }
 
-    public String getMillenniumPersonId() throws FileFormatException {
-        return super.getString("MillenniumPersonId");
+    protected String[] getCsvHeaders(String version) {
+
+        return new String[]{
+                "#PERSON_ID",
+                "EXTRACT_DT_TM",
+                "ACTIVE_IND",
+                "LOCAL_PATIENT_IDENT",
+                "LOCAL_PATIENT_NHS_ORG_ID",
+                "NHS_NBR_IDENT",
+                "NHS_NBR_STATUS_CD",
+                "BIRTH_DT_TM",
+                "EST_BIRTH_DT_CD",
+                "GENDER_CD",
+                "MARITAL_STATUS_CD",
+                "ETHNIC_GROUP_CD",
+                "LANGUAGE_CD",
+                "RELIGION_CD",
+                "DECEASED_DT_TM",
+                "CAUSE_OF_DEATH_CD",
+                "DECEASED_CD",
+                "CONSENT_REL_RELIG_CD"
+        };
+    }
+
+    public String getMillenniumPersonId() {
+        return super.getString("#PERSON_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
-        return super.getDateTime("ExtractDateTime");
+        return super.getDate("EXTRACT_DT_TM");
     }
 
-    public String getActiveIndicator() throws FileFormatException {
-        return super.getString("ActiveIndicator");
+    public String getActiveIndicator() {
+        return super.getString("ACTIVE_IND");
     }
 
-    public boolean isActive() throws FileFormatException {
-        int val = super.getInt("ActiveIndicator");
+    public boolean isActive() {
+        int val = super.getInt("ACTIVE_IND");
         if (val == 1) {
             return true;
         } else {
@@ -62,70 +65,75 @@ public class PPATI extends AbstractCharacterParser {
         }
     }
 
-    public String getLocalPatientId() throws FileFormatException {
-        return super.getString("LocalPatientIdentifier");
+    public String getLocalPatientId() {
+        return super.getString("LOCAL_PATIENT_IDENT");
     }
 
-    public String getOrganisationId() throws FileFormatException {
-        return super.getString("MillenniumOrganisationIdentifier");
+    public String getOrganisationId() {
+        return super.getString("LOCAL_PATIENT_NHS_ORG_ID");
     }
 
-    public String getNhsNumber() throws FileFormatException {
-        return super.getString("NhsNumber");
+    public String getNhsNumber() {
+        return super.getString("NHS_NBR_IDENT");
     }
 
-    public String getNhsNumberStatus() throws FileFormatException {
-        return super.getString("NhsNumberStatus");
+    public String getNhsNumberStatus() {
+        return super.getString("NHS_NBR_STATUS_CD");
     }
 
     public Date getDateOfBirth() throws TransformException {
-        return super.getDateTime("DateOfBirth");
+        return super.getDate("BIRTH_DT_TM");
     }
 
-    public String getEstimatedBirthDateIndicator() throws FileFormatException {
-        return super.getString("EstimatedBirthDateIndicator");
+    public String getEstimatedBirthDateIndicator() {
+        return super.getString("EST_BIRTH_DT_CD");
     }
 
-    public String getGenderCode() throws FileFormatException {
-        return super.getString("GenderCode");
+    public String getGenderCode() {
+        return super.getString("GENDER_CD");
     }
 
-    public String getMaritalStatusCode() throws FileFormatException {
-        return super.getString("MaritalStatusCode");
+    public String getMaritalStatusCode() {
+        return super.getString("MARITAL_STATUS_CD");
     }
 
-    public String getEthnicGroupCode() throws TransformException {
-        return super.getString("EthnicGroupCode");
+    public String getEthnicGroupCode() {
+        return super.getString("ETHNIC_GROUP_CD");
     }
 
-    public String getFirstLanguageCode() throws TransformException {
-        return super.getString("FirstLanguageCode");
+    public String getFirstLanguageCode() {
+        return super.getString("LANGUAGE_CD");
     }
 
-    public String getReligionCode() throws FileFormatException {
-        return super.getString("ReligionCode");
+    public String getReligionCode() {
+        return super.getString("RELIGION_CD");
     }
 
     public Date getDeceasedDateTime() throws TransformException {
-        if (super.getString("DeceasedDateTime").equals("0000-00-00 00:00:00"))
+        if (super.getString("DECEASED_DT_TM").equals("0000-00-00 00:00:00"))
             return null;
-        return super.getDateTime("DeceasedDateTime");
+        return super.getDate("DECEASED_DT_TM");
     }
 
-    public String getCauseOfDeathCode() throws FileFormatException {
-        return super.getString("CauseOfDeathCode");
+    public String getCauseOfDeathCode() {
+        return super.getString("CAUSE_OF_DEATH_CD");
     }
 
-    public String getDeceasedMethodCode() throws FileFormatException {
-        return super.getString("DeceasedMethodCode");
+    public String getDeceasedMethodCode() {
+        return super.getString("DECEASED_CD");
     }
 
-    public String getConsentToReleaseReligionCode() throws FileFormatException {
-        return super.getString("ConsentToReleaseReligionCode");
+    public String getConsentToReleaseReligionCode() {
+        return super.getString("CONSENT_REL_RELIG_CD");
     }
 
     @Override
     protected String getFileTypeDescription() {
         return "Cerner person file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 }
