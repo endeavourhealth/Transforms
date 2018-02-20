@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -9,7 +8,6 @@ import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class ENCNT extends AbstractCsvParser {
@@ -22,7 +20,7 @@ public class ENCNT extends AbstractCsvParser {
     public ENCNT(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, openParser,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);
     }
 

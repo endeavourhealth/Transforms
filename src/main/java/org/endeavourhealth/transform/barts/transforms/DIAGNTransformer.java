@@ -151,6 +151,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                 String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
                 CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
                 fhirCondition.setCategory(diagTypeCode);
+            } else {
+                LOG.warn("Diagnosis type code: "+diagnosisTypeCode+" not found in Code Value lookup");
             }
         }
 

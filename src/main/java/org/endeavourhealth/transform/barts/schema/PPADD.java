@@ -16,7 +16,7 @@ public class PPADD extends AbstractCsvParser {
     public PPADD(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, openParser,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);
     }
 

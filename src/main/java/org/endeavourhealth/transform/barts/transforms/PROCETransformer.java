@@ -151,6 +151,8 @@ public class PROCETransformer extends BartsBasisTransformer {
                 String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
                 CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
                 fhirProcedure.setCategory(procTypeCode);
+            } else {
+                LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");
             }
         }
 

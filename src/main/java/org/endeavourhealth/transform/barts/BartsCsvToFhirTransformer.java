@@ -23,7 +23,7 @@ public abstract class BartsCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String DATE_FORMAT = "dd/MM/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                                 .withHeader()
