@@ -24,7 +24,7 @@ public class CLEVE extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "EVENT_ID",
+                "#EVENT_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "PERSON_ID",
@@ -65,7 +65,7 @@ public class CLEVE extends AbstractCsvParser {
     }
 
     public String getEventId() {
-        return super.getString("EVENT_ID");
+        return super.getString("#EVENT_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
