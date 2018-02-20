@@ -26,6 +26,7 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
+                                                .withHeader()
                                                 .withDelimiter('|')
                                                 .withEscape('^')
                                                 .withQuoteMode(QuoteMode.NONE)
