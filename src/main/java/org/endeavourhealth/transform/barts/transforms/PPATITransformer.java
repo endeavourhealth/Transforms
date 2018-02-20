@@ -74,16 +74,19 @@ public class PPATITransformer extends BartsBasisTransformer {
         Patient fhirPatient = new Patient();
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
-        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + parser.getMillenniumPersonId();
-        ResourceId patientResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Patient", uniqueId);
+        String mrn = parser.getMillenniumPersonId();
+        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+        if (patientResourceId == null) {
+            patientResourceId = createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+        }
 
         fhirPatient.setId(patientResourceId.toString());
 
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
-                parser.getMillenniumPersonId()));
+                parser.getLocalPatientId()));
 
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
-                parser.getLocalPatientId()));
+                parser.getMillenniumPersonId()));
 
         if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));

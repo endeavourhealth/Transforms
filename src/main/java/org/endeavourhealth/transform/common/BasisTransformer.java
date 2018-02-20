@@ -686,6 +686,17 @@ public class BasisTransformer {
         return resourceId;
     }
 
+    public static ResourceId createPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
+        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        ResourceId patientResourceId = new ResourceId();
+        patientResourceId.setScopeId(scope);
+        patientResourceId.setResourceType("Patient");
+        patientResourceId.setUniqueId(uniqueId);
+        patientResourceId.setResourceId(UUID.randomUUID());
+        saveResourceId(patientResourceId);
+        return patientResourceId;
+    }
+
     /*
      *
      */
