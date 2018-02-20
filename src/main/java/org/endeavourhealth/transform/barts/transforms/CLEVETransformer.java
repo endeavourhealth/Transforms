@@ -4,22 +4,17 @@ import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
-
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +97,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
         //  ResourceId clinicianResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getPatientId(), null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
         ResourceId clinicianResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Practitioner", parser.getClinicianID());
 
-
         // Encounter
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId());
         if (encounterResourceId == null) {
@@ -142,8 +136,13 @@ public class CLEVETransformer extends BartsBasisTransformer {
                     RdbmsCernerCodeValueRefDal.CLINICAL_CODE_TYPE,
                     Long.parseLong(parser.getEventCode()),
                     fhirResourceFiler.getServiceId());
+            if (cernerCodeValueRef != null) {
+                term = cernerCodeValueRef.getCodeDispTxt();
+            } else {
+                LOG.warn("Event type code: " + parser.getEventCode() + " not found in Code Value lookup");
+            }
 
-            term = cernerCodeValueRef.getCodeDispTxt();
+
 
         }
 
@@ -168,8 +167,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         // if it contains  valid comparator symbol, use it
         String value = parser.getEventResultAsText();
         if (!Strings.isNullOrEmpty(value)) {
-            Number num = null;
-            num = NumberFormat.getInstance().parse(value);
+            Number num = NumberFormat.getInstance().parse(value);
             if (num == null) {
                 //TODO we need to cater for some non-numeric results
                 LOG.debug("Not proceeding with non-numeric value for now");
@@ -178,7 +176,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
             Double value1 = Double.parseDouble(value);
             String unitsCode = parser.getEventUnitsCode();
             String units = "";   //TODO - map units from unitsCode
-
             for (String comp : comparators) {
                 if (value.contains(comp)) {
                     fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1,
@@ -202,13 +199,18 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 SimpleQuantity high = QuantityHelper.createSimpleQuantity(rangeHigh, units);
                 //TODO I think I need a new createcodeableconcept method without term ???
                 // I think the fhir page suggests this but may be wrong
-                CodeableConcept normCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_CERNER_CODE_ID, "normal", parser.getEventNormalcyCode());
+                CodeableConcept normCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_CERNER_CODE_ID,
+                        "normal", parser.getEventNormalcyCode());
                 Observation.ObservationReferenceRangeComponent obsRange = new Observation.ObservationReferenceRangeComponent();
                 obsRange.setHigh(high);
                 obsRange.setLow(low);
                 obsRange.setMeaning(normCode);
                 fhirObservation.addReferenceRange(obsRange);
             }
+            //TODO save the cerner codes and somehow manage the parent id to make test results comprehensible
+            // Looks like we have to correlate via encounter id for now
+
+
             // save resource
             if (parser.isActive()) {
                 LOG.debug("Save Observation (PatId=" + parser.getPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirObservation));
