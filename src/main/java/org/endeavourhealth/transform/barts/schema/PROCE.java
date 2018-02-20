@@ -22,7 +22,7 @@ public class PROCE extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[] {
-                "PROCEDURE_ID",
+                "#PROCEDURE_ID",
                 "ACTIVE_IND",
                 "EXTRACT_DT_TM",
                 "ENCNTR_ID",
@@ -38,7 +38,7 @@ public class PROCE extends AbstractCsvParser {
     }
 
     public String getProcedureID() {
-        return super.getString("PROCEDURE_ID");
+        return super.getString("#PROCEDURE_ID");
     }
 
     public int getActiveIndicator() {

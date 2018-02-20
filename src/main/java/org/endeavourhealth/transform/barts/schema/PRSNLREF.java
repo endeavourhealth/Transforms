@@ -22,7 +22,7 @@ public class PRSNLREF extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "PERSONNEL_ID",
+                "#PERSONNEL_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "POSITION_CD",
@@ -50,7 +50,7 @@ public class PRSNLREF extends AbstractCsvParser {
     }
 
     public String getPersonnelID() {
-        return super.getString("PERSONNEL_ID");
+        return super.getString("#PERSONNEL_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {

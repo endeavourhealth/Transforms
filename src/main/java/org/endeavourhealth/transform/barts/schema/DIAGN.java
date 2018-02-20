@@ -22,7 +22,7 @@ public class DIAGN extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "DIAGNOSIS_ID",
+                "#DIAGNOSIS_ID",
                 "ACTIVE_IND",
                 "EXTRACT_DT_TM",
                 "ENCNTR_ID",
@@ -39,7 +39,7 @@ public class DIAGN extends AbstractCsvParser {
     }
 
     public String getDiagnosisID() {
-        return super.getString("DIAGNOSIS_ID");
+        return super.getString("#DIAGNOSIS_ID");
     }
 
     public int getActiveIndicator() {
