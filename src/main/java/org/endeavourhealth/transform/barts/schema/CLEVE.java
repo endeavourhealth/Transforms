@@ -1,162 +1,171 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
 
-public class CLEVE extends AbstractCharacterParser {
+public class CLEVE extends AbstractCsvParser {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVE.class);
 
-    public static final String DATE_FORMAT = "dd/mm/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
     public static final int RECORD_ACTIVE = 1;
 
     public CLEVE(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
-
-        addFieldList("MillenniumEventId");
-        addFieldList("ExtractDateTime");
-        addFieldList("ActiveIndicator");
-        addFieldList("MillenniumPersonIdentifier");
-        addFieldList("MillenniumEncounterIdentifier");
-        addFieldList("MillenniumOrderIdentifier");
-        addFieldList("MillenniumParentEventIdentifier");
-        addFieldList("EventMillenniumCode");
-        addFieldList("AccessionNumber");
-        addFieldList("EventStartDateTime");
-        addFieldList("EventEndDateTime");
-        addFieldList("ClinicalSignificanceDateTime");
-        addFieldList("ClinicalEventClassMillenniumCode");
-        addFieldList("ClinicalEventResultStatusMillenniumCode");
-        addFieldList("ClinicalEventResult");
-        addFieldList("ClinicalEventNumericResult");
-        addFieldList("ClinicalEventResultUnitsMillenniumCode");
-        addFieldList("ClinicalEventDateResult");
-        addFieldList("NormalcyMillenniumCode");
-        addFieldList("NormalValueLowerLimit");
-        addFieldList("NormalValueUpperLimit");
-        addFieldList("ClinicalEventPerformedDateTime");
-        addFieldList("ClinicalEventPerformedMillenniumPersonnelIdentifier");
-        addFieldList("ClinicalEventVerifiedDateTime");
-        addFieldList("ClinicalEventVerifiedMillenniumPersonnelIdentifier");
-        addFieldList("AuthenticFlag");
-        addFieldList("CollationSequence");
-        addFieldList("CriticalHigh");
-        addFieldList("CriticalLow");
-        addFieldList("EntryModeMillenniumCode");
-        addFieldList("EventRelationMillenniumCode");
-        addFieldList("EventTag");
-        addFieldList("EventTitleText");
-        addFieldList("RecordStatusMillenniumCode");
-        addFieldList("ReferenceNumber");
-        addFieldList("ValidFromDateTime");
-        addFieldList("ContributorSystemMillenniumCode");
-
+        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+                BartsCsvToFhirTransformer.CSV_FORMAT,
+                BartsCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                BartsCsvToFhirTransformer.TIME_FORMAT);
     }
 
-    public String getEventId() throws FileFormatException {
-        return super.getString("MillenniumEventId");
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[]{
+                "EVENT_ID",
+                "EXTRACT_DT_TM",
+                "ACTIVE_IND",
+                "PERSON_ID",
+                "ENCNTR_ID",
+                "ORDER_ID",
+                "PARENT_EVENT_ID",
+                "EVENT_CD",
+                "ACCESSION_NBR_IDENT",
+                "EVENT_START_DT_TM",
+                "EVENT_END_DT_TM",
+                "CLIN_SIGNIFICANCE_DT_TM",
+                "EVENT_CLASS_CD",
+                "EVENT_RESULT_STATUS_CD",
+                "EVENT_RESULT_TXT",
+                "EVENT_RESULT_NBR",
+                "EVENT_RESULT_UNITS_CD",
+                "EVENT_RESULT_DT",
+                "NORMALCY_CD",
+                "NORMAL_VALUE_LOW_TXT",
+                "NORMAL_VALUE_HIGH_TXT",
+                "EVENT_PERFORMED_DT_TM",
+                "EVENT_PERFORMED_PRSNL_ID",
+                "EVENT_VERIFIED_DT_TM",
+                "EVENT_VERIFIED_PRSNL_ID",
+                "AUTHENTIC_IND",
+                "COLLATION_SEQ_TXT",
+                "CRITICAL_HIGH_TXT",
+                "CRITICAL_LOW_TXT",
+                "ENTRY_MODE_CD",
+                "EVENT_RELTN_CD",
+                "EVENT_TAG_TXT",
+                "EVENT_TITLE_TXT",
+                "RECORD_STATUS_CD",
+                "REFERENCE_NBR",
+                "VALID_FROM_DT_TM",
+                "CONTRIBUTOR_SYSTEM_CD",
+        };
+    }
+
+    public String getEventId() {
+        return super.getString("EVENT_ID");
     }
 
     public Date getExtractDateTime() throws TransformException {
-        return super.getDateTime("ExtractDateTime");
+        return super.getDate("EXTRACT_DT_TM");
     }
 
-    public String getActiveIndicator() throws FileFormatException {
-        return super.getString("ActiveIndicator");
+    public String getActiveIndicator() {
+        return super.getString("ACTIVE_IND");
     }
 
-    public boolean isActive() throws FileFormatException {
-        return (super.getInt("ActiveIndicator") == RECORD_ACTIVE);
+    public boolean isActive() {
+        return (super.getInt("ACTIVE_IND") == RECORD_ACTIVE);
     }
 
-    public String getPatientId() throws FileFormatException {
-        return super.getString("MillenniumPersonIdentifier");
+    public String getPatientId() {
+        return super.getString("PERSON_ID");
     }
 
-    public String getEncounterId() throws FileFormatException {
-        return super.getString("MillenniumEncounterIdentifier");
+    public String getEncounterId() {
+        return super.getString("ENCNTR_ID");
     }
 
-    public String getEventCode() throws FileFormatException {
-        return super.getString("EventMillenniumCode");
+    public String getEventCode() {
+        return super.getString("EVENT_CD");
     }
 
-    public String getEventCodeClass() throws FileFormatException {
-        return super.getString("ClinicalEventClassMillenniumCode");
+    public String getEventCodeClass() {
+        return super.getString("EVENT_CLASS_CD");
     }
 
-    public String getEventResultClassCode() throws FileFormatException {
-        return super.getString("ClinicalEventResultStatusMillenniumCode");
+    public String getEventResultClassCode() {
+        return super.getString("EVENT_RESULT_STATUS_CD");
     }
 
-    public String getEventResultAsText() throws FileFormatException {
-        return super.getString("ClinicalEventResult");
+    public String getEventResultAsText() {
+        return super.getString("EVENT_RESULT_TXT");
     }
 
-    public String getEventUnitsCode() throws FileFormatException {
-        return super.getString("ClinicalEventResultUnitsMillenniumCode");
+    public String getEventUnitsCode() {
+        return super.getString("EVENT_RESULT_UNITS_CD");
     }
 
-    public String getEventNormalRangeLow() throws FileFormatException {
-        return super.getString("NormalValueLowerLimit");
+    public String getEventNormalRangeLow() {
+        return super.getString("NORMAL_VALUE_LOW_TXT");
     }
 
-    public String getEventNormalcyCode() throws  FileFormatException {
-        return super.getString("NormalcyMillenniumCode");
+    public String getEventNormalcyCode() {
+        return super.getString("NORMALCY_CD");
     }
-    public String getEventNormalRangeHigh() throws FileFormatException {
-        return super.getString("NormalValueUpperLimit");
+    public String getEventNormalRangeHigh() {
+        return super.getString("NORMAL_VALUE_HIGH_TXT");
     }
 
     public Date getEffectiveDateTime() throws TransformException {
-        return super.getDate("ClinicalSignificanceDateTime");
+        return super.getDate("CLIN_SIGNIFICANCE_DT_TM");
     }
 
     public String getEffectiveDateTimeAsString() throws TransformException {
-        return super.getString("ClinicalEventPerformedDateTime");
+        return super.getString("EVENT_PERFORMED_DT_TM");
     }
 
-    public String getClinicianID() throws FileFormatException {
-        return super.getString("ClinicalEventPerformedMillenniumPersonnelIdentifier");
+    public String getClinicianID() {
+        return super.getString("EVENT_PERFORMED_PRSNL_ID");
     }
 
-    public String getEventTag() throws FileFormatException {   //use for display if EventTitleText is null
-        return super.getString("EventTag");
+    public String getEventTag() {   //use for display if EventTitleText is null
+        return super.getString("EVENT_TAG_TXT");
     }
 
-    public String getEventTitleText() throws FileFormatException {
-        return super.getString("EventTitleText");
+    public String getEventTitleText() {
+        return super.getString("EVENT_TITLE_TXT");
     }
 
-    public String getRecordStatusreference() throws FileFormatException {
-        return super.getString("RecordStatusMillenniumCode");
+    public String getRecordStatusreference() {
+        return super.getString("RECORD_STATUS_CD");
     }
 
     //TODO Do we need some boolean methods on status?
-    public String getReferenceNumber() throws FileFormatException {
-        return super.getString("ReferenceNumber");
+    public String getReferenceNumber() {
+        return super.getString("REFERENCE_NBR");
     }
 
     public Date getValidFromDateTime() throws TransformException {
-        return super.getDate("ValidFromDateTime");
+        return super.getDate("VALID_FROM_DT_TM");
     }
 
     public String getValidFromDateTimeasString() throws TransformException {
-        return super.getString("ValidFromDateTime");
+        return super.getString("VALID_FROM_DT_TM");
     }
 
-    public String getContributorSystemMillenniumCode() throws FileFormatException {
-        return super.getString("ContributorSystemMillenniumCode");
+    public String getContributorSystemMillenniumCode() {
+        return super.getString("CONTRIBUTOR_SYSTEM_CD");
     }
     @Override
     protected String getFileTypeDescription() {
         return "Cerner clinical events file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 }
