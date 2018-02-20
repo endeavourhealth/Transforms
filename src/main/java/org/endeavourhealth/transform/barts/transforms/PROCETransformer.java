@@ -147,9 +147,11 @@ public class PROCETransformer extends BartsBasisTransformer {
         Long procedureTypeCode = parser.getProcedureTypeCode();
         if (procedureTypeCode != null) {
             CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCode, fhirResourceFiler.getServiceId());
-            String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-            CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
-            fhirProcedure.setCategory(procTypeCode);
+            if (cernerCodeValueRef != null) {
+                String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+                CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
+                fhirProcedure.setCategory(procTypeCode);
+            }
         }
 
         // save resource

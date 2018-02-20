@@ -147,9 +147,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         Long diagnosisTypeCode = parser.getDiagnosisTypeCode();
         if (diagnosisTypeCode != null) {
             CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE, diagnosisTypeCode, fhirResourceFiler.getServiceId());
-            String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-            CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
-            fhirCondition.setCategory(diagTypeCode);
+            if (cernerCodeValueRef != null) {
+                String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+                CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
+                fhirCondition.setCategory(diagTypeCode);
+            }
         }
 
         String diagnosisFreeText = parser.getDiagnosicFreeText();

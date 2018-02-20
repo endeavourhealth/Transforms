@@ -68,15 +68,19 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
 
             if (positionCode != null) {
                 CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_POSITION, positionCode, fhirResourceFiler.getServiceId());
-                String positionName = cernerCodeValueRef.getCodeDispTxt();
-                CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
-                fhirRole.setRole(positionTypeCode);
+                if (cernerCodeValueRef != null) {
+                    String positionName = cernerCodeValueRef.getCodeDispTxt();
+                    CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
+                    fhirRole.setRole(positionTypeCode);
+                }
             }
             if (specialityCode != null) {
                 CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, specialityCode, fhirResourceFiler.getServiceId());
-                String specialityName = cernerCodeValueRef.getCodeDispTxt();
-                CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());
-                fhirRole.addSpecialty(specialityTypeCode);
+                if (cernerCodeValueRef != null) {
+                    String specialityName = cernerCodeValueRef.getCodeDispTxt();
+                    CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());
+                    fhirRole.addSpecialty(specialityTypeCode);
+                }
             }
         }
 
