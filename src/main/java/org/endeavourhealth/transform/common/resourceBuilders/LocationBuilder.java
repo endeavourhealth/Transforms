@@ -29,6 +29,13 @@ public class LocationBuilder extends ResourceBuilderBase
         return location;
     }
 
+    public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
+        this.location.addIdentifier(fhirIdentifier);
+
+        int index = this.location.getIdentifier().size()-1;
+        auditValue("identifier[" + index + "].value", sourceCells);
+    }
+
     public void addTelecom(ContactPoint fhirContact, CsvCell... sourceCells) {
         this.location.addTelecom(fhirContact);
 
@@ -89,6 +96,12 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("address.text", sourceCells);
     }
 
+    public void setDescription(String name, CsvCell... sourceCells) {
+        this.location.setDescription(name);
+
+        auditValue("description", sourceCells);
+    }
+
     public void setName(String name, CsvCell... sourceCells) {
         this.location.setName(name);
 
@@ -118,6 +131,24 @@ public class LocationBuilder extends ResourceBuilderBase
         this.location.setManagingOrganization(organisationReference);
 
         auditValue("managingOrganization.reference", sourceCells);
+    }
+
+    public void setMode(Location.LocationMode mode, CsvCell... sourceCells) {
+        this.location.setMode(mode);
+
+        auditValue("mode", sourceCells);
+    }
+
+    public void setStatus(Location.LocationStatus status, CsvCell... sourceCells) {
+        this.location.setStatus(status);
+
+        auditValue("status", sourceCells);
+    }
+
+    public void setPhysicalType(CodeableConcept pt, CsvCell... sourceCells) {
+        this.location.setPhysicalType(pt);
+
+        auditValue("physicalType.value", sourceCells);
     }
 
     private Period findOrCreateOpenPeriod(Extension extension) {
