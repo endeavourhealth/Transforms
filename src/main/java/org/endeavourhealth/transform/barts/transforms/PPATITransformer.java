@@ -20,10 +20,16 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class PPATITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
     private static InternalIdDalI internalIdDalI = null;
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-MM HH:mm:ss.sss");
 
     public static void transform(String version,
                                  PPATI parser,
@@ -122,7 +128,13 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         if (parser.getDateOfBirth() != null && parser.getDateOfBirth().toString().length() > 0) {
-            fhirPatient.setBirthDate(parser.getDateOfBirth());
+            Date dob = null;
+            try {
+                dob = formatDaily.parse(parser.getDateOfBirthAsString());
+            } catch (ParseException ex) {
+                dob = formatBulk.parse(parser.getDateOfBirthAsString());
+            }
+            fhirPatient.setBirthDate(dob);
         }
 
         if (parser.getGenderCode() != null && parser.getGenderCode().length() > 0) {
@@ -211,7 +223,13 @@ public class PPATITransformer extends BartsBasisTransformer {
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         if (parser.getDeceasedDateTime() != null || parser.getDeceasedMethodCode() != null) {
             if (parser.getDeceasedDateTime() != null) {
-                fhirPatient.setDeceased(new DateTimeType(parser.getDeceasedDateTime()));
+                Date dod = null;
+                try {
+                    dod = formatDaily.parse(parser.getDeceasedDateTimeAsString());
+                } catch (ParseException ex) {
+                    dod = formatBulk.parse(parser.getDeceasedDateTimeAsString());
+                }
+                fhirPatient.setDeceased(new DateTimeType(dod));
             }  // 684730 = No for deceased method!
             else if (!parser.getDeceasedMethodCode().equals("0") || !parser.getDeceasedMethodCode().equals("684730")) {
                 fhirPatient.setDeceased(new BooleanType(true));

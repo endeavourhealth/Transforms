@@ -85,6 +85,10 @@ public class PPATI extends AbstractCsvParser {
         return super.getDate("BIRTH_DT_TM");
     }
 
+    public String getDateOfBirthAsString() throws TransformException {
+        return super.getString("BIRTH_DT_TM");
+    }
+
     public String getEstimatedBirthDateIndicator() {
         return super.getString("EST_BIRTH_DT_CD");
     }
@@ -113,6 +117,10 @@ public class PPATI extends AbstractCsvParser {
         if (super.getString("DECEASED_DT_TM").equals("0000-00-00 00:00:00"))
             return null;
         return super.getDate("DECEASED_DT_TM");
+    }
+
+    public String getDeceasedDateTimeAsString() throws TransformException {
+        return super.getString("DECEASED_DT_TM");
     }
 
     public String getCauseOfDeathCode() {

@@ -31,6 +31,8 @@ import org.hl7.fhir.instance.model.valuesets.LocationPhysicalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.UUID;
@@ -39,6 +41,8 @@ public class LOREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
     private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
+    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-MM HH:mm:ss.sss");
 
     /*
      *
@@ -57,7 +61,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             try {
                 String valStr = validateEntry(parser);
                 if (valStr == null) {
-                    createEncounter(parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createLocation(parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                 } else {
                     LOG.debug("Validation error:" + valStr);
                     SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
@@ -79,10 +83,17 @@ public class LOREFTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    public static void createEncounter(LOREF parser,
+    public static void createLocation(LOREF parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+        if (internalIdDAL == null) {
+            internalIdDAL = DalProvider.factoryInternalIdDal();
+        }
+
+        if (cernerCodeValueRefDAL == null) {
+            cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
+        }
 
         String parentLocationResourceId = null;
         // Extract locations
@@ -92,19 +103,31 @@ public class LOREFTransformer extends BartsBasisTransformer {
         CsvCell nurseUnitLoc = parser.getNurseUnitLocation();
         CsvCell roomLoc = parser.getRoomLocation();
         CsvCell bedLoc = parser.getBedLcoation();
+        CsvCell beginDateCell = parser.getBeginEffectiveDateTime();
+        Date beginDate = null;
+        try {
+            beginDate = formatDaily.parse(beginDateCell.getString());
+        } catch (ParseException ex) {
+            beginDate = formatBulk.parse(beginDateCell.getString());
+        }
+        CsvCell endDateCell = parser.getEndEffectiveDateTime();
+        Date endDate = null;
+        try {
+            endDate = formatDaily.parse(endDateCell.getString());
+        } catch (ParseException ex) {
+            endDate = formatBulk.parse(endDateCell.getString());
+        }
 
         // Location resource id
         CsvCell locationIdCell = parser.getLocationId();
         ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
         if (locationResourceId == null) {
-            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
+            locationResourceId = new ResourceId();
+            locationResourceId.setScopeId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE);
+            locationResourceId.setResourceType("Location");
+            locationResourceId.setUniqueId("LocationId=" + locationIdCell.getString());
 
-            if (internalIdDAL == null) {
-                internalIdDAL = DalProvider.factoryInternalIdDal();
-                cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
-            }
-
-            // Try secondary key
+            // Check if this location has previously been saved as a parent-location - Try secondary key
             String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
             String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId);
             // Create main resource key
@@ -151,15 +174,13 @@ public class LOREFTransformer extends BartsBasisTransformer {
         locationBuilder.addIdentifier(fhirIdentifier, locationIdCell);
 
         // Status
-        CsvCell beginDate = parser.getBeginEffectiveDateTime();
-        CsvCell endDate = parser.getEndEffectiveDateTime();
         Date now = new Date();
-        if (now.after(beginDate.getDate()) && now.before(endDate.getDate())) {
+        if (now.after(beginDate) && now.before(endDate)) {
             //fhirLocation.setStatus(Location.LocationStatus.ACTIVE);
-            locationBuilder.setStatus(Location.LocationStatus.ACTIVE, beginDate, endDate);
+            locationBuilder.setStatus(Location.LocationStatus.ACTIVE, beginDateCell, endDateCell);
         } else {
             //fhirLocation.setStatus(Location.LocationStatus.INACTIVE);
-            locationBuilder.setStatus(Location.LocationStatus.INACTIVE, beginDate, endDate);
+            locationBuilder.setStatus(Location.LocationStatus.INACTIVE, beginDateCell, endDateCell);
         }
 
         // Physical type
