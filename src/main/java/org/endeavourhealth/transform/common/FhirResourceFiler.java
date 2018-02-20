@@ -16,6 +16,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappin
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -328,6 +329,11 @@ public class FhirResourceFiler implements FhirResourceFilerI {
         }
 
         //if we get here, something is wrong since we've failed to find a patient ID
+        LOG.error("No patient reference found for resources:");
+        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+            Resource resource = resourceBuilder.getResource();
+            LOG.error("" + FhirSerializationHelper.serializeResource(resource));
+        }
         throw new TransformException("Failed to find or create EDS patient ID");
     }
 
