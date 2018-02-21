@@ -103,8 +103,17 @@ public class PPATITransformer extends BartsBasisTransformer {
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
                 parser.getLocalPatientId()));
 
-        if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
-            fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
+        String nhsNumber = parser.getNhsNumber();
+        if (!Strings.isNullOrEmpty(nhsNumber)) {
+            nhsNumber = nhsNumber.trim().replace("-","");
+            if (nhsNumber.length() == 10) {
+                fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
+            } else {
+                //add the invalid NHS number as a secondary identifier
+                fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
+                        FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
+                        nhsNumber));
+            }
         }
 
         if (parser.getNhsNumberStatus() != null && parser.getNhsNumberStatus().length() > 0) {
