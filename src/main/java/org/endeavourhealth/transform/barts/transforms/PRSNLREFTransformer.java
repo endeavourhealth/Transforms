@@ -28,9 +28,6 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
         while (parser.nextRecord()) {
             try {
                 createPractitioner(parser, fhirResourceFiler, csvHelper);

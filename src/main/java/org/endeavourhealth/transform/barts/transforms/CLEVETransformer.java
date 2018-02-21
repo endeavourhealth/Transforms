@@ -42,8 +42,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
         if (cernerCodeValueRefDalI == null) {
             cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
         }
-        // Skip header line
-        parser.nextRecord();
 
         while (parser.nextRecord()) {
             try {
