@@ -157,6 +157,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Get parent resource id using alternate key
         String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
         String parentUniqueId = createParentKey(uniqueId);
+        LOG.debug("Looking for parent location using key:" + parentUniqueId);
         parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
 
         // Organisation
