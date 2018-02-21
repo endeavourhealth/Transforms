@@ -42,7 +42,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
     private static InternalIdDalI internalIdDAL = null;
     private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-MM HH:mm:ss.sss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     /*
      *
