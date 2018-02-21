@@ -87,6 +87,9 @@ public class LOREFTransformer extends BartsBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+        LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId());
+
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
         }
@@ -187,22 +190,22 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //fhirLocation.setPhysicalType(getPhysicalType(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString()));
         CodeableConcept physicalType = new CodeableConcept();
         if (!bedLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.BD.getDefinition()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
             locationBuilder.setPhysicalType(physicalType, bedLoc);
         } else if (!roomLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.RO.getDefinition()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
             locationBuilder.setPhysicalType(physicalType, roomLoc);
         } else if (!nurseUnitLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
         } else if (!ambulatoryLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
         } else if (!buildingLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.BU.getDefinition()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             locationBuilder.setPhysicalType(physicalType, buildingLoc);
         } else if (!facilityLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDisplay());
+            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             locationBuilder.setPhysicalType(physicalType, facilityLoc);
         }
 
@@ -389,7 +392,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
      */
     private static String createDescription(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
         StringBuffer sb = new StringBuffer();
-        if (!bedCode.isEmpty()) {
+        if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
@@ -397,7 +400,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             dependencyList.add(bedCode);
         }
 
-        if (!roomCode.isEmpty()) {
+        if (!roomCode.isEmpty() && roomCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
@@ -405,7 +408,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             dependencyList.add(roomCode);
         }
 
-        if (!nurseUnitCode.isEmpty()) {
+        if (!nurseUnitCode.isEmpty() && nurseUnitCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
@@ -413,7 +416,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             dependencyList.add(nurseUnitCode);
         }
 
-        if (!ambulatoryCode.isEmpty()) {
+        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
@@ -421,7 +424,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             dependencyList.add(ambulatoryCode);
         }
 
-        if (!buildingCode.isEmpty()) {
+        if (!buildingCode.isEmpty() && buildingCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
@@ -442,19 +445,19 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getName(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
-        if (!bedCode.isEmpty()) {
+        if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
             dependencyList.add(bedCode);
             return getCodeRefValue(fhirResourceFiler, bedCode.getString());
-        } else if (!roomCode.isEmpty()) {
+        } else if (!roomCode.isEmpty() && roomCode.getString().compareTo("0") != 0) {
             dependencyList.add(roomCode);
             return getCodeRefValue(fhirResourceFiler, roomCode.getString());
-        } else if (!nurseUnitCode.isEmpty()) {
+        } else if (!nurseUnitCode.isEmpty() && nurseUnitCode.getString().compareTo("0") != 0) {
             dependencyList.add(nurseUnitCode);
             return getCodeRefValue(fhirResourceFiler, nurseUnitCode.getString());
-        } else if (!ambulatoryCode.isEmpty()) {
+        } else if (!ambulatoryCode.isEmpty() && ambulatoryCode.getString().compareTo("0") != 0) {
             dependencyList.add(ambulatoryCode);
             return getCodeRefValue(fhirResourceFiler, ambulatoryCode.getString());
-        } else if (!buildingCode.isEmpty()) {
+        } else if (!buildingCode.isEmpty() && buildingCode.getString().compareTo("0") != 0) {
             dependencyList.add(buildingCode);
             return getCodeRefValue(fhirResourceFiler, buildingCode.getString());
         } else {
@@ -494,6 +497,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
+        LOG.debug("Loking for Cerner Code " + code);
         CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();
