@@ -215,13 +215,15 @@ public class LOREFTransformer extends BartsBasisTransformer {
         ArrayList<CsvCell> dependencyList = new ArrayList<CsvCell>();
         String description = createDescription(fhirResourceFiler, facilityLoc,buildingLoc,ambulatoryLoc,nurseUnitLoc,roomLoc,bedLoc, dependencyList);
         //fhirLocation.setDescription(description);
-        locationBuilder.setDescription(description, (CsvCell[]) dependencyList.toArray());
+        CsvCell[] dependencyArray = dependencyList.toArray(new CsvCell[dependencyList.size()]);
+        locationBuilder.setDescription(description, dependencyArray);
 
         // Name
         dependencyList = new ArrayList<CsvCell>();
         String name = getName(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation(), dependencyList);
         //fhirLocation.setName(name);
-        locationBuilder.setName(name, (CsvCell[]) dependencyList.toArray());
+        dependencyArray = dependencyList.toArray(new CsvCell[dependencyList.size()]);
+        locationBuilder.setName(name, dependencyArray);
 
         // managing org
         //TODO complete
@@ -392,6 +394,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 sb.append(", ");
             }
             sb.append(getCodeRefValue(fhirResourceFiler, bedCode.getString()));
+            dependencyList.add(bedCode);
         }
 
         if (!roomCode.isEmpty()) {
@@ -399,6 +402,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 sb.append(", ");
             }
             sb.append(getCodeRefValue(fhirResourceFiler, roomCode.getString()));
+            dependencyList.add(roomCode);
         }
 
         if (!nurseUnitCode.isEmpty()) {
@@ -406,6 +410,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 sb.append(", ");
             }
             sb.append(getCodeRefValue(fhirResourceFiler, nurseUnitCode.getString()));
+            dependencyList.add(nurseUnitCode);
         }
 
         if (!ambulatoryCode.isEmpty()) {
@@ -413,6 +418,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 sb.append(", ");
             }
             sb.append(getCodeRefValue(fhirResourceFiler, ambulatoryCode.getString()));
+            dependencyList.add(ambulatoryCode);
         }
 
         if (!buildingCode.isEmpty()) {
@@ -420,12 +426,14 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 sb.append(", ");
             }
             sb.append(getCodeRefValue(fhirResourceFiler, buildingCode.getString()));
+            dependencyList.add(buildingCode);
         }
 
         if (sb.length() > 0) {
             sb.append(", ");
         }
         sb.append(getCodeRefValue(fhirResourceFiler, facilityCode.getString()));
+        dependencyList.add(facilityCode);
 
         return sb.toString();
     }
