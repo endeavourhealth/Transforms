@@ -29,7 +29,7 @@ public class PPATITransformer extends BartsBasisTransformer {
     private static InternalIdDalI internalIdDalI = null;
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-MM HH:mm:ss.sss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
                                  PPATI parser,
@@ -102,8 +102,6 @@ public class PPATITransformer extends BartsBasisTransformer {
             PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonId()), fhirPatient);
         }
 
-        fhirPatient.setActive(parser.isActive());
-
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
                 parser.getLocalPatientId()));
 
@@ -135,7 +133,6 @@ public class PPATITransformer extends BartsBasisTransformer {
             }
         }
 
-        // TODO check for inactives and whether they are deletions with just the active flag populated and need to be handled differently
         if (parser.getActiveIndicator() != null && parser.getActiveIndicator().length() > 0) {
             fhirPatient.setActive(parser.isActive());
         }
