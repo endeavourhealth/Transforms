@@ -58,10 +58,15 @@ public class PPADDTransformer extends BartsBasisTransformer {
         }
 
         Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
-        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        if (fhirPatient == null) {
+            if (parser.isActive()) {
+                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
+            } else {
+                return;
+            }
+        }
 
         // Patient Address
         Patient.ContactComponent fhirContactComponent = new Patient.ContactComponent();

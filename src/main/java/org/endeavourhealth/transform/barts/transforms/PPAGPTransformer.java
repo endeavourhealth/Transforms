@@ -50,10 +50,17 @@ public class PPAGPTransformer extends BartsBasisTransformer {
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
 
         Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
+
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        if (fhirPatient == null) {
+            if (parser.isActive()) {
+                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
+            } else {
+                return;
+            }
+        }
 
         fhirPatient.addCareProvider(csvHelper.createPractitionerReference(parser.getRegisteredGPMillenniumPersonnelId()));
 
