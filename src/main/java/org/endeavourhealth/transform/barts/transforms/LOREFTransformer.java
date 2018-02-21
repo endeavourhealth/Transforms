@@ -88,7 +88,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId());
+        LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId().getString());
 
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
@@ -240,7 +240,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
         }
 
-        LOG.debug("Save Location (LocationId=" + parser.getLocationId());
+        LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
@@ -497,7 +497,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
-        LOG.debug("Loking for Cerner Code " + code);
+        LOG.debug("Looking for Cerner Code " + code + " in Code Set " + RdbmsCernerCodeValueRefDal.LOCATION_NAME + " for ServiceId " + fhirResourceFiler.getServiceId());
         CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();
