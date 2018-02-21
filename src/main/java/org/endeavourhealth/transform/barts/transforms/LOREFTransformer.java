@@ -54,9 +54,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
         while (parser.nextRecord()) {
             try {
                 String valStr = validateEntry(parser);
@@ -141,6 +138,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 String parentUniqueId = createParentKey(uniqueId);
                 while (parentUniqueId != null) {
                     try {
+                        LOG.debug("Saving parent altkey:" + parentUniqueId);
                         internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId, UUID.randomUUID().toString());
                     }
                     catch (Exception ex) {
@@ -149,6 +147,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                     parentUniqueId = createParentKey(parentUniqueId);
                 }
             } else {
+                LOG.debug("Found resource id " + alternateResourceId + " using altkey:" + uniqueId);
                 locationResourceId.setResourceId(UUID.fromString(alternateResourceId));
                 // Alternate keys for all parents should already exist
             }

@@ -38,9 +38,6 @@ public class PPATITransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
         while (parser.nextRecord()) {
             try {
                 String valStr = validateEntry(parser);
@@ -92,7 +89,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         Patient fhirPatient = new Patient();
         fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
-        fhirPatient.setId(patientResourceId.toString());
+        fhirPatient.setId(patientResourceId.getResourceId().toString());
 
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
                 parser.getMillenniumPersonId()));
@@ -170,8 +167,12 @@ public class PPATITransformer extends BartsBasisTransformer {
 
             if (cernerCodeValueRef != null) {
                 MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
-                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
-                fhirPatient.setMaritalStatus(codeableConcept);
+                if (maritalStatus != null) {
+                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
+                    fhirPatient.setMaritalStatus(codeableConcept);
+                } else {
+                    LOG.warn("Marital Status code: " + cernerCodeValueRef.getCodeMeaningTxt() + " not found in status conversion code");
+                }
             } else {
                 LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
             }

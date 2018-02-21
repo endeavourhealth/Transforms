@@ -48,9 +48,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
         while (parser.nextRecord()) {
             try {
                 String valStr = validateEntry(parser);
