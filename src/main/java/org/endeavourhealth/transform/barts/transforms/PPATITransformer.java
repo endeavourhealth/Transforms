@@ -76,23 +76,36 @@ public class PPATITransformer extends BartsBasisTransformer {
         internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID,
                 parser.getLocalPatientId(), parser.getMillenniumPersonId());
 
-
-        Patient fhirPatient = new Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
-
         String mrn = parser.getMillenniumPersonId();
+
         ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+        if (patientResourceId == null && !parser.isActive()) {
+            //We don't already have the patient and it is not active so ignore it.
+            return;
+        }
+
         if (patientResourceId == null) {
             patientResourceId = createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
         }
 
-        fhirPatient.setId(patientResourceId.toString());
+        Patient fhirPatient = new Patient();
+        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
 
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
-                parser.getLocalPatientId()));
+        fhirPatient.setId(patientResourceId.toString());
 
         fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
                 parser.getMillenniumPersonId()));
+
+        if (!parser.isActive()) {
+            // Patient is inactive and we already have them in the system so just set them to inactive and save the resource
+            fhirPatient.setActive(false);
+            PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonId()), fhirPatient);
+        }
+
+        fhirPatient.setActive(parser.isActive());
+
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
+                parser.getLocalPatientId()));
 
         if (parser.getNhsNumber() != null && parser.getNhsNumber().length() > 0) {
             fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
