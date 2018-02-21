@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
@@ -137,7 +138,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             fhirPatient.setActive(parser.isActive());
         }
 
-        if (parser.getDateOfBirth() != null && parser.getDateOfBirth().toString().length() > 0) {
+        if (!Strings.isNullOrEmpty(parser.getDateOfBirthAsString())) {
             Date dob = null;
             try {
                 dob = formatDaily.parse(parser.getDateOfBirthAsString());
@@ -231,8 +232,8 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
-        if (parser.getDeceasedDateTime() != null || parser.getDeceasedMethodCode() != null) {
-            if (parser.getDeceasedDateTime() != null) {
+        if (!Strings.isNullOrEmpty(parser.getDeceasedDateTimeAsString()) || parser.getDeceasedMethodCode() != null) {
+            if (!Strings.isNullOrEmpty(parser.getDeceasedDateTimeAsString())) {
                 Date dod = null;
                 try {
                     dod = formatDaily.parse(parser.getDeceasedDateTimeAsString());
