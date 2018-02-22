@@ -74,16 +74,14 @@ public class PPATITransformer extends BartsBasisTransformer {
         internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID,
                 parser.getLocalPatientId(), parser.getMillenniumPersonId());
 
-        String mrn = parser.getMillenniumPersonId();
-
-        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, parser.getMillenniumPersonId());
         if (patientResourceId == null && !parser.isActive()) {
             //We don't already have the patient and it is not active so ignore it.
             return;
         }
 
         if (patientResourceId == null) {
-            patientResourceId = createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+            patientResourceId = createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, parser.getMillenniumPersonId());
         }
 
         Patient fhirPatient = new Patient();
