@@ -98,4 +98,8 @@ public class SpecimenBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag) {
         return "type";
     }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
 }

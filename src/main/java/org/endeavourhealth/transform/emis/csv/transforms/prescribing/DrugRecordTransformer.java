@@ -131,7 +131,7 @@ public class DrugRecordTransformer {
 
         IssueRecordIssueDate mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
         if (mostRecentDate != null) {
-            medicationStatementBuilder.setLastIssueDate(firstIssueDate.getIssueDateType(), firstIssueDate.getSourceCells());
+            medicationStatementBuilder.setLastIssueDate(mostRecentDate.getIssueDateType(), mostRecentDate.getSourceCells());
         }
 
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();

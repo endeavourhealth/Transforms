@@ -7,8 +7,8 @@ import java.util.UUID;
 
 public class Practice extends AbstractCsvParser {
 
-    public Practice(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Practice(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "ID",
                 "NAME",
                 "IDENTIFIER",

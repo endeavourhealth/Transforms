@@ -106,7 +106,7 @@ public class ObservationTransformer {
         //a FHIR Condition (for the problem) as well as the FHIR FamilyMemberHistory. The above code will
         //sort out deleting the FamilyMemberHistory, so we also need to see if the same EMIS observation
         //was saved as a condition too
-        if (wasSavedAsResourceType(fhirResourceFiler, parser, ResourceType.Condition)) {
+        if (wasSavedAsResourceType(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid(), ResourceType.Condition)) {
             createOrDeleteCondition(parser, fhirResourceFiler, csvHelper, true);
         }
     }
@@ -116,6 +116,10 @@ public class ObservationTransformer {
      * finds out what resource type an EMIS observation was previously saved as
      */
     private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, Observation parser) throws Exception {
+        return findOriginalTargetResourceType(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid());
+    }
+
+    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -130,15 +134,15 @@ public class ObservationTransformer {
         potentialResourceTypes.add(ResourceType.ReferralRequest);
         
         for (ResourceType resourceType: potentialResourceTypes) {
-            if (wasSavedAsResourceType(fhirResourceFiler, parser, resourceType)) {
+            if (wasSavedAsResourceType(fhirResourceFiler, patientGuid, observationGuid, resourceType)) {
                 return resourceType;
             }
         }
         return null;
     }
 
-    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, Observation parser, ResourceType resourceType) throws Exception {
-        String sourceId = EmisCsvHelper.createUniqueId(parser.getPatientGuid(), parser.getObservationGuid());
+    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid, ResourceType resourceType) throws Exception {
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
         Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
         Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
         return edsReference != null;
@@ -318,7 +322,7 @@ public class ObservationTransformer {
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
         String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
         if (system.equals(FhirUri.CODE_SYSTEM_READ2)) {
-            String readCode = codeMapping.getReadCode();
+            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
             return Read2.isDisorder(readCode);
         }
 
@@ -422,7 +426,7 @@ public class ObservationTransformer {
 
         String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
         if (system.equals(FhirUri.CODE_SYSTEM_READ2)) {
-            String readCode = codeMapping.getReadCode();
+            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
             return Read2.isProcedure(readCode);
         }
 
@@ -534,6 +538,13 @@ public class ObservationTransformer {
             referralRequestBuilder.setIsConfidential(true, confidential);
         }
 
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            referralRequestBuilder.setParentResource(parentReference, parentObservationCell);
+        }
+
         //assert that these fields are empty, as we don't stored them in this resource type,
         assertValueEmpty(referralRequestBuilder, parser);
         assertNumericUnitEmpty(referralRequestBuilder, parser);
@@ -542,6 +553,14 @@ public class ObservationTransformer {
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), referralRequestBuilder);
 
+    }
+
+    private static ResourceType findObservationType(EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell patientGuidCell, CsvCell parentObservationCell) throws Exception {
+        ResourceType parentResourceType = csvHelper.getCachedParentObservationResourceType(patientGuidCell, parentObservationCell);
+        if (parentResourceType == null) {
+            parentResourceType = findOriginalTargetResourceType(fhirResourceFiler, patientGuidCell, parentObservationCell);
+        }
+        return parentResourceType;
     }
 
     /*private static void createOrDeleteReferralRequest(Observation parser,
@@ -673,17 +692,20 @@ public class ObservationTransformer {
         DateTimeType dateTimeType = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
         diagnosticOrderBuilder.setDateTime(dateTimeType, effectiveDate, effectiveDatePrecision);
 
-        CsvCell enteredDate = parser.getEnteredDate();
-        CsvCell enteredTime = parser.getEnteredTime();
-        Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(enteredDate, enteredTime);
-        if (enteredDateTime != null) {
-            diagnosticOrderBuilder.setRecordedDate(enteredDateTime, enteredDate, enteredTime);
-        }
+        //we don't know anything other than it was requested
+        diagnosticOrderBuilder.setStatus(DiagnosticOrder.DiagnosticOrderStatus.REQUESTED);
 
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
         if (!enteredByGuid.isEmpty()) {
             Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
             diagnosticOrderBuilder.setRecordedBy(reference, enteredByGuid);
+        }
+
+        CsvCell enteredDate = parser.getEnteredDate();
+        CsvCell enteredTime = parser.getEnteredTime();
+        Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(enteredDate, enteredTime);
+        if (enteredDateTime != null) {
+            diagnosticOrderBuilder.setRecordedDate(enteredDateTime, enteredDate, enteredTime);
         }
 
         CsvCell documentGuid = parser.getDocumentGuid();
@@ -699,6 +721,13 @@ public class ObservationTransformer {
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
             diagnosticOrderBuilder.setIsConfidential(true, confidential);
+        }
+
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            diagnosticOrderBuilder.setParentResource(parentReference, parentObservationCell);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -841,6 +870,13 @@ public class ObservationTransformer {
             specimenBuilder.setIsConfidential(true, confidential);
         }
 
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            specimenBuilder.setParentResource(parentReference, parentObservationCell);
+        }
+
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(specimenBuilder, parser);
         assertNumericUnitEmpty(specimenBuilder, parser);
@@ -946,16 +982,16 @@ public class ObservationTransformer {
         CsvCell associatedText = parser.getAssociatedText();
         allergyIntoleranceBuilder.setNote(associatedText.getString(), associatedText);
 
-        CsvCell consultationGuid = parser.getConsultationGuid();
-        if (!consultationGuid.isEmpty()) {
-            Reference reference = csvHelper.createEncounterReference(consultationGuid, patientGuid);
-            allergyIntoleranceBuilder.setEncounter(reference, consultationGuid);
-        }
-
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
             Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             allergyIntoleranceBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
+        }
+
+        CsvCell consultationGuid = parser.getConsultationGuid();
+        if (!consultationGuid.isEmpty()) {
+            Reference reference = csvHelper.createEncounterReference(consultationGuid, patientGuid);
+            allergyIntoleranceBuilder.setEncounter(reference, consultationGuid);
         }
 
         if (isReview(allergyIntoleranceBuilder, null, parser, csvHelper, fhirResourceFiler)) {
@@ -965,6 +1001,13 @@ public class ObservationTransformer {
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
             allergyIntoleranceBuilder.setIsConfidential(true, confidential);
+        }
+
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            allergyIntoleranceBuilder.setParentResource(parentReference, parentObservationCell);
         }
 
         assertValueEmpty(allergyIntoleranceBuilder, parser);
@@ -1112,6 +1155,13 @@ public class ObservationTransformer {
             diagnosticReportBuilder.setIsConfidential(true, confidential);
         }
 
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            diagnosticReportBuilder.setParentResource(parentReference, parentObservationCell);
+        }
+
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(diagnosticReportBuilder, parser);
         assertNumericUnitEmpty(diagnosticReportBuilder, parser);
@@ -1203,7 +1253,7 @@ public class ObservationTransformer {
         EmisCsvHelper.setUniqueId(procedureBuilder, patientGuid, observationGuid);
 
         Reference patientReference = csvHelper.createPatientReference(patientGuid);
-        procedureBuilder.setPatient(patientReference);
+        procedureBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell deleted = parser.getDeleted();
@@ -1268,6 +1318,13 @@ public class ObservationTransformer {
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
             procedureBuilder.setIsConfidential(true, confidential);
+        }
+
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            procedureBuilder.setParentResource(parentReference, parentObservationCell);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1434,6 +1491,13 @@ public class ObservationTransformer {
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
             conditionBuilder.setIsConfidential(true, confidential);
+        }
+
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            conditionBuilder.setParentResource(parentReference, parentObservationCell);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1672,6 +1736,13 @@ public class ObservationTransformer {
             observationBuilder.setIsConfidential(true, confidential);
         }
 
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            observationBuilder.setParentResource(parentReference, parentObservationCell);
+        }
+
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
     }
 
@@ -1846,6 +1917,13 @@ public class ObservationTransformer {
             familyMemberHistoryBuilder.setIsConfidential(true, confidential);
         }
 
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            familyMemberHistoryBuilder.setParentResource(parentReference, parentObservationCell);
+        }
+
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(familyMemberHistoryBuilder, parser);
         assertNumericUnitEmpty(familyMemberHistoryBuilder, parser);
@@ -1994,6 +2072,13 @@ public class ObservationTransformer {
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
             immunizationBuilder.setIsConfidential(true, confidential);
+        }
+
+        CsvCell parentObservationCell = parser.getParentObservationGuid();
+        if (!parentObservationCell.isEmpty()) {
+            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+            immunizationBuilder.setParentResource(parentReference, parentObservationCell);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type

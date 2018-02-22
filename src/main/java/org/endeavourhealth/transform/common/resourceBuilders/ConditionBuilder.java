@@ -7,12 +7,16 @@ import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
 public class ConditionBuilder extends ResourceBuilderBase
                               implements HasCodeableConceptI,
                                         HasContainedListI {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
 
     private Condition condition = null;
 
@@ -117,7 +121,7 @@ public class ConditionBuilder extends ResourceBuilderBase
     public void setOnset(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.condition.setOnset(dateTimeType);
 
-        auditValue("onset.dateTimeValue", sourceCells);
+        auditValue("onsetDateTime", sourceCells);
     }
 
     public void setNotes(String notes, CsvCell... sourceCells) {
@@ -172,7 +176,13 @@ public class ConditionBuilder extends ResourceBuilderBase
         }
 
         this.condition.setAbatement(type);
-        auditValue("abatement.dateValue", sourceCells);
+        if (type instanceof DateType) {
+            auditValue("abatementDate", sourceCells);
+
+        } else {
+            auditValue("abatementBoolean", sourceCells);
+        }
+
     }
 
     public Type getEndDateOrBoolean() {
@@ -372,5 +382,9 @@ public class ConditionBuilder extends ResourceBuilderBase
         }
         StringType stringType = (StringType)ExtensionConverter.findExtensionValue(outerExtension, FhirExtensionUri._PROBLEM_RELATED__TYPE);
         return ProblemRelationshipType.fromCode(stringType.getValue());
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

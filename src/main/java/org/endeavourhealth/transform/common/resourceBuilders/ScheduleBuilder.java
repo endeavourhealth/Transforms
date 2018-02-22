@@ -97,8 +97,8 @@ public class ScheduleBuilder extends ResourceBuilderBase {
 
     public void addActor(Reference practitionerReference, CsvCell... sourceCells) {
         //the schedule resource only supports ONE actor, so put the first there and
-        //all subsequent ones in extenasions
-        if (this.schedule.getActor() == null) {
+        //all subsequent ones in extensions
+        if (!this.schedule.hasActor()) {
             this.schedule.setActor(practitionerReference);
 
             auditValue("actor.reference", sourceCells);

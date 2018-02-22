@@ -158,52 +158,52 @@ public abstract class BartsCsvToFhirTransformer {
 
             if (fileType.compareTo("LOREF") == 0) {
                 // call into 2.2 location transform
-                LOREF parser = new LOREF(serviceId, systemId, exchangeId, version, filePath, true);
+                LOREF parser = new LOREF(serviceId, systemId, exchangeId, version, filePath);
                 LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PRSNLREF") == 0) {
                 //call into 2.2 personnel transform
-                PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath, true);
+                PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath);
                 PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
                 parser.close();
             } else if (fileType.compareTo("PPATI") == 0) {
                 //call into 2.2 main person/patient transform
-                PPATI parser = new PPATI(serviceId, systemId, exchangeId, version, filePath, true);
+                PPATI parser = new PPATI(serviceId, systemId, exchangeId, version, filePath);
                 PPATITransformer.transform(version, parser, fhirResourceFiler, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPADD") == 0) {
                 //call into 2.2 patient address transform
-                PPADD parser = new PPADD(serviceId, systemId, exchangeId, version, filePath, true);
+                PPADD parser = new PPADD(serviceId, systemId, exchangeId, version, filePath);
                 PPADDTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPALI") == 0) {
                 //call into 2.2 patient alias transform
-                PPALI parser = new PPALI(serviceId, systemId, exchangeId, version, filePath, true);
+                PPALI parser = new PPALI(serviceId, systemId, exchangeId, version, filePath);
                 PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPINF") == 0) {
                 //TODO: call into 2.2 patient info transform
-                PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath, true);
+                PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath);
                 //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPNAM") == 0) {
                 //call into 2.2 patient name transform
-                PPNAM parser = new PPNAM(serviceId, systemId, exchangeId, version, filePath, true);
+                PPNAM parser = new PPNAM(serviceId, systemId, exchangeId, version, filePath);
                 PPNAMTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPPHO") == 0) {
                 //call into 2.2 patient phone transform
-                PPPHO parser = new PPPHO(serviceId, systemId, exchangeId, version, filePath, true);
+                PPPHO parser = new PPPHO(serviceId, systemId, exchangeId, version, filePath);
                 PPPHOTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPREL") == 0) {
                 //call into 2.2 patient relation transform
-                PPREL parser = new PPREL(serviceId, systemId, exchangeId, version, filePath, true);
+                PPREL parser = new PPREL(serviceId, systemId, exchangeId, version, filePath);
                 PPRELTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPAGP") == 0) {
                 //call into 2.2 patient GP transform
-                PPAGP parser = new PPAGP(serviceId, systemId, exchangeId, version, filePath, true);
+                PPAGP parser = new PPAGP(serviceId, systemId, exchangeId, version, filePath);
                 PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             }
@@ -306,22 +306,22 @@ public abstract class BartsCsvToFhirTransformer {
 
             if (fileType.compareTo("ENCNT") == 0) {
                 //call into 2.2 encounter transform
-                ENCNT parser = new ENCNT(serviceId, systemId, exchangeId, version, filePath, true);
+                ENCNT parser = new ENCNT(serviceId, systemId, exchangeId, version, filePath);
                 ENCNTTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("DIAGN") == 0) {
                 //call into 2.2 diagnosis transform
-                DIAGN parser = new DIAGN(serviceId, systemId, exchangeId, version, filePath, true);
+                DIAGN parser = new DIAGN(serviceId, systemId, exchangeId, version, filePath);
                 DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PROCE") == 0) {
                 //call into 2.2 procedure transform
-                PROCE parser = new PROCE(serviceId, systemId, exchangeId, version, filePath, true);
+                PROCE parser = new PROCE(serviceId, systemId, exchangeId, version, filePath);
                 PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("CLEVE") == 0) {
                 //call into 2.2 clinical events transform
-                CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, filePath, true);
+                CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, filePath);
                 CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             }

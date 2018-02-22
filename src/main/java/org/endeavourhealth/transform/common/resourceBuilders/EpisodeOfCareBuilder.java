@@ -54,6 +54,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         }
         period.setStart(date);
 
+        //active state is only based on end date, so don't pass in our source cells
         calculateActiveState();
 
         auditValue("period.start", sourceCells);
@@ -67,7 +68,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         }
         period.setEnd(date);
 
-        calculateActiveState();
+        calculateActiveState(sourceCells);
 
         auditValue("period.end", sourceCells);
     }
@@ -75,7 +76,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
     /**
      * when we set the period, we call this to derive the active status from it
      */
-    private void calculateActiveState() {
+    private void calculateActiveState(CsvCell... sourceCells) {
 
         boolean active = PeriodHelper.isActive(this.episodeOfCare.getPeriod());
 
@@ -84,6 +85,8 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         } else {
             this.episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
         }
+
+        auditValue("status", sourceCells);
     }
 
     public void setConfidential(boolean isConfidential, CsvCell... sourceCells) {

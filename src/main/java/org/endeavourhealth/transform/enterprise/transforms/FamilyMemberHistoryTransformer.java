@@ -37,13 +37,17 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
         Long snomedConceptId = null;
-        BigDecimal value = null;
-        String units = null;
+        BigDecimal resultValue = null;
+        String resultValueUnits = null;
+        Date resultDate = null;
+        String resultString = null;
+        Long resultConcptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
+        Long parentObservationId = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -89,6 +93,12 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
             }
         }
 
+        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
+        if (parentExtension != null) {
+            Reference parentReference = (Reference)parentExtension.getValue();
+            parentObservationId = findEnterpriseId(params, parentReference);
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
                 organisationId,
@@ -99,13 +109,17 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
                 clinicalEffectiveDate,
                 datePrecisionId,
                 snomedConceptId,
-                value,
-                units,
+                resultValue,
+                resultValueUnits,
+                resultDate,
+                resultString,
+                resultConcptId,
                 originalCode,
                 isProblem,
                 originalTerm,
                 isReview,
-                problemEndDate);
+                problemEndDate,
+                parentObservationId);
     }
 
 

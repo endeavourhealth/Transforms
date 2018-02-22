@@ -56,6 +56,7 @@ public class EmisCsvHelper {
     private Map<String, CodeAndDate> ethnicityMap = new HashMap<>();
     private Map<String, CodeAndDate> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<String, ResourceType> parentObservationResourceTypes = new HashMap<>();
 
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
 
@@ -260,7 +261,6 @@ public class EmisCsvHelper {
         //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
         return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid.getString());
     }
-
 
 
 
@@ -1232,5 +1232,27 @@ public class EmisCsvHelper {
     }
 
 
+    public ResourceType getCachedParentObservationResourceType(CsvCell patientGuidCell, CsvCell parentObservationCell) {
+        String locallyUniqueId = createUniqueId(patientGuidCell, parentObservationCell);
+        return parentObservationResourceTypes.get(locallyUniqueId);
+    }
 
+    public void cacheParentObservationResourceType(CsvCell patientGuidCell, CsvCell observationGuidCell, ResourceType resourceType) {
+        String locallyUniqueId = createUniqueId(patientGuidCell, observationGuidCell);
+        parentObservationResourceTypes.put(locallyUniqueId, resourceType);
+    }
+
+    /**
+     * we've cached the resource type of EVERY observation, but only need those with a parent-child link,
+     * so call this to remove the unnecessary ones and free up some memory
+     */
+    public void pruneUnnecessaryParentObservationResourceTypes() {
+
+        Set<String> idsToRemove = new HashSet<>(parentObservationResourceTypes.keySet());
+        idsToRemove.removeAll(observationChildMap.keySet());
+
+        for (String idToRemove: idsToRemove) {
+            parentObservationResourceTypes.remove(idToRemove);
+        }
+    }
 }

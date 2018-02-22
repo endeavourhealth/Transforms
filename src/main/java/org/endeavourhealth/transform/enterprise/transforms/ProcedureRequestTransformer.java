@@ -36,7 +36,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
         Long snomedConceptId = null;
-        int procedureRequestStatusId;
+        Integer procedureRequestStatusId = null;
         String originalCode = null;
         String originalTerm = null;
 
@@ -63,7 +63,9 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
 
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
 
-        procedureRequestStatusId = fhir.getStatus().ordinal();
+        if (fhir.hasStatus()) {
+            procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
+        }
 
         //add the raw original code, to assist in data checking
         originalCode = CodeableConceptHelper.findOriginalCode(fhir.getCode());

@@ -78,10 +78,12 @@ public class OrganizationBuilder extends ResourceBuilderBase
         return period;
     }
 
-    private void updateActiveStatus(Extension extension) {
+    private void updateActiveStatus(Extension extension, CsvCell... sourceCells) {
         Period period = findOrCreateOpenPeriod(extension);
         boolean active = PeriodHelper.isActive(period);
         this.organization.setActive(active);
+
+        auditValue("active", sourceCells);
     }
 
     public void setOpenDate(Date date, CsvCell... sourceCells) {
@@ -89,6 +91,7 @@ public class OrganizationBuilder extends ResourceBuilderBase
         Period period = findOrCreateOpenPeriod(extension);
         period.setStart(date);
 
+        //don't pass the source cells into this fn as it's only the end date that's factored into the active calculation
         updateActiveStatus(extension);
 
         auditPeriodStartExtension(extension, sourceCells);
@@ -99,7 +102,7 @@ public class OrganizationBuilder extends ResourceBuilderBase
         Period period = findOrCreateOpenPeriod(extension);
         period.setStart(date);
 
-        updateActiveStatus(extension);
+        updateActiveStatus(extension, sourceCells);
 
         auditPeriodEndExtension(extension, sourceCells);
     }
@@ -126,6 +129,11 @@ public class OrganizationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public String getLastAddressJsonPrefix() {
+        return "address[" + getLastAddressIndex() + "]";
+    }
+
+    /*@Override
     public void addAddressLine(String line, CsvCell... sourceCells) {
         Address address = getLastAddress();
         address.addLine(line);
@@ -164,5 +172,5 @@ public class OrganizationBuilder extends ResourceBuilderBase
         address.setText(displayText);
 
         auditValue("address[" + getLastAddressIndex() + "].text", sourceCells);
-    }
+    }*/
 }

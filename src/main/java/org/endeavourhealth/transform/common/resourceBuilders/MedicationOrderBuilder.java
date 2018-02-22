@@ -65,7 +65,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     public void setReason(Reference conditionReference, CsvCell... sourceCells) {
         this.medicationOrder.setReason(conditionReference);
 
-        auditValue("reason.reference", sourceCells);
+        auditValue("reasonReference.reference", sourceCells);
     }
 
     public void setPrescriber(Reference practitionerReference, CsvCell... sourceCells) {
@@ -115,14 +115,14 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         SimpleQuantity quantity = getDispenseRequestQuantity();
         quantity.setValue(BigDecimal.valueOf(value.doubleValue()));
 
-        auditValue("dispenseRequest.quantity.value");
+        auditValue("dispenseRequest.quantity.value", sourceCells);
     }
 
     public void setQuantityUnit(String unit, CsvCell... sourceCells) {
         SimpleQuantity quantity = getDispenseRequestQuantity();
         quantity.setUnit(unit);
 
-        auditValue("dispenseRequest.quantity.unit");
+        auditValue("dispenseRequest.quantity.unit", sourceCells);
     }
 
     public void setDurationDays(Integer days, CsvCell... sourceCells) {
@@ -130,7 +130,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         MedicationOrder.MedicationOrderDispenseRequestComponent dispenseRequest = getDispenseRequest();
         dispenseRequest.setExpectedSupplyDuration(duration);
 
-        auditValue("dispenseRequest.expectedSupplyDuration.value");
+        auditValue("dispenseRequest.expectedSupplyDuration.value", sourceCells);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
 
     @Override
     public String getCodeableConceptJsonPath(String tag) {
-        return "medication";
+        return "medicationCodeableConcept";
     }
 
 }

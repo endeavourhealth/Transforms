@@ -13,7 +13,7 @@ import java.util.Date;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
-        HasContainedListI {
+                                        HasContainedListI {
 
     private Encounter encounter = null;
 
@@ -64,8 +64,8 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("appointment", sourceCells);
     }
 
-    public void setIncomplete(CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.encounter, FhirExtensionUri.ENCOUNTER_INCOMPLETE, true);
+    public void setIncomplete(boolean isIncomplete, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.encounter, FhirExtensionUri.ENCOUNTER_INCOMPLETE, isIncomplete);
 
         auditBooleanExtension(extension, sourceCells);
     }

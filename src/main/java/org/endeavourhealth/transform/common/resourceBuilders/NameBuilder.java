@@ -2,8 +2,10 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
@@ -32,11 +34,16 @@ public class NameBuilder {
             //trim and handle empty tokens to get around double-spaces or weird spacing
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
-                parentBuilder.addNamePrefix(tok, sourceCells);
+
+                HumanName name = parentBuilder.getLastName();
+                name.addPrefix(tok);
+
+                int index = name.getPrefix().size()-1;
+                auditNameValue("prefix[" + index + "]", sourceCells);
             }
         }
 
-        updateDisplayName();
+        updateDisplayName(sourceCells);
     }
 
     public void addGiven(String given, CsvCell... sourceCells) {
@@ -49,11 +56,16 @@ public class NameBuilder {
             //trim and handle empty tokens to get around double-spaces or weird spacing
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
-                parentBuilder.addNameGiven(tok, sourceCells);
+
+                HumanName name = parentBuilder.getLastName();
+                name.addGiven(tok);
+
+                int index = name.getGiven().size()-1;
+                auditNameValue("given[" + index + "]", sourceCells);
             }
         }
 
-        updateDisplayName();
+        updateDisplayName(sourceCells);
     }
 
     public void addFamily(String family, CsvCell... sourceCells) {
@@ -66,11 +78,16 @@ public class NameBuilder {
             //trim and handle empty tokens to get around double-spaces or weird spacing
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
-                parentBuilder.addNameFamily(tok, sourceCells);
+
+                HumanName name = parentBuilder.getLastName();
+                name.addFamily(tok);
+
+                int index = name.getFamily().size()-1;
+                auditNameValue("family[" + index + "]", sourceCells);
             }
         }
 
-        updateDisplayName();
+        updateDisplayName(sourceCells);
     }
 
     public void addSuffix(String suffix, CsvCell... sourceCells) {
@@ -83,25 +100,61 @@ public class NameBuilder {
             //trim and handle empty tokens to get around double-spaces or weird spacing
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
-                parentBuilder.addNameSuffix(tok, sourceCells);
+
+                HumanName name = parentBuilder.getLastName();
+                name.addSuffix(tok);
+
+                int index = name.getSuffix().size()-1;
+                auditNameValue("suffix[" + index + "]", sourceCells);
             }
         }
 
-        updateDisplayName();
+        updateDisplayName(sourceCells);
     }
 
-    private void updateDisplayName() {
+
+    private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
+
+        String jsonField = parentBuilder.getLastNameJsonPrefix() + "." + jsonSuffix;
+
+        ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
+        for (CsvCell csvCell: sourceCells) {
+            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+        }
+    }
+
+
+    private void updateDisplayName(CsvCell... sourceCells) {
         HumanName humanName = parentBuilder.getLastName();
         String displayName = NameConverter.generateDisplayName(humanName);
-        parentBuilder.addNameDisplayName(displayName);
+
+        HumanName name = parentBuilder.getLastName();
+        name.setText(displayName);
+
+        auditNameValue("text", sourceCells);
     }
 
+    private Period getOrCreateNamePeriod() {
+        HumanName name = parentBuilder.getLastName();
+        Period period = null;
+        if (name.hasPeriod()) {
+            period = name.getPeriod();
+        } else {
+            period = new Period();
+            name.setPeriod(period);
+        }
+        return period;
+    }
 
     public void setStartDate(Date date, CsvCell... sourceCells) {
-        //TODO - need to implement
+        getOrCreateNamePeriod().setStart(date);
+
+        auditNameValue("period.start", sourceCells);
     }
 
     public void setEndDate(Date date, CsvCell... sourceCells) {
-        //TODO - need to implement
+        getOrCreateNamePeriod().setEnd(date);
+
+        auditNameValue("period.end", sourceCells);
     }
 }

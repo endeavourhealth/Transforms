@@ -45,6 +45,11 @@ public class LocationBuilder extends ResourceBuilderBase
 
     @Override
     public void addAddress(Address.AddressUse use) {
+
+        if (this.location.hasAddress()) {
+            throw new IllegalArgumentException("Trying to add new address when location already has an address");
+        }
+
         Address address = new Address();
         address.setUse(use);
         this.location.setAddress(address);
@@ -56,6 +61,11 @@ public class LocationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public String getLastAddressJsonPrefix() {
+        return "address";
+    }
+
+    /*@Override
     public void addAddressLine(String line, CsvCell... sourceCells) {
         Address address = this.location.getAddress();
         address.addLine(line);
@@ -94,7 +104,7 @@ public class LocationBuilder extends ResourceBuilderBase
         address.setText(displayText);
 
         auditValue("address.text", sourceCells);
-    }
+    }*/
 
     public void setDescription(String name, CsvCell... sourceCells) {
         this.location.setDescription(name);
@@ -160,13 +170,13 @@ public class LocationBuilder extends ResourceBuilderBase
         return period;
     }
 
-    private void updateActiveStatus(Extension extension) {
+    private void updateActiveStatus(Extension extension, CsvCell... sourceCells) {
         Period period = findOrCreateOpenPeriod(extension);
         boolean active = PeriodHelper.isActive(period);
         if (active) {
-            this.location.setStatus(Location.LocationStatus.ACTIVE);
+            setStatus(Location.LocationStatus.ACTIVE, sourceCells);
         } else {
-            this.location.setStatus(Location.LocationStatus.INACTIVE);
+            setStatus(Location.LocationStatus.INACTIVE, sourceCells);
         }
     }
 
@@ -175,6 +185,7 @@ public class LocationBuilder extends ResourceBuilderBase
         Period period = findOrCreateOpenPeriod(extension);
         period.setStart(date);
 
+        //don't pass the source cells into this fn, as it's only the end date that's factored in to the status calculation
         updateActiveStatus(extension);
 
         auditPeriodStartExtension(extension, sourceCells);
@@ -183,9 +194,9 @@ public class LocationBuilder extends ResourceBuilderBase
     public void setCloseDate(Date date, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.findOrCreateExtension(this.location, FhirExtensionUri.ACTIVE_PERIOD);
         Period period = findOrCreateOpenPeriod(extension);
-        period.setStart(date);
+        period.setEnd(date);
 
-        updateActiveStatus(extension);
+        updateActiveStatus(extension, sourceCells);
 
         auditPeriodEndExtension(extension, sourceCells);
     }

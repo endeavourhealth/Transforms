@@ -94,14 +94,9 @@ public abstract class ResourceBuilderBase {
         auditValue("extension[" + index + "].valueDuration.value", sourceCells);
     }
 
-    protected void auditPositiveIntExtension(Extension extension, CsvCell... sourceCells) {
-        int index = getResource().getExtension().indexOf(extension);
-        auditValue("extension[" + index + "].valuePositiveInt.value", sourceCells);
-    }
-
     protected void auditIntegerExtension(Extension extension, CsvCell... sourceCells) {
         int index = getResource().getExtension().indexOf(extension);
-        auditValue("extension[" + index + "].valueInteger.value", sourceCells);
+        auditValue("extension[" + index + "].valueInteger", sourceCells);
     }
 
     protected void auditDecimalExtension(Extension extension, CsvCell... sourceCells) {
@@ -191,4 +186,9 @@ public abstract class ResourceBuilderBase {
         auditReferenceExtension(extension, sourceCells);
     }
 
+    public void createOrUpdateParentResourceExtension(Reference reference, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.PARENT_RESOURCE, reference);
+
+        auditReferenceExtension(extension, sourceCells);
+    }
 }

@@ -13,8 +13,8 @@ public class PPATI extends AbstractCsvParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(PPATI.class);
 
-    public PPATI(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+    public PPATI(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);

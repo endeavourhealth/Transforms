@@ -49,7 +49,7 @@ public class ObservationReferralTransformer {
         EmisCsvHelper.setUniqueId(referralRequestBuilder, patientGuid, observationGuid);
 
         Reference patientReference = csvHelper.createPatientReference(patientGuid);
-        referralRequestBuilder.setPatient(patientReference);
+        referralRequestBuilder.setPatient(patientReference, patientGuid);
 
         CsvCell ubrn = parser.getReferralUBRN();
         if (!ubrn.isEmpty()) {

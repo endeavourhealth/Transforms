@@ -17,8 +17,8 @@ public class LOREF extends AbstractCsvParser {
     //public static final String TIME_FORMAT = "hh:mm:ss";
     //public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public LOREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+    public LOREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);

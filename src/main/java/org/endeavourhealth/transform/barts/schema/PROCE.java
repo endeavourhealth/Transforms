@@ -12,8 +12,8 @@ import java.util.UUID;
 public class PROCE extends AbstractCsvParser {
     private static final Logger LOG = LoggerFactory.getLogger(PROCE.class);
 
-    public PROCE(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser,
+    public PROCE(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);

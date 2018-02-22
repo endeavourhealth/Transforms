@@ -52,7 +52,7 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     public void setOnsetDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.allergyIntolerance.setOnsetElement(dateTimeType);
 
-        auditValue("onset.valueDateTime", sourceCells);
+        auditValue("onset", sourceCells);
 
     }
 
@@ -94,5 +94,9 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag) {
         return "substance";
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

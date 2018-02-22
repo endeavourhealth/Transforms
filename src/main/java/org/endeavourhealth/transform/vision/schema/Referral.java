@@ -11,8 +11,8 @@ import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cl
 
 public class Referral extends AbstractCsvParser {
 
-    public Referral(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Referral(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "PID",
                 "ID",
                 "DATE",

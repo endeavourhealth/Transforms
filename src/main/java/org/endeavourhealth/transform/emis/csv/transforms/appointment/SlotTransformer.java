@@ -135,12 +135,14 @@ public class SlotTransformer {
 
         CsvCell sentInTime = parser.getSendInTime();
         if (!sentInTime.isEmpty()) {
+            //combine the sent in TIME with the start DATE
             Date sentInDateTime = CsvCell.getDateTimeFromTwoCells(startDate, sentInTime);
             appointmentBuilder.setSentInDateTime(sentInDateTime, startDate, sentInTime);
         }
 
         CsvCell leftTime = parser.getLeftTime();
         if (!leftTime.isEmpty()) {
+            //combine the left in TIME with the start DATE
             Date leftDateTime = CsvCell.getDateTimeFromTwoCells(startDate, leftTime);
             appointmentBuilder.setLeftDateTime(leftDateTime, startDate, leftTime);
         }
@@ -157,6 +159,7 @@ public class SlotTransformer {
             appointmentBuilder.setStatus(Appointment.AppointmentStatus.ARRIVED, sentInTime);
 
         } else {
+            //otherwise the appointment is booked
             appointmentBuilder.setStatus(Appointment.AppointmentStatus.BOOKED);
         }
 

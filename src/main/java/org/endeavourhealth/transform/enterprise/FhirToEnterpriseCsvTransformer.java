@@ -13,12 +13,12 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
@@ -55,12 +55,6 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
         boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
-        //nasty workaround to handle a column missing from a table in AIMES
-        boolean hasProblemEndDate = true;
-        if (config.has("problem_end_date")) {
-            hasProblemEndDate = config.get("problem_end_date").asBoolean();
-        }
-
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
             batchSize = config.get("transform_batch_size").asInt();
@@ -75,7 +69,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
-        OutputContainer data = new OutputContainer(pseudonymised, hasProblemEndDate);
+        OutputContainer data = new OutputContainer(pseudonymised);
         EnterpriseTransformParams params = new EnterpriseTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params, resources);

@@ -53,18 +53,32 @@ public class EmisCodeHelper {
         }
     }
 
+    public static String removeSynonymAndPadRead2Code(EmisCsvCodeMap codeMap) {
+        String code = codeMap.getReadCode();
+
+        //the raw CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
+        //but only apply this IF the code isn't one of the Emis diagnostic order codes, which is a
+        //valid Read2 code but prefixed with EMISREQ.
+        if (!code.startsWith("EMISREQ")) {
+            int index = code.indexOf("-");
+            if (index > -1) {
+                code = code.substring(0, index);
+            }
+        }
+
+        while (code.length() < 5) {
+            code += ".";
+        }
+
+        return code;
+    }
+
     public static String getClinicalCodeSystemForReadCode(EmisCsvCodeMap codeMap) {
         //without a Read 2 engine, there seems to be no cast-iron way to determine whether the supplied codes
         //are Read 2 codes or Emis local codes. Looking at the codes from the test data sets, this seems
         //to be a reliable way to perform the same check.
 
-        //the CSV uses a hyphen to delimit the synonym ID from the code, but since we include
-        //the original term text anyway, there's no need to carry the synonym ID into the FHIR data
-        String readCode = codeMap.getReadCode();
-        int index = readCode.indexOf("-");
-        if (index > -1) {
-            readCode = readCode.substring(0, index);
-        }
+        String readCode = removeSynonymAndPadRead2Code(codeMap);
 
         if (readCode.startsWith("EMIS")
                 || readCode.startsWith("ALLERGY")
@@ -94,7 +108,7 @@ public class EmisCodeHelper {
 
     private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) {
 
-        String readCode = codeMap.getReadCode();
+        String readCode = removeSynonymAndPadRead2Code(codeMap);
         String readTerm = codeMap.getReadTerm();
         Long snomedConceptId = codeMap.getSnomedConceptId();
         String snomedTerm = codeMap.getSnomedTerm();
@@ -123,7 +137,7 @@ public class EmisCodeHelper {
             codeableConceptBuilder.setCodingCode("" + snomedDescriptionId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID, snomedDescriptionId));
         }
 
-        codeableConceptBuilder.setText(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm, additionalSourceCells));
+        codeableConceptBuilder.setText(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
     }
 
     private static void applyMedicationCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) {
@@ -136,9 +150,12 @@ public class EmisCodeHelper {
             codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_CT);
             codeableConceptBuilder.setCodingCode("" + dmdId, createCsvCell(codeMap, AUDIT_DRUG_CODE, dmdId, additionalSourceCells));
             codeableConceptBuilder.setCodingDisplay(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));
-        }
+            codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));
 
-        codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName, additionalSourceCells));
+        } else {
+            //if we don't have a DM+D ID, then just pass in the additional source cells (i.e. the codeId cell) along with the drug name
+            codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName, additionalSourceCells));
+        }
     }
 
     private static CsvCell[] createCsvCell(EmisCsvCodeMap codeMap, String fieldName, Object value, CsvCell... additionalSourceCells) {
@@ -183,7 +200,7 @@ public class EmisCodeHelper {
 
 
     public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) {
-        String read2Code = codeMapping.getReadCode();
+        String read2Code = removeSynonymAndPadRead2Code(codeMapping);
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }
@@ -222,7 +239,7 @@ public class EmisCodeHelper {
     }
 
     public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
-        String read2Code = codeMapping.getReadCode();
+        String read2Code = removeSynonymAndPadRead2Code(codeMapping);
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }

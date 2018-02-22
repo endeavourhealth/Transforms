@@ -43,7 +43,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public void setDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.referralRequest.setDateElement(dateTimeType);
 
-        auditValue("dateTimeType", sourceCells);
+        auditValue("date", sourceCells);
     }
 
     public void setEncounter(Reference encounterReference, CsvCell... sourceCells) {
@@ -159,4 +159,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag) {
         return "serviceRequested[0]";
     }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
 }

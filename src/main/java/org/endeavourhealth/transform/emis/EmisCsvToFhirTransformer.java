@@ -154,7 +154,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{131AE556-8B50-4C17-9D7D-A4B19F7B1FEA}", "15/10/2017");
         map.put("{C0D2D0DF-EF78-444D-9A6D-B9EDEF5EF350}", "13/10/2017");
         map.put("{F174B354-4156-4BCB-960F-35D0145075EA}", "01/02/2017");
-        map.put("{38600D63-1DE0-4910-8ED6-A38DC28A9DAA}", "02/01/2018"); //NOT FIXED YET - THE SPITALFIELDS PRACTICE (CDB 16);F84081
+        map.put("{38600D63-1DE0-4910-8ED6-A38DC28A9DAA}", "19/02/2018"); //THE SPITALFIELDS PRACTICE (CDB 16);F84081
         map.put("{B3ECA2DE-D926-4594-B0EA-CF2F28057CE1}", "19/10/2017");
         map.put("{18F7C28B-2A54-4F82-924B-38C60631FFFA}", "04/02/2018"); //Rowans Surgery (CDB 18174);H85035
         map.put("{16FB5EE8-5039-4068-BC42-1DB56DC2A530}", "08/06/2017");
@@ -222,7 +222,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{90C2959C-0C2D-43DC-A81B-4AD594C17999}", "20/04/2017");
         map.put("{1F1669CF-1BB0-47A7-8FBF-BE65651644C1}", "15/10/2017");
         map.put("{C1800BE8-4C1D-4340-B0F2-7ED208586ED3}", "15/10/2017");
-        map.put("{55A94703-4582-46FB-808A-1990E9CBCB6F}", "02/01/2018"); //NOT FIXED YET - Stamford Hill Group Practice (CDB 56);F84013
+        map.put("{55A94703-4582-46FB-808A-1990E9CBCB6F}", "19/02/2018"); //Stamford Hill Group Practice (CDB 56);F84013
         map.put("{D4996E62-268F-4759-83A6-7A68D0B38CEC}", "27/04/2017");
         map.put("{3C843BBA-C507-4A95-9934-1A85B977C7B8}", "01/02/2017");
         map.put("{2216253B-705D-4C46-ADB3-ED48493D6A39}", "03/02/2018"); //RIVERSIDE MEDICAL PRACTICE (CDB 14675);Y01962
@@ -395,8 +395,8 @@ public abstract class EmisCsvToFhirTransformer {
         Class cls = Class.forName(clsName);
 
         //now construct an instance of the parser for the file we've found
-        Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class, Boolean.TYPE);
-        return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath, false);
+        Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+        return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
     }
 
 

@@ -17,6 +17,7 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -441,7 +442,14 @@ public class FhirHl7v2Filer {
                 .filter(t -> t.getResourceType() != ResourceType.Parameters)
                 .collect(Collectors.toList());
 
-        fhirResourceFiler.saveAdminResource(null, false, adminResources.toArray(new Resource[0]));
+        GenericBuilder[] builders = new GenericBuilder[adminResources.size()];
+        for (int i=0; i<adminResources.size(); i++) {
+            Resource resource = adminResources.get(i);
+            GenericBuilder builder = new GenericBuilder(resource);
+            builders[i] = builder;
+        }
+
+        fhirResourceFiler.saveAdminResource(null, false, builders);
     }
 
     /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
@@ -486,8 +494,10 @@ public class FhirHl7v2Filer {
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
             }
 
+            GenericBuilder builder = new GenericBuilder(resource);
+
             //and save the resource
-            fhirResourceFiler.savePatientResource(null, false, resource);
+            fhirResourceFiler.savePatientResource(null, false, builder);
         }
     }
 

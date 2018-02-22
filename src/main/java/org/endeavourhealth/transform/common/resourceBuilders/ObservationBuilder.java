@@ -38,7 +38,7 @@ public class ObservationBuilder extends ResourceBuilderBase
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
         this.observation.setSubject(patientReference);
 
-        auditValue("patient.reference", sourceCells);
+        auditValue("subject.reference", sourceCells);
     }
 
     public void setStatus(Observation.ObservationStatus status, CsvCell... sourceCells) {
@@ -50,7 +50,7 @@ public class ObservationBuilder extends ResourceBuilderBase
     public void setEffectiveDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.observation.setEffective(dateTimeType);
 
-        auditValue("effective.dateTimeValue", sourceCells);
+        auditValue("effectiveDateTime", sourceCells);
     }
 
     public void setClinician(Reference practitionerReference, CsvCell... sourceCells) {
@@ -60,7 +60,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         }
         this.observation.addPerformer(practitionerReference);
 
-        auditValue("performer.reference", sourceCells);
+        auditValue("performer[0].reference", sourceCells);
     }
 
     public void setNotes(String notes, CsvCell... sourceCells) {
@@ -88,13 +88,13 @@ public class ObservationBuilder extends ResourceBuilderBase
     public void setValue(Double value, CsvCell... sourceCells) {
         findOrCreateQuantity().setValue(BigDecimal.valueOf(value));
 
-        auditValue("value.value", sourceCells);
+        auditValue("valueQuantity.value", sourceCells);
     }
 
     public void setUnits(String units, CsvCell... sourceCells) {
         findOrCreateQuantity().setUnit(units);
 
-        auditValue("value.unit", sourceCells);
+        auditValue("valueQuantity.unit", sourceCells);
     }
 
     public void setEncounter(Reference encounterReference, CsvCell... sourceCells) {
@@ -149,8 +149,11 @@ public class ObservationBuilder extends ResourceBuilderBase
     private boolean hasChildObservation(Reference reference) {
         if (this.observation.hasRelated()) {
             for (Observation.ObservationRelatedComponent related: this.observation.getRelated()) {
+
                 Reference relatedReference = related.getTarget();
-                if (ReferenceHelper.equals(reference, relatedReference)) {
+
+                if (related.getType() == Observation.ObservationRelationshipType.HASMEMBER
+                    && ReferenceHelper.equals(reference, relatedReference)) {
                     return true;
                 }
             }
@@ -167,14 +170,13 @@ public class ObservationBuilder extends ResourceBuilderBase
         }
 
         Observation.ObservationRelatedComponent fhirRelation = this.observation.addRelated();
-        fhirRelation.setType(org.hl7.fhir.instance.model.Observation.ObservationRelationshipType.HASMEMBER);
+        fhirRelation.setType(Observation.ObservationRelationshipType.HASMEMBER);
         fhirRelation.setTarget(reference);
 
         int index = this.observation.getRelated().indexOf(fhirRelation);
         auditValue("related[" + index + "].target.reference", sourceCells);
         return true;
     }
-
 
     private Observation.ObservationComponentComponent getLastComponent() {
         int index = getLastComponentIndex();
@@ -258,5 +260,9 @@ public class ObservationBuilder extends ResourceBuilderBase
 
         int index = this.observation.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

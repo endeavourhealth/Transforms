@@ -26,11 +26,11 @@ public class OutputContainer {
     private final List<AbstractEnterpriseCsvWriter> csvWriters;
 
 
-    public OutputContainer(boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
-        this(CSV_FORMAT, DATE_FORMAT, TIME_FORMAT, pseduonymised, hasProblemEndDate);
+    public OutputContainer(boolean pseduonymised) throws Exception {
+        this(CSV_FORMAT, DATE_FORMAT, TIME_FORMAT, pseduonymised);
     }
 
-    public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised, boolean hasProblemEndDate) throws Exception {
+    public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised) throws Exception {
 
         csvWriters = new ArrayList<>();
         csvWriters.add(new Organization("organization.csv", csvFormat, dateFormat, timeFormat));
@@ -46,7 +46,7 @@ public class OutputContainer {
         csvWriters.add(new EncounterRaw("encounter_raw.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Observation("observation.csv", csvFormat, dateFormat, timeFormat, hasProblemEndDate));
+        csvWriters.add(new Observation("observation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));

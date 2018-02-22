@@ -50,7 +50,7 @@ public abstract class VisionCsvToFhirTransformer {
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, true, allParsers);
+            validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor, previousErrors);
@@ -75,19 +75,19 @@ public abstract class VisionCsvToFhirTransformer {
         }
     }
 
-    private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
-        findFileAndOpenParser(Practice.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Practice.class, serviceId, systemId, exchangeId, files, version, parsers);
         //admin - staff
-        findFileAndOpenParser(Staff.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Staff.class, serviceId, systemId, exchangeId, files, version, parsers);
         //patient - demographics
-        findFileAndOpenParser(Patient.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Patient.class, serviceId, systemId, exchangeId, files, version, parsers);
         //clinical - encounters
-        findFileAndOpenParser(Encounter.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Encounter.class, serviceId, systemId, exchangeId, files, version, parsers);
         //clinical - referrals
-        findFileAndOpenParser(Referral.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Referral.class, serviceId, systemId, exchangeId, files, version, parsers);
         //clinical - journal (observations, medication, problems etc.)
-        findFileAndOpenParser(Journal.class, serviceId, systemId, exchangeId, files, version, openParser, parsers);
+        findFileAndOpenParser(Journal.class, serviceId, systemId, exchangeId, files, version, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
         //Set<File> sh = new HashSet<>(parsers);
@@ -114,7 +114,7 @@ public abstract class VisionCsvToFhirTransformer {
         return name.contains("active_user_data") || name.contains("patient_check_sum_data");
     }
 
-    public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, boolean openParser, Map<Class, AbstractCsvParser> ret) throws Exception {
+    public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();
 
@@ -139,8 +139,8 @@ public abstract class VisionCsvToFhirTransformer {
             }
 
             //now construct an instance of the parser for the file we've found
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class, Boolean.TYPE);
-            AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath, openParser);
+            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+            AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
 
             ret.put(parserCls, parser);
             return;

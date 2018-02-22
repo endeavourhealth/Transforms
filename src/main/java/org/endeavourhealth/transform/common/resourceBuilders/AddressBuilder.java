@@ -1,11 +1,11 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.StringType;
-
-import java.util.ArrayList;
 
 public class AddressBuilder {
 
@@ -23,7 +23,12 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(line)) {
             return;
         }
-        parentBuilder.addAddressLine(line, sourceCells);
+
+        Address address = parentBuilder.getLastAddress();
+        address.addLine(line);
+
+        int index = address.getLine().size()-1;
+        auditNameValue("line[" + index + "]", sourceCells);
 
         updateAddressDisplay(sourceCells);
     }
@@ -32,7 +37,11 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(town)) {
             return;
         }
-        parentBuilder.addAddressTown(town, sourceCells);
+
+        Address address = parentBuilder.getLastAddress();
+        address.setCity(town);
+
+        auditNameValue("city", sourceCells);
 
         updateAddressDisplay(sourceCells);
     }
@@ -41,7 +50,10 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(district)) {
             return;
         }
-        parentBuilder.addAddressDistrict(district, sourceCells);
+        Address address = parentBuilder.getLastAddress();
+        address.setDistrict(district);
+
+        auditNameValue("district", sourceCells);
 
         updateAddressDisplay(sourceCells);
     }
@@ -50,107 +62,59 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(postcode)) {
             return;
         }
-        parentBuilder.addAddressPostcode(postcode, sourceCells);
+        Address address = parentBuilder.getLastAddress();
+        address.setPostalCode(postcode);
+
+        auditNameValue("postalCode", sourceCells);
 
         updateAddressDisplay(sourceCells);
     }
 
-    private void updateAddressDisplay(CsvCell... sourceCells) {
+    private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
-        ArrayList<String> displayTextLines = new ArrayList<>();
+        String jsonField = parentBuilder.getLastAddressJsonPrefix() + "." + jsonSuffix;
 
-        Address address = parentBuilder.getLastAddress();
-
-        if (address.hasLine()) {
-            for (StringType line: address.getLine()) {
-                displayTextLines.add(line.getValue());
-            }
+        ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
+        for (CsvCell csvCell: sourceCells) {
+            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
         }
-
-        if (address.hasCity()) {
-            displayTextLines.add(address.getCity());
-        }
-
-        if (address.hasDistrict()) {
-            displayTextLines.add(address.getDistrict());
-        }
-
-        if (address.hasPostalCode()) {
-            displayTextLines.add(address.getPostalCode());
-        }
-
-        String displayText = String.join(", ", displayTextLines);
-        parentBuilder.addAddressDisplayText(displayText, sourceCells);
     }
 
+    private void updateAddressDisplay(CsvCell... sourceCells) {
 
-    /*public void populateAddress(Address.AddressUse use, CsvCell houseNameFlatNumber, CsvCell numberAndStreet, CsvCell village, CsvCell town, CsvCell county, CsvCell postcode) {
+        Address address = parentBuilder.getLastAddress();
+        String displayText = AddressConverter.generateDisplayText(address);
+        address.setText(displayText);
 
-        ArrayList<String> displayTextLines = new ArrayList<>();
+        auditNameValue("text", sourceCells);
+    }
 
-        parentBuilder.addAddress(use);
-
-        if (!houseNameFlatNumber.isEmpty()) {
-            String str = houseNameFlatNumber.getString();
-            parentBuilder.addAddressLine(str, houseNameFlatNumber);
-            displayTextLines.add(str);
-        }
-
-        if (!numberAndStreet.isEmpty()) {
-            String str = numberAndStreet.getString();
-            parentBuilder.addAddressLine(str, numberAndStreet);
-            displayTextLines.add(str);
-        }
-
-        if (!village.isEmpty()) {
-            String str = village.getString();
-            parentBuilder.addAddressLine(str, village);
-            displayTextLines.add(str);
-        }
-
-        if (!town.isEmpty()) {
-            String str = town.getString();
-            parentBuilder.addAddressTown(str, town);
-            displayTextLines.add(str);
-        }
-
-        if (!county.isEmpty()) {
-            String str = county.getString();
-            parentBuilder.addAddressDistrict(str, county);
-            displayTextLines.add(str);
-        }
-
-        if (!postcode.isEmpty()) {
-            String str = postcode.getString();
-            parentBuilder.addAddressPostcode(str, postcode);
-            displayTextLines.add(str);
-        }
-
-        String displayText = String.join(", ", displayTextLines);
-        parentBuilder.addAddressDisplayText(displayText, houseNameFlatNumber, numberAndStreet, village, town, county, postcode);
-    }*/
-
+    /**
+     * if we want to populate our builder with a full FHIR address and no audit info
+     */
     public void addAddressNoAudit(Address address) {
 
         Address.AddressUse use = address.getUse();
         parentBuilder.addAddress(use);
 
+        Address newAddress = parentBuilder.getLastAddress();
+
         if (address.hasLine()) {
             for (StringType line: address.getLine()) {
-                parentBuilder.addAddressLine(line.getValue());
+                newAddress.addLine(line.getValue());
             }
         }
 
         if (address.hasCity()) {
-            parentBuilder.addAddressTown(address.getCity());
+            newAddress.setCity(address.getCity());
         }
 
         if (address.hasDistrict()) {
-            parentBuilder.addAddressDistrict(address.getDistrict());
+            newAddress.setDistrict(address.getDistrict());
         }
 
         if (address.hasPostalCode()) {
-            parentBuilder.addAddressPostcode(address.getPostalCode());
+            newAddress.setPostalCode(address.getPostalCode());
         }
 
         updateAddressDisplay();

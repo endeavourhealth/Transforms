@@ -10,6 +10,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.dsig.TransformException;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -37,13 +38,17 @@ public class ObservationTransformer extends AbstractTransformer {
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
         Long snomedConceptId = null;
-        BigDecimal value = null;
-        String units = null;
+        BigDecimal resultValue = null;
+        String resultValueUnits = null;
+        Date resultDate = null;
+        String resultString = null;
+        Long resultConcptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
+        Long parentObservationId = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -73,9 +78,27 @@ public class ObservationTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
 
         if (fhir.hasValue()) {
-            Quantity quantity = fhir.getValueQuantity();
-            value = quantity.getValue();
-            units = quantity.getUnit();
+            Type value = fhir.getValue();
+            if (value instanceof Quantity) {
+                Quantity quantity = (Quantity)value;
+                resultValue = quantity.getValue();
+                resultValueUnits = quantity.getUnit();
+
+            } else if (value instanceof DateTimeType) {
+                DateTimeType dateTimeType = (DateTimeType)value;
+                resultDate = dateTimeType.getValue();
+
+            } else if (value instanceof StringType) {
+                StringType stringType = (StringType)value;
+                resultString = stringType.getValue();
+
+            } else if (value instanceof CodeableConcept) {
+                CodeableConcept codeableConcept = (CodeableConcept)value;
+                resultConcptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+
+            } else {
+                throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            }
         }
 
         //add the raw original code, to assist in data checking
@@ -92,6 +115,12 @@ public class ObservationTransformer extends AbstractTransformer {
             }
         }
 
+        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
+        if (parentExtension != null) {
+            Reference parentReference = (Reference)parentExtension.getValue();
+            parentObservationId = findEnterpriseId(params, parentReference);
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
             organisationId,
@@ -102,13 +131,17 @@ public class ObservationTransformer extends AbstractTransformer {
             clinicalEffectiveDate,
             datePrecisionId,
             snomedConceptId,
-            value,
-            units,
+            resultValue,
+            resultValueUnits,
+            resultDate,
+            resultString,
+            resultConcptId,
             originalCode,
             isProblem,
             originalTerm,
             isReview,
-            problemEndDate);
+            problemEndDate,
+            parentObservationId);
     }
 }
 

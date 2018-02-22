@@ -68,7 +68,7 @@ public class ConsultationTransformer {
         CsvCell appointmentGuid = parser.getAppointmentSlotGuid();
         if (!appointmentGuid.isEmpty()) {
             Reference apptReference = csvHelper.createAppointmentReference(appointmentGuid, patientGuid);
-            encounterBuilder.setAppointment(apptReference);
+            encounterBuilder.setAppointment(apptReference, appointmentGuid);
         }
 
         CsvCell clinicianUuid = parser.getClinicianUserInRoleGuid();
@@ -80,7 +80,7 @@ public class ConsultationTransformer {
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
         if (!enteredByGuid.isEmpty()) {
             Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
-            encounterBuilder.setRecordedBy(reference);
+            encounterBuilder.setRecordedBy(reference, enteredByGuid);
         }
 
         //in the earliest version of the extract, we only got the entered date and not time
@@ -103,7 +103,7 @@ public class ConsultationTransformer {
 
         CsvCell organisationGuid = parser.getOrganisationGuid();
         Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
-        encounterBuilder.setServiceProvider(organisationReference);
+        encounterBuilder.setServiceProvider(organisationReference, organisationGuid);
 
         CsvCell codeId = parser.getConsultationSourceCodeId();
         EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, null, csvHelper);
@@ -117,12 +117,7 @@ public class ConsultationTransformer {
         //since complete consultations are by far the default, only record the incomplete extension if it's not complete
         CsvCell completeCell = parser.getComplete();
         if (!completeCell.getBoolean()) {
-            encounterBuilder.setIncomplete(completeCell);
-        }
-
-        CsvCell confidentialCell = parser.getIsConfidential();
-        if (confidentialCell.getBoolean()) {
-            encounterBuilder.setConfidential(true, confidentialCell);
+            encounterBuilder.setIncomplete(true, completeCell);
         }
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
@@ -134,6 +129,11 @@ public class ConsultationTransformer {
         //apply any new linked items from this extract
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
         containedListBuilder.addReferences(newLinkedResources);
+
+        CsvCell confidentialCell = parser.getIsConfidential();
+        if (confidentialCell.getBoolean()) {
+            encounterBuilder.setConfidential(true, confidentialCell);
+        }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }

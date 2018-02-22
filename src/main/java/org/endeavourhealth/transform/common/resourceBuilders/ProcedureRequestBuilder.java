@@ -22,7 +22,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
         this.procedureRequest = procedureRequest;
         if (this.procedureRequest == null) {
             this.procedureRequest = new ProcedureRequest();
-            this.procedureRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+            this.procedureRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE_REQUEST));
         }
     }
 
@@ -95,7 +95,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     public void setScheduledDate(DateTimeType date, CsvCell... sourceCells) {
         this.procedureRequest.setScheduled(date);
 
-        auditValue("scheduled", sourceCells);
+        auditValue("scheduledDateTime", sourceCells);
     }
 
     public void setCodeText(String term, CsvCell... sourceCells) {

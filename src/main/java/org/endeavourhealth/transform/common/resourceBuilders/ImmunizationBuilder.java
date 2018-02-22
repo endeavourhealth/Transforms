@@ -56,7 +56,7 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     public void setPerformedDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.immunization.setDateElement(dateTimeType);
 
-        auditValue("dateValue", sourceCells);
+        auditValue("date", sourceCells);
     }
 
     public void setPerformer(Reference practitionerReference, CsvCell... sourceCells) {
@@ -118,5 +118,9 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag) {
         return "vaccineCode";
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

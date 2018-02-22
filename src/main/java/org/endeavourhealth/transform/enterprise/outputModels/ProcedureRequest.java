@@ -25,7 +25,7 @@ public class ProcedureRequest extends AbstractEnterpriseCsvWriter {
                             Date clinicalEffectiveDate,
                             Integer datePrecisionId,
                             Long snomedConceptId,
-                            int procedureRequestStatusId,
+                            Integer procedureRequestStatusId,
                             String originalCode,
                             String originalTerm) throws Exception {
 
@@ -76,7 +76,7 @@ public class ProcedureRequest extends AbstractEnterpriseCsvWriter {
                 Date.class,
                 Integer.class,
                 Long.class,
-                Integer.TYPE,
+                Integer.class,
                 String.class,
                 String.class
         };

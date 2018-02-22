@@ -99,7 +99,7 @@ public class LocationTransformer {
 
         CsvCell closeDate = parser.getCloseDate();
         if (!closeDate.isEmpty()) {
-            locationBuilder.setCloseDate(openDate.getDate(), openDate);
+            locationBuilder.setCloseDate(closeDate.getDate(), closeDate);
         }
 
         CsvCell mainContactName = parser.getMainContactName();

@@ -103,4 +103,8 @@ public class ProcedureBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag) {
         return "code";
     }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
 }

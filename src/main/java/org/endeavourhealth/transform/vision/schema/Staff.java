@@ -7,8 +7,8 @@ import java.util.UUID;
 
 public class Staff extends AbstractCsvParser {
 
-    public Staff(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, openParser, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
+    public Staff(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
                 "ID",
                 "HCP_TYPE",
                 "GMP_CODE",

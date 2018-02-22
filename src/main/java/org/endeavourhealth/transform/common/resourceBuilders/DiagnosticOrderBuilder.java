@@ -31,7 +31,7 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
         this.diagnosticOrder.setSubject(patientReference);
 
-        auditValue("patient.reference", sourceCells);
+        auditValue("subject.reference", sourceCells);
     }
 
     public void setOrderedBy(Reference practitionerReference, CsvCell... sourceCells) {
@@ -79,7 +79,13 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     public void setDateTime(DateTimeType dateTimeType, CsvCell... sourceCells) {
         getOrderEventComponent().setDateTimeElement(dateTimeType);
 
-        auditValue("event[0].valueDateTime", sourceCells);
+        auditValue("event[0].dateTime", sourceCells);
+    }
+
+    public void setStatus(DiagnosticOrder.DiagnosticOrderStatus status, CsvCell... sourceCells) {
+        getOrderEventComponent().setStatus(status);
+
+        auditValue("event[0].status", sourceCells);
     }
 
     public void setRecordedDate(Date recordedDate, CsvCell... sourceCells) {
@@ -114,5 +120,9 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag) {
         return "item[0].code";
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

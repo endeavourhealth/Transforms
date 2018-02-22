@@ -38,7 +38,7 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     public void setDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.familyMemberHistory.setDateElement(dateTimeType);
 
-        auditValue("dateValue", sourceCells);
+        auditValue("date", sourceCells);
     }
 
     public void setStatus(FamilyMemberHistory.FamilyHistoryStatus status, CsvCell... sourceCells) {
@@ -115,5 +115,9 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag) {
         return "condition[0].code";
+    }
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

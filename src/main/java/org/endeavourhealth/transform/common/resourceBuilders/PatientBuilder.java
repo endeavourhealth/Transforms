@@ -54,7 +54,7 @@ public class PatientBuilder extends ResourceBuilderBase
     public void setDateOfDeath(Date dod, CsvCell... sourceCells) {
         this.patient.setDeceased(new DateTimeType(dod));
 
-        auditValue("deceased.valueDateTime", sourceCells);
+        auditValue("deceasedDateTime", sourceCells);
     }
 
     public void setGender(Enumerations.AdministrativeGender gender, CsvCell... sourceCells) {
@@ -110,11 +110,16 @@ public class PatientBuilder extends ResourceBuilderBase
         return this.patient.getName().get(getLastNameIndex());
     }
 
+    @Override
+    public String getLastNameJsonPrefix() {
+        return "name[" + getLastNameIndex() + "]";
+    }
+
     private int getLastNameIndex() {
         return this.patient.getName().size()-1;
     }
 
-    @Override
+    /*@Override
     public void addNamePrefix(String prefix, CsvCell... sourceCells) {
         HumanName name = getLastName();
         name.addPrefix(prefix);
@@ -157,7 +162,7 @@ public class PatientBuilder extends ResourceBuilderBase
         name.setText(displayName);
 
         auditValue("name[" + getLastNameIndex() + "].text", sourceCells);
-    }
+    }*/
 
     @Override
     public void addAddress(Address.AddressUse use) {
@@ -171,11 +176,16 @@ public class PatientBuilder extends ResourceBuilderBase
         return this.patient.getAddress().get(getLastAddressIndex());
     }
 
+    @Override
+    public String getLastAddressJsonPrefix() {
+        return "address[" + getLastAddressIndex() + "]";
+    }
+
     private int getLastAddressIndex() {
         return this.patient.getAddress().size()-1;
     }
 
-    @Override
+    /*@Override
     public void addAddressLine(String line, CsvCell... sourceCells) {
         Address address = getLastAddress();
         address.addLine(line);
@@ -214,7 +224,7 @@ public class PatientBuilder extends ResourceBuilderBase
         address.setText(displayText);
 
         auditValue("address[" + getLastAddressIndex() + "].text", sourceCells);
-    }
+    }*/
 
     public void addCareProvider(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
         this.patient.addCareProvider(practitionerOrOrganizationReference);
@@ -258,7 +268,8 @@ public class PatientBuilder extends ResourceBuilderBase
         Patient.ContactComponent contact = getLatestContact();
         contact.addRelationship(codeableConcept);
 
-        auditValue("contact[" + getLastAddressIndex() + "].relationship.coding[0]", sourceCells);
+        int index = contact.getRelationship().indexOf(codeableConcept);
+        auditValue("contact[" + getLastAddressIndex() + "].relationship[" + index + "].coding[0]", sourceCells);
     }
 
     public void addContactRelationshipTypeFreeText(String carerRelationshipFreeText, CsvCell... sourceCells) {
@@ -266,7 +277,8 @@ public class PatientBuilder extends ResourceBuilderBase
         Patient.ContactComponent contact = getLatestContact();
         contact.addRelationship(codeableConcept);
 
-        auditValue("contact[" + getLastAddressIndex() + "].relationship.text", sourceCells);
+        int index = contact.getRelationship().indexOf(codeableConcept);
+        auditValue("contact[" + getLastAddressIndex() + "].relationship[" + index + "].text", sourceCells);
     }
 
     public void setMaritalStatus(MaritalStatus fhirMaritalStatus, CsvCell... sourceCells) {

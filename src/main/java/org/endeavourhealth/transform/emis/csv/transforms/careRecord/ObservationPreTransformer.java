@@ -32,6 +32,10 @@ public class ObservationPreTransformer {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
         }
+
+        //we've cached the resource type of EVERY observation, but only need those with a parent-child link,
+        //so call this to remove the unnecessary ones and free up some memory
+        csvHelper.pruneUnnecessaryParentObservationResourceTypes();
     }
 
 
@@ -51,11 +55,13 @@ public class ObservationPreTransformer {
 
         ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
 
+        CsvCell observationGuid = parser.getObservationGuid();
+        CsvCell patientGuid = parser.getPatientGuid();
+
+        csvHelper.cacheParentObservationResourceType(patientGuid, observationGuid, resourceType);
+
         CsvCell parentGuid = parser.getParentObservationGuid();
         if (!parentGuid.isEmpty()) {
-
-            CsvCell observationGuid = parser.getObservationGuid();
-            CsvCell patientGuid = parser.getPatientGuid();
 
             //if the observation links to a parent observation, store this relationship in the
             //helper class, so when processing later, we can set the Has Member reference in the FHIR observation
@@ -84,9 +90,6 @@ public class ObservationPreTransformer {
         CsvCell problemGuid = parser.getProblemGuid();
         if (!problemGuid.isEmpty()) {
 
-            CsvCell observationGuid = parser.getObservationGuid();
-            CsvCell patientGuid = parser.getPatientGuid();
-
             csvHelper.cacheProblemRelationship(problemGuid,
                     patientGuid,
                     observationGuid,
@@ -95,8 +98,6 @@ public class ObservationPreTransformer {
 
         CsvCell consultationGuid = parser.getConsultationGuid();
         if (!consultationGuid.isEmpty()) {
-            CsvCell observationGuid = parser.getObservationGuid();
-            CsvCell patientGuid = parser.getPatientGuid();
 
             csvHelper.cacheNewConsultationChildRelationship(consultationGuid,
                     patientGuid,
@@ -114,7 +115,7 @@ public class ObservationPreTransformer {
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
             if (EmisCodeHelper.isEthnicity(codeMapping)) {
-                CsvCell patientGuid = parser.getPatientGuid();
+
                 CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
                 csvHelper.cacheEthnicity(patientGuid, codeAndDate);
             }
@@ -127,7 +128,7 @@ public class ObservationPreTransformer {
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
             if (EmisCodeHelper.isMaritalStatus(codeMapping)) {
-                CsvCell patientGuid = parser.getPatientGuid();
+
                 CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
                 csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
             }
@@ -135,11 +136,9 @@ public class ObservationPreTransformer {
 
         //if we've previously found that our observation is a problem (via the problem pre-transformer)
         //then cache the read code of the observation
-        CsvCell patientGuid = parser.getPatientGuid();
-        CsvCell observationGuid = parser.getObservationGuid();
         if (csvHelper.isProblemObservationGuid(patientGuid, observationGuid)) {
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            String readCode = codeMapping.getReadCode();
+            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
             csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, readCode);
         }
     }

@@ -59,7 +59,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         return coding;
     }
 
-    private void calculateActiveState() {
+    private void calculateActiveState(CsvCell... sourceCells) {
 
         boolean isActive = false;
 
@@ -74,6 +74,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
 
         this.practitioner.setActive(isActive);
 
+        auditValue("active", sourceCells);
     }
 
     public void setRoleStartDate(Date date, CsvCell... sourceCells) {
@@ -86,10 +87,11 @@ public class PractitionerBuilder extends ResourceBuilderBase
         }
         period.setStart(date);
 
+        //active state is only based on end date, so don't pass in our source cells
         calculateActiveState();
 
         int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("role[" + index + "].person.start", sourceCells);
+        auditValue("practitionerRole[" + index + "].period.start", sourceCells);
     }
 
     public void setRoleEndDate(Date date, CsvCell... sourceCells) {
@@ -102,10 +104,10 @@ public class PractitionerBuilder extends ResourceBuilderBase
         }
         period.setEnd(date);
 
-        calculateActiveState();
+        calculateActiveState(sourceCells);
 
         int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("role[" + index + "].person.end", sourceCells);
+        auditValue("practitionerRole[" + index + "].period.end", sourceCells);
     }
 
     public void setRoleManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
@@ -113,7 +115,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         role.setManagingOrganization(organisationReference);
 
         int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("role[" + index + "].managingOrganisation.reference", sourceCells);
+        auditValue("practitionerRole[" + index + "].managingOrganization.reference", sourceCells);
     }
 
     public void setRoleName(String roleName, CsvCell... sourceCells) {
@@ -121,7 +123,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         coding.setDisplay(roleName);
 
         int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("role[" + index + "].role[0].coding[0].display", sourceCells);
+        auditValue("practitionerRole[" + index + "].role.coding[0].display", sourceCells);
     }
 
     public void setRoleCode(String roleCode, CsvCell... sourceCells) {
@@ -129,7 +131,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         coding.setCode(roleCode);
 
         int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("role[" + index + "].role[0].coding[0].code", sourceCells);
+        auditValue("practitionerRole[" + index + "].role.coding[0].code", sourceCells);
     }
 
     @Override
@@ -146,6 +148,16 @@ public class PractitionerBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public HumanName getLastName() {
+        return this.practitioner.getName();
+    }
+
+    @Override
+    public String getLastNameJsonPrefix() {
+        return "name";
+    }
+
+    /*@Override
     public void addNamePrefix(String prefix, CsvCell... sourceCells) {
         HumanName name = this.practitioner.getName();
         name.addPrefix(prefix);
@@ -187,10 +199,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         name.setText(displayName);
 
         auditValue("name.text", sourceCells);
-    }
+    }*/
 
-    @Override
-    public HumanName getLastName() {
-        return this.practitioner.getName();
-    }
+
 }

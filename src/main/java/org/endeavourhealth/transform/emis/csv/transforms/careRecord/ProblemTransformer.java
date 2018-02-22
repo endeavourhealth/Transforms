@@ -49,7 +49,7 @@ public class ProblemTransformer {
         EmisCsvHelper.setUniqueId(conditionBuilder, patientGuid, observationGuid);
 
         Reference patientReference = csvHelper.createPatientReference(patientGuid);
-        conditionBuilder.setPatient(patientReference);
+        conditionBuilder.setPatient(patientReference, patientGuid);
 
         //the deleted fields isn't present in the test pack, so need to check the version first
         if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
@@ -72,7 +72,7 @@ public class ProblemTransformer {
         }
 
         //set the category on the condition, so we know it's a problem
-        conditionBuilder.setCategory("complaint");
+        conditionBuilder.setCategory("complaint", observationGuid); //the fact it's in this file makes it a problem, so just link to the Oservation GUID
 
         CsvCell comments = parser.getComment();
         if (!comments.isEmpty()) {
@@ -110,7 +110,7 @@ public class ProblemTransformer {
         }
 
         CsvCell lastReviewedByGuid = parser.getLastReviewUserInRoleGuid();
-        if (!lastReviewDate.isEmpty()) {
+        if (!lastReviewedByGuid.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(lastReviewedByGuid);
             conditionBuilder.setProblemLastReviewedBy(practitionerReference, lastReviewedByGuid);
         }
@@ -123,14 +123,15 @@ public class ProblemTransformer {
 
         CsvCell parentProblemGuid = parser.getParentProblemObservationGuid();
         if (!parentProblemGuid.isEmpty()) {
-            Reference problemReference = csvHelper.createProblemReference(parentProblemGuid, patientGuid);
-            conditionBuilder.setParentProblem(problemReference, parentProblemGuid);
 
             CsvCell parentRelationship = parser.getParentProblemRelationship();
             if (!parentRelationship.isEmpty()) {
                 ProblemRelationshipType fhirRelationshipType = convertRelationshipType(parentRelationship.getString());
                 conditionBuilder.setParentProblemRelationship(fhirRelationshipType, parentRelationship);
             }
+
+            Reference problemReference = csvHelper.createProblemReference(parentProblemGuid, patientGuid);
+            conditionBuilder.setParentProblem(problemReference, parentProblemGuid);
         }
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);

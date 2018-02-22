@@ -62,19 +62,19 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
         fhirDose.setText(dose);
 
         int index = this.medicationStatement.getDosage().size()-1;
-        auditValue("doseage[" + index + "].text", sourceCells);
+        auditValue("dosage[" + index + "].text", sourceCells);
     }
 
     public void setNumberIssuesAuthorised(int num, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdatePositiveIntExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ALLOWED, num);
 
-        auditPositiveIntExtension(extension, sourceCells);
+        auditIntegerExtension(extension, sourceCells);
     }
 
     public void setNumberIssuesIssued(int num, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdatePositiveIntExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ISSUED, num);
 
-        auditPositiveIntExtension(extension, sourceCells);
+        auditIntegerExtension(extension, sourceCells);
     }
 
     public void setReasonForUse(Reference conditionReference, CsvCell... sourceCells) {
@@ -163,6 +163,6 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
 
     @Override
     public String getCodeableConceptJsonPath(String tag) {
-        return "medication";
+        return "medicationCodeableConcept";
     }
 }

@@ -41,7 +41,7 @@ public class ContainedListBuilder {
 
         int listIndex = resource.getContained().indexOf(list);
         int entryIndex = list.getEntry().indexOf(entry);
-        parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].reference", sourceCells);
+        parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].item.reference", sourceCells);
     }
 
     public void removeContainedList() {

@@ -109,19 +109,19 @@ public abstract class HomertonCsvToFhirTransformer {
             LOG.debug("currFile:" + filePath + " Type:" + fileType);
 
             if (fileType.compareTo("PATIENT") == 0) {
-                Patient parser = new Patient(serviceId, systemId, exchangeId, version, filePath, true);
+                Patient parser = new Patient(serviceId, systemId, exchangeId, version, filePath);
                 PatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROBLEM") == 0) {
-                Problem parser = new Problem(serviceId, systemId, exchangeId, version, filePath, true);
+                Problem parser = new Problem(serviceId, systemId, exchangeId, version, filePath);
                 ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
-                Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath, true);
+                Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath);
                 DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
-                Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath, true);
+                Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath);
                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             }
