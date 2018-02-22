@@ -59,44 +59,38 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // get patient from encounter
-        Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
-        String patientId = fhirEncounter.getPatient().getId();
-        ResourceId patientResourceId =  getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, patientId);
-        if (patientResourceId == null) {
-            throw new TransformRuntimeException("Patient ResourceId not found for PatientId " + patientId + " from Encounter ResourceId "+encounterResourceId.getUniqueId()+" in file " + parser.getFilePath());
-        }
+        Encounter fhirEncounter = (Encounter)csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
+        String patientReferenceValue = fhirEncounter.getPatient().getReference();
 
         // this Condition resource id
-        CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
-        CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
-        String conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
-        ResourceId conditionResourceId = getDiagnosisResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, patientId, diagnosisDateTimeCell.getString(), conceptCode);
+        CsvCell diagnosisId = parser.getDiagnosisID();
+        ResourceId conditionResourceId = getConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
 
         // create the FHIR Condition
         ConditionBuilder conditionBuilder = new ConditionBuilder();
         conditionBuilder.setAsProblem(false);
 
-        conditionBuilder.setId(conditionResourceId.getResourceId().toString(), diagnosisDateTimeCell, conceptIdentifierCell);
+        conditionBuilder.setId(conditionResourceId.getResourceId().toString(), diagnosisId);
 
         // set the patient reference
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString());
+        Reference patientReference = ReferenceHelper.createReference(patientReferenceValue);
         conditionBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
 
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-            LOG.debug("Delete Condition (PatId=" + patientId + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+            LOG.debug("Delete Condition (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
             return;
         }
 
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        CsvCell diagnosisId = parser.getDiagnosisID();
         if (!diagnosisId.isEmpty()) {
             Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID, diagnosisId.getString());
             conditionBuilder.addIdentifier(identifier, diagnosisId);
         }
 
+        CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
         if (!diagnosisDateTimeCell.isEmpty()) {
             DateTimeType dateTimeType = new DateTimeType(diagnosisDateTimeCell.getDate());
             conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
@@ -125,7 +119,9 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // Condition(Diagnosis) is coded either as Snomed or ICD10
+        CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
         if (!conceptIdentifierCell.isEmpty()) {
+            String conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
             String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(conceptIdentifierCell);
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
@@ -178,7 +174,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // save the resource
-        LOG.debug("Save Condition (PatId=" + patientId + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+        LOG.debug("Save Condition (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
     }
 

@@ -1266,7 +1266,7 @@ public class ObservationTransformer {
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
         CsvCell codeId = parser.getCodeId();
-        EmisCodeHelper.createCodeableConcept(procedureBuilder, false, codeId, null, csvHelper);
+        EmisCodeHelper.createCodeableConcept(procedureBuilder, false, codeId, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE, csvHelper);
 
         CsvCell effectiveDate = parser.getEffectiveDate();
         CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();

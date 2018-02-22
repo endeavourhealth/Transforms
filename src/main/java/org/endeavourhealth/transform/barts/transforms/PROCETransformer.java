@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -15,13 +13,14 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PROCE;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Date;
 
 public class PROCETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
@@ -44,6 +43,135 @@ public class PROCETransformer extends BartsBasisTransformer {
     }
 
     public static void createProcedure(PROCE parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        // Encounter (should already have been created previously)
+        CsvCell encounterIdCell = parser.getEncounterID();
+        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+        if (encounterResourceId == null) {
+            throw new TransformRuntimeException("Encounter ResourceId not found for EncounterId " + parser.getEncounterID() + " in file " + parser.getFilePath());
+        }
+
+        // get patient from encounter
+        Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
+        String patientReferenceValue = fhirEncounter.getPatient().getReference();
+
+        // this Procedure resource id
+        CsvCell procedureIdCell = parser.getProcedureID();
+        ResourceId procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, procedureIdCell);
+
+        // create the FHIR Procedure
+        ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+
+        procedureBuilder.setId(procedureResourceId.getResourceId().toString(), procedureIdCell);
+
+        // set the patient reference
+        Reference patientReference = ReferenceHelper.createReference(patientReferenceValue);
+        procedureBuilder.setPatient(patientReference);
+
+
+        if (!procedureIdCell.isEmpty()) {
+            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID, procedureIdCell.getString());
+            procedureBuilder.addIdentifier(identifier, procedureIdCell);
+        }
+
+        CsvCell active = parser.getActiveIndicator();
+        if (!active.getIntAsBoolean()) {
+            LOG.debug("Delete Procedure (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
+            return;
+        }
+
+        procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
+
+        CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
+        if (!procedureDateTimeCell.isEmpty()) {
+            DateTimeType dateTimeType = new DateTimeType(procedureDateTimeCell.getDate());
+            procedureBuilder.setPerformed(dateTimeType, procedureDateTimeCell);
+        }
+
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString());
+        procedureBuilder.setEncounter(encounterReference, encounterIdCell);
+
+        CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
+        if (!encounterSliceIdCell.isEmpty()) {
+            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID, encounterSliceIdCell.getString());
+            procedureBuilder.addIdentifier(identifier, encounterSliceIdCell);
+        }
+
+        CsvCell nomenclatureIdCell = parser.getNomenclatureID();
+        if (!nomenclatureIdCell.isEmpty()) {
+            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenclatureIdCell.getString());
+            procedureBuilder.addIdentifier(identifier, nomenclatureIdCell);
+        }
+
+        CsvCell personnelIdCell = parser.getPersonnelID();
+        if (!personnelIdCell.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
+            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+        }
+
+        // Procedure is coded either Snomed or OPCS4
+        CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
+        if (!conceptIdentifierCell.isEmpty()) {
+            String conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
+            String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(conceptIdentifierCell);
+
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+
+            if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
+                String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
+
+                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
+                codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+
+            } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+                String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+
+                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
+                codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+            }
+
+        } else {
+            //LOG.warn("Unable to create codeableConcept for Procedure ID: "+procedureIdCell);
+            return;
+        }
+
+        // Procedure type (category) is a Cerner Millenium code so lookup
+        CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
+        if (!procedureTypeCodeCell.isEmpty()) {
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCodeCell.getLong(), fhirResourceFiler.getServiceId());
+            if (cernerCodeValueRef != null) {
+                String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
+
+                codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE);
+                codeableConceptBuilder.setCodingCode(procedureTypeCodeCell.getString(), procedureTypeCodeCell);
+                codeableConceptBuilder.setCodingDisplay(procedureTypeTerm); //don't pass in the cell as this is derived
+                codeableConceptBuilder.setText(procedureTypeTerm); //don't pass in the cell as this is derived
+
+            } else {
+                // LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");
+            }
+        }
+
+        // save resource
+        LOG.debug("Save Procedure (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
+    }
+
+    /*public static void createProcedure(PROCE parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -141,5 +269,5 @@ public class PROCETransformer extends BartsBasisTransformer {
         // save resource
         LOG.debug("Save Procedure (PatId=" + patientId + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
-    }
+    }*/
 }

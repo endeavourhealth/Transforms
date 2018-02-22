@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class PROCE extends AbstractCsvParser {
@@ -37,7 +36,55 @@ public class PROCE extends AbstractCsvParser {
         };
     }
 
-    public String getProcedureID() {
+    public CsvCell getProcedureID() {
+        return super.getCell("#PROCEDURE_ID");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getEncounterID() {
+        return super.getCell("ENCNTR_ID");
+    }
+
+    public CsvCell getEncounterSliceID() {
+        return super.getCell("ENCNTR_SLICE_ID");
+    }
+
+    public CsvCell getCDSSequence() {
+        return super.getCell("PROCEDURE_SEQ_NBR");
+    }
+
+    public CsvCell getNomenclatureID() {
+        return super.getCell("NOMENCLATURE_ID");
+    }
+
+    public CsvCell getProcedureDateTime() {
+        return super.getCell("PROCEDURE_DT_TM");
+    }
+
+    public CsvCell getPersonnelID() {
+        return super.getCell("PROCEDURE_HCP_PRSNL_ID");
+    }
+
+    public CsvCell getProcedureTypeCode() {
+        return super.getCell("PROCEDURE_TYPE_CD");
+    }
+
+    public CsvCell getConceptCodeIdentifier() {
+        return super.getCell("CONCEPT_CKI_IDENT");
+    }
+
+    public CsvCell geProcedureCodeSequenceEntryOrder() {
+        return super.getCell("PROCEDURE_ENTRY_SEQ_NBR");
+    }
+
+    /*public String getProcedureID() {
         return super.getString("#PROCEDURE_ID");
     }
 
@@ -116,7 +163,7 @@ public class PROCE extends AbstractCsvParser {
 
     public String geProcedureCodeSequenceEntryOrder() {
         return super.getString("PROCEDURE_ENTRY_SEQ_NBR");
-    }
+    }*/
 
     @Override
     protected String getFileTypeDescription() {

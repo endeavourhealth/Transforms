@@ -606,6 +606,7 @@ public class BasisTransformer {
         return resourceId;
     }
 
+
     public static ResourceId getProcedureResourceId(String scope, String encounterId, String procedureDateTime, String procedureCode, Integer repetition) throws Exception {
         String uniqueId = null;
         if (repetition.intValue() == 0) {
@@ -792,8 +793,30 @@ public class BasisTransformer {
         if (notes != null) {
             fhirCondition.setNotes(notes);
         }
-
     }
+
+
+    public static ResourceId getProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
+        return getOrCreateResourceId(scope, ResourceType.Procedure, procedureIdCell);
+    }
+
+    public static ResourceId getConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
+        return getOrCreateResourceId(scope, ResourceType.Condition, conditionIdCell);
+    }
+
+    private static ResourceId getOrCreateResourceId(String scope, ResourceType resourceType, CsvCell uniqueIdCell) throws Exception {
+        ResourceId resourceId = getResourceId(scope, resourceType.toString(), uniqueIdCell.getString());
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType(resourceType.toString());
+            resourceId.setUniqueId(uniqueIdCell.getString());
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+        return resourceId;
+    }
+
 
     public static Enumerations.AdministrativeGender convertSusGenderToFHIR(int gender) {
         if (gender == 1) {

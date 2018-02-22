@@ -12,6 +12,10 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
     private Procedure procedure = null;
 
+    public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
+    public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
+
+
     public ProcedureBuilder() {
         this(null);
     }
@@ -93,18 +97,47 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
     @Override
     public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.procedure.hasCode()) {
-            this.procedure.setCode(new CodeableConcept());
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            if (!this.procedure.hasCode()) {
+                this.procedure.setCode(new CodeableConcept());
+            }
+            return this.procedure.getCode();
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            if (!this.procedure.hasCategory()) {
+                this.procedure.setCategory(new CodeableConcept());
+            }
+            return this.procedure.getCategory();
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
-        return this.procedure.getCode();
+
     }
 
     @Override
     public String getCodeableConceptJsonPath(String tag) {
-        return "code";
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            return "code";
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            return "category";
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
     }
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
+
+    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+        this.procedure.addIdentifier(identifier);
+
+        int index = this.procedure.getIdentifier().size()-1;
+        auditValue("identifier[" + index + "].value", sourceCells);
+    }
+
+
 }
