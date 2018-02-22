@@ -107,7 +107,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!Strings.isNullOrEmpty(nhsNumber)) {
             nhsNumber = nhsNumber.trim().replace("-","");
             if (nhsNumber.length() == 10) {
-                fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(parser.getNhsNumber()));
+                fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(nhsNumber));
             } else {
                 //add the invalid NHS number as a secondary identifier
                 fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
