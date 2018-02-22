@@ -192,23 +192,29 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //fhirLocation.setPhysicalType(getPhysicalType(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString()));
         CodeableConcept physicalType = new CodeableConcept();
         if (!bedLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
-            locationBuilder.setPhysicalType(physicalType, bedLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType, bedLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.BED), bedLoc);
         } else if (!roomLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
-            locationBuilder.setPhysicalType(physicalType, roomLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType, roomLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.ROOM), roomLoc);
         } else if (!nurseUnitLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
-            locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.NURSEUNIT), nurseUnitLoc);
         } else if (!ambulatoryLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
-            locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.AMBULATORY), ambulatoryLoc);
         } else if (!buildingLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
-            locationBuilder.setPhysicalType(physicalType, buildingLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType, buildingLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.BUILDING), buildingLoc);
         } else if (!facilityLoc.isEmpty()) {
-            physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
-            locationBuilder.setPhysicalType(physicalType, facilityLoc);
+            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
+            //locationBuilder.setPhysicalType(physicalType, facilityLoc);
+            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.FACILITY), facilityLoc);
         }
 
         // Mode
@@ -499,7 +505,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
-        LOG.debug("Looking for Cerner Code " + code + " in Code Set " + RdbmsCernerCodeValueRefDal.LOCATION_NAME + " for ServiceId " + fhirResourceFiler.getServiceId());
+        //LOG.debug("Looking for Cerner Code " + code + " in Code Set " + RdbmsCernerCodeValueRefDal.LOCATION_NAME + " for ServiceId " + fhirResourceFiler.getServiceId());
         CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();
