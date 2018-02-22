@@ -64,7 +64,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
             Practitioner.PractitionerPractitionerRoleComponent fhirRole = fhirPractitioner.addPractitionerRole();
 
             if (positionCode != null) {
-                CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_POSITION, positionCode, fhirResourceFiler.getServiceId());
+                CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_POSITION, positionCode, fhirResourceFiler.getServiceId());
                 if (cernerCodeValueRef != null) {
                     String positionName = cernerCodeValueRef.getCodeDispTxt();
                     CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
@@ -74,7 +74,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                 }
             }
             if (specialityCode != null) {
-                CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, specialityCode, fhirResourceFiler.getServiceId());
+                CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, specialityCode, fhirResourceFiler.getServiceId());
                 if (cernerCodeValueRef != null) {
                     String specialityName = cernerCodeValueRef.getCodeDispTxt();
                     CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());

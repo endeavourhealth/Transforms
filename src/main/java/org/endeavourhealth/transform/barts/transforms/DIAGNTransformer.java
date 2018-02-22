@@ -263,7 +263,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         Long diagnosisTypeCode = parser.getDiagnosisTypeCode();
         if (diagnosisTypeCode != null) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE, diagnosisTypeCode, fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE, diagnosisTypeCode, fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
                 CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());

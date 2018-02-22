@@ -256,7 +256,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         // Procedure type (category) is a Cerner Millenium code so lookup
         Long procedureTypeCode = parser.getProcedureTypeCode();
         if (procedureTypeCode != null) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCode, fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCode, fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
                 CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());

@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -12,6 +14,7 @@ import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public class BartsCsvHelper {
@@ -20,6 +23,9 @@ public class BartsCsvHelper {
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+
+    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+    private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
 
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
 
@@ -84,5 +90,27 @@ public class BartsCsvHelper {
         } else {
             return null;
         }
+    }
+
+    public static CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code, UUID serviceId) throws Exception {
+
+        String codeLookup = codeSet.toString() + "|" + code.toString() + "|" + serviceId.toString();
+
+        //Find the code in the cache
+        CernerCodeValueRef cernerCodeFromCache =  cernerCodes.get(codeLookup);
+
+        // return cached version if exists
+        if (cernerCodeFromCache != null) {
+            return cernerCodeFromCache;
+        }
+
+        // get code from DB
+        CernerCodeValueRef cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                codeSet, code, serviceId);
+
+        // Add to the cache
+        cernerCodes.put(codeLookup, cernerCodeFromDB);
+
+        return cernerCodeFromDB;
     }
 }

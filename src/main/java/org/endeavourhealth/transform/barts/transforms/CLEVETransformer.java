@@ -130,7 +130,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         String term = parser.getEventTitleText();
         if (Strings.isNullOrEmpty(term)) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.CLINICAL_CODE_TYPE,
                     Long.parseLong(parser.getEventCode()),
                     fhirResourceFiler.getServiceId());

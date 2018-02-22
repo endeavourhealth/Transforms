@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
@@ -116,7 +117,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getNhsNumberStatus() != null && parser.getNhsNumberStatus().length() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.NHS_NUMBER_STATUS,
                     Long.parseLong(parser.getActiveIndicator()),
                     fhirResourceFiler.getServiceId());
@@ -153,7 +154,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         if (parser.getGenderCode() != null && parser.getGenderCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.GENDER,
                     Long.parseLong(parser.getGenderCode()),
                     fhirResourceFiler.getServiceId());
@@ -167,7 +168,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         if (parser.getMaritalStatusCode() != null && parser.getMaritalStatusCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.MARITAL_STATUS,
                     Long.parseLong(parser.getMaritalStatusCode()),
                     fhirResourceFiler.getServiceId());
@@ -187,7 +188,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getEthnicGroupCode() != null && parser.getEthnicGroupCode().length() > 0) {
             CodeableConcept ethnicGroup = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.ETHNIC_GROUP,
                     Long.parseLong(parser.getEthnicGroupCode()),
                     fhirResourceFiler.getServiceId());
@@ -204,7 +205,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             CodeableConcept languageConcept = new CodeableConcept();
             Patient.PatientCommunicationComponent fhirCommunication = fhirPatient.addCommunication();
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.LANGUAGE,
                     Long.parseLong(parser.getFirstLanguageCode()),
                     fhirResourceFiler.getServiceId());
@@ -224,7 +225,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (parser.getReligionCode() != null && parser.getReligionCode().length() > 0) {
             CodeableConcept religionConcept = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.RELIGION,
                     Long.parseLong(parser.getReligionCode()),
                     fhirResourceFiler.getServiceId());

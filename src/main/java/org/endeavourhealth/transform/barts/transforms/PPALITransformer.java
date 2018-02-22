@@ -70,7 +70,7 @@ public class PPALITransformer extends BartsBasisTransformer {
         // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
         if (parser.getAlias() != null && parser.getAlias().length() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.ALIAS_TYPE,
                     Long.parseLong(parser.getAliasTypeCode()),
                     fhirResourceFiler.getServiceId());

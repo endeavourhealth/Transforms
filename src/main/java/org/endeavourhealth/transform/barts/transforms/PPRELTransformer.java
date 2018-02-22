@@ -123,7 +123,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
         if (parser.getRelationshipToPatientCode() != null && parser.getRelationshipToPatientCode().length() >0) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.RELATIONSHIP_TO_PATIENT,
                     Long.parseLong(parser.getRelationshipToPatientCode()),
                     fhirResourceFiler.getServiceId());
@@ -138,7 +138,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
         if (parser.getPersonRelationTypeCode() != null && parser.getPersonRelationTypeCode().length() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.PERSON_RELATIONSHIP_TYPE,
                     Long.parseLong(parser.getPersonRelationTypeCode()),
                     fhirResourceFiler.getServiceId());

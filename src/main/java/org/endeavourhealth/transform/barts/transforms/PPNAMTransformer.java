@@ -76,7 +76,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
 
         if (parser.getNameTypeCode() != null) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.NAME_USE,
                     Long.parseLong(parser.getNameTypeCode()),
                     fhirResourceFiler.getServiceId());

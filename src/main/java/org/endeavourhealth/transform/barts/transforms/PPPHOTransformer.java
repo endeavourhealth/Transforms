@@ -77,7 +77,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             }
 
             if (parser.getPhoneTypeCode() != null && parser.getPhoneTypeCode().length() > 0 ) {
-                CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                         RdbmsCernerCodeValueRefDal.PHONE_TYPE,
                         Long.parseLong(parser.getPhoneTypeCode()),
                         fhirResourceFiler.getServiceId());
