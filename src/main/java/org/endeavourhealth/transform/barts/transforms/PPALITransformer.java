@@ -80,7 +80,7 @@ public class PPALITransformer extends BartsBasisTransformer {
             if (cernerCodeValueRef != null) {
                 aliasCode = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
             } else {
-                LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
+                // LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
             }
 
             Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,

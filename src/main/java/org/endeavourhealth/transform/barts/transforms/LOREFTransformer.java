@@ -505,7 +505,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             return cernerCodeDef.getCodeDispTxt();
         } else {
             String ret = "??Unknown location " + code;
-            LOG.warn("Code not found in Code Value lookup:" + ret);
+            // LOG.warn("Code not found in Code Value lookup:" + ret);
             return ret;
         }
     }

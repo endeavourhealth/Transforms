@@ -132,7 +132,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
                 ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
                 fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
             } else {
-                LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
+                // LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
             }
         }
 
@@ -147,7 +147,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
                 ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(cernerCodeValueRef.getCodeDescTxt());
                 fhirContactComponent.addRelationship(CodeableConceptHelper.createCodeableConcept(fhirContactRelationship));
             } else {
-                LOG.warn("Person Relation Type code: " + parser.getPersonRelationTypeCode() + " not found in Code Value lookup");
+                // LOG.warn("Person Relation Type code: " + parser.getPersonRelationTypeCode() + " not found in Code Value lookup");
             }
         }
 

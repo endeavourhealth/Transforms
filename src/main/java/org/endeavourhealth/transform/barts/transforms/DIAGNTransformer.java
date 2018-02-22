@@ -134,7 +134,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                 CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
                 fhirCondition.setCategory(diagTypeCode);
             } else {
-                LOG.warn("Diagnosis type code: "+diagnosisTypeCode+" not found in Code Value lookup");
+                // LOG.warn("Diagnosis type code: "+diagnosisTypeCode+" not found in Code Value lookup");
             }
         }
 

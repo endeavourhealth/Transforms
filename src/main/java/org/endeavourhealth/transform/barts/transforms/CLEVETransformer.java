@@ -137,7 +137,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             if (cernerCodeValueRef != null) {
                 term = cernerCodeValueRef.getCodeDispTxt();
             } else {
-                LOG.warn("Event type code: " + parser.getEventCode() + " not found in Code Value lookup");
+                // LOG.warn("Event type code: " + parser.getEventCode() + " not found in Code Value lookup");
             }
 
 

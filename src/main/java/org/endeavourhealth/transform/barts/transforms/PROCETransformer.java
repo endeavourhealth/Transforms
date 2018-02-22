@@ -134,7 +134,7 @@ public class PROCETransformer extends BartsBasisTransformer {
                 CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
                 fhirProcedure.setCategory(procTypeCode);
             } else {
-                LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");
+                // LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");
             }
         }
 

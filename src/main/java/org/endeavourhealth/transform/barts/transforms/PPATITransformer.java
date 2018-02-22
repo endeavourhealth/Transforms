@@ -136,7 +136,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS,
                         fhirCodeableConcept));
             } else {
-                LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
+                // LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
             }
         }
 
@@ -164,7 +164,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                 Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
                 fhirPatient.setGender(gender);
             } else {
-                LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
+                // LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
             }
         }
 
@@ -180,10 +180,10 @@ public class PPATITransformer extends BartsBasisTransformer {
                     CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
                     fhirPatient.setMaritalStatus(codeableConcept);
                 } else {
-                    LOG.warn("Marital Status code: " + cernerCodeValueRef.getCodeMeaningTxt() + " not found in status conversion code");
+                    // LOG.warn("Marital Status code: " + cernerCodeValueRef.getCodeMeaningTxt() + " not found in status conversion code");
                 }
             } else {
-                LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
+                // LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
             }
         }
 
@@ -198,7 +198,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                 ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
                         .setDisplay(cernerCodeValueRef.getCodeDescTxt());
             } else {
-                LOG.warn("Ethnic Group code: " + parser.getEthnicGroupCode() + " not found in Code Value lookup");
+                // LOG.warn("Ethnic Group code: " + parser.getEthnicGroupCode() + " not found in Code Value lookup");
             }
         }
 
@@ -220,7 +220,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
                 fhirPatient.addCommunication(fhirCommunication);
             } else {
-                LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
+                // LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
             }
         }
 
@@ -237,7 +237,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
             } else {
-                LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
+                // LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
             }
         }
 

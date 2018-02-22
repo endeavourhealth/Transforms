@@ -84,7 +84,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
             if (cernerCodeValueRef != null) {
                 nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
             } else {
-                LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
+                // LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
             }
         }
 

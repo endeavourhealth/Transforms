@@ -90,7 +90,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
                     system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
                 } else {
-                    LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
+                    // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
                 }
 
                 ContactPoint contactPoint = ContactPointHelper.create(system, use, phoneNumber);

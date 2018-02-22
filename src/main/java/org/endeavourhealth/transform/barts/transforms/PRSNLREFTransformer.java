@@ -70,7 +70,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                     CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
                     fhirRole.setRole(positionTypeCode);
                 } else {
-                    LOG.warn("Position code: "+positionCode+" not found in Code Value lookup");
+                    // LOG.warn("Position code: "+positionCode+" not found in Code Value lookup");
                 }
             }
             if (specialityCode != null) {
@@ -80,7 +80,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                     CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());
                     fhirRole.addSpecialty(specialityTypeCode);
                 } else {
-                    LOG.warn("Speciality code: "+specialityCode+" not found in Code Value lookup");
+                    // LOG.warn("Speciality code: "+specialityCode+" not found in Code Value lookup");
                 }
             }
         }
