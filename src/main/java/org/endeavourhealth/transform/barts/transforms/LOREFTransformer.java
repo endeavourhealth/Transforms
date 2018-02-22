@@ -43,6 +43,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
     private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+    private String uniqueId;
 
     /*
      *
@@ -134,17 +135,16 @@ public class LOREFTransformer extends BartsBasisTransformer {
             if (alternateResourceId == null) {
                 locationResourceId.setResourceId(UUID.randomUUID());
 
-                // Create alternate keys for all parents (if missing)
-                String parentUniqueId = createParentKey(uniqueId);
-                while (parentUniqueId != null) {
+                // Create alternate keys for current location and all parents
+                while (uniqueId != null) {
                     try {
-                        LOG.debug("Saving parent altkey:" + parentUniqueId);
-                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId, UUID.randomUUID().toString());
+                        LOG.debug("Saving altkey:" + uniqueId);
+                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId, UUID.randomUUID().toString());
                     }
                     catch (Exception ex) {
                         // ignore duplicates
                     }
-                    parentUniqueId = createParentKey(parentUniqueId);
+                    uniqueId = createParentKey(uniqueId);
                 }
             } else {
                 LOG.debug("Found resource id " + alternateResourceId + " using altkey:" + uniqueId);
@@ -158,7 +158,9 @@ public class LOREFTransformer extends BartsBasisTransformer {
         String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
         String parentUniqueId = createParentKey(uniqueId);
         LOG.debug("Looking for parent location using key:" + parentUniqueId);
-        parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
+        if (parentUniqueId != null) {
+            parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
+        }
 
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
@@ -341,31 +343,31 @@ public class LOREFTransformer extends BartsBasisTransformer {
         sb.append("FacilityLocCode=");
         sb.append(facilityCode);
 
-        if (buildingCode != null && buildingCode.length() > 0) {
+        if (buildingCode != null && buildingCode.length() > 0 && buildingCode.compareTo("0") != 0) {
             sb.append("-");
             sb.append("BuildingLocCode=");
             sb.append(buildingCode);
         }
 
-        if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
+        if (ambulatoryCode != null && ambulatoryCode.length() > 0 && ambulatoryCode.compareTo("0") != 0) {
             sb.append("-");
             sb.append("AmbulatoryLocCode=");
             sb.append(ambulatoryCode);
         }
 
-        if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
+        if (nurseUnitCode != null && nurseUnitCode.length() > 0 && nurseUnitCode.compareTo("0") != 0) {
             sb.append("-");
             sb.append("NurseUnitLocCode=");
             sb.append(nurseUnitCode);
         }
 
-        if (roomCode != null && roomCode.length() > 0) {
+        if (roomCode != null && roomCode.length() > 0 && roomCode.compareTo("0") != 0) {
             sb.append("-");
             sb.append("RoomLocCode=");
             sb.append(roomCode);
         }
 
-        if (bedCode != null && bedCode.length() > 0) {
+        if (bedCode != null && bedCode.length() > 0 && bedCode.compareTo("0") != 0) {
             sb.append("-");
             sb.append("BedLocCode=");
             sb.append(bedCode);
