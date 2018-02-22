@@ -1,16 +1,12 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
-import java.util.Date;
-
 public class PractitionerBuilder extends ResourceBuilderBase
-                                 implements HasNameI {
+                                 implements HasNameI, HasIdentifierI, HasContactPointI, HasAddressI {
 
     private Practitioner practitioner = null;
 
@@ -32,130 +28,86 @@ public class PractitionerBuilder extends ResourceBuilderBase
         return practitioner;
     }
 
-    public void addRole() {
-        this.practitioner.addPractitionerRole();
+    public Practitioner.PractitionerPractitionerRoleComponent addRole() {
+        return this.practitioner.addPractitionerRole();
     }
 
-    private Practitioner.PractitionerPractitionerRoleComponent getLastRole() {
-        int size = this.practitioner.getPractitionerRole().size();
-        return this.practitioner.getPractitionerRole().get(size-1);
+    public String getRoleJsonPrefix(Practitioner.PractitionerPractitionerRoleComponent role) {
+        int index = this.practitioner.getPractitionerRole().indexOf(role);
+        return "practitionerRole[" + index + "]";
     }
 
-    private Coding getOrCreateCodeableConceptCodingOnLastRole() {
-        Practitioner.PractitionerPractitionerRoleComponent role = getLastRole();
-        CodeableConcept codeableConcept = role.getRole();
-        if (codeableConcept == null) {
-            codeableConcept = new CodeableConcept();
-            role.setRole(codeableConcept);
-        }
 
-        Coding coding = CodeableConceptHelper.findCoding(codeableConcept, FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
-        if (coding == null) {
-            coding = new Coding();
-            coding.setSystem(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
-            codeableConcept.addCoding(coding);
-        }
-
-        return coding;
-    }
-
-    private void calculateActiveState(CsvCell... sourceCells) {
-
-        boolean isActive = false;
-
-        //count the practitioner as active is ANY of their roles is active according to its Period
-        for (Practitioner.PractitionerPractitionerRoleComponent role: this.practitioner.getPractitionerRole()) {
-            Period period = role.getPeriod();
-            if (period != null
-                    && PeriodHelper.isActive(period)) {
-                isActive = true;
-            }
-        }
-
+    public void setActive(boolean isActive, CsvCell... sourceCells) {
         this.practitioner.setActive(isActive);
 
         auditValue("active", sourceCells);
     }
 
-    public void setRoleStartDate(Date date, CsvCell... sourceCells) {
-        Practitioner.PractitionerPractitionerRoleComponent role = getLastRole();
 
-        Period period = role.getPeriod();
-        if (period == null) {
-            period = new Period();
-            role.setPeriod(period);
+    public void calculateActiveFromRoles() {
+
+        boolean active = false;
+        for (Practitioner.PractitionerPractitionerRoleComponent role: this.practitioner.getPractitionerRole()) {
+            Period period = role.getPeriod();
+            if (period != null
+                    && PeriodHelper.isActive(period)) {
+                active = true;
+            }
         }
-        period.setStart(date);
 
-        //active state is only based on end date, so don't pass in our source cells
-        calculateActiveState();
-
-        int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("practitionerRole[" + index + "].period.start", sourceCells);
-    }
-
-    public void setRoleEndDate(Date date, CsvCell... sourceCells) {
-        Practitioner.PractitionerPractitionerRoleComponent role = getLastRole();
-
-        Period period = role.getPeriod();
-        if (period == null) {
-            period = new Period();
-            role.setPeriod(period);
-        }
-        period.setEnd(date);
-
-        calculateActiveState(sourceCells);
-
-        int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("practitionerRole[" + index + "].period.end", sourceCells);
-    }
-
-    public void setRoleManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
-        Practitioner.PractitionerPractitionerRoleComponent role = getLastRole();
-        role.setManagingOrganization(organisationReference);
-
-        int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("practitionerRole[" + index + "].managingOrganization.reference", sourceCells);
-    }
-
-    public void setRoleName(String roleName, CsvCell... sourceCells) {
-        Coding coding = getOrCreateCodeableConceptCodingOnLastRole();
-        coding.setDisplay(roleName);
-
-        int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("practitionerRole[" + index + "].role.coding[0].display", sourceCells);
-    }
-
-    public void setRoleCode(String roleCode, CsvCell... sourceCells) {
-        Coding coding = getOrCreateCodeableConceptCodingOnLastRole();
-        coding.setCode(roleCode);
-
-        int index = this.practitioner.getPractitionerRole().size()-1;
-        auditValue("practitionerRole[" + index + "].role.coding[0].code", sourceCells);
+        setActive(active);
     }
 
     @Override
-    public void addName(HumanName.NameUse use) {
+    public Identifier addIdentifier() {
+        return this.practitioner.addIdentifier();
+    }
 
-        //practitioner only supports one name instance, so throw an error if we're trying to overwrite one
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.practitioner.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
+
+    @Override
+    public ContactPoint addContactPoint() {
+        return this.practitioner.addTelecom();
+    }
+
+    @Override
+    public String getContactPointJsonPrefix(ContactPoint contactPoint) {
+        int index = this.practitioner.getTelecom().indexOf(contactPoint);
+        return "telecom[" + index + "]";
+    }
+
+    @Override
+    public Address addAddress() {
+        return this.practitioner.addAddress();
+    }
+
+    @Override
+    public String getAddressJsonPrefix(Address address) {
+        int index = this.practitioner.getAddress().indexOf(address);
+        return "address[" + index + "]";
+    }
+
+    @Override
+    public HumanName addName() {
         if (this.practitioner.hasName()) {
-            throw new IllegalArgumentException("Trying to set practitioner name when already set");
+            throw new IllegalArgumentException("Trying to set name on practitioner that already has one");
         }
-
         HumanName name = new HumanName();
-        name.setUse(use);
         this.practitioner.setName(name);
+        return name;
     }
 
     @Override
-    public HumanName getLastName() {
-        return this.practitioner.getName();
-    }
-
-    @Override
-    public String getLastNameJsonPrefix() {
+    public String getNameJsonPrefix(HumanName name) {
         return "name";
     }
+
+
 
     /*@Override
     public void addNamePrefix(String prefix, CsvCell... sourceCells) {

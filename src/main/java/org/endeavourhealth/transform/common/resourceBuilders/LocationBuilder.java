@@ -43,28 +43,6 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("telecom[" + index + "].value", sourceCells);
     }
 
-    @Override
-    public void addAddress(Address.AddressUse use) {
-
-        if (this.location.hasAddress()) {
-            throw new IllegalArgumentException("Trying to add new address when location already has an address");
-        }
-
-        Address address = new Address();
-        address.setUse(use);
-        this.location.setAddress(address);
-    }
-
-    @Override
-    public Address getLastAddress() {
-        return this.location.getAddress();
-    }
-
-    @Override
-    public String getLastAddressJsonPrefix() {
-        return "address";
-    }
-
     /*@Override
     public void addAddressLine(String line, CsvCell... sourceCells) {
         Address address = this.location.getAddress();
@@ -199,5 +177,20 @@ public class LocationBuilder extends ResourceBuilderBase
         updateActiveStatus(extension, sourceCells);
 
         auditPeriodEndExtension(extension, sourceCells);
+    }
+
+    @Override
+    public Address addAddress() {
+        if (this.location.hasAddress()) {
+            throw new IllegalArgumentException("Trying to set address on location that already has one");
+        }
+        Address address = new Address();
+        this.location.setAddress(address);
+        return address;
+    }
+
+    @Override
+    public String getAddressJsonPrefix(Address address) {
+        return "address";
     }
 }

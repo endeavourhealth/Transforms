@@ -87,7 +87,6 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (!millenniumPersonId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
             identifierBuilder.setValue(millenniumPersonId.getString());
@@ -95,7 +94,6 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         if (!mrnCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
             identifierBuilder.setValue(mrnCell.getString());
@@ -108,7 +106,6 @@ public class PPATITransformer extends BartsBasisTransformer {
             nhsNumber = nhsNumber.replace("-","");
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
 
             if (nhsNumber.length() == 10) {
                 identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);

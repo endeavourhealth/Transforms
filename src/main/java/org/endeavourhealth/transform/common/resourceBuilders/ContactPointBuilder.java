@@ -11,30 +11,29 @@ import java.util.Date;
 public class ContactPointBuilder {
 
     private HasContactPointI parentBuilder = null;
+    private ContactPoint contactPoint = null;
 
     public ContactPointBuilder(HasContactPointI parentBuilder) {
-        this.parentBuilder = parentBuilder;
+        this(parentBuilder, null);
     }
 
-    /**
-     * start the creation of a new ContactPoint on the parent object (patient etc.)
-     */
-    public void addContactPoint() {
-        parentBuilder.addContactPoint();
+    public ContactPointBuilder(HasContactPointI parentBuilder, ContactPoint contactPoint) {
+        this.parentBuilder = parentBuilder;
+        this.contactPoint = contactPoint;
+
+        if (this.contactPoint == null) {
+            this.contactPoint = parentBuilder.addContactPoint();
+        }
     }
 
     public void setUse(ContactPoint.ContactPointUse use, CsvCell... sourceCells) {
-
-        ContactPoint ContactPoint = parentBuilder.getLastContactPoint();
-        ContactPoint.setUse(use);
+        contactPoint.setUse(use);
 
         auditNameValue("use", sourceCells);
     }
 
     public void setSystem(ContactPoint.ContactPointSystem system, CsvCell... sourceCells) {
-
-        ContactPoint ContactPoint = parentBuilder.getLastContactPoint();
-        ContactPoint.setSystem(system);
+        contactPoint.setSystem(system);
 
         auditNameValue("system", sourceCells);
     }
@@ -44,15 +43,14 @@ public class ContactPointBuilder {
             return;
         }
 
-        ContactPoint ContactPoint = parentBuilder.getLastContactPoint();
-        ContactPoint.setValue(value);
+        contactPoint.setValue(value);
 
         auditNameValue("value", sourceCells);
     }
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
-        String jsonField = parentBuilder.getLastContactPointJsonPrefix() + "." + jsonSuffix;
+        String jsonField = parentBuilder.getContactPointJsonPrefix(this.contactPoint) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
@@ -61,13 +59,12 @@ public class ContactPointBuilder {
     }
 
     private Period getOrCreateNamePeriod() {
-        ContactPoint ContactPoint = parentBuilder.getLastContactPoint();
         Period period = null;
-        if (ContactPoint.hasPeriod()) {
-            period = ContactPoint.getPeriod();
+        if (contactPoint.hasPeriod()) {
+            period = contactPoint.getPeriod();
         } else {
             period = new Period();
-            ContactPoint.setPeriod(period);
+            contactPoint.setPeriod(period);
         }
         return period;
     }

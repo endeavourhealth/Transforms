@@ -72,7 +72,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell lastName = parser.getLastName();
 
         NameBuilder nameBuilder = new NameBuilder(contactBuilder);
-        nameBuilder.beginName(HumanName.NameUse.USUAL);
+        nameBuilder.setUse(HumanName.NameUse.USUAL);
         nameBuilder.addPrefix(title.getString(), title);
         nameBuilder.addGiven(firstName.getString(), firstName);
         nameBuilder.addGiven(middleName.getString(), middleName);
@@ -86,7 +86,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
-        addressBuilder.beginAddress(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(line1.getString(), line1);
         addressBuilder.addLine(line2.getString(), line2);
         addressBuilder.addLine(line3.getString(), line3);
@@ -97,7 +97,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell homePhone = parser.getHomePhoneNumber();
         if (!homePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.addContactPoint();
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setValue(homePhone.getString(), homePhone);
@@ -106,7 +105,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell mobilePhone = parser.getMobilePhoneNumber();
         if (!mobilePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.addContactPoint();
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
@@ -115,7 +113,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell workPhone = parser.getWorkPhoneNumber();
         if (!workPhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.addContactPoint();
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setValue(workPhone.getString(), workPhone);
@@ -124,7 +121,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell emailAddress = parser.getEmailAddress();
         if (!emailAddress.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.addContactPoint();
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
             contactPointBuilder.setValue(emailAddress.getString(), emailAddress);

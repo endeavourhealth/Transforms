@@ -81,9 +81,6 @@ public class PPNAMTransformer extends BartsBasisTransformer {
             }
         }
 
-        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.beginName(nameUse, nameTypeCell);
-
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
         CsvCell firstNameCell = parser.getFirstName();
@@ -91,6 +88,8 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         CsvCell lastNameCell = parser.getLastName();
         CsvCell suffixCell = parser.getSuffix();
 
+        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setUse(nameUse, nameTypeCell);
         nameBuilder.addPrefix(titleCell.getString(), titleCell);
         nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
         nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);

@@ -13,13 +13,25 @@ import java.util.Date;
 public class AddressBuilder {
 
     private HasAddressI parentBuilder = null;
+    private Address address = null;
 
     public AddressBuilder(HasAddressI parentBuilder) {
-        this.parentBuilder = parentBuilder;
+        this(parentBuilder, null);
     }
 
-    public void beginAddress(Address.AddressUse use) {
-        parentBuilder.addAddress(use);
+    public AddressBuilder(HasAddressI parentBuilder, Address address) {
+        this.parentBuilder = parentBuilder;
+        this.address = address;
+
+        if (this.address == null) {
+            this.address = parentBuilder.addAddress();
+        }
+    }
+
+    public void setUse(Address.AddressUse use, CsvCell... sourceCells) {
+        this.address.setUse(use);
+
+        auditNameValue("use", sourceCells);
     }
 
     public void addLine(String line, CsvCell... sourceCells) {
@@ -27,7 +39,6 @@ public class AddressBuilder {
             return;
         }
 
-        Address address = parentBuilder.getLastAddress();
         address.addLine(line);
 
         int index = address.getLine().size()-1;
@@ -41,7 +52,6 @@ public class AddressBuilder {
             return;
         }
 
-        Address address = parentBuilder.getLastAddress();
         address.setCity(town);
 
         auditNameValue("city", sourceCells);
@@ -53,7 +63,6 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(district)) {
             return;
         }
-        Address address = parentBuilder.getLastAddress();
         address.setDistrict(district);
 
         auditNameValue("district", sourceCells);
@@ -65,7 +74,6 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(postcode)) {
             return;
         }
-        Address address = parentBuilder.getLastAddress();
         address.setPostalCode(postcode);
 
         auditNameValue("postalCode", sourceCells);
@@ -75,7 +83,6 @@ public class AddressBuilder {
 
 
     private Period getOrCreateNamePeriod() {
-        Address address = parentBuilder.getLastAddress();
         Period period = null;
         if (address.hasPeriod()) {
             period = address.getPeriod();
@@ -100,7 +107,7 @@ public class AddressBuilder {
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
-        String jsonField = parentBuilder.getLastAddressJsonPrefix() + "." + jsonSuffix;
+        String jsonField = parentBuilder.getAddressJsonPrefix(this.address) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
@@ -110,7 +117,6 @@ public class AddressBuilder {
 
     private void updateAddressDisplay(CsvCell... sourceCells) {
 
-        Address address = parentBuilder.getLastAddress();
         String displayText = AddressConverter.generateDisplayText(address);
         address.setText(displayText);
 
@@ -123,26 +129,24 @@ public class AddressBuilder {
     public void addAddressNoAudit(Address address) {
 
         Address.AddressUse use = address.getUse();
-        parentBuilder.addAddress(use);
-
-        Address newAddress = parentBuilder.getLastAddress();
+        setUse(use);
 
         if (address.hasLine()) {
             for (StringType line: address.getLine()) {
-                newAddress.addLine(line.getValue());
+                addLine(line.getValue());
             }
         }
 
         if (address.hasCity()) {
-            newAddress.setCity(address.getCity());
+            setTown(address.getCity());
         }
 
         if (address.hasDistrict()) {
-            newAddress.setDistrict(address.getDistrict());
+            setDistrict(address.getDistrict());
         }
 
         if (address.hasPostalCode()) {
-            newAddress.setPostalCode(address.getPostalCode());
+            setPostcode(address.getPostalCode());
         }
 
         updateAddressDisplay();

@@ -4,9 +4,8 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.hl7.fhir.instance.model.ContactPoint;
 
 public interface HasContactPointI {
-    
-    void addContactPoint();
-    ContactPoint getLastContactPoint();
-    String getLastContactPointJsonPrefix();
+
+    ContactPoint addContactPoint();
+    String getContactPointJsonPrefix(ContactPoint contactPoint);
     ResourceFieldMappingAudit getAuditWrapper();
 }

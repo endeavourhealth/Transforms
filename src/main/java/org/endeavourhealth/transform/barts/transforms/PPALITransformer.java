@@ -85,7 +85,6 @@ public class PPALITransformer extends BartsBasisTransformer {
         }
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-        identifierBuilder.addIdentifier();
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
         identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
         identifierBuilder.setValue(aliasCell.getString(), aliasCell);

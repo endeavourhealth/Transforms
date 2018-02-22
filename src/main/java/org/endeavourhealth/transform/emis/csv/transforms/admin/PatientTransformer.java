@@ -73,7 +73,6 @@ public class PatientTransformer {
         CsvCell nhsNumber = parser.getNhsNumber();
         if (!nhsNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
@@ -82,7 +81,6 @@ public class PatientTransformer {
         //store the patient GUID and patient number to the patient resource
         if (!patientGuid.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
             identifierBuilder.setValue(patientGuid.getString(), patientGuid);
@@ -91,7 +89,6 @@ public class PatientTransformer {
         CsvCell patientNumber = parser.getPatientNumber();
         if (!patientNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.addIdentifier();
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
             identifierBuilder.setValue(patientNumber.getString(), patientNumber);
@@ -117,7 +114,7 @@ public class PatientTransformer {
         CsvCell surname = parser.getSurname();
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.beginName(HumanName.NameUse.OFFICIAL);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
         nameBuilder.addPrefix(title.getString(), title);
         nameBuilder.addGiven(givenName.getString(), givenName);
         nameBuilder.addGiven(middleNames.getString(), middleNames);
@@ -131,7 +128,7 @@ public class PatientTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.beginAddress(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
         addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
         addressBuilder.addLine(village.getString(), village);

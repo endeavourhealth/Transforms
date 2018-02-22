@@ -5,15 +5,8 @@ import org.hl7.fhir.instance.model.HumanName;
 
 public interface HasNameI {
 
-    void addName(HumanName.NameUse use);
-    HumanName getLastName();
-    String getLastNameJsonPrefix();
+    HumanName addName();
+    String getNameJsonPrefix(HumanName name);
     public ResourceFieldMappingAudit getAuditWrapper();
-
-    /*void addNamePrefix(String prefix, CsvCell... sourceCells);
-    void addNameGiven(String given, CsvCell... sourceCells);
-    void addNameFamily(String family, CsvCell... sourceCells);
-    void addNameSuffix(String suffix, CsvCell... sourceCells);
-    void addNameDisplayName(String displayName, CsvCell... sourceCells);*/
 
 }

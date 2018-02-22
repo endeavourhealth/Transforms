@@ -95,7 +95,6 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         }
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-        contactPointBuilder.addContactPoint();
         contactPointBuilder.setUse(use, phoneTypeCell);
         contactPointBuilder.setSystem(system, phoneTypeCell);
         contactPointBuilder.setValue(number, numberCell, extensionCell);

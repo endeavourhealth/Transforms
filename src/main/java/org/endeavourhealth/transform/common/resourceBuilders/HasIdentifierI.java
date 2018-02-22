@@ -5,8 +5,7 @@ import org.hl7.fhir.instance.model.Identifier;
 
 public interface HasIdentifierI {
 
-    void addIdentifier();
-    Identifier getLastIdentifier();
-    String getLastIdentifierJsonPrefix();
+    Identifier addIdentifier();
+    String getIdentifierJsonPrefix(Identifier identifier);
     ResourceFieldMappingAudit getAuditWrapper();
 }

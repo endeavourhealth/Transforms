@@ -57,69 +57,49 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
+
     @Override
-    public void addAddress(Address.AddressUse use) {
+    public Address addAddress() {
         if (contact.hasAddress()) {
             throw new IllegalArgumentException("Contact already has an address element");
         }
 
         Address address = new Address();
-        address.setUse(use);
         contact.setAddress(address);
+        return address;
     }
 
     @Override
-    public Address getLastAddress() {
-        return contact.getAddress();
-    }
-
-    @Override
-    public String getLastAddressJsonPrefix() {
+    public String getAddressJsonPrefix(Address address) {
         return patientBuilder.getContactJsonPrefix(contact) + ".address";
     }
 
     @Override
-    public void addContactPoint() {
-        this.contact.addTelecom();
-    }
-
-    private int getLastContactPointIndex() {
-        return contact.getTelecom().size()-1;
+    public ContactPoint addContactPoint() {
+        return this.contact.addTelecom();
     }
 
     @Override
-    public ContactPoint getLastContactPoint() {
-        int index = getLastContactPointIndex();
-        return contact.getTelecom().get(index);
-    }
-
-    @Override
-    public String getLastContactPointJsonPrefix() {
-        int index = getLastContactPointIndex();
+    public String getContactPointJsonPrefix(ContactPoint contactPoint) {
+        int index = contact.getTelecom().indexOf(contactPoint);
         return patientBuilder.getContactJsonPrefix(contact) + ".telecom[" + index + "]";
     }
 
     @Override
-    public void addName(HumanName.NameUse use) {
+    public HumanName addName() {
         if (contact.hasName()) {
             throw new IllegalArgumentException("Contact already has a name element");
         }
 
         HumanName name = new HumanName();
-        name.setUse(use);
         contact.setName(name);
+        return name;
     }
 
     @Override
-    public HumanName getLastName() {
-        return contact.getName();
-    }
-
-    @Override
-    public String getLastNameJsonPrefix() {
+    public String getNameJsonPrefix(HumanName name) {
         return patientBuilder.getContactJsonPrefix(contact) + ".name";
     }
-
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
@@ -132,6 +112,8 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         int index = contact.getRelationship().indexOf(codeableConcept);
         return "relationship[" + index + "]";
     }
+
+
 
     @Override
     public ResourceFieldMappingAudit getAuditWrapper() {

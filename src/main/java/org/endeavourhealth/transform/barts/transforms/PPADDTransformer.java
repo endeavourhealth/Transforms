@@ -70,7 +70,7 @@ public class PPADDTransformer extends BartsBasisTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.beginAddress(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(line1.getString(), line1);
         addressBuilder.addLine(line2.getString(), line2);
         addressBuilder.addLine(line3.getString(), line3);

@@ -1,10 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,77 +52,97 @@ public class ENCNT extends AbstractCsvParser {
     }
 
 
-    public CsvCell getMillenniumEncounterIdentifier() throws FileFormatException {
+    public CsvCell getMillenniumEncounterIdentifier() {
         return super.getCell("#ENCNTR_ID");
     }
 
-    public CsvCell getExtractDateTime() throws TransformException {
+    public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
     }
 
-    public CsvCell getActiveIndicator() throws FileFormatException {
+    public CsvCell getActiveIndicator() {
         return super.getCell("ACTIVE_IND");
     }
 
-    public CsvCell getMillenniumPersonIdentifier() throws FileFormatException {
-        return super.getCell("PERSON_ID");}
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
 
-    public CsvCell getMillenniumFinancialNumberIdentifier() throws FileFormatException {
-        return super.getCell("FIN_NBR_ID");}
+    public CsvCell getMillenniumFinancialNumberIdentifier() {
+        return super.getCell("FIN_NBR_ID");
+    }
 
-    public CsvCell getEncounterCreateDateTime() throws TransformException {
-        return super.getCell("CREATE_DT_TM");}
+    public CsvCell getEncounterCreateDateTime() {
+        return super.getCell("CREATE_DT_TM");
+    }
 
-    public CsvCell getEncounterTypeMillenniumCode() throws FileFormatException {
-        return super.getCell("ENC_TYPE_CD");}
+    public CsvCell getEncounterTypeMillenniumCode() {
+        return super.getCell("ENC_TYPE_CD");
+    }
 
-    public CsvCell getEncounterStatusMillenniumCode() throws FileFormatException {
-        return super.getCell("ENC_STATUS_CD");}
+    public CsvCell getEncounterStatusMillenniumCode() {
+        return super.getCell("ENC_STATUS_CD");
+    }
 
-    public CsvCell getMilleniumSourceIdentifierForVisit() throws FileFormatException {
-        return super.getCell("VISIT_ID");}
+    public CsvCell getMilleniumSourceIdentifierForVisit() {
+        return super.getCell("VISIT_ID");
+    }
 
-    public CsvCell getReferralWrittenDate() throws TransformException {
-        return super.getCell("REFERRAL_WRITTEN_DT_TM");}
+    public CsvCell getReferralWrittenDate() {
+        return super.getCell("REFERRAL_WRITTEN_DT_TM");
+    }
 
-    public CsvCell getReferalReceivedDate() throws TransformException {
-        return super.getCell("REFERRAL_RECEIVED_DT_TM");}
+    public CsvCell getReferalReceivedDate() {
+        return super.getCell("REFERRAL_RECEIVED_DT_TM");
+    }
 
-    public CsvCell getSourceofReferralMillenniumCode() throws FileFormatException {
-        return super.getCell("SOURCE_OF_REFERRAL_CD");}
+    public CsvCell getSourceofReferralMillenniumCode() {
+        return super.getCell("SOURCE_OF_REFERRAL_CD");
+    }
 
-    public CsvCell getReferrerMillenniumPersonnelIdentifier() throws FileFormatException {
-        return super.getCell("REFERRER_PRSNL_ID");}
+    public CsvCell getReferrerMillenniumPersonnelIdentifier() {
+        return super.getCell("REFERRER_PRSNL_ID");
+    }
 
-    public CsvCell getReasonForVisitText() throws FileFormatException {
-        return super.getCell("REASON_FOR_VISIT_TXT");}
+    public CsvCell getReasonForVisitText() {
+        return super.getCell("REASON_FOR_VISIT_TXT");
+    }
 
-    public CsvCell getCurrentMainSpecialtyMillenniumCode() throws FileFormatException {
-        return super.getCell("MAIN_SPECIALTY_CD");}
+    public CsvCell getCurrentMainSpecialtyMillenniumCode() {
+        return super.getCell("MAIN_SPECIALTY_CD");
+    }
 
-    public CsvCell getCurrentTreatmentFunctionMillenniumCode() throws FileFormatException {
-        return super.getCell("TREATMENT_FUNCTION_CD");}
+    public CsvCell getCurrentTreatmentFunctionMillenniumCode() {
+        return super.getCell("TREATMENT_FUNCTION_CD");
+    }
 
-    public CsvCell getCurrenrLocalSpecialtyCode() throws FileFormatException {
-        return super.getCell("LOCAL_SPECIALTY_NHS_CD_ALIAS");}
+    public CsvCell getCurrenrLocalSpecialtyCode() {
+        return super.getCell("LOCAL_SPECIALTY_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getCurrentInstitutionMillenniumLocationCode() throws FileFormatException {
-        return super.getCell("CURRENT_LOC_INSTITUTION_CD");}
+    public CsvCell getCurrentInstitutionMillenniumLocationCode() {
+        return super.getCell("CURRENT_LOC_INSTITUTION_CD");
+    }
 
-    public CsvCell getMillenniumAdministrativeCategoty() throws FileFormatException {
-        return super.getCell("ADMIN_CATEGORY_CD");}
+    public CsvCell getMillenniumAdministrativeCategoty() {
+        return super.getCell("ADMIN_CATEGORY_CD");
+    }
 
-    public CsvCell getEpisodeIdentifier() throws FileFormatException {
-        return super.getCell("EPISODE_ID");}
+    public CsvCell getEpisodeIdentifier() {
+        return super.getCell("EPISODE_ID");
+    }
 
-    public CsvCell getResponsibleHealthCareprovidingPersonnelIdentifier() throws FileFormatException {
-        return super.getCell("RESP_HCP_PRSNL_ID");}
+    public CsvCell getResponsibleHealthCareprovidingPersonnelIdentifier() {
+        return super.getCell("RESP_HCP_PRSNL_ID");
+    }
 
-    public CsvCell getRegisteringMillenniumPersonnelIdentifier() throws FileFormatException {
-        return super.getCell("REGISTERING_PRSNL_ID");}
+    public CsvCell getRegisteringMillenniumPersonnelIdentifier() {
+        return super.getCell("REGISTERING_PRSNL_ID");
+    }
 
-    public CsvCell getCurrentLocationIdentifier() throws FileFormatException {
-        return super.getCell("CURRENT_LOC_ID");}
+    public CsvCell getCurrentLocationIdentifier() {
+        return super.getCell("CURRENT_LOC_ID");
+    }
 
     @Override
     protected String getFileTypeDescription() {

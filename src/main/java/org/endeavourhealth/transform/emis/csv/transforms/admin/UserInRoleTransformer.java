@@ -1,10 +1,13 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.UserInRole;
@@ -51,38 +54,44 @@ public class UserInRoleTransformer {
         CsvCell surname = parser.getSurname();
 
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
-        nameBuilder.beginName(HumanName.NameUse.OFFICIAL);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
         nameBuilder.addPrefix(title.getString(), title);
         nameBuilder.addGiven(givenName.getString(), givenName);
         nameBuilder.addFamily(surname.getString(), surname);
 
         //need to call this to generate the role in the practitioner, as all the following fields are set on that
-        practitionerBuilder.addRole();
+        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell startDate = parser.getContractStartDate();
         if (!startDate.isEmpty()) {
             Date date = startDate.getDate();
-            practitionerBuilder.setRoleStartDate(date, startDate);
+            roleBuilder.setRoleStartDate(date, startDate);
         }
 
         CsvCell endDate = parser.getContractEndDate();
         if (!endDate.isEmpty()) {
             Date date = endDate.getDate();
-            practitionerBuilder.setRoleEndDate(date, endDate);
+            roleBuilder.setRoleEndDate(date, endDate);
         }
+
+        //after doing the start and end dates, call this to calculate the active state from them
+        practitionerBuilder.calculateActiveFromRoles();
 
         CsvCell orgUuid = parser.getOrganisationGuid();
         Reference organisationReference = csvHelper.createOrganisationReference(orgUuid);
-        practitionerBuilder.setRoleManagingOrganisation(organisationReference, orgUuid);
+        roleBuilder.setRoleManagingOrganisation(organisationReference, orgUuid);
+
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
 
         CsvCell roleName = parser.getJobCategoryName();
         if (!roleName.isEmpty()) {
-            practitionerBuilder.setRoleName(roleName.getString(), roleName);
+            codeableConceptBuilder.setCodingDisplay(roleName.getString(), roleName);
         }
 
         CsvCell roleCode = parser.getJobCategoryCode();
         if (!roleCode.isEmpty()) {
-            practitionerBuilder.setRoleCode(roleCode.getString(), roleCode);
+            codeableConceptBuilder.setCodingCode(roleCode.getString(), roleCode);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);

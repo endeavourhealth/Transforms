@@ -1,10 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,42 +40,49 @@ public class LOREF extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getLocationId() throws FileFormatException {
+    public CsvCell getLocationId() {
         return super.getCell("LOCATION_ID");
     }
 
-    public CsvCell getExtractDateTime() throws TransformException {
+    public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
     }
 
-    public CsvCell getBeginEffectiveDateTime() throws TransformException {
+    public CsvCell getBeginEffectiveDateTime() {
         return super.getCell("BEG_EFFECTIVE_DT_TM");
     }
 
-    public CsvCell getEndEffectiveDateTime() throws TransformException {
+    public CsvCell getEndEffectiveDateTime() {
         return super.getCell("END_EFFECTIVE_DT_TM");
     }
 
-    public CsvCell getBedLcoation() throws FileFormatException {
-        return super.getCell("BED_LOC_CD");}
+    public CsvCell getBedLcoation() {
+        return super.getCell("BED_LOC_CD");
+    }
 
-    public CsvCell getRoomLocation() throws FileFormatException {
-        return super.getCell("ROOM_LOC_CD");}
+    public CsvCell getRoomLocation() {
+        return super.getCell("ROOM_LOC_CD");
+    }
 
-    public CsvCell getNurseUnitLocation() throws FileFormatException {
-        return super.getCell("NURSE_UNIT_LOC_CD");}
+    public CsvCell getNurseUnitLocation() {
+        return super.getCell("NURSE_UNIT_LOC_CD");
+    }
 
-    public CsvCell getAmbulatoryLocation() throws FileFormatException {
-        return super.getCell("AMBULATORY_LOC_CD");}
+    public CsvCell getAmbulatoryLocation() {
+        return super.getCell("AMBULATORY_LOC_CD");
+    }
 
-    public CsvCell getSurgeryLocation() throws FileFormatException {
-        return super.getCell("SURGERY_LOC_CD");}
+    public CsvCell getSurgeryLocation() {
+        return super.getCell("SURGERY_LOC_CD");
+    }
 
-    public CsvCell getBuildingLocation() throws FileFormatException {
-        return super.getCell("BUILDING_LOC_CD");}
+    public CsvCell getBuildingLocation() {
+        return super.getCell("BUILDING_LOC_CD");
+    }
 
-    public CsvCell getFacilityLocation() throws FileFormatException {
-        return super.getCell("FACILITY_LOC_CD");}
+    public CsvCell getFacilityLocation() {
+        return super.getCell("FACILITY_LOC_CD");
+    }
 
     @Override
     protected String getFileTypeDescription() {

@@ -93,133 +93,6 @@ public class PatientBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
 
-    @Override
-    public void addName(HumanName.NameUse use) {
-        HumanName name = new HumanName();
-        name.setUse(use);
-        this.patient.addName(name);
-    }
-
-    @Override
-    public HumanName getLastName() {
-        return this.patient.getName().get(getLastNameIndex());
-    }
-
-    @Override
-    public String getLastNameJsonPrefix() {
-        return "name[" + getLastNameIndex() + "]";
-    }
-
-    private int getLastNameIndex() {
-        return this.patient.getName().size()-1;
-    }
-
-    /*@Override
-    public void addNamePrefix(String prefix, CsvCell... sourceCells) {
-        HumanName name = getLastName();
-        name.addPrefix(prefix);
-
-        int index = name.getPrefix().size()-1;
-        auditValue("name[" + getLastNameIndex() + "].prefix[" + index + "]", sourceCells);
-
-    }
-
-    @Override
-    public void addNameGiven(String given, CsvCell... sourceCells) {
-        HumanName name = getLastName();
-        name.addGiven(given);
-
-        int index = name.getGiven().size()-1;
-        auditValue("name[" + getLastNameIndex() + "].given[" + index + "]", sourceCells);
-    }
-
-    @Override
-    public void addNameFamily(String family, CsvCell... sourceCells) {
-        HumanName name = getLastName();
-        name.addFamily(family);
-
-        int index = name.getFamily().size()-1;
-        auditValue("name[" + getLastNameIndex() + "].family[" + index + "]", sourceCells);
-    }
-
-    @Override
-    public void addNameSuffix(String suffix, CsvCell... sourceCells) {
-        HumanName name = getLastName();
-        name.addSuffix(suffix);
-
-        int index = name.getSuffix().size()-1;
-        auditValue("name[" + getLastNameIndex() + "].suffix[" + index + "]", sourceCells);
-    }
-
-    @Override
-    public void addNameDisplayName(String displayName, CsvCell... sourceCells) {
-        HumanName name = getLastName();
-        name.setText(displayName);
-
-        auditValue("name[" + getLastNameIndex() + "].text", sourceCells);
-    }*/
-
-    @Override
-    public void addAddress(Address.AddressUse use) {
-        Address address = new Address();
-        address.setUse(use);
-        patient.getAddress().add(address);
-    }
-
-    @Override
-    public Address getLastAddress() {
-        return this.patient.getAddress().get(getLastAddressIndex());
-    }
-
-    @Override
-    public String getLastAddressJsonPrefix() {
-        return "address[" + getLastAddressIndex() + "]";
-    }
-
-    private int getLastAddressIndex() {
-        return this.patient.getAddress().size()-1;
-    }
-
-    /*@Override
-    public void addAddressLine(String line, CsvCell... sourceCells) {
-        Address address = getLastAddress();
-        address.addLine(line);
-
-        int index = address.getLine().size()-1;
-        auditValue("address[" + getLastAddressIndex() + "].line[" + index + "]", sourceCells);
-    }
-
-    @Override
-    public void addAddressTown(String town, CsvCell... sourceCells) {
-        Address address = getLastAddress();
-        address.setCity(town);
-
-        auditValue("address[" + getLastAddressIndex() + "].city", sourceCells);
-    }
-
-    @Override
-    public void addAddressDistrict(String district, CsvCell... sourceCells) {
-        Address address = getLastAddress();
-        address.setDistrict(district);
-
-        auditValue("address[" + getLastAddressIndex() + "].district", sourceCells);
-    }
-
-    @Override
-    public void addAddressPostcode(String postcode, CsvCell... sourceCells) {
-        Address address = getLastAddress();
-        address.setPostalCode(postcode);
-
-        auditValue("address[" + getLastAddressIndex() + "].postalcode", sourceCells);
-    }
-
-    @Override
-    public void addAddressDisplayText(String displayText, CsvCell... sourceCells) {
-        Address address = getLastAddress();
-        address.setText(displayText);
-
-        auditValue("address[" + getLastAddressIndex() + "].text", sourceCells);
-    }*/
 
     public void addCareProvider(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
         //only add to the patient if not already present
@@ -319,59 +192,25 @@ public class PatientBuilder extends ResourceBuilderBase
         auditCodeableConceptExtension(extension, sourceCells);
     }
 
-    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
-        this.patient.addIdentifier(identifier);
-
-        int index = this.patient.getIdentifier().size()-1;
-        auditValue("identifier[" + index + "].value", sourceCells);
-    }*/
-
     @Override
-    public void addIdentifier() {
-        this.patient.addIdentifier();
-    }
-
-    private int getLastIdentifierIndex() {
-        return this.patient.getIdentifier().size()-1;
+    public Identifier addIdentifier() {
+        return this.patient.addIdentifier();
     }
 
     @Override
-    public Identifier getLastIdentifier() {
-        int index = getLastIdentifierIndex();
-        return this.patient.getIdentifier().get(index);
-    }
-
-    @Override
-    public String getLastIdentifierJsonPrefix() {
-        int index = getLastIdentifierIndex();
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.patient.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
     }
 
-    /*public void addTelecom(ContactPoint contactPoint, CsvCell... sourceCells) {
-        this.patient.addTelecom(contactPoint);
-
-        int index = this.patient.getTelecom().size()-1;
-        auditValue("telecom[" + index + "].value", sourceCells);
-    }*/
-
     @Override
-    public void addContactPoint() {
-        this.patient.addTelecom();
-    }
-
-    private int getLastContactPointIndex() {
-        return this.patient.getTelecom().size()-1;
+    public ContactPoint addContactPoint() {
+        return this.patient.addTelecom();
     }
 
     @Override
-    public ContactPoint getLastContactPoint() {
-        int index = getLastContactPointIndex();
-        return this.patient.getTelecom().get(index);
-    }
-
-    @Override
-    public String getLastContactPointJsonPrefix() {
-        int index = getLastContactPointIndex();
+    public String getContactPointJsonPrefix(ContactPoint contactPoint) {
+        int index = this.patient.getTelecom().indexOf(contactPoint);
         return "telecom[" + index + "]";
     }
 
@@ -424,5 +263,29 @@ public class PatientBuilder extends ResourceBuilderBase
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
+    }
+
+    @Override
+    public Address addAddress() {
+        Address address = new Address();
+        this.patient.addAddress(address);
+        return address;
+    }
+
+    @Override
+    public String getAddressJsonPrefix(Address address) {
+        int index = this.patient.getAddress().indexOf(address);
+        return "address[" + index + "]";
+    }
+
+    @Override
+    public HumanName addName() {
+        return this.patient.addName();
+    }
+
+    @Override
+    public String getNameJsonPrefix(HumanName name) {
+        int index = this.patient.getName().indexOf(name);
+        return "name[" + index + "]";
     }
 }

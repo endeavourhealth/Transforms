@@ -66,7 +66,7 @@ public class LocationTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.beginAddress(Address.AddressUse.WORK);
+        addressBuilder.setUse(Address.AddressUse.WORK);
         addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
         addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
         addressBuilder.addLine(village.getString(), village);

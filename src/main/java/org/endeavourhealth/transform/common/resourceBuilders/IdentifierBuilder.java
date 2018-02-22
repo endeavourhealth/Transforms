@@ -11,21 +11,21 @@ import java.util.Date;
 public class IdentifierBuilder {
 
     private HasIdentifierI parentBuilder = null;
+    private Identifier identifier = null;
 
     public IdentifierBuilder(HasIdentifierI parentBuilder) {
-        this.parentBuilder = parentBuilder;
+        this(parentBuilder, null);
     }
 
-    /**
-     * start the creation of a new identifier on the parent object (patient etc.)
-     */
-    public void addIdentifier() {
-        parentBuilder.addIdentifier();
+    public IdentifierBuilder(HasIdentifierI parentBuilder, Identifier identifier) {
+        this.parentBuilder = parentBuilder;
+        this.identifier = identifier;
+        if (this.identifier == null) {
+            this.identifier = parentBuilder.addIdentifier();
+        }
     }
 
     public void setUse(Identifier.IdentifierUse use, CsvCell... sourceCells) {
-
-        Identifier identifier = parentBuilder.getLastIdentifier();
         identifier.setUse(use);
 
         auditNameValue("use", sourceCells);
@@ -36,7 +36,6 @@ public class IdentifierBuilder {
             return;
         }
 
-        Identifier identifier = parentBuilder.getLastIdentifier();
         identifier.setSystem(system);
 
         auditNameValue("system", sourceCells);
@@ -47,7 +46,6 @@ public class IdentifierBuilder {
             return;
         }
 
-        Identifier identifier = parentBuilder.getLastIdentifier();
         identifier.setValue(value);
 
         auditNameValue("value", sourceCells);
@@ -55,7 +53,7 @@ public class IdentifierBuilder {
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
-        String jsonField = parentBuilder.getLastIdentifierJsonPrefix() + "." + jsonSuffix;
+        String jsonField = parentBuilder.getIdentifierJsonPrefix(identifier) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
@@ -64,7 +62,6 @@ public class IdentifierBuilder {
     }
 
     private Period getOrCreateNamePeriod() {
-        Identifier identifier = parentBuilder.getLastIdentifier();
         Period period = null;
         if (identifier.hasPeriod()) {
             period = identifier.getPeriod();

@@ -12,16 +12,23 @@ import java.util.Date;
 public class NameBuilder {
 
     private HasNameI parentBuilder = null;
+    private HumanName name = null;
 
     public NameBuilder(HasNameI parentBuilder) {
-        this.parentBuilder = parentBuilder;
+        this(parentBuilder, null);
     }
 
-    /**
-     * start the creation of a new name on the parent object (patient, practitioner etc.)
-     */
-    public void beginName(HumanName.NameUse use, CsvCell... sourceCells) {
-        parentBuilder.addName(use);
+    public NameBuilder(HasNameI parentBuilder, HumanName humanName) {
+        this.parentBuilder = parentBuilder;
+        this.name = humanName;
+
+        if (this.name == null) {
+            this.name = parentBuilder.addName();
+        }
+    }
+
+    public void setUse(HumanName.NameUse use, CsvCell... sourceCells) {
+        name.setUse(use);
 
         auditNameValue("use", sourceCells);
     }
@@ -37,7 +44,6 @@ public class NameBuilder {
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
 
-                HumanName name = parentBuilder.getLastName();
                 name.addPrefix(tok);
 
                 int index = name.getPrefix().size()-1;
@@ -59,7 +65,6 @@ public class NameBuilder {
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
 
-                HumanName name = parentBuilder.getLastName();
                 name.addGiven(tok);
 
                 int index = name.getGiven().size()-1;
@@ -81,7 +86,6 @@ public class NameBuilder {
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
 
-                HumanName name = parentBuilder.getLastName();
                 name.addFamily(tok);
 
                 int index = name.getFamily().size()-1;
@@ -103,7 +107,6 @@ public class NameBuilder {
             tok = tok.trim();
             if (!Strings.isNullOrEmpty(tok)) {
 
-                HumanName name = parentBuilder.getLastName();
                 name.addSuffix(tok);
 
                 int index = name.getSuffix().size()-1;
@@ -117,7 +120,7 @@ public class NameBuilder {
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
-        String jsonField = parentBuilder.getLastNameJsonPrefix() + "." + jsonSuffix;
+        String jsonField = parentBuilder.getNameJsonPrefix(this.name) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
@@ -127,17 +130,14 @@ public class NameBuilder {
 
 
     private void updateDisplayName(CsvCell... sourceCells) {
-        HumanName humanName = parentBuilder.getLastName();
-        String displayName = NameConverter.generateDisplayName(humanName);
 
-        HumanName name = parentBuilder.getLastName();
+        String displayName = NameConverter.generateDisplayName(this.name);
         name.setText(displayName);
 
         auditNameValue("text", sourceCells);
     }
 
     private Period getOrCreateNamePeriod() {
-        HumanName name = parentBuilder.getLastName();
         Period period = null;
         if (name.hasPeriod()) {
             period = name.getPeriod();
