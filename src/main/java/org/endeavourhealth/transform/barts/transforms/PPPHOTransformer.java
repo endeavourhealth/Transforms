@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.ContactPointHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
@@ -10,10 +8,11 @@ import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.hl7.fhir.instance.model.Address;
+import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +47,77 @@ public class PPPHOTransformer extends BartsBasisTransformer {
     }
 
     public static void createPatientPhone(PPPHO parser,
+                                          FhirResourceFiler fhirResourceFiler,
+                                          BartsCsvHelper csvHelper,
+                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        //if no number, then nothing to process
+        CsvCell numberCell = parser.getPhoneNumber();
+        if (numberCell.isEmpty()) {
+            return;
+        }
+
+        CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+
+            //TODO - need to REMOVE phone number from patient
+
+            return;
+        }
+
+        //TODO - need to handle deltas where we're ENDING an existing phone number
+
+        String number = numberCell.getString();
+
+        CsvCell extensionCell = parser.getExtension();
+        if (!extensionCell.isEmpty()) {
+            number += " " + extensionCell.getString();
+        }
+
+        ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
+        ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
+        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
+        if (!phoneTypeCell.isEmpty()) {
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                                                                                RdbmsCernerCodeValueRefDal.PHONE_TYPE,
+                                                                                phoneTypeCell.getLong(),
+                                                                                fhirResourceFiler.getServiceId());
+
+            if (cernerCodeValueRef != null) {
+                use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
+                system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
+
+            } else {
+                // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
+            }
+        }
+
+        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+        contactPointBuilder.addContactPoint();
+        contactPointBuilder.setUse(use, phoneTypeCell);
+        contactPointBuilder.setSystem(system, phoneTypeCell);
+        contactPointBuilder.setValue(number, numberCell, extensionCell);
+
+        CsvCell startDate = parser.getBeginEffectiveDateTime();
+        if (!startDate.isEmpty()) {
+            contactPointBuilder.setStartDate(startDate.getDate(), startDate);
+        }
+
+        CsvCell endDate = parser.getEndEffectiveDateTime();
+        if (!endDate.isEmpty()) {
+            contactPointBuilder.setEndDate(endDate.getDate(), endDate);
+        }
+    }
+
+    /*public static void createPatientPhone(PPPHO parser,
                                           FhirResourceFiler fhirResourceFiler,
                                           BartsCsvHelper csvHelper,
                                           String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -101,7 +171,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-    }
+    }*/
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) {
         switch (phoneType) {

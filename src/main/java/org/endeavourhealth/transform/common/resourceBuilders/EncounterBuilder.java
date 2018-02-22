@@ -118,33 +118,11 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("period.end", sourceCells);
     }
 
-    public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
+    /*public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
         getOrCreateCodeableConcept(null).setText(term);
 
         auditValue(getCodeableConceptJsonPath(null) + ".text", sourceCells);
-    }
-
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        if (codeableConcept == null) {
-            codeableConcept = new CodeableConcept();
-            extension.setValue(codeableConcept);
-        }
-        return codeableConcept;
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        if (extension == null) {
-            throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
-        }
-
-        int index = this.encounter.getExtension().indexOf(extension);
-        return "extension[" + index + "].valueCodeableConcept";
-    }
+    }*/
 
     public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.encounter.addIdentifier(identifier);
@@ -179,4 +157,26 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("location[" + index + "].location", sourceCells);
     }
 
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
+        if (codeableConcept != null) {
+            throw new IllegalArgumentException("Trying to add new code to Encounter when it already has one");
+        }
+        codeableConcept = new CodeableConcept();
+        extension.setValue(codeableConcept);
+        return codeableConcept;
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (extension == null) {
+            throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
+        }
+
+        int index = this.encounter.getExtension().indexOf(extension);
+        return "extension[" + index + "].valueCodeableConcept";
+    }
 }

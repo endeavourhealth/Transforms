@@ -100,19 +100,21 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditValue("status", sourceCells);
     }
 
+
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(String tag) {
         Extension extension = ExtensionConverter.findOrCreateExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
         CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        if (codeableConcept == null) {
-            codeableConcept = new CodeableConcept();
-            extension.setValue(codeableConcept);
+        if (codeableConcept != null) {
+            throw new IllegalArgumentException("Trying to add new DNA code to Appointment when it already has one");
         }
+        codeableConcept = new CodeableConcept();
+        extension.setValue(codeableConcept);
         return codeableConcept;
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         Extension extension = ExtensionConverter.findExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
         if (extension == null) {
             throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");

@@ -86,20 +86,21 @@ public class SpecimenBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(b, sourceCells);
     }
 
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.specimen.hasType()) {
-            this.specimen.setType(new CodeableConcept());
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (this.specimen.hasType()) {
+            throw new IllegalArgumentException("Trying to add new type to Specimen that already has one");
         }
+        this.specimen.setType(new CodeableConcept());
         return this.specimen.getType();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "type";
-    }
-
-    public void setParentResource(Reference reference, CsvCell... sourceCells) {
-        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

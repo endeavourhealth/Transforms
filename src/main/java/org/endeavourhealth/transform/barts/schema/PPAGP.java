@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class PPAGP extends AbstractCsvParser {
@@ -35,7 +34,43 @@ public class PPAGP extends AbstractCsvParser {
         };
     }
 
-    public String getMillenniumPersonPersonnelRelationId() {
+    public CsvCell getMillenniumPersonPersonnelRelationId() {
+        return super.getCell("#PERSON_PRSNL_RELTN_ID");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
+
+    public CsvCell getBeginEffectiveDate() {
+        return super.getCell("BEG_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getEndEffectiveDate() {
+        return super.getCell("END_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getRegisteredGPMillenniumPersonnelId() {
+        return super.getCell("GP_PRSNL_ID");
+    }
+
+    public CsvCell getRegisteredGPPracticeMillenniumIdOrganisationCode() {
+        return super.getCell("GP_PRAC_ORG_ID");
+    }
+
+    public CsvCell getPersonPersonnelRelationCode() {
+        return super.getCell("PERSON_PRSNL_R_CD");
+    }
+    
+    /*public String getMillenniumPersonPersonnelRelationId() {
         return super.getString("#PERSON_PRSNL_RELTN_ID");
     }
 
@@ -78,7 +113,7 @@ public class PPAGP extends AbstractCsvParser {
 
     public String getPersonPersonnelRelationCode() {
         return super.getString("PERSON_PRSNL_R_CD");
-    }
+    }*/
 
     @Override
     protected String getFileTypeDescription() {

@@ -218,27 +218,28 @@ public class ConditionBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(String tag) {
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
-            if (!this.condition.hasCode()) {
-                this.condition.setCode(new CodeableConcept());
+            if (this.condition.hasCode()) {
+                throw new IllegalArgumentException("Trying to add new code to Condition that already has one");
             }
+            this.condition.setCode(new CodeableConcept());
             return this.condition.getCode();
 
         } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            if (!this.condition.hasCategory()) {
-                this.condition.setCategory(new CodeableConcept());
+            if (this.condition.hasCategory()) {
+                throw new IllegalArgumentException("Trying to add new category to Condition that already has one");
             }
+            this.condition.setCategory(new CodeableConcept());
             return this.condition.getCategory();
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
-
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             return "code";
 
@@ -249,6 +250,7 @@ public class ConditionBuilder extends ResourceBuilderBase
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
     }
+
 
     public void setProblemLastReviewDate(DateType lastReviewDateType, CsvCell... sourceCells) {
         if (lastReviewDateType == null) {
@@ -426,5 +428,6 @@ public class ConditionBuilder extends ResourceBuilderBase
 
         auditValue("verificationStatus", sourceCells);
     }
+
 
 }

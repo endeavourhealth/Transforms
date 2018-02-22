@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -106,12 +107,15 @@ public class ConsultationTransformer {
         encounterBuilder.setServiceProvider(organisationReference, organisationGuid);
 
         CsvCell codeId = parser.getConsultationSourceCodeId();
-        EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, null, csvHelper);
 
         CsvCell termCell = parser.getConsultationSourceTerm();
         if (!termCell.isEmpty()) {
             String term = termCell.getString();
-            encounterBuilder.setEncounterSourceTerm(term, termCell);
+            if (codeableConceptBuilder == null) {
+                codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+            }
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         //since complete consultations are by far the default, only record the incomplete extension if it's not complete

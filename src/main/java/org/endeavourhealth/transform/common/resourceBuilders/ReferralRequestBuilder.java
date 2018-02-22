@@ -148,15 +148,17 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.referralRequest.hasServiceRequested()) {
-            this.referralRequest.addServiceRequested();
+    public CodeableConcept createNewCodeableConcept(String tag) {
+
+        //although the FHIR resource supports multiple codeable concepts, we only want to use a single one
+        if (this.referralRequest.hasServiceRequested()) {
+            throw new IllegalArgumentException("Trying to add service requested to ReferralRequest that already has one");
         }
-        return this.referralRequest.getServiceRequested().get(0);
+        return this.referralRequest.addServiceRequested();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "serviceRequested[0]";
     }
 

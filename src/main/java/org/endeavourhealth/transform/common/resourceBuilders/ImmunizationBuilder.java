@@ -104,23 +104,24 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (this.immunization.hasVaccineCode()) {
-            return this.immunization.getVaccineCode();
-        } else {
-            CodeableConcept codeableConcept = new CodeableConcept();
-            this.immunization.setVaccineCode(codeableConcept);
-            return codeableConcept;
-        }
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        return "vaccineCode";
-    }
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (this.immunization.hasVaccineCode()) {
+            throw new IllegalArgumentException("Trying to add new code to Immunization when it already has one");
+        }
+
+        CodeableConcept codeableConcept = new CodeableConcept();
+        this.immunization.setVaccineCode(codeableConcept);
+        return codeableConcept;
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        return "vaccineCode";
     }
 }

@@ -100,24 +100,24 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
         }
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
-        if (condition.hasCode()) {
-            return condition.getCode();
-        } else {
-            CodeableConcept codeableConcept = new CodeableConcept();
-            condition.setCode(codeableConcept);
-            return codeableConcept;
-        }
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        return "condition[0].code";
-    }
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+        if (condition.hasCode()) {
+            throw new IllegalArgumentException("Trying to add new code to FamilyMemberHistory when it already has one");
+        }
+        CodeableConcept codeableConcept = new CodeableConcept();
+        condition.setCode(codeableConcept);
+        return codeableConcept;
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        return "condition[0].code";
     }
 }

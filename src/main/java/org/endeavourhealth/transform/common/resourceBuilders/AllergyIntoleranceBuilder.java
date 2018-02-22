@@ -83,20 +83,22 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
         createOrUpdateRecordedByExtension(practitionerReference, sourceCells);
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.allergyIntolerance.hasSubstance()) {
-            this.allergyIntolerance.setSubstance(new CodeableConcept());
-        }
-        return this.allergyIntolerance.getSubstance();
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        return "substance";
-    }
-
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (this.allergyIntolerance.hasSubstance()) {
+            throw new IllegalArgumentException("Trying to add new code to AllergyIntolerance that already has one");
+        }
+        this.allergyIntolerance.setSubstance(new CodeableConcept());
+        return this.allergyIntolerance.getSubstance();
+
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        return "substance";
     }
 }

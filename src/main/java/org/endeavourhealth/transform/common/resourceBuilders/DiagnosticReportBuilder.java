@@ -111,20 +111,22 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
         return true;
     }
 
+
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.diagnosticReport.hasCode()) {
-            this.diagnosticReport.setCode(new CodeableConcept());
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (this.diagnosticReport.hasCode()) {
+            throw new IllegalArgumentException("Trying to add new code to DiagnosticReport when it already has one");
         }
+        this.diagnosticReport.setCode(new CodeableConcept());
         return this.diagnosticReport.getCode();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
-    }
-
-    public void setParentResource(Reference reference, CsvCell... sourceCells) {
-        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

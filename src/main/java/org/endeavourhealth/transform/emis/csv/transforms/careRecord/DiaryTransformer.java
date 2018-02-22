@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
@@ -57,13 +58,15 @@ public class DiaryTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        EmisCodeHelper.createCodeableConcept(procedureRequestBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(procedureRequestBuilder, false, codeId, null, csvHelper);
 
         //this MUST be done after doing the codeId as this will potentially overwrite the codeable concept text the above sets
         CsvCell termCell = parser.getOriginalTerm();
         if (!termCell.isEmpty()) {
-            String term = termCell.getString();
-            procedureRequestBuilder.setCodeText(term, termCell);
+            if (codeableConceptBuilder == null) {
+                codeableConceptBuilder = new CodeableConceptBuilder(procedureRequestBuilder, null);
+            }
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell effectiveDateCell = parser.getEffectiveDate();

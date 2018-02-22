@@ -10,17 +10,26 @@ import org.hl7.fhir.instance.model.Coding;
 public class CodeableConceptBuilder {
 
     private HasCodeableConceptI parentBuilder = null;
+    private CodeableConcept codeableConcept = null;
     private String codeableConceptTag = null;
 
     public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, String codeableConceptTag) {
+        this(parentBuilder, codeableConceptTag, null);
+    }
+
+    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, String codeableConceptTag, CodeableConcept codeableConcept) {
         this.parentBuilder = parentBuilder;
+        this.codeableConcept = codeableConcept;
         this.codeableConceptTag = codeableConceptTag;
+
+        if (this.codeableConcept == null) {
+            this.codeableConcept = parentBuilder.createNewCodeableConcept(codeableConceptTag);
+        }
     }
 
     public void addCoding(String systemUrl, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = this.parentBuilder.getOrCreateCodeableConcept(codeableConceptTag);
         Coding coding = CodingHelper.createCoding(systemUrl, null, null);
-        codeableConcept.addCoding(coding);
+        this.codeableConcept.addCoding(coding);
 
         addCodingAudit(codeableConcept, coding, "system", sourceCells);
     }
@@ -29,7 +38,6 @@ public class CodeableConceptBuilder {
         if (Strings.isNullOrEmpty(code)) {
             return;
         }
-        CodeableConcept codeableConcept = this.parentBuilder.getOrCreateCodeableConcept(codeableConceptTag);
         Coding coding = getLastCoding(codeableConcept);
         coding.setCode(code);
 
@@ -40,7 +48,7 @@ public class CodeableConceptBuilder {
         if (Strings.isNullOrEmpty(display)) {
             return;
         }
-        CodeableConcept codeableConcept = this.parentBuilder.getOrCreateCodeableConcept(codeableConceptTag);
+
         Coding coding = getLastCoding(codeableConcept);
         coding.setDisplay(display);
 
@@ -59,7 +67,7 @@ public class CodeableConceptBuilder {
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         int index = codeableConcept.getCoding().indexOf(coding);
 
-        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag) + ".coding[" + index + "]." + element;
+        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + ".coding[" + index + "]." + element;
 
         for (CsvCell csvCell: sourceCells) {
             audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
@@ -71,10 +79,9 @@ public class CodeableConceptBuilder {
             return;
         }
 
-        CodeableConcept codeableConcept = this.parentBuilder.getOrCreateCodeableConcept(codeableConceptTag);
         codeableConcept.setText(textValue);
 
-        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag) + ".text";
+        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + ".text";
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
             audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
@@ -101,5 +108,9 @@ public class CodeableConceptBuilder {
             String text = codeableConcept.getText();
             setText(text);
         }
+    }
+
+    public CodeableConcept getCodeableConcept() {
+        return codeableConcept;
     }
 }

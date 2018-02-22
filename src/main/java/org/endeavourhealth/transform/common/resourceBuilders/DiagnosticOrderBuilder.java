@@ -108,21 +108,22 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(b, sourceCells);
     }
 
+    public void setParentResource(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(String tag) {
         DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
-        if (!item.hasCode()) {
-            item.setCode(new CodeableConcept());
+        if (item.hasCode()) {
+            throw new IllegalArgumentException("Trying to add new code to DiagnosticOrder item when it already has one");
         }
+        item.setCode(new CodeableConcept());
         return item.getCode();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "item[0].code";
-    }
-
-    public void setParentResource(Reference reference, CsvCell... sourceCells) {
-        super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 }

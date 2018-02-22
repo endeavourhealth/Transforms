@@ -98,16 +98,16 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
         auditValue("scheduledDateTime", sourceCells);
     }
 
-    public void setCodeText(String term, CsvCell... sourceCells) {
+    /*public void setCodeText(String term, CsvCell... sourceCells) {
         getOrCreateCodeableConcept(null).setText(term);
 
         auditValue("code.text", sourceCells);
-    }
+    }*/
 
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(String tag) {
         if (this.procedureRequest.hasCode()) {
-            return this.procedureRequest.getCode();
+            throw new IllegalArgumentException("Trying to add code to ProcedureRequest when it already has one");
         } else {
             CodeableConcept codeableConcept = new CodeableConcept();
             this.procedureRequest.setCode(codeableConcept);
@@ -116,7 +116,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
     }
 }

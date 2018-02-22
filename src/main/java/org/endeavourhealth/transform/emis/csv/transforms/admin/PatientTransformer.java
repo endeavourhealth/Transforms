@@ -72,17 +72,30 @@ public class PatientTransformer {
 
         CsvCell nhsNumber = parser.getNhsNumber();
         if (!nhsNumber.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createNhsNumberIdentifier(nhsNumber.getString());
-            patientBuilder.addIdentifier(identifier, nhsNumber);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.addIdentifier();
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
         }
 
         //store the patient GUID and patient number to the patient resource
-        Identifier patientGuidIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, patientGuid.getString());
-        patientBuilder.addIdentifier(patientGuidIdentifier, patientGuid);
+        if (!patientGuid.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.addIdentifier();
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
+            identifierBuilder.setValue(patientGuid.getString(), patientGuid);
+        }
 
         CsvCell patientNumber = parser.getPatientNumber();
-        Identifier patientNumberIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER, patientNumber.getString());
-        patientBuilder.addIdentifier(patientNumberIdentifier, patientNumber);
+        if (!patientNumber.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.addIdentifier();
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+            identifierBuilder.setValue(patientNumber.getString(), patientNumber);
+        }
 
         CsvCell dob = parser.getDateOfBirth();
         patientBuilder.setDateOfBirth(dob.getDate(), dob);
@@ -141,20 +154,26 @@ public class PatientTransformer {
 
         CsvCell homePhone = parser.getHomePhone();
         if (!homePhone.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.HOME, homePhone.getString());
-            patientBuilder.addTelecom(fhirContact, homePhone);
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setValue(homePhone.getString(), homePhone);
         }
 
         CsvCell mobilePhone = parser.getMobilePhone();
         if (!mobilePhone.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.MOBILE, mobilePhone.getString());
-            patientBuilder.addTelecom(fhirContact, mobilePhone);
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
         }
 
         CsvCell email = parser.getEmailAddress();
         if (!email.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.HOME, email.getString());
-            patientBuilder.addTelecom(fhirContact, email);
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            contactPointBuilder.setValue(email.getString(), email);
         }
 
         Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
@@ -170,22 +189,27 @@ public class PatientTransformer {
         if (!carerName.isEmpty() || !carerRelationship.isEmpty()) {
 
             //add a new empty contact object to the patient which the following lines will populate
-            patientBuilder.addContact();
+            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
 
             if (!carerName.isEmpty()) {
                 HumanName humanName = NameConverter.convert(carerName.getString());
-                patientBuilder.addContactName(humanName, carerName);
+                contactBuilder.addContactName(humanName, carerName);
             }
 
             if (!carerRelationship.isEmpty()) {
                 //FHIR spec states that we should map to their relationship types if possible, but if
                 //not possible, then send as a textual codeable concept
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+
                 try {
                     ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(carerRelationship.getString());
-                    patientBuilder.addContactRelationshipType(fhirContactRelationship, carerRelationship);
+
+                    codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_CONTACT_RELATIONSHIP);
+                    codeableConceptBuilder.setCodingCode(fhirContactRelationship.getCode(), carerRelationship);
+                    codeableConceptBuilder.setCodingDisplay(fhirContactRelationship.getDescription());
 
                 } catch (IllegalArgumentException ex) {
-                    patientBuilder.addContactRelationshipTypeFreeText(carerRelationship.getString(), carerRelationship);
+                    codeableConceptBuilder.setText(carerRelationship.getString(), carerRelationship);
                 }
             }
         }

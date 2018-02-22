@@ -133,16 +133,19 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         auditValue("dispenseRequest.expectedSupplyDuration.value", sourceCells);
     }
 
+
+
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(String tag) {
         try {
             if (this.medicationOrder.hasMedicationCodeableConcept()) {
-                return this.medicationOrder.getMedicationCodeableConcept();
-            } else {
-                CodeableConcept codeableConcept = new CodeableConcept();
-                this.medicationOrder.setMedication(codeableConcept);
-                return codeableConcept;
+                throw new IllegalArgumentException("Trying to add new medication to MedicationOrder when it already has one");
             }
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            this.medicationOrder.setMedication(codeableConcept);
+            return codeableConcept;
+
         } catch (Exception ex) {
             //we should never get this exception raised, but if we do, just wrap in a runtime exception and throw up
             throw new RuntimeException(ex);
@@ -150,8 +153,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "medicationCodeableConcept";
     }
-
 }

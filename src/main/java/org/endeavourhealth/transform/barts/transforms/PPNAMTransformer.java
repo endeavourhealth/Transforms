@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
@@ -11,11 +9,11 @@ import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.hl7.fhir.instance.model.Address;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +47,76 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         return null;
     }
 
-
     public static void createPatientName(PPNAM parser,
+                                         FhirResourceFiler fhirResourceFiler,
+                                         BartsCsvHelper csvHelper,
+                                         String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+
+            //TOOD - need to handle DELETING a name of a patient
+
+            return;
+        }
+
+        //TODO - need to handle deltas where we UPDATE an existing name with an end date
+
+        HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
+
+        CsvCell nameTypeCell = parser.getNameTypeCode();
+        if (!nameTypeCell.isEmpty()) {
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                                                                            RdbmsCernerCodeValueRefDal.NAME_USE,
+                                                                            nameTypeCell.getLong(),
+                                                                            fhirResourceFiler.getServiceId());
+
+            if (cernerCodeValueRef != null) {
+                nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
+            } else {
+                // LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
+            }
+        }
+
+        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.beginName(nameUse, nameTypeCell);
+
+        CsvCell titleCell = parser.getTitle();
+        CsvCell prefixCell = parser.getPrefix();
+        CsvCell firstNameCell = parser.getFirstName();
+        CsvCell middleNameCell = parser.getMiddleName();
+        CsvCell lastNameCell = parser.getLastName();
+        CsvCell suffixCell = parser.getSuffix();
+
+        nameBuilder.addPrefix(titleCell.getString(), titleCell);
+        nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
+        nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+        nameBuilder.addGiven(middleNameCell.getString(), middleNameCell);
+        nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
+        nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
+
+        CsvCell startDate = parser.getBeginEffectiveDate();
+        if (!startDate.isEmpty()) {
+            nameBuilder.setStartDate(startDate.getDate(), startDate);
+        }
+
+        CsvCell endDate = parser.getEndEffectiveDater();
+        if (!endDate.isEmpty()) {
+            nameBuilder.setEndDate(endDate.getDate(), endDate);
+        }
+    }
+
+    /*public static void createPatientName(PPNAM parser,
                                      FhirResourceFiler fhirResourceFiler,
                                      BartsCsvHelper csvHelper,
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -102,7 +168,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-    }
+    }*/
 
     private static String parseTitleAndPrefix(String title, String prefix) throws Exception {
 

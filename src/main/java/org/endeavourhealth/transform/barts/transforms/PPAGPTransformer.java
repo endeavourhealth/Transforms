@@ -1,13 +1,15 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.Patient;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +42,37 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         return null;
     }
 
-
     public static void createPatientGP(PPAGP parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+
+        CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
+
+        //if we don't have a person ID, there's nothing we can do with the row
+        CsvCell personId = parser.getRegisteredGPMillenniumPersonnelId();
+        if (personId.isEmpty()) {
+            return;
+        }
+        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personId.getString());
+        Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
+
+        //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
+        CsvCell activeCell = parser.getActiveIndicator();
+        CsvCell endDateCell = parser.getEndEffectiveDate();
+        if (!activeCell.getIntAsBoolean()
+                && !endDateCell.isEmpty()) {
+
+            patientBuilder.removeCareProvider(practitionerReference);
+
+        } else {
+            patientBuilder.addCareProvider(practitionerReference);
+        }
+    }
+
+    /*public static void createPatientGP(PPAGP parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -63,5 +94,5 @@ public class PPAGPTransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-    }
+    }*/
 }

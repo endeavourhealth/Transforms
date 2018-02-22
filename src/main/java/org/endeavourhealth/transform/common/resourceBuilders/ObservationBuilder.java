@@ -206,41 +206,6 @@ public class ObservationBuilder extends ResourceBuilderBase
         this.observation.addComponent();
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-
-        //depending on the tag, we may be setting the main codeable concept or the one in the last component added
-        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
-            if (!this.observation.hasCode()) {
-                this.observation.setCode(new CodeableConcept());
-            }
-            return this.observation.getCode();
-
-        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
-            Observation.ObservationComponentComponent component = getLastComponent();
-            if (!component.hasCode()) {
-                component.setCode(new CodeableConcept());
-            }
-            return component.getCode();
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag " + tag);
-        }
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-
-        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
-            return "code";
-
-        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
-            return "component[" + getLastComponentIndex() + "].code";
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag " + tag);
-        }
-    }
 
 
     public void setComponentValue(Double value, CsvCell... sourceCells) {
@@ -264,5 +229,42 @@ public class ObservationBuilder extends ResourceBuilderBase
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        //depending on the tag, we may be setting the main codeable concept or the one in the last component added
+        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+            if (this.observation.hasCode()) {
+                throw new IllegalArgumentException("Trying to add code to Observation when it already has one");
+            }
+
+            this.observation.setCode(new CodeableConcept());
+            return this.observation.getCode();
+
+        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+            Observation.ObservationComponentComponent component = getLastComponent();
+            if (component.hasCode()) {
+                throw new IllegalArgumentException("Trying to add code to Observation Component when it already has one");
+            }
+            component.setCode(new CodeableConcept());
+            return component.getCode();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+            return "code";
+
+        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+            return "component[" + getLastComponentIndex() + "].code";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
     }
 }

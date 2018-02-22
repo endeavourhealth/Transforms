@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -22,15 +21,33 @@ public class BartsCsvHelper {
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
 
-    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
 
-    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private UUID serviceId = null;
+    private UUID systemId = null;
+    private String primaryOrgHL7OrgOID = null;
 
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
+    public BartsCsvHelper(UUID serviceId, UUID systemId, String primaryOrgHL7OrgOID) {
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.primaryOrgHL7OrgOID = primaryOrgHL7OrgOID;
+    }
+
+    public String getPrimaryOrgHL7OrgOID() {
+        return primaryOrgHL7OrgOID;
+    }
+
+    public UUID getServiceId() {
+        return serviceId;
+    }
+
+    public UUID getSystemId() {
+        return systemId;
+    }
+
+    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType) throws Exception {
 
         UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, systemId, resourceType, locallyUniqueId);
 

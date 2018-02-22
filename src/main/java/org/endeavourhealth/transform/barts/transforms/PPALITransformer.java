@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.ContactRelationship;
+import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
@@ -10,8 +9,11 @@ import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPALI;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,70 @@ public class PPALITransformer extends BartsBasisTransformer {
     }
 
     public static void createPatientAlias(PPALI parser,
+                                          FhirResourceFiler fhirResourceFiler,
+                                          BartsCsvHelper csvHelper,
+                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        //if the alias is empty, there's nothing to add
+        CsvCell aliasCell = parser.getAlias();
+        if (aliasCell.isEmpty()) {
+            return;
+        }
+
+        CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
+
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+
+            //TODO - need to support DELETING alias of existing patient
+
+            return;
+        }
+
+        //TODO - need to handle receving an update to an existing alias (e.g. end date is set)
+
+        // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
+        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
+        CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                                                                    RdbmsCernerCodeValueRefDal.ALIAS_TYPE,
+                                                                    aliasTypeCodeCell.getLong(),
+                                                                    fhirResourceFiler.getServiceId());
+
+        String aliasSystem = FhirUri.IDENTIFIER_SYSTEM_CERNER_OTHER_PERSON_ID;
+
+        if (cernerCodeValueRef != null) {
+            aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
+        } else {
+            // LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
+        }
+
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+        identifierBuilder.addIdentifier();
+        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
+        identifierBuilder.setValue(aliasCell.getString(), aliasCell);
+
+        CsvCell startDateCell = parser.getBeginEffectiveDate();
+        if (!startDateCell.isEmpty()) {
+            identifierBuilder.setStartDate(startDateCell.getDate(), startDateCell);
+        }
+
+        CsvCell endDateCell = parser.getEndEffectiveDate();
+        if (!endDateCell.isEmpty()) {
+            identifierBuilder.setEndDate(startDateCell.getDate(), startDateCell);
+        }
+
+    }
+
+    /*public static void createPatientAlias(PPALI parser,
                                           FhirResourceFiler fhirResourceFiler,
                                           BartsCsvHelper csvHelper,
                                           String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -96,7 +162,7 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-    }
+    }*/
 
     private static String convertAliasCode(String statusCode) {
         switch (statusCode) {

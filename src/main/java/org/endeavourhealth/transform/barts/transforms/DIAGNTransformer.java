@@ -59,7 +59,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // get patient from encounter
-        Encounter fhirEncounter = (Encounter)csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
+        Encounter fhirEncounter = (Encounter)csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter);
         String patientReferenceValue = fhirEncounter.getPatient().getReference();
 
         // this Condition resource id

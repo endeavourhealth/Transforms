@@ -5,8 +5,8 @@ import org.hl7.fhir.instance.model.CodeableConcept;
 
 public interface HasCodeableConceptI {
 
-    CodeableConcept getOrCreateCodeableConcept(String tag);
-    String getCodeableConceptJsonPath(String tag);
+    CodeableConcept createNewCodeableConcept(String tag);
+    String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept);
     public ResourceFieldMappingAudit getAuditWrapper();
 
 }

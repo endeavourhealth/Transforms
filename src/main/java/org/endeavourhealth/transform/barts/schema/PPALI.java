@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class PPALI extends AbstractCsvParser {
@@ -42,7 +41,67 @@ public class PPALI extends AbstractCsvParser {
         };
     }
 
-    public String getMillenniumPersonAliasId() {
+    public CsvCell getMillenniumPersonAliasId() {
+        return super.getCell("#PERSON_ALIAS_ID");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
+
+    public CsvCell getBeginEffectiveDate() {
+        return super.getCell("BEG_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getEndEffectiveDate() {
+        return super.getCell("END_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getAlias() {
+        return super.getCell("ALIAS_TXT");
+    }
+
+    public CsvCell getAliasTypeCode() {
+        return super.getCell("PERSON_ALIAS_TYPE_CD");
+    }
+
+    public CsvCell getAliasPoolCode() {
+        return super.getCell("ALIAS_POOL_CD");
+    }
+
+    public CsvCell getAliasStatusCode() {
+        return super.getCell("PERSON_ALIAS_STATUS_CD");
+    }
+
+    public CsvCell getHealthCardProvince() {
+        return super.getCell("HEALTH_CARD_PROVINCE");
+    }
+
+    public CsvCell getHealthCardVersion() {
+        return super.getCell("HEALTH_CARD_VERSION");
+    }
+
+    public CsvCell getHealthCardType() {
+        return super.getCell("HEALTH_CARD_TYPE");
+    }
+
+    public CsvCell getHealthCardIssueDateTime() {
+        return super.getCell("HEALTH_CARD_ISSUE_DT_TM");
+    }
+
+    public CsvCell getHealthCardExpiryDateTime() {
+        return super.getCell("HEALTH_CARD_EXPIRY_DT_TM");
+    }
+
+    /*public String getMillenniumPersonAliasId() {
         return super.getString("#PERSON_ALIAS_ID");
     }
 
@@ -109,7 +168,7 @@ public class PPALI extends AbstractCsvParser {
 
     public Date getHealthCardExpiryDateTime() throws TransformException {
         return super.getDate("HEALTH_CARD_EXPIRY_DT_TM");
-    }
+    }*/
 
     @Override
     protected String getFileTypeDescription() {

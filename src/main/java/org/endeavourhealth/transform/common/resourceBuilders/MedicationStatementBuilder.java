@@ -154,15 +154,16 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (!this.medicationStatement.hasMedication()) {
-            this.medicationStatement.setMedication(new CodeableConcept());
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (this.medicationStatement.hasMedication()) {
+            throw new IllegalArgumentException("Trying to add new code to MedicationStatement when it already has one");
         }
+        this.medicationStatement.setMedication(new CodeableConcept());
         return (CodeableConcept)this.medicationStatement.getMedication();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag) {
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "medicationCodeableConcept";
     }
 }

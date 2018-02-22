@@ -5,7 +5,10 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.StringType;
+
+import java.util.Date;
 
 public class AddressBuilder {
 
@@ -68,6 +71,31 @@ public class AddressBuilder {
         auditNameValue("postalCode", sourceCells);
 
         updateAddressDisplay(sourceCells);
+    }
+
+
+    private Period getOrCreateNamePeriod() {
+        Address address = parentBuilder.getLastAddress();
+        Period period = null;
+        if (address.hasPeriod()) {
+            period = address.getPeriod();
+        } else {
+            period = new Period();
+            address.setPeriod(period);
+        }
+        return period;
+    }
+
+    public void setStartDate(Date date, CsvCell... sourceCells) {
+        getOrCreateNamePeriod().setStart(date);
+
+        auditNameValue("period.start", sourceCells);
+    }
+
+    public void setEndDate(Date date, CsvCell... sourceCells) {
+        getOrCreateNamePeriod().setEnd(date);
+
+        auditNameValue("period.end", sourceCells);
     }
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {

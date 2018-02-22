@@ -95,39 +95,6 @@ public class ProcedureBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
 
-    @Override
-    public CodeableConcept getOrCreateCodeableConcept(String tag) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
-            if (!this.procedure.hasCode()) {
-                this.procedure.setCode(new CodeableConcept());
-            }
-            return this.procedure.getCode();
-
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            if (!this.procedure.hasCategory()) {
-                this.procedure.setCategory(new CodeableConcept());
-            }
-            return this.procedure.getCategory();
-
-        } else {
-            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
-        }
-
-    }
-
-    @Override
-    public String getCodeableConceptJsonPath(String tag) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
-            return "code";
-
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            return "category";
-
-        } else {
-            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
-        }
-    }
-
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
@@ -140,4 +107,37 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
 
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            if (this.procedure.hasCode()) {
+                throw new IllegalArgumentException("Trying to add code to Procedure that already has one");
+            }
+            this.procedure.setCode(new CodeableConcept());
+            return this.procedure.getCode();
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            if (this.procedure.hasCategory()) {
+                throw new IllegalArgumentException("Trying to add category to Procedure that already has one");
+            }
+            this.procedure.setCategory(new CodeableConcept());
+            return this.procedure.getCategory();
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            return "code";
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            return "category";
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
 }

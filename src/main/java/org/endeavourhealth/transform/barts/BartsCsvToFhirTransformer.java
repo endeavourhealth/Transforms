@@ -70,9 +70,11 @@ public abstract class BartsCsvToFhirTransformer {
 
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
+        BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, PRIMARY_ORG_HL7_OID);
+
         LOG.trace("Transforming Barts CSV content in {}", orgDirectory);
-        transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors);
-        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors);
+        transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, processor, csvHelper, previousErrors);
+        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, processor, csvHelper, previousErrors);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -112,9 +114,9 @@ public abstract class BartsCsvToFhirTransformer {
 
     private static void transformAdminAndPatientParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
+                                        BartsCsvHelper csvHelper,
                                          TransformError previousErrors) throws Exception {
 
-        BartsCsvHelper csvHelper = new BartsCsvHelper();
         String [] v2_2Files = new String[VERSION_2_2_FILE_COUNT];
 
         // loop through file list.  If the file is v2.2, add to a separate list to process in order later
@@ -169,7 +171,7 @@ public abstract class BartsCsvToFhirTransformer {
             } else if (fileType.compareTo("PPATI") == 0) {
                 //call into 2.2 main person/patient transform
                 PPATI parser = new PPATI(serviceId, systemId, exchangeId, version, filePath);
-                PPATITransformer.transform(version, parser, fhirResourceFiler, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                PPATITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.compareTo("PPADD") == 0) {
                 //call into 2.2 patient address transform
@@ -214,9 +216,10 @@ public abstract class BartsCsvToFhirTransformer {
 
     private static void transformClinicalParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
                                                  FhirResourceFiler fhirResourceFiler,
+                                                 BartsCsvHelper csvHelper,
                                                  TransformError previousErrors) throws Exception {
 
-        BartsCsvHelper csvHelper = new BartsCsvHelper();
+
         String [] v2_2Files = new String[VERSION_2_2_FILE_COUNT];
 
         // loop through file list.  If the file is v2.2, add to a separate list to process in order later

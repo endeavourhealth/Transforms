@@ -27,9 +27,9 @@ public class EmisCodeHelper {
     public static final String AUDIT_DRUG_CODE = "drug_code";
     public static final String AUDIT_DRUG_TERM = "drug_term";
 
-    public static void createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, String tag, EmisCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, String tag, EmisCsvHelper csvHelper) throws Exception {
         if (codeIdCell.isEmpty()) {
-            return;
+            return null;
         }
 
         EmisCsvCodeMap codeMap = null;
@@ -39,10 +39,10 @@ public class EmisCodeHelper {
             codeMap = csvHelper.findClinicalCode(codeIdCell);
         }
 
-        applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
+        return applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
     }
 
-    private static void applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, String tag, CsvCell... additionalSourceCells) {
+    private static CodeableConceptBuilder applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, String tag, CsvCell... additionalSourceCells) {
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
 
         if (codeMap.isMedication()) {
@@ -51,6 +51,8 @@ public class EmisCodeHelper {
         } else {
             applyClinicalCodeMap(codeableConceptBuilder, codeMap, additionalSourceCells);
         }
+
+        return codeableConceptBuilder;
     }
 
     public static String removeSynonymAndPadRead2Code(EmisCsvCodeMap codeMap) {

@@ -1,10 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ContactPointHelper;
-import org.endeavourhealth.common.fhir.PeriodHelper;
-import org.endeavourhealth.common.fhir.schema.ContactRelationship;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
@@ -13,8 +8,12 @@ import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPREL;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +48,144 @@ public class PPRELTransformer extends BartsBasisTransformer {
     }
 
     public static void createPatientRelationship(PPREL parser,
+                                                 FhirResourceFiler fhirResourceFiler,
+                                                 BartsCsvHelper csvHelper,
+                                                 String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+
+
+
+        if (cernerCodeValueRefDalI == null) {
+            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+        }
+
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
+
+        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+
+            //TODO - need to handle DELETING an existing relationship of a patient resource
+
+            return;
+        }
+
+        //TODO - need to handle DELTAS to existing contacts
+
+        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+
+        CsvCell title = parser.getTitle();
+        CsvCell firstName = parser.getFirstName();
+        CsvCell middleName = parser.getMiddleName();
+        CsvCell lastName = parser.getLastName();
+
+        NameBuilder nameBuilder = new NameBuilder(contactBuilder);
+        nameBuilder.beginName(HumanName.NameUse.USUAL);
+        nameBuilder.addPrefix(title.getString(), title);
+        nameBuilder.addGiven(firstName.getString(), firstName);
+        nameBuilder.addGiven(middleName.getString(), middleName);
+        nameBuilder.addFamily(lastName.getString(), lastName);
+
+        CsvCell line1 = parser.getAddressLine1();
+        CsvCell line2 = parser.getAddressLine2();
+        CsvCell line3 = parser.getAddressLine3();
+        CsvCell line4 = parser.getAddressLine4();
+        CsvCell city = parser.getCity();
+        CsvCell postcode = parser.getPostcode();
+
+        AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
+        addressBuilder.beginAddress(Address.AddressUse.HOME);
+        addressBuilder.addLine(line1.getString(), line1);
+        addressBuilder.addLine(line2.getString(), line2);
+        addressBuilder.addLine(line3.getString(), line3);
+        addressBuilder.addLine(line4.getString(), line4);
+        addressBuilder.setTown(city.getString(), city);
+        addressBuilder.setPostcode(postcode.getString(), postcode);
+
+        CsvCell homePhone = parser.getHomePhoneNumber();
+        if (!homePhone.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+            contactPointBuilder.addContactPoint();
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setValue(homePhone.getString(), homePhone);
+        }
+
+        CsvCell mobilePhone = parser.getMobilePhoneNumber();
+        if (!mobilePhone.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+            contactPointBuilder.addContactPoint();
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
+        }
+
+        CsvCell workPhone = parser.getWorkPhoneNumber();
+        if (!workPhone.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+            contactPointBuilder.addContactPoint();
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setValue(workPhone.getString(), workPhone);
+        }
+
+        CsvCell emailAddress = parser.getEmailAddress();
+        if (!emailAddress.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+            contactPointBuilder.addContactPoint();
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            contactPointBuilder.setValue(emailAddress.getString(), emailAddress);
+        }
+
+        CsvCell startDate = parser.getBeginEffectiveDateTime();
+        if (!startDate.isEmpty()) {
+            contactBuilder.setStartDate(startDate.getDate(), startDate);
+        }
+
+        CsvCell endDate = parser.getEndEffectiveDateTime();
+        if (!endDate.isEmpty()) {
+            contactBuilder.setEndDate(endDate.getDate(), endDate);
+        }
+
+        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
+        if (!relationshipToPatientCell.isEmpty()) {
+
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                                                                    RdbmsCernerCodeValueRefDal.RELATIONSHIP_TO_PATIENT,
+                                                                    relationshipToPatientCell.getLong(),
+                                                                    fhirResourceFiler.getServiceId());
+
+            if (cernerCodeValueRef != null) {
+                String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
+
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+                codeableConceptBuilder.setText(relationshipToPatientDesc);
+            } else {
+                // LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
+            }
+        }
+
+        CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
+        if (!relationshipTypeCell.isEmpty()) {
+
+            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    RdbmsCernerCodeValueRefDal.PERSON_RELATIONSHIP_TYPE,
+                    relationshipTypeCell.getLong(),
+                    fhirResourceFiler.getServiceId());
+
+            if (cernerCodeValueRef != null) {
+                String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
+
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+                codeableConceptBuilder.setText(relationshipTypeDesc);
+            } else {
+                // LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
+            }
+        }
+    }
+
+    /*public static void createPatientRelationship(PPREL parser,
                                                  FhirResourceFiler fhirResourceFiler,
                                                  BartsCsvHelper csvHelper,
                                                  String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -156,6 +293,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
         PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
 
-    }
+    }*/
 
 }

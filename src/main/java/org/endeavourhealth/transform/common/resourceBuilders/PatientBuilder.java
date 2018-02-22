@@ -1,10 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.schema.ContactRelationship;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
@@ -15,7 +11,13 @@ import java.util.Date;
 
 public class PatientBuilder extends ResourceBuilderBase
                             implements HasNameI,
-                                       HasAddressI {
+                                       HasAddressI,
+                                       HasIdentifierI,
+                                       HasContactPointI,
+                                       HasCodeableConceptI {
+
+    public static final String TAG_CODEABLE_CONCEPT_LANGUAGE = "Language";
+    public static final String TAG_CODEABLE_CONCEPT_RELIGION = "Religion";
 
     private Patient patient = null;
 
@@ -38,12 +40,6 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
 
-    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
-        this.patient.addIdentifier(identifier);
-
-        int index = this.patient.getIdentifier().size()-1;
-        auditValue("identifier[" + index + "].value", sourceCells);
-    }
 
     public void setDateOfBirth(Date dob, CsvCell... sourceCells) {
         this.patient.setBirthDate(dob);
@@ -57,6 +53,12 @@ public class PatientBuilder extends ResourceBuilderBase
         auditValue("deceasedDateTime", sourceCells);
     }
 
+    public void setDateOfDeathBoolean(boolean deceased, CsvCell... sourceCells) {
+        this.patient.setDeceased(new BooleanType(deceased));
+
+        auditValue("deceasedBoolean", sourceCells);
+    }
+
     public void setGender(Enumerations.AdministrativeGender gender, CsvCell... sourceCells) {
         this.patient.setGender(gender);
 
@@ -67,13 +69,6 @@ public class PatientBuilder extends ResourceBuilderBase
         Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.patient, FhirExtensionUri.PATIENT_RESIDENTIAL_INSTITUTE_CODE, code);
 
         auditStringExtension(extension, sourceCells);
-    }
-
-    public void addTelecom(ContactPoint contactPoint, CsvCell... sourceCells) {
-        this.patient.addTelecom(contactPoint);
-
-        int index = this.patient.getTelecom().size()-1;
-        auditValue("telecom[" + index + "].value", sourceCells);
     }
 
     public void setManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
@@ -227,10 +222,29 @@ public class PatientBuilder extends ResourceBuilderBase
     }*/
 
     public void addCareProvider(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
+        //only add to the patient if not already present
+        for (Reference reference: this.patient.getCareProvider()) {
+            if (ReferenceHelper.equals(reference, practitionerOrOrganizationReference)) {
+                return;
+            }
+        }
+
         this.patient.addCareProvider(practitionerOrOrganizationReference);
 
         int index = this.patient.getCareProvider().size()-1;
         auditValue("careProvider[" + index + "].reference", sourceCells);
+    }
+
+    public void removeCareProvider(Reference practitionerOrOrganizationReference) {
+        //can't just remove from the list because the Reference class doesn't implement equals(..) properly
+        for (int i=this.patient.getCareProvider().size()-1; i>=0; i--) {
+            Reference reference = patient.getCareProvider().get(i);
+            if (ReferenceHelper.equals(reference, practitionerOrOrganizationReference)) {
+                this.patient.getCareProvider().remove(i);
+            }
+        }
+
+        //we can't audit anything agsinst this change because we can't audit against something that isn't there
     }
 
     public void setNhsNumberVerificationStatus(NhsNumberVerificationStatus verificationStatus, CsvCell... sourceCells) {
@@ -241,10 +255,19 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
 
+    public Patient.ContactComponent addContact() {
+        return this.patient.addContact();
+    }
+
+    public String getContactJsonPrefix(Patient.ContactComponent contactComponent) {
+        int index = this.patient.getContact().indexOf(contactComponent);
+        return "contact[" + index + "]";
+    }
+
     /**
      * called to add an empty contact (i.e. relationship with another person) which is then populated by the following fns
      */
-    public void addContact() {
+    /*public void addContact() {
         this.patient.addContact();
     }
 
@@ -279,7 +302,8 @@ public class PatientBuilder extends ResourceBuilderBase
 
         int index = contact.getRelationship().indexOf(codeableConcept);
         auditValue("contact[" + getLastAddressIndex() + "].relationship[" + index + "].text", sourceCells);
-    }
+    }*/
+
 
     public void setMaritalStatus(MaritalStatus fhirMaritalStatus, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMaritalStatus);
@@ -295,4 +319,110 @@ public class PatientBuilder extends ResourceBuilderBase
         auditCodeableConceptExtension(extension, sourceCells);
     }
 
+    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+        this.patient.addIdentifier(identifier);
+
+        int index = this.patient.getIdentifier().size()-1;
+        auditValue("identifier[" + index + "].value", sourceCells);
+    }*/
+
+    @Override
+    public void addIdentifier() {
+        this.patient.addIdentifier();
+    }
+
+    private int getLastIdentifierIndex() {
+        return this.patient.getIdentifier().size()-1;
+    }
+
+    @Override
+    public Identifier getLastIdentifier() {
+        int index = getLastIdentifierIndex();
+        return this.patient.getIdentifier().get(index);
+    }
+
+    @Override
+    public String getLastIdentifierJsonPrefix() {
+        int index = getLastIdentifierIndex();
+        return "identifier[" + index + "]";
+    }
+
+    /*public void addTelecom(ContactPoint contactPoint, CsvCell... sourceCells) {
+        this.patient.addTelecom(contactPoint);
+
+        int index = this.patient.getTelecom().size()-1;
+        auditValue("telecom[" + index + "].value", sourceCells);
+    }*/
+
+    @Override
+    public void addContactPoint() {
+        this.patient.addTelecom();
+    }
+
+    private int getLastContactPointIndex() {
+        return this.patient.getTelecom().size()-1;
+    }
+
+    @Override
+    public ContactPoint getLastContactPoint() {
+        int index = getLastContactPointIndex();
+        return this.patient.getTelecom().get(index);
+    }
+
+    @Override
+    public String getLastContactPointJsonPrefix() {
+        int index = getLastContactPointIndex();
+        return "telecom[" + index + "]";
+    }
+
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
+            Patient.PatientCommunicationComponent communicationComponent = null;
+            if (this.patient.getCommunication().isEmpty()) {
+                communicationComponent = this.patient.addCommunication();
+
+                //NOTE this is an assumption that when we record a patient's language, it's the preferred one
+                //If we need more control over this, the creation of the Patient Communication should
+                //be refactored out into a PatientCommunicationBuilder class to expose this for setting differently
+                communicationComponent.setPreferred(true);
+            } else {
+                communicationComponent = this.patient.getCommunication().get(0);
+            }
+
+            if (communicationComponent.hasLanguage()) {
+                throw new IllegalArgumentException("Trying to add code to Patient Communication that already has one");
+            }
+            communicationComponent.setLanguage(new CodeableConcept());
+            return communicationComponent.getLanguage();
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+            if (extension.hasValue()) {
+                throw new IllegalArgumentException("Trying to add religion code to Patient when it already has one");
+            }
+            CodeableConcept ret = new CodeableConcept();
+            extension.setValue(ret);
+            return ret;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
+            return "communication[0].language";
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+            int index = this.patient.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
 }

@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class PPATI extends AbstractCsvParser {
@@ -44,7 +43,79 @@ public class PPATI extends AbstractCsvParser {
         };
     }
 
-    public String getMillenniumPersonId() {
+    public CsvCell getMillenniumPersonId() {
+        return super.getCell("#PERSON_ID");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getLocalPatientId() {
+        return super.getCell("LOCAL_PATIENT_IDENT");
+    }
+
+    public CsvCell getOrganisationId() {
+        return super.getCell("LOCAL_PATIENT_NHS_ORG_ID");
+    }
+
+    public CsvCell getNhsNumber() {
+        return super.getCell("NHS_NBR_IDENT");
+    }
+
+    public CsvCell getNhsNumberStatus() {
+        return super.getCell("NHS_NBR_STATUS_CD");
+    }
+
+    public CsvCell getDateOfBirth() {
+        return super.getCell("BIRTH_DT_TM");
+    }
+
+    public CsvCell getEstimatedBirthDateIndicator() {
+        return super.getCell("EST_BIRTH_DT_CD");
+    }
+
+    public CsvCell getGenderCode() {
+        return super.getCell("GENDER_CD");
+    }
+
+    public CsvCell getMaritalStatusCode() {
+        return super.getCell("MARITAL_STATUS_CD");
+    }
+
+    public CsvCell getEthnicGroupCode() {
+        return super.getCell("ETHNIC_GROUP_CD");
+    }
+
+    public CsvCell getFirstLanguageCode() {
+        return super.getCell("LANGUAGE_CD");
+    }
+
+    public CsvCell getReligionCode() {
+        return super.getCell("RELIGION_CD");
+    }
+
+    public CsvCell getDeceasedDateTime() {
+        return super.getCell("DECEASED_DT_TM");
+    }
+
+    public CsvCell getCauseOfDeathCode() {
+        return super.getCell("CAUSE_OF_DEATH_CD");
+    }
+
+    public CsvCell getDeceasedMethodCode() {
+        return super.getCell("DECEASED_CD");
+    }
+
+    public CsvCell getConsentToReleaseReligionCode() {
+        return super.getCell("CONSENT_REL_RELIG_CD");
+    }
+    
+    /*public String getMillenniumPersonId() {
         return super.getString("#PERSON_ID");
     }
 
@@ -133,7 +204,7 @@ public class PPATI extends AbstractCsvParser {
 
     public String getConsentToReleaseReligionCode() {
         return super.getString("CONSENT_REL_RELIG_CD");
-    }
+    }*/
 
     @Override
     protected String getFileTypeDescription() {

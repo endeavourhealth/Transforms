@@ -20,8 +20,10 @@ public class NameBuilder {
     /**
      * start the creation of a new name on the parent object (patient, practitioner etc.)
      */
-    public void beginName(HumanName.NameUse use) {
+    public void beginName(HumanName.NameUse use, CsvCell... sourceCells) {
         parentBuilder.addName(use);
+
+        auditNameValue("use", sourceCells);
     }
 
     public void addPrefix(String prefix, CsvCell... sourceCells) {

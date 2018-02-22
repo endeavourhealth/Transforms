@@ -59,7 +59,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         }
 
         // get patient from encounter
-        Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter, fhirResourceFiler);
+        Encounter fhirEncounter = (Encounter) csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter);
         String patientReferenceValue = fhirEncounter.getPatient().getReference();
 
         // this Procedure resource id
