@@ -1447,7 +1447,7 @@ public class ObservationTransformer {
         conditionBuilder.setRecordedDate(enteredDateTime, enteredDate, enteredTime);
 
         CsvCell codeId = parser.getCodeId();
-        EmisCodeHelper.createCodeableConcept(conditionBuilder, false, codeId, null, csvHelper);
+        EmisCodeHelper.createCodeableConcept(conditionBuilder, false, codeId, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE, csvHelper);
 
         //we don't have enough information to set this accurately, so taking out
         //fhirCondition.setClinicalStatus("active"); //if we have a Problem record for this condition, this status may be changed

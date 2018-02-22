@@ -42,7 +42,7 @@ public class EmisCodeHelper {
         applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
     }
 
-    public static void applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, String tag, CsvCell... additionalSourceCells) {
+    private static void applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, String tag, CsvCell... additionalSourceCells) {
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
 
         if (codeMap.isMedication()) {

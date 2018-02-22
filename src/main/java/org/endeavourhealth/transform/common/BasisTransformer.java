@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -810,6 +811,32 @@ public class BasisTransformer {
         }
     }
 
+    public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.deletePatientResource(parserState, false, resourceBuilders);
+    }
+
+    public static void deletePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.deletePatientResource(parserState, true, resourceBuilders);
+    }
+
+    public static void savePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.savePatientResource(parserState, false, resourceBuilders);
+    }
+
+    public static void savePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.savePatientResource(parserState, true, resourceBuilders);
+    }
+
+    public static void saveAdminResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.saveAdminResource(parserState, false, resourceBuilders);
+    }
+
+    public static void saveAdminResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+        fhirResourceFiler.saveAdminResource(parserState, true, resourceBuilders);
+    }
+
+    //TO DELETE AFTER CHANGING TRANSFORMS TO USE BUILDERS
+
     public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
         fhirResourceFiler.deletePatientResource(parserState, false, resources);
     }
@@ -833,7 +860,6 @@ public class BasisTransformer {
 
     public static void saveAdminResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
         fhirResourceFiler.saveAdminResource(parserState, true, resources);
-
     }
 
 }
