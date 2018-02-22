@@ -2,8 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -19,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 public class PPALITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPALITransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
     public static void transform(String version,
                                  PPALI parser,
@@ -52,12 +49,6 @@ public class PPALITransformer extends BartsBasisTransformer {
                                           BartsCsvHelper csvHelper,
                                           String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
         //if the alias is empty, there's nothing to add
         CsvCell aliasCell = parser.getAlias();
         if (aliasCell.isEmpty()) {
@@ -80,7 +71,7 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+        CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                     RdbmsCernerCodeValueRefDal.ALIAS_TYPE,
                                                                     aliasTypeCodeCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());

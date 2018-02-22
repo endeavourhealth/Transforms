@@ -159,6 +159,8 @@ public class CLEVE extends AbstractCsvParser {
     public String getContributorSystemMillenniumCode() {
         return super.getString("CONTRIBUTOR_SYSTEM_CD");
     }
+
+
     @Override
     protected String getFileTypeDescription() {
         return "Cerner clinical events file";

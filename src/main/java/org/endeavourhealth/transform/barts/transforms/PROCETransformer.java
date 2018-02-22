@@ -3,9 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -24,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class PROCETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+
 
     public static void transform(String version,
                                  PROCE parser,
@@ -46,10 +44,6 @@ public class PROCETransformer extends BartsBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
 
         // Encounter (should already have been created previously)
         CsvCell encounterIdCell = parser.getEncounterID();
@@ -150,7 +144,11 @@ public class PROCETransformer extends BartsBasisTransformer {
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
         if (!procedureTypeCodeCell.isEmpty()) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCodeCell.getLong(), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+                                                                        RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE,
+                                                                        procedureTypeCodeCell.getLong(),
+                                                                        fhirResourceFiler.getServiceId());
+
             if (cernerCodeValueRef != null) {
                 String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
 

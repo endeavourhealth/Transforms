@@ -1,19 +1,11 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
-import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
@@ -26,17 +18,14 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY;
-
 public class ENCNTTransformer extends BartsBasisTransformer {
+
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
-    private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
 
     /*
      *
@@ -101,8 +90,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Get MRN (using person-id)
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
-            cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
         }
+
         String mrn = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(),RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID, personIdCell.getString());
         if (mrn == null) {
             throw new TransformRuntimeException("MRN not found for PersonId " + parser.getMillenniumPersonIdentifier() + " in file " + parser.getFilePath());
@@ -176,7 +165,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
             // specialty
             if (!encounterTypeCodeCell.isEmpty()) {
-                CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, encounterTypeCodeCell.getLong(), fhirResourceFiler.getServiceId());
+                CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+                                                                RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY,
+                                                                encounterTypeCodeCell.getLong(),
+                                                                fhirResourceFiler.getServiceId());
+
                 String encounterDispTxt;
                 if (ret != null) {
                     encounterDispTxt = ret.getCodeDispTxt();
@@ -190,7 +183,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
             // treatment function
             if (!treatmentFunctionCodeCell.isEmpty()) {
-                CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION, treatmentFunctionCodeCell.getLong(), fhirResourceFiler.getServiceId());
+                CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+                                                                RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION,
+                                                                treatmentFunctionCodeCell.getLong(),
+                                                                fhirResourceFiler.getServiceId());
+
                 String treatFuncDispTxt;
                 if (ret != null) {
                     treatFuncDispTxt = ret.getCodeDispTxt();

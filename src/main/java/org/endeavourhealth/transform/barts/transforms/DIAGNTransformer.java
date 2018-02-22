@@ -3,9 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -24,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class DIAGNTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DIAGNTransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+
 
     public static void transform(String version,
                                  DIAGN parser,
@@ -46,10 +44,6 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
 
         // get encounter details (should already have been created previously)
         CsvCell encounterIdCell = parser.getEncounterID();
@@ -151,7 +145,10 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
         if (!diagnosisTypeCode.isEmpty()) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE, diagnosisTypeCode.getLong(), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+                                                                            RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE,
+                                                                            diagnosisTypeCode.getLong(),
+                                                                            fhirResourceFiler.getServiceId());
 
             if (cernerCodeValueRef != null) {
                 String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();

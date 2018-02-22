@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -19,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class PPRELTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPRELTransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+
 
     public static void transform(String version,
                                  PPREL parser,
@@ -51,12 +49,6 @@ public class PPRELTransformer extends BartsBasisTransformer {
                                                  FhirResourceFiler fhirResourceFiler,
                                                  BartsCsvHelper csvHelper,
                                                  String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
 
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
@@ -151,7 +143,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!relationshipToPatientCell.isEmpty()) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                     RdbmsCernerCodeValueRefDal.RELATIONSHIP_TO_PATIENT,
                                                                     relationshipToPatientCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());
@@ -169,7 +161,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
         if (!relationshipTypeCell.isEmpty()) {
 
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     RdbmsCernerCodeValueRefDal.PERSON_RELATIONSHIP_TYPE,
                     relationshipTypeCell.getLong(),
                     fhirResourceFiler.getServiceId());

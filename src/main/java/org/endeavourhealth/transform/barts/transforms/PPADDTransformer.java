@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
@@ -16,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 public class PPADDTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
 
     public static void transform(String version,
                                  PPADD parser,
@@ -49,10 +46,6 @@ public class PPADDTransformer extends BartsBasisTransformer {
                                             BartsCsvHelper csvHelper,
                                             String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
 
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);

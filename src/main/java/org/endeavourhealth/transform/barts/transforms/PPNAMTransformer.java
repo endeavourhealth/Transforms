@@ -2,8 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -19,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class PPNAMTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPNAMTransformer.class);
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = null;
+
 
     public static void transform(String version,
                                  PPNAM parser,
@@ -53,11 +51,6 @@ public class PPNAMTransformer extends BartsBasisTransformer {
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
         CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
@@ -76,7 +69,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
         if (!nameTypeCell.isEmpty()) {
-            CernerCodeValueRef cernerCodeValueRef = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                             RdbmsCernerCodeValueRefDal.NAME_USE,
                                                                             nameTypeCell.getLong(),
                                                                             fhirResourceFiler.getServiceId());
