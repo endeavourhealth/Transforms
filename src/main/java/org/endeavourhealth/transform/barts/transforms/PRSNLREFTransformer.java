@@ -42,10 +42,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         CsvCell personnelIdCell = parser.getPersonnelID();
 
         // this Practitioner resource id
-        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell.getString());
-        if (practitionerResourceId == null) {
-            practitionerResourceId = createPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell.getString());
-        }
+        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell);
 
         practitionerBuilder.setId(practitionerResourceId.getResourceId().toString(), personnelIdCell);
 

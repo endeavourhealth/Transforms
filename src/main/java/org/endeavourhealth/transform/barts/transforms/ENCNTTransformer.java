@@ -205,7 +205,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // Referrer
             CsvCell referrerPersonnelIdentifier = parser.getReferrerMillenniumPersonnelIdentifier();
             if (!referrerPersonnelIdentifier.isEmpty()) {
-                ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, referrerPersonnelIdentifier.getString());
+                ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, referrerPersonnelIdentifier);
                 if (referrerPersonResourceId != null) {
                     encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, referrerPersonnelIdentifier);
                 } else {
@@ -218,7 +218,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // responsible person
             CsvCell responsibleHCPCell = parser.getResponsibleHealthCareprovidingPersonnelIdentifier();
             if (!responsibleHCPCell.isEmpty()) {
-                ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, responsibleHCPCell.getString());
+                ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, responsibleHCPCell);
                 if (respPersonResourceId != null) {
                     encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, responsibleHCPCell);
                 } else {
@@ -231,7 +231,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // registering person
             CsvCell registeringPersonnelIdentifierCell = parser.getRegisteringMillenniumPersonnelIdentifier();
             if (!registeringPersonnelIdentifierCell.isEmpty()) {
-                ResourceId regPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, registeringPersonnelIdentifierCell.getString());
+                ResourceId regPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, registeringPersonnelIdentifierCell);
                 if (regPersonResourceId != null) {
                     encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, registeringPersonnelIdentifierCell);
                 } else {

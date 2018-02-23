@@ -685,17 +685,34 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    /*
-     *
-     */
-    public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
-        String uniqueId = "PersonnelId=" + personnelId;
-        return getResourceId(scope, "Practitioner", uniqueId);
+    public static ResourceId getPractitionerResourceId(String scope, CsvCell personnelIdCell) throws Exception {
+
+        String uniqueId = "PersonnelId=" + personnelIdCell.getString();
+        ResourceId resourceId = getResourceId(scope, "Practitioner", uniqueId);
+
+        //if we failed to find a UUID for our personnelID, generate one and return it
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType("Practitioner");
+            resourceId.setUniqueId(uniqueId);
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+        return resourceId;
     }
 
-    /*
-     *
-     */
+
+    /*public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
+        String uniqueId = "PersonnelId=" + personnelId;
+        //if we failed to find a UUID for our personnelID, generate one and return it
+        //return getResourceId(scope, "Practitioner", uniqueId);
+        ResourceId ret = getResourceId(scope, "Practitioner", uniqueId);
+        if (ret == null) {
+            ret = createPractitionerResourceId(scope, personnelId);
+        }
+    }
+
     public static ResourceId createPractitionerResourceId(String scope, String personnelId) throws Exception {
         String uniqueId = "PersonnelId=" + personnelId;
         ResourceId resourceId = new ResourceId();
@@ -705,7 +722,7 @@ public class BasisTransformer {
         resourceId.setResourceId(UUID.randomUUID());
         saveResourceId(resourceId);
         return resourceId;
-    }
+    }*/
 
     public static ResourceId createPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
         String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;

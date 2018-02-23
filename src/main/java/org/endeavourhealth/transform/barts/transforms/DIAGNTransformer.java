@@ -112,7 +112,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         CsvCell personnelIdCell = parser.getPersonnelId();
         if (!personnelIdCell.isEmpty()) {
-            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell.getString());
+            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell);
             Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
             conditionBuilder.setClinician(practitionerReference, personnelIdCell);
         }

@@ -56,7 +56,7 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         if (personnelId.isEmpty()) {
             return;
         }
-        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId.getString());
+        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId);
         Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
 
         //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
