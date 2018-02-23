@@ -57,6 +57,9 @@ public class PPALITransformer extends BartsBasisTransformer {
         CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
 
+        CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
+        IdentifierBuilder.removeExistingIdentifier(patientBuilder, aliasIdCell.getString());
+
         // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
@@ -84,6 +87,7 @@ public class PPALITransformer extends BartsBasisTransformer {
         }
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+        identifierBuilder.setId(aliasIdCell.getString(), aliasCell);
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
         identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
         identifierBuilder.setValue(aliasCell.getString(), aliasCell);

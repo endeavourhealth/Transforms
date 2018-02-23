@@ -8,7 +8,9 @@ import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.StringType;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class AddressBuilder {
 
@@ -28,21 +30,35 @@ public class AddressBuilder {
         }
     }
 
-    /*public static AddressBuilder factoryAddressBuilder(HasAddressI parentBuilder, String idValue, CsvCell... sourceCells) {
+    public static boolean removeExistingAddress(HasAddressI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
-            throw new IllegalArgumentException("Can't create address builder for address without ID");
+            throw new IllegalArgumentException("Can't remove address without ID");
         }
+
+        List<Address> matches = new ArrayList<>();
 
         List<Address> addresses = parentBuilder.getAddresses();
         for (Address address: addresses) {
+            //if we match on ID, then remove this address from the parent object
             if (address.hasId()
                     && address.getId().equals(idValue)) {
 
-                //if we match on ID, then return the address builder populated with the matching address
-                return new AddressBuilder(parentBuilder, address);
+                matches.add(address);
             }
         }
-    }*/
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " addresses for ID " + idValue);
+
+        } else {
+            Address address = matches.get(0);
+            parentBuilder.removeAddress(address);
+            return true;
+        }
+    }
 
     public void setId(String id, CsvCell... sourceCells) {
         this.address.setId(id);

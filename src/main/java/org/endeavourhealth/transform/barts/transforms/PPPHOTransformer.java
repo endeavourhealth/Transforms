@@ -57,16 +57,15 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        //we always fully recreate the phone record on the patient so just remove any matching one already there
+        CsvCell phoneIdCell = parser.getMillenniumPhoneId();
+        ContactPointBuilder.removeExistingAddress(patientBuilder, phoneIdCell.getString());
+
+        //if the record is inactive, we've already removed the phone from the patient so jsut return out
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-
-            //TODO - need to REMOVE phone number from patient
-
             return;
         }
-
-        //TODO - need to handle deltas where we're ENDING an existing phone number
 
         String number = numberCell.getString();
 
@@ -94,6 +93,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         }
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+        contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
         contactPointBuilder.setUse(use, phoneTypeCell);
         contactPointBuilder.setSystem(system, phoneTypeCell);
         contactPointBuilder.setValue(number, numberCell, extensionCell);

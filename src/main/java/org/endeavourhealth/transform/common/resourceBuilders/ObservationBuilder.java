@@ -298,5 +298,14 @@ public class ObservationBuilder extends ResourceBuilderBase
         return "identifier[" + index + "]";
     }
 
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.observation.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.observation.getIdentifier().remove(identifier);
+    }
 
 }

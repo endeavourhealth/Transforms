@@ -5,6 +5,9 @@ import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PractitionerBuilder extends ResourceBuilderBase
                                  implements HasNameI, HasIdentifierI, HasContactPointI, HasAddressI {
 
@@ -82,6 +85,16 @@ public class PractitionerBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public List<ContactPoint> getContactPoint() {
+        return this.practitioner.getTelecom();
+    }
+
+    @Override
+    public void removeContactPoint(ContactPoint contactPoint) {
+        this.practitioner.getTelecom().remove(contactPoint);
+    }
+
+    @Override
     public Address addAddress() {
         return this.practitioner.addAddress();
     }
@@ -90,6 +103,16 @@ public class PractitionerBuilder extends ResourceBuilderBase
     public String getAddressJsonPrefix(Address address) {
         int index = this.practitioner.getAddress().indexOf(address);
         return "address[" + index + "]";
+    }
+
+    @Override
+    public List<Address> getAddresses() {
+        return this.practitioner.getAddress();
+    }
+
+    @Override
+    public void removeAddress(Address address) {
+        this.practitioner.getAddress().remove(address);
     }
 
     @Override
@@ -105,6 +128,30 @@ public class PractitionerBuilder extends ResourceBuilderBase
     @Override
     public String getNameJsonPrefix(HumanName name) {
         return "name";
+    }
+
+    @Override
+    public List<HumanName> getNames() {
+        List<HumanName> ret = new ArrayList<>();
+        if (this.practitioner.hasName()) {
+            ret.add(this.practitioner.getName());
+        }
+        return ret;
+    }
+
+    @Override
+    public void removeName(HumanName name) {
+        this.practitioner.setName(null);
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.practitioner.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.practitioner.getIdentifier().remove(identifier);
     }
 
 

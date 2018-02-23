@@ -53,16 +53,14 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        CsvCell nameIdCell = parser.getMillenniumPersonNameId();
+        NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+
+        //if the name is no longer active, it's already been removed from the Patient so just return out
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-
-            //TOOD - need to handle DELETING a name of a patient
-
             return;
         }
-
-        //TODO - need to handle deltas where we UPDATE an existing name with an end date
 
         HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
 
@@ -88,6 +86,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         CsvCell suffixCell = parser.getSuffix();
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setId(nameIdCell.getString(), nameIdCell);
         nameBuilder.setUse(nameUse, nameTypeCell);
         nameBuilder.addPrefix(titleCell.getString(), titleCell);
         nameBuilder.addPrefix(prefixCell.getString(), prefixCell);

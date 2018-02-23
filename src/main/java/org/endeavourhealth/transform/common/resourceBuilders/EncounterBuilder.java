@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
@@ -189,5 +190,15 @@ public class EncounterBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.encounter.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.encounter.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.encounter.getIdentifier().remove(identifier);
     }
 }

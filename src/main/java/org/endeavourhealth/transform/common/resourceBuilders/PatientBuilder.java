@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class PatientBuilder extends ResourceBuilderBase
                             implements HasNameI,
@@ -214,6 +215,16 @@ public class PatientBuilder extends ResourceBuilderBase
         return "telecom[" + index + "]";
     }
 
+    @Override
+    public List<ContactPoint> getContactPoint() {
+        return this.patient.getTelecom();
+    }
+
+    @Override
+    public void removeContactPoint(ContactPoint contactPoint) {
+        this.patient.getTelecom().remove(contactPoint);
+    }
+
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
@@ -279,6 +290,16 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public List<Address> getAddresses() {
+        return this.patient.getAddress();
+    }
+
+    @Override
+    public void removeAddress(Address address) {
+        this.patient.getAddress().remove(address);
+    }
+
+    @Override
     public HumanName addName() {
         return this.patient.addName();
     }
@@ -288,4 +309,34 @@ public class PatientBuilder extends ResourceBuilderBase
         int index = this.patient.getName().indexOf(name);
         return "name[" + index + "]";
     }
+
+    @Override
+    public List<HumanName> getNames() {
+        return this.patient.getName();
+    }
+
+    @Override
+    public void removeName(HumanName name) {
+        this.patient.getName().remove(name);
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.patient.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.patient.getIdentifier().remove(identifier);
+    }
+
+    public List<Patient.ContactComponent> getPatientContactComponents() {
+        return this.patient.getContact();
+    }
+
+    public void removePatientContactComponent(Patient.ContactComponent patientContact) {
+        this.patient.getContact().remove(patientContact);
+    }
+
+
 }

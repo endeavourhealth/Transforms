@@ -52,18 +52,18 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
+        CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
+        PatientContactBuilder.removeExistingAddress(patientBuilder, relationshipIdCell.getString());
+
+        //if the record is now inactive, we've already removed it from the patient so just return out
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-
-            //TODO - need to handle DELETING an existing relationship of a patient resource
-
             return;
         }
 
-        //TODO - need to handle DELTAS to existing contacts
-
         PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+        contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
 
         CsvCell title = parser.getTitle();
         CsvCell firstName = parser.getFirstName();

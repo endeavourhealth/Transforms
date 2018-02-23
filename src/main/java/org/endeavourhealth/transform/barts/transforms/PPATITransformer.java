@@ -80,6 +80,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
 
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
+        LOG.trace("millenniumPersonId = [" + millenniumPersonId.getString() + "]");
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
         //TODO - need to avoid duplicating Identifiers, Extensions, Communications etc. if we're processing a Delta extract

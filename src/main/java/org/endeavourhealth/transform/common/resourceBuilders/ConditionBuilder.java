@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class ConditionBuilder extends ResourceBuilderBase
                               implements HasCodeableConceptI,
@@ -438,5 +439,15 @@ public class ConditionBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.condition.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.condition.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.condition.getIdentifier().remove(identifier);
     }
 }

@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class ReferralRequestBuilder extends ResourceBuilderBase
                                     implements HasCodeableConceptI, HasIdentifierI {
@@ -175,5 +176,15 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.referralRequest.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.referralRequest.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.referralRequest.getIdentifier().remove(identifier);
     }
 }

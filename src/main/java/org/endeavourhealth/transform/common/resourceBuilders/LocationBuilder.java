@@ -4,7 +4,9 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class LocationBuilder extends ResourceBuilderBase
                             implements HasAddressI, HasIdentifierI {
@@ -195,6 +197,20 @@ public class LocationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public List<Address> getAddresses() {
+        List<Address> ret = new ArrayList<>();
+        if (this.location.hasAddress()) {
+            ret.add(this.location.getAddress());
+        }
+        return ret;
+    }
+
+    @Override
+    public void removeAddress(Address address) {
+        this.location.setAddress(null);
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.location.addIdentifier();
     }
@@ -203,5 +219,15 @@ public class LocationBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.location.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.location.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.location.getIdentifier().remove(identifier);
     }
 }

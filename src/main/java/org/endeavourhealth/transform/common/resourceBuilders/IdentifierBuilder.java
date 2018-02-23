@@ -6,7 +6,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Period;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class IdentifierBuilder {
 
@@ -22,6 +24,36 @@ public class IdentifierBuilder {
         this.identifier = identifier;
         if (this.identifier == null) {
             this.identifier = parentBuilder.addIdentifier();
+        }
+    }
+
+    public static boolean removeExistingIdentifier(HasIdentifierI parentBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove identifier without ID");
+        }
+
+        List<Identifier> matches = new ArrayList<>();
+
+        List<Identifier> identifieres = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifieres) {
+            //if we match on ID, then remove this identifier from the parent object
+            if (identifier.hasId()
+                    && identifier.getId().equals(idValue)) {
+
+                matches.add(identifier);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " identifiers for ID " + idValue);
+
+        } else {
+            Identifier identifier = matches.get(0);
+            parentBuilder.removeIdentifier(identifier);
+            return true;
         }
     }
 

@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class ProcedureBuilder extends ResourceBuilderBase
                              implements HasCodeableConceptI, HasIdentifierI {
@@ -150,5 +151,15 @@ public class ProcedureBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.procedure.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.procedure.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.procedure.getIdentifier().remove(identifier);
     }
 }

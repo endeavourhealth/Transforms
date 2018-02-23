@@ -65,6 +65,8 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         if (!activeCell.getIntAsBoolean()
                 && !endDateCell.isEmpty()) {
 
+            //this only removes if the reference matches the record we're supposed to remove, in case we've already
+            //processed another row telling us to change it
             patientBuilder.removeCareProvider(practitionerReference);
 
         } else {
