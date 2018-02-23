@@ -34,8 +34,8 @@ public class IdentifierBuilder {
 
         List<Identifier> matches = new ArrayList<>();
 
-        List<Identifier> identifieres = parentBuilder.getIdentifiers();
-        for (Identifier identifier: identifieres) {
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
             //if we match on ID, then remove this identifier from the parent object
             if (identifier.hasId()
                     && identifier.getId().equals(idValue)) {
@@ -55,6 +55,33 @@ public class IdentifierBuilder {
             parentBuilder.removeIdentifier(identifier);
             return true;
         }
+    }
+
+    public static boolean hasIdentifier(HasIdentifierI parentBuilder, String identifierSystem, String identifierValue) {
+        if (Strings.isNullOrEmpty(identifierSystem)) {
+            throw new IllegalArgumentException("Can't match identifier without system");
+        }
+        if (Strings.isNullOrEmpty(identifierValue)) {
+            throw new IllegalArgumentException("Can't match identifier without value");
+        }
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+
+            if (!identifier.hasSystem()
+                    || !identifier.getSystem().equalsIgnoreCase(identifierSystem)) {
+                continue;
+            }
+
+            if (!identifier.hasValue()
+                    || !identifier.getValue().equalsIgnoreCase(identifierValue)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     public void setUse(Identifier.IdentifierUse use, CsvCell... sourceCells) {
@@ -122,4 +149,6 @@ public class IdentifierBuilder {
 
         auditIdentifierValue("period.end", sourceCells);
     }
+
+
 }

@@ -86,17 +86,23 @@ public class PPATITransformer extends BartsBasisTransformer {
         //TODO - need to avoid duplicating Identifiers, Extensions, Communications etc. if we're processing a Delta extract
 
         if (!millenniumPersonId.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-            identifierBuilder.setValue(millenniumPersonId.getString());
+            //we may be amending a patient, so only add if not already there
+            if (!IdentifierBuilder.hasIdentifier(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON, millenniumPersonId.getString())) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+                identifierBuilder.setValue(millenniumPersonId.getString(), millenniumPersonId);
+            }
         }
 
         if (!mrnCell.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
-            identifierBuilder.setValue(mrnCell.getString());
+            //we may be amending a patient, so only add if not already there
+            if (!IdentifierBuilder.hasIdentifier(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID, mrnCell.getString())) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+                identifierBuilder.setValue(mrnCell.getString(), mrnCell);
+            }
         }
 
         CsvCell nhsNumberCell = parser.getNhsNumber();
@@ -110,13 +116,13 @@ public class PPATITransformer extends BartsBasisTransformer {
             if (nhsNumber.length() == 10) {
                 identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
                 identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-                identifierBuilder.setValue(nhsNumber);
+                identifierBuilder.setValue(nhsNumber, nhsNumberCell);
 
             } else {
                 //add the invalid NHS number as a secondary identifier
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
                 identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                identifierBuilder.setValue(nhsNumber);
+                identifierBuilder.setValue(nhsNumber, nhsNumberCell);
             }
         }
 

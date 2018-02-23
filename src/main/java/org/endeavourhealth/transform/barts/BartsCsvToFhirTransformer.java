@@ -209,9 +209,9 @@ public abstract class BartsCsvToFhirTransformer {
                 PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             }
-
-            PatientResourceCache.filePatientResources(fhirResourceFiler);
         }
+
+        PatientResourceCache.filePatientResources(fhirResourceFiler);
     }
 
     private static void transformClinicalParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,

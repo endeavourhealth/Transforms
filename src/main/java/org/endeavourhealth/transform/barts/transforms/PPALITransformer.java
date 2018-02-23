@@ -57,19 +57,15 @@ public class PPALITransformer extends BartsBasisTransformer {
         CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
 
+        //we always fully re-create the Identifier on the patient so just remove any previous instance
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
         IdentifierBuilder.removeExistingIdentifier(patientBuilder, aliasIdCell.getString());
 
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
+        //if this record is no longer active, just return out, since we've already removed the Identifier from the patient
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-
-            //TODO - need to support DELETING alias of existing patient
-
             return;
         }
-
-        //TODO - need to handle receving an update to an existing alias (e.g. end date is set)
 
         // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
