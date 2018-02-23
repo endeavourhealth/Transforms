@@ -41,7 +41,7 @@ public class PPADD extends AbstractCsvParser {
                 "COUNTRY_TXT",
                 "ADDRESS_TYPE_CD",
                 "ADDRESS_TYPE_SEQ_NBR",
-                "PRIMARE_CARE_CD",
+                "PRIMARY_CARE_CD",
         };
     }
 
@@ -118,7 +118,7 @@ public class PPADD extends AbstractCsvParser {
     }
 
     public CsvCell getResidencePCTCodeValue() {
-        return super.getCell("PRIMARE_CARE_CD");
+        return super.getCell("PRIMARY_CARE_CD");
     }
 
     /*public String getMillenniumAddressId() {
