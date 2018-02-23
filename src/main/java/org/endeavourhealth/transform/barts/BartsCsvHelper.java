@@ -8,16 +8,20 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.rdbms.publisherTransform.models.RdbmsCernerCodeValueRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.UUID;
 
 public class BartsCsvHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
@@ -126,6 +130,12 @@ public class BartsCsvHelper {
         // get code from DB
         CernerCodeValueRef cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
                 codeSet, code, serviceId);
+
+        //TODO - trying to track errors, but remove once we no longer want to process missing codes
+        if (cernerCodeFromDB == null) {
+            LOG.error("No code found for codeSet " + codeSet + ", code " + code + ", service " + serviceId);
+            return new CernerCodeValueRef(new RdbmsCernerCodeValueRef());
+        }
 
         // Add to the cache
         cernerCodes.put(codeLookup, cernerCodeFromDB);
