@@ -288,6 +288,24 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+            this.observation.setCode(null);
+
+        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+            Observation.ObservationComponentComponent component = getLastComponent();
+            component.setCode(null);
+
+        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+            Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
+            rangeComponent.setMeaning(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.observation.addIdentifier();
     }

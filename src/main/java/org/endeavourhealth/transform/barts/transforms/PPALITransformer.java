@@ -59,7 +59,7 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         //we always fully re-create the Identifier on the patient so just remove any previous instance
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
-        IdentifierBuilder.removeExistingIdentifier(patientBuilder, aliasIdCell.getString());
+        IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
         //if this record is no longer active, just return out, since we've already removed the Identifier from the patient
         CsvCell activeCell = parser.getActiveIndicator();
@@ -67,26 +67,23 @@ public class PPALITransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
-        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                    CernerCodeValueRef.ALIAS_TYPE,
-                                                                    aliasTypeCodeCell.getLong(),
-                                                                    fhirResourceFiler.getServiceId());
-
-        String aliasSystem = FhirUri.IDENTIFIER_SYSTEM_CERNER_OTHER_PERSON_ID;
-
-        if (cernerCodeValueRef != null) {
-            aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
-        } else {
-            // LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
-        }
-
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
         identifierBuilder.setId(aliasIdCell.getString(), aliasCell);
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
         identifierBuilder.setValue(aliasCell.getString(), aliasCell);
+
+        // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
+        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
+        if (!aliasTypeCodeCell.isEmpty() && aliasTypeCodeCell.getLong() > 0) {
+
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+                    CernerCodeValueRef.ALIAS_TYPE,
+                    aliasTypeCodeCell.getLong(),
+                    fhirResourceFiler.getServiceId());
+
+            String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
+            identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
+        }
 
         CsvCell startDateCell = parser.getBeginEffectiveDate();
         if (!startDateCell.isEmpty()) {

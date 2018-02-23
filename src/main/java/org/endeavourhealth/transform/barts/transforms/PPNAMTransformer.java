@@ -62,20 +62,16 @@ public class PPNAMTransformer extends BartsBasisTransformer {
             return;
         }
 
-        HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
+        HumanName.NameUse nameUse = null;
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
-        if (!nameTypeCell.isEmpty()) {
+        if (!nameTypeCell.isEmpty() && nameTypeCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.NAME_USE,
                                                                                 nameTypeCell.getLong(),
                                                                                 fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
-            } else {
-                // LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
-            }
+            nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
         }
 
         CsvCell titleCell = parser.getTitle();

@@ -74,22 +74,19 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             number += " " + extensionCell.getString();
         }
 
-        ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
-        ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
+        ContactPoint.ContactPointUse use = null;
+        ContactPoint.ContactPointSystem system = null;
+
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        if (!phoneTypeCell.isEmpty()) {
+        if (!phoneTypeCell.isEmpty() && phoneTypeCell.getLong() > 0) {
+
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PHONE_TYPE,
                                                                                 phoneTypeCell.getLong(),
                                                                                 fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
-                system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
-
-            } else {
-                // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
-            }
+            use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
+            system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
         }
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);

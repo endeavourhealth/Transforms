@@ -124,4 +124,9 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "vaccineCode";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.immunization.setVaccineCode(null);
+    }
 }

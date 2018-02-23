@@ -136,39 +136,31 @@ public class PPRELTransformer extends BartsBasisTransformer {
         }
 
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
-        if (!relationshipToPatientCell.isEmpty()) {
+        if (!relationshipToPatientCell.isEmpty() && relationshipToPatientCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.RELATIONSHIP_TO_PATIENT,
                                                                     relationshipToPatientCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
+            String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
-                codeableConceptBuilder.setText(relationshipToPatientDesc);
-            } else {
-                // LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
-            }
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+            codeableConceptBuilder.setText(relationshipToPatientDesc);
         }
 
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
-        if (!relationshipTypeCell.isEmpty()) {
+        if (!relationshipTypeCell.isEmpty() && relationshipTypeCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.PERSON_RELATIONSHIP_TYPE,
                                                                         relationshipTypeCell.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
+            String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
-                codeableConceptBuilder.setText(relationshipTypeDesc);
-            } else {
-                // LOG.warn("Relationship To Patient code: " + parser.getRelationshipToPatientCode() + " not found in Code Value lookup");
-            }
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+            codeableConceptBuilder.setText(relationshipTypeDesc);
         }
     }
 

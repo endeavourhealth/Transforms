@@ -101,4 +101,9 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "substance";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.allergyIntolerance.setSubstance(null);
+    }
 }

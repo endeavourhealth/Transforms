@@ -149,25 +149,20 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        if (!diagnosisTypeCode.isEmpty()) {
+        if (!diagnosisTypeCode.isEmpty() && diagnosisTypeCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.DIAGNOSIS_TYPE,
                                                                             diagnosisTypeCode.getLong(),
                                                                             fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+            String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
 
-                codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE);
-                codeableConceptBuilder.setCodingCode(diagnosisTypeCode.getString(), diagnosisTypeCode);
-                codeableConceptBuilder.setCodingDisplay(diagnosisTypeTerm); //don't pass in the cell as this is derived
-                codeableConceptBuilder.setText(diagnosisTypeTerm); //don't pass in the cell as this is derived
-
-            } else {
-                //LOG.warn("Diagnosis type code: "+diagnosisTypeCode+" not found in Code Value lookup");
-            }
+            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE);
+            codeableConceptBuilder.setCodingCode(diagnosisTypeCode.getString(), diagnosisTypeCode);
+            codeableConceptBuilder.setCodingDisplay(diagnosisTypeTerm); //don't pass in the cell as this is derived
+            codeableConceptBuilder.setText(diagnosisTypeTerm); //don't pass in the cell as this is derived
         }
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();

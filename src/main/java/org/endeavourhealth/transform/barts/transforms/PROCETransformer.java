@@ -149,25 +149,20 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
-        if (!procedureTypeCodeCell.isEmpty()) {
+        if (!procedureTypeCodeCell.isEmpty() && procedureTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.PROCEDURE_TYPE,
                                                                         procedureTypeCodeCell.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
+            String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
 
-                codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE);
-                codeableConceptBuilder.setCodingCode(procedureTypeCodeCell.getString(), procedureTypeCodeCell);
-                codeableConceptBuilder.setCodingDisplay(procedureTypeTerm); //don't pass in the cell as this is derived
-                codeableConceptBuilder.setText(procedureTypeTerm); //don't pass in the cell as this is derived
-
-            } else {
-                // LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");
-            }
+            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE);
+            codeableConceptBuilder.setCodingCode(procedureTypeCodeCell.getString(), procedureTypeCodeCell);
+            codeableConceptBuilder.setCodingDisplay(procedureTypeTerm); //don't pass in the cell as this is derived
+            codeableConceptBuilder.setText(procedureTypeTerm); //don't pass in the cell as this is derived
         }
 
         // save resource

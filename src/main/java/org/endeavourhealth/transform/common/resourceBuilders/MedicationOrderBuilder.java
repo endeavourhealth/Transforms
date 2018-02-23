@@ -156,4 +156,9 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "medicationCodeableConcept";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.medicationOrder.setMedication(null);
+    }
 }

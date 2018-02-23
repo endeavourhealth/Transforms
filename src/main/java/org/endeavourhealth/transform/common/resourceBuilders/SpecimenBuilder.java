@@ -103,4 +103,9 @@ public class SpecimenBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "type";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.specimen.setType(null);
+    }
 }

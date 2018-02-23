@@ -27,6 +27,10 @@ public class CodeableConceptBuilder {
         }
     }
 
+    public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, String tag) {
+        parentBuilder.removeCodeableConcepts(tag);
+    }
+
     public void addCoding(String systemUrl, CsvCell... sourceCells) {
         Coding coding = CodingHelper.createCoding(systemUrl, null, null);
         this.codeableConcept.addCoding(coding);
@@ -119,4 +123,6 @@ public class CodeableConceptBuilder {
     public CodeableConcept getCodeableConcept() {
         return codeableConcept;
     }
+
+
 }

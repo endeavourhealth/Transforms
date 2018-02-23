@@ -143,6 +143,19 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            this.procedure.setCode(null);
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.procedure.setCategory(null);
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.procedure.addIdentifier();
     }

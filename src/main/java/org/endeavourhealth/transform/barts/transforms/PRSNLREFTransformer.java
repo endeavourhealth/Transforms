@@ -55,36 +55,29 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell positionCode = parser.getMilleniumPositionCode();
-        if (!positionCode.isEmpty()) {
+        if (!positionCode.isEmpty() && positionCode.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.PERSONNEL_POSITION, positionCode.getLong(), fhirResourceFiler.getServiceId());
-            if (cernerCodeValueRef != null) {
-                String positionName = cernerCodeValueRef.getCodeDispTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
-                codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE);
-                codeableConceptBuilder.setCodingCode(positionCode.getString(), positionCode);
-                codeableConceptBuilder.setCodingDisplay(positionName);
+            String positionName = cernerCodeValueRef.getCodeDispTxt();
 
-            } else {
-                // LOG.warn("Position code: "+positionCode+" not found in Code Value lookup");
-            }
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE);
+            codeableConceptBuilder.setCodingCode(positionCode.getString(), positionCode);
+            codeableConceptBuilder.setCodingDisplay(positionName);
         }
 
         CsvCell specialityCode = parser.getMillenniumSpecialtyCode();
-        if (!specialityCode.isEmpty()) {
+        if (!specialityCode.isEmpty() && specialityCode.getLong() > 0) {
+
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.PERSONNEL_SPECIALITY, specialityCode.getLong(), fhirResourceFiler.getServiceId());
-            if (cernerCodeValueRef != null) {
-                String specialityName = cernerCodeValueRef.getCodeDispTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_SPECIALTY_CODEABLE_CONCEPT);
-                codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE);
-                codeableConceptBuilder.setCodingCode(specialityCode.getString(), specialityCode);
-                codeableConceptBuilder.setCodingDisplay(specialityName);
+            String specialityName = cernerCodeValueRef.getCodeDispTxt();
 
-            } else {
-                // LOG.warn("Speciality code: "+specialityCode+" not found in Code Value lookup");
-            }
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_SPECIALTY_CODEABLE_CONCEPT);
+            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE);
+            codeableConceptBuilder.setCodingCode(specialityCode.getString(), specialityCode);
+            codeableConceptBuilder.setCodingDisplay(specialityName);
         }
 
         CsvCell title = parser.getTitle();

@@ -129,4 +129,9 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.diagnosticReport.setCode(null);
+    }
 }

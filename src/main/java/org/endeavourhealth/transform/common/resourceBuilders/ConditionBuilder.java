@@ -252,6 +252,19 @@ public class ConditionBuilder extends ResourceBuilderBase
         }
     }
 
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            this.condition.setCode(null);
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.condition.setCategory(null);
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
 
     public void setProblemLastReviewDate(DateType lastReviewDateType, CsvCell... sourceCells) {
         if (lastReviewDateType == null) {

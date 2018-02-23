@@ -120,4 +120,10 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "condition[0].code";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+        condition.setCode(null);
+    }
 }

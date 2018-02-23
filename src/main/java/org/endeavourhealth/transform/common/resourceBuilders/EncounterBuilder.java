@@ -182,6 +182,11 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.encounter.addIdentifier();
     }

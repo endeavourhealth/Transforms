@@ -163,6 +163,11 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         return "serviceRequested[0]";
     }
 
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.referralRequest.getServiceRequested().clear();
+    }
+
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }

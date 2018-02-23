@@ -139,22 +139,17 @@ public class CLEVETransformer extends BartsBasisTransformer {
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
         CsvCell termCell = parser.getEventTitleText();
-        if (!codeCell.isEmpty()) {
-
-            codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
+        if (!codeCell.isEmpty() && codeCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                 CernerCodeValueRef.CLINICAL_CODE_TYPE,
                                                                 codeCell.getLong(),
                                                                 fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String officialTerm = cernerCodeValueRef.getCodeDispTxt();
-                codeableConceptBuilder.setCodingDisplay(officialTerm);
+            String officialTerm = cernerCodeValueRef.getCodeDispTxt();
 
-            } else {
-                // LOG.warn("Event type code: " + parser.getEventCode() + " not found in Code Value lookup");
-            }
+            codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
+            codeableConceptBuilder.setCodingDisplay(officialTerm);
         }
 
         //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
@@ -164,8 +159,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
         String unitsDesc = null;
-        if (!unitsCodeCell.isEmpty()
-                && unitsCodeCell.getLong() > 0) { //seem to have a mix of empty cells and zero, so check for both
+        if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_UNITS,
@@ -173,7 +167,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
                     fhirResourceFiler.getServiceId());
 
             unitsDesc = cernerCodeValueRef.getCodeDispTxt();
-
             observationBuilder.setUnits(unitsDesc, unitsCodeCell);
         }
 
@@ -240,8 +233,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        if (!normalcyCodeCell.isEmpty()
-                && normalcyCodeCell.getLong() > 0) { //seem to have both empty cells and ones with zero in, so ignore both
+        if (!normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_NORMALCY,

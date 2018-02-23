@@ -82,64 +82,48 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
+        //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
+        //so they can be added back on without duplicating them
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+
         if (!millenniumPersonId.isEmpty()) {
-            //we may be amending a patient, so only add if not already there
-            if (!IdentifierBuilder.hasIdentifier(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON, millenniumPersonId.getString())) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                identifierBuilder.setValue(millenniumPersonId.getString(), millenniumPersonId);
-            }
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+            identifierBuilder.setValue(millenniumPersonId.getString(), millenniumPersonId);
         }
 
         if (!mrnCell.isEmpty()) {
-            //we may be amending a patient, so only add if not already there
-            if (!IdentifierBuilder.hasIdentifier(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID, mrnCell.getString())) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
-                identifierBuilder.setValue(mrnCell.getString(), mrnCell);
-            }
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+            identifierBuilder.setValue(mrnCell.getString(), mrnCell);
         }
 
-        //TODO - need to handle delta
         CsvCell nhsNumberCell = parser.getNhsNumber();
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
-            nhsNumber = nhsNumber.trim();
-            nhsNumber = nhsNumber.replace("-","");
+            nhsNumber = nhsNumber.replace("-",""); //Cerner NHS numbers are tokenised with hyphens, so remove
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-
-            if (nhsNumber.length() == 10) {
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-                identifierBuilder.setValue(nhsNumber, nhsNumberCell);
-
-            } else {
-                //add the invalid NHS number as a secondary identifier
-                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                identifierBuilder.setValue(nhsNumber, nhsNumberCell);
-            }
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setValue(nhsNumber, nhsNumberCell);
         }
 
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
-        if (!nhsNumberStatusCell.isEmpty()) {
+        if (!nhsNumberStatusCell.isEmpty() && nhsNumberStatusCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.NHS_NUMBER_STATUS,
                                                                         nhsNumberStatusCell.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
-                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc);
-                patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
-
-            } else {
-                // LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
-            }
+            String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
+            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc);
+            patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
 
         } else {
             //we may be updating a patient, so make sure to remove if not set
@@ -166,37 +150,29 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell genderCell = parser.getGenderCode();
-        if (!genderCell.isEmpty()) {
+        if (!genderCell.isEmpty() && genderCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.GENDER,
                                                                                 genderCell.getLong(),
                                                                                 fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
-                patientBuilder.setGender(gender, genderCell);
-            } else {
-                // LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
-            }
+            Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
+            patientBuilder.setGender(gender, genderCell);
+
         } else {
             //if updating a record then clear the gender if the field is empty
             patientBuilder.setGender(null);
         }
 
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
-        if (!maritalStatusCode.isEmpty()) {
+        if (!maritalStatusCode.isEmpty() && maritalStatusCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.MARITAL_STATUS,
                                                                         maritalStatusCode.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
-                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
-
-            } else {
-                // LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
-            }
+            MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
+            patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
 
         } else {
             //if updating a record, make sure to clear the field in this case
@@ -204,7 +180,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
-        if (!ethnicityCode.isEmpty()) {
+        if (!ethnicityCode.isEmpty() && ethnicityCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.ETHNIC_GROUP,
                                                                             ethnicityCode.getLong(),
@@ -217,49 +193,38 @@ public class PPATITransformer extends BartsBasisTransformer {
             patientBuilder.setEthnicity(null);
         }
 
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
+
         CsvCell languageCell = parser.getFirstLanguageCode();
-        if (!languageCell.isEmpty()) {
+        if (!languageCell.isEmpty() && languageCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.LANGUAGE,
                                                                             languageCell.getLong(),
                                                                             fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String codeTerm = cernerCodeValueRef.getCodeDescTxt();
+            String codeTerm = cernerCodeValueRef.getCodeDescTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
-                codeableConceptBuilder.setCodingCode(languageCell.getString(), languageCell);
-                codeableConceptBuilder.setCodingDisplay(codeTerm);
-
-            } else {
-                // LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
-            }
-        } else {
-            //TODO - remove language
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
+            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+            codeableConceptBuilder.setCodingCode(languageCell.getString(), languageCell);
+            codeableConceptBuilder.setCodingDisplay(codeTerm);
         }
 
         CsvCell religionCell = parser.getReligionCode();
-        if (!religionCell.isEmpty()) {
+        if (!religionCell.isEmpty() && religionCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.RELIGION,
                                                                     religionCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());
 
-            if (cernerCodeValueRef != null) {
-                String codeTerm = cernerCodeValueRef.getCodeDescTxt();
+            String codeTerm = cernerCodeValueRef.getCodeDescTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
-                codeableConceptBuilder.setCodingCode(religionCell.getString(), religionCell);
-                codeableConceptBuilder.setCodingDisplay(codeTerm);
-
-            } else {
-                // LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
-            }
-        } else {
-            //TODO - remove religion
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
+            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+            codeableConceptBuilder.setCodingCode(religionCell.getString(), religionCell);
+            codeableConceptBuilder.setCodingDisplay(codeTerm);
         }
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag

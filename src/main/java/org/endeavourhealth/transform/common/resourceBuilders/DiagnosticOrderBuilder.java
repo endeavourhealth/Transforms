@@ -126,4 +126,10 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "item[0].code";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
+        item.setCode(null);
+    }
 }

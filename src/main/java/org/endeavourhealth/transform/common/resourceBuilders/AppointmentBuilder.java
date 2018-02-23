@@ -123,4 +123,9 @@ public class AppointmentBuilder extends ResourceBuilderBase
         int index = this.appointment.getExtension().indexOf(extension);
         return "extension[" + index + "].valueCodeableConcept";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        ExtensionConverter.removeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
+    }
 }

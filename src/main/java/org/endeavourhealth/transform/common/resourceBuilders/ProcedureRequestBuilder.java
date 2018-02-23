@@ -119,4 +119,9 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
     }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.procedureRequest.setCode(null);
+    }
 }

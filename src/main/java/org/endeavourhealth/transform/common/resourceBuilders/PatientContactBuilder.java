@@ -161,6 +161,11 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        this.contact.getRelationship().clear();
+    }
+
+    @Override
     public List<HumanName> getNames() {
         List<HumanName> ret = new ArrayList<>();
         if (this.contact.hasName()) {
