@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
@@ -12,7 +10,6 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -22,12 +19,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirResourceFilerI;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.CodeableConcept;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Location;
-import org.hl7.fhir.instance.model.ResourceType;
-import org.hl7.fhir.instance.model.valuesets.LocationPhysicalType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -506,7 +498,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
         //LOG.debug("Looking for Cerner Code " + code + " in Code Set " + RdbmsCernerCodeValueRefDal.LOCATION_NAME + " for ServiceId " + fhirResourceFiler.getServiceId());
-        CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
+        CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();
         } else {

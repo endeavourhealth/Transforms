@@ -795,6 +795,9 @@ public class BasisTransformer {
         }
     }
 
+    public static ResourceId getObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
+        return getOrCreateResourceId(scope, ResourceType.Observation, observationIdCell);
+    }
 
     public static ResourceId getProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Procedure, procedureIdCell);

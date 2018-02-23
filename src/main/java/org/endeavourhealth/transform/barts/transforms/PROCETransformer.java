@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -13,7 +12,6 @@ import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
@@ -49,7 +47,8 @@ public class PROCETransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterID();
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
         if (encounterResourceId == null) {
-            throw new TransformRuntimeException("Encounter ResourceId not found for EncounterId " + parser.getEncounterID() + " in file " + parser.getFilePath());
+            LOG.warn("Skipping Procedure " + parser.getProcedureID().getString() + " due to missing encounter");
+            return;
         }
 
         // get patient from encounter
@@ -77,7 +76,7 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-            LOG.debug("Delete Procedure (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            LOG.debug("Delete Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
             return;
         }
@@ -107,7 +106,8 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         CsvCell personnelIdCell = parser.getPersonnelID();
         if (!personnelIdCell.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
+            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell.getString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
         }
 
@@ -145,7 +145,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
         if (!procedureTypeCodeCell.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE,
+                                                                        CernerCodeValueRef.PROCEDURE_TYPE,
                                                                         procedureTypeCodeCell.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
@@ -165,7 +165,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         }
 
         // save resource
-        LOG.debug("Save Procedure (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+        LOG.debug("Save Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
     }
 

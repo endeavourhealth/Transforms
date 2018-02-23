@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -13,7 +12,6 @@ import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.hl7.fhir.instance.model.*;
@@ -49,7 +47,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterID();
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
         if (encounterResourceId == null) {
-            throw new TransformRuntimeException("Encounter ResourceId not found for EncounterId " + parser.getEncounterID() + " in file " + parser.getFilePath());
+            LOG.warn("Skipping Diagnosis " + parser.getDiagnosisID().getString() + " due to missing encounter");
+            return;
         }
 
         // get patient from encounter
@@ -72,7 +71,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-            LOG.debug("Delete Condition (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+            LOG.debug("Delete Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
             return;
         }
@@ -105,11 +104,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             conditionBuilder.addIdentifier(identifier, nomenclatureId);
         }
 
-
-        CsvCell personnelId = parser.getPersonnel();
-        if (!personnelId.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(personnelId);
-            conditionBuilder.setClinician(practitionerReference, personnelId);
+        CsvCell personnelIdCell = parser.getPersonnelId();
+        if (!personnelIdCell.isEmpty()) {
+            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelIdCell.getString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
+            conditionBuilder.setClinician(practitionerReference, personnelIdCell);
         }
 
         // Condition(Diagnosis) is coded either as Snomed or ICD10
@@ -146,7 +145,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
         if (!diagnosisTypeCode.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE,
+                                                                            CernerCodeValueRef.DIAGNOSIS_TYPE,
                                                                             diagnosisTypeCode.getLong(),
                                                                             fhirResourceFiler.getServiceId());
 
@@ -171,7 +170,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
 
         // save the resource
-        LOG.debug("Save Condition (" + patientReferenceValue + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+        LOG.debug("Save Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
     }
 

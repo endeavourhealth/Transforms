@@ -11,10 +11,11 @@ import java.util.Date;
 import java.util.List;
 
 public class ObservationBuilder extends ResourceBuilderBase
-                                implements HasCodeableConceptI {
+                                implements HasCodeableConceptI, HasIdentifierI {
 
     public static final String TAG_MAIN_CODEABLE_CONCEPT = "MainCode";
     public static final String TAG_COMPONENT_CODEABLE_CONCEPT = "ComponentCode";
+    public static final String TAG_RANGE_MEANING_CODEABLE_CONCEPT = "RangeMeaning";
 
     private Observation observation = null;
 
@@ -22,7 +23,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         this(null);
     }
 
-    public ObservationBuilder(Observation condition) {
+    public ObservationBuilder(Observation observation) {
         this.observation = observation;
         if (this.observation == null) {
             this.observation = new Observation();
@@ -95,6 +96,12 @@ public class ObservationBuilder extends ResourceBuilderBase
         findOrCreateQuantity().setUnit(units);
 
         auditValue("valueQuantity.unit", sourceCells);
+    }
+
+    public void setValueComparator(Quantity.QuantityComparator comparatorValue, CsvCell... sourceCells) {
+        findOrCreateQuantity().setComparator(comparatorValue);
+
+        auditValue("valueQuantity.comparator", sourceCells);
     }
 
     public void setEncounter(Reference encounterReference, CsvCell... sourceCells) {
@@ -250,6 +257,15 @@ public class ObservationBuilder extends ResourceBuilderBase
             component.setCode(new CodeableConcept());
             return component.getCode();
 
+        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+            Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
+            if (rangeComponent.hasMeaning()) {
+                throw new IllegalArgumentException("Trying to set meaning on Observation when already set");
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            rangeComponent.setMeaning(codeableConcept);
+            return codeableConcept;
+
         } else {
             throw new IllegalArgumentException("Unknown tag " + tag);
         }
@@ -263,8 +279,24 @@ public class ObservationBuilder extends ResourceBuilderBase
         } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
             return "component[" + getLastComponentIndex() + "].code";
 
+        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+            return "referenceRange[0].meaning";
+
         } else {
             throw new IllegalArgumentException("Unknown tag " + tag);
         }
     }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.observation.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.observation.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
+
+
 }

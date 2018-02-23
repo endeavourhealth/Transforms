@@ -69,11 +69,7 @@ public class DIAGN extends AbstractCsvParser {
         return super.getCell("DIAGNOSIS_DT_TM");
     }
 
-    public CsvCell getDiagnosisDateTimeAsCsvCell() {
-        return super.getCell("DIAGNOSIS_DT_TM");
-    }
-
-    public CsvCell getPersonnel() {
+    public CsvCell getPersonnelId() {
         return super.getCell("DIAG_HCP_PRSNL_ID");
     }
 

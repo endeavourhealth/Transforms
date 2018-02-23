@@ -52,11 +52,11 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
 
         //if we don't have a person ID, there's nothing we can do with the row
-        CsvCell personId = parser.getRegisteredGPMillenniumPersonnelId();
-        if (personId.isEmpty()) {
+        CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
+        if (personnelId.isEmpty()) {
             return;
         }
-        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personId.getString());
+        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId.getString());
         Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
 
         //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource

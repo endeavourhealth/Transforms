@@ -8,7 +8,6 @@ import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
@@ -124,7 +123,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!nhsNumberStatusCell.isEmpty()) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        RdbmsCernerCodeValueRefDal.NHS_NUMBER_STATUS,
+                                                                        CernerCodeValueRef.NHS_NUMBER_STATUS,
                                                                         nhsNumberStatusCell.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
@@ -156,7 +155,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell genderCell = parser.getGenderCode();
         if (!genderCell.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                                RdbmsCernerCodeValueRefDal.GENDER,
+                                                                                CernerCodeValueRef.GENDER,
                                                                                 genderCell.getLong(),
                                                                                 fhirResourceFiler.getServiceId());
 
@@ -171,7 +170,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
         if (!maritalStatusCode.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        RdbmsCernerCodeValueRefDal.MARITAL_STATUS,
+                                                                        CernerCodeValueRef.MARITAL_STATUS,
                                                                         maritalStatusCode.getLong(),
                                                                         fhirResourceFiler.getServiceId());
 
@@ -187,7 +186,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
         if (!ethnicityCode.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            RdbmsCernerCodeValueRefDal.ETHNIC_GROUP,
+                                                                            CernerCodeValueRef.ETHNIC_GROUP,
                                                                             ethnicityCode.getLong(),
                                                                             fhirResourceFiler.getServiceId());
 
@@ -199,7 +198,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!languageCell.isEmpty()) {
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            RdbmsCernerCodeValueRefDal.LANGUAGE,
+                                                                            CernerCodeValueRef.LANGUAGE,
                                                                             languageCell.getLong(),
                                                                             fhirResourceFiler.getServiceId());
 
@@ -219,7 +218,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell religionCell = parser.getReligionCode();
         if (!religionCell.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                    RdbmsCernerCodeValueRefDal.RELIGION,
+                                                                    CernerCodeValueRef.RELIGION,
                                                                     religionCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());
 

@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
@@ -81,7 +80,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
         if (!phoneTypeCell.isEmpty()) {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                                RdbmsCernerCodeValueRefDal.PHONE_TYPE,
+                                                                                CernerCodeValueRef.PHONE_TYPE,
                                                                                 phoneTypeCell.getLong(),
                                                                                 fhirResourceFiler.getServiceId());
 

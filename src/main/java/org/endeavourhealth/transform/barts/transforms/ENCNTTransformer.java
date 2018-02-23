@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -166,7 +165,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // specialty
             if (!encounterTypeCodeCell.isEmpty()) {
                 CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY,
+                                                                CernerCodeValueRef.PERSONNEL_SPECIALITY,
                                                                 encounterTypeCodeCell.getLong(),
                                                                 fhirResourceFiler.getServiceId());
 
@@ -184,7 +183,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // treatment function
             if (!treatmentFunctionCodeCell.isEmpty()) {
                 CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION,
+                                                                CernerCodeValueRef.TREATMENT_FUNCTION,
                                                                 treatmentFunctionCodeCell.getLong(),
                                                                 fhirResourceFiler.getServiceId());
 

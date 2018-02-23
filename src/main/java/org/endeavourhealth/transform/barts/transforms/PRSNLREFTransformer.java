@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -58,7 +57,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         CsvCell positionCode = parser.getMilleniumPositionCode();
         if (!positionCode.isEmpty()) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_POSITION, positionCode.getLong(), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.PERSONNEL_POSITION, positionCode.getLong(), fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String positionName = cernerCodeValueRef.getCodeDispTxt();
 
@@ -74,7 +73,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
 
         CsvCell specialityCode = parser.getMillenniumSpecialtyCode();
         if (!specialityCode.isEmpty()) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, specialityCode.getLong(), fhirResourceFiler.getServiceId());
+            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.PERSONNEL_SPECIALITY, specialityCode.getLong(), fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String specialityName = cernerCodeValueRef.getCodeDispTxt();
 

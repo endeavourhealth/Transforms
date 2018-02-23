@@ -72,9 +72,9 @@ public class BartsCsvHelper {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
 
-    public Reference createPractitionerReference(CsvCell practitionerIdCell) throws Exception {
+    /*public Reference createPractitionerReference(CsvCell practitionerIdCell) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerIdCell.getString());
-    }
+    }*/
 
     public String getProcedureOrDiagnosisConceptCodeType(CsvCell cell) {
         if (cell.isEmpty()) {

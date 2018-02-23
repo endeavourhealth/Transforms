@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsCernerCodeValueRefDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPALI;
@@ -72,7 +71,7 @@ public class PPALITransformer extends BartsBasisTransformer {
         // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
         CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                    RdbmsCernerCodeValueRefDal.ALIAS_TYPE,
+                                                                    CernerCodeValueRef.ALIAS_TYPE,
                                                                     aliasTypeCodeCell.getLong(),
                                                                     fhirResourceFiler.getServiceId());
 

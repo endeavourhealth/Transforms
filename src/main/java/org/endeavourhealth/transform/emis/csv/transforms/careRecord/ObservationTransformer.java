@@ -1663,6 +1663,7 @@ public class ObservationTransformer {
             if (!low.isEmpty() && !high.isEmpty()) {
                 observationBuilder.setRecommendedRangeLow(low.getDouble(), units.getString(), Quantity.QuantityComparator.GREATER_OR_EQUAL, low, units);
                 observationBuilder.setRecommendedRangeHigh(high.getDouble(), units.getString(), Quantity.QuantityComparator.LESS_OR_EQUAL, high, units);
+
             } else if (!low.isEmpty()) {
                 observationBuilder.setRecommendedRangeLow(low.getDouble(), units.getString(), Quantity.QuantityComparator.GREATER_THAN, low, units);
 
