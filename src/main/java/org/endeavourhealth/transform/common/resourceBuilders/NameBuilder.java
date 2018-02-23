@@ -33,6 +33,12 @@ public class NameBuilder {
         auditNameValue("use", sourceCells);
     }
 
+    public void setId(String id, CsvCell... sourceCells) {
+        this.name.setId(id);
+
+        auditNameValue("id", sourceCells);
+    }
+
     public void addPrefix(String prefix, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(prefix)) {
             return;

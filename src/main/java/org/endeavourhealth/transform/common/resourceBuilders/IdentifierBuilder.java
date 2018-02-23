@@ -28,8 +28,15 @@ public class IdentifierBuilder {
     public void setUse(Identifier.IdentifierUse use, CsvCell... sourceCells) {
         identifier.setUse(use);
 
-        auditNameValue("use", sourceCells);
+        auditIdentifierValue("use", sourceCells);
     }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.identifier.setId(id);
+
+        auditIdentifierValue("id", sourceCells);
+    }
+
 
     public void setSystem(String system, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(system)) {
@@ -38,7 +45,7 @@ public class IdentifierBuilder {
 
         identifier.setSystem(system);
 
-        auditNameValue("system", sourceCells);
+        auditIdentifierValue("system", sourceCells);
     }
 
     public void setValue(String value, CsvCell... sourceCells) {
@@ -48,10 +55,10 @@ public class IdentifierBuilder {
 
         identifier.setValue(value);
 
-        auditNameValue("value", sourceCells);
+        auditIdentifierValue("value", sourceCells);
     }
 
-    private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
+    private void auditIdentifierValue(String jsonSuffix, CsvCell... sourceCells) {
 
         String jsonField = parentBuilder.getIdentifierJsonPrefix(identifier) + "." + jsonSuffix;
 
@@ -75,12 +82,12 @@ public class IdentifierBuilder {
     public void setStartDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setStart(date);
 
-        auditNameValue("period.start", sourceCells);
+        auditIdentifierValue("period.start", sourceCells);
     }
 
     public void setEndDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setEnd(date);
 
-        auditNameValue("period.end", sourceCells);
+        auditIdentifierValue("period.end", sourceCells);
     }
 }

@@ -50,14 +50,21 @@ public class PPADDTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
+        /*CsvCell addressIdCell = parser.getMillenniumAddressId();
+        AddressBuilder addressBuilder = AddressBuilder.factoryAddressBuilder(patientBuilder, addressIdCell.getString(), addressIdCell);*/
+
         //if non-active, we should REMOVE the address
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
+
+
 
             //TODO - need to REMOVE address from patient
 
             return;
         }
+
+        //if we matched to an existing address on the patient, then we should reset it, otherwise
 
         //TODO - handle deltas where we're updating an existing address
 

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.cache;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PatientResourceCache {
@@ -30,10 +32,19 @@ public class PatientResourceCache {
 
             //first look up the MRN for the person ID
             InternalIdDalI internalIdDalI = DalProvider.factoryInternalIdDal();
-            String mrn = internalIdDalI.getDestinationId(csvHelper.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID, millenniumIdCell.getString());
-            if (mrn == null) {
+            List<InternalIdMap> mrnMaps = internalIdDalI.getSourceId(csvHelper.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID, millenniumIdCell.getString());
+            if (mrnMaps.isEmpty()) {
                 throw new TransformRuntimeException("MRN not found for PersonId " + millenniumIdCell.getString());
             }
+
+            //TODO - confirm this is right. When finding an MRN for the Millennium Person ID it uses the one MOST RECENTLY updated. Is this right?
+
+            //always use the most recent MRN for the person
+            mrnMaps.sort((o1, o2) -> (o1.getUpdatedAt().compareTo(o2.getUpdatedAt())));
+
+            int size = mrnMaps.size();
+            InternalIdMap lastMap = mrnMaps.get(size-1);
+            String mrn = lastMap.getSourceId();
 
             ResourceId patientResourceId = BasisTransformer.getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, csvHelper.getPrimaryOrgHL7OrgOID(), mrn);
             if (patientResourceId == null) {

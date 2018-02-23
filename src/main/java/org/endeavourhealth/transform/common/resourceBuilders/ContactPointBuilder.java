@@ -29,13 +29,19 @@ public class ContactPointBuilder {
     public void setUse(ContactPoint.ContactPointUse use, CsvCell... sourceCells) {
         contactPoint.setUse(use);
 
-        auditNameValue("use", sourceCells);
+        auditContactPointValue("use", sourceCells);
+    }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.contactPoint.setId(id);
+
+        auditContactPointValue("id", sourceCells);
     }
 
     public void setSystem(ContactPoint.ContactPointSystem system, CsvCell... sourceCells) {
         contactPoint.setSystem(system);
 
-        auditNameValue("system", sourceCells);
+        auditContactPointValue("system", sourceCells);
     }
 
     public void setValue(String value, CsvCell... sourceCells) {
@@ -45,10 +51,10 @@ public class ContactPointBuilder {
 
         contactPoint.setValue(value);
 
-        auditNameValue("value", sourceCells);
+        auditContactPointValue("value", sourceCells);
     }
 
-    private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
+    private void auditContactPointValue(String jsonSuffix, CsvCell... sourceCells) {
 
         String jsonField = parentBuilder.getContactPointJsonPrefix(this.contactPoint) + "." + jsonSuffix;
 
@@ -72,12 +78,12 @@ public class ContactPointBuilder {
     public void setStartDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setStart(date);
 
-        auditNameValue("period.start", sourceCells);
+        auditContactPointValue("period.start", sourceCells);
     }
 
     public void setEndDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setEnd(date);
 
-        auditNameValue("period.end", sourceCells);
+        auditContactPointValue("period.end", sourceCells);
     }
 }

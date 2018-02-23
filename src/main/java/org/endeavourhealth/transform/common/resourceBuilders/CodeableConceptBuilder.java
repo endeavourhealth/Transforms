@@ -31,7 +31,13 @@ public class CodeableConceptBuilder {
         Coding coding = CodingHelper.createCoding(systemUrl, null, null);
         this.codeableConcept.addCoding(coding);
 
-        addCodingAudit(codeableConcept, coding, "system", sourceCells);
+        addCodingAudit(coding, "system", sourceCells);
+    }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.codeableConcept.setId(id);
+
+        addAudit("id", sourceCells);
     }
 
     public void setCodingCode(String code, CsvCell... sourceCells) {
@@ -41,7 +47,7 @@ public class CodeableConceptBuilder {
         Coding coding = getLastCoding(codeableConcept);
         coding.setCode(code);
 
-        addCodingAudit(codeableConcept, coding, "code", sourceCells);
+        addCodingAudit(coding, "code", sourceCells);
     }
 
     public void setCodingDisplay(String display, CsvCell... sourceCells) {
@@ -52,7 +58,7 @@ public class CodeableConceptBuilder {
         Coding coding = getLastCoding(codeableConcept);
         coding.setDisplay(display);
 
-        addCodingAudit(codeableConcept, coding, "display", sourceCells);
+        addCodingAudit(coding, "display", sourceCells);
     }
 
     private Coding getLastCoding(CodeableConcept codeableConcept) {
@@ -63,12 +69,16 @@ public class CodeableConceptBuilder {
         return codeableConcept.getCoding().get(index);
     }
 
-    private void addCodingAudit(CodeableConcept codeableConcept, Coding coding, String element, CsvCell... sourceCells) {
-        ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
+    private void addCodingAudit(Coding coding, String codingElement, CsvCell... sourceCells) {
         int index = codeableConcept.getCoding().indexOf(coding);
+        String jsonSuffix = "coding[" + index + "]." + codingElement;
 
-        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + ".coding[" + index + "]." + element;
+        addAudit(jsonSuffix, sourceCells);
+    }
 
+    private void addAudit(String jsonSuffix, CsvCell... sourceCells) {
+        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + "." + jsonSuffix;
+        ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
             audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
         }
@@ -81,11 +91,7 @@ public class CodeableConceptBuilder {
 
         codeableConcept.setText(textValue);
 
-        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + ".text";
-        ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
-        for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
-        }
+        addAudit("text", sourceCells);
     }
 
     /**

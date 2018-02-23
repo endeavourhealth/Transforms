@@ -28,6 +28,28 @@ public class AddressBuilder {
         }
     }
 
+    /*public static AddressBuilder factoryAddressBuilder(HasAddressI parentBuilder, String idValue, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't create address builder for address without ID");
+        }
+
+        List<Address> addresses = parentBuilder.getAddresses();
+        for (Address address: addresses) {
+            if (address.hasId()
+                    && address.getId().equals(idValue)) {
+
+                //if we match on ID, then return the address builder populated with the matching address
+                return new AddressBuilder(parentBuilder, address);
+            }
+        }
+    }*/
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.address.setId(id);
+
+        auditNameValue("id", sourceCells);
+    }
+
     public void setUse(Address.AddressUse use, CsvCell... sourceCells) {
         this.address.setUse(use);
 

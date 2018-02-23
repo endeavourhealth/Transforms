@@ -55,7 +55,7 @@ public class ObservationReferralTransformer {
         CsvCell ubrn = parser.getReferralUBRN();
         if (!ubrn.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(referralRequestBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_UBRN);
             identifierBuilder.setValue(ubrn.getString(), ubrn);
         }
