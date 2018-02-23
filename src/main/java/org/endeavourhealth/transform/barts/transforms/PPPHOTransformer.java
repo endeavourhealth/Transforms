@@ -164,7 +164,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) {
 
-        //we've missing codes in the code ref table, so just handle by returning SOMETHING
+        //we're missing codes in the code ref table, so just handle by returning SOMETHING
         if (phoneType == null) {
             return ContactPoint.ContactPointUse.TEMP;
         }
@@ -195,6 +195,12 @@ public class PPPHOTransformer extends BartsBasisTransformer {
     }
 
     private static ContactPoint.ContactPointSystem convertPhoneSystem(String phoneType) {
+
+        //we're missing codes in the code ref table, so just handle by returning SOMETHING
+        if (phoneType == null) {
+            return ContactPoint.ContactPointSystem.OTHER;
+        }
+
         switch (phoneType) {
             case "ALTERNATE":
             case "BILLING":
@@ -230,7 +236,8 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             case "PAGER BILL":
             case "PAGING":
                 return ContactPoint.ContactPointSystem.PAGER;
-            default: return ContactPoint.ContactPointSystem.OTHER;
+            default:
+                return ContactPoint.ContactPointSystem.OTHER;
         }
     }
 

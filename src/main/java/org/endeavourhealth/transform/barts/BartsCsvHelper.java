@@ -131,9 +131,8 @@ public class BartsCsvHelper {
         CernerCodeValueRef cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
                 codeSet, code, serviceId);
 
-        //TODO - trying to track errors, but remove once we no longer want to process missing codes
+        //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
         if (cernerCodeFromDB == null) {
-            LOG.error("No code found for codeSet " + codeSet + ", code " + code + ", service " + serviceId);
             return new CernerCodeValueRef(new RdbmsCernerCodeValueRef());
         }
 
