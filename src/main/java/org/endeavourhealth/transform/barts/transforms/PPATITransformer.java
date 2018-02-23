@@ -80,10 +80,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
 
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
-        LOG.trace("millenniumPersonId = [" + millenniumPersonId.getString() + "]");
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
-
-        //TODO - need to avoid duplicating Identifiers, Extensions, Communications etc. if we're processing a Delta extract
 
         if (!millenniumPersonId.isEmpty()) {
             //we may be amending a patient, so only add if not already there
@@ -105,6 +102,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             }
         }
 
+        //TODO - need to handle delta
         CsvCell nhsNumberCell = parser.getNhsNumber();
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
@@ -142,6 +140,10 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 // LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
             }
+
+        } else {
+            //we may be updating a patient, so make sure to remove if not set
+            patientBuilder.setNhsNumberVerificationStatus(null);
         }
 
         CsvCell activeCell = parser.getActiveIndicator();
@@ -157,6 +159,10 @@ public class PPATITransformer extends BartsBasisTransformer {
                 dob = formatBulk.parse(dateOfBirthCell.getString());
             }
             patientBuilder.setDateOfBirth(dob, dateOfBirthCell);
+
+        } else {
+            //we may be updating an existing patient
+            patientBuilder.setDateOfBirth(null);
         }
 
         CsvCell genderCell = parser.getGenderCode();

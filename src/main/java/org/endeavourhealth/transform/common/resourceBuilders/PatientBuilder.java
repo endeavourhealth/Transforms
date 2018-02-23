@@ -43,9 +43,14 @@ public class PatientBuilder extends ResourceBuilderBase
 
 
     public void setDateOfBirth(Date dob, CsvCell... sourceCells) {
-        this.patient.setBirthDate(dob);
+        if (dob == null) {
+            this.patient.setBirthDate(null);
 
-        auditValue("birthDate", sourceCells);
+        } else {
+            this.patient.setBirthDate(dob);
+
+            auditValue("birthDate", sourceCells);
+        }
     }
 
     public void setDateOfDeath(Date dod, CsvCell... sourceCells) {
@@ -122,10 +127,16 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void setNhsNumberVerificationStatus(NhsNumberVerificationStatus verificationStatus, CsvCell... sourceCells) {
-        CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(verificationStatus);
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS, fhirCodeableConcept);
+        //we may be updating a resource, so if null is passed in, we want to REMOVE it
+        if (verificationStatus == null) {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS);
 
-        auditCodeableConceptExtension(extension, sourceCells);
+        } else {
+            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(verificationStatus);
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS, fhirCodeableConcept);
+
+            auditCodeableConceptExtension(extension, sourceCells);
+        }
     }
 
 

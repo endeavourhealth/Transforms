@@ -59,7 +59,7 @@ public class PatientResourceCache {
                 patientBuilder = new PatientBuilder(patient);
             }
 
-            patientBuilder = patientBuilders.put(millenniumIdCell.getLong(), patientBuilder);
+            patientBuilders.put(millenniumIdCell.getLong(), patientBuilder);
         }
         return patientBuilder;
     }

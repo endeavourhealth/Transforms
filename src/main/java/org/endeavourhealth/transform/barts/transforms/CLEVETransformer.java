@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 public class CLEVETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
-    //TODO  - kludge -relies on given order
     private static final String[] comparators = {"<=", "<", ">=", ">"};
     private static final String RESULT_STATUS_AUTHORIZED = "25";
 
@@ -169,7 +168,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 && unitsCodeCell.getLong() > 0) { //seem to have a mix of empty cells and zero, so check for both
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    54L, //TODO - change this to a constant in CernerCodeValueRef
+                    CernerCodeValueRef.CLINICAL_EVENT_UNITS,
                     unitsCodeCell.getLong(),
                     fhirResourceFiler.getServiceId());
 
