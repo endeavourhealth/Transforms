@@ -163,6 +163,12 @@ public class PPPHOTransformer extends BartsBasisTransformer {
     }*/
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) {
+
+        //we've missing codes in the code ref table, so just handle by returning SOMETHING
+        if (phoneType == null) {
+            return ContactPoint.ContactPointUse.TEMP;
+        }
+
         switch (phoneType) {
             case "HOME":
             case "VHOME":
@@ -183,7 +189,8 @@ public class PPPHOTransformer extends BartsBasisTransformer {
                 return ContactPoint.ContactPointUse.OLD;
             case "FAX TEMP":
                 return ContactPoint.ContactPointUse.TEMP;
-            default: return ContactPoint.ContactPointUse.TEMP;
+            default:
+                return ContactPoint.ContactPointUse.TEMP;
         }
     }
 
