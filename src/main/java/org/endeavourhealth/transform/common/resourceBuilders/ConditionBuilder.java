@@ -177,19 +177,23 @@ public class ConditionBuilder extends ResourceBuilderBase
     }*/
 
     public void setEndDateOrBoolean(Type type, CsvCell... sourceCells) {
-        if (!(type instanceof DateType)
-            && !(type instanceof BooleanType)) {
-            throw new IllegalArgumentException("Only DateType or BooleanType are supported for abatement");
-        }
-
-        this.condition.setAbatement(type);
-        if (type instanceof DateType) {
-            auditValue("abatementDate", sourceCells);
+        if (type == null) {
+            this.condition.setAbatement(null);
 
         } else {
-            auditValue("abatementBoolean", sourceCells);
-        }
+            if (!(type instanceof DateType)
+                    && !(type instanceof BooleanType)) {
+                throw new IllegalArgumentException("Only DateType or BooleanType are supported for abatement");
+            }
 
+            this.condition.setAbatement(type);
+            if (type instanceof DateType) {
+                auditValue("abatementDate", sourceCells);
+
+            } else {
+                auditValue("abatementBoolean", sourceCells);
+            }
+        }
     }
 
     public Type getEndDateOrBoolean() {

@@ -166,7 +166,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
         //we're missing codes in the code ref table, so just handle by returning SOMETHING
         if (phoneType == null) {
-            return ContactPoint.ContactPointUse.TEMP;
+            return null;
         }
 
         switch (phoneType) {
@@ -198,7 +198,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
         //we're missing codes in the code ref table, so just handle by returning SOMETHING
         if (phoneType == null) {
-            return ContactPoint.ContactPointSystem.OTHER;
+            return null;
         }
 
         switch (phoneType) {

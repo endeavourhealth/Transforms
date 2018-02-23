@@ -479,6 +479,12 @@ public class PPATITransformer extends BartsBasisTransformer {
     }*/
 
     private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus) {
+
+        //we've got at least one missing code, so return null
+        if (nhsNumberStatus == null) {
+            return null;
+        }
+
         switch (nhsNumberStatus) {
             case "Present and verified":
                 return NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
