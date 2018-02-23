@@ -1,12 +1,13 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.ObservationReferral;
@@ -53,8 +54,10 @@ public class ObservationReferralTransformer {
 
         CsvCell ubrn = parser.getReferralUBRN();
         if (!ubrn.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createUbrnIdentifier(ubrn.getString());
-            referralRequestBuilder.addIdentifier(identifier, ubrn);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(referralRequestBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_UBRN);
+            identifierBuilder.setValue(ubrn.getString(), ubrn);
         }
 
         CsvCell urgency = parser.getReferralUrgency();

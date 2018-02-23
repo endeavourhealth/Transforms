@@ -8,7 +8,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class OrganizationBuilder extends ResourceBuilderBase
-                                implements HasAddressI {
+                                implements HasAddressI, HasIdentifierI {
 
     private Organization organization = null;
 
@@ -35,12 +35,12 @@ public class OrganizationBuilder extends ResourceBuilderBase
         auditReferenceExtension(extension, sourceCells);
     }
 
-    public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
         this.organization.addIdentifier(fhirIdentifier);
 
         int index = this.organization.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
     public void setName(String name, CsvCell... sourceCells) {
         this.organization.setName(name);
@@ -121,4 +121,14 @@ public class OrganizationBuilder extends ResourceBuilderBase
         return "address[" + index + "]";
     }
 
+    @Override
+    public Identifier addIdentifier() {
+        return this.organization.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.organization.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
 }

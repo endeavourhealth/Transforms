@@ -7,7 +7,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class LocationBuilder extends ResourceBuilderBase
-                            implements HasAddressI {
+                            implements HasAddressI, HasIdentifierI {
 
     private Location location = null;
 
@@ -29,12 +29,12 @@ public class LocationBuilder extends ResourceBuilderBase
         return location;
     }
 
-    public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
         this.location.addIdentifier(fhirIdentifier);
 
         int index = this.location.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
     public void addTelecom(ContactPoint fhirContact, CsvCell... sourceCells) {
         this.location.addTelecom(fhirContact);
@@ -192,5 +192,16 @@ public class LocationBuilder extends ResourceBuilderBase
     @Override
     public String getAddressJsonPrefix(Address address) {
         return "address";
+    }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.location.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.location.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
     }
 }

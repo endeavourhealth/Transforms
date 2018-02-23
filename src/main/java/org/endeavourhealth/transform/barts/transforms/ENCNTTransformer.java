@@ -17,6 +17,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,15 +136,26 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // Handled in builder now
 
             // Identifiers
-            Identifier identifier;
-            identifier = new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID).setValue(finIdCell.getString());
-            encounterBuilder.addIdentifier(identifier, finIdCell);
+            if (!finIdCell.isEmpty()) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+                identifierBuilder.setValue(finIdCell.getString(), finIdCell);
+            }
 
-            identifier = new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID).setValue(visitIdCell.getString());
-            encounterBuilder.addIdentifier(identifier, visitIdCell);
+            if (!visitIdCell.isEmpty()) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+                identifierBuilder.setValue(visitIdCell.getString(), visitIdCell);
+            }
 
-            identifier = new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID).setValue(encounterIdCell.getString());
-            encounterBuilder.addIdentifier(identifier, encounterIdCell);
+            if (!encounterIdCell.isEmpty()) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+                identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
+            }
 
             // Patient
             //fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));

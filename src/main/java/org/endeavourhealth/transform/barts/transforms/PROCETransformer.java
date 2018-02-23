@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -13,6 +12,7 @@ import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -70,8 +70,10 @@ public class PROCETransformer extends BartsBasisTransformer {
 
 
         if (!procedureIdCell.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID, procedureIdCell.getString());
-            procedureBuilder.addIdentifier(identifier, procedureIdCell);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID);
+            identifierBuilder.setValue(procedureIdCell.getString(), procedureIdCell);
         }
 
         CsvCell active = parser.getActiveIndicator();
@@ -94,14 +96,18 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
         if (!encounterSliceIdCell.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID, encounterSliceIdCell.getString());
-            procedureBuilder.addIdentifier(identifier, encounterSliceIdCell);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
 
         CsvCell nomenclatureIdCell = parser.getNomenclatureID();
         if (!nomenclatureIdCell.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenclatureIdCell.getString());
-            procedureBuilder.addIdentifier(identifier, nomenclatureIdCell);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID);
+            identifierBuilder.setValue(nomenclatureIdCell.getString(), nomenclatureIdCell);
         }
 
         CsvCell personnelIdCell = parser.getPersonnelID();

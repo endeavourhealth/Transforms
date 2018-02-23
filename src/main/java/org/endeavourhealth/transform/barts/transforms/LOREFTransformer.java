@@ -18,6 +18,7 @@ import org.endeavourhealth.transform.barts.schema.LOREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirResourceFilerI;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -166,9 +167,12 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         // Identifier
         //fhirLocation.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
-        Identifier fhirIdentifier = new Identifier();
-        fhirIdentifier.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(locationIdCell.getString());
-        locationBuilder.addIdentifier(fhirIdentifier, locationIdCell);
+        if (!locationIdCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
+            identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
+        }
 
         // Status
         Date now = new Date();

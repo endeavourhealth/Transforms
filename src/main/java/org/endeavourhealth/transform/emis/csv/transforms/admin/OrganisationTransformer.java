@@ -1,11 +1,11 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -53,8 +53,10 @@ public class OrganisationTransformer {
 
         CsvCell odsCode = parser.getODScode();
         if (!odsCode.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createOdsOrganisationIdentifier(odsCode.getString());
-            organizationBuilder.addIdentifier(fhirIdentifier, odsCode);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setValue(odsCode.getString(), odsCode);
         }
 
         CsvCell name = parser.getOrganisatioName();
@@ -64,8 +66,10 @@ public class OrganisationTransformer {
 
         CsvCell cdbNumber = parser.getCDB();
         if (!cdbNumber.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_CDB_NUMBER, cdbNumber.getString());
-            organizationBuilder.addIdentifier(identifier, cdbNumber);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_CDB_NUMBER);
+            identifierBuilder.setValue(cdbNumber.getString(), cdbNumber);
         }
 
         CsvCell openDate = parser.getOpenDate();

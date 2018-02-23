@@ -13,7 +13,7 @@ import java.util.Date;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
-                                        HasContainedListI {
+                                        HasContainedListI, HasIdentifierI{
 
     private Encounter encounter = null;
 
@@ -124,12 +124,12 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue(getCodeableConceptJsonPath(null) + ".text", sourceCells);
     }*/
 
-    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.encounter.addIdentifier(identifier);
 
         int index = this.encounter.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
     public void addReason(CodeableConcept reason, CsvCell... sourceCells) {
         this.encounter.addReason(reason);
@@ -178,5 +178,16 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getExtension().indexOf(extension);
         return "extension[" + index + "].valueCodeableConcept";
+    }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.encounter.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.encounter.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
     }
 }

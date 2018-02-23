@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -14,6 +13,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +79,10 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
         if (!diagnosisId.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID, diagnosisId.getString());
-            conditionBuilder.addIdentifier(identifier, diagnosisId);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID);
+            identifierBuilder.setValue(diagnosisId.getString(), diagnosisId);
         }
 
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
@@ -94,14 +96,18 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         CsvCell encounterSliceID = parser.getEncounterSliceID();
         if (!encounterSliceID.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID, encounterSliceID.getString());
-            conditionBuilder.addIdentifier(identifier, encounterSliceID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setValue(encounterSliceID.getString(), encounterSliceID);
         }
 
         CsvCell nomenclatureId = parser.getNomenclatureID();
         if (!nomenclatureId.isEmpty()) {
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenclatureId.getString());
-            conditionBuilder.addIdentifier(identifier, nomenclatureId);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID);
+            identifierBuilder.setValue(nomenclatureId.getString(), nomenclatureId);
         }
 
         CsvCell personnelIdCell = parser.getPersonnelId();

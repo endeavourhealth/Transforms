@@ -17,7 +17,7 @@ import java.util.Date;
 
 public class ConditionBuilder extends ResourceBuilderBase
                               implements HasCodeableConceptI,
-                                        HasContainedListI {
+                                        HasContainedListI, HasIdentifierI {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
 
@@ -416,12 +416,12 @@ public class ConditionBuilder extends ResourceBuilderBase
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 
-    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.condition.addIdentifier(identifier);
 
         int index = this.condition.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
     public void setVerificationStatus(Condition.ConditionVerificationStatus status, CsvCell... sourceCells) {
         this.condition.setVerificationStatus(status);
@@ -429,5 +429,14 @@ public class ConditionBuilder extends ResourceBuilderBase
         auditValue("verificationStatus", sourceCells);
     }
 
+    @Override
+    public Identifier addIdentifier() {
+        return this.condition.addIdentifier();
+    }
 
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.condition.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
 }

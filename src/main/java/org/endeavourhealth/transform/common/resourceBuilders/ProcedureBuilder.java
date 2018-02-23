@@ -8,7 +8,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class ProcedureBuilder extends ResourceBuilderBase
-                             implements HasCodeableConceptI {
+                             implements HasCodeableConceptI, HasIdentifierI {
 
     private Procedure procedure = null;
 
@@ -99,12 +99,12 @@ public class ProcedureBuilder extends ResourceBuilderBase
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 
-    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.procedure.addIdentifier(identifier);
 
         int index = this.procedure.getIdentifier().size()-1;
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
 
     @Override
@@ -139,5 +139,16 @@ public class ProcedureBuilder extends ResourceBuilderBase
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
+    }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.procedure.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.procedure.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
     }
 }

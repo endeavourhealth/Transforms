@@ -13,7 +13,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class ReferralRequestBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI {
+                                    implements HasCodeableConceptI, HasIdentifierI {
 
     private ReferralRequest referralRequest = null;
 
@@ -98,12 +98,12 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("recipient[" + index + "].reference", sourceCells);
     }
 
-    public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
+    /*public void addIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.referralRequest.addIdentifier(identifier);
 
         int index = this.referralRequest.getIdentifier().indexOf(identifier);
         auditValue("identifier[" + index + "].value", sourceCells);
-    }
+    }*/
 
     public void setPriority(ReferralPriority fhirPriority, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirPriority);
@@ -166,4 +166,14 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
 
+    @Override
+    public Identifier addIdentifier() {
+        return this.referralRequest.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.referralRequest.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
 }
