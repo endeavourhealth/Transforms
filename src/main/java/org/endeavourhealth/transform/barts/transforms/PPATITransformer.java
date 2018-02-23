@@ -178,6 +178,9 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 // LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
             }
+        } else {
+            //if updating a record then clear the gender if the field is empty
+            patientBuilder.setGender(null);
         }
 
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
@@ -194,6 +197,10 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 // LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
             }
+
+        } else {
+            //if updating a record, make sure to clear the field in this case
+            patientBuilder.setMaritalStatus(null);
         }
 
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
@@ -205,6 +212,9 @@ public class PPATITransformer extends BartsBasisTransformer {
 
             EthnicCategory ethnicCategory = convertEthnicCategory(cernerCodeValueRef.getAliasNhsCdAlias());
             patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
+        } else {
+            //if this field is empty we should clear the value from the patient
+            patientBuilder.setEthnicity(null);
         }
 
         CsvCell languageCell = parser.getFirstLanguageCode();
@@ -226,6 +236,8 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 // LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
             }
+        } else {
+            //TODO - remove language
         }
 
         CsvCell religionCell = parser.getReligionCode();
@@ -238,7 +250,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             if (cernerCodeValueRef != null) {
                 String codeTerm = cernerCodeValueRef.getCodeDescTxt();
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
                 codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
                 codeableConceptBuilder.setCodingCode(religionCell.getString(), religionCell);
                 codeableConceptBuilder.setCodingDisplay(codeTerm);
@@ -246,6 +258,8 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 // LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
             }
+        } else {
+            //TODO - remove religion
         }
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
@@ -271,6 +285,10 @@ public class PPATITransformer extends BartsBasisTransformer {
 
                 patientBuilder.setDateOfDeathBoolean(true, deceasedMethodCell);
             }
+
+        } else {
+            //if updating a record, we may have REMOVED a date of death set incorrectly, so clear the fields on the patient
+            patientBuilder.clearDateOfDeath();
         }
     }
 

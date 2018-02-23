@@ -53,7 +53,14 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public void clearDateOfDeath() {
+        this.patient.setDeceased(null);
+    }
+
     public void setDateOfDeath(Date dod, CsvCell... sourceCells) {
+        if (dod == null) {
+            throw new IllegalArgumentException("Use clearDateOfDeath to remove date of death");
+        }
         this.patient.setDeceased(new DateTimeType(dod));
 
         auditValue("deceasedDateTime", sourceCells);
@@ -66,9 +73,14 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void setGender(Enumerations.AdministrativeGender gender, CsvCell... sourceCells) {
-        this.patient.setGender(gender);
+        if (gender == null) {
+            this.patient.setGender(null);
 
-        auditValue("gender", sourceCells);
+        } else {
+            this.patient.setGender(gender);
+
+            auditValue("gender", sourceCells);
+        }
     }
 
     public void setResidentialInstituteCode(String code, CsvCell... sourceCells) {
@@ -191,17 +203,27 @@ public class PatientBuilder extends ResourceBuilderBase
 
 
     public void setMaritalStatus(MaritalStatus fhirMaritalStatus, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMaritalStatus);
-        this.patient.setMaritalStatus(codeableConcept);
+        if (fhirMaritalStatus == null) {
+            this.patient.setMaritalStatus(null);
 
-        auditValue("maritalStatus.coding[0]", sourceCells);
+        } else {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMaritalStatus);
+            this.patient.setMaritalStatus(codeableConcept);
+
+            auditValue("maritalStatus.coding[0]", sourceCells);
+        }
     }
 
     public void setEthnicity(EthnicCategory fhirEthnicity, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirEthnicity);
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, codeableConcept);
+        if (fhirEthnicity == null) {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY);
 
-        auditCodeableConceptExtension(extension, sourceCells);
+        } else {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirEthnicity);
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, codeableConcept);
+
+            auditCodeableConceptExtension(extension, sourceCells);
+        }
     }
 
     @Override
