@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -23,6 +24,7 @@ public class BartsCsvHelper {
 
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
+    private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private UUID serviceId = null;
@@ -130,4 +132,17 @@ public class BartsCsvHelper {
 
         return cernerCodeFromDB;
     }
+
+    public static ResourceId getResourceIdFromCache (String resourceIdLookup) {
+        return resourceIds.get(resourceIdLookup);
+    }
+
+    public static void addResourceIdToCache (ResourceId resourceId) {
+        String resourceIdLookup = resourceId.getScopeId()
+                + "|" + resourceId.getResourceType()
+                + "|" + resourceId.getUniqueId() ;
+        resourceIds.put(resourceIdLookup, resourceId);
+    }
+
+
 }

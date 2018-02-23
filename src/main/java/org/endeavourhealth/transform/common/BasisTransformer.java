@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -40,7 +41,15 @@ public class BasisTransformer {
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
      */
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
-        ResourceId ret = null;
+
+        //Try to find the resourceId in the cache first
+        String resourceIdLookup = scope + "|" + resourceType + "|" + uniqueId;
+        ResourceId resourceId  = BartsCsvHelper.getResourceIdFromCache (resourceIdLookup);
+        if (resourceId != null) {
+            return resourceId;
+        }
+
+        //otherwise, hit the DB
         if (hl7receiverConnection == null) {
             prepareJDBCConnection();
         }
@@ -51,30 +60,40 @@ public class BasisTransformer {
 
         ResultSet rs = resourceIdSelectStatement.executeQuery();
         if (rs.next()) {
-            ret = new ResourceId();
-            ret.setScopeId(scope);
-            ret.setResourceType(resourceType);
-            ret.setResourceId((UUID) rs.getObject(1));
-            ret.setUniqueId(uniqueId);
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType(resourceType);
+            resourceId.setResourceId((UUID) rs.getObject(1));
+            resourceId.setUniqueId(uniqueId);
+
+            // Add to the cache
+            BartsCsvHelper.addResourceIdToCache(resourceId);
         }
         rs.close();
 
-        return ret;
+        return resourceId;
     }
 
 
-    public static void saveResourceId(ResourceId r) throws SQLException, ClassNotFoundException, IOException {
+    public static void saveResourceId(ResourceId resourceId) throws SQLException, ClassNotFoundException, IOException {
         if (hl7receiverConnection == null) {
             prepareJDBCConnection();
         }
 
-        resourceIdInsertStatement.setString(1, r.getScopeId());
-        resourceIdInsertStatement.setString(2, r.getResourceType());
-        resourceIdInsertStatement.setString(3, r.getUniqueId());
-        resourceIdInsertStatement.setObject(4, r.getResourceId());
+        resourceIdInsertStatement.setString(1, resourceId.getScopeId());
+        resourceIdInsertStatement.setString(2, resourceId.getResourceType());
+        resourceIdInsertStatement.setString(3, resourceId.getUniqueId());
+        resourceIdInsertStatement.setObject(4, resourceId.getResourceId());
 
         if (resourceIdInsertStatement.executeUpdate() != 1) {
-            throw new SQLException("Could not create ResourceId:" + r.getScopeId() + ":" + r.getResourceType() + ":" + r.getUniqueId() + ":" + r.getResourceId().toString());
+            throw new SQLException("Could not create ResourceId:"
+                    + resourceId.getScopeId()
+                    + ":" + resourceId.getResourceType() + ":"
+                    + resourceId.getUniqueId()
+                    + ":" + resourceId.getResourceId().toString());
+        } else {
+            // Add to the cache
+            BartsCsvHelper.addResourceIdToCache(resourceId);
         }
     }
 
