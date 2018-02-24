@@ -436,7 +436,7 @@ public class EmisCsvHelper {
             if (fhirObservation != null) {
                 resourceBuilder = new ObservationBuilder(fhirObservation);
             } else {
-                //if the resource can't be found, then we can't update it
+                //if the resource can't be found (or isn't an Observation or DiagnosticReport), then we can't update it
                 return;
             }
         }

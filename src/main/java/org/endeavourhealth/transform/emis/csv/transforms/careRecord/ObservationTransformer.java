@@ -23,7 +23,6 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 
-import javax.xml.crypto.dsig.TransformException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -1332,7 +1331,6 @@ public class ObservationTransformer {
         assertNumericUnitEmpty(procedureBuilder, parser);
         assertNumericRangeLowEmpty(procedureBuilder, parser);
         assertNumericRangeHighEmpty(procedureBuilder, parser);
-        assertNoChildObservations(procedureBuilder, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }
@@ -2292,13 +2290,7 @@ public class ObservationTransformer {
             throw new FieldNotEmptyException("NumericUnit", resourceBuilder.getResource());
         }
     }
-    private static void assertNoChildObservations(ResourceBuilderBase resourceBuilder, EmisCsvHelper csvHelper) throws Exception {
-        ReferenceList childObservations = csvHelper.getAndRemoveObservationParentRelationships(resourceBuilder.getResourceId());
-        if (childObservations != null) {
-            Resource resource = resourceBuilder.getResource();
-            throw new TransformException("" + resource.getResourceType() + " " + resource.getId() + " has " + childObservations.size() + " but the resource doesn't support them");
-        }
-    }
+
 
 
     private static boolean isReview(CodeableConceptBuilder codeableConceptBuilder, String codeableConceptTag, Observation parser,
