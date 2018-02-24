@@ -240,6 +240,6 @@ public class BartsCsvHelper {
             }
         }
 
-        return personIdToPatientResourceMap.get(personIdCell);
+        return personIdToPatientResourceMap.get(personId);
     }
 }
