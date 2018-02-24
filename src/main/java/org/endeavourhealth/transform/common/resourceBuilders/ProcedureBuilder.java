@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -25,7 +25,7 @@ public class ProcedureBuilder extends ResourceBuilderBase
         this.procedure = procedure;
         if (this.procedure == null) {
             this.procedure = new Procedure();
-            this.procedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+            this.procedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
         }
     }
 

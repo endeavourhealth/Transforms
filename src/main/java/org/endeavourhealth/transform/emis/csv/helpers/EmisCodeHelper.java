@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
@@ -87,11 +87,11 @@ public class EmisCodeHelper {
                 || readCode.startsWith("EGTON")
                 || readCode.length() > 5) {
 
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else {
             //if valid Read2
-            return FhirUri.CODE_SYSTEM_READ2;
+            return FhirCodeUri.CODE_SYSTEM_READ2;
         }
     }
 
@@ -102,9 +102,9 @@ public class EmisCodeHelper {
             //to look at the namespace digits in the code to know that an cross-reference against
             //the known Emis namespaces (google "snomed ct namespace registry") but if it's a
             //long-form concept ID, then it's not going to be a standard snomed one
-            return FhirUri.CODE_SYSTEM_EMISSNOMED;
+            return FhirCodeUri.CODE_SYSTEM_EMISSNOMED;
         } else {
-            return FhirUri.CODE_SYSTEM_SNOMED_CT;
+            return FhirCodeUri.CODE_SYSTEM_SNOMED_CT;
         }
     }
 
@@ -135,7 +135,7 @@ public class EmisCodeHelper {
 
         //if we have a separate snomed description, set that in a separate coding object
         if (snomedDescriptionId != null) {
-            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID);
             codeableConceptBuilder.setCodingCode("" + snomedDescriptionId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID, snomedDescriptionId));
         }
 
@@ -149,7 +149,7 @@ public class EmisCodeHelper {
 
         //if we have a DM+D ID, then build a proper coding in the codeable concept
         if (dmdId != null) {
-            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             codeableConceptBuilder.setCodingCode("" + dmdId, createCsvCell(codeMap, AUDIT_DRUG_CODE, dmdId, additionalSourceCells));
             codeableConceptBuilder.setCodingDisplay(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));
             codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));

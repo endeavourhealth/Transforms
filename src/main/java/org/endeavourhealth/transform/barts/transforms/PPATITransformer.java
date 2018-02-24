@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
@@ -84,21 +85,21 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
         //so they can be added back on without duplicating them
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
 
         if (!millenniumPersonId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
             identifierBuilder.setValue(millenniumPersonId.getString(), millenniumPersonId);
         }
 
         if (!mrnCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
             identifierBuilder.setValue(mrnCell.getString(), mrnCell);
         }
 
@@ -109,7 +110,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setValue(nhsNumber, nhsNumberCell);
         }
 
@@ -207,7 +208,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             String codeTerm = cernerCodeValueRef.getCodeDescTxt();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
-            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
             codeableConceptBuilder.setCodingCode(languageCell.getString(), languageCell);
             codeableConceptBuilder.setCodingDisplay(codeTerm);
         }
@@ -222,7 +223,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             String codeTerm = cernerCodeValueRef.getCodeDescTxt();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
-            codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
             codeableConceptBuilder.setCodingCode(religionCell.getString(), religionCell);
             codeableConceptBuilder.setCodingDisplay(codeTerm);
         }
@@ -296,11 +297,11 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         Patient fhirPatient = new Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
 
         fhirPatient.setId(patientResourceId.getResourceId().toString());
 
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
                 parser.getMillenniumPersonId()));
 
         if (!parser.isActive()) {
@@ -309,7 +310,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonId()), fhirPatient);
         }
 
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
                 parser.getLocalPatientId()));
 
         String nhsNumber = parser.getNhsNumber();
@@ -320,7 +321,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             } else {
                 //add the invalid NHS number as a secondary identifier
                 fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
-                        FhirUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
+                        FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
                         nhsNumber));
             }
         }
@@ -421,7 +422,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                     fhirResourceFiler.getServiceId());
 
             if (cernerCodeValueRef != null) {
-                languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
                         .setDisplay(cernerCodeValueRef.getCodeDescTxt());
 
                 fhirCommunication.setLanguage(languageConcept);
@@ -441,7 +442,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                     fhirResourceFiler.getServiceId());
 
             if (cernerCodeValueRef != null) {
-                religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirUri.CODE_SYSTEM_CERNER_CODE_ID)
+                religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
                         .setDisplay(cernerCodeValueRef.getCodeDescTxt());
 
                 fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));

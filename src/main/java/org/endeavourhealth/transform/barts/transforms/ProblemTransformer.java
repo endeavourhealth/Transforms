@@ -74,7 +74,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
         // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
         // Encounter - Problem record cannot be linked to an Encounter
@@ -82,11 +82,11 @@ public class ProblemTransformer extends BartsBasisTransformer {
         ResourceId problemResourceId = getProblemResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
         //CodeableConcept problemCode = new CodeableConcept();
-        //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProblem());
-        CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
+        //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED)).setDisplay(parser.getProblem());
+        CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
 
         //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_PROBLEM_ID).setValue(parser.getProblemId().toString())};
+        Identifier identifiers[] = {new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())};
 
         DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
 

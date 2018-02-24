@@ -145,7 +145,7 @@ public class SessionTransformer {
                                        EmisCsvHelper csvHelper) throws Exception {
 
         Schedule fhirSchedule = new Schedule();
-        fhirSchedule.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SCHEDULE));
+        fhirSchedule.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SCHEDULE));
 
         String sessionGuid = parser.getAppointmnetSessionGuid();
         fhirSchedule.setId(sessionGuid);

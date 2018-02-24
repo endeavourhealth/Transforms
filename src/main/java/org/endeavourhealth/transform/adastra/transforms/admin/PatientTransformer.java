@@ -24,7 +24,7 @@ public class PatientTransformer {
         String lastName = patient.getLastName();
 
         Patient fhirPatient = new Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
 
         // set patient ID
         fhirPatient.setId(patient.getNationalNumber().getNumber() + ":" + patient.getDateOfBirth().getDobValue());

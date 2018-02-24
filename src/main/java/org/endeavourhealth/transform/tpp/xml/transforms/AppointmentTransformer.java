@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.transform.tpp.xml.schema.AppointmentStatus;
 import org.hl7.fhir.instance.model.*;
 
@@ -16,7 +16,7 @@ public class AppointmentTransformer {
     public static void transform(org.endeavourhealth.transform.tpp.xml.schema.Appointment tppAppointment, List<Resource> fhirResources) throws TransformException {
 
         Appointment fhirAppointment = new Appointment();
-        fhirAppointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+        fhirAppointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
         fhirResources.add(fhirAppointment);
 
         fhirAppointment.setId(tppAppointment.getAppointmentUID());

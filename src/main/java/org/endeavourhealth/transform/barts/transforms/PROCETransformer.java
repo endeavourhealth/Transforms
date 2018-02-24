@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -72,7 +72,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!procedureIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_ID);
             identifierBuilder.setValue(procedureIdCell.getString(), procedureIdCell);
         }
 
@@ -98,7 +98,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!encounterSliceIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
             identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
 
@@ -106,7 +106,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!nomenclatureIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID);
             identifierBuilder.setValue(nomenclatureIdCell.getString(), nomenclatureIdCell);
         }
 
@@ -128,7 +128,7 @@ public class PROCETransformer extends BartsBasisTransformer {
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
 
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
@@ -136,7 +136,7 @@ public class PROCETransformer extends BartsBasisTransformer {
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
 
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
@@ -159,7 +159,7 @@ public class PROCETransformer extends BartsBasisTransformer {
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
 
-            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_TYPE);
             codeableConceptBuilder.setCodingCode(procedureTypeCodeCell.getString(), procedureTypeCodeCell);
             codeableConceptBuilder.setCodingDisplay(procedureTypeTerm); //don't pass in the cell as this is derived
             codeableConceptBuilder.setText(procedureTypeTerm); //don't pass in the cell as this is derived
@@ -199,10 +199,10 @@ public class PROCETransformer extends BartsBasisTransformer {
         // create the FHIR Procedure
         Procedure fhirProcedure = new Procedure();
         fhirProcedure.setId(procedureResourceId.getResourceId().toString());
-        fhirProcedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+        fhirProcedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
         fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
         String procedureID = parser.getProcedureID();
-        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_ID, procedureID));
+        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_ID, procedureID));
 
         // set the patient reference
         fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
@@ -223,10 +223,10 @@ public class PROCETransformer extends BartsBasisTransformer {
         fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
 
         String encounterSliceID = parser.getEncounterSliceID();
-        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID, encounterSliceID));
+        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID, encounterSliceID));
 
         String nomenClatureID = parser.getNomenclatureID();
-        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenClatureID));
+        fhirProcedure.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID, nomenClatureID));
 
         String personnelID = parser.getPersonnelID();
         if (!Strings.isNullOrEmpty(personnelID)) {
@@ -240,11 +240,11 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!Strings.isNullOrEmpty(conceptCodeType) && !Strings.isNullOrEmpty(conceptCode)) {
             if (conceptCodeType.equalsIgnoreCase("SNOMED")) {
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
-                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, conceptCode);
+                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, conceptCode);
                 fhirProcedure.setCode(procCode);
             } else if (conceptCodeType.equalsIgnoreCase("OPCS4")) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
-                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_OPCS4, term, conceptCode);
+                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_OPCS4, term, conceptCode);
                 fhirProcedure.setCode(procCode);
             }
         } else {
@@ -258,7 +258,7 @@ public class PROCETransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PROCEDURE_TYPE, procedureTypeCode, fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-                CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
+                CodeableConcept procTypeCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_TYPE, procedureTypeTerm, procedureTypeCode.toString());
                 fhirProcedure.setCategory(procTypeCode);
             } else {
                 // LOG.warn("Procedure type code: "+procedureTypeCode+" not found in Code Value lookup");

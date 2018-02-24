@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -59,7 +60,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
             String positionName = cernerCodeValueRef.getCodeDispTxt();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
-            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_PERSONNEL_POSITION_TYPE);
             codeableConceptBuilder.setCodingCode(positionCode.getString(), positionCode);
             codeableConceptBuilder.setCodingDisplay(positionName);
         }
@@ -72,7 +73,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
             String specialityName = cernerCodeValueRef.getCodeDispTxt();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_SPECIALTY_CODEABLE_CONCEPT);
-            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_PERSONNEL_SPECIALITY_TYPE);
             codeableConceptBuilder.setCodingCode(specialityCode.getString(), specialityCode);
             codeableConceptBuilder.setCodingDisplay(specialityName);
         }
@@ -131,14 +132,14 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         CsvCell gmpCode = parser.getGPNHSCode();
         if (!gmpCode.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
             identifierBuilder.setValue(gmpCode.getString(), gmpCode);
         }
 
         CsvCell consultantNHSCode = parser.getConsultantNHSCode();
         if (!consultantNHSCode.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
             identifierBuilder.setValue(consultantNHSCode.getString(), consultantNHSCode);
         }
 
@@ -155,7 +156,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         }
 
         Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
 
         String personnelID = parser.getPersonnelID();
         // this Practitioner resource id
@@ -175,7 +176,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                 CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_POSITION, positionCode, fhirResourceFiler.getServiceId());
                 if (cernerCodeValueRef != null) {
                     String positionName = cernerCodeValueRef.getCodeDispTxt();
-                    CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
+                    CodeableConcept positionTypeCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_PERSONNEL_POSITION_TYPE, positionName, positionCode.toString());
                     fhirRole.setRole(positionTypeCode);
                 } else {
                     // LOG.warn("Position code: "+positionCode+" not found in Code Value lookup");
@@ -185,7 +186,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
                 CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, specialityCode, fhirResourceFiler.getServiceId());
                 if (cernerCodeValueRef != null) {
                     String specialityName = cernerCodeValueRef.getCodeDispTxt();
-                    CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());
+                    CodeableConcept specialityTypeCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_PERSONNEL_SPECIALITY_TYPE, specialityName, specialityCode.toString());
                     fhirRole.addSpecialty(specialityTypeCode);
                 } else {
                     // LOG.warn("Speciality code: "+specialityCode+" not found in Code Value lookup");
@@ -239,13 +240,13 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
 
         String gmpCode = parser.getGPNHSCode();
         if (!Strings.isNullOrEmpty(gmpCode)) {
-            Identifier identifier = new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE).setValue(gmpCode);
+            Identifier identifier = new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE).setValue(gmpCode);
             fhirPractitioner.addIdentifier(identifier);
         }
 
         String consultantNHSCode = parser.getConsultantNHSCode();
         if (!Strings.isNullOrEmpty(consultantNHSCode)) {
-            Identifier identifier = new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE).setValue(consultantNHSCode);
+            Identifier identifier = new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE).setValue(consultantNHSCode);
             fhirPractitioner.addIdentifier(identifier);
         }
 

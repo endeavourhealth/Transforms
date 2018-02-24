@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
@@ -56,7 +56,7 @@ public class ObservationReferralTransformer {
         if (!ubrn.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(referralRequestBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_UBRN);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_UBRN);
             identifierBuilder.setValue(ubrn.getString(), ubrn);
         }
 
@@ -143,7 +143,7 @@ public class ObservationReferralTransformer {
                                        EmisCsvHelper csvHelper) throws Exception {
 
         ReferralRequest fhirReferral = new ReferralRequest();
-        fhirReferral.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+        fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();

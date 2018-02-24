@@ -129,7 +129,7 @@ public class EmisCsvHelper {
                     LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
 
                     Coding coding = new Coding();
-                    coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
+                    coding.setSystem(FhirCodeUri.CODE_SYSTEM_READ2);
                     coding.setCode("?????");
                     coding.setDisplay("Unknown code");
 
@@ -1058,7 +1058,7 @@ public class EmisCsvHelper {
 
         Meta meta = condition.getMeta();
         for (UriType profileUri: meta.getProfile()) {
-            if (profileUri.getValue().equals(FhirUri.PROFILE_URI_CONDITION)) {
+            if (profileUri.getValue().equals(FhirProfileUri.PROFILE_URI_CONDITION)) {
                 return true;
             }
         }

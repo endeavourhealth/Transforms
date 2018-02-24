@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.transform.tpp.xml.schema.Address;
 import org.endeavourhealth.transform.tpp.xml.schema.*;
 import org.hl7.fhir.instance.model.*;
@@ -24,7 +24,7 @@ public class DemographicTransformer {
     public static void transform(String patientUid, Identity tppId, Demographics tppDemographics, List<Resource> fhirResources) throws TransformException {
 
         Patient fhirPatient = new Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
         fhirPatient.setId(patientUid);
         fhirResources.add(fhirPatient);
 
@@ -73,7 +73,7 @@ public class DemographicTransformer {
 
         //also need to create the EpisodeOfCare resource
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
-        fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
+        fhirEpisode.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
         fhirResources.add(fhirEpisode);
 
         Period fhirPeriod = PeriodHelper.createPeriod(startDate, endDate);
@@ -169,7 +169,7 @@ public class DemographicTransformer {
                 || (tppCode.getScheme() == CodeScheme.CTV_3 && !tppCode.getCode().equals(ENGLISH_MAIN_CODE_CTV3))
                 || (tppCode.getScheme() == CodeScheme.SNOMED && !tppCode.getCode().equals(ENGLISH_MAIN_CODE_SNOMED))) {
 
-                CodeableConcept fhirConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, ENGLISH_SECOND_CODE, ENGLISH_SECOND_TERM);
+                CodeableConcept fhirConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, ENGLISH_SECOND_CODE, ENGLISH_SECOND_TERM);
                 Patient.PatientCommunicationComponent fhirCommunication = fhirPatient.addCommunication();
                 fhirCommunication.setLanguage(fhirConcept);
             }
@@ -254,7 +254,7 @@ public class DemographicTransformer {
         }
 
         //add the local identifier as well (which we don't have a system for)
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID, patientUid));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID, patientUid));
 
     }
 }

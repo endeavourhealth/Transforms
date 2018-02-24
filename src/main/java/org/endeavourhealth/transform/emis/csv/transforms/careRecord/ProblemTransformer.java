@@ -159,7 +159,7 @@ public class ProblemTransformer {
                                        String version) throws Exception {
 
         Condition fhirProblem = new Condition();
-        fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -176,7 +176,7 @@ public class ProblemTransformer {
             //if we have a row in the Problem file that's deleted but the row in the Observation file
             //isn't being deleted, then the Problem needs to be down-graded to just a Condition, so set
             //the profile URI accordingly
-            fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+            fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
 
             //the problem is actually saved in the ObservationTransformer, so just cache for later
             csvHelper.cacheProblem(observationGuid, patientGuid, fhirProblem);

@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
@@ -26,7 +26,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest = referralRequest;
         if (this.referralRequest == null) {
             this.referralRequest = new ReferralRequest();
-            this.referralRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+            this.referralRequest.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
         }
     }
 

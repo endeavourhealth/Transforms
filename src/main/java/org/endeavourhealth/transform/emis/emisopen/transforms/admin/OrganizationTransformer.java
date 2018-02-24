@@ -2,10 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -34,14 +31,14 @@ public class OrganizationTransformer {
     private static Organization createOrganization(LocationType locationType, TypeOfLocationType typeOfLocationType) throws TransformException
     {
         Organization organization = new Organization();
-        organization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
 
         organization.setId(locationType.getGUID());
 
         organization.setName(locationType.getLocationName());
 
         if (!StringUtils.isBlank(locationType.getNationalCode())) {
-            organization.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_ODS_CODE, locationType.getNationalCode()));
+            organization.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE, locationType.getNationalCode()));
         }
 
         if (typeOfLocationType != null) {

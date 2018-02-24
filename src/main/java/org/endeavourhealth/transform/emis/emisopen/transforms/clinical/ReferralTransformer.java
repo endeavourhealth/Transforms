@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.*;
@@ -86,7 +86,7 @@ public class ReferralTransformer extends ClinicalTransformerBase {
 
     private static ReferralRequest createBasicReferral(CodedItemBaseType codedItem, String patientGuid) throws TransformException {
         ReferralRequest fhirReferral = new ReferralRequest();
-        fhirReferral.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+        fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
 
         String eventGuid = codedItem.getGUID();
         EmisOpenHelper.setUniqueId(fhirReferral, patientGuid, eventGuid);

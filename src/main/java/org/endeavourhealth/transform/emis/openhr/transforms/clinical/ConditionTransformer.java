@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.openhr.transforms.clinical;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -30,7 +30,7 @@ public class ConditionTransformer implements ClinicalResourceTransformer
         Condition target = new Condition();
 
         target.setId(source.getId());
-        target.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+        target.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
 
         target.setPatient(ReferenceHelper.createReference(ResourceType.Patient, source.getPatient()));
         target.setEncounter(eventEncounterMap.getEncounterReference(source.getId()));

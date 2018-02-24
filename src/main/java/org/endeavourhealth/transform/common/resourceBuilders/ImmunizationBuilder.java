@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,7 +20,7 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         this.immunization = immunization;
         if (this.immunization == null) {
             this.immunization = new Immunization();
-            this.immunization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_IMMUNIZATION));
+            this.immunization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_IMMUNIZATION));
         }
     }
 

@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomgetpatientappointments.AppointmentStruct;
@@ -42,7 +42,7 @@ public class AppointmentTransformer {
         /*Appointment fhirAppointment = new Appointment();
 
         fhirAppointment.setId(appointment.getGUID());
-        fhirAppointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+        fhirAppointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
 
         fhirAppointment.setStatus(getAppointmentStatus(appointment.getStatus()));
 
@@ -95,7 +95,7 @@ public class AppointmentTransformer {
         Appointment appointment = new Appointment();
 
         appointment.setId(appointmentStruct.getSlotGUID());
-        appointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+        appointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
 
         appointment.setStatus(getAppointmentStatus(appointmentStruct.getStatus()));
 

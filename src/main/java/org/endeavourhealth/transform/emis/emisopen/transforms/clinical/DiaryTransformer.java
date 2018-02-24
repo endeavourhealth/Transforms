@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.DiaryListType;
@@ -39,7 +39,7 @@ public class DiaryTransformer extends ClinicalTransformerBase {
     public static void transform(DiaryType diaryEntry, List<Resource> resources, String patientGuid) throws TransformException {
 
         ProcedureRequest fhirRequest = new ProcedureRequest();
-        fhirRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE_REQUEST));
+        fhirRequest.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE_REQUEST));
 
         String diaryGuid = diaryEntry.getGUID();
         EmisOpenHelper.setUniqueId(fhirRequest, patientGuid, diaryGuid);

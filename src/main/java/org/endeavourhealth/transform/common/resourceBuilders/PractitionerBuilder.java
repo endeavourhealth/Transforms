@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -21,7 +21,7 @@ public class PractitionerBuilder extends ResourceBuilderBase
         this.practitioner = practitioner;
         if (this.practitioner == null) {
             this.practitioner = new Practitioner();
-            this.practitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+            this.practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
         }
     }
 

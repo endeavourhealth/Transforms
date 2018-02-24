@@ -148,7 +148,7 @@ public class ConsultationTransformer {
                                         String version) throws Exception {
 
         Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
         String consultationGuid = parser.getConsultationGuid();
         String patientGuid = parser.getPatientGuid();

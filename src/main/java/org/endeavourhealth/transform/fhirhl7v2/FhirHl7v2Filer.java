@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.fhirhl7v2;
 
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
@@ -423,7 +423,7 @@ public class FhirHl7v2Filer {
                 }
 
                 Coding event = header.getEvent();
-                if (event.getSystem().equals(FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE)) {
+                if (event.getSystem().equals(FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE)) {
                     return event.getCode();
                 }
             }

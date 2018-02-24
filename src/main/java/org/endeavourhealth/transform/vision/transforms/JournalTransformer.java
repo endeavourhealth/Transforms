@@ -244,7 +244,7 @@ public class JournalTransformer {
         String drugRecordID = parser.getObservationID();
         String patientID = parser.getPatientID();
 
-        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
+        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_AUTHORISATION));
         VisionCsvHelper.setUniqueId(fhirMedicationStatement, patientID, drugRecordID);
         fhirMedicationStatement.setPatient(csvHelper.createPatientReference(patientID));
 
@@ -271,7 +271,7 @@ public class JournalTransformer {
 
         String dmdId = parser.getDrugDMDCode();
         String term = parser.getRubric();
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
         fhirMedicationStatement.setMedication(codeableConcept);
 
         Double quantity = parser.getValue1();
@@ -332,7 +332,7 @@ public class JournalTransformer {
                                                        VisionCsvHelper csvHelper) throws Exception {
 
         MedicationOrder fhirMedicationOrder = new MedicationOrder();
-        fhirMedicationOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+        fhirMedicationOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
 
         String issueRecordID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -359,7 +359,7 @@ public class JournalTransformer {
 
         String dmdId = parser.getDrugDMDCode();
         String term = parser.getRubric();
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, dmdId);
         fhirMedicationOrder.setMedication(codeableConcept);
 
         String dose = parser.getAssociatedText();
@@ -413,7 +413,7 @@ public class JournalTransformer {
                                               VisionCsvHelper csvHelper) throws Exception {
 
         AllergyIntolerance fhirAllergy = new AllergyIntolerance();
-        fhirAllergy.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ALLERGY_INTOLERANCE));
+        fhirAllergy.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ALLERGY_INTOLERANCE));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -483,7 +483,7 @@ public class JournalTransformer {
                                                 VisionCsvHelper csvHelper) throws Exception {
 
         Procedure fhirProcedure = new Procedure();
-        fhirProcedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+        fhirProcedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -546,7 +546,7 @@ public class JournalTransformer {
                                                 VisionCsvHelper csvHelper) throws Exception {
 
         Condition fhirProblem = new Condition();
-        fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -626,7 +626,7 @@ public class JournalTransformer {
                                                   VisionCsvHelper csvHelper) throws Exception {
 
         org.hl7.fhir.instance.model.Observation fhirObservation = new org.hl7.fhir.instance.model.Observation();
-        fhirObservation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -686,13 +686,13 @@ public class JournalTransformer {
         //BP is a special case - create systolic and diastolic coded components
         if (isBPCode (parser.getReadCode()) && value1 != null && value2 != null) {
             Observation.ObservationComponentComponent componentSystolic = fhirObservation.addComponent();
-            CodeableConcept comOneCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163030003");
+            CodeableConcept comOneCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, "", "163030003");
             TerminologyService.translateToSnomed(comOneCodeableConcept);
             componentSystolic.setCode(comOneCodeableConcept);
             componentSystolic.setValue(QuantityHelper.createQuantity(value1, units1));
 
             Observation.ObservationComponentComponent componentDiastolic = fhirObservation.addComponent();
-            CodeableConcept comTwoCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, "", "163031004");
+            CodeableConcept comTwoCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, "", "163031004");
             TerminologyService.translateToSnomed(comTwoCodeableConcept);
             componentDiastolic.setCode(comTwoCodeableConcept);
             componentDiastolic.setValue(QuantityHelper.createQuantity(value2, units2));
@@ -741,7 +741,7 @@ public class JournalTransformer {
                                                           VisionCsvHelper csvHelper) throws Exception {
 
         FamilyMemberHistory fhirFamilyHistory = new FamilyMemberHistory();
-        fhirFamilyHistory.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
+        fhirFamilyHistory.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -805,7 +805,7 @@ public class JournalTransformer {
                                                    VisionCsvHelper csvHelper) throws Exception {
 
         Immunization fhirImmunisation = new Immunization();
-        fhirImmunisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_IMMUNIZATION));
+        fhirImmunisation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_IMMUNIZATION));
 
         String observationID = parser.getObservationID();
         String patientID = parser.getPatientID();
@@ -998,7 +998,7 @@ public class JournalTransformer {
                 if (Strings.isNullOrEmpty(documentGuid)) {
                     return;
                 }
-                Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
+                Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentGuid);
                 resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
             }
         }
@@ -1011,7 +1011,7 @@ public class JournalTransformer {
         String term = parser.getRubric();
         //if the Snomed code exists with no term, pass through the translator to create a full coded concept
         if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, snomedCode);
+            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, snomedCode);
             TerminologyService.translateToSnomed(codeableConcept);
         }
         //otherwise, perform a READ to Snomed translation

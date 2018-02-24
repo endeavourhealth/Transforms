@@ -77,10 +77,14 @@ public class PatientResourceCache {
 
     public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
+        LOG.trace("Saving " + patientBuilders.size() + " patients to the DB");
+
         for (Long milleniumId: patientBuilders.keySet()) {
             PatientBuilder patientBuilder = patientBuilders.get(milleniumId);
             BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
         }
+
+        LOG.trace("Finishing saving " + patientBuilders.size() + " patients to the DB");
 
         //there should be no attempt to reference this cache after this point, so set to null
         //to ensure any attempt results in an exception

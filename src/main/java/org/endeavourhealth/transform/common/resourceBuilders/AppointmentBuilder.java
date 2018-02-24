@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -21,7 +21,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
         this.appointment = appointment;
         if (this.appointment == null) {
             this.appointment = new Appointment();
-            this.appointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+            this.appointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
         }
     }
 

@@ -3,7 +3,8 @@ package org.endeavourhealth.transform.common;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -369,7 +370,7 @@ public class BasisTransformer {
 
         // Meta
         Meta meta = new Meta();
-        meta.addProfile(FhirUri.PROFILE_URI_CONDITION); // This should always be added to make it compatible with EMIS data for viewing purposes
+        meta.addProfile(FhirProfileUri.PROFILE_URI_CONDITION); // This should always be added to make it compatible with EMIS data for viewing purposes
         if (metaUri != null) {
             for (int i = 0; i < metaUri.length; i++) {
                 meta.addProfile(metaUri[i]);
@@ -522,7 +523,7 @@ public class BasisTransformer {
 
             if (nhsno != null && nhsno.length() > 0) {
                 Identifier patientIdentifier = new Identifier()
-                        .setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER)
+                        .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)
                         .setValue(nhsno.replaceAll("\\-", ""));
                 fhirPatient.addIdentifier(patientIdentifier);
 
@@ -785,7 +786,7 @@ public class BasisTransformer {
     public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[], Extension[] ex, Condition.ConditionVerificationStatus cvs) throws Exception {
         fhirCondition.setId(problemResourceId.getResourceId().toString());
 
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirCondition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -817,7 +818,7 @@ public class BasisTransformer {
 
         // set category to 'complaint'
         CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
+        cc.addCoding().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
         fhirCondition.setCategory(cc);
 
         // set onset to field  to field 10 + 11

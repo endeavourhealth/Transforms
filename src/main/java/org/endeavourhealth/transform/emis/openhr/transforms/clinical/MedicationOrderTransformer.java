@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.openhr.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001HealthDomain;
@@ -16,7 +16,7 @@ public class MedicationOrderTransformer implements ClinicalResourceTransformer
         MedicationOrder target = new MedicationOrder();
 
         target.setId(source.getId());
-        target.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+        target.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
 
         target.setDateWrittenElement(DateConverter.convertPartialDateTimeToDateTimeType(source.getEffectiveTime()));
 

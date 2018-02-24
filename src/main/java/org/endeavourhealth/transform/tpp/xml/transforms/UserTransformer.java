@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.NameConverter;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -19,7 +19,7 @@ public class UserTransformer {
         String userName = tppUser.getUserName();
 
         Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
         fhirPractitioner.setId(userName); //user name is unique, so use as the ID
         fhirResources.add(fhirPractitioner);
 

@@ -48,14 +48,14 @@ public class PatientTransformer {
 
         //create Patient Resource
         org.hl7.fhir.instance.model.Patient fhirPatient = new org.hl7.fhir.instance.model.Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
 
         String patientID = parser.getPatientID();
         VisionCsvHelper.setUniqueId(fhirPatient, patientID, null);
 
         //create Episode of Care Resource
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
-        fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
+        fhirEpisode.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
         VisionCsvHelper.setUniqueId(fhirEpisode, patientID, null);
         fhirEpisode.setPatient(csvHelper.createPatientReference(patientID.toString()));
 
@@ -73,8 +73,8 @@ public class PatientTransformer {
 
         //store the patient GUID and patient number to the patient resource
         int patientNumber = parser.getPatientNumber();
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID, patientID));
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER, "" + patientNumber));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID, patientID));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER, "" + patientNumber));
 
         Date dob = parser.getDateOfBirth();
         fhirPatient.setBirthDate(dob);

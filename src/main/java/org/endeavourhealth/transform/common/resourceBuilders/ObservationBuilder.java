@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -27,7 +27,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         this.observation = observation;
         if (this.observation == null) {
             this.observation = new Observation();
-            this.observation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+            this.observation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
         }
     }
 

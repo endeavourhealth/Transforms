@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.reverseCsv.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
@@ -57,9 +57,9 @@ public class FhirPatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasIdentifier()) {
 
-            nhsNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            nhsNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
-            String patientNumberStr = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+            String patientNumberStr = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
             if (!Strings.isNullOrEmpty(patientNumberStr)) {
                 patientNumber = Integer.valueOf(patientNumberStr);
             }

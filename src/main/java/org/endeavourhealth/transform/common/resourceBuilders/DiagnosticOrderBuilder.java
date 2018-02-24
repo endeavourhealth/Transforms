@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,7 +19,7 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
         this.diagnosticOrder = diagnosticOrder;
         if (this.diagnosticOrder == null) {
             this.diagnosticOrder = new DiagnosticOrder();
-            this.diagnosticOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_ORDER));
+            this.diagnosticOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_ORDER));
         }
     }
 

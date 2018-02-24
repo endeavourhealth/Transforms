@@ -222,13 +222,13 @@ public class SlotTransformer {
 
 
         org.hl7.fhir.instance.model.Slot fhirSlot = new org.hl7.fhir.instance.model.Slot();
-        fhirSlot.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SLOT));
+        fhirSlot.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SLOT));
 
         String slotGuid = parser.getSlotGuid();
         EmisCsvHelper.setUniqueId(fhirSlot, patientGuid, slotGuid);
 
         Appointment fhirAppointment = new Appointment();
-        fhirAppointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+        fhirAppointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
 
         //use the same slot GUID as the appointment GUID; since it's a different resource type, it should be fine
         EmisCsvHelper.setUniqueId(fhirAppointment, patientGuid, slotGuid);

@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,7 +20,7 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
         this.allergyIntolerance = allergyIntolerance;
         if (this.allergyIntolerance == null) {
             this.allergyIntolerance = new AllergyIntolerance();
-            this.allergyIntolerance.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ALLERGY_INTOLERANCE));
+            this.allergyIntolerance.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ALLERGY_INTOLERANCE));
         }
     }
 

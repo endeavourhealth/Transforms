@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -102,7 +102,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(observationBuilder);
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_OBSERVATION_ID);
+        identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_OBSERVATION_ID);
         identifierBuilder.setValue(clinicalEventId.getString(), clinicalEventId);
 
         //TODO we need to filter out any records that are not final
@@ -134,7 +134,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
-        codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
 
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
@@ -243,7 +243,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             String normalcyDesc = cernerCodeValueRef.getCodeDescTxt();
 
             CodeableConceptBuilder normalcyBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT);
-            normalcyBuilder.addCoding(FhirUri.CODE_SYSTEM_CERNER_CODE_ID);
+            normalcyBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
             normalcyBuilder.setCodingCode(normalcyCodeCell.getString(), normalcyCodeCell);
             normalcyBuilder.setCodingDisplay(normalcyDesc);
         }
@@ -301,7 +301,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getPatientId()))};
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getPatientId()))};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getPatientId(), null, null, null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
 
         // Performer
@@ -323,8 +323,8 @@ public class CLEVETransformer extends BartsBasisTransformer {
         String observationID = parser.getEventId();
         Observation fhirObservation = new Observation();
         fhirObservation.setId(observationResourceId.getResourceId().toString());
-        fhirObservation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
-        fhirObservation.addIdentifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_OBSERVATION_ID).setValue(observationID);
+        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
+        fhirObservation.addIdentifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_OBSERVATION_ID).setValue(observationID);
         fhirObservation.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
         //TODO we need to filter out any records that are not final
         fhirObservation.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.FINAL);
@@ -362,7 +362,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         //TODO - establish code mapping for millenium / FHIR
         // Just staying with FHIR code for now - valid approach?
-        CodeableConcept obsCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_CERNER_CODE_ID, term, code);
+        CodeableConcept obsCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, term, code);
         //TerminologyService.translateToSnomed(obsCode);
         // Previous null test wouldn't work. Specific errors should get an exception
         if (obsCode.getCoding().isEmpty()) {
@@ -393,10 +393,10 @@ public class CLEVETransformer extends BartsBasisTransformer {
                     fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1,
                             units,
                             Quantity.QuantityComparator.fromCode(comp),
-                            FhirUri.CODE_SYSTEM_CERNER_CODE_ID,
+                            FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID,
                             unitsCode));
                 } else {
-                    fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1, units, FhirUri.CODE_SYSTEM_CERNER_CODE_ID, unitsCode));
+                    fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1, units, FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, unitsCode));
                 }
             }
 
@@ -411,7 +411,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 SimpleQuantity high = QuantityHelper.createSimpleQuantity(rangeHigh, units);
                 //TODO I think I need a new createcodeableconcept method without term ???
                 // I think the fhir page suggests this but may be wrong
-                CodeableConcept normCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_CERNER_CODE_ID,
+                CodeableConcept normCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID,
                         "normal", parser.getEventNormalcyCode());
                 Observation.ObservationReferenceRangeComponent obsRange = new Observation.ObservationReferenceRangeComponent();
                 obsRange.setHigh(high);

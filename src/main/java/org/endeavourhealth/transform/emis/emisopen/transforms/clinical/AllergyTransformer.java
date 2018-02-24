@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.*;
@@ -60,7 +60,7 @@ public final class AllergyTransformer extends ClinicalTransformerBase {
     private static AllergyIntolerance createBasicAllergy(CodedItemBaseType codedItem, String patientGuid) throws TransformException {
 
         AllergyIntolerance fhirAllergy = new AllergyIntolerance();
-        fhirAllergy.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ALLERGY_INTOLERANCE));
+        fhirAllergy.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ALLERGY_INTOLERANCE));
 
         EmisOpenHelper.setUniqueId(fhirAllergy, patientGuid, codedItem.getGUID());
 

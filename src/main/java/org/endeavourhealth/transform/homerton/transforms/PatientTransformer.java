@@ -45,7 +45,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         fhirPatient.setId(parser.getCNN());
 
-        fhirPatient.addIdentifier(new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getCNN())));
+        fhirPatient.addIdentifier(new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getCNN())));
 
         fhirPatient.setActive(true);
 

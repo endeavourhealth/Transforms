@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.ui.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
@@ -28,7 +28,7 @@ public class UIConditionTransform extends UIClinicalTransform<Condition, UICondi
     }
 
     private boolean isProblem(Condition c) {
-        if (c.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM))
+        if (c.getMeta().hasProfile(FhirProfileUri.PROFILE_URI_PROBLEM))
             return true;
 
         if (c.hasCategory()

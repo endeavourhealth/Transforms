@@ -1,11 +1,14 @@
 package org.endeavourhealth.transform.ui.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.ui.helpers.*;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
-import org.endeavourhealth.transform.ui.models.resources.admin.*;
+import org.endeavourhealth.transform.ui.models.resources.admin.UIContact;
+import org.endeavourhealth.transform.ui.models.resources.admin.UIContactPoint;
+import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
+import org.endeavourhealth.transform.ui.models.resources.admin.UIPatient;
 import org.endeavourhealth.transform.ui.models.types.*;
 import org.hl7.fhir.instance.model.*;
 
@@ -14,8 +17,8 @@ import java.util.*;
 public class UIPatientTransform {
 
 	private static Set<String> identifierUris = new HashSet<>(Arrays.asList(
-			FhirUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
-			FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID));
+			FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID,
+			FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID));
 
 	public static UIPatient transform(UUID serviceId, Patient patient, ReferencedResources referencedResources) {
 
@@ -143,7 +146,7 @@ public class UIPatientTransform {
 
 
 	private static String getNhsNumber(List<Identifier> identifiers) {
-		String result = IdentifierHelper.getIdentifierBySystem(identifiers, FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+		String result = IdentifierHelper.getIdentifierBySystem(identifiers, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
 		if (result != null)
 			result = result.replaceAll(" ", "");

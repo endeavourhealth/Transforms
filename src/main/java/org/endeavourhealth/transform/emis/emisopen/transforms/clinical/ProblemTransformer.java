@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -74,7 +74,7 @@ public class ProblemTransformer extends ClinicalTransformerBase {
         }
 
         Condition fhirProblem = new Condition();
-        fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         String eventGuid = codedItem.getGUID();
         EmisOpenHelper.setUniqueId(fhirProblem, patientUuid, eventGuid);

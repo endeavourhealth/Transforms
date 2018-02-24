@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -59,9 +59,9 @@ public class ConditionBuilder extends ResourceBuilderBase
 
     public void setAsProblem(boolean isProblem) {
         if (isProblem) {
-            this.condition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+            this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
         } else {
-            this.condition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+            this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
         }
     }
 
@@ -74,7 +74,7 @@ public class ConditionBuilder extends ResourceBuilderBase
             throw new IllegalAccessError("Meta element has no profile URL set");
         }
         UriType profile = meta.getProfile().get(0);
-        return profile.getValue().equals(FhirUri.PROFILE_URI_PROBLEM);
+        return profile.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM);
     }
 
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {

@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -81,7 +81,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!diagnosisId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_ID);
             identifierBuilder.setValue(diagnosisId.getString(), diagnosisId);
         }
 
@@ -98,7 +98,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!encounterSliceID.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
             identifierBuilder.setValue(encounterSliceID.getString(), encounterSliceID);
         }
 
@@ -106,7 +106,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!nomenclatureId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID);
             identifierBuilder.setValue(nomenclatureId.getString(), nomenclatureId);
         }
 
@@ -128,7 +128,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
 
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                 codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
@@ -136,7 +136,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
                 String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
 
-                codeableConceptBuilder.addCoding(FhirUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                 codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
@@ -159,7 +159,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
 
-            codeableConceptBuilder.addCoding(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_TYPE);
             codeableConceptBuilder.setCodingCode(diagnosisTypeCode.getString(), diagnosisTypeCode);
             codeableConceptBuilder.setCodingDisplay(diagnosisTypeTerm); //don't pass in the cell as this is derived
             codeableConceptBuilder.setText(diagnosisTypeTerm); //don't pass in the cell as this is derived
@@ -204,11 +204,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         // create the FHIR Condition
         Condition fhirCondition = new Condition();
         fhirCondition.setId(conditionResourceId.getResourceId().toString());
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+        fhirCondition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
         String diagnosisID = parser.getDiagnosisID();
-        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID, diagnosisID));
+        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_ID, diagnosisID));
 
         // set the patient reference
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
@@ -229,10 +229,10 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         fhirCondition.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
 
         String encounterSliceID = parser.getEncounterSliceID();
-        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_ENCOUNTER_SLICE_ID, encounterSliceID));
+        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID, encounterSliceID));
 
         String nomenClatureID = parser.getNomenclatureID();
-        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, BartsCsvToFhirTransformer.CODE_SYSTEM_NOMENCLATURE_ID, nomenClatureID));
+        fhirCondition.addIdentifier (IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID, nomenClatureID));
 
         String personnelID = parser.getPersonnel();
         if (!Strings.isNullOrEmpty(personnelID)) {
@@ -245,11 +245,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!Strings.isNullOrEmpty(conceptCodeType) && !Strings.isNullOrEmpty(conceptCode)) {
             if (conceptCodeType.equalsIgnoreCase("SNOMED")) {
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
-                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, term, conceptCode);
+                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, conceptCode);
                 fhirCondition.setCode(procCode);
             } else if (conceptCodeType.equalsIgnoreCase("ICD10WHO")) {
                 String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
-                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_ICD10, term, conceptCode);
+                CodeableConcept procCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_ICD10, term, conceptCode);
                 fhirCondition.setCode(procCode);
             }
         } else {
@@ -263,7 +263,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(RdbmsCernerCodeValueRefDal.DIAGNOSIS_TYPE, diagnosisTypeCode, fhirResourceFiler.getServiceId());
             if (cernerCodeValueRef != null) {
                 String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-                CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(BartsCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
+                CodeableConcept diagTypeCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_TYPE, diagnosisTypeTerm, diagnosisTypeCode.toString());
                 fhirCondition.setCategory(diagTypeCode);
             } else {
                 // LOG.warn("Diagnosis type code: "+diagnosisTypeCode+" not found in Code Value lookup");

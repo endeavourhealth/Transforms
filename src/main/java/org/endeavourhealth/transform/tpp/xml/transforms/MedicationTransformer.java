@@ -2,10 +2,11 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.transform.tpp.xml.schema.*;
 import org.endeavourhealth.transform.tpp.xml.schema.Medication;
 import org.hl7.fhir.instance.model.*;
@@ -26,7 +27,7 @@ public class MedicationTransformer {
     public static void transform(Medication medication, Event tppEvent, Encounter fhirEncounter, List<Resource> fhirResources) throws TransformException {
 
         MedicationOrder fhirMedicationOrder = new MedicationOrder();
-        fhirMedicationOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+        fhirMedicationOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
         fhirResources.add(fhirMedicationOrder);
 
         MedicationType medicationType = medication.getMedicationType();
@@ -80,7 +81,7 @@ public class MedicationTransformer {
         //BigInteger packId = tppDrug.getPackID();
 
         if (scheme == DrugScheme.DMD) {
-            return CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, fullName, productId);
+            return CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, fullName, productId);
         } else if (scheme == DrugScheme.MULTILEX) {
             return CodeableConceptHelper.createCodeableConcept(fullName);
         } else {

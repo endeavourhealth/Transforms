@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomslotsforsession.SlotListStruct;
@@ -32,7 +32,7 @@ public class SlotTransformer
         Slot slot = new Slot();
 
         slot.setId(appointmentSlot.getGUID());
-        slot.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SLOT));
+        slot.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SLOT));
 
         slot.setSchedule(EmisOpenHelper.createScheduleReference(appointmentSlot.getSessionGUID()));
 

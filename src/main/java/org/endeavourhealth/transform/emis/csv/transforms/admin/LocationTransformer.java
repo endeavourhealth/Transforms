@@ -143,7 +143,7 @@ public class LocationTransformer {
                                        EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        fhirLocation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
 
         String locationGuid = parser.getLocationGuid();
         fhirLocation.setId(locationGuid);

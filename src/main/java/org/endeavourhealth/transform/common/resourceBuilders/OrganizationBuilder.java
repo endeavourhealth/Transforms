@@ -21,7 +21,7 @@ public class OrganizationBuilder extends ResourceBuilderBase
         this.organization = organization;
         if (this.organization == null) {
             this.organization = new Organization();
-            this.organization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+            this.organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
         }
     }
 

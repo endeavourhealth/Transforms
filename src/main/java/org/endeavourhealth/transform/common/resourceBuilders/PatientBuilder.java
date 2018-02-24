@@ -30,7 +30,7 @@ public class PatientBuilder extends ResourceBuilderBase
         this.patient = patient;
         if (this.patient == null) {
             this.patient = new Patient();
-            this.patient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+            this.patient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
         }
     }
 

@@ -19,7 +19,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         this.episodeOfCare = episodeOfCare;
         if (this.episodeOfCare == null) {
             this.episodeOfCare = new EpisodeOfCare();
-            this.episodeOfCare.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
+            this.episodeOfCare.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
         }
     }
 

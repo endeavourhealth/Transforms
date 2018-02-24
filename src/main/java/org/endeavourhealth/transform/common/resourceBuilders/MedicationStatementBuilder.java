@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.CodingHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -24,7 +24,7 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
         this.medicationStatement = medicationStatement;
         if (this.medicationStatement == null) {
             this.medicationStatement = new MedicationStatement();
-            this.medicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
+            this.medicationStatement.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_AUTHORISATION));
         }
     }
 

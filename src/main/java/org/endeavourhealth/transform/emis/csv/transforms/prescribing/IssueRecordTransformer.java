@@ -139,7 +139,7 @@ public class IssueRecordTransformer {
                                        String version) throws Exception {
 
         MedicationOrder fhirMedication = new MedicationOrder();
-        fhirMedication.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+        fhirMedication.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
 
         String issueRecordGuid = parser.getIssueRecordGuid();
         String patientGuid = parser.getPatientGuid();

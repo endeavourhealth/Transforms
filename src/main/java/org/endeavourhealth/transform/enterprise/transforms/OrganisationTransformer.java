@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
@@ -37,7 +37,7 @@ public class OrganisationTransformer extends AbstractTransformer {
         //LOG.trace("Transforming Organization " + fhir.getId() + " as enterprise ID " + id);
 
         if (fhir.hasIdentifier()) {
-            odsCode = IdentifierHelper.findIdentifierValue(fhir.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            odsCode = IdentifierHelper.findIdentifierValue(fhir.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
         }
 
         //if the organisation ODS code matches the one we're filing data for, replace the ID with the ID

@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.CodingHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -43,7 +43,7 @@ public final class MedicationTransformer {
     public static void transform(MedicationType medicationType, List<Resource> resources, String patientGuid) throws TransformException
     {
         MedicationStatement fhirMedicationStatement = new MedicationStatement();
-        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
+        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_AUTHORISATION));
 
         EmisOpenHelper.setUniqueId(fhirMedicationStatement, patientGuid, medicationType.getGUID());
 

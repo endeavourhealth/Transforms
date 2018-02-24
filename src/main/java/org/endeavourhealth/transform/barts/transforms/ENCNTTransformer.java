@@ -108,7 +108,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(personIdCell.getString()))};
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(personIdCell.getString()))};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, mrn, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
@@ -132,28 +132,28 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirEpisodeOfCare);
             }
 
-            //fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+            //fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
             // Handled in builder now
 
             // Identifiers
             if (!finIdCell.isEmpty()) {
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
                 identifierBuilder.setValue(finIdCell.getString(), finIdCell);
             }
 
             if (!visitIdCell.isEmpty()) {
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
                 identifierBuilder.setValue(visitIdCell.getString(), visitIdCell);
             }
 
             if (!encounterIdCell.isEmpty()) {
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
                 identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
             }
 
@@ -182,7 +182,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                                                 fhirResourceFiler.getServiceId());
 
                 String encounterDispTxt = ret.getCodeDispTxt();
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
                 encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept, encounterTypeCodeCell);
             }
 
@@ -194,7 +194,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                                                 fhirResourceFiler.getServiceId());
 
                 String treatFuncDispTxt = ret.getCodeDispTxt();
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
                 encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept);
             }
 
@@ -296,7 +296,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getMillenniumPersonIdentifier()))};
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getMillenniumPersonIdentifier()))};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, mrn, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
@@ -320,11 +320,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirEpisodeOfCare);
             }
 
-            fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+            fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
-            fhirEncounter.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID).setValue(parser.getMillenniumFinancialNumberIdentifier());
-            fhirEncounter.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID).setValue(parser.getMilleniumSourceIdentifierForVisit());
-            fhirEncounter.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID).setValue(parser.getMillenniumEncounterIdentifier());
+            fhirEncounter.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID).setValue(parser.getMillenniumFinancialNumberIdentifier());
+            fhirEncounter.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID).setValue(parser.getMilleniumSourceIdentifierForVisit());
+            fhirEncounter.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID).setValue(parser.getMillenniumEncounterIdentifier());
 
             fhirEncounter.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
 
@@ -341,7 +341,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             // specialty
             if (!Strings.isNullOrEmpty(parser.getEncounterTypeMillenniumCode())) {
                 CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.PERSONNEL_SPECIALITY, Long.valueOf(parser.getEncounterTypeMillenniumCode()), fhirResourceFiler.getServiceId());
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, ret.getCodeDispTxt(), parser.getEncounterTypeMillenniumCode());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, ret.getCodeDispTxt(), parser.getEncounterTypeMillenniumCode());
                 fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept));
             }
 
@@ -349,7 +349,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             //
             if (!Strings.isNullOrEmpty(parser.getCurrentTreatmentFunctionMillenniumCode())) {
                 CernerCodeValueRef ret = cernerCodeValueRefDAL.getCodeFromCodeSet(RdbmsCernerCodeValueRefDal.TREATMENT_FUNCTION, Long.valueOf(parser.getCurrentTreatmentFunctionMillenniumCode()), fhirResourceFiler.getServiceId());
-                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, ret.getCodeDispTxt(), parser.getCurrentTreatmentFunctionMillenniumCode());
+                CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, ret.getCodeDispTxt(), parser.getCurrentTreatmentFunctionMillenniumCode());
                 fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept));
             }
 

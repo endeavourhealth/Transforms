@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -166,11 +166,11 @@ public class LOREFTransformer extends BartsBasisTransformer {
         locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
 
         // Identifier
-        //fhirLocation.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
+        //fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
         if (!locationIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
             identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
         }
 
@@ -305,7 +305,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         Location fhirLocation = new Location();
         fhirLocation.setId(locationResourceId.getResourceId().toString());
 
-        fhirLocation.addIdentifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
+        fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
 
         // Status
         Date now = new Date();

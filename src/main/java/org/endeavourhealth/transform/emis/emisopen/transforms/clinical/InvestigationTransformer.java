@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -36,7 +36,7 @@ public class InvestigationTransformer extends ClinicalTransformerBase {
     public static void transform(InvestigationType investigation, List<Resource> resources, String patientGuid) throws TransformException {
 
         DiagnosticReport fhirReport = new DiagnosticReport();
-        fhirReport.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_REPORT));
+        fhirReport.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_REPORT));
 
         String reportGuid = investigation.getGUID();
         EmisOpenHelper.setUniqueId(fhirReport, patientGuid, reportGuid);

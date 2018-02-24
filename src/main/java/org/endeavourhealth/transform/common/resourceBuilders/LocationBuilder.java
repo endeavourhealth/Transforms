@@ -21,7 +21,7 @@ public class LocationBuilder extends ResourceBuilderBase
         this.location = location;
         if (this.location == null) {
             this.location = new Location();
-            this.location.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+            this.location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
         }
     }
 

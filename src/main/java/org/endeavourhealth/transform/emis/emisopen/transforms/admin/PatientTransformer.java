@@ -2,9 +2,6 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -32,7 +29,7 @@ public class PatientTransformer {
             throw new TransformException("Registration element is null");
 
         Patient target = new Patient();
-        target.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        target.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
 
         EmisOpenHelper.setUniqueId(target, patientGuid, null);
 
@@ -118,8 +115,8 @@ public class PatientTransformer {
 
         fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(registrationType.getNhsNumber()));
 
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, registrationType.getGUID()));
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_CHINUMBER, registrationType.getCHINumber()));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, registrationType.getGUID()));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_CHINUMBER, registrationType.getCHINumber()));
     }
 
     private static void createContacts(Patient fhirPatient, RegistrationType registration) throws TransformException {
@@ -145,7 +142,7 @@ public class PatientTransformer {
         if (StringUtils.isNotBlank(registrationType.getNhsNumber()))
         {
             Identifier identifier = new Identifier()
-                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER)
+                    .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)
                     .setValue(registrationType.getNhsNumber());
 
             identifiers.add(identifier);
@@ -154,7 +151,7 @@ public class PatientTransformer {
         if (StringUtils.isNotBlank(registrationType.getCHINumber()))
         {
             Identifier identifier = new Identifier()
-                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_CHINUMBER)
+                    .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CHINUMBER)
                     .setValue(registrationType.getCHINumber());
 
             identifiers.add(identifier);

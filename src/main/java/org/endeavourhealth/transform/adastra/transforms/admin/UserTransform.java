@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.adastra.transforms.admin;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Meta;
@@ -34,7 +34,7 @@ public class UserTransform {
                                    String orgId, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
 
         fhirPractitioner.setId(orgId + ":" + conBy.getName());
         uniqueIdMapper.put(conBy.getName(), fhirPractitioner.getId());
