@@ -27,6 +27,8 @@ public class PatientResourceCache {
 
     private static Map<Long, PatientBuilder> patientBuilders = new HashMap<>();
 
+    private static Map<String, String> mrnsAlreadyAdded = new HashMap<>();
+
     public static PatientBuilder getPatientBuilder(CsvCell millenniumIdCell, BartsCsvHelper csvHelper) throws Exception {
         PatientBuilder patientBuilder = patientBuilders.get(millenniumIdCell.getLong());
         if (patientBuilder == null) {
@@ -46,6 +48,12 @@ public class PatientResourceCache {
             int size = mrnMaps.size();
             InternalIdMap lastMap = mrnMaps.get(size-1);
             String mrn = lastMap.getSourceId();
+
+            if (mrnsAlreadyAdded.containsKey(mrn)) {
+                String previousPersonId = mrnsAlreadyAdded.get(mrn);
+                throw new TransformRuntimeException("MRN " + mrn + " has already been added for person " + previousPersonId + " but this is person " + millenniumIdCell.getString());
+            }
+            mrnsAlreadyAdded.put(mrn, millenniumIdCell.getString());
 
             ResourceId patientResourceId = BasisTransformer.getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, csvHelper.getPrimaryOrgHL7OrgOID(), mrn);
             if (patientResourceId == null) {
