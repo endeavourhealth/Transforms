@@ -11,7 +11,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.LOREF;
@@ -80,7 +79,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId().getString());
+        //LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId().getString());
 
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
@@ -134,7 +133,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 // Create alternate keys for current location and all parents
                 while (uniqueId != null) {
                     try {
-                        LOG.debug("Saving altkey:" + uniqueId);
+                        //LOG.debug("Saving altkey:" + uniqueId);
                         internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId, UUID.randomUUID().toString());
                     }
                     catch (Exception ex) {
@@ -143,7 +142,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                     uniqueId = createParentKey(uniqueId);
                 }
             } else {
-                LOG.debug("Found resource id " + alternateResourceId + " using altkey:" + uniqueId);
+                //LOG.debug("Found resource id " + alternateResourceId + " using altkey:" + uniqueId);
                 locationResourceId.setResourceId(UUID.fromString(alternateResourceId));
                 // Alternate keys for all parents should already exist
             }
@@ -153,7 +152,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Get parent resource id using alternate key
         String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
         String parentUniqueId = createParentKey(uniqueId);
-        LOG.debug("Looking for parent location using key:" + parentUniqueId);
+        //LOG.debug("Looking for parent location using key:" + parentUniqueId);
         if (parentUniqueId != null) {
             parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, parentUniqueId);
         }
@@ -247,7 +246,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
         }
 
-        LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
+        //LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
