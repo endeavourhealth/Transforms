@@ -48,8 +48,8 @@ public class PPAGPTransformer extends BartsBasisTransformer {
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-        CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         //if we don't have a person ID, there's nothing we can do with the row
         CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();

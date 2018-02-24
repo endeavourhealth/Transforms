@@ -18,6 +18,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 public class CLEVETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
@@ -69,18 +71,14 @@ public class CLEVETransformer extends BartsBasisTransformer {
                                          BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-
-        // get encounter details (should already have been created previously)
+        // get patient from encounter
         CsvCell encounterIdCell = parser.getEncounterId();
-        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-        if (encounterResourceId == null) {
+        UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
+        UUID patientUuid = csvHelper.findPatientIdFromEncounterId(encounterIdCell);
+        if (patientUuid == null) {
             LOG.warn("Skipping Clinical Event " + parser.getEventId().getString() + " due to missing encounter");
             return;
         }
-
-        // get patient from encounter
-        Encounter fhirEncounter = (Encounter)csvHelper.retrieveResource(encounterResourceId.getUniqueId(), ResourceType.Encounter);
-        String patientReferenceValue = fhirEncounter.getPatient().getReference();
 
         // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
@@ -90,7 +88,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         observationBuilder.setId(observationResourceId.getResourceId().toString(), clinicalEventId);
 
-        Reference patientReference = ReferenceHelper.createReference(patientReferenceValue);
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
         observationBuilder.setPatient(patientReference);
 
         CsvCell activeCell = parser.getActiveIndicator();
@@ -123,7 +121,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
-        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString());
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterUuid.toString());
         observationBuilder.setEncounter(encounterReference, encounterIdCell);
 
         CsvCell parentEventId = parser.getParentEventId();
@@ -287,153 +285,4 @@ public class CLEVETransformer extends BartsBasisTransformer {
             throw new IllegalArgumentException("Unexpected comparator string [" + str + "]");
         }
     }
-
-    /*
-     *
-     */
-    /*public static void createObservation(CLEVE parser,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         BartsCsvHelper csvHelper,
-                                         String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
-        // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getPatientId()))};
-        ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getPatientId(), null, null, null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
-
-        // Performer
-        //TODO Is IDENTIFIER_SYSTEM_BARTS_PERSONNEL_ID the right one?
-        //  ResourceId clinicianResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getPatientId(), null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
-        ResourceId clinicianResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Practitioner", parser.getClinicianID());
-
-        // Encounter
-        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId());
-        if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId());
-            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, null, encounterResourceId, Encounter.EncounterState.FINISHED, parser.getEffectiveDateTime(), parser.getEffectiveDateTime(), null, Encounter.EncounterClass.OTHER);
-        }
-        // this Observation resource id
-        ResourceId observationResourceId = getObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getPatientId(), parser.getEffectiveDateTimeAsString(), parser.getEventCode());
-
-        //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-
-        String observationID = parser.getEventId();
-        Observation fhirObservation = new Observation();
-        fhirObservation.setId(observationResourceId.getResourceId().toString());
-        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
-        fhirObservation.addIdentifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_OBSERVATION_ID).setValue(observationID);
-        fhirObservation.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-        //TODO we need to filter out any records that are not final
-        fhirObservation.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.FINAL);
-        fhirObservation.addPerformer(ReferenceHelper.createReference(ResourceType.Practitioner, clinicianResourceId.getResourceId().toString()));
-
-        Date effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        fhirObservation.setEffective(EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision));
-
-        fhirObservation.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
-
-//        String clinicianID = parser.getClinicianID();
-//        if (!Strings.isNullOrEmpty(clinicianID)) {
-//            //TODO - need to map to person resources
-//            //fhirObservation.addPerformer(csvHelper.createPractitionerReference(clinicianID));
-//        }
-
-        String term = parser.getEventTitleText();
-        if (Strings.isNullOrEmpty(term)) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.CLINICAL_CODE_TYPE,
-                    Long.parseLong(parser.getEventCode()),
-                    fhirResourceFiler.getServiceId());
-            if (cernerCodeValueRef != null) {
-                term = cernerCodeValueRef.getCodeDispTxt();
-            } else {
-                // LOG.warn("Event type code: " + parser.getEventCode() + " not found in Code Value lookup");
-            }
-
-
-
-        }
-
-        String code = parser.getEventCode();
-
-        //TODO - establish code mapping for millenium / FHIR
-        // Just staying with FHIR code for now - valid approach?
-        CodeableConcept obsCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, term, code);
-        //TerminologyService.translateToSnomed(obsCode);
-        // Previous null test wouldn't work. Specific errors should get an exception
-        if (obsCode.getCoding().isEmpty()) {
-            LOG.warn("Unable to create codeableConcept for Observation ID: " + observationID);
-            return;
-        } else {
-            fhirObservation.setCode(obsCode);
-        }
-
-        //set value and units
-        //TODO need to check getEventResultClassCode()
-        // Need to store comparator separately  - new method in Quantityhelper
-        // if it looks like a plain number it's simple.
-        // if it contains  valid comparator symbol, use it
-        String value = parser.getEventResultAsText();
-        if (!Strings.isNullOrEmpty(value)) {
-            Number num = NumberFormat.getInstance().parse(value);
-            if (num == null) {
-                //TODO we need to cater for some non-numeric results
-                LOG.debug("Not proceeding with non-numeric value for now");
-                return;
-            }
-            Double value1 = Double.parseDouble(value);
-            String unitsCode = parser.getEventUnitsCode();
-            String units = "";   //TODO - map units from unitsCode
-            for (String comp : comparators) {
-                if (value.contains(comp)) {
-                    fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1,
-                            units,
-                            Quantity.QuantityComparator.fromCode(comp),
-                            FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID,
-                            unitsCode));
-                } else {
-                    fhirObservation.setValue(QuantityHelper.createSimpleQuantity(value1, units, FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, unitsCode));
-                }
-            }
-
-            //TODO - set comments
-            fhirObservation.setComments(parser.getEventTag());
-
-            // Reference range if supplied
-            if (parser.getEventNormalRangeLow() != null && parser.getEventNormalRangeHigh() != null) {
-                Double rangeLow = Double.parseDouble(parser.getEventNormalRangeLow());
-                SimpleQuantity low = QuantityHelper.createSimpleQuantity(rangeLow, units);
-                Double rangeHigh = Double.parseDouble(parser.getEventNormalRangeHigh());
-                SimpleQuantity high = QuantityHelper.createSimpleQuantity(rangeHigh, units);
-                //TODO I think I need a new createcodeableconcept method without term ???
-                // I think the fhir page suggests this but may be wrong
-                CodeableConcept normCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID,
-                        "normal", parser.getEventNormalcyCode());
-                Observation.ObservationReferenceRangeComponent obsRange = new Observation.ObservationReferenceRangeComponent();
-                obsRange.setHigh(high);
-                obsRange.setLow(low);
-                obsRange.setMeaning(normCode);
-                fhirObservation.addReferenceRange(obsRange);
-            }
-            //TODO save the cerner codes and somehow manage the parent id to make test results comprehensible
-            // Looks like we have to correlate via encounter id for now
-
-
-            // save resource
-            if (parser.isActive()) {
-                LOG.debug("Save Observation (PatId=" + parser.getPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirObservation));
-                savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirObservation);
-            } else {
-                LOG.debug("Delete Observation (PatId=" + parser.getPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirObservation));
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirObservation);
-            }
-
-        }
-
-    }*/
-
 }

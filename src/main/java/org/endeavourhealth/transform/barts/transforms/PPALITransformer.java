@@ -54,8 +54,8 @@ public class PPALITransformer extends BartsBasisTransformer {
             return;
         }
 
-        CsvCell milleniumId = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumId, csvHelper);
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         //we always fully re-create the Identifier on the patient so just remove any previous instance
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
@@ -94,61 +94,8 @@ public class PPALITransformer extends BartsBasisTransformer {
         if (!endDateCell.isEmpty()) {
             identifierBuilder.setEndDate(startDateCell.getDate(), startDateCell);
         }
-
     }
 
-    /*public static void createPatientAlias(PPALI parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          BartsCsvHelper csvHelper,
-                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
-        if (parser.getAlias() != null && parser.getAlias().length() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.ALIAS_TYPE,
-                    Long.parseLong(parser.getAliasTypeCode()),
-                    fhirResourceFiler.getServiceId());
-
-            String aliasCode = FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_OTHER_PERSON_ID;
-
-            if (cernerCodeValueRef != null) {
-                aliasCode = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
-            } else {
-                // LOG.warn("Alias Type code: " + parser.getAliasTypeCode() + " not found in Code Value lookup");
-            }
-
-            Identifier identifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
-                    aliasCode, parser.getAlias());
-
-            if (parser.getBeginEffectiveDate() != null || parser.getEndEffectiveDater() != null) {
-                Period fhirPeriod = PeriodHelper.createPeriod(parser.getBeginEffectiveDate(), parser.getEndEffectiveDater());
-                identifier.setPeriod(fhirPeriod);
-            }
-
-            fhirPatient.addIdentifier(identifier);
-        }
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
-
-    }*/
 
     private static String convertAliasCode(String statusCode) {
         switch (statusCode) {

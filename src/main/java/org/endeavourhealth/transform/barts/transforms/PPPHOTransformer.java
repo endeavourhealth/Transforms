@@ -106,61 +106,6 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatientPhone(PPPHO parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          BartsCsvHelper csvHelper,
-                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        // Patient Address
-        if (parser.getPhoneNumber() != null && parser.getPhoneNumber().length() > 0 ) {
-            String phoneNumber = parser.getPhoneNumber();
-            if (parser.getExtension() != null && parser.getExtension().length() > 0 ) {
-                phoneNumber += " " + parser.getExtension();
-            }
-
-            if (parser.getPhoneTypeCode() != null && parser.getPhoneTypeCode().length() > 0 ) {
-                CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                        RdbmsCernerCodeValueRefDal.PHONE_TYPE,
-                        Long.parseLong(parser.getPhoneTypeCode()),
-                        fhirResourceFiler.getServiceId());
-
-                ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
-                ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
-
-                if (cernerCodeValueRef != null) {
-                    use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
-
-                    system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
-                } else {
-                    // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
-                }
-
-                ContactPoint contactPoint = ContactPointHelper.create(system, use, phoneNumber);
-
-                fhirPatient.addTelecom(contactPoint);
-            }
-        }
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
-
-    }*/
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) {
 

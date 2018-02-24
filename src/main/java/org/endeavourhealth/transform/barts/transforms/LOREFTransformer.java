@@ -10,7 +10,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -123,7 +123,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
             // Check if this location has previously been saved as a parent-location - Try secondary key
             String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
-            String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId);
+            String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId);
             // Create main resource key
             if (alternateResourceId == null) {
                 locationResourceId.setResourceId(UUID.randomUUID());
@@ -132,7 +132,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
                 while (uniqueId != null) {
                     try {
                         LOG.debug("Saving altkey:" + uniqueId);
-                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId, UUID.randomUUID().toString());
+                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId, UUID.randomUUID().toString());
                     }
                     catch (Exception ex) {
                         // ignore duplicates
@@ -152,7 +152,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         String parentUniqueId = createParentKey(uniqueId);
         LOG.debug("Looking for parent location using key:" + parentUniqueId);
         if (parentUniqueId != null) {
-            parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
+            parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, parentUniqueId);
         }
 
         // Organisation
@@ -249,92 +249,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
-    /*
-    public static void createEncounter(LOREF parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        String parentLocationResourceId = null;
-
-        // Location resource id
-        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocationId());
-        if (locationResourceId == null) {
-            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocationId());
-
-            if (internalIdDAL == null) {
-                internalIdDAL = DalProvider.factoryInternalIdDal();
-                cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
-            }
-
-            // Try secondary key
-            String uniqueId = createSecondaryKey(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation());
-            String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, uniqueId);
-            // Create main resource key
-            if (alternateResourceId == null) {
-                locationResourceId.setResourceId(UUID.randomUUID());
-
-                // Create alternate keys for all parents (if missing)
-                String parentUniqueId = createParentKey(uniqueId);
-                while (parentUniqueId != null) {
-                    try {
-                        internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId, UUID.randomUUID().toString());
-                    }
-                    catch (Exception ex) {
-                        // ignore duplicates
-                    }
-                    parentUniqueId = createParentKey(parentUniqueId);
-                }
-            } else {
-                locationResourceId.setResourceId(UUID.fromString(alternateResourceId));
-                // Alternate keys for all parents should already exist
-            }
-            saveResourceId(locationResourceId);
-        }
-
-        // Get parent resoruce id using alternate key
-        String uniqueId = createSecondaryKey(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation());
-        String parentUniqueId = createParentKey(uniqueId);
-        parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_ALTKEY_LOCATION, parentUniqueId);
-
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
-        // Create Location resource
-        Location fhirLocation = new Location();
-        fhirLocation.setId(locationResourceId.getResourceId().toString());
-
-        fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
-
-        // Status
-        Date now = new Date();
-        if (now.after(parser.getBeginEffectiveDateTime()) && now.before(parser.getEndEffectiveDateTime())) {
-            fhirLocation.setStatus(Location.LocationStatus.ACTIVE);
-        } else {
-            fhirLocation.setStatus(Location.LocationStatus.INACTIVE);
-        }
-
-        // Physical type
-        fhirLocation.setPhysicalType(getPhysicalType(parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
-
-        fhirLocation.setMode(Location.LocationMode.INSTANCE);
-
-        fhirLocation.setDescription(createDescription(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
-
-        fhirLocation.setName(getName(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation()));
-
-        fhirLocation.setManagingOrganization(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
-
-        if (parentLocationResourceId != null) {
-            fhirLocation.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
-        }
-
-        LOG.debug("Save Location (LocationId=" + parser.getLocationId());
-        saveAdminResource(fhirResourceFiler, parser.getCurrentState(), fhirLocation);
-
-    }
-    */
 
 
     /*
@@ -501,7 +415,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
      *
      */
     private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
-        //LOG.debug("Looking for Cerner Code " + code + " in Code Set " + RdbmsCernerCodeValueRefDal.LOCATION_NAME + " for ServiceId " + fhirResourceFiler.getServiceId());
         CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();

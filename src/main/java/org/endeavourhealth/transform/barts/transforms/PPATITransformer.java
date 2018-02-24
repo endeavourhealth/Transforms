@@ -9,7 +9,7 @@ import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherTransform.RdbmsInternalIdDal;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
@@ -73,12 +73,15 @@ public class PPATITransformer extends BartsBasisTransformer {
             internalIdDalI = DalProvider.factoryInternalIdDal();
         }
 
-        //store the MRN/PersonID mapping
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
         CsvCell mrnCell = parser.getLocalPatientId();
-        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID,
+
+        //store the MRN/PersonID mapping in BOTH directions
+        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
                                     mrnCell.getString(), millenniumPersonIdCell.getString());
 
+        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN,
+                                    millenniumPersonIdCell.getString(), mrnCell.getString());
 
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
@@ -270,214 +273,6 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatient(PPATI parser,
-                                     FhirResourceFiler fhirResourceFiler,
-                                     String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-        if (internalIdDalI == null) {
-            internalIdDalI = DalProvider.factoryInternalIdDal();
-        }
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), RdbmsInternalIdDal.IDTYPE_MRN_MILLENNIUM_PERS_ID,
-                parser.getLocalPatientId(), parser.getMillenniumPersonId());
-
-        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, parser.getMillenniumPersonId());
-        if (patientResourceId == null && !parser.isActive()) {
-            //We don't already have the patient and it is not active so ignore it.
-            return;
-        }
-
-        if (patientResourceId == null) {
-            patientResourceId = createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, parser.getMillenniumPersonId());
-        }
-
-        Patient fhirPatient = new Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
-
-        fhirPatient.setId(patientResourceId.getResourceId().toString());
-
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID,
-                parser.getMillenniumPersonId()));
-
-        if (!parser.isActive()) {
-            // Patient is inactive and we already have them in the system so just set them to inactive and save the resource
-            fhirPatient.setActive(false);
-            PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonId()), fhirPatient);
-        }
-
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
-                parser.getLocalPatientId()));
-
-        String nhsNumber = parser.getNhsNumber();
-        if (!Strings.isNullOrEmpty(nhsNumber)) {
-            nhsNumber = nhsNumber.trim().replace("-","");
-            if (nhsNumber.length() == 10) {
-                fhirPatient.addIdentifier(IdentifierHelper.createNhsNumberIdentifier(nhsNumber));
-            } else {
-                //add the invalid NHS number as a secondary identifier
-                fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY,
-                        FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON,
-                        nhsNumber));
-            }
-        }
-
-        if (parser.getNhsNumberStatus() != null && parser.getNhsNumberStatus().length() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.NHS_NUMBER_STATUS,
-                    Long.parseLong(parser.getActiveIndicator()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                CodeableConcept fhirCodeableConcept = null;
-                //convert the String to one of the official statuses. If it can't be converted, insert free-text in the codeable concept
-                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerCodeValueRef.getCodeDescTxt());
-                if (verificationStatus != null) {
-                    fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(verificationStatus);
-
-                } else {
-                    fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(cernerCodeValueRef.getCodeDescTxt());
-                }
-                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS,
-                        fhirCodeableConcept));
-            } else {
-                // LOG.warn("NHS Status code: " + parser.getActiveIndicator() + " not found in Code Value lookup");
-            }
-        }
-
-        if (parser.getActiveIndicator() != null && parser.getActiveIndicator().length() > 0) {
-            fhirPatient.setActive(parser.isActive());
-        }
-
-        if (!Strings.isNullOrEmpty(parser.getDateOfBirthAsString())) {
-            Date dob = null;
-            try {
-                dob = formatDaily.parse(parser.getDateOfBirthAsString());
-            } catch (ParseException ex) {
-                dob = formatBulk.parse(parser.getDateOfBirthAsString());
-            }
-            fhirPatient.setBirthDate(dob);
-        }
-
-        if (parser.getGenderCode() != null && parser.getGenderCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.GENDER,
-                    Long.parseLong(parser.getGenderCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
-                fhirPatient.setGender(gender);
-            } else {
-                // LOG.warn("Gender code: " + parser.getGenderCode() + " not found in Code Value lookup");
-            }
-        }
-
-        if (parser.getMaritalStatusCode() != null && parser.getMaritalStatusCode().length() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.MARITAL_STATUS,
-                    Long.parseLong(parser.getMaritalStatusCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
-                if (maritalStatus != null) {
-                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(maritalStatus);
-                    fhirPatient.setMaritalStatus(codeableConcept);
-                } else {
-                    // LOG.warn("Marital Status code: " + cernerCodeValueRef.getCodeMeaningTxt() + " not found in status conversion code");
-                }
-            } else {
-                // LOG.warn("Marital Status code: " + parser.getMaritalStatusCode() + " not found in Code Value lookup");
-            }
-        }
-
-        if (parser.getEthnicGroupCode() != null && parser.getEthnicGroupCode().length() > 0) {
-            CodeableConcept ethnicGroup = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.ETHNIC_GROUP,
-                    Long.parseLong(parser.getEthnicGroupCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                ethnicGroup.addCoding().setCode(parser.getEthnicGroupCode()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY)
-                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
-            } else {
-                // LOG.warn("Ethnic Group code: " + parser.getEthnicGroupCode() + " not found in Code Value lookup");
-            }
-        }
-
-        if (parser.getFirstLanguageCode() != null && parser.getFirstLanguageCode().length() > 0) {
-            CodeableConcept languageConcept = new CodeableConcept();
-            Patient.PatientCommunicationComponent fhirCommunication = fhirPatient.addCommunication();
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.LANGUAGE,
-                    Long.parseLong(parser.getFirstLanguageCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                languageConcept.addCoding().setCode(parser.getFirstLanguageCode()).setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
-                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
-
-                fhirCommunication.setLanguage(languageConcept);
-                fhirCommunication.setPreferred(true);
-
-                fhirPatient.addCommunication(fhirCommunication);
-            } else {
-                // LOG.warn("Language code: " + parser.getFirstLanguageCode() + " not found in Code Value lookup");
-            }
-        }
-
-        if (parser.getReligionCode() != null && parser.getReligionCode().length() > 0) {
-            CodeableConcept religionConcept = new CodeableConcept();
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.RELIGION,
-                    Long.parseLong(parser.getReligionCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                religionConcept.addCoding().setCode(parser.getReligionCode()).setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
-                        .setDisplay(cernerCodeValueRef.getCodeDescTxt());
-
-                fhirPatient.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_RELIGION, religionConcept));
-            } else {
-                // LOG.warn("Religion code: " + parser.getReligionCode() + " not found in Code Value lookup");
-            }
-        }
-
-        // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
-        if (!Strings.isNullOrEmpty(parser.getDeceasedDateTimeAsString()) || parser.getDeceasedMethodCode() != null) {
-            if (!Strings.isNullOrEmpty(parser.getDeceasedDateTimeAsString())) {
-                Date dod = null;
-                try {
-                    dod = formatDaily.parse(parser.getDeceasedDateTimeAsString());
-                } catch (ParseException ex) {
-                    dod = formatBulk.parse(parser.getDeceasedDateTimeAsString());
-                }
-                fhirPatient.setDeceased(new DateTimeType(dod));
-            }  // 684730 = No for deceased method!
-            else if (!parser.getDeceasedMethodCode().equals("0") || !parser.getDeceasedMethodCode().equals("684730")) {
-                fhirPatient.setDeceased(new BooleanType(true));
-            }
-        }
-
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonId()), fhirPatient);
-
-
-        // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-
-        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
-
-    }*/
 
     private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus) {
 

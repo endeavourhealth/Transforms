@@ -102,59 +102,6 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatientName(PPNAM parser,
-                                     FhirResourceFiler fhirResourceFiler,
-                                     BartsCsvHelper csvHelper,
-                                     String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        // Patient Name
-        HumanName.NameUse nameUse = HumanName.NameUse.OFFICIAL;
-
-        if (parser.getNameTypeCode() != null) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    RdbmsCernerCodeValueRefDal.NAME_USE,
-                    Long.parseLong(parser.getNameTypeCode()),
-                    fhirResourceFiler.getServiceId());
-
-            if (cernerCodeValueRef != null) {
-                nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
-            } else {
-                // LOG.warn("Name Type code: " + parser.getNameTypeCode() + " not found in Code Value lookup");
-            }
-        }
-
-        HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(
-                nameUse,
-                parser.getTitle(), parser.getFirstName(), parser.getMiddleName(),
-                parser.getLastName(), parser.getSuffix());
-
-        if (parser.getBeginEffectiveDate() != null || parser.getEndEffectiveDater() != null) {
-            Period fhirPeriod = PeriodHelper.createPeriod(parser.getBeginEffectiveDate(), parser.getEndEffectiveDater());
-            name.setPeriod(fhirPeriod);
-        }
-
-        fhirPatient.addName(name);
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
-
-    }*/
 
     private static String parseTitleAndPrefix(String title, String prefix) throws Exception {
 
