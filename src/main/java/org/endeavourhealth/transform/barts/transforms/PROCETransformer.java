@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PROCE;
@@ -148,21 +149,7 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
-        if (!procedureTypeCodeCell.isEmpty() && procedureTypeCodeCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        CernerCodeValueRef.PROCEDURE_TYPE,
-                                                                        procedureTypeCodeCell.getLong(),
-                                                                        fhirResourceFiler.getServiceId());
-
-            String procedureTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
-
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_TYPE);
-            codeableConceptBuilder.setCodingCode(procedureTypeCodeCell.getString(), procedureTypeCodeCell);
-            codeableConceptBuilder.setCodingDisplay(procedureTypeTerm); //don't pass in the cell as this is derived
-            codeableConceptBuilder.setText(procedureTypeTerm); //don't pass in the cell as this is derived
-        }
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(procedureTypeCodeCell, CernerCodeValueRef.PROCEDURE_TYPE, procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, fhirResourceFiler);
 
         // save resource
         LOG.debug("Save Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));

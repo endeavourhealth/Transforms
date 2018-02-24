@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
@@ -10,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
@@ -24,6 +24,7 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.dsig.TransformException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -85,6 +86,10 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+
+        if (patientBuilder == null) {
+            throw new TransformException("Failed to find patient builder for Person ID " + millenniumPersonId.getString() + " and MRN " + mrnCell.getString());
+        }
 
         //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
         //so they can be added back on without duplicating them
@@ -201,35 +206,10 @@ public class PPATITransformer extends BartsBasisTransformer {
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
-        if (!languageCell.isEmpty() && languageCell.getLong() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            CernerCodeValueRef.LANGUAGE,
-                                                                            languageCell.getLong(),
-                                                                            fhirResourceFiler.getServiceId());
-
-            String codeTerm = cernerCodeValueRef.getCodeDescTxt();
-
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-            codeableConceptBuilder.setCodingCode(languageCell.getString(), languageCell);
-            codeableConceptBuilder.setCodingDisplay(codeTerm);
-        }
+        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, fhirResourceFiler);
 
         CsvCell religionCell = parser.getReligionCode();
-        if (!religionCell.isEmpty() && religionCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                    CernerCodeValueRef.RELIGION,
-                                                                    religionCell.getLong(),
-                                                                    fhirResourceFiler.getServiceId());
-
-            String codeTerm = cernerCodeValueRef.getCodeDescTxt();
-
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-            codeableConceptBuilder.setCodingCode(religionCell.getString(), religionCell);
-            codeableConceptBuilder.setCodingDisplay(codeTerm);
-        }
+        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, fhirResourceFiler);
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();

@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -9,6 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
@@ -184,7 +188,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
 
         // specialty
-        if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.PERSONNEL_SPECIALITY, encounterBuilder, EncounterBuilder.TAG_SPECIALTY, fhirResourceFiler);
+
+        /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                             CernerCodeValueRef.PERSONNEL_SPECIALITY,
                                                             encounterTypeCodeCell.getLong(),
@@ -193,10 +199,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             String encounterDispTxt = ret.getCodeDispTxt();
             CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
             encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept, encounterTypeCodeCell);
-        }
+        }*/
 
         // treatment function
-        if (!treatmentFunctionCodeCell.isEmpty() && treatmentFunctionCodeCell.getLong() > 0) {
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CernerCodeValueRef.TREATMENT_FUNCTION, encounterBuilder, EncounterBuilder.TAG_TREATMENT_FUNCTION, fhirResourceFiler);
+
+        /*if (!treatmentFunctionCodeCell.isEmpty() && treatmentFunctionCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
                                                             CernerCodeValueRef.TREATMENT_FUNCTION,
                                                             treatmentFunctionCodeCell.getLong(),
@@ -205,7 +213,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             String treatFuncDispTxt = ret.getCodeDispTxt();
             CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
             encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept);
-        }
+        }*/
 
         // EpisodeOfCare
         //fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));

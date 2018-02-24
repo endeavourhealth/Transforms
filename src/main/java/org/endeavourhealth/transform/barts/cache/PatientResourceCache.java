@@ -27,6 +27,7 @@ public class PatientResourceCache {
 
         //if we don't know the Person->MRN mapping, then the UUID returned will be null, in which case we can't proceed
         if (patientId == null) {
+            LOG.trace("Failed to find patient UUID for person ID " + milleniumPersonIdCell.getString());
             return null;
         }
 

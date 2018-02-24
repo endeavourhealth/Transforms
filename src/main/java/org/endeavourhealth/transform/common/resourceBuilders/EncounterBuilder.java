@@ -16,6 +16,10 @@ public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
                                         HasContainedListI, HasIdentifierI{
 
+    public static final String TAG_SPECIALTY = "CodeableConceptSpecialty";
+    public static final String TAG_TREATMENT_FUNCTION = "CodeableConceptTreatmentFunction";
+    public static final String TAG_SOURCE = "CodeableConceptSource";
+
     private Encounter encounter = null;
 
     public EncounterBuilder() {
@@ -145,11 +149,11 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("class", sourceCells);
     }
 
-    public void addExtension(String typeDesc, CodeableConcept fhirCodeableConcept, CsvCell... sourceCells) {
+    /*public void addExtension(String typeDesc, CodeableConcept fhirCodeableConcept, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createExtension(typeDesc, fhirCodeableConcept);
 
         auditStringExtension(extension, sourceCells);
-    }
+    }*/
 
     public void addLocation(Reference referenceValue, CsvCell... sourceCells) {
         this.encounter.addLocation().setLocation(referenceValue);
@@ -160,30 +164,80 @@ public class EncounterBuilder extends ResourceBuilderBase
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
-        Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        if (codeableConcept != null) {
-            throw new IllegalArgumentException("Trying to add new code to Encounter when it already has one");
+        if (tag.equals(TAG_SOURCE)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Source code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Specialty code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Treatment Function code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        codeableConcept = new CodeableConcept();
-        extension.setValue(codeableConcept);
-        return codeableConcept;
+
     }
 
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        if (extension == null) {
-            throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
-        }
+        if (tag.equals(TAG_SOURCE)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
 
-        int index = this.encounter.getExtension().indexOf(extension);
-        return "extension[" + index + "].valueCodeableConcept";
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
     public void removeCodeableConcepts(String tag) {
-        ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (tag.equals(TAG_SOURCE)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+
     }
 
     @Override

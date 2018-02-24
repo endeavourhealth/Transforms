@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
@@ -148,21 +149,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        if (!diagnosisTypeCode.isEmpty() && diagnosisTypeCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            CernerCodeValueRef.DIAGNOSIS_TYPE,
-                                                                            diagnosisTypeCode.getLong(),
-                                                                            fhirResourceFiler.getServiceId());
-
-            String diagnosisTypeTerm = cernerCodeValueRef.getCodeDispTxt();
-
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
-
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_TYPE);
-            codeableConceptBuilder.setCodingCode(diagnosisTypeCode.getString(), diagnosisTypeCode);
-            codeableConceptBuilder.setCodingDisplay(diagnosisTypeTerm); //don't pass in the cell as this is derived
-            codeableConceptBuilder.setText(diagnosisTypeTerm); //don't pass in the cell as this is derived
-        }
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(diagnosisTypeCode, CernerCodeValueRef.DIAGNOSIS_TYPE, conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, fhirResourceFiler);
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();
         if (!diagnosisFreeText.isEmpty()) {

@@ -6,6 +6,7 @@ import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
@@ -131,26 +132,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
             observationBuilder.setParentResource(parentObservationReference, parentEventId);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
-        CsvCell termCell = parser.getEventTitleText();
-        if (!codeCell.isEmpty() && codeCell.getLong() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                                                                CernerCodeValueRef.CLINICAL_CODE_TYPE,
-                                                                codeCell.getLong(),
-                                                                fhirResourceFiler.getServiceId());
-
-            String officialTerm = cernerCodeValueRef.getCodeDispTxt();
-
-            codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
-            codeableConceptBuilder.setCodingDisplay(officialTerm);
-        }
+        CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, fhirResourceFiler);
 
         //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
+        CsvCell termCell = parser.getEventTitleText();
         if (!termCell.isEmpty()) {
             codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
@@ -231,20 +218,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        if (!normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    CernerCodeValueRef.CLINICAL_EVENT_NORMALCY,
-                    normalcyCodeCell.getLong(),
-                    fhirResourceFiler.getServiceId());
-
-            String normalcyDesc = cernerCodeValueRef.getCodeDescTxt();
-
-            CodeableConceptBuilder normalcyBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT);
-            normalcyBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-            normalcyBuilder.setCodingCode(normalcyCodeCell.getString(), normalcyCodeCell);
-            normalcyBuilder.setCodingDisplay(normalcyDesc);
-        }
+        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, fhirResourceFiler);
 
         //TODO - set comments
         CsvCell eventTagCell = parser.getEventTag();
