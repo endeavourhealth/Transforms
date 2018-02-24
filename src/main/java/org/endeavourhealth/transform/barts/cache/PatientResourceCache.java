@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.cache;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
@@ -54,9 +55,17 @@ public class PatientResourceCache {
                 patientResourceId = BasisTransformer.createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, csvHelper.getPrimaryOrgHL7OrgOID(), mrn);
                 patientBuilder.setId(patientResourceId.getResourceId().toString());
 
+                if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
+                    throw new TransformRuntimeException("Just assigned ID to patient and it's empty");
+                }
+
             } else {
                 Patient patient = (Patient)csvHelper.retrieveResource(patientResourceId.getResourceId().toString(), ResourceType.Patient);
                 patientBuilder = new PatientBuilder(patient);
+
+                if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
+                    throw new TransformRuntimeException("Retrieved patient " + patientResourceId.getResourceId() + " from DB and it has no ID");
+                }
             }
 
             patientBuilders.put(millenniumIdCell.getLong(), patientBuilder);

@@ -261,15 +261,17 @@ public class PatientBuilder extends ResourceBuilderBase
     /**
      * although FHIR supports multiple communication components, this builder doesn't. If needed, then change.
      */
-    private Patient.PatientCommunicationComponent getOrCreatCommunicationComponent() {
+    private Patient.PatientCommunicationComponent getOrCreatCommunicationComponent(boolean createIfMissing) {
         Patient.PatientCommunicationComponent communicationComponent = null;
         if (this.patient.getCommunication().isEmpty()) {
-            communicationComponent = this.patient.addCommunication();
+            if (createIfMissing) {
+                communicationComponent = this.patient.addCommunication();
 
-            //NOTE this is an assumption that when we record a patient's language, it's the preferred one
-            //If we need more control over this, the creation of the Patient Communication should
-            //be refactored out into a PatientCommunicationBuilder class to expose this for setting differently
-            communicationComponent.setPreferred(true);
+                //NOTE this is an assumption that when we record a patient's language, it's the preferred one
+                //If we need more control over this, the creation of the Patient Communication should
+                //be refactored out into a PatientCommunicationBuilder class to expose this for setting differently
+                communicationComponent.setPreferred(true);
+            }
         } else {
             communicationComponent = this.patient.getCommunication().get(0);
         }
@@ -279,7 +281,7 @@ public class PatientBuilder extends ResourceBuilderBase
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
         if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
-            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent();
+            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(true);
             if (communicationComponent.hasLanguage()) {
                 throw new IllegalArgumentException("Trying to add code to Patient Communication that already has one");
             }
@@ -318,8 +320,15 @@ public class PatientBuilder extends ResourceBuilderBase
     @Override
     public void removeCodeableConcepts(String tag) {
         if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
-            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent();
-            communicationComponent.setLanguage(null);
+            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(false);
+            if (communicationComponent != null) {
+                communicationComponent.setLanguage(null);
+
+                //and remove from the patient if it's now empty
+                if (communicationComponent.isEmpty()) {
+                    this.patient.getCommunication().remove(communicationComponent);
+                }
+            }
 
         } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
             ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
