@@ -843,7 +843,7 @@ public class EmisCsvHelper {
 
             if (newMaritalStatus != null) {
                 EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
-                CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
+                CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
                 EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
             }
 
