@@ -28,6 +28,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 public class LOREFTransformer extends BartsBasisTransformer {
@@ -93,11 +94,13 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Extract locations
         CsvCell facilityLoc = parser.getFacilityLocation();
         CsvCell buildingLoc = parser.getBuildingLocation();
+        CsvCell surgeryLocationCode = parser.getSurgeryLocation();
         CsvCell ambulatoryLoc = parser.getAmbulatoryLocation();
         CsvCell nurseUnitLoc = parser.getNurseUnitLocation();
         CsvCell roomLoc = parser.getRoomLocation();
         CsvCell bedLoc = parser.getBedLcoation();
         CsvCell beginDateCell = parser.getBeginEffectiveDateTime();
+
         Date beginDate = null;
         try {
             beginDate = formatDaily.parse(beginDateCell.getString());
@@ -122,7 +125,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationResourceId.setUniqueId("LocationId=" + locationIdCell.getString());
 
             // Check if this location has previously been saved as a parent-location - Try secondary key
-            String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
+            String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
             String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId);
             // Create main resource key
             if (alternateResourceId == null) {
@@ -148,7 +151,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         }
 
         // Get parent resource id using alternate key
-        String uniqueId = createSecondaryKey(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString());
+        String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
         String parentUniqueId = createParentKey(uniqueId);
         LOG.debug("Looking for parent location using key:" + parentUniqueId);
         if (parentUniqueId != null) {
@@ -250,11 +253,40 @@ public class LOREFTransformer extends BartsBasisTransformer {
     }
 
 
+    private static String createSecondaryKey(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode) {
 
-    /*
-    *
-     */
-    private static String createSecondaryKey(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
+        List<String> tokens = new ArrayList<>();
+
+        tokens.add("FacilityLocCode=" + facilityCode.getLong());
+
+        if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
+            tokens.add("BuildingLocCode=" + buildingCode.getLong());
+        }
+
+        if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
+            tokens.add("SurgeryLocCode=" + surgeryLocationCode.getLong());
+        }
+
+        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
+            tokens.add("AmbulatoryLocCode=" + ambulatoryCode.getLong());
+        }
+
+        if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
+            tokens.add("NurseUnitLocCode=" + nurseUnitCode.getLong());
+        }
+
+        if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
+            tokens.add("RoomLocCode=" + roomCode.getLong());
+        }
+
+        if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
+            tokens.add("BedLocCode=" + bedCode.getLong());
+        }
+
+        return String.join("-", tokens);
+    }
+
+    /*private static String createSecondaryKey(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
         StringBuffer sb = new StringBuffer();
         sb.append("FacilityLocCode=");
         sb.append(facilityCode);
@@ -290,7 +322,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         }
 
         return sb.toString();
-    }
+    }*/
 
     /*
      *
