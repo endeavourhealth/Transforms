@@ -160,11 +160,11 @@ public class BartsCsvHelper {
         return cernerCodeFromDB;
     }
 
-    public static ResourceId getResourceIdFromCache (String resourceIdLookup) {
+    public static ResourceId getResourceIdFromCache(String resourceIdLookup) {
         return resourceIds.get(resourceIdLookup);
     }
 
-    public static void addResourceIdToCache (ResourceId resourceId) {
+    public static void addResourceIdToCache(ResourceId resourceId) {
         String resourceIdLookup = resourceId.getScopeId()
                 + "|" + resourceId.getResourceType()
                 + "|" + resourceId.getUniqueId() ;

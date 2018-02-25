@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -108,10 +107,10 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         // save resource
         if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
-            LOG.debug("Delete Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
+            //LOG.debug("Delete Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         } else {
-            LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
+            //LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
         }
 

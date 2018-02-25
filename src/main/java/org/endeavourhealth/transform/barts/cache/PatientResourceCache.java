@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.cache;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -46,10 +45,10 @@ public class PatientResourceCache {
                 patientBuilder = new PatientBuilder(patient);
 
                 //due to a previous bug in the transform, we've saved a load of Patient resources without an ID, so fix this now
-                if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
+                /*if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
                     patientBuilder.setId(patientId.toString());
                     //throw new TransformRuntimeException("Retrieved patient " + patientResourceId.getResourceId() + " from DB and it has no ID");
-                }
+                }*/
             }
 
             patientBuildersByUuid.put(patientId, patientBuilder);
@@ -68,8 +67,7 @@ public class PatientResourceCache {
 
         LOG.trace("Finishing saving " + patientBuildersByUuid.size() + " patients to the DB");
 
-        //there should be no attempt to reference this cache after this point, so set to null
-        //to ensure any attempt results in an exception
-        patientBuildersByUuid = null;
+        //clear down as everything has been saved
+        patientBuildersByUuid.clear();
     }
 }
