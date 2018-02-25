@@ -57,7 +57,7 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         // this Procedure resource id
         CsvCell procedureIdCell = parser.getProcedureID();
-        ResourceId procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, procedureIdCell);
+        ResourceId procedureResourceId = getOrCreateProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, procedureIdCell);
 
         // create the FHIR Procedure
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
@@ -149,7 +149,7 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(procedureTypeCodeCell, CernerCodeValueRef.PROCEDURE_TYPE, procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(procedureTypeCodeCell, CernerCodeValueRef.PROCEDURE_TYPE, procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, csvHelper);
 
         // save resource
         LOG.debug("Save Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));

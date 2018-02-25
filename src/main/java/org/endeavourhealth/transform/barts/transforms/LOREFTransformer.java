@@ -8,7 +8,6 @@ import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
@@ -34,7 +33,6 @@ import java.util.UUID;
 public class LOREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
-    private static CernerCodeValueRefDalI cernerCodeValueRefDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
     private String uniqueId;
@@ -84,10 +82,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
-        }
-
-        if (cernerCodeValueRefDAL == null) {
-            cernerCodeValueRefDAL = DalProvider.factoryCernerCodeValueRefDal();
         }
 
         String parentLocationResourceId = null;
@@ -230,7 +224,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         // Name
 
-        String name = generateName(fhirResourceFiler, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
+        String name = generateName(csvHelper, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
         locationBuilder.setName(name, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
         /*dependencyList = new ArrayList<CsvCell>();
         String name = getName(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation(), dependencyList);
@@ -255,13 +249,13 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
-    private static String generateName(FhirResourceFiler fhirResourceFiler, CsvCell... sourceCells) throws Exception {
+    private static String generateName(BartsCsvHelper csvHelper, CsvCell... sourceCells) throws Exception {
         List<String> tokens = new ArrayList<>();
 
         for (CsvCell cell: sourceCells) {
             if (!cell.isEmpty() && cell.getLong() > 0) {
 
-                CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getLong(), fhirResourceFiler.getServiceId());
+                CernerCodeValueRef cernerCodeDef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getLong());
                 String name = cernerCodeDef.getCodeDispTxt();
                 if (!Strings.isNullOrEmpty(name)) {
                     tokens.add(name);

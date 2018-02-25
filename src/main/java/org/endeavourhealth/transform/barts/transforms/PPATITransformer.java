@@ -125,10 +125,9 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
         if (!nhsNumberStatusCell.isEmpty() && nhsNumberStatusCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.NHS_NUMBER_STATUS,
-                                                                        nhsNumberStatusCell.getLong(),
-                                                                        fhirResourceFiler.getServiceId());
+                                                                        nhsNumberStatusCell.getLong());
 
             String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
             NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc);
@@ -160,10 +159,9 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell genderCell = parser.getGenderCode();
         if (!genderCell.isEmpty() && genderCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.GENDER,
-                                                                                genderCell.getLong(),
-                                                                                fhirResourceFiler.getServiceId());
+                                                                                genderCell.getLong());
 
             Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
             patientBuilder.setGender(gender, genderCell);
@@ -175,10 +173,9 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
         if (!maritalStatusCode.isEmpty() && maritalStatusCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.MARITAL_STATUS,
-                                                                        maritalStatusCode.getLong(),
-                                                                        fhirResourceFiler.getServiceId());
+                                                                        maritalStatusCode.getLong());
 
             MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
             patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
@@ -190,10 +187,9 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
         if (!ethnicityCode.isEmpty() && ethnicityCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.ETHNIC_GROUP,
-                                                                            ethnicityCode.getLong(),
-                                                                            fhirResourceFiler.getServiceId());
+                                                                            ethnicityCode.getLong());
 
             EthnicCategory ethnicCategory = convertEthnicCategory(cernerCodeValueRef.getAliasNhsCdAlias());
             patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
@@ -206,10 +202,10 @@ public class PPATITransformer extends BartsBasisTransformer {
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, csvHelper);
 
         CsvCell religionCell = parser.getReligionCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, csvHelper);
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();

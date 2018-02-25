@@ -83,7 +83,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
-        ResourceId observationResourceId = getObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
+        ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
 
@@ -125,16 +125,26 @@ public class CLEVETransformer extends BartsBasisTransformer {
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterUuid.toString());
         observationBuilder.setEncounter(encounterReference, encounterIdCell);
 
+        //link to parent observation if we have a parent event
         CsvCell parentEventId = parser.getParentEventId();
         if (!parentEventId.isEmpty()) {
-            ResourceId parentObservationResourceId = getObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parentEventId);
+            ResourceId parentObservationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parentEventId);
             Reference parentObservationReference = ReferenceHelper.createReference(ResourceType.Observation, parentObservationResourceId.getResourceId().toString());
             observationBuilder.setParentResource(parentObservationReference, parentEventId);
         }
 
+        //link to parent diagnostic report if we have an order (NOTE we don't transform the orders file as of yet, but we may as well carry over this reference)
+        CsvCell orderIdCell = parser.getOrderId();
+        if (!orderIdCell.isEmpty() && orderIdCell.getLong() > 0) {
+            ResourceId parentDiagnosticReportId = getOrCreateDiagnosticReportResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, orderIdCell);
+            Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, parentDiagnosticReportId.getResourceId().toString());
+            observationBuilder.setParentResource(parentDiagnosticReportReference, orderIdCell);
+        }
+
+
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
-        CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, fhirResourceFiler);
+        CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
 
         //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
         CsvCell termCell = parser.getEventTitleText();
@@ -146,10 +156,9 @@ public class CLEVETransformer extends BartsBasisTransformer {
         String unitsDesc = null;
         if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_UNITS,
-                    unitsCodeCell.getLong(),
-                    fhirResourceFiler.getServiceId());
+                    unitsCodeCell.getLong());
 
             unitsDesc = cernerCodeValueRef.getCodeDispTxt();
             observationBuilder.setUnits(unitsDesc, unitsCodeCell);
@@ -218,7 +227,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
 
         //TODO - set comments
         CsvCell eventTagCell = parser.getEventTag();

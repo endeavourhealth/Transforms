@@ -76,10 +76,9 @@ public class PPALITransformer extends BartsBasisTransformer {
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
         if (!aliasTypeCodeCell.isEmpty() && aliasTypeCodeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.ALIAS_TYPE,
-                    aliasTypeCodeCell.getLong(),
-                    fhirResourceFiler.getServiceId());
+                    aliasTypeCodeCell.getLong());
 
             String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
             identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);

@@ -80,10 +80,9 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
         if (!phoneTypeCell.isEmpty() && phoneTypeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PHONE_TYPE,
-                                                                                phoneTypeCell.getLong(),
-                                                                                fhirResourceFiler.getServiceId());
+                                                                                phoneTypeCell.getLong());
 
             use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
             system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());

@@ -832,15 +832,19 @@ public class BasisTransformer {
         }
     }
 
-    public static ResourceId getObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
+    public static ResourceId getOrCreateDiagnosticReportResourceId(String scope, CsvCell observationIdCell) throws Exception {
+        return getOrCreateResourceId(scope, ResourceType.DiagnosticReport, observationIdCell);
+    }
+
+    public static ResourceId getOrCreateObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Observation, observationIdCell);
     }
 
-    public static ResourceId getProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
+    public static ResourceId getOrCreateProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Procedure, procedureIdCell);
     }
 
-    public static ResourceId getConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
+    public static ResourceId getOrCreateConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Condition, conditionIdCell);
     }
 

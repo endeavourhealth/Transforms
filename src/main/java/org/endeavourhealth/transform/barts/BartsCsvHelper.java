@@ -118,7 +118,7 @@ public class BartsCsvHelper {
         }
     }
 
-    public static CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code, UUID serviceId) throws Exception {
+    public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code) throws Exception {
 
         String codeLookup = codeSet.toString() + "|" + code.toString() + "|" + serviceId.toString();
 

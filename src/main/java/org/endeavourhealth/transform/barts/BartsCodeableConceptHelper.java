@@ -4,7 +4,6 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -18,29 +17,28 @@ public class BartsCodeableConceptHelper {
     public static final String AUDIT_ELEMENT_CODE_DISPLAY = "Display";
     public static final String AUDIT_ELEMENT_CODE_MEANING = "Meaning";
 
-    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, FhirResourceFiler fhirResourceFiler) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DESC, codeCell, codeSet, resourceBuilder, resourceBuilderTag, fhirResourceFiler);
+    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DESC, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, FhirResourceFiler fhirResourceFiler) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DISPLAY, codeCell, codeSet, resourceBuilder, resourceBuilderTag, fhirResourceFiler);
+    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DISPLAY, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, FhirResourceFiler fhirResourceFiler) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_MEANING, codeCell, codeSet, resourceBuilder, resourceBuilderTag, fhirResourceFiler);
+    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_MEANING, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
                                                               Long codeSet, HasCodeableConceptI resourceBuilder,
-                                                              String resourceBuilderTag, FhirResourceFiler fhirResourceFiler) throws Exception {
+                                                              String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         if (codeCell.isEmpty() || codeCell.getLong() == 0) {
             return null;
         }
 
-        CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                 codeSet,
-                codeCell.getLong(),
-                fhirResourceFiler.getServiceId());
+                codeCell.getLong());
 
         //TODO - apply audit from code reference table
         String term = null;

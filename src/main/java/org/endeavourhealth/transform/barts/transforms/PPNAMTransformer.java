@@ -66,10 +66,9 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
         if (!nameTypeCell.isEmpty() && nameTypeCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.NAME_USE,
-                                                                                nameTypeCell.getLong(),
-                                                                                fhirResourceFiler.getServiceId());
+                                                                                nameTypeCell.getLong());
 
             nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
         }

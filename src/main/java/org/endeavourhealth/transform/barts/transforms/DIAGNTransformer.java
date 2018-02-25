@@ -57,7 +57,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // this Condition resource id
         CsvCell diagnosisId = parser.getDiagnosisID();
-        ResourceId conditionResourceId = getConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
+        ResourceId conditionResourceId = getOrCreateConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
 
         // create the FHIR Condition
         ConditionBuilder conditionBuilder = new ConditionBuilder();
@@ -149,7 +149,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(diagnosisTypeCode, CernerCodeValueRef.DIAGNOSIS_TYPE, conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(diagnosisTypeCode, CernerCodeValueRef.DIAGNOSIS_TYPE, conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, csvHelper);
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();
         if (!diagnosisFreeText.isEmpty()) {

@@ -188,7 +188,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
 
         // specialty
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.PERSONNEL_SPECIALITY, encounterBuilder, EncounterBuilder.TAG_SPECIALTY, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.PERSONNEL_SPECIALITY, encounterBuilder, EncounterBuilder.TAG_SPECIALTY, csvHelper);
 
         /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
@@ -202,7 +202,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }*/
 
         // treatment function
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CernerCodeValueRef.TREATMENT_FUNCTION, encounterBuilder, EncounterBuilder.TAG_TREATMENT_FUNCTION, fhirResourceFiler);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CernerCodeValueRef.TREATMENT_FUNCTION, encounterBuilder, EncounterBuilder.TAG_TREATMENT_FUNCTION, csvHelper);
 
         /*if (!treatmentFunctionCodeCell.isEmpty() && treatmentFunctionCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(

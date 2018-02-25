@@ -138,10 +138,9 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!relationshipToPatientCell.isEmpty() && relationshipToPatientCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.RELATIONSHIP_TO_PATIENT,
-                                                                    relationshipToPatientCell.getLong(),
-                                                                    fhirResourceFiler.getServiceId());
+                                                                    relationshipToPatientCell.getLong());
 
             String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
 
@@ -152,10 +151,9 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
         if (!relationshipTypeCell.isEmpty() && relationshipTypeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.PERSON_RELATIONSHIP_TYPE,
-                                                                        relationshipTypeCell.getLong(),
-                                                                        fhirResourceFiler.getServiceId());
+                                                                        relationshipTypeCell.getLong());
 
             String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
 
