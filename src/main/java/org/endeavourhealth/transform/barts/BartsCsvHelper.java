@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -139,6 +140,20 @@ public class BartsCsvHelper {
             return new CernerCodeValueRef();
         }
 
+        //seem to have whitespace around some of the fields. As a temporary fix, trim them here
+        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getAliasNhsCdAlias())) {
+            cernerCodeFromDB.setAliasNhsCdAlias(cernerCodeFromDB.getAliasNhsCdAlias().trim());
+        }
+        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDescTxt())) {
+            cernerCodeFromDB.setCodeDescTxt(cernerCodeFromDB.getCodeDescTxt().trim());
+        }
+        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDispTxt())) {
+            cernerCodeFromDB.setCodeDispTxt(cernerCodeFromDB.getCodeDispTxt().trim());
+        }
+        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeMeaningTxt())) {
+            cernerCodeFromDB.setCodeMeaningTxt(cernerCodeFromDB.getCodeMeaningTxt().trim());
+        }
+
         // Add to the cache
         cernerCodes.put(codeLookup, cernerCodeFromDB);
 
@@ -217,12 +232,12 @@ public class BartsCsvHelper {
 
         //if not in the cache, hit the DB
         if (!personIdToPatientResourceMap.containsKey(personId)) {
-            LOG.trace("Person ID not found in cache " + personIdCell.getString());
+            //LOG.trace("Person ID not found in cache " + personIdCell.getString());
 
             String mrn = internalIdDal.getDestinationId(serviceId, InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personIdCell.getString());
             if (mrn == null) {
                 //if we've never received the patient, we won't have a map to its MRN but don't add to the map so if it is created, we'll start working
-                LOG.trace("Failed to find MRN for person ID " + personIdCell.getString());
+                //LOG.trace("Failed to find MRN for person ID " + personIdCell.getString());
                 return null;
 
             } else {
@@ -231,12 +246,12 @@ public class BartsCsvHelper {
                 if (resourceId == null) {
                     //if we've got the MRN mapping, but haven't actually assigned an ID for it, do so now
                     resourceId = BasisTransformer.createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
-                    LOG.trace("Created new resource ID " + resourceId.getResourceId() + " for person ID " + personIdCell.getString());
+                    //LOG.trace("Created new resource ID " + resourceId.getResourceId() + " for person ID " + personIdCell.getString());
                 }
 
                 UUID patientId = resourceId.getResourceId();
                 personIdToPatientResourceMap.put(personId, patientId);
-                LOG.trace("Added patient ID " + resourceId.getResourceId() + " to cache " + personIdCell.getString());
+                //LOG.trace("Added patient ID " + resourceId.getResourceId() + " to cache " + personIdCell.getString());
             }
         }
 
