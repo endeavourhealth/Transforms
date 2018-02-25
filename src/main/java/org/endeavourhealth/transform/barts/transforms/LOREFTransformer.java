@@ -1,9 +1,10 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -192,27 +193,27 @@ public class LOREFTransformer extends BartsBasisTransformer {
         if (!bedLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, bedLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.BED), bedLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.BED, bedLoc);
         } else if (!roomLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, roomLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.ROOM), roomLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.ROOM, roomLoc);
         } else if (!nurseUnitLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             //locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.NURSEUNIT), nurseUnitLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.NURSEUNIT, nurseUnitLoc);
         } else if (!ambulatoryLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.AMBULATORY), ambulatoryLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.AMBULATORY, ambulatoryLoc);
         } else if (!buildingLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, buildingLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.BUILDING), buildingLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.BUILDING, buildingLoc);
         } else if (!facilityLoc.isEmpty()) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, facilityLoc);
-            locationBuilder.setPhysicalType(CodeableConceptHelper.createCodeableConcept(org.endeavourhealth.common.fhir.schema.LocationPhysicalType.FACILITY), facilityLoc);
+            locationBuilder.setPhysicalType(LocationPhysicalType.FACILITY, facilityLoc);
         }
 
         // Mode
@@ -221,18 +222,21 @@ public class LOREFTransformer extends BartsBasisTransformer {
         locationBuilder.setMode(Location.LocationMode.INSTANCE);
 
         // Description
-        ArrayList<CsvCell> dependencyList = new ArrayList<CsvCell>();
+        /*ArrayList<CsvCell> dependencyList = new ArrayList<CsvCell>();
         String description = createDescription(fhirResourceFiler, facilityLoc,buildingLoc,ambulatoryLoc,nurseUnitLoc,roomLoc,bedLoc, dependencyList);
         //fhirLocation.setDescription(description);
         CsvCell[] dependencyArray = dependencyList.toArray(new CsvCell[dependencyList.size()]);
-        locationBuilder.setDescription(description, dependencyArray);
+        locationBuilder.setDescription(description, dependencyArray);*/
 
         // Name
-        dependencyList = new ArrayList<CsvCell>();
+
+        String name = generateName(fhirResourceFiler, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
+        locationBuilder.setName(name, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
+        /*dependencyList = new ArrayList<CsvCell>();
         String name = getName(fhirResourceFiler, parser.getFacilityLocation(),parser.getBuildingLocation(),parser.getAmbulatoryLocation(),parser.getNurseUnitLocation(),parser.getRoomLocation(),parser.getBedLcoation(), dependencyList);
         //fhirLocation.setName(name);
         dependencyArray = dependencyList.toArray(new CsvCell[dependencyList.size()]);
-        locationBuilder.setName(name, dependencyArray);
+        locationBuilder.setName(name, dependencyArray);*/
 
         // managing org
         //TODO complete
@@ -249,6 +253,25 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
+    }
+
+    private static String generateName(FhirResourceFiler fhirResourceFiler, CsvCell... sourceCells) throws Exception {
+        List<String> tokens = new ArrayList<>();
+
+        for (CsvCell cell: sourceCells) {
+            if (!cell.isEmpty() && cell.getLong() > 0) {
+
+                CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getLong(), fhirResourceFiler.getServiceId());
+                String name = cernerCodeDef.getCodeDispTxt();
+                if (!Strings.isNullOrEmpty(name)) {
+                    tokens.add(name);
+                } else {
+                    tokens.add("Unknown Location (" + cell.getLong() + ")");
+                }
+            }
+        }
+
+        return String.join(", ", tokens);
     }
 
 
@@ -339,7 +362,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    private static String createDescription(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
+    /*private static String createDescription(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
         StringBuffer sb = new StringBuffer();
         if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
             if (sb.length() > 0) {
@@ -388,12 +411,12 @@ public class LOREFTransformer extends BartsBasisTransformer {
         dependencyList.add(facilityCode);
 
         return sb.toString();
-    }
+    }*/
 
     /*
      *
      */
-    private static String getName(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
+    /*private static String getName(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
         if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
             dependencyList.add(bedCode);
             return getCodeRefValue(fhirResourceFiler, bedCode.getString());
@@ -413,7 +436,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             dependencyList.add(facilityCode);
             return getCodeRefValue(fhirResourceFiler, facilityCode.getString());
         }
-    }
+    }*/
 
     /*
      *
@@ -445,7 +468,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
+    /*private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
         CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
         if (cernerCodeDef != null) {
             return cernerCodeDef.getCodeDispTxt();
@@ -454,5 +477,5 @@ public class LOREFTransformer extends BartsBasisTransformer {
             // LOG.warn("Code not found in Code Value lookup:" + ret);
             return ret;
         }
-    }
+    }*/
 }

@@ -46,7 +46,9 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 

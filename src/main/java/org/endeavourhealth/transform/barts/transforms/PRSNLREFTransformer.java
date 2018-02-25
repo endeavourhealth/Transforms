@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -123,7 +122,7 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
             identifierBuilder.setValue(consultantNHSCode.getString(), consultantNHSCode);
         }
 
-        LOG.debug("Save Practitioner (PersonnelId=" + personnelIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(practitionerBuilder.getResource()));
+        //LOG.debug("Save Practitioner (PersonnelId=" + personnelIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(practitionerBuilder.getResource()));
         saveAdminResource(fhirResourceFiler, parser.getCurrentState(), practitionerBuilder);
     }
 

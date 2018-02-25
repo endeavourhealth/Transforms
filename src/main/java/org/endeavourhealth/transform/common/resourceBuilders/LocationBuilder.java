@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -31,13 +32,6 @@ public class LocationBuilder extends ResourceBuilderBase
         return location;
     }
 
-    /*public void addIdentifier(Identifier fhirIdentifier, CsvCell... sourceCells) {
-        this.location.addIdentifier(fhirIdentifier);
-
-        int index = this.location.getIdentifier().size()-1;
-        auditValue("identifier[" + index + "].value", sourceCells);
-    }*/
-
     public void addTelecom(ContactPoint fhirContact, CsvCell... sourceCells) {
         this.location.addTelecom(fhirContact);
 
@@ -45,52 +39,12 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("telecom[" + index + "].value", sourceCells);
     }
 
-    /*@Override
-    public void addAddressLine(String line, CsvCell... sourceCells) {
-        Address address = this.location.getAddress();
-        address.addLine(line);
 
-        int index = address.getLine().size()-1;
-        auditValue("address.line[" + index + "]", sourceCells);
-    }
-
-    @Override
-    public void addAddressTown(String town, CsvCell... sourceCells) {
-        Address address = this.location.getAddress();
-        address.setCity(town);
-
-        auditValue("address.city", sourceCells);
-    }
-
-    @Override
-    public void addAddressDistrict(String district, CsvCell... sourceCells) {
-        Address address = this.location.getAddress();
-        address.setDistrict(district);
-
-        auditValue("address.district", sourceCells);
-    }
-
-    @Override
-    public void addAddressPostcode(String postcode, CsvCell... sourceCells) {
-        Address address = this.location.getAddress();
-        address.setPostalCode(postcode);
-
-        auditValue("address.postalCode", sourceCells);
-    }
-
-    @Override
-    public void addAddressDisplayText(String displayText, CsvCell... sourceCells) {
-        Address address = this.location.getAddress();
-        address.setText(displayText);
-
-        auditValue("address.text", sourceCells);
-    }*/
-
-    public void setDescription(String name, CsvCell... sourceCells) {
+    /*public void setDescription(String name, CsvCell... sourceCells) {
         this.location.setDescription(name);
 
         auditValue("description", sourceCells);
-    }
+    }*/
 
     public void setName(String name, CsvCell... sourceCells) {
         this.location.setName(name);
@@ -135,8 +89,9 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("status", sourceCells);
     }
 
-    public void setPhysicalType(CodeableConcept pt, CsvCell... sourceCells) {
-        this.location.setPhysicalType(pt);
+    public void setPhysicalType(LocationPhysicalType locationPhysicalType, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(locationPhysicalType);
+        this.location.setPhysicalType(codeableConcept);
 
         auditValue("physicalType.value", sourceCells);
     }

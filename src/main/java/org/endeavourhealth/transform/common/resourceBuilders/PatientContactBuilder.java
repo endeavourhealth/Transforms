@@ -93,7 +93,9 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
 
         ResourceFieldMappingAudit audit = this.patientBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 
