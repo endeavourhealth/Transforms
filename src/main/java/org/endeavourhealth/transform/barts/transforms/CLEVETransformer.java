@@ -16,6 +16,7 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +136,16 @@ public class CLEVETransformer extends BartsBasisTransformer {
             ResourceId parentObservationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parentEventId);
             Reference parentObservationReference = ReferenceHelper.createReference(ResourceType.Observation, parentObservationResourceId.getResourceId().toString());
             observationBuilder.setParentResource(parentObservationReference, parentEventId);
+        }
+
+        //link to child observations if we have any
+        ReferenceList childReferences = csvHelper.getAndRemoveClinicalEventParentRelationships(clinicalEventId);
+        if (childReferences != null) {
+            for (int i=0; i<childReferences.size(); i++) {
+                Reference reference = childReferences.getReference(i);
+                CsvCell[] sourceCells = childReferences.getSourceCells(i);
+                observationBuilder.addChildObservation(reference, sourceCells);
+            }
         }
 
         //link to parent diagnostic report if we have an order (NOTE we don't transform the orders file as of yet, but we may as well carry over this reference)

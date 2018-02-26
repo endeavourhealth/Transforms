@@ -11,7 +11,6 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -129,7 +128,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (!activeCell.getIntAsBoolean()) {
             encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-            LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }
@@ -266,7 +265,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Location
         CsvCell currentLocationCell = parser.getCurrentLocationIdentifier();
-        if (!currentLocationCell.isEmpty()) {
+        if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
             ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentLocationCell.getString());
             if (locationResourceId != null) {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()), currentLocationCell);
@@ -280,7 +279,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
-        LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 

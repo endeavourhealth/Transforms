@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.barts;
 
-import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
-import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -55,12 +53,11 @@ public abstract class BartsCsvToFhirTransformer {
         FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
         BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, exchangeId, PRIMARY_ORG_HL7_OID, version);
 
-        transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
-        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
+        /*transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
+        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);*/
 
-        /*Map<String, List<String>> fileMap = hashFilesByType(files);
+        Map<String, List<String>> fileMap = hashFilesByType(files);
         Map<String, List<ParserI>> parserMap = new HashMap<>();
-
 
         //admin transformers
         LOREFTransformer.transform(version, createParser(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -79,12 +76,18 @@ public abstract class BartsCsvToFhirTransformer {
         //we're now good to save our patient resources
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
+        //pre-transformers to cache clinical data used later on
+        CLEVEPreTransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
         //clinical transformers
         ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         DIAGNTransformer.transform(version, createParser(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         PROCETransformer.transform(version, createParser(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         CLEVETransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
+        ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
+        //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
+        csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
 
         LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
         fhirResourceFiler.waitToFinish();
@@ -189,7 +192,7 @@ public abstract class BartsCsvToFhirTransformer {
         return ret;
     }
 
-    private static void transformAdminAndPatientParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
+    /*private static void transformAdminAndPatientParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
                                         BartsCsvHelper csvHelper,
                                          TransformError previousErrors) throws Exception {
@@ -317,7 +320,7 @@ public abstract class BartsCsvToFhirTransformer {
 
             // 2.1 files
            // Commented out for the time being...
-            /*else if (fileType.equalsIgnoreCase("BULKPROBLEMS")) {
+            *//*else if (fileType.equalsIgnoreCase("BULKPROBLEMS")) {
                 BulkProblem parser = new BulkProblem(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
@@ -356,7 +359,7 @@ public abstract class BartsCsvToFhirTransformer {
                         SusEmergency parser = new SusEmergency(version, filePath, true);
                         SusEmergencyTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                         parser.close();
-            } else */
+            } else *//*
             if (fileType.equalsIgnoreCase("PROB")) {
                             Problem parser = new Problem(version, filePath, true);
                             List<ParserI> parsers = new ArrayList<>();
@@ -365,7 +368,7 @@ public abstract class BartsCsvToFhirTransformer {
                             parser.close();
             }
 
-            /*
+            *//*
             else if (fileType.equalsIgnoreCase("PROC")) {
                                 Procedure parser = new Procedure(version, filePath, true);
                                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -375,7 +378,7 @@ public abstract class BartsCsvToFhirTransformer {
                                     DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                     parser.close();
             }
-            */
+            *//*
         }
 
         // process the 2.2 files, now in dependency order
@@ -419,7 +422,7 @@ public abstract class BartsCsvToFhirTransformer {
         }
 
         throw new TransformException("Failed to find tail file for expected name " + expectedName);
-    }
+    }*/
 
     private static String identifyFileType(String filename) throws TransformException {
         String[] parts = filename.split("_");
