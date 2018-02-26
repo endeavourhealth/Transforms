@@ -58,30 +58,54 @@ public abstract class BartsCsvToFhirTransformer {
         /*Map<String, List<String>> fileMap = hashFilesByType(files);
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
-        LOREFTransformer.transform(version, createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PRSNLREFTransformer.transform(version, createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
-        PPATITransformer.transform(version, createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPADDTransformer.transform(version, createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPALITransformer.transform(version, createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        //PPINFTransformer.transform(version, createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPNAMTransformer.transform(version, createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPPHOTransformer.transform(version, createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPRELTransformer.transform(version, createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPAGPTransformer.transform(version, createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
+        //admin transformers
+        LOREFTransformer.transform(version, createParser(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PRSNLREFTransformer.transform(version, createParser(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
+
+        //patient transformers
+        PPATITransformer.transform(version, createParser(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPADDTransformer.transform(version, createParser(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPALITransformer.transform(version, createParser(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //PPINFTransformer.transform(version, createParser(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPNAMTransformer.transform(version, createParser(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPPHOTransformer.transform(version, createParser(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPRELTransformer.transform(version, createParser(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPAGPTransformer.transform(version, createParser(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
 
         //we're now good to save our patient resources
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
-        ENCNTTransformer.transform(version, createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        DIAGNTransformer.transform(version, createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PROCETransformer.transform(version, createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        CLEVETransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //clinical transformers
+        ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        DIAGNTransformer.transform(version, createParser(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PROCETransformer.transform(version, createParser(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        CLEVETransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
 
         LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
         fhirResourceFiler.waitToFinish();
     }
 
+    /**
+     * most files should only exist once, so use this fn to create the parser
+     */
+    private static ParserI createParser(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, BartsCsvHelper csvHelper) throws Exception {
+        List<ParserI> list = createParsers(fileMap, parserMap, type, csvHelper);
+        if (list.isEmpty()) {
+            return null;
+
+        } else if (list.size() > 1) {
+            throw new TransformException("" + list.size() + " files found for type " + type);
+
+        } else {
+            return list.get(0);
+        }
+    }
+
+    /**
+     * lazily creates parsers for the given file type on any matching files
+     */
     private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, BartsCsvHelper csvHelper) throws Exception {
         List<ParserI> ret = parserMap.get(type);
         if (ret == null) {
@@ -332,7 +356,9 @@ public abstract class BartsCsvToFhirTransformer {
             } else */
             if (fileType.equalsIgnoreCase("PROB")) {
                             Problem parser = new Problem(version, filePath, true);
-                            ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                            List<ParserI> parsers = new ArrayList<>();
+                            parsers.add(parser);
+                            ProblemTransformer.transform(version, parsers, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                             parser.close();
             }
 

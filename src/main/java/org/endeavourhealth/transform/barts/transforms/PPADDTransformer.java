@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Address;
@@ -16,17 +17,21 @@ public class PPADDTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
 
     public static void transform(String version,
-                                 PPADD parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry(parser);
+                String valStr = validateEntry((PPADD)parser);
                 if (valStr == null) {
-                    createPatientAddress(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientAddress((PPADD)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                 } else {
                     LOG.debug("Validation error:" + valStr);
                     SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);

@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PRSNLREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.HumanName;
@@ -19,13 +20,17 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PRSNLREFTransformer.class);
 
     public static void transform(String version,
-                                 PRSNLREF parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         while (parser.nextRecord()) {
             try {
-                createPractitioner(parser, fhirResourceFiler, csvHelper);
+                createPractitioner((PRSNLREF)parser, fhirResourceFiler, csvHelper);
             }
             catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
