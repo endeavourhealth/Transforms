@@ -97,10 +97,10 @@ public class CLEVETransformer extends BartsBasisTransformer {
         observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
 
         // Performer
-        CsvCell clinicianId = parser.getEventPerformedDateTime();
+        CsvCell clinicianId = parser.getEventPerformedPersonnelId();
         if (!clinicianId.isEmpty()) {
-            ResourceId clinicianResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Practitioner", clinicianId.getString());
-            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, clinicianResourceId.getResourceId().toString());
+            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicianId);
+            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, practitionerResourceId.getResourceId().toString());
             observationBuilder.setClinician(practitionerReference, clinicianId);
         }
 
