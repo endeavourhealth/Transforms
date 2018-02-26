@@ -139,6 +139,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             episodeResourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
+            episodeOfCareBuilder.setId(episodeResourceId.getResourceId().toString());
 
             //TODO - can we set more fields on the episode of care? Do we know its start date or end date?
 
