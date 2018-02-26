@@ -357,7 +357,7 @@ public class EmisCsvHelper {
 
         String childObservationUniqueId = createUniqueId(patientGuid, observationGuid);
         Reference reference = ReferenceHelper.createReference(resourceType, childObservationUniqueId);
-        list.add(reference, parentObservationGuid);
+        list.add(reference, observationGuid);
     }
 
 

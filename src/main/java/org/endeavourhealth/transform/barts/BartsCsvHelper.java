@@ -14,10 +14,11 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ public class BartsCsvHelper {
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
+    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
 
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
@@ -39,6 +41,7 @@ public class BartsCsvHelper {
     private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
+    private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -110,7 +113,8 @@ public class BartsCsvHelper {
         if (index > -1) {
             String ret = conceptCodeIdentifier.substring(0,index);
             if (ret.equals(CODE_TYPE_SNOMED)
-                    || ret.equals(CODE_TYPE_ICD_10)) {
+                    || ret.equals(CODE_TYPE_ICD_10)
+                    || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)) {
                 return ret;
             } else {
                 throw new IllegalArgumentException("Unexpected code type [" + ret + "]");
@@ -271,5 +275,71 @@ public class BartsCsvHelper {
         }
 
         return personIdToPatientResourceMap.get(personId);
+    }
+
+    public void cacheParentChildClinicalEventLink(CsvCell childEventIdCell, CsvCell parentEventIdCell) throws Exception {
+        Long parentEventId = parentEventIdCell.getLong();
+        ReferenceList list = clinicalEventChildMap.get(parentEventId);
+        if (list == null) {
+            list = new ReferenceList();
+            clinicalEventChildMap.put(parentEventId, list);
+        }
+
+        //we need to map the child ID to a Discovery UUID
+        ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, childEventIdCell);
+        Reference reference = ReferenceHelper.createReference(ResourceType.Observation, observationResourceId.getResourceId().toString());
+        list.add(reference, childEventIdCell);
+
+    }
+
+    public ReferenceList getAndRemoveClinicalEventParentRelationships(CsvCell parentEventIdCell) {
+        Long parentEventId = parentEventIdCell.getLong();
+        return clinicalEventChildMap.remove(parentEventId);
+    }
+
+
+    /**
+     * as the end of processing all CSV files, there may be some new observations that link
+     * to past parent observations. These linkages are saved against the parent observation,
+     * so we need to retrieve them off the main repository, amend them and save them
+     */
+    public void processRemainingClinicalEventParentChildLinks(FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (Long parentEventId: clinicalEventChildMap.keySet()) {
+            ReferenceList list = clinicalEventChildMap.get(parentEventId);
+            updateExistingObservationWithNewChildLinks(parentEventId, list, fhirResourceFiler);
+        }
+    }
+
+
+    private void updateExistingObservationWithNewChildLinks(Long parentEventId,
+                                                            ReferenceList childResourceRelationships,
+                                                            FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        //convert the parent event ID to a UUID
+        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null, null);
+        ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, dummyCell);
+        Observation observation = (Observation)retrieveResource(ResourceType.Observation, observationResourceId.getResourceId());
+        if (observation == null) {
+            return;
+        }
+
+        ResourceBuilderBase resourceBuilder = new ObservationBuilder(observation);
+
+        boolean changed = false;
+
+        for (int i=0; i<childResourceRelationships.size(); i++) {
+            Reference reference = childResourceRelationships.getReference(i);
+            CsvCell[] sourceCells = childResourceRelationships.getSourceCells(i);
+
+            ObservationBuilder observationBuilder = (ObservationBuilder)resourceBuilder;
+            if (observationBuilder.addChildObservation(reference, sourceCells)) {
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
+            fhirResourceFiler.savePatientResource(null, false, resourceBuilder);
+        }
     }
 }
