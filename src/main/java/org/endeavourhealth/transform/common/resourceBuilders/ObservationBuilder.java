@@ -86,19 +86,25 @@ public class ObservationBuilder extends ResourceBuilderBase
         }
     }
 
-    public void setValue(Double value, CsvCell... sourceCells) {
+    public void setValueDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
+        this.observation.setValue(dateTimeType);
+
+        auditValue("valueDateTime", sourceCells);
+    }
+
+    public void setValueNumber(Double value, CsvCell... sourceCells) {
         findOrCreateQuantity().setValue(BigDecimal.valueOf(value));
 
         auditValue("valueQuantity.value", sourceCells);
     }
 
-    public void setUnits(String units, CsvCell... sourceCells) {
+    public void setValueNumberUnits(String units, CsvCell... sourceCells) {
         findOrCreateQuantity().setUnit(units);
 
         auditValue("valueQuantity.unit", sourceCells);
     }
 
-    public void setValueComparator(Quantity.QuantityComparator comparatorValue, CsvCell... sourceCells) {
+    public void setValueNumberComparator(Quantity.QuantityComparator comparatorValue, CsvCell... sourceCells) {
         findOrCreateQuantity().setComparator(comparatorValue);
 
         auditValue("valueQuantity.comparator", sourceCells);

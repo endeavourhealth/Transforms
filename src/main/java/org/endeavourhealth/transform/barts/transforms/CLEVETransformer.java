@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -20,6 +21,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
 public class CLEVETransformer extends BartsBasisTransformer {
@@ -27,6 +30,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
     private static final long RESULT_STATUS_AUTHORIZED = 25;
+    private static final SimpleDateFormat resultDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
     /*
      *
@@ -146,6 +150,121 @@ public class CLEVETransformer extends BartsBasisTransformer {
             codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
+
+
+        //TODO need to check getEventResultClassCode()
+        CsvCell resultClassCode = parser.getEventResultClassCode();
+        if (resultClassCode.isEmpty()
+                && resultClassCode.getLong() != RESULT_STATUS_AUTHORIZED) {
+            return;
+        }
+
+        CsvCell resultValueCell = parser.getEventResultNumber();
+        CsvCell resultDateCell = parser.getEventResultDateTime();
+
+        if (!resultValueCell.isEmpty()) {
+            transformResultNumericValue(parser, observationBuilder, csvHelper);
+
+        } else if (!resultDateCell.isEmpty()) {
+            //TODO - restore when we want to process events with result dates
+            //transformResultDateValue(parser, observationBuilder, csvHelper);
+            return;
+
+        } else {
+
+            //TODO - remove this when we want to process more than numerics
+            return;
+        }
+
+
+        CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
+        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
+
+        //TODO - set comments
+        CsvCell eventTagCell = parser.getEventTag();
+        if (!eventTagCell.isEmpty()) {
+            String eventTagStr = eventTagCell.getString();
+
+            CsvCell resultTextCell = parser.getEventResultText();
+            String resultTextStr = resultTextCell.getString();
+
+            //the event tag sometimes replicates what's in the result text, so only carry over if different
+            if (!eventTagStr.equals(resultTextStr)) {
+                observationBuilder.setNotes(eventTagStr, eventTagCell);
+            }
+        }
+
+        // save resource
+        LOG.debug("Save Observation (PatId=" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
+    }
+
+    private static void transformResultDateValue(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell resultDateCell = parser.getEventResultDateTime();
+
+        //note that the date format in the parser doesn't match the format used, so convert manually here
+        Date date = resultDateFormat.parse(resultDateCell.getString());
+
+        //events with a date result have the date in both the EVENT_RESULT_DT and EVENT_RESULT_TXT column
+        //except the EVENT_RESULT_TXT has additional information on the precision, so we need to use both fields
+        CsvCell resultTextCell = parser.getEventResultText();
+        String resultText = resultTextCell.getString();
+        String precisionCode = resultText.substring(0, 1);
+
+        DateTimeType dateTimeType = null;
+
+        if (precisionCode.equals("0")) { //datetime
+            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE); //although the date format has seconds, it's always zero in the data, so Minute is right
+
+        } else if (precisionCode.equals("1")) { //date
+            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.DAY);
+
+        } else if (precisionCode.equals("2")) { //time
+            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
+
+        } else {
+            throw new TransformException("Unknown precision code at start of result text [" + resultText + "]");
+        }
+
+        observationBuilder.setValueDate(dateTimeType, resultTextCell, resultDateCell);
+    }
+
+    private static void transformResultNumericValue(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
+
+        //numeric results have their number in both the result text column and the result number column
+        //HOWEVER the result number column seems to round them to the nearest int, so it less useful. So
+        //get the numeric values from the result text cell
+        CsvCell resultTextCell = parser.getEventResultText();
+        String resultText = resultTextCell.getString();
+
+        //qualified numbers are represented with a comparator at the start of the result text
+        Quantity.QuantityComparator comparatorValue = null;
+
+        for (String comparator : comparators) {
+            if (resultText.startsWith(comparator)) {
+                comparatorValue = convertComparator(comparator);
+
+                //make sure to remove the comparator from the String, and tidy up any whitespace
+                resultText = resultText.substring(comparator.length());
+                resultText = resultText.trim();
+            }
+        }
+
+        //test if the remaining result text is a number, othewise it could just have been free-text that started with a number
+        try {
+            //try treating it as a number
+            Double valueNumber = new Double(resultText);
+            observationBuilder.setValueNumber(valueNumber, resultTextCell);
+
+            if (comparatorValue != null) {
+                observationBuilder.setValueNumberComparator(comparatorValue, resultTextCell);
+            }
+
+        } catch (NumberFormatException nfe) {
+            throw new TransformException("Failed to convert [" + resultText + "] to Double");
+        }
+
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
         String unitsDesc = null;
         if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
@@ -155,56 +274,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                     unitsCodeCell.getLong());
 
             unitsDesc = cernerCodeValueRef.getCodeDispTxt();
-            observationBuilder.setUnits(unitsDesc, unitsCodeCell);
-        }
-
-        //TODO need to check getEventResultClassCode()
-        CsvCell resultClassCode = parser.getEventResultClassCode();
-        if (resultClassCode.isEmpty()
-                && resultClassCode.getLong() != RESULT_STATUS_AUTHORIZED) {
-            return;
-        }
-
-        //set value and units
-        // Need to store comparator separately  - new method in Quantityhelper
-        // if it looks like a plain number it's simple.
-        // if it contains  valid comparator symbol, use it
-        CsvCell resultTextCell = parser.getEventResultText();
-        if (!resultTextCell.isEmpty()) {
-
-            //numeric results have their number in both the result text column and the result number column
-            //HOWEVER the result number column seems to round them to the nearest int, so it less useful. So
-            //get the numeric values from the result text cell
-            String resultText = resultTextCell.getString();
-
-            //qualified numbers are represented with a comparator at the start of the result text
-            Quantity.QuantityComparator comparatorValue = null;
-
-            for (String comparator : comparators) {
-                if (resultText.startsWith(comparator)) {
-                    comparatorValue = convertComparator(comparator);
-
-                    //make sure to remove the comparator from the String, and tidy up any whitespace
-                    resultText = resultText.substring(comparator.length());
-                    resultText = resultText.trim();
-                }
-            }
-
-            //test if the remaining result text is a number, othewise it could just have been free-text that started with a number
-            try {
-                //try treating it as a number
-                Double valueNumber = new Double(resultText);
-                observationBuilder.setValue(valueNumber, resultTextCell);
-
-                if (comparatorValue != null) {
-                    observationBuilder.setValueComparator(comparatorValue, resultTextCell);
-                }
-
-            } catch (NumberFormatException nfe) {
-
-                //TODO - remove this when we want to process more than numerics
-                return;
-            }
+            observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
         }
 
         // Reference range if supplied
@@ -225,30 +295,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_THAN, high);
             }
         }
-
-        CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
-
-        //TODO - set comments
-        CsvCell eventTagCell = parser.getEventTag();
-        if (!eventTagCell.isEmpty()) {
-            String eventTagStr = eventTagCell.getString();
-            String resultTextStr = resultTextCell.getString();
-
-            //the event tag sometimes replicates what's in the result text, so only carry over if different
-            if (!eventTagStr.equals(resultTextStr)) {
-                observationBuilder.setNotes(eventTagStr, eventTagCell);
-            }
-        }
-
-        //TODO - remove this when we want to process more than numerics
-        if (resultTextCell.isEmpty()) {
-            return;
-        }
-
-        // save resource
-        LOG.debug("Save Observation (PatId=" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-        savePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
     }
 
     private static Quantity.QuantityComparator convertComparator(String str) {

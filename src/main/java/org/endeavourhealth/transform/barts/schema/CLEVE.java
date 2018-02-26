@@ -195,7 +195,7 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("EVENT_TITLE_TXT");
     }
 
-    public CsvCell getRecordStatusreference() {
+    public CsvCell getRecordStatusReference() {
         return super.getCell("RECORD_STATUS_CD");
     }
 
