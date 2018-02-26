@@ -19,6 +19,7 @@ public class EncounterBuilder extends ResourceBuilderBase
     public static final String TAG_SPECIALTY = "CodeableConceptSpecialty";
     public static final String TAG_TREATMENT_FUNCTION = "CodeableConceptTreatmentFunction";
     public static final String TAG_SOURCE = "CodeableConceptSource";
+    public static final String TAG_ENCOUNTER_ADMISSION_TYPE = "CodeableConceptEncounterAdmissionType";
 
     private Encounter encounter = null;
 
@@ -194,6 +195,16 @@ public class EncounterBuilder extends ResourceBuilderBase
             extension.setValue(codeableConcept);
             return codeableConcept;
 
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Admission Type code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
@@ -218,6 +229,12 @@ public class EncounterBuilder extends ResourceBuilderBase
             return "extension[" + index + "].valueCodeableConcept";
 
 
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
@@ -233,6 +250,9 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");

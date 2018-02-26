@@ -1640,12 +1640,12 @@ public class ObservationTransformer {
 
         CsvCell value = parser.getValue();
         if (!value.isEmpty()) {
-            observationBuilder.setValue(value.getDouble(), value);
+            observationBuilder.setValueNumber(value.getDouble(), value);
         }
 
         CsvCell units = parser.getNumericUnit();
         if (!units.isEmpty()) {
-            observationBuilder.setUnits(units.getString(), units);
+            observationBuilder.setValueNumberUnits(units.getString(), units);
         }
 
         CsvCell low = parser.getNumericRangeLow();

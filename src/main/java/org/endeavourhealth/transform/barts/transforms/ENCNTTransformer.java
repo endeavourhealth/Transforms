@@ -192,8 +192,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
         encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
 
-        // specialty
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, EncounterBuilder.TAG_SPECIALTY, csvHelper);
+        // Encounter type
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_ADMISSION_TYPE, csvHelper);
 
         /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
