@@ -57,7 +57,28 @@ public class IdentifierBuilder {
         }
     }
 
-    public static boolean removeExistingIdentifierBySystem(HasIdentifierI parentBuilder, String identifierSystem) {
+    public static List<Identifier> findExistingIdentifiersForSystem(HasIdentifierI parentBuilder, String identifierSystem) {
+        if (Strings.isNullOrEmpty(identifierSystem)) {
+            throw new IllegalArgumentException("Can't match identifier without system");
+        }
+
+        List<Identifier> matches = new ArrayList<>();
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+
+            if (!identifier.hasSystem()
+                    || !identifier.getSystem().equalsIgnoreCase(identifierSystem)) {
+                continue;
+            }
+
+            matches.add(identifier);
+        }
+
+        return matches;
+    }
+
+    /*public static boolean removeExistingIdentifiersBySystem(HasIdentifierI parentBuilder, String identifierSystem) {
         if (Strings.isNullOrEmpty(identifierSystem)) {
             throw new IllegalArgumentException("Can't match identifier without system");
         }
@@ -78,6 +99,15 @@ public class IdentifierBuilder {
         if (matches.isEmpty()) {
             return false;
 
+        } else {
+            for (Identifier identifier: matches) {
+                parentBuilder.removeIdentifier(identifier);
+            }
+            return true;
+        }
+        *//*if (matches.isEmpty()) {
+            return false;
+
         } else if (matches.size() > 1) {
             throw new IllegalArgumentException("Found " + matches.size() + " identifiers for system " + identifierSystem);
 
@@ -85,8 +115,8 @@ public class IdentifierBuilder {
             Identifier identifier = matches.get(0);
             parentBuilder.removeIdentifier(identifier);
             return true;
-        }
-    }
+        }*//*
+    }*/
 
     /*public static boolean hasIdentifier(HasIdentifierI parentBuilder, String identifierSystem, String identifierValue) {
         if (Strings.isNullOrEmpty(identifierSystem)) {

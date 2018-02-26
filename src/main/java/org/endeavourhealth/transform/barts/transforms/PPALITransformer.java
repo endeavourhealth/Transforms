@@ -15,6 +15,8 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class PPALITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPALITransformer.class);
 
@@ -77,22 +79,34 @@ public class PPALITransformer extends BartsBasisTransformer {
             return;
         }
 
+        //work out the system for the alias
+        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
+                CernerCodeValueRef.ALIAS_TYPE,
+                aliasTypeCodeCell.getLong());
+
+        String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
+
+        //if the alias record is an NHS number, then it's an official use. Secondary otherwise.
+        Identifier.IdentifierUse use = null;
+        if (aliasSystem.equalsIgnoreCase(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
+            use = Identifier.IdentifierUse.OFFICIAL;
+
+            //if we're the record for NHS number, then remove any other NHS number already on the patient (created by the PPATI transformer)
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            for (Identifier identifier: identifiers) {
+                patientBuilder.removeIdentifier(identifier);
+            }
+
+        } else {
+            use = Identifier.IdentifierUse.SECONDARY;
+        }
+
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
         identifierBuilder.setId(aliasIdCell.getString(), aliasCell);
-        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilder.setUse(use);
         identifierBuilder.setValue(aliasCell.getString(), aliasCell);
-
-        // Patient Alias (these are all secondary as MRN and NHS are added in PPATI
-        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        if (!aliasTypeCodeCell.isEmpty() && aliasTypeCodeCell.getLong() > 0) {
-
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                    CernerCodeValueRef.ALIAS_TYPE,
-                    aliasTypeCodeCell.getLong());
-
-            String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
-            identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
-        }
+        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
 
         CsvCell startDateCell = parser.getBeginEffectiveDate();
         if (!startDateCell.isEmpty()) {
@@ -159,7 +173,11 @@ public class PPALITransformer extends BartsBasisTransformer {
             case "MPI": return FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_HIE_COMMUNITY;
             case "BIOMETRICID": return FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_BIOMETRIC;
             case "NTKCRDNBR": return FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CARD_NUMBER;
-            default: return null;
+            default:
+                LOG.warn("Unknown alias system [" + statusCode + "]");
+                //TODO - change to throw an IllegalArgumentException when happy we have no unmapped aliases
+                return "UNKNWON";
+                //return null;
         }
     }
 

@@ -98,9 +98,9 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
         //so they can be added back on without duplicating them
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-        IdentifierBuilder.removeExistingIdentifierBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+        //TODO - need to avoid duplicating Identifiers
+//        IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+        //IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
 
         if (!millenniumPersonId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
@@ -120,6 +120,10 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
             nhsNumber = nhsNumber.replace("-",""); //Cerner NHS numbers are tokenised with hyphens, so remove
+
+            //the PPALI transform also created NHS Number identifiers, but this file has more details,
+//TODO - need to avoid duplicating Identifiers
+      //      IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
