@@ -52,6 +52,23 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        // this Condition resource id
+        CsvCell diagnosisId = parser.getDiagnosisID();
+        ResourceId conditionResourceId = getOrCreateConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
+
+        //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the encounter ID
+        //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            Condition existingCondition = (Condition)csvHelper.retrieveResource(ResourceType.Condition, conditionResourceId.getResourceId());
+            if (existingCondition != null) {
+                ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
+                //LOG.debug("Delete Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
+            }
+            return;
+        }
+
         // get encounter details (should already have been created previously)
         CsvCell encounterIdCell = parser.getEncounterId();
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
@@ -60,10 +77,6 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             LOG.warn("Skipping Diagnosis " + parser.getDiagnosisID().getString() + " due to missing encounter");
             return;
         }
-
-        // this Condition resource id
-        CsvCell diagnosisId = parser.getDiagnosisID();
-        ResourceId conditionResourceId = getOrCreateConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
 
         // create the FHIR Condition
         ConditionBuilder conditionBuilder = new ConditionBuilder();
@@ -74,13 +87,6 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         // set the patient reference
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
         conditionBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
-
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            LOG.debug("Delete Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
-            return;
-        }
 
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 

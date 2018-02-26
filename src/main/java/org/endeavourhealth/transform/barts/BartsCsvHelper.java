@@ -225,7 +225,7 @@ public class BartsCsvHelper {
             return;
         }
 
-        ResourceId encounterResourceId = BasisTransformer.getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId.toString());
+        ResourceId encounterResourceId = BasisTransformer.getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
         if (encounterResourceId == null) {
             //add nulls to the map so we don't keep hitting the DB
             encounterIdToEnconterResourceMap.put(encounterId, null);
