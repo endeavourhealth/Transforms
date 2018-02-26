@@ -265,7 +265,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Location
         CsvCell currentLocationCell = parser.getCurrentLocationIdentifier();
-        if (!currentLocationCell.isEmpty()) {
+        if ((!currentLocationCell.isEmpty()) && currentLocationCell.getString().compareToIgnoreCase("0") != 0) {
             ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentLocationCell.getString());
             if (locationResourceId != null) {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()), currentLocationCell);
