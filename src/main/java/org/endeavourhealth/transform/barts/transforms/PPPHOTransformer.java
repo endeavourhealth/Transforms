@@ -54,8 +54,13 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             return;
         }
 
-        CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
+
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPPHO record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         CsvCell phoneIdCell = parser.getMillenniumPhoneId();

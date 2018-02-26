@@ -44,17 +44,18 @@ public class BartsCsvHelper {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private UUID serviceId = null;
     private UUID systemId = null;
+    private UUID exchangeId = null;
     private String primaryOrgHL7OrgOID = null;
+    private String version = null;
 
-    public BartsCsvHelper(UUID serviceId, UUID systemId, String primaryOrgHL7OrgOID) {
+    public BartsCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String primaryOrgHL7OrgOID, String version) {
         this.serviceId = serviceId;
         this.systemId = systemId;
+        this.exchangeId = exchangeId;
         this.primaryOrgHL7OrgOID = primaryOrgHL7OrgOID;
+        this.version = version;
     }
 
-    public String getPrimaryOrgHL7OrgOID() {
-        return primaryOrgHL7OrgOID;
-    }
 
     public UUID getServiceId() {
         return serviceId;
@@ -63,6 +64,20 @@ public class BartsCsvHelper {
     public UUID getSystemId() {
         return systemId;
     }
+
+    public UUID getExchangeId() {
+        return exchangeId;
+    }
+
+    public String getPrimaryOrgHL7OrgOID() {
+        return primaryOrgHL7OrgOID;
+    }
+
+
+    public String getVersion() {
+        return version;
+    }
+
 
     public Resource retrieveResource(ResourceType resourceType, UUID resourceId) throws Exception {
 

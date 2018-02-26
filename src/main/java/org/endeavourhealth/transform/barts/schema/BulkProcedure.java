@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,42 +10,57 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class BulkProcedure extends AbstractCharacterParser {
+public class BulkProcedure extends AbstractCsvParser {
     private static final Logger LOG = LoggerFactory.getLogger(BulkProcedure.class);
 
     public static final String DATE_FORMAT = "yyyy-mm-dd";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public BulkProcedure(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public BulkProcedure(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+    }
 
-        addFieldList("DOB");
-        addFieldList("MRN");
-        addFieldList("NHSNo");
-        addFieldList("AdmissionDateTime");
-        addFieldList("DischargeDateTime");
-        addFieldList("Trtmt_Func");
-        addFieldList("Specialty");
-        addFieldList("Ward");
-        addFieldList("Consultant");
-        addFieldList("Procedure_DT_TM");
-        addFieldList("ProcedureText");
-        addFieldList("Comment");
-        addFieldList("ProcedureCode");
-        addFieldList("Proc_Cd_Type");
-        addFieldList("Error");
-        addFieldList("Encounter_Type");
-        addFieldList("Site");
-        addFieldList("Create_DT_TM");
-        addFieldList("Update_DT_TM");
-        addFieldList("UpdatedBy");
-        addFieldList("EncounterId");
-        addFieldList("FINNo");
-        addFieldList("Source_System");
-        addFieldList("Ctrl_Id");
-        addFieldList("Record_Updated_Dt");
 
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[] {
+                "DOB",
+                "MRN",
+                "NHSNo",
+                "AdmissionDateTime",
+                "DischargeDateTime",
+                "Trtmt_Func",
+                "Specialty",
+                "Ward",
+                "Consultant",
+                "Procedure_DT_TM",
+                "ProcedureText",
+                "Comment",
+                "ProcedureCode",
+                "Proc_Cd_Type",
+                "Error",
+                "Encounter_Type",
+                "Site",
+                "Create_DT_TM",
+                "Update_DT_TM",
+                "UpdatedBy",
+                "EncounterId",
+                "FINNo",
+                "Source_System",
+                "Ctrl_Id",
+                "Record_Updated_Dt",
+        };
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner 2.1 Bulk Procedures file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return false;
     }
 
     public Date getDOB() throws TransformException {
@@ -68,14 +84,14 @@ public class BulkProcedure extends AbstractCharacterParser {
     }
 
     public Date getAdmissionDateTime() throws TransformException {
-        return super.getDateTime("AdmissionDateTime");
+        return super.getDate("AdmissionDateTime");
     }
     public String getAdmissionDateTimeAsString() throws TransformException {
         return super.getString("AdmissionDateTime");
     }
 
     public Date getDischargeDateTime() throws TransformException {
-        return super.getDateTime("DischargeDateTime");
+        return super.getDate("DischargeDateTime");
     }
     public String getDischargeDateTimeAsString() throws TransformException {
         return super.getString("DischargeDateTime");
@@ -95,7 +111,7 @@ public class BulkProcedure extends AbstractCharacterParser {
         return super.getDate("Create_DT_TM");
     }
     public Date getUpdateDateTime() throws TransformException {
-        return super.getDateTime("Update_DT_TM");
+        return super.getDate("Update_DT_TM");
     }
     public String getUpdatedBy() throws FileFormatException {
         return super.getString("UpdatedBy").trim();
@@ -107,8 +123,4 @@ public class BulkProcedure extends AbstractCharacterParser {
         return super.getString("FINNo").trim();
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner 2.1 procedures file";
-    }
 }

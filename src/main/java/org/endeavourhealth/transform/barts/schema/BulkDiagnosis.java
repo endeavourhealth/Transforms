@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.AbstractCharacterParser;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,45 +10,60 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.UUID;
 
-public class BulkDiagnosis extends AbstractCharacterParser {
+public class BulkDiagnosis extends AbstractCsvParser {
     private static final Logger LOG = LoggerFactory.getLogger(BulkDiagnosis.class);
 
     public static final String DATE_FORMAT = "yyyy-mm-dd";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public BulkDiagnosis(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, boolean openParser) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, "\\|", openParser, DATE_FORMAT, TIME_FORMAT);
+    public BulkDiagnosis(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+    }
 
-        addFieldList("DiagnosisId");
-        addFieldList("Update_DT_TM");
-        addFieldList("ActiveIndicator");
-        addFieldList("PersonId");
-        addFieldList("EncounterId");
-        addFieldList("MRN");
-        addFieldList("FINNbr");
-        addFieldList("Diagnosis");
-        addFieldList("Qualifier");
-        addFieldList("Confirmation");
-        addFieldList("DiagnosisDate");
-        addFieldList("Classification");
-        addFieldList("Clin_Service");
-        addFieldList("Diag_Type");
-        addFieldList("Rank");
-        addFieldList("Diag_Prnsl");
-        addFieldList("Severity_Class");
-        addFieldList("Severity");
-        addFieldList("Certainty");
-        addFieldList("Probability");
-        addFieldList("Org_Name");
-        addFieldList("DiagnosisCode");
-        addFieldList("Vocabulary");
-        addFieldList("Axis");
-        addFieldList("SecondaryDescription");
-        addFieldList("Source_System");
-        addFieldList("Ctrl_Id");
-        addFieldList("Record_Updated_Dt");
 
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[] {
+                "DiagnosisId",
+                "Update_DT_TM",
+                "ActiveIndicator",
+                "PersonId",
+                "EncounterId",
+                "MRN",
+                "FINNbr",
+                "Diagnosis",
+                "Qualifier",
+                "Confirmation",
+                "DiagnosisDate",
+                "Classification",
+                "Clin_Service",
+                "Diag_Type",
+                "Rank",
+                "Diag_Prnsl",
+                "Severity_Class",
+                "Severity",
+                "Certainty",
+                "Probability",
+                "Org_Name",
+                "DiagnosisCode",
+                "Vocabulary",
+                "Axis",
+                "SecondaryDescription",
+                "Source_System",
+                "Ctrl_Id",
+                "Record_Updated_Dt"
+        };
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "Cerner 2.1 Bulk Diagnosis file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
     }
 
     public Long getDiagnosisId() throws FileFormatException {
@@ -55,7 +71,7 @@ public class BulkDiagnosis extends AbstractCharacterParser {
     }
 
     public Date getUpdateDateTime() throws TransformException {
-        return super.getDateTime("Update_DT_TM");
+        return super.getDate("Update_DT_TM");
     }
 
     public String getActiveIndicator() throws FileFormatException {
@@ -105,9 +121,5 @@ public class BulkDiagnosis extends AbstractCharacterParser {
         return super.getString("SecondaryDescription").trim();
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner 2.1 diagnosis file";
-    }
 
 }

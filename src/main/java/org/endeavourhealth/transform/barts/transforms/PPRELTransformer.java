@@ -52,6 +52,11 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPREL record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
+
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
         CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
         PatientContactBuilder.removeExistingAddress(patientBuilder, relationshipIdCell.getString());

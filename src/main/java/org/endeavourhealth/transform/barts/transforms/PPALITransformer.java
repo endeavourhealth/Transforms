@@ -57,6 +57,11 @@ public class PPALITransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPALI record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
+
         //we always fully re-create the Identifier on the patient so just remove any previous instance
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
         IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());

@@ -50,8 +50,13 @@ public class PPNAMTransformer extends BartsBasisTransformer {
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-        CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
+
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPNAM record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
 
         CsvCell nameIdCell = parser.getMillenniumPersonNameId();
         NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());

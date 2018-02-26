@@ -147,11 +147,11 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("NORMAL_VALUE_HIGH_TXT");
     }
 
-    public CsvCell getEffectiveDateTime() {
+    public CsvCell getEventPerformedDateTime() {
         return super.getCell("EVENT_PERFORMED_DT_TM");
     }
 
-    public CsvCell getClinicianID() {
+    public CsvCell getEventPerformedPersonnelId() {
         return super.getCell("EVENT_PERFORMED_PRSNL_ID");
     }
 
@@ -159,7 +159,7 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("EVENT_VERIFIED_DT_TM");
     }
 
-    public CsvCell getVerifiedPersonnedId() {
+    public CsvCell getVerifiedPersonnelId() {
         return super.getCell("EVENT_VERIFIED_PRSNL_ID");
     }
 

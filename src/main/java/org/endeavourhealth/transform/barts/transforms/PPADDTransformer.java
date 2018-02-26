@@ -50,6 +50,11 @@ public class PPADDTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPADD record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
+
         //we always fully re-create the address, so remove it from the patient
         CsvCell addressIdCell = parser.getMillenniumAddressId();
         AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());

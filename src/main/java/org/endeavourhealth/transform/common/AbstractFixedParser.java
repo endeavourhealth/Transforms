@@ -1,9 +1,8 @@
-package org.endeavourhealth.transform.barts;
+package org.endeavourhealth.transform.common;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 
-public abstract class AbstractFixedParser implements AutoCloseable {
+public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFixedParser.class);
 
     private final String version;

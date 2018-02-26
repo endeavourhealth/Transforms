@@ -108,15 +108,14 @@ public class CLEVETransformer extends BartsBasisTransformer {
         observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
 
         // Performer
-        //TODO Is IDENTIFIER_SYSTEM_BARTS_PERSONNEL_ID the right one?
-        CsvCell clinicianId = parser.getClinicianID();
+        CsvCell clinicianId = parser.getEventPerformedDateTime();
         if (!clinicianId.isEmpty()) {
             ResourceId clinicianResourceId = getResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, "Practitioner", clinicianId.getString());
             Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, clinicianResourceId.getResourceId().toString());
             observationBuilder.setClinician(practitionerReference, clinicianId);
         }
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
+        CsvCell effectiveDate = parser.getEventPerformedDateTime();
         if (!effectiveDate.isEmpty()) {
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);

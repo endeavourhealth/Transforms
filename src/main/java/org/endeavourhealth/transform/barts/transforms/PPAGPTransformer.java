@@ -51,6 +51,11 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPAGP record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            return;
+        }
+
         //if we don't have a person ID, there's nothing we can do with the row
         CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
         if (personnelId.isEmpty()) {

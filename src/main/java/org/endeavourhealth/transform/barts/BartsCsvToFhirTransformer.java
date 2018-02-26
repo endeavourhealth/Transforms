@@ -12,11 +12,11 @@ import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public abstract class BartsCsvToFhirTransformer {
 
@@ -34,12 +34,6 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
-    //public static final int CODE_SYSTEM_SNOMED = 1000;
-    //public static final int CODE_SYSTEM_ICD_10 = 1001;
-    //public static final int CODE_SYSTEM_OPCS_4 = 1002;
-
-    public static final String CODE_CONTEXT_DIAGNOSIS = "BARTSCSV_CLIN_DIAGNOSIS";
-    public static final String CODE_CONTEXT_PROCEDURE = "BARTSCSV_CLIN_PROCEDURE";
 
     public static final int VERSION_2_2_FILE_COUNT = 14;
 
@@ -52,53 +46,121 @@ public abstract class BartsCsvToFhirTransformer {
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        LOG.trace("Transforming Barts CSV content in " + orgDirectory);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, exchangeId, PRIMARY_ORG_HL7_OID, version);
 
-        //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
-        BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, PRIMARY_ORG_HL7_OID);
+        transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
+        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
 
-        LOG.trace("Transforming Barts CSV content in {}", orgDirectory);
-        transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, processor, csvHelper, previousErrors);
-        transformClinicalParsers(serviceId, systemId, exchangeId, files, version, processor, csvHelper, previousErrors);
 
-        LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
-        processor.waitToFinish();
+        /*Map<String, List<String>> fileMap = hashFilesByType(files);
+        Map<String, List<ParserI>> parserMap = new HashMap<>();
+
+        createParsers(fileMap, parserMap, "", csvHelper);
+
+        LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
+        PPATITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPADDTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPNAMTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPPHOTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPRELTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
+        //we're now good to save our patient resources
+        PatientResourceCache.filePatientResources(fhirResourceFiler);
+
+        ENCNTTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ProblemTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
+
+        LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
+        fhirResourceFiler.waitToFinish();
     }
 
-
-    /*private static File validateAndFindCommonDirectory(String sharedStoragePath, String[] files) throws Exception {
-        String organisationDir = null;
-
-        for (String file: files) {
-            File f = new File(sharedStoragePath, file);
-            if (!f.exists()) {
-                LOG.error("Failed to find file {} in shared storage {}", file, sharedStoragePath);
-                throw new FileNotFoundException("" + f + " doesn't exist");
-            }
-            //LOG.info("Successfully found file {} in shared storage {}", file, sharedStoragePath);
-
-            try {
-                File orgDir = f.getParentFile();
-
-                if (organisationDir == null) {
-                    organisationDir = orgDir.getAbsolutePath();
-                } else {
-                    if (!organisationDir.equalsIgnoreCase(orgDir.getAbsolutePath())) {
-                        throw new Exception();
-                    }
+    private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, BartsCsvHelper csvHelper) throws Exception {
+        List<ParserI> ret = parserMap.get(type);
+        if (ret == null) {
+            ret = new ArrayList<>();
+            
+            List<String> files = fileMap.get(type);
+            if (files != null) {
+                for (String file: files) {
+                    ParserI parser = createParser(file, type, csvHelper);
+                    ret.add(parser);
                 }
-
-            } catch (Exception ex) {
-                throw new FileNotFoundException("" + f + " isn't in the expected directory structure within " + organisationDir);
             }
-
+            
+            parserMap.put(type, ret);
         }
-        return new File(organisationDir);
-    }*/
+        return ret;
+    }
 
+    private static ParserI createParser(String file, String type, BartsCsvHelper csvHelper) throws Exception {
+
+        UUID serviceId = csvHelper.getServiceId();
+        UUID systemId = csvHelper.getSystemId();
+        UUID exchangeId = csvHelper.getExchangeId();
+        String version = csvHelper.getVersion();
+
+        if (type.equalsIgnoreCase("LOREF")) {
+            return new LOREF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PRSNLREF")) {
+            return new PRSNLREF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPATI")) {
+            return new PPATI(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPADD")) {
+            return new PPADD(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPALI")) {
+            return new PPALI(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPINF")) {
+            return new PPINF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPNAM")) {
+            return new PPNAM(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPPHO")) {
+            return new PPPHO(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPREL")) {
+            return new PPREL(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PPAGP")) {
+            return new PPAGP(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ENCNT")) {
+            return new ENCNT(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("DIAGN")) {
+            return new DIAGN(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PROCE")) {
+            return new PROCE(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("CLEVE")) {
+            return new CLEVE(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PROB")) {
+            return new Problem(version, file, true);
+        } else {
+            throw new TransformException("Unknown file type [" + type + "]");
+        }
+    }
+
+    private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
+        Map<String, List<String>> ret = new HashMap<>();
+        
+        for (String file: files) {
+            String type = identifyFileType(file);
+            List<String> list = ret.get(type);
+            if (list == null) {
+                list = new ArrayList<>();
+                ret.put(type, list);
+            }
+            list.add(file);
+        }
+
+        return ret;
+    }
 
     private static void transformAdminAndPatientParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
@@ -115,25 +177,25 @@ public abstract class BartsCsvToFhirTransformer {
             //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
             // 2.2 files - put into a separate ordered list for processing later
-            if (fileType.compareTo("LOREF") == 0) {
+            if (fileType.equalsIgnoreCase("LOREF")) {
                 v2_2Files [0] = filePath;
-            } else if (fileType.compareTo("PRSNLREF") == 0) {
+            } else if (fileType.equalsIgnoreCase("PRSNLREF")) {
                 v2_2Files [1] = filePath;
-            } else if (fileType.compareTo("PPATI") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPATI")) {
                 v2_2Files [2] = filePath;
-            } else if (fileType.compareTo("PPADD") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPADD")) {
                 v2_2Files [3] = filePath;
-            } else if (fileType.compareTo("PPALI") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPALI")) {
                 v2_2Files [4] = filePath;
-            } else if (fileType.compareTo("PPINF") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPINF")) {
                 v2_2Files [5] = filePath;
-            } else if (fileType.compareTo("PPNAM") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPNAM")) {
                 v2_2Files [6] = filePath;
-            } else if (fileType.compareTo("PPPHO") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPPHO")) {
                 v2_2Files [7] = filePath;
-            } else if (fileType.compareTo("PPREL") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPREL")) {
                 v2_2Files [8] = filePath;
-            } else if (fileType.compareTo("PPAGP") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPAGP")) {
                 v2_2Files [9] = filePath;
             }
         }
@@ -146,52 +208,52 @@ public abstract class BartsCsvToFhirTransformer {
             String fName = FilenameUtils.getName(filePath);
             String fileType = identifyFileType(fName);
 
-            if (fileType.compareTo("LOREF") == 0) {
+            if (fileType.equalsIgnoreCase("LOREF")) {
                 // call into 2.2 location transform
                 LOREF parser = new LOREF(serviceId, systemId, exchangeId, version, filePath);
                 LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PRSNLREF") == 0) {
+            } else if (fileType.equalsIgnoreCase("PRSNLREF")) {
                 //call into 2.2 personnel transform
                 PRSNLREF parser = new PRSNLREF(serviceId, systemId, exchangeId, version, filePath);
                 PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
                 parser.close();
-            } else if (fileType.compareTo("PPATI") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPATI")) {
                 //call into 2.2 main person/patient transform
                 PPATI parser = new PPATI(serviceId, systemId, exchangeId, version, filePath);
                 PPATITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPADD") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPADD")) {
                 //call into 2.2 patient address transform
                 PPADD parser = new PPADD(serviceId, systemId, exchangeId, version, filePath);
                 PPADDTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPALI") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPALI")) {
                 //call into 2.2 patient alias transform
                 PPALI parser = new PPALI(serviceId, systemId, exchangeId, version, filePath);
                 PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPINF") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPINF")) {
                 //TODO: call into 2.2 patient info transform
                 PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath);
                 //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPNAM") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPNAM")) {
                 //call into 2.2 patient name transform
                 PPNAM parser = new PPNAM(serviceId, systemId, exchangeId, version, filePath);
                 PPNAMTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPPHO") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPPHO")) {
                 //call into 2.2 patient phone transform
                 PPPHO parser = new PPPHO(serviceId, systemId, exchangeId, version, filePath);
                 PPPHOTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPREL") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPREL")) {
                 //call into 2.2 patient relation transform
                 PPREL parser = new PPREL(serviceId, systemId, exchangeId, version, filePath);
                 PPRELTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PPAGP") == 0) {
+            } else if (fileType.equalsIgnoreCase("PPAGP")) {
                 //call into 2.2 patient GP transform
                 PPAGP parser = new PPAGP(serviceId, systemId, exchangeId, version, filePath);
                 PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -216,31 +278,31 @@ public abstract class BartsCsvToFhirTransformer {
             String fileType = identifyFileType(fName);
             //LOG.debug("currFile:" + currFile.getAbsolutePath() + " Type:" + fileType);
 
-           if (fileType.compareTo("ENCNT") == 0) {
+           if (fileType.equalsIgnoreCase("ENCNT")) {
                 v2_2Files [10] = filePath;
-            } else if (fileType.compareTo("DIAGN") == 0) {
+            } else if (fileType.equalsIgnoreCase("DIAGN")) {
                 v2_2Files [11] = filePath;
-            } else if (fileType.compareTo("PROCE") == 0) {
+            } else if (fileType.equalsIgnoreCase("PROCE")) {
                 v2_2Files [12] = filePath;
-            } else if (fileType.compareTo("CLEVE") == 0) {
+            } else if (fileType.equalsIgnoreCase("CLEVE")) {
                 v2_2Files [13] = filePath;
             }
 
             // 2.1 files
            // Commented out for the time being...
-            /*else if (fileType.compareTo("BULKPROBLEMS") == 0) {
+            /*else if (fileType.equalsIgnoreCase("BULKPROBLEMS")) {
                 BulkProblem parser = new BulkProblem(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("BULKDIAGNOSES") == 0) {
+            } else if (fileType.equalsIgnoreCase("BULKDIAGNOSES")) {
                 BulkDiagnosis parser = new BulkDiagnosis(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkDiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("BULKPROCEDURES") == 0) {
+            } else if (fileType.equalsIgnoreCase("BULKPROCEDURES")) {
                 BulkProcedure parser = new BulkProcedure(serviceId, systemId, exchangeId, version, filePath, true);
                 BulkProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("SUSOPA") == 0) {
+            } else if (fileType.equalsIgnoreCase("SUSOPA")) {
                 String tailFilePath = findTailFile(files, "tailopa_DIS." + fName.split("_")[1].split("\\.")[1]);
                 //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                 Tails tailsParser = new Tails(version, tailFilePath, true);
@@ -249,7 +311,7 @@ public abstract class BartsCsvToFhirTransformer {
                 SusOutpatient parser = new SusOutpatient(version, filePath, true);
                 SusOutpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("SUSIP") == 0) {
+            } else if (fileType.equalsIgnoreCase("SUSIP")) {
                     String tailFilePath = findTailFile(files, "tailip_DIS." + fName.split("_")[2] + "_susrnj.dat");
                     //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                     Tails tailsParser = new Tails(version, tailFilePath, true);
@@ -258,7 +320,7 @@ public abstract class BartsCsvToFhirTransformer {
                     SusInpatient parser = new SusInpatient(version, filePath, true);
                     SusInpatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                     parser.close();
-            } else if (fileType.compareTo("SUSAEA") == 0) {
+            } else if (fileType.equalsIgnoreCase("SUSAEA")) {
                         String tailFilePath = findTailFile(files, "tailaea_DIS." + fName.split("_")[1].split("\\.")[1]);
                         //LOG.debug("currFile:" + currFile.getAbsolutePath() + " TailFile:" + tailFile.getAbsolutePath());
                         Tails tailsParser = new Tails(version, tailFilePath, true);
@@ -268,18 +330,18 @@ public abstract class BartsCsvToFhirTransformer {
                         SusEmergencyTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                         parser.close();
             } else */
-            if (fileType.compareTo("PROB") == 0) {
+            if (fileType.equalsIgnoreCase("PROB")) {
                             Problem parser = new Problem(version, filePath, true);
                             ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                             parser.close();
             }
 
             /*
-            else if (fileType.compareTo("PROC") == 0) {
+            else if (fileType.equalsIgnoreCase("PROC")) {
                                 Procedure parser = new Procedure(version, filePath, true);
                                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                 parser.close();
-            } else if (fileType.compareTo("DIAG") == 0) {
+            } else if (fileType.equalsIgnoreCase("DIAG")) {
                                     Diagnosis parser = new Diagnosis(version, filePath, true);
                                     DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                                     parser.close();
@@ -295,22 +357,22 @@ public abstract class BartsCsvToFhirTransformer {
             String fName = FilenameUtils.getName(filePath);
             String fileType = identifyFileType(fName);
 
-            if (fileType.compareTo("ENCNT") == 0) {
+            if (fileType.equalsIgnoreCase("ENCNT")) {
                 //call into 2.2 encounter transform
                 ENCNT parser = new ENCNT(serviceId, systemId, exchangeId, version, filePath);
                 ENCNTTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("DIAGN") == 0) {
+            } else if (fileType.equalsIgnoreCase("DIAGN")) {
                 //call into 2.2 diagnosis transform
                 DIAGN parser = new DIAGN(serviceId, systemId, exchangeId, version, filePath);
                 DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("PROCE") == 0) {
+            } else if (fileType.equalsIgnoreCase("PROCE")) {
                 //call into 2.2 procedure transform
                 PROCE parser = new PROCE(serviceId, systemId, exchangeId, version, filePath);
                 PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
-            } else if (fileType.compareTo("CLEVE") == 0) {
+            } else if (fileType.equalsIgnoreCase("CLEVE")) {
                 //call into 2.2 clinical events transform
                 CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, filePath);
                 CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -330,29 +392,31 @@ public abstract class BartsCsvToFhirTransformer {
         throw new TransformException("Failed to find tail file for expected name " + expectedName);
     }
 
-    private static String identifyFileType(String filename) {
+    private static String identifyFileType(String filename) throws TransformException {
         String[] parts = filename.split("_");
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
 
-        if (filenamePart1.compareToIgnoreCase("PC") == 0) {
+        if (filenamePart1.equalsIgnoreCase("PC")) {
             // Bulk
-            if (filenamePart2.compareToIgnoreCase("PROBLEMS") == 0) {
+            if (filenamePart2.equalsIgnoreCase("PROBLEMS")) {
                 return "BULKPROBLEMS";
-            } else if (filenamePart2.compareToIgnoreCase("DIAGNOSES") == 0) {
+            } else if (filenamePart2.equalsIgnoreCase("DIAGNOSES")) {
                 return "BULKDIAGNOSES";
-            } else if (filenamePart2.compareToIgnoreCase("PROCEDURES") == 0) {
+            } else if (filenamePart2.equalsIgnoreCase("PROCEDURES")) {
                 return "BULKPROCEDURES";
             } else {
-                return "UNKNOWN";
+                //if we have an unknown file this should be raised as an error
+                throw new TransformException("Unknown file type for " + filename);
+                //return "UNKNOWN";
             }
-        } else if (filenamePart1.compareToIgnoreCase("susopa") == 0) {
+        } else if (filenamePart1.equalsIgnoreCase("susopa")) {
             return "SUSOPA";
-        } else if (filenamePart1.compareToIgnoreCase("susaea") == 0) {
+        } else if (filenamePart1.equalsIgnoreCase("susaea")) {
             return "SUSAEA";
-        } else if (filenamePart1.compareToIgnoreCase("tailopa") == 0) {
+        } else if (filenamePart1.equalsIgnoreCase("tailopa")) {
             return filenamePart1.toUpperCase();
-        } else if (filenamePart1.compareToIgnoreCase("tailaea") == 0) {
+        } else if (filenamePart1.equalsIgnoreCase("tailaea")) {
             return filenamePart1.toUpperCase();
 
             // v2.2 files
@@ -375,18 +439,20 @@ public abstract class BartsCsvToFhirTransformer {
         } else {
             String filenamePart3 = parts[2];
 
-            if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
+            if (filenamePart1.equalsIgnoreCase("tailip")) {
                 return filenamePart1.toUpperCase();
             } else {
-                if (filenamePart1.compareToIgnoreCase("ip") == 0) {
+                if (filenamePart1.equalsIgnoreCase("ip")) {
                     return "SUSIP";
-                } else if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
+                } else if (filenamePart1.equalsIgnoreCase("rnj")) {
                     return filenamePart3.toUpperCase();
                 } else {
-                    if (filenamePart1.compareToIgnoreCase("GETL") == 0) {
+                    if (filenamePart1.equalsIgnoreCase("GETL")) {
                         return filenamePart3.toUpperCase();
                     } else {
-                        return "UNKNOWN";
+                        //if we have an unknown file this should be raised as an error
+                        throw new TransformException("Unknown file type for " + filename);
+                        //return "UNKNOWN";
                     }
                 }
             }
