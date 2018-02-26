@@ -29,6 +29,7 @@ import javax.xml.crypto.dsig.TransformException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class PPATITransformer extends BartsBasisTransformer {
 
@@ -98,22 +99,13 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
         //so they can be added back on without duplicating them
-        //TODO - need to avoid duplicating Identifiers
-//        IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-        //IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
 
         if (!millenniumPersonId.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-            identifierBuilder.setValue(millenniumPersonId.getString(), millenniumPersonId);
+            addOrUpdateIdentifier(patientBuilder, millenniumPersonIdCell.getString(), millenniumPersonIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
         }
 
         if (!mrnCell.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
-            identifierBuilder.setValue(mrnCell.getString(), mrnCell);
+            addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
         }
 
         CsvCell nhsNumberCell = parser.getNhsNumber();
@@ -121,14 +113,7 @@ public class PPATITransformer extends BartsBasisTransformer {
             String nhsNumber = nhsNumberCell.getString();
             nhsNumber = nhsNumber.replace("-",""); //Cerner NHS numbers are tokenised with hyphens, so remove
 
-            //the PPALI transform also created NHS Number identifiers, but this file has more details,
-//TODO - need to avoid duplicating Identifiers
-      //      IdentifierBuilder.removeExistingIdentifiersBySystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setValue(nhsNumber, nhsNumberCell);
+            addOrUpdateIdentifier(patientBuilder, nhsNumber, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
         }
 
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
@@ -244,6 +229,32 @@ public class PPATITransformer extends BartsBasisTransformer {
             //if updating a record, we may have REMOVED a date of death set incorrectly, so clear the fields on the patient
             patientBuilder.clearDateOfDeath();
         }
+    }
+
+    /**
+     * the PPALI transformer also creates identifiers for the Patient resource, and sets more information on them (e.g. period)
+     * so we can't just create new Identifiers, but should try to match and update
+     */
+    private static void addOrUpdateIdentifier(PatientBuilder patientBuilder, String value, CsvCell sourceCell, Identifier.IdentifierUse use, String system) {
+
+        //match to an existing identifier for the same system. The PPALI transform sets the ID on the Identifiers
+        //that it creates, so only match to one that doesn't have an ID set. If the MRN (for example) has been changed
+        //there should also be an update to the PPALI file which will remove any unnecessary Identifier we create here
+        Identifier existingIdentifier = null;
+
+        List<Identifier> identifiersForSameSystem = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, system);
+        for (Identifier identifier: identifiersForSameSystem) {
+            if (!identifier.hasId()) {
+                existingIdentifier = identifier;
+                break;
+            }
+        }
+
+        //create the Identity builder, which will generate a new one if the existing variable is still null
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder, existingIdentifier);
+        identifierBuilder.setUse(use);
+        identifierBuilder.setSystem(system);
+        identifierBuilder.setValue(value, sourceCell);
     }
 
     private static EthnicCategory convertEthnicCategory(String aliasNhsCdAlias) {

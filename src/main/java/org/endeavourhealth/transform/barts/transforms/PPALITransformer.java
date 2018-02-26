@@ -87,16 +87,20 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
 
+        //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
+        //has more information on them, so remove any existing Identifier for the same system that DOES NOT
+        //have an ID (i.e. it didn't come from the PPALI file)
+        List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, aliasSystem);
+        for (Identifier identifier: identifiers) {
+            if (!identifier.hasId()) {
+                patientBuilder.removeIdentifier(identifier);
+            }
+        }
+
         //if the alias record is an NHS number, then it's an official use. Secondary otherwise.
         Identifier.IdentifierUse use = null;
         if (aliasSystem.equalsIgnoreCase(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
             use = Identifier.IdentifierUse.OFFICIAL;
-
-            //if we're the record for NHS number, then remove any other NHS number already on the patient (created by the PPATI transformer)
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            for (Identifier identifier: identifiers) {
-                patientBuilder.removeIdentifier(identifier);
-            }
 
         } else {
             use = Identifier.IdentifierUse.SECONDARY;
