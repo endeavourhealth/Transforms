@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -27,7 +26,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
-    private static final String RESULT_STATUS_AUTHORIZED = "25";
+    private static final long RESULT_STATUS_AUTHORIZED = 25;
 
     /*
      *
@@ -45,32 +44,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry((CLEVE)parser);
-                if (valStr == null) {
-                    createObservation((CLEVE)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createObservation((CLEVE)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-    }
-
-    /*
-     *
-     */
-    public static String validateEntry(CLEVE parser) {
-        //TODO later we need more results but focus on numerics for now
-        try {
-            if (parser.getEventResultClassCode().equals(RESULT_STATUS_AUTHORIZED)) {
-                return null;
-            }
-        } catch (Exception ex) {
-            LOG.error("Problem parsing Event Result Status Code" + parser.toString());
-        }
-        return "Non-numeric result ignored for now";
     }
 
     public static void createObservation(CLEVE parser,
@@ -179,8 +158,14 @@ public class CLEVETransformer extends BartsBasisTransformer {
             observationBuilder.setUnits(unitsDesc, unitsCodeCell);
         }
 
-        //set value and units
         //TODO need to check getEventResultClassCode()
+        CsvCell resultClassCode = parser.getEventResultClassCode();
+        if (resultClassCode.isEmpty()
+                && resultClassCode.getLong() != RESULT_STATUS_AUTHORIZED) {
+            return;
+        }
+
+        //set value and units
         // Need to store comparator separately  - new method in Quantityhelper
         // if it looks like a plain number it's simple.
         // if it contains  valid comparator symbol, use it
