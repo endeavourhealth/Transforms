@@ -52,35 +52,31 @@ public abstract class BartsCsvToFhirTransformer {
         FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
         BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, exchangeId, PRIMARY_ORG_HL7_OID, version);
 
-
         transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
         transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
-
 
         /*Map<String, List<String>> fileMap = hashFilesByType(files);
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
-        createParsers(fileMap, parserMap, "", csvHelper);
-
-        LOREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PRSNLREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper);
-        PPATITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPADDTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPNAMTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPPHOTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPRELTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPAGPTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        LOREFTransformer.transform(version, createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PRSNLREFTransformer.transform(version, createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
+        PPATITransformer.transform(version, createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPADDTransformer.transform(version, createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPALITransformer.transform(version, createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //PPINFTransformer.transform(version, createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPNAMTransformer.transform(version, createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPPHOTransformer.transform(version, createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPRELTransformer.transform(version, createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPAGPTransformer.transform(version, createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
 
         //we're now good to save our patient resources
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
-        ENCNTTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        DIAGNTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PROCETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ProblemTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
+        ENCNTTransformer.transform(version, createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        DIAGNTransformer.transform(version, createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PROCETransformer.transform(version, createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        CLEVETransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
 
         LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
         fhirResourceFiler.waitToFinish();
@@ -151,6 +147,10 @@ public abstract class BartsCsvToFhirTransformer {
         
         for (String file: files) {
             String type = identifyFileType(file);
+
+            //always force into upper case, just in case
+            type = type.toUpperCase();
+
             List<String> list = ret.get(type);
             if (list == null) {
                 list = new ArrayList<>();
@@ -407,8 +407,9 @@ public abstract class BartsCsvToFhirTransformer {
                 return "BULKPROCEDURES";
             } else {
                 //if we have an unknown file this should be raised as an error
-                throw new TransformException("Unknown file type for " + filename);
-                //return "UNKNOWN";
+                LOG.error("UNKNOWN File type " + filename);
+                //throw new TransformException("Unknown file type for " + filename);
+                return "UNKNOWN";
             }
         } else if (filenamePart1.equalsIgnoreCase("susopa")) {
             return "SUSOPA";
@@ -420,21 +421,64 @@ public abstract class BartsCsvToFhirTransformer {
             return filenamePart1.toUpperCase();
 
             // v2.2 files
-        } else if (filenamePart1.equalsIgnoreCase("LOREF") ||
-                filenamePart1.equalsIgnoreCase("PRSNLREF") ||
-                filenamePart1.equalsIgnoreCase("PPATI") ||
-                filenamePart1.equalsIgnoreCase("PPADD") ||
-                filenamePart1.equalsIgnoreCase("PPALI") ||
-                filenamePart1.equalsIgnoreCase("PPINF") ||
-                filenamePart1.equalsIgnoreCase("PPNAM") ||
-                filenamePart1.equalsIgnoreCase("PPPHO") ||
-                filenamePart1.equalsIgnoreCase("PPREL") ||
-                filenamePart1.equalsIgnoreCase("PPAGP") ||
-                filenamePart1.equalsIgnoreCase("ENCNT") ||
-                filenamePart1.equalsIgnoreCase("DIAGN") ||
-                filenamePart1.equalsIgnoreCase("PROCE") ||
-                filenamePart1.equalsIgnoreCase("ORDER") ||
-                filenamePart1.equalsIgnoreCase("CLEVE")) {
+        } else if (filenamePart1.equalsIgnoreCase("PPATI")
+            || filenamePart1.equalsIgnoreCase("PPREL")
+            || filenamePart1.equalsIgnoreCase("CDSEV")
+            || filenamePart1.equalsIgnoreCase("PPATH")
+            || filenamePart1.equalsIgnoreCase("RTTPE")
+            || filenamePart1.equalsIgnoreCase("AEATT")
+            || filenamePart1.equalsIgnoreCase("AEINV")
+            || filenamePart1.equalsIgnoreCase("AETRE")
+            || filenamePart1.equalsIgnoreCase("OPREF")
+            || filenamePart1.equalsIgnoreCase("OPATT")
+            || filenamePart1.equalsIgnoreCase("EALEN")
+            || filenamePart1.equalsIgnoreCase("EALSU")
+            || filenamePart1.equalsIgnoreCase("EALOF")
+            || filenamePart1.equalsIgnoreCase("HPSSP")
+            || filenamePart1.equalsIgnoreCase("IPEPI")
+            || filenamePart1.equalsIgnoreCase("IPWDS")
+            || filenamePart1.equalsIgnoreCase("DELIV")
+            || filenamePart1.equalsIgnoreCase("BIRTH")
+            || filenamePart1.equalsIgnoreCase("SCHAC")
+            || filenamePart1.equalsIgnoreCase("APPSL")
+            || filenamePart1.equalsIgnoreCase("DIAGN")
+            || filenamePart1.equalsIgnoreCase("PROCE")
+            || filenamePart1.equalsIgnoreCase("ORDER")
+            || filenamePart1.equalsIgnoreCase("DOCRP")
+            || filenamePart1.equalsIgnoreCase("DOCREF")
+            || filenamePart1.equalsIgnoreCase("CNTRQ")
+            || filenamePart1.equalsIgnoreCase("LETRS")
+            || filenamePart1.equalsIgnoreCase("LOREF")
+            || filenamePart1.equalsIgnoreCase("ORGREF")
+            || filenamePart1.equalsIgnoreCase("PRSNLREF")
+            || filenamePart1.equalsIgnoreCase("CVREF")
+            || filenamePart1.equalsIgnoreCase("NOMREF")
+            || filenamePart1.equalsIgnoreCase("EALIP")
+            || filenamePart1.equalsIgnoreCase("CLEVE")
+            || filenamePart1.equalsIgnoreCase("ENCNT")
+            || filenamePart1.equalsIgnoreCase("RESREF")
+            || filenamePart1.equalsIgnoreCase("PPNAM")
+            || filenamePart1.equalsIgnoreCase("PPADD")
+            || filenamePart1.equalsIgnoreCase("PPPHO")
+            || filenamePart1.equalsIgnoreCase("PPALI")
+            || filenamePart1.equalsIgnoreCase("PPINF")
+            || filenamePart1.equalsIgnoreCase("PPAGP")
+            || filenamePart1.equalsIgnoreCase("SURCC")
+            || filenamePart1.equalsIgnoreCase("SURCP")
+            || filenamePart1.equalsIgnoreCase("SURCA")
+            || filenamePart1.equalsIgnoreCase("SURCD")
+            || filenamePart1.equalsIgnoreCase("PDRES")
+            || filenamePart1.equalsIgnoreCase("PDREF")
+            || filenamePart1.equalsIgnoreCase("ABREF")
+            || filenamePart1.equalsIgnoreCase("CEPRS")
+            || filenamePart1.equalsIgnoreCase("ORDDT")
+            || filenamePart1.equalsIgnoreCase("STATREF")
+            || filenamePart1.equalsIgnoreCase("STATA")
+            || filenamePart1.equalsIgnoreCase("ENCINF")
+            || filenamePart1.equalsIgnoreCase("SCHDETAIL")
+            || filenamePart1.equalsIgnoreCase("SCHOFFER")
+            || filenamePart1.equalsIgnoreCase("PPGPORG")) {
+
             return filenamePart1.toUpperCase();
         } else {
             String filenamePart3 = parts[2];
@@ -451,8 +495,9 @@ public abstract class BartsCsvToFhirTransformer {
                         return filenamePart3.toUpperCase();
                     } else {
                         //if we have an unknown file this should be raised as an error
-                        throw new TransformException("Unknown file type for " + filename);
-                        //return "UNKNOWN";
+                        LOG.error("UNKNOWN File type " + filename);
+                        //throw new TransformException("Unknown file type for " + filename);
+                        return "UNKNOWN";
                     }
                 }
             }
