@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
@@ -32,22 +31,14 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry((PPREL)parser);
-                if (valStr == null) {
-                    createPatientRelationship((PPREL)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createPatientRelationship((PPREL)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    public static String validateEntry(PPREL parser) {
-        return null;
-    }
 
     public static void createPatientRelationship(PPREL parser,
                                                  FhirResourceFiler fhirResourceFiler,

@@ -52,6 +52,23 @@ public class PROCETransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        // this Procedure resource id
+        CsvCell procedureIdCell = parser.getProcedureID();
+        ResourceId procedureResourceId = getOrCreateProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, procedureIdCell);
+
+        //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the encounter ID
+        //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            Procedure existingProcedure = (Procedure)csvHelper.retrieveResource(ResourceType.Condition, procedureResourceId.getResourceId());
+            if (existingProcedure != null) {
+                ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
+                //LOG.debug("Delete Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
+            }
+            return;
+        }
+
         // get encounter details (should already have been created previously)
         CsvCell encounterIdCell = parser.getEncounterId();
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
@@ -60,10 +77,6 @@ public class PROCETransformer extends BartsBasisTransformer {
             LOG.warn("Skipping Procedure " + parser.getProcedureID().getString() + " due to missing encounter");
             return;
         }
-
-        // this Procedure resource id
-        CsvCell procedureIdCell = parser.getProcedureID();
-        ResourceId procedureResourceId = getOrCreateProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, procedureIdCell);
 
         // create the FHIR Procedure
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
@@ -74,19 +87,11 @@ public class PROCETransformer extends BartsBasisTransformer {
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
         procedureBuilder.setPatient(patientReference);
 
-
         if (!procedureIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_ID);
             identifierBuilder.setValue(procedureIdCell.getString(), procedureIdCell);
-        }
-
-        CsvCell active = parser.getActiveIndicator();
-        if (!active.getIntAsBoolean()) {
-            LOG.debug("Delete Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
-            return;
         }
 
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);

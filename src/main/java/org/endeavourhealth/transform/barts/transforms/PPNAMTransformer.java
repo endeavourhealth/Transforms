@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
@@ -32,22 +31,14 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry((PPNAM)parser);
-                if (valStr == null) {
-                    createPatientName((PPNAM)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createPatientName((PPNAM)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    public static String validateEntry(PPNAM parser) {
-        return null;
-    }
 
     public static void createPatientName(PPNAM parser,
                                          FhirResourceFiler fhirResourceFiler,

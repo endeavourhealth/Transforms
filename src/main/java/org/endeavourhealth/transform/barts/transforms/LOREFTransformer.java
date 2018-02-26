@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
@@ -54,24 +53,12 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry((LOREF)parser);
-                if (valStr == null) {
-                    createLocation((LOREF)parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createLocation((LOREF)parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-    }
-
-    /*
-     *
-     */
-    public static String validateEntry(LOREF parser) {
-        return null;
     }
 
 
