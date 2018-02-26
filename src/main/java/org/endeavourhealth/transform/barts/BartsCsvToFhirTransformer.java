@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -176,7 +177,8 @@ public abstract class BartsCsvToFhirTransformer {
         Map<String, List<String>> ret = new HashMap<>();
         
         for (String file: files) {
-            String type = identifyFileType(file);
+            String fileName = FilenameUtils.getBaseName(file);
+            String type = identifyFileType(fileName);
 
             //always force into upper case, just in case
             type = type.toUpperCase();
@@ -439,9 +441,8 @@ public abstract class BartsCsvToFhirTransformer {
                 return "BULKPROCEDURES";
             } else {
                 //if we have an unknown file this should be raised as an error
-                LOG.error("UNKNOWN File type " + filename);
-                //throw new TransformException("Unknown file type for " + filename);
-                return "UNKNOWN";
+                throw new TransformException("Unknown file type for " + filename);
+                //return "UNKNOWN";
             }
         } else if (filenamePart1.equalsIgnoreCase("susopa")) {
             return "SUSOPA";
@@ -451,6 +452,12 @@ public abstract class BartsCsvToFhirTransformer {
             return filenamePart1.toUpperCase();
         } else if (filenamePart1.equalsIgnoreCase("tailaea")) {
             return filenamePart1.toUpperCase();
+        } else if (filenamePart1.equalsIgnoreCase("spfit")) {
+            return "SPFIT";
+        } else if (filenamePart1.equalsIgnoreCase("cc")) {
+            return "CC";
+        } else if (filenamePart1.equalsIgnoreCase("hdb")) {
+            return "HDB";
 
             // v2.2 files
         } else if (filenamePart1.equalsIgnoreCase("PPATI")
@@ -527,9 +534,8 @@ public abstract class BartsCsvToFhirTransformer {
                         return filenamePart3.toUpperCase();
                     } else {
                         //if we have an unknown file this should be raised as an error
-                        LOG.error("UNKNOWN File type " + filename);
-                        //throw new TransformException("Unknown file type for " + filename);
-                        return "UNKNOWN";
+                        throw new TransformException("Unknown file type for " + filename);
+                        //return "UNKNOWN";
                     }
                 }
             }

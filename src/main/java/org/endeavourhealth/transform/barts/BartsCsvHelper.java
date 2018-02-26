@@ -31,6 +31,7 @@ public class BartsCsvHelper {
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
+    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
 
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
@@ -112,7 +113,8 @@ public class BartsCsvHelper {
         if (index > -1) {
             String ret = conceptCodeIdentifier.substring(0,index);
             if (ret.equals(CODE_TYPE_SNOMED)
-                    || ret.equals(CODE_TYPE_ICD_10)) {
+                    || ret.equals(CODE_TYPE_ICD_10)
+                    || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)) {
                 return ret;
             } else {
                 throw new IllegalArgumentException("Unexpected code type [" + ret + "]");
