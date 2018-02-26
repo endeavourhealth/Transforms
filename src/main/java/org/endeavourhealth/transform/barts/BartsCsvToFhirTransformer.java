@@ -29,8 +29,11 @@ public abstract class BartsCsvToFhirTransformer {
                                                 .withHeader()
                                                 .withDelimiter('|')
                                                 .withEscape('^')
-                                                .withQuoteMode(QuoteMode.NONE)
-                                                .withQuote((Character)null);
+                                                //.withQuoteMode(QuoteMode.NONE)
+                                                //.withQuote((char)null);
+                                                .withQuoteMode(QuoteMode.MINIMAL) //older combined files created by the SFTP Reader may have some quoting
+                                                .withQuote('\"');
+
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
