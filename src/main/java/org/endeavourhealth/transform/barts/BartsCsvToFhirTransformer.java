@@ -163,6 +163,8 @@ public abstract class BartsCsvToFhirTransformer {
             return new PPREL(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PPAGP")) {
             return new PPAGP(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ENCINF")) {
+            return new ENCINF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("ENCNT")) {
             return new ENCNT(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("DIAGN")) {
