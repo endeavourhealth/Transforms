@@ -4,10 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.BulkProblem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +22,9 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 BulkProblem parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -32,7 +33,7 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createConditionProblem(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createConditionProblem((BulkProblem)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -46,7 +47,7 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
 */
     public static void createConditionProblem(BulkProblem parser,
                                               FhirResourceFiler fhirResourceFiler,
-                                              EmisCsvHelper csvHelper,
+                                              BartsCsvHelper csvHelper,
                                               String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
         CodeableConcept cc = null;
         Date d = null;

@@ -4,9 +4,10 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,40 +15,42 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class ProcedureTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     public static void transform(String version,
-                                 org.endeavourhealth.transform.barts.schema.Procedure parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        int lineCount = 0;
-        // Skip header line
-        parser.nextRecord();
-        lineCount++;
+        for (ParserI parser: parsers) {
+            int lineCount = 0;
+            // Skip header line
+            parser.nextRecord();
+            lineCount++;
 
-        while (parser.nextRecord()) {
-            try {
-                lineCount++;
-                String valStr = validateEntry(parser);
-                if (valStr == null) {
-                    createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    valStr = "Validation error on line " + Integer.toString(lineCount) + " - " + valStr;
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            while (parser.nextRecord()) {
+                try {
+                    lineCount++;
+                    String valStr = validateEntry((org.endeavourhealth.transform.barts.schema.Procedure)parser);
+                    if (valStr == null) {
+                        createProcedure((org.endeavourhealth.transform.barts.schema.Procedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    } else {
+                        valStr = "Validation error on line " + Integer.toString(lineCount) + " - " + valStr;
+                        LOG.debug("Validation error:" + valStr);
+                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                    }
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-
     }
 
     /*
@@ -67,7 +70,7 @@ public class ProcedureTransformer extends BartsBasisTransformer {
      */
     public static void createProcedure(org.endeavourhealth.transform.barts.schema.Procedure parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
         CodeableConcept cc = null;
         Date d = null;

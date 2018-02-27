@@ -83,16 +83,23 @@ public abstract class BartsCsvToFhirTransformer {
         ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
-        //pre-transformers to cache clinical data used later on
-        CLEVEPreTransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-
         //clinical transformers
         DIAGNTransformer.transform(version, createParser(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         PROCETransformer.transform(version, createParser(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
+        CLEVEPreTransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         CLEVETransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        /*BulkDiagnosisTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        BulkProblemTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        BulkProcedureTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        /*DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+        SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+        SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
+
 /*
-1. put in 2.1 transformers but comment out
 2. make 2.1 SUS transforms run their own tails parser
 3. investigate SUSOPA thing for Liam??
 */
@@ -438,6 +445,17 @@ public abstract class BartsCsvToFhirTransformer {
         throw new TransformException("Failed to find tail file for expected name " + expectedName);
     }*/
 
+    public static String findTailFile(String[] files, String expectedName) throws TransformException {
+        for (String filePath: files) {
+            String name = FilenameUtils.getName(filePath);
+            if (name.equalsIgnoreCase(expectedName)) {
+                return filePath;
+            }
+        }
+
+        throw new TransformException("Failed to find tail file for expected name " + expectedName);
+    }
+
     private static String identifyFileType(String filename) throws TransformException {
         String[] parts = filename.split("_");
         String filenamePart1 = parts[0];
@@ -553,4 +571,6 @@ public abstract class BartsCsvToFhirTransformer {
             }
         }
     }
+
+
 }

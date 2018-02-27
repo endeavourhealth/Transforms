@@ -5,13 +5,16 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class DiagnosisTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
@@ -20,26 +23,28 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 Diagnosis parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
+        for (ParserI parser: parsers) {
+            // Skip header line
+            parser.nextRecord();
 
-        while (parser.nextRecord()) {
-            try {
-                String valStr = validateEntry(parser);
-                if (valStr == null) {
-                    createDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((Diagnosis)parser);
+                    if (valStr == null) {
+                        createDiagnosis((Diagnosis)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    } else {
+                        LOG.debug("Validation error:" + valStr);
+                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
@@ -61,7 +66,7 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
      */
     public static void createDiagnosis(Diagnosis parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation

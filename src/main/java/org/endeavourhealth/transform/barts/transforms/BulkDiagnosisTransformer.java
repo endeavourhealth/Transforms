@@ -4,10 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.BulkDiagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +20,15 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 BulkDiagnosis parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
         while (parser.nextRecord()) {
             try {
-                createDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createDiagnosis((BulkDiagnosis)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -41,7 +42,7 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
      */
     public static void createDiagnosis(BulkDiagnosis parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation

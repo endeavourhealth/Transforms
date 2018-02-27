@@ -3,10 +3,11 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.BulkProcedure;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +21,9 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     public static void transform(String version,
-                                 BulkProcedure parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
@@ -31,7 +32,7 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                createProcedure((BulkProcedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -45,7 +46,7 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
      */
     public static void createProcedure(BulkProcedure parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
         CodeableConcept cc = null;
         Date d = null;

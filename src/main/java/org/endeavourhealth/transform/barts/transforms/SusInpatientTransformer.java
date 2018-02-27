@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -7,11 +8,13 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.BartsSusResourceMapDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
+import org.endeavourhealth.transform.barts.schema.Tails;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,38 +30,50 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 SusInpatient parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 String primaryOrgHL7OrgOID,
+                                 String[] allFiles) throws Exception {
 
-        entryCount = 0;
-        while (parser.nextRecord()) {
-            try {
-                entryCount++;
-                // CDS V6-2 Type 010 - Accident and Emergency CDS
-                // CDS V6-2 Type 020 - Outpatient CDS
-                // CDS V6-2 Type 120 - Admitted Patient Care - Finished Birth Episode CDS
-                // CDS V6-2 Type 130 - Admitted Patient Care - Finished General Episode CDS
-                // CDS V6-2 Type 140 - Admitted Patient Care - Finished Delivery Episode CDS
-                // CDS V6-2 Type 160 - Admitted Patient Care - Other Delivery Event CDS
-                // CDS V6-2 Type 180 - Admitted Patient Care - Unfinished Birth Episode CDS
-                // CDS V6-2 Type 190 - Admitted Patient Care - Unfinished General Episode CDS
-                // CDS V6-2 Type 200 - Admitted Patient Care - Unfinished Delivery Episode CDS
-                if (parser.getCDSRecordType() == 10 ||
-                        parser.getCDSRecordType() == 20 ||
-                        parser.getCDSRecordType() == 120 ||
-                        parser.getCDSRecordType() == 130 ||
-                        parser.getCDSRecordType() == 140 ||
-                        parser.getCDSRecordType() == 160 ||
-                        parser.getCDSRecordType() == 180 ||
-                        parser.getCDSRecordType() == 190 ||
-                        parser.getCDSRecordType() == 200) {
-                    mapFileEntry(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+        for (ParserI parser: parsers) {
+
+            //parse corresponding tails file first
+            String fName = FilenameUtils.getName(parser.getFilePath());
+            String tailFilePath = BartsCsvToFhirTransformer.findTailFile(allFiles, "tailip_DIS." + fName.split("_")[2] + "_susrnj.dat");
+            TailsPreTransformer.transform(version, new Tails(version, tailFilePath, true));
+
+            entryCount = 0;
+            while (parser.nextRecord()) {
+                try {
+                    entryCount++;
+
+                    SusInpatient susInpatient = (SusInpatient)parser;
+
+                    // CDS V6-2 Type 010 - Accident and Emergency CDS
+                    // CDS V6-2 Type 020 - Outpatient CDS
+                    // CDS V6-2 Type 120 - Admitted Patient Care - Finished Birth Episode CDS
+                    // CDS V6-2 Type 130 - Admitted Patient Care - Finished General Episode CDS
+                    // CDS V6-2 Type 140 - Admitted Patient Care - Finished Delivery Episode CDS
+                    // CDS V6-2 Type 160 - Admitted Patient Care - Other Delivery Event CDS
+                    // CDS V6-2 Type 180 - Admitted Patient Care - Unfinished Birth Episode CDS
+                    // CDS V6-2 Type 190 - Admitted Patient Care - Unfinished General Episode CDS
+                    // CDS V6-2 Type 200 - Admitted Patient Care - Unfinished Delivery Episode CDS
+                    if (susInpatient.getCDSRecordType() == 10 ||
+                            susInpatient.getCDSRecordType() == 20 ||
+                            susInpatient.getCDSRecordType() == 120 ||
+                            susInpatient.getCDSRecordType() == 130 ||
+                            susInpatient.getCDSRecordType() == 140 ||
+                            susInpatient.getCDSRecordType() == 160 ||
+                            susInpatient.getCDSRecordType() == 180 ||
+                            susInpatient.getCDSRecordType() == 190 ||
+                            susInpatient.getCDSRecordType() == 200) {
+                        mapFileEntry(susInpatient, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
@@ -68,7 +83,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
      */
     public static void mapFileEntry(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
-                                    EmisCsvHelper csvHelper,
+                                    BartsCsvHelper csvHelper,
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID) throws Exception {
@@ -180,7 +195,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
     */
     public static void mapDiagnosis(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
-                                    EmisCsvHelper csvHelper,
+                                    BartsCsvHelper csvHelper,
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID,
@@ -293,7 +308,7 @@ Data line is of type Inpatient
 */
     public static void mapProcedure(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
-                                    EmisCsvHelper csvHelper,
+                                    BartsCsvHelper csvHelper,
                                     String version,
                                     String primaryOrgOdsCode,
                                     String primaryOrgHL7OrgOID,
