@@ -169,7 +169,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 && unitsCodeCell.getLong() > 0) { //seem to have a mix of empty cells and zero, so check for both
 
             CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                    54L, //TODO - change this to a constant in CernerCodeValueRef
+                    CernerCodeValueRef.CLINICAL_EVENT_CODE_SET_UNIT_OF_MEASURE,
                     unitsCodeCell.getLong(),
                     fhirResourceFiler.getServiceId());
 
