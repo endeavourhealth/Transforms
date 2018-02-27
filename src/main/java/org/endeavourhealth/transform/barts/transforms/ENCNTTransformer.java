@@ -231,7 +231,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             if (referrerPersonResourceId != null) {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, referrerPersonnelIdentifier);
             } else {
-                String valStr = "Practitioner Resource not found for Referrer-id " + parser.getReferrerMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                String valStr = "Practitioner Resource not found for Referrer-id " + parser.getReferrerMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier() + " in file " + parser.getFilePath();
                 LOG.debug(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
@@ -244,7 +244,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             if (respPersonResourceId != null) {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, responsibleHCPCell);
             } else {
-                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getResponsibleHealthCareprovidingPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getResponsibleHealthCareprovidingPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier() + " in file " + parser.getFilePath();
                 LOG.debug(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
@@ -257,7 +257,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             if (regPersonResourceId != null) {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, registeringPersonnelIdentifierCell);
             } else {
-                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getRegisteringMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier();
+                String valStr = "Practitioner Resource not found for Personnel-id " + parser.getRegisteringMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier()  + " in file " + parser.getFilePath();
                 LOG.debug(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
@@ -270,7 +270,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             if (locationResourceId != null) {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()), currentLocationCell);
             } else {
-                String valStr = "Location Resource not found for Location-id " + currentLocationCell.getString() + " in ENCNT record " + encounterIdCell.getString();
+                String valStr = "Location Resource not found for Location-id " + currentLocationCell.getString() + " in ENCNT record " + encounterIdCell.getString() + " in file " + parser.getFilePath();
                 LOG.debug(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
