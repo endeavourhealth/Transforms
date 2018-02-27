@@ -298,7 +298,6 @@ public abstract class BartsCsvToFhirTransformer {
                 PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.equalsIgnoreCase("PPINF")) {
-                //TODO: call into 2.2 patient info transform
                 PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath);
                 //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
