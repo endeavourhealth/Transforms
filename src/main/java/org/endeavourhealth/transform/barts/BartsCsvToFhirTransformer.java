@@ -38,7 +38,7 @@ public abstract class BartsCsvToFhirTransformer {
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
 
-    public static final int VERSION_2_2_FILE_COUNT = 14;
+    //public static final int VERSION_2_2_FILE_COUNT = 14;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
@@ -89,20 +89,15 @@ public abstract class BartsCsvToFhirTransformer {
 
         CLEVEPreTransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         CLEVETransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        /*BulkDiagnosisTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        BulkProblemTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        BulkProcedureTransformer.transform(version, createParser(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
+        /*BulkDiagnosisTransformer.transform(version, createParser(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        BulkProblemTransformer.transform(version, createParser(fileMap, parserMap, "BULKDIAGNOSES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        BulkProcedureTransformer.transform(version, createParser(fileMap, parserMap, "BULKPROCEDURES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);*/
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        /*DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-        SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-        SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
-
-/*
-2. make 2.1 SUS transforms run their own tails parser
-3. investigate SUSOPA thing for Liam??
-*/
+        /*DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAG", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROC", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SUSAEA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+        SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSIP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+        SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
 
         //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
         csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
@@ -187,6 +182,23 @@ public abstract class BartsCsvToFhirTransformer {
             return new CLEVE(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PROB")) {
             return new Problem(version, file, true);
+        } else if (type.equalsIgnoreCase("PROC")) {
+            return new Problem(version, file, true);
+        } else if (type.equalsIgnoreCase("DIAG")) {
+            return new Problem(version, file, true);
+        } else if (type.equalsIgnoreCase("SUSOPA")) {
+            return new SusOutpatient(version, file, true);
+        } else if (type.equalsIgnoreCase("SUSIP")) {
+            return new SusInpatient(version, file, true);
+        } else if (type.equalsIgnoreCase("SUSAEA")) {
+            return new SusEmergency(version, file, true);
+        } else if (type.equalsIgnoreCase("BULKPROBLEMS")) {
+            return new BulkProblem(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("BULKDIAGNOSES")) {
+            return new BulkDiagnosis(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("BULKPROCEDURES")) {
+            return new BulkProcedure(serviceId, systemId, exchangeId, version, file);
+
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
