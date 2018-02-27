@@ -92,6 +92,12 @@ public class ObservationBuilder extends ResourceBuilderBase
         auditValue("valueDateTime", sourceCells);
     }
 
+    public void setValueString(String resultText, CsvCell... sourceCells) {
+        this.observation.setValue(new StringType(resultText));
+
+        auditValue("valueString", sourceCells);
+    }
+
     public void setValueNumber(Double value, CsvCell... sourceCells) {
         findOrCreateQuantity().setValue(BigDecimal.valueOf(value));
 
@@ -331,5 +337,6 @@ public class ObservationBuilder extends ResourceBuilderBase
     public void removeIdentifier(Identifier identifier) {
         this.observation.getIdentifier().remove(identifier);
     }
+
 
 }

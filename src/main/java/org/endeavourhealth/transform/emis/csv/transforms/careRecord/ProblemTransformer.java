@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -74,10 +72,7 @@ public class ProblemTransformer {
         }
 
         //set the category on the condition, so we know it's a problem
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
-        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
-        codeableConceptBuilder.setCodingCode("complaint", observationGuid);
-        //conditionBuilder.setCategory("complaint", observationGuid); //the fact it's in this file makes it a problem, so just link to the Oservation GUID
+        conditionBuilder.setCategory("complaint", observationGuid);
 
         CsvCell comments = parser.getComment();
         if (!comments.isEmpty()) {

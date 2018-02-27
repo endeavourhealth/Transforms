@@ -91,6 +91,11 @@ public abstract class BartsCsvToFhirTransformer {
         PROCETransformer.transform(version, createParser(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         CLEVETransformer.transform(version, createParser(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+/*
+1. put in 2.1 transformers but comment out
+2. make 2.1 SUS transforms run their own tails parser
+3. investigate SUSOPA thing for Liam??
+*/
 
         //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
         csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);

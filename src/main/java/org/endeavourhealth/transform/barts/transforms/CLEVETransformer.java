@@ -83,7 +83,15 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-            LOG.debug("Delete Observation (" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+            //LOG.debug("Delete Observation (" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
+            return;
+        }
+
+        //there are lots of events that are still active but have a result text of DELETED
+        CsvCell resultTextCell = parser.getEventResultText();
+        if (!resultTextCell.isEmpty()
+            && resultTextCell.getString().equalsIgnoreCase("DELETED")) {
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
             return;
         }
@@ -159,20 +167,18 @@ public class CLEVETransformer extends BartsBasisTransformer {
             return;
         }
 
-        CsvCell resultValueCell = parser.getEventResultNumber();
-        CsvCell resultDateCell = parser.getEventResultDateTime();
 
-        if (!resultValueCell.isEmpty()) {
+        if (isNumericResult(parser)) {
             transformResultNumericValue(parser, observationBuilder, csvHelper);
 
-        } else if (!resultDateCell.isEmpty()) {
+        } else if (isDateResult(parser)) {
             //TODO - restore when we want to process events with result dates
             //transformResultDateValue(parser, observationBuilder, csvHelper);
             return;
 
         } else {
-
             //TODO - remove this when we want to process more than numerics
+            //transformResultString(parser, observationBuilder, csvHelper);
             return;
         }
 
@@ -184,8 +190,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
         CsvCell eventTagCell = parser.getEventTag();
         if (!eventTagCell.isEmpty()) {
             String eventTagStr = eventTagCell.getString();
-
-            CsvCell resultTextCell = parser.getEventResultText();
             String resultTextStr = resultTextCell.getString();
 
             //the event tag sometimes replicates what's in the result text, so only carry over if different
@@ -197,6 +201,24 @@ public class CLEVETransformer extends BartsBasisTransformer {
         // save resource
         LOG.debug("Save Observation (PatId=" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
+    }
+
+    private static void transformResultString(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) {
+        CsvCell resultTextCell = parser.getEventResultText();
+        if (!resultTextCell.isEmpty()) {
+            String resultText = resultTextCell.getString();
+
+            observationBuilder.setValueString(resultText, resultTextCell);
+        }
+    }
+
+    private static boolean isDateResult(CLEVE parser) {
+        CsvCell resultDateCell = parser.getEventResultDateTime();
+        if (resultDateCell.isEmpty()) {
+            return false;
+        }
+
+        return true;
     }
 
     private static void transformResultDateValue(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
@@ -228,6 +250,29 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         observationBuilder.setValueDate(dateTimeType, resultTextCell, resultDateCell);
+    }
+
+    private static boolean isNumericResult(CLEVE parser) {
+
+        //confusingly, the numeric values are in BOTH the result value and result text cells, and the
+        //version in the result text cell has BETTER precision than the result value cell
+
+        CsvCell resultValueCell = parser.getEventResultNumber();
+        if (resultValueCell.isEmpty()) {
+            return false;
+        }
+
+        //despite the event class saying "numeric" we have lots of events where the result is "negative" (e.g. pregnancy tests)
+        //so we need to test the value itself
+        CsvCell resultTextCell = parser.getEventResultText();
+        String resultText = resultTextCell.getString();
+        try {
+            new Double(resultText);
+            return true;
+
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
     }
 
     private static void transformResultNumericValue(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
@@ -307,7 +352,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         } else if (str.equals(">=")) {
             return Quantity.QuantityComparator.GREATER_OR_EQUAL;
 
-        } else if (str.equals("<")) {
+        } else if (str.equals(">")) {
             return Quantity.QuantityComparator.GREATER_THAN;
 
         } else {

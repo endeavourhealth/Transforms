@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -23,7 +20,7 @@ public class ConditionBuilder extends ResourceBuilderBase
     private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
 
     public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
-    public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
+    //public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
 
     private Condition condition = null;
 
@@ -83,11 +80,22 @@ public class ConditionBuilder extends ResourceBuilderBase
         auditValue("patient.reference", sourceCells);
     }
 
-    public void addExtension(Extension extension, CsvCell... sourceCells) {
+    public void setContext(String context, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(context)) {
+            ExtensionConverter.removeExtension(this.condition, FhirExtensionUri.RESOURCE_CONTEXT);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.condition, FhirExtensionUri.RESOURCE_CONTEXT, context);
+
+            auditStringExtension(extension, sourceCells);
+        }
+    }
+
+    /*public void addExtension(Extension extension, CsvCell... sourceCells) {
         this.condition.addExtension(extension);
 
         auditValue("extension[" + this.condition.getExtension().size() + "]", sourceCells);
-    }
+    }*/
 
     public void setClinician(Reference practitionerReference, CsvCell... sourceCells) {
         this.condition.setAsserter(practitionerReference);
@@ -180,10 +188,14 @@ public class ConditionBuilder extends ResourceBuilderBase
         return null;
     }
 
-    public void setCategory(CodeableConcept cc, CsvCell... sourceCells) {
-        this.condition.setCategory(cc);
+    public void setCategory(String category, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = new CodeableConcept();
+        Coding coding = codeableConcept.addCoding();
+        coding.setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
+        coding.setCode(category);
+        this.condition.setCategory(codeableConcept);
 
-        auditValue("category", sourceCells);
+        auditValue("category.coding[0].code", sourceCells);
     }
 
     public void setEndDateOrBoolean(Type type, CsvCell... sourceCells) {
@@ -241,12 +253,12 @@ public class ConditionBuilder extends ResourceBuilderBase
             this.condition.setCode(new CodeableConcept());
             return this.condition.getCode();
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
             if (this.condition.hasCategory()) {
                 throw new IllegalArgumentException("Trying to add new category to Condition that already has one");
             }
             this.condition.setCategory(new CodeableConcept());
-            return this.condition.getCategory();
+            return this.condition.getCategory();*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -258,8 +270,8 @@ public class ConditionBuilder extends ResourceBuilderBase
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             return "code";
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            return "category";
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            return "category";*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -271,8 +283,8 @@ public class ConditionBuilder extends ResourceBuilderBase
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             this.condition.setCode(null);
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            this.condition.setCategory(null);
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.condition.setCategory(null);*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");

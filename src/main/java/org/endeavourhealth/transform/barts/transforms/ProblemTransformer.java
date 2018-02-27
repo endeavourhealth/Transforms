@@ -15,7 +15,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
 
 public class ProblemTransformer extends BartsBasisTransformer {
@@ -113,10 +112,8 @@ public class ProblemTransformer extends BartsBasisTransformer {
         ib.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID);
         ib.setValue(parser.getProblemId().toString());
 
-
         // Extensions
-        Extension ex = ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding");
-        fhirCondition.addExtension(ex);
+        fhirCondition.setContext("clinical coding");
 
         // set patient reference
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
@@ -131,9 +128,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
         fhirCondition.setCode(problemCode);
 
         // set category to 'complaint'
-        CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
-        fhirCondition.setCategory(cc);
+        fhirCondition.setCategory("complaint");
 
         // set onset to field  to field 10 + 11
         fhirCondition.setOnset(onsetDate);
@@ -141,8 +136,8 @@ public class ProblemTransformer extends BartsBasisTransformer {
         fhirCondition.setVerificationStatus(cvs);
 
         // set notes
-        if ( parser.getAnnotatedDisp() != null) {
-            fhirCondition.setNotes( parser.getAnnotatedDisp());
+        if (parser.getAnnotatedDisp() != null) {
+            fhirCondition.setNotes(parser.getAnnotatedDisp());
         }
         //****************************************************************
 

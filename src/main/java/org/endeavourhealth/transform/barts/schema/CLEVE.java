@@ -121,8 +121,6 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("EVENT_RESULT_TXT");
     }
 
-    //NOTE; numeric results have the value in this field AND in EVENT_RESULT_TXT, except this field
-    //is rounded to the nearest int. So DO NOT USE this field, and use the EVENT_RESULT_TXT instead
     public CsvCell getEventResultNumber() {
         return super.getCell("EVENT_RESULT_NBR");
     }

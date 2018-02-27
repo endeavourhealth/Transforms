@@ -7,7 +7,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
@@ -174,7 +173,13 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(diagnosisTypeCode, CernerCodeValueRef.DIAGNOSIS_TYPE, conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, csvHelper);
+        if (!diagnosisTypeCode.isEmpty() && diagnosisTypeCode.getLong() > 0) {
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
+                                                                    CernerCodeValueRef.DIAGNOSIS_TYPE,
+                                                                    diagnosisTypeCode.getLong());
+            String category = cernerCodeValueRef.getCodeDispTxt();
+            conditionBuilder.setCategory(category, diagnosisTypeCode);
+        }
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();
         if (!diagnosisFreeText.isEmpty()) {

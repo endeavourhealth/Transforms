@@ -2,10 +2,7 @@ package org.endeavourhealth.transform.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
@@ -818,7 +815,7 @@ public class BasisTransformer {
 
         // set category to 'complaint'
         CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
+        cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode("complaint");
         fhirCondition.setCategory(cc);
 
         // set onset to field  to field 10 + 11

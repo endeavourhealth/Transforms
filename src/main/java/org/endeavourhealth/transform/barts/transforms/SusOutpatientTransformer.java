@@ -341,7 +341,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
 
         Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "cds coding")};
 
-        Procedure fhirProcedure = new Procedure ();
+        Procedure fhirProcedure = new Procedure();
         ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getOPCSPrimaryProcedureDate(), null, identifiers, null, ex);
 
         // save resource
