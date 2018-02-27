@@ -28,11 +28,10 @@ public abstract class BartsCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                                 .withHeader()
                                                 .withDelimiter('|')
-                                                .withEscape('^')
-                                                //.withQuoteMode(QuoteMode.NONE)
-                                                //.withQuote((char)null);
-                                                .withQuoteMode(QuoteMode.MINIMAL) //older combined files created by the SFTP Reader may have some quoting
-                                                .withQuote('\"');
+                                                .withEscape((Character)null)
+                                                .withQuote((Character)null)
+                                                .withQuoteMode(QuoteMode.NONE);
+
 
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
@@ -298,7 +297,6 @@ public abstract class BartsCsvToFhirTransformer {
                 PPALITransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             } else if (fileType.equalsIgnoreCase("PPINF")) {
-                //TODO: call into 2.2 patient info transform
                 PPINF parser = new PPINF(serviceId, systemId, exchangeId, version, filePath);
                 //PPINFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();

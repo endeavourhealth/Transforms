@@ -380,25 +380,31 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             return false;
         }
 
-        while (advanceToNextRow()) {
+        try {
+            while (advanceToNextRow()) {
 
-            if (this.csvRecordLineNumber % 50000 == 0) {
-                if (numLines == null) {
-                    LOG.trace("Line " + csvRecordLineNumber + " of " + filePath);
+                if (this.csvRecordLineNumber % 50000 == 0) {
+                    if (numLines == null) {
+                        LOG.trace("Line " + csvRecordLineNumber + " of " + filePath);
+                    } else {
+                        LOG.trace("Line " + csvRecordLineNumber + " / " + numLines + " of " + filePath);
+                    }
+                }
+
+                //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
+                if (recordNumbersToProcess == null
+                        || recordNumbersToProcess.contains(Long.valueOf(csvRecordLineNumber))) {
+
+                    return true;
+
                 } else {
-                    LOG.trace("Line " + csvRecordLineNumber + " / " + numLines + " of " + filePath);
+                    continue;
                 }
             }
-
-            //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
-            if (recordNumbersToProcess == null
-                || recordNumbersToProcess.contains(Long.valueOf(csvRecordLineNumber))) {
-
-                return true;
-
-            } else {
-                continue;
-            }
+        }
+        catch (ArrayIndexOutOfBoundsException ex) {
+            LOG.trace("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber );
+            throw new TransformException("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber, ex);
         }
 
         //automatically close the parser once we reach the end, to cut down on memory use

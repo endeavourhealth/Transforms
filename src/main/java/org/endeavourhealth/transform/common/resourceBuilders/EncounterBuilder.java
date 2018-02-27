@@ -207,41 +207,25 @@ public class EncounterBuilder extends ResourceBuilderBase
     public CodeableConcept createNewCodeableConcept(String tag) {
         if (tag.equals(TAG_SOURCE)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            if (codeableConcept != null) {
-                throw new IllegalArgumentException("Trying to add new Source code to Encounter when it already has one");
-            }
-            codeableConcept = new CodeableConcept();
+            CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
         } else if (tag.equals(TAG_SPECIALTY)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
-            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            if (codeableConcept != null) {
-                throw new IllegalArgumentException("Trying to add new Specialty code to Encounter when it already has one");
-            }
-            codeableConcept = new CodeableConcept();
+            CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
         } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
-            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            if (codeableConcept != null) {
-                throw new IllegalArgumentException("Trying to add new Treatment Function code to Encounter when it already has one");
-            }
-            codeableConcept = new CodeableConcept();
+            CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
         } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
-            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            if (codeableConcept != null) {
-                throw new IllegalArgumentException("Trying to add new Admission Type code to Encounter when it already has one");
-            }
-            codeableConcept = new CodeableConcept();
+            CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
@@ -267,7 +251,6 @@ public class EncounterBuilder extends ResourceBuilderBase
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
-
 
         } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
