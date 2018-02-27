@@ -30,8 +30,7 @@ public abstract class BartsCsvToFhirTransformer {
                                                 .withDelimiter('|')
                                                 .withEscape((Character)null)
                                                 .withQuote((Character)null)
-                                                .withQuoteMode(QuoteMode.NONE);
-
+                                                .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
 
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
