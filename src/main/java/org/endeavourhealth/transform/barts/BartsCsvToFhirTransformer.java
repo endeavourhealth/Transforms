@@ -198,7 +198,8 @@ public abstract class BartsCsvToFhirTransformer {
             return new BulkDiagnosis(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("BULKPROCEDURES")) {
             return new BulkProcedure(serviceId, systemId, exchangeId, version, file);
-
+        } else if (type.equalsIgnoreCase("CVREF")) {
+            return new CVREF(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }

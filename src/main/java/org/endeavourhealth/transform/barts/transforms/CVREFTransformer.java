@@ -80,7 +80,7 @@ public class CVREFTransformer {
                                     codeSetDescTxt.getString(),
                                     aliasNhsCdAlias.getString(),
                                     fhirResourceFiler.getServiceId().toString(),
-                                    auditWrapper.writeToJson());
+                                    auditWrapper);
 
 
                 //save to the DB
