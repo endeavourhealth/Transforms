@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -35,7 +35,7 @@ public class TestRequestHeaderTransformer extends ClinicalTransformerBase {
     public static void transform(TestRequestHeaderType testRequest, List<Resource> resources, String patientGuid) throws TransformException {
 
         DiagnosticOrder fhirOrder = new DiagnosticOrder();
-        fhirOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_ORDER));
+        fhirOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_ORDER));
 
         String requestGuid = testRequest.getGUID();
         EmisOpenHelper.setUniqueId(fhirOrder, patientGuid, requestGuid);
@@ -142,7 +142,7 @@ public class TestRequestHeaderTransformer extends ClinicalTransformerBase {
         }
 
         Specimen fhirSpecimen = new Specimen();
-        fhirSpecimen.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SPECIMIN));
+        fhirSpecimen.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SPECIMIN));
 
         String requestGuid = request.getGUID();
         EmisOpenHelper.setUniqueId(fhirSpecimen, patientGuid, requestGuid);

@@ -1,10 +1,13 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactPointI, HasCodeableConceptI {
 
@@ -24,12 +27,49 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
+    public static boolean removeExistingAddress(PatientBuilder parentBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove patient contact without ID");
+        }
+
+        List<Patient.ContactComponent> matches = new ArrayList<>();
+
+        List<Patient.ContactComponent> patientContacts = parentBuilder.getPatientContactComponents();
+        for (Patient.ContactComponent patientContact: patientContacts) {
+            //if we match on ID, then remove this patientContact from the parent object
+            if (patientContact.hasId()
+                    && patientContact.getId().equals(idValue)) {
+
+                matches.add(patientContact);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " patientContacts for ID " + idValue);
+
+        } else {
+            Patient.ContactComponent patientContact = matches.get(0);
+            parentBuilder.removePatientContactComponent(patientContact);
+            return true;
+        }
+    }
+
+    public void setId(String idValue, CsvCell... sourceCells) {
+        contact.setId(idValue);
+
+        auditValue("id", sourceCells);
+    }
 
     public void addContactName(HumanName humanName, CsvCell... sourceCells) {
         contact.setName(humanName);
 
         auditValue("name.text", sourceCells);
     }
+
+
 
     /*public void addContactRelationshipType(ContactRelationship fhirContactRelationship, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirContactRelationship);
@@ -53,7 +93,9 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
 
         ResourceFieldMappingAudit audit = this.patientBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 
@@ -120,6 +162,49 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         return patientBuilder.getAuditWrapper();
     }
 
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.contact.getRelationship().clear();
+    }
+
+    @Override
+    public List<HumanName> getNames() {
+        List<HumanName> ret = new ArrayList<>();
+        if (this.contact.hasName()) {
+            ret.add(this.contact.getName());
+        }
+        return ret;
+    }
+
+    @Override
+    public void removeName(HumanName name) {
+        this.contact.setName(null);
+    }
+
+    @Override
+    public List<ContactPoint> getContactPoint() {
+        return this.contact.getTelecom();
+    }
+
+    @Override
+    public void removeContactPoint(ContactPoint contactPoint) {
+        this.contact.getTelecom().remove(contactPoint);
+    }
+
+    @Override
+    public List<Address> getAddresses() {
+        List<Address> ret = new ArrayList<>();
+        if (this.contact.hasAddress()) {
+            ret.add(this.contact.getAddress());
+        }
+        return ret;
+    }
+
+    @Override
+    public void removeAddress(Address address) {
+        this.contact.setAddress(null);
+    }
+
 
     private Period getOrCreateNamePeriod() {
         Period period = null;
@@ -143,4 +228,6 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
 
         auditValue("period.end", sourceCells);
     }
+
+
 }

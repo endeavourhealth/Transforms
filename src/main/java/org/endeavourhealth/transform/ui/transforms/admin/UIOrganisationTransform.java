@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.ui.transforms.admin;
 
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.ui.helpers.AddressHelper;
 import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
@@ -42,6 +41,6 @@ public class UIOrganisationTransform {
 		}
 
 		private static String getOdsCode(Organization organization) {
-			return IdentifierHelper.getIdentifierBySystem(organization.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
+			return IdentifierHelper.getIdentifierBySystem(organization.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
 		}
 }

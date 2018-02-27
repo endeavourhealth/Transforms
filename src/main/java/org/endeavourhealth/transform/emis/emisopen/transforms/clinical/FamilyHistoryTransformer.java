@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
@@ -23,7 +23,7 @@ final class FamilyHistoryTransformer extends ClinicalTransformerBase {
     public static void transform(EventType eventType, List<Resource> results, String patientGuid) throws TransformException
     {
         FamilyMemberHistory fhirFamilyMemberHistory = new FamilyMemberHistory();
-        fhirFamilyMemberHistory.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
+        fhirFamilyMemberHistory.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
 
         EmisOpenHelper.setUniqueId(fhirFamilyMemberHistory, patientGuid, eventType.getGUID());
 

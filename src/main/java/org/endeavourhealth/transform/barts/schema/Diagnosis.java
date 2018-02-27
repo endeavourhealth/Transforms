@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.transform.barts.AbstractFixedParser;
-import org.endeavourhealth.transform.barts.FixedParserField;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

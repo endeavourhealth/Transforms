@@ -4,16 +4,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.util.List;
 
 public class ProblemTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
@@ -22,30 +24,32 @@ public class ProblemTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 Problem parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
+        for (ParserI parser: parsers) {
 
-        while (parser.nextRecord()) {
-            try {
-                String valStr = validateEntry(parser);
-                if (valStr == null) {
-                    createConditionProblem(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            // Skip header line
+            parser.nextRecord();
+
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((Problem)parser);
+                    if (valStr == null) {
+                        createConditionProblem((Problem)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    } else {
+                        LOG.debug("Validation error:" + valStr);
+                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+                    }
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-
     }
 
     /*
@@ -60,21 +64,18 @@ public class ProblemTransformer extends BartsBasisTransformer {
     }
 
     /*
-*
-*/
+    *
+    */
     public static void createConditionProblem(Problem parser,
                                               FhirResourceFiler fhirResourceFiler,
-                                              EmisCsvHelper csvHelper,
+                                              BartsCsvHelper csvHelper,
                                               String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
-
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
+        Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getLocalPatientId()))};
         ResourceId patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
         // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
         // Encounter - Problem record cannot be linked to an Encounter
@@ -82,15 +83,11 @@ public class ProblemTransformer extends BartsBasisTransformer {
         ResourceId problemResourceId = getProblemResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
         //CodeableConcept problemCode = new CodeableConcept();
-        //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(BartsCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProblem());
-        CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
-
-        //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem(BartsCsvToFhirTransformer.CODE_SYSTEM_PROBLEM_ID).setValue(parser.getProblemId().toString())};
+        //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED)).setDisplay(parser.getProblem());
+        CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
 
         DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
 
-        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
         Condition.ConditionVerificationStatus cvs;
         if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
@@ -103,16 +100,56 @@ public class ProblemTransformer extends BartsBasisTransformer {
             }
         }
 
-        Condition fhirCondition = new Condition();
-        createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex, cvs);
+        ConditionBuilder fhirCondition = new ConditionBuilder();
+        //createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex, cvs);
+        //****************************************************************
+        fhirCondition.setId(problemResourceId.getResourceId().toString());
+
+        fhirCondition.setAsProblem(true);
+
+        //Identifiers
+        IdentifierBuilder ib = new IdentifierBuilder(fhirCondition);
+        ib.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID);
+        ib.setValue(parser.getProblemId().toString());
+
+        // Extensions
+        fhirCondition.setContext("clinical coding");
+
+        // set patient reference
+        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        // Date recorded
+        fhirCondition.setRecordedDate(parser.getUpdateDateTime());
+
+        // set code to coded problem
+        if (problemCode.getText() == null || problemCode.getText().length() == 0) {
+            problemCode.setText(problemCode.getCoding().get(0).getDisplay());
+        }
+        fhirCondition.setCode(problemCode);
+
+        // set category to 'complaint'
+        fhirCondition.setCategory("complaint");
+
+        // set onset to field  to field 10 + 11
+        fhirCondition.setOnset(onsetDate);
+
+        fhirCondition.setVerificationStatus(cvs);
+
+        // set notes
+        if (parser.getAnnotatedDisp() != null) {
+            fhirCondition.setNotes(parser.getAnnotatedDisp());
+        }
+        //****************************************************************
 
         // save resource
         if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
-            LOG.debug("Delete Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            //LOG.debug("Delete Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
+            //deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirCondition);
         } else {
-            LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            //LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
+            //savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirCondition);
         }
 
     }

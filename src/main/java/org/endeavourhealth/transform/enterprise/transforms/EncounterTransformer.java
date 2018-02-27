@@ -3,8 +3,8 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
@@ -344,7 +344,7 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-        Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+        Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
         if (hl7MessageTypeCoding == null) {
             return null;
         }
@@ -478,7 +478,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (extension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
             if (hl7MessageTypeCoding == null) {
                 //LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
                 return null;
@@ -570,7 +570,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (extension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
+            Coding hl7MessageTypeCoding = CodeableConceptHelper.findCoding(codeableConcept, FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE);
             if (hl7MessageTypeCoding == null) {
                 LOG.debug("No HL7 type coding found in " + fhir.getResourceType() + " " + fhir.getId());
                 return null;

@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import org.endeavourhealth.common.fhir.ContactPointHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.LocationType;
@@ -26,7 +26,7 @@ public class LocationTransformer {
     private static Location createLocation(LocationType locationType) throws TransformException
     {
         Location location = new Location();
-        location.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
 
         location.setId(locationType.getGUID());
 

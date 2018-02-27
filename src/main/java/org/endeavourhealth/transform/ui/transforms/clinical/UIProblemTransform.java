@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.ui.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.ui.helpers.CodeHelper;
 import org.endeavourhealth.transform.ui.helpers.DateHelper;
 import org.endeavourhealth.transform.ui.helpers.ExtensionHelper;
 import org.endeavourhealth.transform.ui.helpers.ReferencedResources;
-import org.endeavourhealth.transform.ui.models.resources.clinicial.UIProblem;
 import org.endeavourhealth.transform.ui.models.resources.clinicial.UIProblem;
 import org.endeavourhealth.transform.ui.models.types.UICode;
 import org.endeavourhealth.transform.ui.models.types.UIDate;
@@ -28,7 +27,7 @@ public class UIProblemTransform extends UIClinicalTransform<Condition, UIProblem
     }
 
     private boolean isProblem(Condition c) {
-        if (c.getMeta().hasProfile(FhirUri.PROFILE_URI_PROBLEM))
+        if (c.getMeta().hasProfile(FhirProfileUri.PROFILE_URI_PROBLEM))
             return true;
 
         if (c.hasCategory()

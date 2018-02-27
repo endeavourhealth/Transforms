@@ -1,11 +1,11 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Address;
@@ -16,30 +16,26 @@ public class PPADDTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
 
     public static void transform(String version,
-                                 PPADD parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry(parser);
-                if (valStr == null) {
-                    createPatientAddress(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createPatientAddress((PPADD)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    public static String validateEntry(PPADD parser) {
-        return null;
-    }
 
     public static void createPatientAddress(PPADD parser,
                                             FhirResourceFiler fhirResourceFiler,
@@ -50,16 +46,20 @@ public class PPADDTransformer extends BartsBasisTransformer {
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
-        //if non-active, we should REMOVE the address
-        CsvCell active = parser.getActiveIndicator();
-        if (!active.getIntAsBoolean()) {
-
-            //TODO - need to REMOVE address from patient
-
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPADD record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
             return;
         }
 
-        //TODO - handle deltas where we're updating an existing address
+        //we always fully re-create the address, so remove it from the patient
+        CsvCell addressIdCell = parser.getMillenniumAddressId();
+        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+
+        //if non-active, we should REMOVE the address, which we've already done, so just return out
+        CsvCell active = parser.getActiveIndicator();
+        if (!active.getIntAsBoolean()) {
+            return;
+        }
 
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
@@ -70,6 +70,7 @@ public class PPADDTransformer extends BartsBasisTransformer {
         CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+        addressBuilder.setId(addressIdCell.getString(), addressIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(line1.getString(), line1);
         addressBuilder.addLine(line2.getString(), line2);

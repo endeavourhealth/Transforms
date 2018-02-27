@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -27,7 +27,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         this.observation = observation;
         if (this.observation == null) {
             this.observation = new Observation();
-            this.observation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+            this.observation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
         }
     }
 
@@ -86,19 +86,31 @@ public class ObservationBuilder extends ResourceBuilderBase
         }
     }
 
-    public void setValue(Double value, CsvCell... sourceCells) {
+    public void setValueDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
+        this.observation.setValue(dateTimeType);
+
+        auditValue("valueDateTime", sourceCells);
+    }
+
+    public void setValueString(String resultText, CsvCell... sourceCells) {
+        this.observation.setValue(new StringType(resultText));
+
+        auditValue("valueString", sourceCells);
+    }
+
+    public void setValueNumber(Double value, CsvCell... sourceCells) {
         findOrCreateQuantity().setValue(BigDecimal.valueOf(value));
 
         auditValue("valueQuantity.value", sourceCells);
     }
 
-    public void setUnits(String units, CsvCell... sourceCells) {
+    public void setValueNumberUnits(String units, CsvCell... sourceCells) {
         findOrCreateQuantity().setUnit(units);
 
         auditValue("valueQuantity.unit", sourceCells);
     }
 
-    public void setValueComparator(Quantity.QuantityComparator comparatorValue, CsvCell... sourceCells) {
+    public void setValueNumberComparator(Quantity.QuantityComparator comparatorValue, CsvCell... sourceCells) {
         findOrCreateQuantity().setComparator(comparatorValue);
 
         auditValue("valueQuantity.comparator", sourceCells);
@@ -288,6 +300,24 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+            this.observation.setCode(null);
+
+        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+            Observation.ObservationComponentComponent component = getLastComponent();
+            component.setCode(null);
+
+        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+            Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
+            rangeComponent.setMeaning(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.observation.addIdentifier();
     }
@@ -296,6 +326,16 @@ public class ObservationBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.observation.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.observation.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.observation.getIdentifier().remove(identifier);
     }
 
 

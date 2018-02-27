@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -22,7 +22,7 @@ public class ScheduleBuilder extends ResourceBuilderBase {
         this.schedule = schedule;
         if (this.schedule == null) {
             this.schedule = new Schedule();
-            this.schedule.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SCHEDULE));
+            this.schedule.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SCHEDULE));
         }
     }
 

@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ContactPointHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.transform.tpp.xml.schema.Address;
 import org.endeavourhealth.transform.tpp.xml.schema.Site;
@@ -26,7 +26,7 @@ public class SiteTransformer {
     private static void createLocation(Site tppSite, List<Resource> fhirResources) {
 
         Location fhirLocation = new Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        fhirLocation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
         //TODO - can't use random UUIDs. We should use consistent ones
         fhirLocation.setId(UUID.randomUUID().toString()); //we don't have unique IDs for these, so sub in a UUID
         fhirResources.add(fhirLocation);
@@ -69,7 +69,7 @@ public class SiteTransformer {
         String id = tppSite.getID();
 
         Organization fhirOrganisation = new Organization();
-        fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        fhirOrganisation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
         fhirOrganisation.setId(id);
         fhirResources.add(fhirOrganisation);
 

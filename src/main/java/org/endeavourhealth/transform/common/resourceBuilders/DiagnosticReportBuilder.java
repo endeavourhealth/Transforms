@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -22,7 +22,7 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
         this.diagnosticReport = diagnosticReport;
         if (this.diagnosticReport == null) {
             this.diagnosticReport = new DiagnosticReport();
-            this.diagnosticReport.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_REPORT));
+            this.diagnosticReport.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_REPORT));
         }
     }
 
@@ -128,5 +128,10 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.diagnosticReport.setCode(null);
     }
 }

@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.openhr.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -37,7 +37,7 @@ public class LocationTransformer
 		Location target = new Location();
 
 		target.setId(source.getId());
-        target.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        target.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
 
 		target.setName(source.getName());
 

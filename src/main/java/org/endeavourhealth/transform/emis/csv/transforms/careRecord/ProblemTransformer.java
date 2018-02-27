@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -74,10 +72,7 @@ public class ProblemTransformer {
         }
 
         //set the category on the condition, so we know it's a problem
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CATEGORY);
-        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
-        codeableConceptBuilder.setCodingCode("complaint", observationGuid);
-        //conditionBuilder.setCategory("complaint", observationGuid); //the fact it's in this file makes it a problem, so just link to the Oservation GUID
+        conditionBuilder.setCategory("complaint", observationGuid);
 
         CsvCell comments = parser.getComment();
         if (!comments.isEmpty()) {
@@ -159,7 +154,7 @@ public class ProblemTransformer {
                                        String version) throws Exception {
 
         Condition fhirProblem = new Condition();
-        fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -176,7 +171,7 @@ public class ProblemTransformer {
             //if we have a row in the Problem file that's deleted but the row in the Observation file
             //isn't being deleted, then the Problem needs to be down-graded to just a Condition, so set
             //the profile URI accordingly
-            fhirProblem.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+            fhirProblem.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
 
             //the problem is actually saved in the ObservationTransformer, so just cache for later
             csvHelper.cacheProblem(observationGuid, patientGuid, fhirProblem);

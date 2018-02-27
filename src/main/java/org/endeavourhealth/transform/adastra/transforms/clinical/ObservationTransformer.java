@@ -2,12 +2,12 @@ package org.endeavourhealth.transform.adastra.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Observation;
 
@@ -89,7 +89,7 @@ public class ObservationTransformer {
 
     private static Observation createStandardObservation() {
         Observation fhirObservation = new Observation();
-        fhirObservation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
         fhirObservation.setSubject(AdastraHelper.createPatientReference());
 

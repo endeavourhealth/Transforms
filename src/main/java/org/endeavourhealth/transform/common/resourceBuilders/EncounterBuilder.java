@@ -4,16 +4,22 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
                                         HasContainedListI, HasIdentifierI{
+
+    public static final String TAG_SPECIALTY = "CodeableConceptSpecialty";
+    public static final String TAG_TREATMENT_FUNCTION = "CodeableConceptTreatmentFunction";
+    public static final String TAG_SOURCE = "CodeableConceptSource";
+    public static final String TAG_ENCOUNTER_ADMISSION_TYPE = "CodeableConceptEncounterAdmissionType";
 
     private Encounter encounter = null;
 
@@ -25,7 +31,7 @@ public class EncounterBuilder extends ResourceBuilderBase
         this.encounter = encounter;
         if (this.encounter == null) {
             this.encounter = new Encounter();
-            this.encounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+            this.encounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
         }
     }
 
@@ -56,6 +62,40 @@ public class EncounterBuilder extends ResourceBuilderBase
         this.encounter.setStatus(status);
 
         auditValue("status", sourceCells);
+    }
+
+    // Maintain status history
+    public void setStatus(Encounter.EncounterState status, Date startPeriod, Date endPeriod, CsvCell... sourceCells) {
+        Encounter.EncounterState currentStatus = this.encounter.getStatus();
+
+        if (currentStatus != null) {
+            // If current status found move to history
+            if (startPeriod == null) {
+                if (this.encounter.getStatusHistory().size() > 0) {
+                    Encounter.EncounterStatusHistoryComponent lastHistEntry = this.encounter.getStatusHistory().get(this.encounter.getStatusHistory().size() - 1);
+                    startPeriod = lastHistEntry.getPeriod().getEnd();
+                } else {
+                    startPeriod = this.encounter.getPeriod().getStart();
+                }
+            }
+
+            if (endPeriod == null) {
+                endPeriod = new Date();
+            }
+
+            Period period = new Period();
+            period.setStart(startPeriod);
+            period.setEnd(endPeriod);
+
+            //Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent(currentStatus, period);
+
+            Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent()
+                    .setPeriod(period)
+                    .setStatus(currentStatus);
+
+            this.encounter.getStatusHistory().add(eshc);
+        }
+        setStatus(status, sourceCells);
     }
 
     public void setAppointment(Reference appointmentReference, CsvCell... sourceCells) {
@@ -111,11 +151,17 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         auditValue("period.start", sourceCells);
     }
+    public void setPeriodStart(Date startDateTime, CsvCell... sourceCells) {
+        setPeriodStart(new DateTimeType(startDateTime), sourceCells);
+    }
 
     public void setPeriodEnd(DateTimeType endDateTime, CsvCell... sourceCells) {
         getOrCreatePeriod().setStartElement(endDateTime);
 
         auditValue("period.end", sourceCells);
+    }
+    public void setPeriodEnd(Date endDateTime, CsvCell... sourceCells) {
+        setPeriodEnd(new DateTimeType(endDateTime), sourceCells);
     }
 
     /*public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
@@ -144,11 +190,11 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("class", sourceCells);
     }
 
-    public void addExtension(String typeDesc, CodeableConcept fhirCodeableConcept, CsvCell... sourceCells) {
+    /*public void addExtension(String typeDesc, CodeableConcept fhirCodeableConcept, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createExtension(typeDesc, fhirCodeableConcept);
 
         auditStringExtension(extension, sourceCells);
-    }
+    }*/
 
     public void addLocation(Reference referenceValue, CsvCell... sourceCells) {
         this.encounter.addLocation().setLocation(referenceValue);
@@ -159,25 +205,99 @@ public class EncounterBuilder extends ResourceBuilderBase
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
-        Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        if (codeableConcept != null) {
-            throw new IllegalArgumentException("Trying to add new code to Encounter when it already has one");
+        if (tag.equals(TAG_SOURCE)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Source code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Specialty code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Treatment Function code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new Admission Type code to Encounter when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        codeableConcept = new CodeableConcept();
-        extension.setValue(codeableConcept);
-        return codeableConcept;
+
     }
 
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
-        if (extension == null) {
-            throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
+        if (tag.equals(TAG_SOURCE)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_SOURCE)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+
+        } else if (tag.equals(TAG_SPECIALTY)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+
+        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+
+        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
 
-        int index = this.encounter.getExtension().indexOf(extension);
-        return "extension[" + index + "].valueCodeableConcept";
     }
 
     @Override
@@ -189,5 +309,15 @@ public class EncounterBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.encounter.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.encounter.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.encounter.getIdentifier().remove(identifier);
     }
 }

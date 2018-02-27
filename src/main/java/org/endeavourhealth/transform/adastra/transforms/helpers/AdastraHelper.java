@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.adastra.transforms.helpers;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.common.XmlDateHelper;
@@ -34,7 +34,7 @@ public class AdastraHelper {
     public static CodeableConcept createClinicalCode(String codeTerm) {
 
         Coding coding = new Coding();
-        coding.setSystem(FhirUri.CODE_SYSTEM_CTV3);
+        coding.setSystem(FhirCodeUri.CODE_SYSTEM_CTV3);
         coding.setDisplay(codeTerm);
 
         CodeableConcept codeableConcept = new CodeableConcept();
@@ -76,7 +76,7 @@ public class AdastraHelper {
 
     public static CodeableConcept createCodableConcept(CodedItem codedItem) {
         Coding coding = new Coding();
-        coding.setSystem(FhirUri.CODE_SYSTEM_CTV3);
+        coding.setSystem(FhirCodeUri.CODE_SYSTEM_CTV3);
         coding.setCode(codedItem.getCode());
         coding.setDisplay(codedItem.getDescription());
 

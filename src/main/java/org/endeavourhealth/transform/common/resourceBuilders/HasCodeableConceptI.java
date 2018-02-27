@@ -8,5 +8,5 @@ public interface HasCodeableConceptI {
     CodeableConcept createNewCodeableConcept(String tag);
     String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept);
     public ResourceFieldMappingAudit getAuditWrapper();
-
+    void removeCodeableConcepts(String tag);
 }

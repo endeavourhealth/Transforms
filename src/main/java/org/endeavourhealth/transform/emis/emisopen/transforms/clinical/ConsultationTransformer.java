@@ -35,7 +35,7 @@ public class ConsultationTransformer {
     private static void transform(ConsultationType consultation, List<Resource> resources, String patientGuid, MedicalRecordType medicalRecord) throws TransformException {
 
         Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
         String consultationGuid = consultation.getGUID();
         EmisOpenHelper.setUniqueId(fhirEncounter, patientGuid, consultationGuid);

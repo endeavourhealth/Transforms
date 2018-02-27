@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.adastra.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
@@ -19,7 +19,7 @@ public class FlagTransform {
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
         Flag fhirFlag = new Flag();
 
-        fhirFlag.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FLAG));
+        fhirFlag.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_FLAG));
 
         fhirFlag.setId(caseRef + ":" + specialNote.getText());
 

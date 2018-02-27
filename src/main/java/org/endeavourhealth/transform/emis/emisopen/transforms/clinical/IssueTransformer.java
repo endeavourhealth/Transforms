@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.clinical;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.IssueListType;
@@ -36,7 +36,7 @@ public final class IssueTransformer
     private static MedicationOrder transform(IssueType issueType, String patientGuid) throws TransformException
     {
         MedicationOrder medicationOrder = new MedicationOrder();
-        medicationOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+        medicationOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
 
         EmisOpenHelper.setUniqueId(medicationOrder, patientGuid, issueType.getGUID());
 

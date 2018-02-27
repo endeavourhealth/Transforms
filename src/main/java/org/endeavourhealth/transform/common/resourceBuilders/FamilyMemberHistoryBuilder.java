@@ -20,7 +20,7 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
         this.familyMemberHistory = familyMemberHistory;
         if (this.familyMemberHistory == null) {
             this.familyMemberHistory = new FamilyMemberHistory();
-            this.familyMemberHistory.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
+            this.familyMemberHistory.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
         }
     }
 
@@ -119,5 +119,11 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "condition[0].code";
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+        condition.setCode(null);
     }
 }

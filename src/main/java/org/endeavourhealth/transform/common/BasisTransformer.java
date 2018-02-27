@@ -2,14 +2,13 @@ package org.endeavourhealth.transform.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -40,7 +39,15 @@ public class BasisTransformer {
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
      */
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
-        ResourceId ret = null;
+
+        //Try to find the resourceId in the cache first
+        String resourceIdLookup = scope + "|" + resourceType + "|" + uniqueId;
+        ResourceId resourceId  = BartsCsvHelper.getResourceIdFromCache (resourceIdLookup);
+        if (resourceId != null) {
+            return resourceId;
+        }
+
+        //otherwise, hit the DB
         if (hl7receiverConnection == null) {
             prepareJDBCConnection();
         }
@@ -51,30 +58,40 @@ public class BasisTransformer {
 
         ResultSet rs = resourceIdSelectStatement.executeQuery();
         if (rs.next()) {
-            ret = new ResourceId();
-            ret.setScopeId(scope);
-            ret.setResourceType(resourceType);
-            ret.setResourceId((UUID) rs.getObject(1));
-            ret.setUniqueId(uniqueId);
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType(resourceType);
+            resourceId.setResourceId((UUID) rs.getObject(1));
+            resourceId.setUniqueId(uniqueId);
+
+            // Add to the cache
+            BartsCsvHelper.addResourceIdToCache(resourceId);
         }
         rs.close();
 
-        return ret;
+        return resourceId;
     }
 
 
-    public static void saveResourceId(ResourceId r) throws SQLException, ClassNotFoundException, IOException {
+    public static void saveResourceId(ResourceId resourceId) throws SQLException, ClassNotFoundException, IOException {
         if (hl7receiverConnection == null) {
             prepareJDBCConnection();
         }
 
-        resourceIdInsertStatement.setString(1, r.getScopeId());
-        resourceIdInsertStatement.setString(2, r.getResourceType());
-        resourceIdInsertStatement.setString(3, r.getUniqueId());
-        resourceIdInsertStatement.setObject(4, r.getResourceId());
+        resourceIdInsertStatement.setString(1, resourceId.getScopeId());
+        resourceIdInsertStatement.setString(2, resourceId.getResourceType());
+        resourceIdInsertStatement.setString(3, resourceId.getUniqueId());
+        resourceIdInsertStatement.setObject(4, resourceId.getResourceId());
 
         if (resourceIdInsertStatement.executeUpdate() != 1) {
-            throw new SQLException("Could not create ResourceId:" + r.getScopeId() + ":" + r.getResourceType() + ":" + r.getUniqueId() + ":" + r.getResourceId().toString());
+            throw new SQLException("Could not create ResourceId:"
+                    + resourceId.getScopeId()
+                    + ":" + resourceId.getResourceType() + ":"
+                    + resourceId.getUniqueId()
+                    + ":" + resourceId.getResourceId().toString());
+        } else {
+            // Add to the cache
+            BartsCsvHelper.addResourceIdToCache(resourceId);
         }
     }
 
@@ -350,7 +367,7 @@ public class BasisTransformer {
 
         // Meta
         Meta meta = new Meta();
-        meta.addProfile(FhirUri.PROFILE_URI_CONDITION); // This should always be added to make it compatible with EMIS data for viewing purposes
+        meta.addProfile(FhirProfileUri.PROFILE_URI_CONDITION); // This should always be added to make it compatible with EMIS data for viewing purposes
         if (metaUri != null) {
             for (int i = 0; i < metaUri.length; i++) {
                 meta.addProfile(metaUri[i]);
@@ -503,7 +520,7 @@ public class BasisTransformer {
 
             if (nhsno != null && nhsno.length() > 0) {
                 Identifier patientIdentifier = new Identifier()
-                        .setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER)
+                        .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)
                         .setValue(nhsno.replaceAll("\\-", ""));
                 fhirPatient.addIdentifier(patientIdentifier);
 
@@ -666,17 +683,34 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    /*
-     *
-     */
-    public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
-        String uniqueId = "PersonnelId=" + personnelId;
-        return getResourceId(scope, "Practitioner", uniqueId);
+    public static ResourceId getPractitionerResourceId(String scope, CsvCell personnelIdCell) throws Exception {
+
+        String uniqueId = "PersonnelId=" + personnelIdCell.getString();
+        ResourceId resourceId = getResourceId(scope, "Practitioner", uniqueId);
+
+        //if we failed to find a UUID for our personnelID, generate one and return it
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType("Practitioner");
+            resourceId.setUniqueId(uniqueId);
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+        return resourceId;
     }
 
-    /*
-     *
-     */
+
+    /*public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
+        String uniqueId = "PersonnelId=" + personnelId;
+        //if we failed to find a UUID for our personnelID, generate one and return it
+        //return getResourceId(scope, "Practitioner", uniqueId);
+        ResourceId ret = getResourceId(scope, "Practitioner", uniqueId);
+        if (ret == null) {
+            ret = createPractitionerResourceId(scope, personnelId);
+        }
+    }
+
     public static ResourceId createPractitionerResourceId(String scope, String personnelId) throws Exception {
         String uniqueId = "PersonnelId=" + personnelId;
         ResourceId resourceId = new ResourceId();
@@ -686,7 +720,7 @@ public class BasisTransformer {
         resourceId.setResourceId(UUID.randomUUID());
         saveResourceId(resourceId);
         return resourceId;
-    }
+    }*/
 
     public static ResourceId createPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
         String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
@@ -749,7 +783,7 @@ public class BasisTransformer {
     public static void createProblemResource(Condition fhirCondition, ResourceId problemResourceId, ResourceId patientResourceId, ResourceId encounterResourceId, Date dateRecorded, CodeableConcept problemCode, DateTimeType onsetDate, String notes, Identifier identifiers[], Extension[] ex, Condition.ConditionVerificationStatus cvs) throws Exception {
         fhirCondition.setId(problemResourceId.getResourceId().toString());
 
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+        fhirCondition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
 
         if (identifiers != null) {
             for (int i = 0; i < identifiers.length; i++) {
@@ -781,7 +815,7 @@ public class BasisTransformer {
 
         // set category to 'complaint'
         CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
+        cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode("complaint");
         fhirCondition.setCategory(cc);
 
         // set onset to field  to field 10 + 11
@@ -795,15 +829,19 @@ public class BasisTransformer {
         }
     }
 
-    public static ResourceId getObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
+    public static ResourceId getOrCreateDiagnosticReportResourceId(String scope, CsvCell observationIdCell) throws Exception {
+        return getOrCreateResourceId(scope, ResourceType.DiagnosticReport, observationIdCell);
+    }
+
+    public static ResourceId getOrCreateObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Observation, observationIdCell);
     }
 
-    public static ResourceId getProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
+    public static ResourceId getOrCreateProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Procedure, procedureIdCell);
     }
 
-    public static ResourceId getConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
+    public static ResourceId getOrCreateConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Condition, conditionIdCell);
     }
 

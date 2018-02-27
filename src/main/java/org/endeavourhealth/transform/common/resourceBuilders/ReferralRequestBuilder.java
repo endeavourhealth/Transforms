@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class ReferralRequestBuilder extends ResourceBuilderBase
                                     implements HasCodeableConceptI, HasIdentifierI {
@@ -25,7 +26,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest = referralRequest;
         if (this.referralRequest == null) {
             this.referralRequest = new ReferralRequest();
-            this.referralRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+            this.referralRequest.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
         }
     }
 
@@ -162,6 +163,11 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         return "serviceRequested[0]";
     }
 
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.referralRequest.getServiceRequested().clear();
+    }
+
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
         super.createOrUpdateParentResourceExtension(reference, sourceCells);
     }
@@ -175,5 +181,15 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.referralRequest.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.referralRequest.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.referralRequest.getIdentifier().remove(identifier);
     }
 }

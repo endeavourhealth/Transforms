@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -14,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class ConditionBuilder extends ResourceBuilderBase
                               implements HasCodeableConceptI,
@@ -22,7 +20,7 @@ public class ConditionBuilder extends ResourceBuilderBase
     private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
 
     public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
-    public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
+    //public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
 
     private Condition condition = null;
 
@@ -58,9 +56,9 @@ public class ConditionBuilder extends ResourceBuilderBase
 
     public void setAsProblem(boolean isProblem) {
         if (isProblem) {
-            this.condition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROBLEM));
+            this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
         } else {
-            this.condition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+            this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
         }
     }
 
@@ -73,7 +71,7 @@ public class ConditionBuilder extends ResourceBuilderBase
             throw new IllegalAccessError("Meta element has no profile URL set");
         }
         UriType profile = meta.getProfile().get(0);
-        return profile.getValue().equals(FhirUri.PROFILE_URI_PROBLEM);
+        return profile.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM);
     }
 
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
@@ -81,6 +79,23 @@ public class ConditionBuilder extends ResourceBuilderBase
 
         auditValue("patient.reference", sourceCells);
     }
+
+    public void setContext(String context, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(context)) {
+            ExtensionConverter.removeExtension(this.condition, FhirExtensionUri.RESOURCE_CONTEXT);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.condition, FhirExtensionUri.RESOURCE_CONTEXT, context);
+
+            auditStringExtension(extension, sourceCells);
+        }
+    }
+
+    /*public void addExtension(Extension extension, CsvCell... sourceCells) {
+        this.condition.addExtension(extension);
+
+        auditValue("extension[" + this.condition.getExtension().size() + "]", sourceCells);
+    }*/
 
     public void setClinician(Reference practitionerReference, CsvCell... sourceCells) {
         this.condition.setAsserter(practitionerReference);
@@ -99,6 +114,12 @@ public class ConditionBuilder extends ResourceBuilderBase
         this.condition.setEncounter(encounterReference);
 
         auditValue("encounter.reference", sourceCells);
+    }
+
+    public void setCode(CodeableConcept code, CsvCell... sourceCells) {
+        this.condition.setCode(code);
+
+        auditValue("code", sourceCells);
     }
 
     public void setPartOfProblem(Reference problemReference, CsvCell... sourceCells) {
@@ -167,28 +188,34 @@ public class ConditionBuilder extends ResourceBuilderBase
         return null;
     }
 
-    /*public void setCategory(String category, CsvCell... sourceCells) {
-        CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode(category);
-        this.condition.setCategory(cc);
+    public void setCategory(String category, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = new CodeableConcept();
+        Coding coding = codeableConcept.addCoding();
+        coding.setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
+        coding.setCode(category);
+        this.condition.setCategory(codeableConcept);
 
         auditValue("category.coding[0].code", sourceCells);
-    }*/
+    }
 
     public void setEndDateOrBoolean(Type type, CsvCell... sourceCells) {
-        if (!(type instanceof DateType)
-            && !(type instanceof BooleanType)) {
-            throw new IllegalArgumentException("Only DateType or BooleanType are supported for abatement");
-        }
-
-        this.condition.setAbatement(type);
-        if (type instanceof DateType) {
-            auditValue("abatementDate", sourceCells);
+        if (type == null) {
+            this.condition.setAbatement(null);
 
         } else {
-            auditValue("abatementBoolean", sourceCells);
-        }
+            if (!(type instanceof DateType)
+                    && !(type instanceof BooleanType)) {
+                throw new IllegalArgumentException("Only DateType or BooleanType are supported for abatement");
+            }
 
+            this.condition.setAbatement(type);
+            if (type instanceof DateType) {
+                auditValue("abatementDate", sourceCells);
+
+            } else {
+                auditValue("abatementBoolean", sourceCells);
+            }
+        }
     }
 
     public Type getEndDateOrBoolean() {
@@ -226,12 +253,12 @@ public class ConditionBuilder extends ResourceBuilderBase
             this.condition.setCode(new CodeableConcept());
             return this.condition.getCode();
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
             if (this.condition.hasCategory()) {
                 throw new IllegalArgumentException("Trying to add new category to Condition that already has one");
             }
             this.condition.setCategory(new CodeableConcept());
-            return this.condition.getCategory();
+            return this.condition.getCategory();*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -243,8 +270,21 @@ public class ConditionBuilder extends ResourceBuilderBase
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             return "code";
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            return "category";
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            return "category";*/
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            this.condition.setCode(null);
+
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.condition.setCategory(null);*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -438,5 +478,15 @@ public class ConditionBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.condition.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.condition.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.condition.getIdentifier().remove(identifier);
     }
 }

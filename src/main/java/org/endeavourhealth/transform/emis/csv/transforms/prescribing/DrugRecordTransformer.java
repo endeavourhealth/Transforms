@@ -172,7 +172,7 @@ public class DrugRecordTransformer {
                                        String version) throws Exception {
 
         MedicationStatement fhirMedicationStatement = new MedicationStatement();
-        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_AUTHORISATION));
+        fhirMedicationStatement.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_AUTHORISATION));
 
         String drugRecordGuid = parser.getDrugRecordGuid();
         String patientGuid = parser.getPatientGuid();

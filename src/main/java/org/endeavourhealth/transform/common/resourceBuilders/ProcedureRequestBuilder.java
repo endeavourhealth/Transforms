@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -22,7 +22,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
         this.procedureRequest = procedureRequest;
         if (this.procedureRequest == null) {
             this.procedureRequest = new ProcedureRequest();
-            this.procedureRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE_REQUEST));
+            this.procedureRequest.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE_REQUEST));
         }
     }
 
@@ -118,5 +118,10 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "code";
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.procedureRequest.setCode(null);
     }
 }

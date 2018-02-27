@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.CodingHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
@@ -55,12 +55,12 @@ public class CodeConverter {
                 || emisCode.startsWith("ALLERGY")
                 || emisCode.startsWith("EGTON")
                 || emisCodeNoSynonym.length() > 5) {
-            system = FhirUri.CODE_SYSTEM_EMIS_CODE;
+            system = FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
         }
 
         //Emis store Read 2 codes without the padding stops, which seems to be against Read 2 standards,
         //so make sure all codes are padded to five chars
-        if (system == FhirUri.CODE_SYSTEM_READ2) {
+        if (system == FhirCodeUri.CODE_SYSTEM_READ2) {
             while (emisCode.length() < 5) {
                 emisCode += ".";
             }
@@ -75,7 +75,7 @@ public class CodeConverter {
             system = getCodingSystem(code.getMapScheme());
 
             //if the system is proper SNOMED, then get the official term for the snomed concept ID
-            if (system == FhirUri.CODE_SYSTEM_SNOMED_CT) {
+            if (system == FhirCodeUri.CODE_SYSTEM_SNOMED_CT) {
                 try {
                     SnomedLookup snomedLookup = repository.getSnomedLookup(mappedCode);
                     if (snomedLookup != null) {
@@ -105,7 +105,7 @@ public class CodeConverter {
                 .setDisplay(code.getTerm())
                 .setUserSelected(true);
 
-        if (coding.getSystem().equals(FhirUri.CODE_SYSTEM_READ2))
+        if (coding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_READ2))
             if (coding.getCode() != null)
                 coding.setCode(coding.getCode().replace(".", ""));
 
@@ -156,28 +156,28 @@ public class CodeConverter {
 
     private static String getCodingSystem(String scheme) throws TransformException {
         if (scheme.equals(EMISOPEN_IDENTIFIER_READ2)) {
-            return FhirUri.CODE_SYSTEM_READ2;
+            return FhirCodeUri.CODE_SYSTEM_READ2;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_PREPARATION)) {
-            return FhirUri.CODE_SYSTEM_EMISPREPARATION;
+            return FhirCodeUri.CODE_SYSTEM_EMISPREPARATION;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_SNOMED)) {
-            return FhirUri.CODE_SYSTEM_SNOMED_CT;
+            return FhirCodeUri.CODE_SYSTEM_SNOMED_CT;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_BOTH)) {
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_DRUG_NAME)) {
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_DRUG_GROUP)) {
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_NON_DRUG_ALLERGY)) {
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else if (scheme.equals(EMISOPEN_IDENTIFIER_EMIS_CONSTITUENT)) {
-            return FhirUri.CODE_SYSTEM_EMIS_CODE;
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
 
         } else {
             //log the scheme out

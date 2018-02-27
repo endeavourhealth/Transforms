@@ -1,11 +1,12 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class ProcedureBuilder extends ResourceBuilderBase
                              implements HasCodeableConceptI, HasIdentifierI {
@@ -24,7 +25,7 @@ public class ProcedureBuilder extends ResourceBuilderBase
         this.procedure = procedure;
         if (this.procedure == null) {
             this.procedure = new Procedure();
-            this.procedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+            this.procedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
         }
     }
 
@@ -142,6 +143,19 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+            this.procedure.setCode(null);
+
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.procedure.setCategory(null);
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.procedure.addIdentifier();
     }
@@ -150,5 +164,15 @@ public class ProcedureBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.procedure.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.procedure.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.procedure.getIdentifier().remove(identifier);
     }
 }

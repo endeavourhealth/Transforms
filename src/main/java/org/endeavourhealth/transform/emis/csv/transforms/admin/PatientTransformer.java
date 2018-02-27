@@ -74,7 +74,7 @@ public class PatientTransformer {
         if (!nhsNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
         }
 
@@ -82,7 +82,7 @@ public class PatientTransformer {
         if (!patientGuid.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
             identifierBuilder.setValue(patientGuid.getString(), patientGuid);
         }
 
@@ -90,7 +90,7 @@ public class PatientTransformer {
         if (!patientNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
             identifierBuilder.setValue(patientNumber.getString(), patientNumber);
         }
 
@@ -298,7 +298,7 @@ public class PatientTransformer {
 
         //create Patient Resource
         org.hl7.fhir.instance.model.Patient fhirPatient = new org.hl7.fhir.instance.model.Patient();
-        fhirPatient.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PATIENT));
+        fhirPatient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
 
         String patientGuid = parser.getPatientGuid();
         String organisationGuid = parser.getOrganisationGuid();
@@ -307,7 +307,7 @@ public class PatientTransformer {
 
         //create Episode of Care Resource
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
-        fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
+        fhirEpisode.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
 
         EmisCsvHelper.setUniqueId(fhirEpisode, patientGuid, null);
 
@@ -328,8 +328,8 @@ public class PatientTransformer {
 
         //store the patient GUID and patient number to the patient resource
         int patientNumber = parser.getPatientNumber();
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, patientGuid));
-        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER, "" + patientNumber));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID, patientGuid));
+        fhirPatient.addIdentifier(IdentifierHelper.createIdentifier(Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER, "" + patientNumber));
 
         Date dob = parser.getDateOfBirth();
         fhirPatient.setBirthDate(dob);

@@ -147,7 +147,7 @@ public class EventTransformer extends ClinicalTransformerBase {
     public static void transformImmunisation(EventType eventType, List<Resource> results, String patientGuid) throws TransformException
     {
         Immunization fhirImmunization = new Immunization();
-        fhirImmunization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_IMMUNIZATION));
+        fhirImmunization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_IMMUNIZATION));
 
         EmisOpenHelper.setUniqueId(fhirImmunization, patientGuid, eventType.getGUID());
 
@@ -228,7 +228,7 @@ public class EventTransformer extends ClinicalTransformerBase {
     private static void transformObservation(EventType eventType, List<Resource> results, String patientGuid) throws TransformException {
 
         Observation fhirObservation = new Observation();
-        fhirObservation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
         String eventGuid = eventType.getGUID();
         EmisOpenHelper.setUniqueId(fhirObservation, patientGuid, eventGuid);
@@ -314,7 +314,7 @@ public class EventTransformer extends ClinicalTransformerBase {
     /*public static Observation transform(EventType eventType, String patientGuid) throws TransformException {
 
         Observation observation = new Observation();
-        observation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        observation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
         EmisOpenHelper.setUniqueId(observation, patientGuid, eventType.getGUID());
 
@@ -344,7 +344,7 @@ public class EventTransformer extends ClinicalTransformerBase {
     private static void transformCondition(EventType eventType, List<Resource> results, String patientGuid) throws TransformException {
 
         Condition fhirCondition = new Condition();
-        fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+        fhirCondition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
 
         String eventGuid = eventType.getGUID();
         EmisOpenHelper.setUniqueId(fhirCondition, patientGuid, eventGuid);
@@ -391,7 +391,7 @@ public class EventTransformer extends ClinicalTransformerBase {
 
     private static void transformProcedure(EventType eventType, List<Resource> results, String patientGuid) throws TransformException {
         Procedure fhirProcedure = new Procedure();
-        fhirProcedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+        fhirProcedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
 
         String eventGuid = eventType.getGUID();
         EmisOpenHelper.setUniqueId(fhirProcedure, patientGuid, eventGuid);

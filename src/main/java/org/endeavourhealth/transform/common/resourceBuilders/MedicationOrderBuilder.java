@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -23,7 +23,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         this.medicationOrder = medicationOrder;
         if (this.medicationOrder == null) {
             this.medicationOrder = new MedicationOrder();
-            this.medicationOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_MEDICATION_ORDER));
+            this.medicationOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_MEDICATION_ORDER));
         }
     }
 
@@ -155,5 +155,10 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "medicationCodeableConcept";
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.medicationOrder.setMedication(null);
     }
 }

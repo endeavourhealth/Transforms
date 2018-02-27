@@ -2,12 +2,12 @@ package org.endeavourhealth.transform.adastra.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Period;
@@ -22,7 +22,7 @@ public class EncounterTransform {
     public static void createMainCaseEncounter(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
         if (caseReport.getCaseType().getDescription() != null)
             fhirEncounter.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, caseReport.getCaseType().getDescription()));
@@ -64,7 +64,7 @@ public class EncounterTransform {
     private static void createEncounterFromConsultation(AdastraCaseDataExport.Consultation consultation,
                                                         String caseRef, FhirResourceFiler fhirResourceFiler) throws Exception {
         Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
         fhirEncounter.setId(caseRef + ":" + consultation.getStartTime() + ":" + consultation.getEndTime() + ":" + consultation.getConsultationBy().getName());
         String consultationID = fhirEncounter.getId();

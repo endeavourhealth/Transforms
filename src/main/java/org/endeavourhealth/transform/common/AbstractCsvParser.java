@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 
-public abstract class AbstractCsvParser implements AutoCloseable {
+public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCsvParser.class);
 

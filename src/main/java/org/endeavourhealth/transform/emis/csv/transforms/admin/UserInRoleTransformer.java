@@ -107,7 +107,7 @@ public class UserInRoleTransformer {
                                        EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
 
         String userInRoleGuid = parser.getUserInRoleGuid();
         fhirPractitioner.setId(userInRoleGuid);

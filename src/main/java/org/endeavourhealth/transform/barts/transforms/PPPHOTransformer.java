@@ -1,12 +1,12 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -18,30 +18,26 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
 
     public static void transform(String version,
-                                 PPPHO parser,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry(parser);
-                if (valStr == null) {
-                    createPatientPhone(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createPatientPhone((PPPHO)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    public static String validateEntry(PPPHO parser) {
-        return null;
-    }
 
     public static void createPatientPhone(PPPHO parser,
                                           FhirResourceFiler fhirResourceFiler,
@@ -54,19 +50,23 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             return;
         }
 
-        CsvCell millenniumPersonId = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-
-            //TODO - need to REMOVE phone number from patient
-
+        if (patientBuilder == null) {
+            LOG.warn("Skipping PPPHO record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
             return;
         }
 
-        //TODO - need to handle deltas where we're ENDING an existing phone number
+        //we always fully recreate the phone record on the patient so just remove any matching one already there
+        CsvCell phoneIdCell = parser.getMillenniumPhoneId();
+        ContactPointBuilder.removeExistingAddress(patientBuilder, phoneIdCell.getString());
+
+        //if the record is inactive, we've already removed the phone from the patient so jsut return out
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            return;
+        }
 
         String number = numberCell.getString();
 
@@ -75,25 +75,22 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             number += " " + extensionCell.getString();
         }
 
-        ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
-        ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
+        ContactPoint.ContactPointUse use = null;
+        ContactPoint.ContactPointSystem system = null;
+
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        if (!phoneTypeCell.isEmpty()) {
-            CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
+        if (!phoneTypeCell.isEmpty() && phoneTypeCell.getLong() > 0) {
+
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PHONE_TYPE,
-                                                                                phoneTypeCell.getLong(),
-                                                                                fhirResourceFiler.getServiceId());
+                                                                                phoneTypeCell.getLong());
 
-            if (cernerCodeValueRef != null) {
-                use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
-                system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
-
-            } else {
-                // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
-            }
+            use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
+            system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
         }
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+        contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
         contactPointBuilder.setUse(use, phoneTypeCell);
         contactPointBuilder.setSystem(system, phoneTypeCell);
         contactPointBuilder.setValue(number, numberCell, extensionCell);
@@ -109,63 +106,14 @@ public class PPPHOTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatientPhone(PPPHO parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          BartsCsvHelper csvHelper,
-                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        // Patient Address
-        if (parser.getPhoneNumber() != null && parser.getPhoneNumber().length() > 0 ) {
-            String phoneNumber = parser.getPhoneNumber();
-            if (parser.getExtension() != null && parser.getExtension().length() > 0 ) {
-                phoneNumber += " " + parser.getExtension();
-            }
-
-            if (parser.getPhoneTypeCode() != null && parser.getPhoneTypeCode().length() > 0 ) {
-                CernerCodeValueRef cernerCodeValueRef = BartsCsvHelper.lookUpCernerCodeFromCodeSet(
-                        RdbmsCernerCodeValueRefDal.PHONE_TYPE,
-                        Long.parseLong(parser.getPhoneTypeCode()),
-                        fhirResourceFiler.getServiceId());
-
-                ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.TEMP;
-                ContactPoint.ContactPointSystem system = ContactPoint.ContactPointSystem.OTHER;
-
-                if (cernerCodeValueRef != null) {
-                    use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
-
-                    system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());
-                } else {
-                    // LOG.warn("Phone Type code: " + parser.getPhoneTypeCode() + " not found in Code Value lookup");
-                }
-
-                ContactPoint contactPoint = ContactPointHelper.create(system, use, phoneNumber);
-
-                fhirPatient.addTelecom(contactPoint);
-            }
-        }
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
-
-    }*/
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) {
+
+        //we're missing codes in the code ref table, so just handle by returning SOMETHING
+        if (phoneType == null) {
+            return null;
+        }
+
         switch (phoneType) {
             case "HOME":
             case "VHOME":
@@ -186,11 +134,18 @@ public class PPPHOTransformer extends BartsBasisTransformer {
                 return ContactPoint.ContactPointUse.OLD;
             case "FAX TEMP":
                 return ContactPoint.ContactPointUse.TEMP;
-            default: return ContactPoint.ContactPointUse.TEMP;
+            default:
+                return ContactPoint.ContactPointUse.TEMP;
         }
     }
 
     private static ContactPoint.ContactPointSystem convertPhoneSystem(String phoneType) {
+
+        //we're missing codes in the code ref table, so just handle by returning SOMETHING
+        if (phoneType == null) {
+            return null;
+        }
+
         switch (phoneType) {
             case "ALTERNATE":
             case "BILLING":
@@ -226,7 +181,8 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             case "PAGER BILL":
             case "PAGING":
                 return ContactPoint.ContactPointSystem.PAGER;
-            default: return ContactPoint.ContactPointSystem.OTHER;
+            default:
+                return ContactPoint.ContactPointSystem.OTHER;
         }
     }
 

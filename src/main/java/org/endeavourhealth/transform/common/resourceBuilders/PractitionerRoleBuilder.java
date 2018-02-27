@@ -46,7 +46,9 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 
@@ -136,5 +138,18 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
     @Override
     public ResourceFieldMappingAudit getAuditWrapper() {
         return parentBuilder.getAuditWrapper();
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        if (tag.equals(TAG_ROLE_CODEABLE_CONCEPT)) {
+            role.setRole(null);
+
+        } else if (tag.equals(TAG_SPECIALTY_CODEABLE_CONCEPT)) {
+            role.getSpecialty().clear();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

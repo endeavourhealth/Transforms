@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -23,7 +20,6 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 
-import javax.xml.crypto.dsig.TransformException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -321,7 +317,7 @@ public class ObservationTransformer {
 
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
         String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
-        if (system.equals(FhirUri.CODE_SYSTEM_READ2)) {
+        if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
             String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
             return Read2.isDisorder(readCode);
         }
@@ -335,7 +331,7 @@ public class ObservationTransformer {
         for (Coding coding: fhirConcept.getCoding()) {
 
             //would prefer to check for procedures using Snomed, but this Read2 is simple and works
-            if (coding.getSystem().equals(FhirUri.CODE_SYSTEM_READ2)) {
+            if (coding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
                 return Read2.isDisorder(coding.getCode());
             }
 
@@ -425,7 +421,7 @@ public class ObservationTransformer {
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
 
         String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
-        if (system.equals(FhirUri.CODE_SYSTEM_READ2)) {
+        if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
             String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
             return Read2.isProcedure(readCode);
         }
@@ -525,7 +521,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             referralRequestBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -580,7 +576,7 @@ public class ObservationTransformer {
 
             //if we didn't have a record in the ObservationReferral file, we need to create a new one
             fhirReferral = new ReferralRequest();
-            fhirReferral.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+            fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
 
             EmisCsvHelper.setUniqueId(fhirReferral, patientGuid, observationGuid);
 
@@ -710,7 +706,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             diagnosticOrderBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -743,7 +739,7 @@ public class ObservationTransformer {
                                                       FhirResourceFiler fhirResourceFiler,
                                                       EmisCsvHelper csvHelper) throws Exception {
         DiagnosticOrder fhirOrder = new DiagnosticOrder();
-        fhirOrder.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_ORDER));
+        fhirOrder.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_ORDER));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -857,7 +853,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             specimenBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -889,7 +885,7 @@ public class ObservationTransformer {
     /*private static void createOrDeleteSpecimen(Observation parser, FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper) throws Exception {
 
         Specimen fhirSpecimen = new Specimen();
-        fhirSpecimen.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SPECIMIN));
+        fhirSpecimen.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SPECIMIN));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -984,7 +980,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             allergyIntoleranceBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1022,7 +1018,7 @@ public class ObservationTransformer {
                                               EmisCsvHelper csvHelper) throws Exception {
 
         AllergyIntolerance fhirAllergy = new AllergyIntolerance();
-        fhirAllergy.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ALLERGY_INTOLERANCE));
+        fhirAllergy.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ALLERGY_INTOLERANCE));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -1142,7 +1138,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             diagnosticReportBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1176,7 +1172,7 @@ public class ObservationTransformer {
                                                       FhirResourceFiler fhirResourceFiler,
                                                       EmisCsvHelper csvHelper) throws Exception {
         DiagnosticReport fhirReport = new DiagnosticReport();
-        fhirReport.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_DIAGNOSTIC_REPORT));
+        fhirReport.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_DIAGNOSTIC_REPORT));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -1307,7 +1303,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             procedureBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1332,7 +1328,6 @@ public class ObservationTransformer {
         assertNumericUnitEmpty(procedureBuilder, parser);
         assertNumericRangeLowEmpty(procedureBuilder, parser);
         assertNumericRangeHighEmpty(procedureBuilder, parser);
-        assertNoChildObservations(procedureBuilder, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }
@@ -1344,7 +1339,7 @@ public class ObservationTransformer {
                                                 EmisCsvHelper csvHelper) throws Exception {
 
         Procedure fhirProcedure = new Procedure();
-        fhirProcedure.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE));
+        fhirProcedure.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -1480,7 +1475,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             conditionBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1534,7 +1529,7 @@ public class ObservationTransformer {
 
             //if we didn't have a record in the Problem file, we need to create a new one
             fhirCondition = new Condition();
-            fhirCondition.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_CONDITION));
+            fhirCondition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
 
             EmisCsvHelper.setUniqueId(fhirCondition, patientGuid, observationGuid);
 
@@ -1645,12 +1640,12 @@ public class ObservationTransformer {
 
         CsvCell value = parser.getValue();
         if (!value.isEmpty()) {
-            observationBuilder.setValue(value.getDouble(), value);
+            observationBuilder.setValueNumber(value.getDouble(), value);
         }
 
         CsvCell units = parser.getNumericUnit();
         if (!units.isEmpty()) {
-            observationBuilder.setUnits(units.getString(), units);
+            observationBuilder.setValueNumberUnits(units.getString(), units);
         }
 
         CsvCell low = parser.getNumericRangeLow();
@@ -1724,7 +1719,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             observationBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1752,7 +1747,7 @@ public class ObservationTransformer {
                                                   EmisCsvHelper csvHelper) throws Exception {
 
         org.hl7.fhir.instance.model.Observation fhirObservation = new org.hl7.fhir.instance.model.Observation();
-        fhirObservation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_OBSERVATION));
+        fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -1905,7 +1900,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             familyMemberHistoryBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -1939,7 +1934,7 @@ public class ObservationTransformer {
                                                           EmisCsvHelper csvHelper) throws Exception {
 
         FamilyMemberHistory fhirFamilyHistory = new FamilyMemberHistory();
-        fhirFamilyHistory.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
+        fhirFamilyHistory.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_FAMILY_MEMBER_HISTORY));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -2062,7 +2057,7 @@ public class ObservationTransformer {
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
-            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
+            Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid.getString());
             immunizationBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
@@ -2096,7 +2091,7 @@ public class ObservationTransformer {
                                                    EmisCsvHelper csvHelper) throws Exception {
 
         Immunization fhirImmunisation = new Immunization();
-        fhirImmunisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_IMMUNIZATION));
+        fhirImmunisation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_IMMUNIZATION));
 
         String observationGuid = parser.getObservationGuid();
         String patientGuid = parser.getPatientGuid();
@@ -2158,7 +2153,7 @@ public class ObservationTransformer {
             return;
         }
 
-        Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid);
+        Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_DOCUMENT_GUID, documentGuid);
         resource.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.EXTERNAL_DOCUMENT, fhirIdentifier));
     }
 
@@ -2292,13 +2287,7 @@ public class ObservationTransformer {
             throw new FieldNotEmptyException("NumericUnit", resourceBuilder.getResource());
         }
     }
-    private static void assertNoChildObservations(ResourceBuilderBase resourceBuilder, EmisCsvHelper csvHelper) throws Exception {
-        ReferenceList childObservations = csvHelper.getAndRemoveObservationParentRelationships(resourceBuilder.getResourceId());
-        if (childObservations != null) {
-            Resource resource = resourceBuilder.getResource();
-            throw new TransformException("" + resource.getResourceType() + " " + resource.getId() + " has " + childObservations.size() + " but the resource doesn't support them");
-        }
-    }
+
 
 
     private static boolean isReview(CodeableConceptBuilder codeableConceptBuilder, String codeableConceptTag, Observation parser,

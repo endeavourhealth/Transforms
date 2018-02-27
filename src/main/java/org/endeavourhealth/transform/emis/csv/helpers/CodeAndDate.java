@@ -35,7 +35,23 @@ public class CodeAndDate {
 
         DateTimeType ourDate = getDate();
         DateTimeType otherDate = other.getDate();
-        return ourDate.after(otherDate);
+
+        //handle having a null date
+        if (ourDate == null && otherDate == null) {
+            //if both dates are null OUR data is not AFTER the other date
+            return false;
+
+        } else if (ourDate == null) {
+            //if our date is null, the other date must be more resnet
+            return false;
+
+        } else if (otherDate == null) {
+            //if the other date is null, our date must be more recent
+            return true;
+
+        } else {
+            return ourDate.after(otherDate);
+        }
     }
 
     /*public boolean isBefore(DateTimeType other) {

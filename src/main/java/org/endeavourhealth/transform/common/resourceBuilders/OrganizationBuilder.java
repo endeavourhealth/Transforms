@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class OrganizationBuilder extends ResourceBuilderBase
                                 implements HasAddressI, HasIdentifierI {
@@ -20,7 +21,7 @@ public class OrganizationBuilder extends ResourceBuilderBase
         this.organization = organization;
         if (this.organization == null) {
             this.organization = new Organization();
-            this.organization.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+            this.organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
         }
     }
 
@@ -122,6 +123,16 @@ public class OrganizationBuilder extends ResourceBuilderBase
     }
 
     @Override
+    public List<Address> getAddresses() {
+        return this.organization.getAddress();
+    }
+
+    @Override
+    public void removeAddress(Address address) {
+        this.organization.getAddress().remove(address);
+    }
+
+    @Override
     public Identifier addIdentifier() {
         return this.organization.addIdentifier();
     }
@@ -130,5 +141,15 @@ public class OrganizationBuilder extends ResourceBuilderBase
     public String getIdentifierJsonPrefix(Identifier identifier) {
         int index = this.organization.getIdentifier().indexOf(identifier);
         return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.organization.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.organization.getIdentifier().remove(identifier);
     }
 }

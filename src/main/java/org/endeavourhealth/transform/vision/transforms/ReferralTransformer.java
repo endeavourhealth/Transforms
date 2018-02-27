@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -44,7 +44,7 @@ public class ReferralTransformer {
                                        VisionCsvHelper csvHelper) throws Exception {
 
         ReferralRequest fhirReferral = new ReferralRequest();
-        fhirReferral.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_REFERRAL_REQUEST));
+        fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
 
         String referralID = parser.getReferralID();
         String patientID = parser.getPatientID();

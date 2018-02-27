@@ -2,10 +2,7 @@ package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ContactPointHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.MedicalRecordType;
@@ -28,7 +25,7 @@ public class PractitionerTransformer
     private static Practitioner createPractitioner(PersonType personType, String organisationGuid) throws TransformException
     {
         Practitioner practitioner = new Practitioner();
-        practitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
 
         practitioner.setId(personType.getGUID());
 
@@ -79,21 +76,21 @@ public class PractitionerTransformer
         if (StringUtils.isNotBlank(gmcNumber))
         {
             identifiers.add(new Identifier()
-                            .setSystem(FhirUri.IDENTIFIER_SYSTEM_GMC_NUMBER)
+                            .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER)
                             .setValue(gmcNumber));
         }
 
         if (StringUtils.isNotBlank(doctorIndexNumber))
         {
             identifiers.add(new Identifier()
-                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER)
+                    .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER)
                     .setValue(doctorIndexNumber));
         }
 
         if (StringUtils.isNotBlank(gmpPpdCode))
         {
             identifiers.add(new Identifier()
-                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE)
+                    .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE)
                     .setValue(gmpPpdCode));
         }
 

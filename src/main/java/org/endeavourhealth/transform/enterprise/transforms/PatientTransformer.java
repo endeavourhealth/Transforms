@@ -405,7 +405,7 @@ public class PatientTransformer extends AbstractTransformer {
             //if we don't have an NHS number, use the Emis patient number
             String patientNumber = null;
             if (fhirPatient.hasIdentifier()) {
-                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
             }
 
             if (!Strings.isNullOrEmpty(patientNumber)) {

@@ -48,7 +48,7 @@ public class PracticeTransformer {
                                        VisionCsvHelper csvHelper) throws Exception {
 
         org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        fhirLocation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
 
         //set the Location ID to that of the Organisation ID
         String organisationID = parser.getOrganisationID();
@@ -90,7 +90,7 @@ public class PracticeTransformer {
                                                    FhirResourceFiler fhirResourceFiler,
                                                    VisionCsvHelper csvHelper) throws Exception {
         Organization fhirOrganisation = new Organization();
-        fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        fhirOrganisation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
 
         String orgID = parser.getOrganisationID();
         fhirOrganisation.setId(orgID);

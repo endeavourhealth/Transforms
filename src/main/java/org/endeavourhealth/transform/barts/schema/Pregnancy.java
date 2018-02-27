@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.transform.barts.AbstractFixedParser;
-import org.endeavourhealth.transform.barts.FixedParserField;
+import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.FixedParserField;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
 public class Pregnancy extends AbstractFixedParser {

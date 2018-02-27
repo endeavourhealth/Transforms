@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -75,7 +75,7 @@ public class ConditionTransformer extends AbstractTransformer {
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
             for (UriType uriType: fhir.getMeta().getProfile()) {
-                if (uriType.getValue().equals(FhirUri.PROFILE_URI_PROBLEM)) {
+                if (uriType.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM)) {
                     isProblem = true;
                 }
             }

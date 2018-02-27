@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.adastra.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Meta;
@@ -18,7 +18,7 @@ public class AppointmentTransformer {
         AdastraCaseDataExport.LatestAppointment appointment = caseReport.getLatestAppointment();
 
         Appointment fhirAppointment = new Appointment();
-        fhirAppointment.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_APPOINTMENT));
+        fhirAppointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
 
         fhirAppointment.setId(caseReport.getAdastraCaseReference() + ":" + appointment.getAppointmentTime() + ":" + appointment.getLocation());
         uniqueIdMapper.put("latestAppointment", fhirAppointment.getId());

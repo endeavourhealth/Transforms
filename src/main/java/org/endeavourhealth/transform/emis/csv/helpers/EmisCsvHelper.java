@@ -129,7 +129,7 @@ public class EmisCsvHelper {
                     LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
 
                     Coding coding = new Coding();
-                    coding.setSystem(FhirUri.CODE_SYSTEM_READ2);
+                    coding.setSystem(FhirCodeUri.CODE_SYSTEM_READ2);
                     coding.setCode("?????");
                     coding.setDisplay("Unknown code");
 
@@ -357,7 +357,7 @@ public class EmisCsvHelper {
 
         String childObservationUniqueId = createUniqueId(patientGuid, observationGuid);
         Reference reference = ReferenceHelper.createReference(resourceType, childObservationUniqueId);
-        list.add(reference, parentObservationGuid);
+        list.add(reference, observationGuid);
     }
 
 
@@ -436,7 +436,7 @@ public class EmisCsvHelper {
             if (fhirObservation != null) {
                 resourceBuilder = new ObservationBuilder(fhirObservation);
             } else {
-                //if the resource can't be found, then we can't update it
+                //if the resource can't be found (or isn't an Observation or DiagnosticReport), then we can't update it
                 return;
             }
         }
@@ -843,7 +843,7 @@ public class EmisCsvHelper {
 
             if (newMaritalStatus != null) {
                 EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
-                CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
+                CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
                 EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
             }
 
@@ -1058,7 +1058,7 @@ public class EmisCsvHelper {
 
         Meta meta = condition.getMeta();
         for (UriType profileUri: meta.getProfile()) {
-            if (profileUri.getValue().equals(FhirUri.PROFILE_URI_CONDITION)) {
+            if (profileUri.getValue().equals(FhirProfileUri.PROFILE_URI_CONDITION)) {
                 return true;
             }
         }

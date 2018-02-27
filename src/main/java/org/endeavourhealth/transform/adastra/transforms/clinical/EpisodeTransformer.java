@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.adastra.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
@@ -19,7 +19,7 @@ public class EpisodeTransformer {
     public static void transform(AdastraCaseDataExport caseReport, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         EpisodeOfCare fhirEpisode = new EpisodeOfCare();
-        fhirEpisode.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_EPISODE_OF_CARE));
+        fhirEpisode.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
 
         fhirEpisode.setId(caseReport.getPatient().getNationalNumber().getNumber() + ":" + caseReport.getAdastraCaseReference());
         uniqueIdMapper.put("episode", fhirEpisode.getId());

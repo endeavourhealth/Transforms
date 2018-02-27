@@ -152,7 +152,7 @@ public class DiaryTransformer {
                                        String version) throws Exception {
 
         ProcedureRequest fhirRequest = new ProcedureRequest();
-        fhirRequest.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PROCEDURE_REQUEST));
+        fhirRequest.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROCEDURE_REQUEST));
 
         String diaryGuid = parser.getDiaryGuid();
         String patientGuid = parser.getPatientGuid();

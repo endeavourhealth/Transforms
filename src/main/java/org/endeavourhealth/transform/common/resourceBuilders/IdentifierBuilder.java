@@ -6,7 +6,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Period;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class IdentifierBuilder {
 
@@ -25,11 +27,136 @@ public class IdentifierBuilder {
         }
     }
 
+    public static boolean removeExistingIdentifierById(HasIdentifierI parentBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove identifier without ID");
+        }
+
+        List<Identifier> matches = new ArrayList<>();
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+            //if we match on ID, then remove this identifier from the parent object
+            if (identifier.hasId()
+                    && identifier.getId().equals(idValue)) {
+
+                matches.add(identifier);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " identifiers for ID " + idValue);
+
+        } else {
+            Identifier identifier = matches.get(0);
+            parentBuilder.removeIdentifier(identifier);
+            return true;
+        }
+    }
+
+    public static List<Identifier> findExistingIdentifiersForSystem(HasIdentifierI parentBuilder, String identifierSystem) {
+        if (Strings.isNullOrEmpty(identifierSystem)) {
+            throw new IllegalArgumentException("Can't match identifier without system");
+        }
+
+        List<Identifier> matches = new ArrayList<>();
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+
+            if (!identifier.hasSystem()
+                    || !identifier.getSystem().equalsIgnoreCase(identifierSystem)) {
+                continue;
+            }
+
+            matches.add(identifier);
+        }
+
+        return matches;
+    }
+
+    /*public static boolean removeExistingIdentifiersBySystem(HasIdentifierI parentBuilder, String identifierSystem) {
+        if (Strings.isNullOrEmpty(identifierSystem)) {
+            throw new IllegalArgumentException("Can't match identifier without system");
+        }
+
+        List<Identifier> matches = new ArrayList<>();
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+
+            if (!identifier.hasSystem()
+                    || !identifier.getSystem().equalsIgnoreCase(identifierSystem)) {
+                continue;
+            }
+
+            matches.add(identifier);
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else {
+            for (Identifier identifier: matches) {
+                parentBuilder.removeIdentifier(identifier);
+            }
+            return true;
+        }
+        *//*if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " identifiers for system " + identifierSystem);
+
+        } else {
+            Identifier identifier = matches.get(0);
+            parentBuilder.removeIdentifier(identifier);
+            return true;
+        }*//*
+    }*/
+
+    /*public static boolean hasIdentifier(HasIdentifierI parentBuilder, String identifierSystem, String identifierValue) {
+        if (Strings.isNullOrEmpty(identifierSystem)) {
+            throw new IllegalArgumentException("Can't match identifier without system");
+        }
+        if (Strings.isNullOrEmpty(identifierValue)) {
+            throw new IllegalArgumentException("Can't match identifier without value");
+        }
+
+        List<Identifier> identifiers = parentBuilder.getIdentifiers();
+        for (Identifier identifier: identifiers) {
+
+            if (!identifier.hasSystem()
+                    || !identifier.getSystem().equalsIgnoreCase(identifierSystem)) {
+                continue;
+            }
+
+            if (!identifier.hasValue()
+                    || !identifier.getValue().equalsIgnoreCase(identifierValue)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }*/
+
     public void setUse(Identifier.IdentifierUse use, CsvCell... sourceCells) {
         identifier.setUse(use);
 
-        auditNameValue("use", sourceCells);
+        auditIdentifierValue("use", sourceCells);
     }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.identifier.setId(id);
+
+        auditIdentifierValue("id", sourceCells);
+    }
+
 
     public void setSystem(String system, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(system)) {
@@ -38,7 +165,7 @@ public class IdentifierBuilder {
 
         identifier.setSystem(system);
 
-        auditNameValue("system", sourceCells);
+        auditIdentifierValue("system", sourceCells);
     }
 
     public void setValue(String value, CsvCell... sourceCells) {
@@ -48,16 +175,18 @@ public class IdentifierBuilder {
 
         identifier.setValue(value);
 
-        auditNameValue("value", sourceCells);
+        auditIdentifierValue("value", sourceCells);
     }
 
-    private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
+    private void auditIdentifierValue(String jsonSuffix, CsvCell... sourceCells) {
 
         String jsonField = parentBuilder.getIdentifierJsonPrefix(identifier) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 
@@ -75,12 +204,14 @@ public class IdentifierBuilder {
     public void setStartDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setStart(date);
 
-        auditNameValue("period.start", sourceCells);
+        auditIdentifierValue("period.start", sourceCells);
     }
 
     public void setEndDate(Date date, CsvCell... sourceCells) {
         getOrCreateNamePeriod().setEnd(date);
 
-        auditNameValue("period.end", sourceCells);
+        auditIdentifierValue("period.end", sourceCells);
     }
+
+
 }

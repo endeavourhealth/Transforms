@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,7 +19,7 @@ public class SpecimenBuilder extends ResourceBuilderBase
         this.specimen = specimen;
         if (this.specimen == null) {
             this.specimen = new Specimen();
-            this.specimen.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SPECIMIN));
+            this.specimen.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SPECIMIN));
         }
     }
 
@@ -102,5 +102,10 @@ public class SpecimenBuilder extends ResourceBuilderBase
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
         return "type";
+    }
+
+    @Override
+    public void removeCodeableConcepts(String tag) {
+        this.specimen.setType(null);
     }
 }

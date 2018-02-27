@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.adastra.transforms.admin;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Meta;
 
@@ -37,7 +37,7 @@ public class LocationTransform {
     public static void createLocation(String locationText, String orgCode, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_LOCATION));
+        fhirLocation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
 
         fhirLocation.setId(orgCode + ":" + locationText);
         fhirLocation.setManagingOrganization(AdastraHelper.createOrganisationReference(orgCode));

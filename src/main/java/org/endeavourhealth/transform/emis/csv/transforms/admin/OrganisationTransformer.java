@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -55,7 +55,7 @@ public class OrganisationTransformer {
         if (!odsCode.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
             identifierBuilder.setValue(odsCode.getString(), odsCode);
         }
 
@@ -68,7 +68,7 @@ public class OrganisationTransformer {
         if (!cdbNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirUri.IDENTIFIER_SYSTEM_EMIS_CDB_NUMBER);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_CDB_NUMBER);
             identifierBuilder.setValue(cdbNumber.getString(), cdbNumber);
         }
 
@@ -130,7 +130,7 @@ public class OrganisationTransformer {
                                        EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         Organization fhirOrganisation = new Organization();
-        fhirOrganisation.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        fhirOrganisation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
 
         String orgGuid = parser.getOrganisationGuid();
         fhirOrganisation.setId(orgGuid);

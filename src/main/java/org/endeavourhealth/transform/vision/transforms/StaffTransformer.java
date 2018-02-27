@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
@@ -38,7 +35,7 @@ public class StaffTransformer {
                                        VisionCsvHelper csvHelper) throws Exception {
 
         Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_PRACTITIONER));
+        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
 
         String userID = parser.getUserID();
         fhirPractitioner.setId(userID);
@@ -69,7 +66,7 @@ public class StaffTransformer {
         String gmpCode = parser.getGMPCode();
         if (!Strings.isNullOrEmpty(gmpCode)) {
             Identifier identifier = new Identifier()
-                    .setSystem(FhirUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE)
+                    .setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE)
                     .setValue(gmpCode);
             fhirPractitioner.addIdentifier(identifier);
         }

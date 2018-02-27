@@ -7,7 +7,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Period;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class NameBuilder {
 
@@ -27,10 +29,46 @@ public class NameBuilder {
         }
     }
 
+    public static boolean removeExistingName(HasNameI parentBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove name without ID");
+        }
+
+        List<HumanName> matches = new ArrayList<>();
+
+        List<HumanName> namees = parentBuilder.getNames();
+        for (HumanName name: namees) {
+            //if we match on ID, then remove this name from the parent object
+            if (name.hasId()
+                    && name.getId().equals(idValue)) {
+
+                matches.add(name);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " names for ID " + idValue);
+
+        } else {
+            HumanName name = matches.get(0);
+            parentBuilder.removeName(name);
+            return true;
+        }
+    }
+
     public void setUse(HumanName.NameUse use, CsvCell... sourceCells) {
         name.setUse(use);
 
         auditNameValue("use", sourceCells);
+    }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.name.setId(id);
+
+        auditNameValue("id", sourceCells);
     }
 
     public void addPrefix(String prefix, CsvCell... sourceCells) {
@@ -124,7 +162,9 @@ public class NameBuilder {
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
-            audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            if (csvCell != null) {
+                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 

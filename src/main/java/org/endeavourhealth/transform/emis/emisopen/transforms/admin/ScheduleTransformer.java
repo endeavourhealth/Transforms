@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.emisopen.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eomappointmentsessions.AppointmentSessionList;
@@ -35,7 +35,7 @@ public class ScheduleTransformer
 
         schedule.setId(appointmentSession.getGUID());
 
-        schedule.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SCHEDULE));
+        schedule.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SCHEDULE));
 
         Period period = new Period()
             .setStart(DateConverter.getDateAndTime(appointmentSession.getDate(), appointmentSession.getStartTime()))

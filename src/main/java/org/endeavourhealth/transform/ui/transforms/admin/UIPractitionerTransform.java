@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.ui.transforms.admin;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
 import org.endeavourhealth.transform.ui.helpers.NameHelper;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
@@ -20,6 +20,6 @@ public class UIPractitionerTransform {
     }
 
     private static String getGpCode(List<Identifier> identifiers) {
-    	return IdentifierHelper.getIdentifierBySystem(identifiers, FhirUri.IDENTIFIER_SYSTEM_GMC_NUMBER);
+    	return IdentifierHelper.getIdentifierBySystem(identifiers, FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER);
 		}
 }

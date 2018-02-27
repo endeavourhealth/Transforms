@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.tpp.xml.transforms;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
-import org.endeavourhealth.transform.common.FhirHelper;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.FhirHelper;
 import org.endeavourhealth.transform.tpp.xml.schema.Task;
 import org.hl7.fhir.instance.model.*;
 
@@ -15,7 +15,7 @@ public class TaskTransformer
     public static void transform(Task tppTask, List<Resource> fhirResources) throws TransformException
     {
         Order fhirTask = new Order();
-        fhirTask.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_TASK));
+        fhirTask.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_TASK));
         fhirTask.setId(tppTask.getTaskUID());
         fhirResources.add(fhirTask);
 

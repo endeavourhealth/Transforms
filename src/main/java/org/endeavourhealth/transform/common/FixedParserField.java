@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts;
+package org.endeavourhealth.transform.common;
 
 public class FixedParserField {
     private String name;

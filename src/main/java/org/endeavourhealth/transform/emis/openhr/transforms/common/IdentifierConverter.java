@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.emis.openhr.transforms.common;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.DtPatientIdentifier;
 import org.endeavourhealth.transform.emis.openhr.schema.VocPatientIdentifierType;
@@ -31,8 +31,8 @@ public class IdentifierConverter
     {
         switch (openHRType)
         {
-            case NHS: return FhirUri.IDENTIFIER_SYSTEM_NHSNUMBER;
-            case CHI: return FhirUri.IDENTIFIER_SYSTEM_CHINUMBER;
+            case NHS: return FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER;
+            case CHI: return FhirIdentifierUri.IDENTIFIER_SYSTEM_CHINUMBER;
             default: throw new TransformException("VocPatientIdentifierType not supported: " + openHRType.toString());
         }
     }

@@ -2,7 +2,8 @@ package org.endeavourhealth.transform.emis.openhr.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001Organisation;
@@ -32,10 +33,10 @@ public class OrganisationTransformer
 		Organization target = new Organization();
 
         target.setId(source.getId());
-        target.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ORGANIZATION));
+        target.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
 
         if (StringUtils.isNotBlank(source.getNationalPracticeCode()))
-            target.addIdentifier(new Identifier().setSystem(FhirUri.IDENTIFIER_SYSTEM_ODS_CODE).setValue(source.getNationalPracticeCode()));
+            target.addIdentifier(new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE).setValue(source.getNationalPracticeCode()));
 
         target.setActive(source.getCloseDate() == null);
 

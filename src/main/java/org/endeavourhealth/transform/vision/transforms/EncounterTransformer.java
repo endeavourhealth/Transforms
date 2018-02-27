@@ -37,7 +37,7 @@ public class EncounterTransformer {
                                         String version) throws Exception {
 
         Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_ENCOUNTER));
+        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
 
         String consultationID = parser.getConsultationID();
         String patientID = parser.getPatientID();

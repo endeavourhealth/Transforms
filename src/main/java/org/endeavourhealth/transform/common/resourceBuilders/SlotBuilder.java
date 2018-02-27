@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.FhirUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.DomainResource;
 import org.hl7.fhir.instance.model.Meta;
@@ -21,7 +21,7 @@ public class SlotBuilder extends ResourceBuilderBase {
         this.slot = slot;
         if (this.slot == null) {
             this.slot = new Slot();
-            this.slot.setMeta(new Meta().addProfile(FhirUri.PROFILE_URI_SLOT));
+            this.slot.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_SLOT));
         }
     }
 

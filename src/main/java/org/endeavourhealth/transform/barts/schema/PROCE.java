@@ -48,7 +48,7 @@ public class PROCE extends AbstractCsvParser {
         return super.getCell("EXTRACT_DT_TM");
     }
 
-    public CsvCell getEncounterID() {
+    public CsvCell getEncounterId() {
         return super.getCell("ENCNTR_ID");
     }
 
