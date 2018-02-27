@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,15 +64,12 @@ public class ProblemTransformer extends BartsBasisTransformer {
     }
 
     /*
-*
-*/
+    *
+    */
     public static void createConditionProblem(Problem parser,
                                               FhirResourceFiler fhirResourceFiler,
                                               BartsCsvHelper csvHelper,
                                               String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
-
         // Organisation
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
@@ -88,12 +86,8 @@ public class ProblemTransformer extends BartsBasisTransformer {
         //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED)).setDisplay(parser.getProblem());
         CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
 
-        //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())};
-
         DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
 
-        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
         Condition.ConditionVerificationStatus cvs;
         if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
@@ -106,16 +100,78 @@ public class ProblemTransformer extends BartsBasisTransformer {
             }
         }
 
-        Condition fhirCondition = new Condition();
-        createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex, cvs);
+        ConditionBuilder fhirCondition = new ConditionBuilder();
+        //createProblemResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers, ex, cvs);
+        //****************************************************************
+        fhirCondition.setId(problemResourceId.getResourceId().toString());
+
+        fhirCondition.setAsProblem(true);
+
+        //Identifiers
+        // New code
+        //Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.USUAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PROBLEM_ID, parser.getProblemId().toString());
+        //fhirCondition.addIdentifier();
+
+        //Original code>>
+        /*
+        Identifier identifiers[] = {};
+        if (identifiers != null) {
+            for (int i = 0; i < identifiers.length; i++) {
+                Identifier identifier = new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())
+                fhirCondition.getIdentifiers().addIdentifier();
+            }
+        }
+        */
+
+        //Original code>>
+        // Extensions
+        /*
+        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
+        fhirCondition.createOrUpdateEncounterExtension();
+        if (ex != null) {
+            for (int i = 0; i < ex.length; i++) {
+                fhirCondition.addExtension(ex[i]);
+            }
+        }
+        */
+
+        // set patient reference
+        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        // Date recorded
+        fhirCondition.setRecordedDate(parser.getUpdateDateTime());
+
+        // set code to coded problem
+        if (problemCode.getText() == null || problemCode.getText().length() == 0) {
+            problemCode.setText(problemCode.getCoding().get(0).getDisplay());
+        }
+        fhirCondition.setCode(problemCode);
+
+        // set category to 'complaint'
+        CodeableConcept cc = new CodeableConcept();
+        cc.addCoding().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONDITION_CATEGORY).setCode("complaint");
+        fhirCondition.setCategory(cc);
+
+        // set onset to field  to field 10 + 11
+        fhirCondition.setOnset(onsetDate);
+
+        fhirCondition.setVerificationStatus(cvs);
+
+        // set notes
+        if ( parser.getAnnotatedDisp() != null) {
+            fhirCondition.setNotes( parser.getAnnotatedDisp());
+        }
+        //****************************************************************
 
         // save resource
         if (parser.getStatusLifecycle().compareToIgnoreCase("Canceled") == 0) {
             //LOG.debug("Delete Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            //deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirCondition);
         } else {
             //LOG.debug("Save Condition(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            //savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirCondition);
         }
 
     }

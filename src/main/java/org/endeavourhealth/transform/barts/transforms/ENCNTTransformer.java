@@ -14,6 +14,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -25,6 +26,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.UUID;
 
 public class ENCNTTransformer extends BartsBasisTransformer {
@@ -86,16 +88,15 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
 
-        // Encounter resource id
-        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-        if (encounterResourceId == null
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
+        if (encounterBuilder == null
                 && !activeCell.getIntAsBoolean()) {
             // skip - encounter missing but set to delete so do nothing
             return;
         }
 
-        if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+        if (encounterBuilder == null) {
+            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
         }
 
         if (internalIdDAL == null) {
@@ -122,14 +123,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
-        EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(encounterResourceId.getResourceId().toString(), encounterIdCell);
 
         if (!activeCell.getIntAsBoolean()) {
             encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
             //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
             return;
         }
 
@@ -184,8 +183,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString()), encounterTypeCodeCell);
 
         // status
+        Date d = null;
         CsvCell status = parser.getEncounterStatusMillenniumCode();
-        encounterBuilder.setStatus(getEncounterStatus(status.getString()), status);
+        encounterBuilder.setStatus(getEncounterStatus(status.getString()), d, d, status);
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();

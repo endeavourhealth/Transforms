@@ -102,6 +102,12 @@ public class ConditionBuilder extends ResourceBuilderBase
         auditValue("encounter.reference", sourceCells);
     }
 
+    public void setCode(CodeableConcept code, CsvCell... sourceCells) {
+        this.condition.setCode(code);
+
+        auditValue("code", sourceCells);
+    }
+
     public void setPartOfProblem(Reference problemReference, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.condition, FhirExtensionUri.CONDITION_PART_OF_PROBLEM, problemReference);
 
@@ -168,13 +174,11 @@ public class ConditionBuilder extends ResourceBuilderBase
         return null;
     }
 
-    /*public void setCategory(String category, CsvCell... sourceCells) {
-        CodeableConcept cc = new CodeableConcept();
-        cc.addCoding().setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY).setCode(category);
+    public void setCategory(CodeableConcept cc, CsvCell... sourceCells) {
         this.condition.setCategory(cc);
 
-        auditValue("category.coding[0].code", sourceCells);
-    }*/
+        auditValue("category", sourceCells);
+    }
 
     public void setEndDateOrBoolean(Type type, CsvCell... sourceCells) {
         if (type == null) {

@@ -64,6 +64,40 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("status", sourceCells);
     }
 
+    // Maintain status history
+    public void setStatus(Encounter.EncounterState status, Date startPeriod, Date endPeriod, CsvCell... sourceCells) {
+        Encounter.EncounterState currentStatus = this.encounter.getStatus();
+
+        if (currentStatus != null) {
+            // If current status found move to history
+            if (startPeriod == null) {
+                if (this.encounter.getStatusHistory().size() > 0) {
+                    Encounter.EncounterStatusHistoryComponent lastHistEntry = this.encounter.getStatusHistory().get(this.encounter.getStatusHistory().size() - 1);
+                    startPeriod = lastHistEntry.getPeriod().getEnd();
+                } else {
+                    startPeriod = this.encounter.getPeriod().getStart();
+                }
+            }
+
+            if (endPeriod == null) {
+                endPeriod = new Date();
+            }
+
+            Period period = new Period();
+            period.setStart(startPeriod);
+            period.setEnd(endPeriod);
+
+            //Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent(currentStatus, period);
+
+            Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent()
+                    .setPeriod(period)
+                    .setStatus(currentStatus);
+
+            this.encounter.getStatusHistory().add(eshc);
+        }
+        setStatus(status, sourceCells);
+    }
+
     public void setAppointment(Reference appointmentReference, CsvCell... sourceCells) {
         this.encounter.setAppointment(appointmentReference);
 
@@ -117,11 +151,17 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         auditValue("period.start", sourceCells);
     }
+    public void setPeriodStart(Date startDateTime, CsvCell... sourceCells) {
+        setPeriodStart(new DateTimeType(startDateTime), sourceCells);
+    }
 
     public void setPeriodEnd(DateTimeType endDateTime, CsvCell... sourceCells) {
         getOrCreatePeriod().setStartElement(endDateTime);
 
         auditValue("period.end", sourceCells);
+    }
+    public void setPeriodEnd(Date endDateTime, CsvCell... sourceCells) {
+        setPeriodEnd(new DateTimeType(endDateTime), sourceCells);
     }
 
     /*public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
