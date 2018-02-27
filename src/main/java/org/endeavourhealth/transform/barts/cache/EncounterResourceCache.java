@@ -106,7 +106,11 @@ public class EncounterResourceCache {
 
     public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell) throws Exception {
 
-        ResourceId encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+
+        if (encounterResourceId == null) {
+            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+        }
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(encounterResourceId.getResourceId().toString(), encounterIdCell);
