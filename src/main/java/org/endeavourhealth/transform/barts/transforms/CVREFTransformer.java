@@ -4,17 +4,15 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.CVREF;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
-import java.util.Map;
 
 public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
@@ -27,28 +25,34 @@ public class CVREFTransformer {
     private static final String MEANING_TXT = "MeanTxt";
 
     public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+                                 ParserI parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper) throws Exception {
+                                 BartsCsvHelper csvHelper,
+                                 String primaryOrgOdsCode,
+                                 String primaryOrgHL7OrgOID) throws Exception {
 
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
 
-        AbstractCsvParser parser = parsers.get(CVREF.class);
-        while (parser.nextRecord()) {
+        if (parser == null) {
+            return;
+        }
 
+        while (parser.nextRecord()) {
             try {
                 transform((CVREF) parser, fhirResourceFiler);
             } catch (Exception ex) {
-                throw new TransformException(parser.getCurrentState().toString(), ex);
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
 
+    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-    private static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler ) throws Exception {
+
+
 
         CsvCell codeValueCode = parser.getCodeValueCode();
         CsvCell date = parser.getDate();
