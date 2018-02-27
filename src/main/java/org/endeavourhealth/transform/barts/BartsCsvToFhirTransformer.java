@@ -28,7 +28,8 @@ public abstract class BartsCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                                 .withHeader()
                                                 .withDelimiter('|')
-                                                .withEscape('^')
+                                                //.withEscape('^')
+                                                .withEscape((Character)null)
                                                 //.withQuoteMode(QuoteMode.NONE)
                                                 //.withQuote((char)null);
                                                 .withQuoteMode(QuoteMode.MINIMAL) //older combined files created by the SFTP Reader may have some quoting
