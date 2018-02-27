@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.barts.schema.Problem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,32 +109,14 @@ public class ProblemTransformer extends BartsBasisTransformer {
         fhirCondition.setAsProblem(true);
 
         //Identifiers
-        // New code
-        //Identifier fhirIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.USUAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PROBLEM_ID, parser.getProblemId().toString());
-        //fhirCondition.addIdentifier();
+        IdentifierBuilder ib = new IdentifierBuilder(fhirCondition);
+        ib.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID);
+        ib.setValue(parser.getProblemId().toString());
 
-        //Original code>>
-        /*
-        Identifier identifiers[] = {};
-        if (identifiers != null) {
-            for (int i = 0; i < identifiers.length; i++) {
-                Identifier identifier = new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())
-                fhirCondition.getIdentifiers().addIdentifier();
-            }
-        }
-        */
 
-        //Original code>>
         // Extensions
-        /*
-        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-        fhirCondition.createOrUpdateEncounterExtension();
-        if (ex != null) {
-            for (int i = 0; i < ex.length; i++) {
-                fhirCondition.addExtension(ex[i]);
-            }
-        }
-        */
+        Extension ex = ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding");
+        fhirCondition.addExtension(ex);
 
         // set patient reference
         fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));

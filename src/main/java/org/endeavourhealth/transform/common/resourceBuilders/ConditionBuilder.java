@@ -83,6 +83,12 @@ public class ConditionBuilder extends ResourceBuilderBase
         auditValue("patient.reference", sourceCells);
     }
 
+    public void addExtension(Extension extension, CsvCell... sourceCells) {
+        this.condition.addExtension(extension);
+
+        auditValue("extension[" + this.condition.getExtension().size() + "]", sourceCells);
+    }
+
     public void setClinician(Reference practitionerReference, CsvCell... sourceCells) {
         this.condition.setAsserter(practitionerReference);
 
