@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCacheDateRecord;
 import org.endeavourhealth.transform.barts.schema.ENCINF;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -93,15 +94,14 @@ public class ENCINFTransformer extends BartsBasisTransformer {
             EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
 
             if (encounterBuilder == null) {
-                EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-            }
-
-            if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
-                encounterBuilder.setPeriodStart(beginEffectiveCell.getDate(), beginEffectiveCell);
-            }
-
-            if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
-                encounterBuilder.setPeriodEnd(endEffectiveCell.getDate(), endEffectiveCell);
+                EncounterResourceCache.saveEncounterDates(encounterIdCell.getString(), beginEffectiveCell, endEffectiveCell);
+            } else {
+                if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
+                    encounterBuilder.setPeriodStart(beginEffectiveCell.getDate(), beginEffectiveCell);
+                }
+                if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
+                    encounterBuilder.setPeriodEnd(endEffectiveCell.getDate(), endEffectiveCell);
+                }
             }
         }
 

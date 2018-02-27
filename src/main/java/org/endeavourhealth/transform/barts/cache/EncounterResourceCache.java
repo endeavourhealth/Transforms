@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.BasisTransformer;
@@ -13,6 +14,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -25,7 +27,34 @@ public class EncounterResourceCache {
 
     private static Map<UUID, EncounterBuilder> encounterBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
+    private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
 
+
+    public static void saveEncounterDates(String encounterId, CsvCell beginDateCell, CsvCell endDateCell) throws TransformException {
+        EncounterResourceCacheDateRecord record = new EncounterResourceCacheDateRecord();
+
+        record.setEncounterId(encounterId);
+
+        if (beginDateCell != null) {
+            record.setBeginDate(beginDateCell.getDate());
+        }
+        record.setBeginDateCell(beginDateCell);
+
+        if (endDateCell != null) {
+            record.setEndDate(endDateCell.getDate());
+        }
+        record.setEndDateCell(endDateCell);
+
+        if (encounterDates.containsKey(record.getEncounterId())) {
+            encounterDates.replace(record.getEncounterId(), record);
+        } else {
+            encounterDates.put(record.getEncounterId(), record);
+        }
+    }
+
+    public static EncounterResourceCacheDateRecord getEncounterDates(String encounterId) {
+        return encounterDates.get(encounterId);
+    }
 
     public static void deleteEncounterBuilder(EncounterBuilder encounterBuilder) throws Exception {
         UUID key = UUID.fromString(encounterBuilder.getResourceId());
@@ -107,5 +136,7 @@ public class EncounterResourceCache {
 
         //clear down as everything has been saved
         encounterBuildersByUuid.clear();
+        deletedEncounterBuildersByUuid.clear();
+        encounterDates.clear();
     }
 }

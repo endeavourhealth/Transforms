@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCacheDateRecord;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -97,6 +98,15 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
+
+            EncounterResourceCacheDateRecord dateRecord = EncounterResourceCache.getEncounterDates(encounterIdCell.getString());
+
+            if (dateRecord != null && dateRecord.getBeginDate() != null) {
+                encounterBuilder.setPeriodStart(dateRecord.getBeginDate(), dateRecord.getBeginDateCell());
+            }
+            if (dateRecord != null && dateRecord.getEndDate() != null) {
+                encounterBuilder.setPeriodStart(dateRecord.getEndDate(), dateRecord.getEndDateCell());
+            }
         }
 
         if (internalIdDAL == null) {
