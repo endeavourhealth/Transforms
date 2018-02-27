@@ -80,6 +80,10 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        if (internalIdDAL == null) {
+            internalIdDAL = DalProvider.factoryInternalIdDal();
+        }
+
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell encounterIdCell = parser.getMillenniumEncounterIdentifier();
         CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
@@ -96,6 +100,13 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             return;
         }
 
+        // Patient
+        UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
+        if (patientUuid == null) {
+            LOG.warn("Skipping encounter " + encounterIdCell.getString() + " because no Person->MRN mapping could be found");
+            return;
+        }
+
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
 
@@ -109,8 +120,13 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             }
         }
 
-        if (internalIdDAL == null) {
-            internalIdDAL = DalProvider.factoryInternalIdDal();
+
+        if (!activeCell.getIntAsBoolean()) {
+            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
+            return;
         }
 
         // Save visit-id to encounter-id link
@@ -124,24 +140,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
-        // Patient
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
-        if (patientUuid == null) {
-            LOG.warn("Skipping encounter " + encounterIdCell.getString() + " because no Person->MRN mapping could be found");
-            return;
-        }
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-
-
-        if (!activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
-        }
-
 
         if (episodeResourceId == null) {
             episodeResourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
