@@ -62,6 +62,7 @@ public abstract class BartsCsvToFhirTransformer {
         //admin transformers
         LOREFTransformer.transform(version, createParser(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         PRSNLREFTransformer.transform(version, createParser(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
+        CVREFTransformer.transform(version, createParser(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
 
         //patient transformers
         PPATITransformer.transform(version, createParser(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
