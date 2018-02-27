@@ -103,7 +103,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Patient
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
         if (patientUuid == null) {
-            LOG.warn("Skipping encounter " + encounterIdCell.getString() + " because no Person->MRN mapping could be found");
+            LOG.warn("Skipping encounter " + encounterIdCell.getString() + " because no Person->MRN mapping (" + personIdCell.getString() +")could be found in file " + parser.getFilePath());
             return;
         }
 
