@@ -142,15 +142,15 @@ public class PROCETransformer extends BartsBasisTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+                codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
 
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+                codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
 
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
@@ -161,7 +161,7 @@ public class PROCETransformer extends BartsBasisTransformer {
                 codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
 
             } else {
-                throw new TransformException("Unknown DIAGN code type [" + conceptCodeType + "]");
+                throw new TransformException("Unknown PROCE code type [" + conceptCodeType + "]");
             }
 
         } else {
