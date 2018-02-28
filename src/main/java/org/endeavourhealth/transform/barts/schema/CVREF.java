@@ -36,9 +36,7 @@ public class CVREF extends AbstractCsvParser {
     public CsvCell getCodeValueCode() {
         return super.getCell("#CODE_VALUE_CD");
     }
-    public CsvCell getDate() {
-        return super.getCell("DATE");
-    }
+    public CsvCell getDate() {return super.getCell("EXTRACT_DT_TM"); }
     public CsvCell getActiveInd() {
         return super.getCell("ACTIVE_IND");
     }
