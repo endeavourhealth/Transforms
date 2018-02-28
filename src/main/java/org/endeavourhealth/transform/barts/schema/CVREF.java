@@ -22,7 +22,7 @@ public class CVREF extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         return new String[]{
                 "#CODE_VALUE_CD",
-                "DATE",
+                "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "CODE_DESC_TXT",
                 "CODE_DISP_TXT",
