@@ -86,7 +86,7 @@ public class CVREFTransformer {
 
 
                 //save to the DB
-            repository.save(mapping);
+            repository.save(mapping, fhirResourceFiler.getServiceId());
 
 
     }
