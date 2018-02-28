@@ -140,7 +140,11 @@ public class BartsCsvHelper {
 
     public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code) throws Exception {
 
-        String codeLookup = codeSet.toString() + "|" + code.toString() + "|" + serviceId.toString();
+        String codeLookup = code.toString() + "|" + serviceId.toString();
+
+        if (code.equals(0)) {
+            codeLookup = codeSet + "|" + codeLookup;
+        }
 
         //Find the code in the cache
         CernerCodeValueRef cernerCodeFromCache =  cernerCodes.get(codeLookup);
@@ -150,9 +154,15 @@ public class BartsCsvHelper {
             return cernerCodeFromCache;
         }
 
-        // get code from DB
-        CernerCodeValueRef cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
-                codeSet, code, serviceId);
+        CernerCodeValueRef cernerCodeFromDB = null;
+
+        // get code from DB (special case for a code of 0 as that is duplicated)
+        if (code.equals(0)) {
+            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
+                    codeSet, code, serviceId);
+        } else {
+            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeWithoutCodeSet(code, serviceId);
+        }
 
         //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
         if (cernerCodeFromDB == null) {
