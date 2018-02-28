@@ -21,7 +21,7 @@ public class CVREF extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-                "CODE_VALUE_CD",
+                "#CODE_VALUE_CD",
                 "DATE",
                 "ACTIVE_IND",
                 "CODE_DESC_TXT",
@@ -34,7 +34,7 @@ public class CVREF extends AbstractCsvParser {
     }
 
     public CsvCell getCodeValueCode() {
-        return super.getCell("CODE_VALUE_CD");
+        return super.getCell("#CODE_VALUE_CD");
     }
     public CsvCell getDate() {
         return super.getCell("DATE");

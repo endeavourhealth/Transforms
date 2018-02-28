@@ -12,17 +12,15 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Date;
-
 public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
 
     private static CernerCodeValueRefDalI repository = DalProvider.factoryCernerCodeValueRefDal();
-    private static final String CODE_VALUE = "Codeval";
-    private static final String CODE_SET_NBR = "CodeSetNr";
-    private static final String DISP_TXT = "DispTxt";
-    private static final String DESC_TXT = "DescTxt";
-    private static final String MEANING_TXT = "MeanTxt";
+    public static final String CODE_VALUE = "Codeval";
+    public static final String CODE_SET_NBR = "CodeSetNr";
+    public static final String DISP_TXT = "DispTxt";
+    public static final String DESC_TXT = "DescTxt";
+    public static final String MEANING_TXT = "MeanTxt";
 
     public static void transform(String version,
                                  ParserI parser,
@@ -72,10 +70,10 @@ public class CVREFTransformer {
         auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
         //TODO FYI. CernerCodeValueRef uses sql date. CsvCell uses util date. Deliberate?
-        Date mapDate = new java.sql.Date(date.getDate().getTime());
+        //Date mapDate = new java.sql.Date(date.getDate().getTime());
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getLong(),
-                                    mapDate,
+                                    date.getDate(),
                                     active,
                                     codeDescTxt.getString(),
                                     codeDispTxt.getString(),
