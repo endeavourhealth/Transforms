@@ -140,8 +140,8 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Get parent resource id using alternate key
         String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
         String parentUniqueId = createParentKey(uniqueId);
-        LOG.debug("Looking for parent location using key(LocationId=" + locationIdCell.getString() + "):" + parentUniqueId);
         if (parentUniqueId != null) {
+            LOG.debug("Looking for parent location using key(LocationId=" + locationIdCell.getString() + "):" + parentUniqueId);
             parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, parentUniqueId);
         }
 
@@ -159,7 +159,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
         if (!locationIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
             identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
         }
@@ -177,27 +177,27 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Physical type
         //fhirLocation.setPhysicalType(getPhysicalType(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString()));
         CodeableConcept physicalType = new CodeableConcept();
-        if (!bedLoc.isEmpty()) {
+        if (!bedLoc.isEmpty() && bedLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, bedLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.BED, bedLoc);
-        } else if (!roomLoc.isEmpty()) {
+        } else if (!roomLoc.isEmpty() && roomLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, roomLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.ROOM, roomLoc);
-        } else if (!nurseUnitLoc.isEmpty()) {
+        } else if (!nurseUnitLoc.isEmpty() && nurseUnitLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             //locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.NURSEUNIT, nurseUnitLoc);
-        } else if (!ambulatoryLoc.isEmpty()) {
+        } else if (!ambulatoryLoc.isEmpty() && ambulatoryLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.AMBULATORY, ambulatoryLoc);
-        } else if (!buildingLoc.isEmpty()) {
+        } else if (!buildingLoc.isEmpty() && buildingLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, buildingLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.BUILDING, buildingLoc);
-        } else if (!facilityLoc.isEmpty()) {
+        } else if (!facilityLoc.isEmpty() && facilityLoc.getLong() > 0) {
             //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
             //locationBuilder.setPhysicalType(physicalType, facilityLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.FACILITY, facilityLoc);
