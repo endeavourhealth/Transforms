@@ -286,7 +286,8 @@ public class PPATITransformer extends BartsBasisTransformer {
             case "Trace Postponed":
                 return NhsNumberVerificationStatus.TRACE_POSTPONED;
             default:
-                throw new IllegalArgumentException("Unmapped NHS number status [" + nhsNumberStatus + "]");
+                LOG.warn("Unmapped NHS number status [" + nhsNumberStatus + "]");
+                return null;
         }
     }
 
