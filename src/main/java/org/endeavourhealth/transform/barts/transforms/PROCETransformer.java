@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -89,7 +90,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!procedureIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROCEDURE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PROCEDURE_ID);
             identifierBuilder.setValue(procedureIdCell.getString(), procedureIdCell);
         }
 
@@ -108,7 +109,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!encounterSliceIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
             identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
 
@@ -116,7 +117,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!nomenclatureIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_NOMENCLATURE_ID);
             identifierBuilder.setValue(nomenclatureIdCell.getString(), nomenclatureIdCell);
         }
 

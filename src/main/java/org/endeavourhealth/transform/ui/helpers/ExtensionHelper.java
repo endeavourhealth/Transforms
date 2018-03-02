@@ -35,14 +35,17 @@ public class ExtensionHelper {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Object> T getExtensionValue(DomainResource resource, String name, Class<T> type) {
         return getExtensionValue(getExtension(resource, name), type);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Object> T getExtensionValue(Element element, String name, Class<T> type) {
         return getExtensionValue(getExtension(element, name), type);
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Object> T getExtensionValue(Extension extension, Class<T> expectedType) {
         if (extension == null)
             return null;

@@ -448,7 +448,7 @@ public class BasisTransformer {
         if (!Strings.isNullOrEmpty(cdsId)) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
             identifierBuilder.setValue(cdsId);
         }
 

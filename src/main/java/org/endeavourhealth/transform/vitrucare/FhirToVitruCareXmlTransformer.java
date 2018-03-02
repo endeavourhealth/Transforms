@@ -15,10 +15,10 @@ import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.VitruCareTransformDalI;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.vitrucare.model.ClinicalTerm;
 import org.endeavourhealth.transform.vitrucare.model.ObjectFactory;
 import org.endeavourhealth.transform.vitrucare.model.Payload;
@@ -427,6 +427,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
         return vitruCareRepository.getVitruCareId(edsPatientId);
     }
 
+    @SuppressWarnings("unchecked")
     private static String createVitruCareId(Patient fhirPatient, String configName) throws Exception {
 
         String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
