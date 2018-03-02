@@ -12,6 +12,10 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
 
@@ -21,6 +25,9 @@ public class CVREFTransformer {
     public static final String DISP_TXT = "DispTxt";
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
+
+    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
                                  ParserI parser,
@@ -49,9 +56,6 @@ public class CVREFTransformer {
 
     public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-
-
-
         CsvCell codeValueCode = parser.getCodeValueCode();
         CsvCell date = parser.getDate();
         CsvCell activeInd = parser.getActiveInd();
@@ -61,6 +65,16 @@ public class CVREFTransformer {
         CsvCell codeSetNbr = parser.getCodeSetNbr();
         CsvCell codeSetDescTxt = parser.getCodeSetDescTxt();
         CsvCell aliasNhsCdAlias = parser.getAliasNhsCdAlias();
+
+        //we need to handle multiple formats, so attempt to apply both formats here
+        Date formattedDate = null;
+        if (!date.isEmpty()) {
+            try {
+                formattedDate = formatDaily.parse(date.getString());
+            } catch (ParseException ex) {
+                formattedDate = formatBulk.parse(date.getString());
+            }
+        }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
@@ -73,7 +87,7 @@ public class CVREFTransformer {
         //Date mapDate = new java.sql.Date(date.getDate().getTime());
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getLong(),
-                                    date.getDate(),
+                                    formattedDate,
                                     active,
                                     codeDescTxt.getString(),
                                     codeDispTxt.getString(),
