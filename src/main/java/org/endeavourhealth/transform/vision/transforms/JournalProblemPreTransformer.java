@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
@@ -32,10 +33,10 @@ public class JournalProblemPreTransformer {
 
         //all this pre-transformer does is cache the observation IDs of problems, so
         //that we know what is a problem when we run process the problem links pre-transformer
-        if (parser.getSubset().equalsIgnoreCase("P")) {
-            String patientID = parser.getPatientID();
-            String observationID = parser.getObservationID();
-            String readCode = parser.getReadCode();
+        if (parser.getSubset().getString().equalsIgnoreCase("P")) {
+            CsvCell patientID = parser.getPatientID();
+            CsvCell observationID = parser.getObservationID();
+            String readCode = parser.getReadCode().getString();
             csvHelper.cacheProblemObservationGuid(patientID, observationID, readCode);
         }
     }

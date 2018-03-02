@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -9,6 +10,10 @@ import java.util.Date;
 
 public class ImmunizationBuilder extends ResourceBuilderBase
                                  implements HasCodeableConceptI {
+
+    public static final String TAG_VACCINE_CODEABLE_CONCEPT = "VaccineCode";
+    public static final String TAG_SITE_CODEABLE_CONCEPT = "SiteCode";
+    public static final String TAG_ROUTE_CODEABLE_CONCEPT = "RouteCode";
 
     private Immunization immunization = null;
 
@@ -84,6 +89,24 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         auditValue("note[0].text", sourceCells);
     }
 
+    public void setLotNumber(String lotNumber, CsvCell... sourceCells) {
+        this.immunization.setLotNumber(lotNumber);
+
+        auditValue("lotNumber", sourceCells);
+    }
+
+    public void setReason(String reason, CsvCell... sourceCells) {
+        Immunization.ImmunizationExplanationComponent immsExplanationComponent = new Immunization.ImmunizationExplanationComponent();
+        if (!Strings.isNullOrEmpty(reason)) {
+            immsExplanationComponent.addReason().setText(reason);
+        } else {
+            immsExplanationComponent.addReasonNotGiven();
+        }
+        this.immunization.setExplanation(immsExplanationComponent);
+
+        auditValue("explanation.reason", sourceCells);
+    }
+
     public void setRecordedBy(Reference practitionerReference, CsvCell... sourceCells) {
         createOrUpdateRecordedByExtension(practitionerReference, sourceCells);
     }
@@ -111,22 +134,69 @@ public class ImmunizationBuilder extends ResourceBuilderBase
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.immunization.hasVaccineCode()) {
-            throw new IllegalArgumentException("Trying to add new code to Immunization when it already has one");
-        }
 
-        CodeableConcept codeableConcept = new CodeableConcept();
-        this.immunization.setVaccineCode(codeableConcept);
-        return codeableConcept;
+        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+            if (this.immunization.hasVaccineCode()) {
+                throw new IllegalArgumentException("Trying to add new Vaccine code to Immunization when it already has one");
+            }
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            this.immunization.setVaccineCode(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+            if (this.immunization.hasSite()) {
+                throw new IllegalArgumentException("Trying to add a new Site code to Immunization when it already has one");
+            }
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            this.immunization.setSite(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+            if (this.immunization.hasRoute()) {
+                throw new IllegalArgumentException("Trying to add a new Route code to Immunization when it already has one");
+            }
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            this.immunization.setRoute(codeableConcept);
+            return codeableConcept;
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
     }
 
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "vaccineCode";
+
+        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+            return "vaccineCode";
+
+        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+            return "site";
+
+        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+            return "route";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
     }
 
     @Override
     public void removeCodeableConcepts(String tag) {
-        this.immunization.setVaccineCode(null);
+
+        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+            this.immunization.setVaccineCode(null);
+
+        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+            this.immunization.setSite(null);
+
+        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+            this.immunization.setRoute(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag " + tag);
+        }
     }
 }

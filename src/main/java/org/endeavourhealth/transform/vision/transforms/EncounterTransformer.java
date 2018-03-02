@@ -1,16 +1,20 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 public class EncounterTransformer {
@@ -36,79 +40,88 @@ public class EncounterTransformer {
                                         VisionCsvHelper csvHelper,
                                         String version) throws Exception {
 
-        Encounter fhirEncounter = new Encounter();
-        fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
+        EncounterBuilder encounterBuilder = new EncounterBuilder();
 
-        String consultationID = parser.getConsultationID();
-        String patientID = parser.getPatientID();
+        CsvCell consultationID = parser.getConsultationID();
+        CsvCell patientID = parser.getPatientID();
 
-        VisionCsvHelper.setUniqueId(fhirEncounter, patientID, consultationID);
+        VisionCsvHelper.setUniqueId(encounterBuilder, patientID, consultationID);
 
-        fhirEncounter.setPatient(csvHelper.createPatientReference(patientID));
+        encounterBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirEncounter);
+        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }
 
         //link the consultation to our episode of care
-        Reference episodeReference = csvHelper.createEpisodeReference(patientID);
-        fhirEncounter.addEpisodeOfCare(episodeReference);
-        fhirEncounter.setStatus(Encounter.EncounterState.FINISHED);
+        Reference episodeReference = csvHelper.createEpisodeReference(patientID.getString());
+        encounterBuilder.addEpisodeOfCare(episodeReference);
+        //we have no status field in the source data, but will only receive completed encounters, so we can infer this
+        encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-        String clinicianID = parser.getClinicianUserID();
-        if (!Strings.isNullOrEmpty(clinicianID)) {
-            Encounter.EncounterParticipantComponent fhirParticipant = fhirEncounter.addParticipant();
-            fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PRIMARY_PERFORMER));
-            fhirParticipant.setIndividual(csvHelper.createPractitionerReference(clinicianID));
+        CsvCell clinicianID = parser.getClinicianUserID();
+        if (!clinicianID.isEmpty()) {
+            String cleanUserID = csvHelper.cleanUserId(clinicianID.getString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(cleanUserID);
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, clinicianID);
         }
 
-        Date enteredDateTime = parser.getEnteredDateTime();
-        if (enteredDateTime != null) {
-            fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.RECORDED_DATE, new DateTimeType(enteredDateTime)));
+        //NOTE: there is no recorded date for Vision encounter extracts
+
+        CsvCell effectiveDate = parser.getEffectiveDate();
+        CsvCell effectiveTime = parser.getEffectiveTime();
+        Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(effectiveDate, effectiveTime);
+        if (effectiveDateTime != null) {
+            encounterBuilder.setPeriodStart(effectiveDateTime, effectiveDate, effectiveTime);
         }
 
-        Date date = parser.getEffectiveDate();
-        String precision = "YMD";
-        Period fhirPeriod = createPeriod(date, precision);
-        if (fhirPeriod != null) {
-            fhirEncounter.setPeriod(fhirPeriod);
+        CsvCell organisationID = parser.getOrganisationID();
+        if (!organisationID.isEmpty()) {
+            encounterBuilder.setServiceProvider(csvHelper.createOrganisationReference(organisationID.getString()), organisationID);
         }
 
-        String organisationID = parser.getOrganisationID();
-        fhirEncounter.setServiceProvider(csvHelper.createOrganisationReference(organisationID));
-
-        String sessionTypeCode = parser.getConsultationSessionTypeCode();
+        CsvCell sessionTypeCode = parser.getConsultationSessionTypeCode();
         if (sessionTypeCode != null) {
-            String term = convertSessionTypeCode(sessionTypeCode);
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(term);
-            fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_SOURCE, fhirCodeableConcept));
+            String term = convertSessionTypeCode(sessionTypeCode.getString());
+            if (!Strings.isNullOrEmpty(term)) {
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+                codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_SOURCE);
+                codeableConceptBuilder.setCodingCode(sessionTypeCode.getString(), sessionTypeCode);
+                codeableConceptBuilder.setCodingDisplay(term);
+            }
         }
 
-        String locationTypeCode = parser.getConsultationLocationTypeCode();
-        if (locationTypeCode != null) {
-            String term = convertLocationTypeCode(locationTypeCode);
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(term);
-            fhirEncounter.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE, fhirCodeableConcept));
+        CsvCell locationTypeCode = parser.getConsultationLocationTypeCode();
+        if (!locationTypeCode.isEmpty()) {
+            String term = convertLocationTypeCode(locationTypeCode.getString());
+            if (!Strings.isNullOrEmpty(term)) {
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+                codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
+                codeableConceptBuilder.setCodingCode(locationTypeCode.getString(), locationTypeCode);
+                codeableConceptBuilder.setCodingDisplay(term);
+            }
         }
 
-        //carry over linked items from any previous instance of this encounter
-        List<Reference> previousReferences = VisionCsvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
-        if (previousReferences != null && !previousReferences.isEmpty()) {
-            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
-        }
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-        //apply any linked items from this extract. Encounter links set-up in Journal pre-transformer
-        List<String> linkedResources = csvHelper.getAndRemoveConsultationRelationships(consultationID, patientID);
-        if (linkedResources != null) {
-            List<Reference> references = ReferenceHelper.createReferences(linkedResources);
-            csvHelper.addLinkedItemsToResource(fhirEncounter, references, FhirExtensionUri.ENCOUNTER_COMPONENTS);
-        }
+        //carry over linked items from any previous instance of this consultation
+        //TODO - work out - prev and new in EMIS version
+        //carry over linked items from any previous instance of this encounter.
+//        List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
+//        if (previousReferences != null && !previousReferences.isEmpty()) {
+//            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
+//        }
+        //ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
+        //containedListBuilder.addReferences(previousReferences);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirEncounter);
+        //apply any new linked items from this extract. Encounter links set-up in Journal pre-transformer
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(newLinkedResources);
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
-
 
     private static Period createPeriod(Date date, String precision) throws Exception {
         if (date == null) {

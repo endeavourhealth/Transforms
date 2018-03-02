@@ -141,6 +141,17 @@ public class ConditionBuilder extends ResourceBuilderBase
         createOrUpdateIsReviewExtension(isReview, sourceCells);
     }
 
+    public void setEpisodicity(String episodicity, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(episodicity)) {
+            ExtensionConverter.removeExtension(this.condition, FhirExtensionUri.PROBLEM_EPISODICITY);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.condition, FhirExtensionUri.PROBLEM_EPISODICITY, episodicity);
+
+            auditStringExtension(extension, sourceCells);
+        }
+    }
+
     public void setIsConfidential(boolean isConfidential, CsvCell... sourceCells) {
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }

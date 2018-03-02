@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.vision.schema;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
 import java.util.UUID;
@@ -17,7 +18,7 @@ public class Staff extends AbstractCsvParser {
                 "TITLE",
                 "SEX",
                 "SERVICE_ID"),
-                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
@@ -45,7 +46,31 @@ public class Staff extends AbstractCsvParser {
         return true;
     }
 
-    public String getUserID() {
+    public CsvCell getUserID() {return super.getCell("ID");}
+    public CsvCell getOrganisationID() {
+        return super.getCell("SERVICE_ID");
+    }
+    public CsvCell getTitle() {
+        return super.getCell("TITLE");
+    }
+    public CsvCell getSex() {
+        return super.getCell("SEX");
+    }
+    public CsvCell getGivenName() {
+        return super.getCell("FORENAME");
+    }
+    public CsvCell getSurname() {
+        return super.getCell("SURNAME");
+    }
+    public CsvCell getGMPCode() {
+        return super.getCell("GMP_CODE");
+    }
+    public CsvCell getJobCategoryCode() {
+        return super.getCell("HCP_TYPE");
+    }
+
+
+    /* public String getUserID() {
         return super.getString("ID");
     }
     public String getOrganisationID() {
@@ -68,5 +93,5 @@ public class Staff extends AbstractCsvParser {
     }
     public String getJobCategoryCode() {
         return super.getString("HCP_TYPE");
-    }
+    }*/
 }

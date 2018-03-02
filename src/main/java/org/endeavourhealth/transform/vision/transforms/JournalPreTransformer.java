@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
@@ -40,45 +41,45 @@ public class JournalPreTransformer {
 
     private static void processLine(Journal parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
-        if (parser.getAction().equalsIgnoreCase("D")) {
+        if (parser.getAction().getString().equalsIgnoreCase("D")) {
             return;
         }
 
         ResourceType resourceType = getTargetResourceType(parser);
-        String observationID = parser.getObservationID();
-        String patientID = parser.getPatientID();
-        String readCode = parser.getReadCode();
+        CsvCell observationID = parser.getObservationID();
+        CsvCell patientID = parser.getPatientID();
+        String readCode = parser.getReadCode().getString();
 
         //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
         if (resourceType != ResourceType.Condition) {
             //extract actual problem links
-            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks(), patientID, csvHelper);
+            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks().getString(), patientID.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(problemLinkIDs)) {
                 String[] linkIDs = problemLinkIDs.split("[|]");
                 for (String problemID : linkIDs) {
                     //store the problem/observation relationship in the helper
                     csvHelper.cacheProblemRelationship(problemID,
-                            patientID,
-                            observationID,
+                            patientID.getString(),
+                            observationID.getString(),
                             resourceType);
                 }
             }
         }
 
         //linked consultation encounter record
-        String consultationID = extractEncounterLinkID (parser.getLinks());
+        String consultationID = extractEncounterLinkID (parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
-            csvHelper.cacheConsultationRelationship(consultationID,
-                    patientID,
-                    observationID,
+            csvHelper.cacheNewConsultationChildRelationship(consultationID,
+                    patientID.getString(),
+                    observationID.getString(),
                     resourceType);
         }
 
         //medication issue record - set linked drug record first and last issue dates
         if (resourceType == ResourceType.MedicationOrder) {
-            String drugRecordID = extractDrugRecordLinkID (parser.getLinks());
+            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString());
             if (!Strings.isNullOrEmpty(drugRecordID)) {
-                Date effectiveDate = parser.getEffectiveDateTime();
+                Date effectiveDate = parser.getEffectiveDateTime().getDate();
                 String effectiveDatePrecision = "YMD";
                 DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
                 csvHelper.cacheDrugRecordDate(drugRecordID, patientID, dateTime);
@@ -87,7 +88,7 @@ public class JournalPreTransformer {
 
         //try to get Ethnicity from Journal
         if (readCode.startsWith("9S")) {
-            Date effectiveDate = parser.getEffectiveDateTime();
+            Date effectiveDate = parser.getEffectiveDateTime().getDate();
             String effectiveDatePrecision = "YMD";
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
@@ -99,7 +100,7 @@ public class JournalPreTransformer {
 
         //try to get Marital status from Journal
         if (readCode.startsWith("133")) {
-            Date effectiveDate = parser.getEffectiveDateTime();
+            Date effectiveDate = parser.getEffectiveDateTime().getDate();
             String effectiveDatePrecision = "YMD";
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 

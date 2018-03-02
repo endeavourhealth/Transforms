@@ -103,6 +103,10 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
         super.createOrUpdateRecordedDateExtension(date, sourceCells);
     }
 
+    public void setEncounter(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateEncounterExtension(reference, sourceCells);
+    }
+
     public void setAuthorisationType(MedicationAuthorisationType fhirAuthorisationType, CsvCell... sourceCells) {
         Coding fhirCoding = CodingHelper.createCoding(fhirAuthorisationType);
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE, fhirCoding);

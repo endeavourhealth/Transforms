@@ -2,12 +2,10 @@ package org.endeavourhealth.transform.vision.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
-import java.util.Date;
 import java.util.UUID;
-
-import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
 
 public class Referral extends AbstractCsvParser {
 
@@ -28,7 +26,7 @@ public class Referral extends AbstractCsvParser {
                 "LINKS",
                 "SERVICE_ID",
                 "ACTION"),
-                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
@@ -64,38 +62,72 @@ public class Referral extends AbstractCsvParser {
         return true;
     }
 
-    public String getPatientID() {
-        return super.getString("PID");
+    public CsvCell getPatientID() {
+        return super.getCell("PID");
     }
-    public String getReferralID() {
-        return super.getString("ID");
+    public CsvCell getReferralID() {
+        return super.getCell("ID");
     }
-    public Date getReferralDate() throws TransformException {
-        return super.getDate("DATE");
+    public CsvCell getReferralDate() throws TransformException {
+        return super.getCell("DATE");
     }
-    public Date getActionDate() throws TransformException {
-        return super.getDate("ACTION_DATE");
+    public CsvCell getActionDate() throws TransformException {
+        return super.getCell("ACTION_DATE");
     }
-    public String getReferralUserID() {
-        return cleanUserId(super.getString("HCP"));
+    public CsvCell getReferralUserID() {
+        return super.getCell("HCP");
     }
-    public String getReferralUserType() {
-        return super.getString("HCP_TYPE");
+    public CsvCell getReferralUserType() {
+        return super.getCell("HCP_TYPE");
     }
-    public String getReferralDestOrgID() {
-        return super.getString("TO_HCP");
+    public CsvCell getReferralDestOrgID() {
+        return super.getCell("TO_HCP");
     }
-    public String getOrganisationID() {
-        return super.getString("SERVICE_ID");
+    public CsvCell getOrganisationID() {
+        return super.getCell("SERVICE_ID");
     }
-    public String getAction() {
-        return super.getString("ACTION");
+    public CsvCell getAction() {
+        return super.getCell("ACTION");
     }
-    public String getReferralType() {
-        return super.getString("TYPE");
+    public CsvCell getReferralType() {
+        return super.getCell("TYPE");
     }
-    public String getLinks() {
-        return super.getString("LINKS");
+    public CsvCell getLinks() {
+        return super.getCell("LINKS");
     }
+
+//    public String getPatientID() {
+//        return super.getString("PID");
+//    }
+//    public String getReferralID() {
+//        return super.getString("ID");
+//    }
+//    public Date getReferralDate() throws TransformException {
+//        return super.getDate("DATE");
+//    }
+//    public Date getActionDate() throws TransformException {
+//        return super.getDate("ACTION_DATE");
+//    }
+//    public String getReferralUserID() {
+//        return cleanUserId(super.getString("HCP"));
+//    }
+//    public String getReferralUserType() {
+//        return super.getString("HCP_TYPE");
+//    }
+//    public String getReferralDestOrgID() {
+//        return super.getString("TO_HCP");
+//    }
+//    public String getOrganisationID() {
+//        return super.getString("SERVICE_ID");
+//    }
+//    public String getAction() {
+//        return super.getString("ACTION");
+//    }
+//    public String getReferralType() {
+//        return super.getString("TYPE");
+//    }
+//    public String getLinks() {
+//        return super.getString("LINKS");
+//    }
 
 }

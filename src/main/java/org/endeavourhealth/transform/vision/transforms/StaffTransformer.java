@@ -1,14 +1,15 @@
 package org.endeavourhealth.transform.vision.transforms;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Staff;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Meta;
-import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Map;
 
@@ -31,6 +32,52 @@ public class StaffTransformer {
     }
 
     private static void createResource(Staff parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       VisionCsvHelper csvHelper) throws Exception {
+
+        PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
+        CsvCell userID = parser.getUserID();
+        practitionerBuilder.setId(userID.getString(), userID);
+
+        CsvCell title = parser.getTitle();
+        CsvCell givenName = parser.getGivenName();
+        CsvCell surname = parser.getSurname();
+
+        NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+        nameBuilder.addPrefix(title.getString(), title);
+        nameBuilder.addGiven(givenName.getString(), givenName);
+        nameBuilder.addFamily(surname.getString(), surname);
+
+        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
+        CsvCell orgID = parser.getOrganisationID();
+        Reference organisationReference = csvHelper.createOrganisationReference(orgID.getString());
+        roleBuilder.setRoleManagingOrganisation(organisationReference, orgID);
+
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+
+        CsvCell roleCode = parser.getJobCategoryCode();
+        if (!roleCode.isEmpty()) {
+            codeableConceptBuilder.setCodingCode(roleCode.getString(), roleCode);
+        }
+
+        String roleName = getJobCategoryName(roleCode.getString());
+        if (!roleName.isEmpty()) {
+            codeableConceptBuilder.setCodingDisplay(roleName);   //don't pass in a cell as roleName was derived
+        }
+
+        CsvCell gmpCode = parser.getGMPCode();
+        if (!gmpCode.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+            identifierBuilder.setValue(gmpCode.getString(), gmpCode);
+        }
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
+    }
+
+    /*private static void createResource(Staff parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        VisionCsvHelper csvHelper) throws Exception {
 
@@ -76,7 +123,7 @@ public class StaffTransformer {
         fhirRole.setRole(CodeableConceptHelper.createCodeableConcept(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES, roleName, roleCode));
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirPractitioner);
-    }
+    }*/
 
 
     public static String getJobCategoryName(String jobCategoryCode) {

@@ -2022,7 +2022,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(immunizationBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(immunizationBuilder, false, codeId, ImmunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT, csvHelper);
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {

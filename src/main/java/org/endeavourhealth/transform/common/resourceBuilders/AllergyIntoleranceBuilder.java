@@ -56,6 +56,18 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
 
     }
 
+    public void setSeverity(AllergyIntolerance.AllergyIntoleranceSeverity allergyIntoleranceSeverity, CsvCell... sourceCells) {
+        this.allergyIntolerance.addReaction().setSeverity(allergyIntoleranceSeverity);
+
+        auditValue("severity", sourceCells);
+    }
+
+    public void setCertainty(AllergyIntolerance.AllergyIntoleranceCertainty allergyIntoleranceCertainty, CsvCell... sourceCells) {
+        this.allergyIntolerance.addReaction().setCertainty(allergyIntoleranceCertainty);
+
+        auditValue("certainty", sourceCells);
+    }
+
     public void setNote(String text, CsvCell... sourceCells) {
         Annotation annotation = AnnotationHelper.createAnnotation(text);
         this.allergyIntolerance.setNote(annotation);

@@ -1,20 +1,19 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Referral;
-import org.hl7.fhir.instance.model.Meta;
-import org.hl7.fhir.instance.model.ReferralRequest;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.Map;
 
 import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkID;
@@ -43,69 +42,51 @@ public class ReferralTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        VisionCsvHelper csvHelper) throws Exception {
 
-        ReferralRequest fhirReferral = new ReferralRequest();
-        fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
 
-        String referralID = parser.getReferralID();
-        String patientID = parser.getPatientID();
+        ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder();
+        CsvCell referralID = parser.getReferralID();
+        CsvCell patientID = parser.getPatientID();
 
-        VisionCsvHelper.setUniqueId(fhirReferral, patientID, referralID);
+        VisionCsvHelper.setUniqueId(referralRequestBuilder, patientID, referralID);
 
-        fhirReferral.setPatient(csvHelper.createPatientReference(patientID));
+        Reference patientReference = csvHelper.createPatientReference(patientID);
+        referralRequestBuilder.setPatient(patientReference, patientID);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().equalsIgnoreCase("D")) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), fhirReferral);
+        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
             return;
         }
 
-        Date referralDate = parser.getReferralDate();
-        fhirReferral.setDate(referralDate);
+        CsvCell referralDate = parser.getReferralDate();
+        referralRequestBuilder.setDate(EmisDateTimeHelper.createDateTimeType(referralDate.getDate(), "YMD"), referralDate);
 
-        //TODO: no referral urgency?
-//        String urgency = parser.getReferralUrgency();
-//        if (!Strings.isNullOrEmpty(urgency)) {
-//            ReferralPriority fhirPriority = convertUrgency(urgency);
-//            if (fhirPriority != null) {
-//                fhirReferral.setPriority(CodeableConceptHelper.createCodeableConcept(fhirPriority));
-//            } else {
-//                //if the CSV urgency couldn't be mapped to a FHIR priority, then we can use free-text
-//                LOG.warn("Unmapped Emis referral priority {}", urgency);
-//                fhirReferral.setPriority(CodeableConceptHelper.createCodeableConcept(urgency));
-//            }
-//        }
-
-        String referralUserID = parser.getReferralUserID();
-        if (!Strings.isNullOrEmpty(referralUserID)) {
-            fhirReferral.setRequester(csvHelper.createPractitionerReference(referralUserID));
+        CsvCell referralUserID = parser.getReferralUserID();
+        if (!referralUserID.isEmpty()) {
+            String cleanReferralUserID = csvHelper.cleanUserId(referralUserID.getString());
+            referralRequestBuilder.setRequester(csvHelper.createPractitionerReference(cleanReferralUserID));
         }
 
-        String referralType = parser.getReferralType();
-        if (!Strings.isNullOrEmpty(referralType)) {
-            ReferralType type = convertReferralType(referralType);
+        CsvCell referralType = parser.getReferralType();
+        if (!referralType.isEmpty()) {
+            ReferralType type = convertReferralType(referralType.getString());
             if (type != null) {
-                fhirReferral.setType(CodeableConceptHelper.createCodeableConcept(type));
-            } else {
-                LOG.warn("Unmapped Vision referral type {}", referralType);
-                fhirReferral.setType(CodeableConceptHelper.createCodeableConcept(referralType));
+                referralRequestBuilder.setType(type);
             }
         }
 
-        String recipientOrgID = parser.getReferralDestOrgID();
-        if (!Strings.isNullOrEmpty(recipientOrgID)) {
-            fhirReferral.addRecipient(csvHelper.createOrganisationReference(recipientOrgID));
+        CsvCell recipientOrgID = parser.getReferralDestOrgID();
+        if (!recipientOrgID.isEmpty()) {
+            referralRequestBuilder.addRecipient(csvHelper.createOrganisationReference(recipientOrgID.getString()));
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks());
+        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
-            fhirReferral.setEncounter(csvHelper.createEncounterReference(consultationID, patientID));
+            referralRequestBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
 
-        //TODO:  no linked documents ?
-        //addDocumentExtension(fhirReferral, parser);
-
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), fhirReferral);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), referralRequestBuilder);
     }
 
     private static ReferralType convertReferralType(String type) throws Exception {

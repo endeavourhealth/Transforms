@@ -56,6 +56,10 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         super.createOrUpdateRecordedByExtension(reference, sourceCells);
     }
 
+    public void setEncounter(Reference reference, CsvCell... sourceCells) {
+        super.createOrUpdateEncounterExtension(reference, sourceCells);
+    }
+
     public void setMedicationStatementReference(Reference medicationStatementReference, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.medicationOrder, FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, medicationStatementReference);
 

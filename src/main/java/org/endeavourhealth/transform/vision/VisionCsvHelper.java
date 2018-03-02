@@ -11,8 +11,11 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,11 +35,10 @@ public class VisionCsvHelper {
 
     //some resources are referred to by others, so we cache them here for when we need them
     private Map<String, List<String>> observationChildMap = new HashMap<>();
-    private Map<String, List<String>> problemChildMap = new HashMap<>();
-    private Map<String, List<String>> consultationChildMap = new HashMap<>();
+    private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
+    private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
     private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
-    private Map<String, List<Observation.ObservationComponentComponent>> bpComponentMap = new HashMap<>();
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
@@ -48,6 +50,13 @@ public class VisionCsvHelper {
      * to ensure globally unique IDs for all resources, a new ID is created
      * from the patientGuid and sourceGuid (e.g. observationGuid)
      */
+    public static String createUniqueId(CsvCell patientGuid, CsvCell sourceGuid) {
+        if (sourceGuid == null) {
+            return patientGuid.getString();
+        } else {
+            return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
+        }
+    }
     public static String createUniqueId(String patientGuid, String sourceGuid) {
         if (sourceGuid == null) {
             return patientGuid;
@@ -55,6 +64,7 @@ public class VisionCsvHelper {
             return patientGuid + ID_DELIMITER + sourceGuid;
         }
     }
+
     private static String getPatientGuidFromUniqueId(String uniqueId) {
         String[] toks = uniqueId.split(ID_DELIMITER);
         if (toks.length == 1
@@ -65,12 +75,13 @@ public class VisionCsvHelper {
         }
     }
 
-    public static void setUniqueId(Resource resource, String patientGuid, String sourceGuid) {
-        resource.setId(createUniqueId(patientGuid, sourceGuid));
+    public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
+        String resourceId = createUniqueId(patientGuid, sourceGuid);
+        resourceBuilder.setId(resourceId, patientGuid, sourceGuid);
     }
 
     /**
-     * admin-type resources just use the EMIS CSV GUID as their reference
+     * admin-type resources just use the Vision CSV GUID as their reference
      */
     public Reference createLocationReference(String locationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid);
@@ -86,38 +97,45 @@ public class VisionCsvHelper {
      * patient-type resources must include the patient GUID are part of the unique ID in the reference
      * because the EMIS GUIDs for things like Obs are only unique within that patient record itself
      */
-    public Reference createPatientReference(String patientGuid) throws Exception {
+    public Reference createPatientReference(CsvCell patientGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
     }
 
+    public Reference createConditionReference(String problemGuid, String patientGuid) {
+        if (problemGuid.isEmpty()) {
+            throw new IllegalArgumentException("Missing problemGuid");
+        }
+        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
+    }
+
     public Reference createEncounterReference(String encounterGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(encounterGuid)) {
+        if (encounterGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing Encounter ID");
         }
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
-    public Reference createObservationReference(String observationGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(observationGuid)) {
+    public Reference createObservationReference(CsvCell observationGuid, CsvCell patientGuid) throws Exception {
+        if (observationGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing observationGuid");
         }
         return ReferenceHelper.createReference(ResourceType.Observation, createUniqueId(patientGuid, observationGuid));
     }
-    public Reference createMedicationStatementReference(String medicationStatementGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(medicationStatementGuid)) {
+    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) throws Exception {
+        if (medicationStatementGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing MedicationStatement ID");
         }
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
     }
 
-    public List<String> getAndRemoveObservationParentRelationships(String parentObservationGuid, String patientGuid) {
+    public List<String> getAndRemoveObservationParentRelationships(CsvCell parentObservationGuid, CsvCell patientGuid) {
         return observationChildMap.remove(createUniqueId(patientGuid, parentObservationGuid));
     }
 
-    public boolean hasChildObservations(String parentObservationGuid, String patientGuid) {
+    public boolean hasChildObservations(CsvCell parentObservationGuid, CsvCell patientGuid) {
         return observationChildMap.containsKey(createUniqueId(patientGuid, parentObservationGuid));
     }
 
-    public void cacheObservationParentRelationship(String parentObservationGuid, String patientGuid, String observationGuid) {
+    public void cacheObservationParentRelationship(CsvCell parentObservationGuid, CsvCell patientGuid, CsvCell observationGuid) {
 
         List<String> list = observationChildMap.get(createUniqueId(patientGuid, parentObservationGuid));
         if (list == null) {
@@ -223,13 +241,8 @@ public class VisionCsvHelper {
         }
     }
 
-    public List<String> getAndRemoveProblemRelationships(String problemGuid, String patientGuid) {
-        return problemChildMap.remove(createUniqueId(patientGuid, problemGuid));
-    }
-
-
-    public Map<String, List<String>> getProblemChildMap() {
-        return problemChildMap;
+    public ReferenceList getAndRemoveNewProblemChildren(CsvCell problemGuid, CsvCell patientGuid) {
+        return newProblemChildren.remove(createUniqueId(patientGuid, problemGuid));
     }
 
     public void cacheProblemRelationship(String problemObservationGuid,
@@ -237,18 +250,20 @@ public class VisionCsvHelper {
                                          String resourceGuid,
                                          ResourceType resourceType) {
 
-        if (Strings.isNullOrEmpty(problemObservationGuid)) {
+        if (problemObservationGuid.isEmpty()) {
             return;
         }
 
-        List<String> list = problemChildMap.get(createUniqueId(patientGuid, problemObservationGuid));
-        if (list == null) {
-            list = new ArrayList<>();
-            problemChildMap.put(createUniqueId(patientGuid, problemObservationGuid), list);
+        String problemLocalUniqueId = createUniqueId(patientGuid, problemObservationGuid);
+        ReferenceList referenceList = newProblemChildren.get(problemLocalUniqueId);
+        if (referenceList == null) {
+            referenceList = new ReferenceList();
+            newProblemChildren.put(problemLocalUniqueId, referenceList);
         }
 
-        String resourceReference = ReferenceHelper.createResourceReference(resourceType, createUniqueId(patientGuid, resourceGuid));
-        list.add(resourceReference);
+        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        Reference reference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        referenceList.add(reference); //, problemObservationGuid);
     }
 
     /**
@@ -369,8 +384,8 @@ public class VisionCsvHelper {
         return ret;
     }
 
-    public void cacheDrugRecordDate(String drugRecordGuid, String patientGuid, DateTimeType dateTime) {
-        String uniqueId = createUniqueId(patientGuid, drugRecordGuid);
+    public void cacheDrugRecordDate(String drugRecordGuid, CsvCell patientGuid, DateTimeType dateTime) {
+        String uniqueId = createUniqueId(patientGuid.getString(), drugRecordGuid);
 
         Date date = dateTime.getValue();
 
@@ -387,32 +402,15 @@ public class VisionCsvHelper {
         }
     }
 
-    public DateType getDrugRecordFirstIssueDate(String drugRecordId, String patientGuid) {
+    public DateType getDrugRecordFirstIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         return drugRecordFirstIssueDateMap.remove(createUniqueId(patientGuid, drugRecordId));
     }
 
-    public DateType getDrugRecordLastIssueDate(String drugRecordId, String patientGuid) {
+    public DateType getDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         return drugRecordLastIssueDateMap.remove(createUniqueId(patientGuid, drugRecordId));
     }
 
-
-
-    public void cacheBpComponent(String parentObservationGuid, String patientGuid, Observation.ObservationComponentComponent component) {
-        String key = createUniqueId(patientGuid, parentObservationGuid);
-        List<Observation.ObservationComponentComponent> list = bpComponentMap.get(key);
-        if (list == null) {
-            list = new ArrayList<>();
-            bpComponentMap.put(key, list);
-        }
-        list.add(component);
-    }
-
-    public List<Observation.ObservationComponentComponent> findBpComponents(String observationGuid, String patientGuid) {
-        String key = createUniqueId(patientGuid, observationGuid);
-        return bpComponentMap.remove(key);
-    }
-
-    public void cacheEthnicity(String patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
+    public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
         DateAndCode dc = ethnicityMap.get(createUniqueId(patientGuid, null));
         if (dc == null
             || dc.isBefore(fhirDate)) {
@@ -420,7 +418,7 @@ public class VisionCsvHelper {
         }
     }
 
-    public CodeableConcept findEthnicity(String patientGuid) {
+    public CodeableConcept findEthnicity(CsvCell patientGuid) {
         DateAndCode dc = ethnicityMap.remove(createUniqueId(patientGuid, null));
         if (dc != null) {
             return dc.getCodeableConcept();
@@ -429,7 +427,7 @@ public class VisionCsvHelper {
         }
     }
 
-    public void cacheMaritalStatus(String patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
+    public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
         DateAndCode dc = maritalStatusMap.get(createUniqueId(patientGuid, null));
         if (dc == null
                 || dc.isBefore(fhirDate)) {
@@ -437,7 +435,7 @@ public class VisionCsvHelper {
         }
     }
 
-    public CodeableConcept findMaritalStatus(String patientGuid) {
+    public CodeableConcept findMaritalStatus(CsvCell patientGuid) {
         DateAndCode dc = maritalStatusMap.remove(createUniqueId(patientGuid, null));
         if (dc != null) {
             return dc.getCodeableConcept();
@@ -446,35 +444,29 @@ public class VisionCsvHelper {
         }
     }
 
-    public Type createConditionReference(String problemGuid, String patientGuid) {
-        if (Strings.isNullOrEmpty(problemGuid)) {
-            throw new IllegalArgumentException("Missing problemGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
-    }
+    public void cacheNewConsultationChildRelationship(String consultationGuid,
+                                                      String patientGuid,
+                                                      String resourceGuid,
+                                                      ResourceType resourceType) {
 
-    public void cacheConsultationRelationship(String consultationGuid, String patientGuid, String resourceGuid, ResourceType resourceType) {
-        if (Strings.isNullOrEmpty(consultationGuid)) {
+        if (consultationGuid.isEmpty()) {
             return;
         }
 
-        List<String> list = consultationChildMap.get(createUniqueId(patientGuid, consultationGuid));
+        String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
+        ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ArrayList<>();
-            consultationChildMap.put(createUniqueId(patientGuid, consultationGuid), list);
+            list = new ReferenceList();
+            consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
-        String resourceReference = ReferenceHelper.createResourceReference(resourceType, createUniqueId(patientGuid, resourceGuid));
-        list.add(resourceReference);
+        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        list.add(resourceReference); //, consultationGuid);
     }
 
-    public List<String> getAndRemoveConsultationRelationships(String consultationGuid, String patientGuid) {
-        return consultationChildMap.remove(createUniqueId(patientGuid, consultationGuid));
-    }
-
-    public void processRemainingConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (Map.Entry<String, List<String>> entry : consultationChildMap.entrySet())
-            addRelationshipsToExistingResource(entry.getKey(), ResourceType.Encounter, entry.getValue(), fhirResourceFiler, FhirExtensionUri.ENCOUNTER_COMPONENTS);
+    public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
+        return consultationNewChildMap.remove(encounterSourceId);
     }
 
     public Reference createEpisodeReference(String patientGuid) {
@@ -482,7 +474,7 @@ public class VisionCsvHelper {
         return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid);
     }
 
-    public void cacheProblemObservationGuid(String patientGuid, String problemGuid, String readCode) {
+    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
         problemReadCodes.put(createUniqueId(patientGuid, problemGuid), readCode);
     }
 
@@ -490,7 +482,7 @@ public class VisionCsvHelper {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
     }
 
-    public String findProblemObservationReadCode(String patientGuid, String problemGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public String findProblemObservationReadCode(CsvCell patientGuid, CsvCell problemGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         String locallyUniqueId = createUniqueId(patientGuid, problemGuid);
 
@@ -611,5 +603,20 @@ public class VisionCsvHelper {
             }
 
         }
+    }
+
+    public static String cleanUserId(String data) {
+        if (!Strings.isNullOrEmpty(data)) {
+            if (data.contains(":STAFF:")) {
+                data = data.replace(":","").replace("STAFF","");
+                return data;
+            }
+            if (data.contains(":EXT_STAFF:")) {
+                data = data.substring(0,data.indexOf(","));
+                data = data.replace(":","").replace("EXT_STAFF","").replace(",", "");
+                return data;
+            }
+        }
+        return data;
     }
 }

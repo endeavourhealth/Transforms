@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.vision.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
-import java.util.Date;
 import java.util.UUID;
-
-import static org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer.cleanUserId;
 
 public class Encounter extends AbstractCsvParser {
 
@@ -27,7 +24,7 @@ public class Encounter extends AbstractCsvParser {
                 "PRACT_NUMBER",
                 "SERVICE_ID",
                 "ACTION"),
-                VisionCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD,
+                VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
@@ -62,36 +59,46 @@ public class Encounter extends AbstractCsvParser {
         return true;
     }
 
-    public String getPatientID() {
-        return super.getString("PID");
-    }
-    public String getConsultationID() {
-        return super.getString("ID");
-    }
+    public CsvCell getPatientID() { return super.getCell("PID"); }
+    public CsvCell getConsultationID() { return super.getCell("ID"); }
+    public CsvCell getOrganisationID() { return super.getCell("SERVICE_ID"); }
+    public CsvCell getEffectiveDate() {return super.getCell("DATE"); }
+    public CsvCell getEffectiveTime() {return super.getCell("TIME"); }
+    public CsvCell getClinicianUserID() { return super.getCell("HCP"); }
+    public CsvCell getConsultationSessionTypeCode() { return super.getCell("SESSION"); }
+    public CsvCell getConsultationLocationTypeCode() { return super.getCell("LOCATION"); }
+    public CsvCell getAction () { return super.getCell("ACTION"); }
 
-    public String getOrganisationID() {
-        return super.getString("SERVICE_ID");
-    }
-    public Date getEffectiveDate() throws TransformException {
-        return super.getDate("DATE");
-    }
-
-    public Date getEnteredDate() throws TransformException {
-        return super.getDate("DATE");
-    }
-    public Date getEnteredDateTime() throws TransformException {
-        return super.getDateTime("DATE", "TIME");
-    }
-
-    public String getClinicianUserID() {
-        return cleanUserId(super.getString("HCP"));
-    }
-
-    public String getConsultationSessionTypeCode() { return super.getString("SESSION"); }
-
-    public String getConsultationLocationTypeCode() { return super.getString("LOCATION"); }
-
-    public String getAction () { return super.getString("ACTION");
-    }
+//    public String getPatientID() {
+//        return super.getString("PID");
+//    }
+//    public String getConsultationID() {
+//        return super.getString("ID");
+//    }
+//
+//    public String getOrganisationID() {
+//        return super.getString("SERVICE_ID");
+//    }
+//    public Date getEffectiveDate() throws TransformException {
+//        return super.getDate("DATE");
+//    }
+//
+//    public Date getEnteredDate() throws TransformException {
+//        return super.getDate("DATE");
+//    }
+//    public Date getEnteredDateTime() throws TransformException {
+//        return super.getDateTime("DATE", "TIME");
+//    }
+//
+//    public String getClinicianUserID() {
+//        return cleanUserId(super.getString("HCP"));
+//    }
+//
+//    public String getConsultationSessionTypeCode() { return super.getString("SESSION"); }
+//
+//    public String getConsultationLocationTypeCode() { return super.getString("LOCATION"); }
+//
+//    public String getAction () { return super.getString("ACTION");
+//    }
 
 }

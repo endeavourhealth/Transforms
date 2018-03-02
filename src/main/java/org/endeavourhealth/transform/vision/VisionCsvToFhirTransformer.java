@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.vision;
 
-import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
@@ -28,7 +27,7 @@ public abstract class VisionCsvToFhirTransformer {
 
     public static final String VERSION_0_18 = "0.18";
 
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyyMMdd";
+    public static final String DATE_FORMAT = "yyyyMMdd";
     public static final String TIME_FORMAT = "hhmm";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
 
@@ -224,21 +223,5 @@ public abstract class VisionCsvToFhirTransformer {
         }
 
         return processingSpecificRecords;
-    }
-
-
-    public static String cleanUserId(String data) {
-        if (!Strings.isNullOrEmpty(data)) {
-            if (data.contains(":STAFF:")) {
-                data = data.replace(":","").replace("STAFF","");
-                return data;
-            }
-            if (data.contains(":EXT_STAFF:")) {
-                data = data.substring(0,data.indexOf(","));
-                data = data.replace(":","").replace("EXT_STAFF","").replace(",", "");
-                return data;
-            }
-        }
-        return data;
     }
 }
