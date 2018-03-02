@@ -19,6 +19,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return code;
     }
 
+    @SuppressWarnings("unchecked")
     public T setCode(UICodeableConcept code) {
         this.code = code;
         return (T)this;
@@ -28,6 +29,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return effectivePractitioner;
     }
 
+    @SuppressWarnings("unchecked")
     public T setEffectivePractitioner(UIInternalIdentifier effectivePractitioner) {
         this.effectivePractitioner = effectivePractitioner;
         return (T)this;
@@ -37,6 +39,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return effectiveDate;
     }
 
+    @SuppressWarnings("unchecked")
     public T setEffectiveDate(UIDate effectiveDate) {
         this.effectiveDate = effectiveDate;
         return (T)this;
@@ -46,6 +49,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return recordingPractitioner;
     }
 
+    @SuppressWarnings("unchecked")
     public T setRecordingPractitioner(UIInternalIdentifier recordingPractitioner) {
         this.recordingPractitioner = recordingPractitioner;
         return (T)this;
@@ -55,6 +59,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return recordedDate;
     }
 
+    @SuppressWarnings("unchecked")
     public T setRecordedDate(UIDate recordedDate) {
         this.recordedDate = recordedDate;
         return (T)this;
@@ -64,6 +69,7 @@ public abstract class UIClinicalResource<T extends UIClinicalResource> extends U
         return notes;
     }
 
+    @SuppressWarnings("unchecked")
     public T setNotes(String notes) {
         this.notes = notes;
         return (T)this;

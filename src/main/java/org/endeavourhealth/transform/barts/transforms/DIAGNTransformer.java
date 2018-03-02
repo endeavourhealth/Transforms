@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -92,7 +93,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!diagnosisId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_DIAGNOSIS_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_DIAGNOSIS_ID);
             identifierBuilder.setValue(diagnosisId.getString(), diagnosisId);
         }
 
@@ -109,7 +110,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!encounterSliceID.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
             identifierBuilder.setValue(encounterSliceID.getString(), encounterSliceID);
         }
 
@@ -117,7 +118,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!nomenclatureId.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_NOMENCLATURE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_NOMENCLATURE_ID);
             identifierBuilder.setValue(nomenclatureId.getString(), nomenclatureId);
         }
 

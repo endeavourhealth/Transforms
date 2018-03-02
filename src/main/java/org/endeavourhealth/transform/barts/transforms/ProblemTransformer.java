@@ -99,7 +99,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         //Identifiers
         IdentifierBuilder ib = new IdentifierBuilder(conditionBuilder);
-        ib.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID);
+        ib.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PROBLEM_ID);
         ib.setValue(parser.getProblemId().toString());
 
         // Extensions

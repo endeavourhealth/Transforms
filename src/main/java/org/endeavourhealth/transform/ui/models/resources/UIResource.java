@@ -10,6 +10,7 @@ public abstract class UIResource<T extends UIResource> {
         return id;
     }
 
+    @SuppressWarnings("unchecked")
     public T setId(String id) {
         this.id = id;
         return (T)this;

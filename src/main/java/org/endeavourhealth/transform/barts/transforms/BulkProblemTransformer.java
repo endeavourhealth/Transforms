@@ -78,7 +78,7 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
             CodeableConcept problemCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProblem(), parser.getProblemCode());
 
             //Identifiers
-            Identifier identifiers[] = {new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())};
+            Identifier identifiers[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PROBLEM_ID).setValue(parser.getProblemId().toString())};
 
             DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
 

@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -97,7 +97,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(observationBuilder);
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_OBSERVATION_ID);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_OBSERVATION_ID);
         identifierBuilder.setValue(clinicalEventId.getString(), clinicalEventId);
 
         //TODO we need to filter out any records that are not final

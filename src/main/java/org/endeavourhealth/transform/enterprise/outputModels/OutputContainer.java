@@ -129,6 +129,7 @@ public class OutputContainer {
         return csvWriters;
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends AbstractEnterpriseCsvWriter> T findCsvWriter(Class<T> cls) {
         for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
             if (csvWriter.getClass() == cls) {
