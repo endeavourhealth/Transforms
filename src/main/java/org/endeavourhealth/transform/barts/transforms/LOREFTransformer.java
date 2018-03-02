@@ -101,6 +101,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         } catch (ParseException ex) {
             endDate = formatBulk.parse(endDateCell.getString());
         }
+        LOG.debug("Location active from " + beginDate.toString() + " until " + endDate.toString());
 
         // Location resource id
         CsvCell locationIdCell = parser.getLocationId();
