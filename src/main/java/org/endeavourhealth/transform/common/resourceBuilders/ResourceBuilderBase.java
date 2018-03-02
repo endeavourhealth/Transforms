@@ -191,4 +191,10 @@ public abstract class ResourceBuilderBase {
 
         auditReferenceExtension(extension, sourceCells);
     }
+
+    public void createOrUpdateContextExtension(String context, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT, context);
+
+        auditStringExtension(extension, sourceCells);
+    }
 }

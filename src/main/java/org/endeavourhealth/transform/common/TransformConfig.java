@@ -17,6 +17,7 @@ public class TransformConfig {
     private boolean emisAllowDisabledOrganisations;
     private boolean emisAllowMissingCodes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
+    private boolean transformCerner21Files;
 
     //singleton
     private static TransformConfig instance;
@@ -42,6 +43,7 @@ public class TransformConfig {
         this.emisAllowDisabledOrganisations = false;
         this.emisAllowMissingCodes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
+        this.transformCerner21Files = false;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -76,6 +78,14 @@ public class TransformConfig {
                 subNode = node.get("allow_missing_codes");
                 if (subNode != null) {
                     this.emisAllowMissingCodes = subNode.asBoolean();
+                }
+            }
+
+            node = json.get("cerner");
+            if (node != null) {
+                JsonNode subNode = node.get("transform_2_1_files");
+                if (subNode != null) {
+                    this.transformCerner21Files = subNode.asBoolean();
                 }
             }
 
@@ -115,5 +125,9 @@ public class TransformConfig {
 
     public Set<String> getSoftwareFormatsToDrainQueueOnFailure() {
         return softwareFormatsToDrainQueueOnFailure;
+    }
+
+    public boolean isTransformCerner21Files() {
+        return transformCerner21Files;
     }
 }

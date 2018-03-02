@@ -67,6 +67,20 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         ensureFileAudited();
     }
 
+    @Override
+    public UUID getServiceId() {
+        return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return systemId;
+    }
+
+    @Override
+    public UUID getExchangeId() {
+        return exchangeId;
+    }
 
     private void open(String action) throws Exception {
 

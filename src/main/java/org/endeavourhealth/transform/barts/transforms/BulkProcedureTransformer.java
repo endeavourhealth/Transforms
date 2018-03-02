@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -8,7 +9,11 @@ import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.BulkProcedure;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.CodeableConcept;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Procedure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +31,10 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
+
+        if (parser == null) {
+            return;
+        }
 
         // Skip header line
         parser.nextRecord();
@@ -77,20 +86,16 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
         if (procedureResourceId == null) {
             procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode(), 0);
 
-            // Procedure Code
-            //CodeableConcept procedureCode = new CodeableConcept();
-            //procedureCode.addCoding().setSystem(getCodeSystemName(FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
-            CodeableConcept procedureCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProcedureText(), parser.getProcedureCode());
-
-            Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, "clinical coding")};
-
             // Create resource
-            Procedure fhirProcedure = new Procedure();
-            createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null, null, ex);
+            String code = parser.getProcedureCode();
+            String term = parser.getProcedureText();
+            Date date = parser.getProcedureDateTime();
+            String comment = parser.getComment();
+            ProcedureBuilder procedureBuilder = createProcedureResource(procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, code, term, FhirCodeUri.CODE_SYSTEM_SNOMED_CT, date, comment, null, "clinical coding");
 
             // save resource
-            LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+            LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
         }
     }
 

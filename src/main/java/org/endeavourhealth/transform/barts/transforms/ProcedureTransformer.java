@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -8,7 +10,11 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.CodeableConcept;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Procedure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,19 +35,13 @@ public class ProcedureTransformer extends BartsBasisTransformer {
                                  String primaryOrgHL7OrgOID) throws Exception {
 
         for (ParserI parser: parsers) {
-            int lineCount = 0;
-            // Skip header line
-            parser.nextRecord();
-            lineCount++;
 
             while (parser.nextRecord()) {
                 try {
-                    lineCount++;
                     String valStr = validateEntry((org.endeavourhealth.transform.barts.schema.Procedure)parser);
                     if (valStr == null) {
                         createProcedure((org.endeavourhealth.transform.barts.schema.Procedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                     } else {
-                        valStr = "Validation error on line " + Integer.toString(lineCount) + " - " + valStr;
                         LOG.debug("Validation error:" + valStr);
                         SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
                     }
@@ -98,15 +98,17 @@ public class ProcedureTransformer extends BartsBasisTransformer {
         //procedureCode.addCoding().setSystem(getCodeSystemName(FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
         CodeableConcept procedureCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getProcedureText(), parser.getProcedureCode());
 
-        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-
         // Create resource
-        Procedure fhirProcedure = new Procedure();
-        createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null, null, ex);
+
+        String code = parser.getProcedureCode();
+        String term = parser.getProcedureText();
+        Date date = parser.getProcedureDateTime();
+        String comment = parser.getComment();
+        ProcedureBuilder procedureBuilder = createProcedureResource(procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, code, term, FhirCodeUri.CODE_SYSTEM_SNOMED_CT, date, comment, null, "clinical coding");
 
         // save resource
-        LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-        savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+        LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+        savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
 
     }
 
