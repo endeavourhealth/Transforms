@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -14,7 +16,7 @@ public class ProcedureBuilder extends ResourceBuilderBase
     private Procedure procedure = null;
 
     public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
-    public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
+    //public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
 
 
     public ProcedureBuilder() {
@@ -117,12 +119,12 @@ public class ProcedureBuilder extends ResourceBuilderBase
             this.procedure.setCode(new CodeableConcept());
             return this.procedure.getCode();
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
             if (this.procedure.hasCategory()) {
                 throw new IllegalArgumentException("Trying to add category to Procedure that already has one");
             }
             this.procedure.setCategory(new CodeableConcept());
-            return this.procedure.getCategory();
+            return this.procedure.getCategory();*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -134,8 +136,8 @@ public class ProcedureBuilder extends ResourceBuilderBase
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             return "code";
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            return "category";
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            return "category";*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
@@ -147,11 +149,26 @@ public class ProcedureBuilder extends ResourceBuilderBase
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             this.procedure.setCode(null);
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            this.procedure.setCategory(null);
+        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
+            this.procedure.setCategory(null);*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
+    }
+
+    public void setCategory(String category, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(category)) {
+            this.procedure.setCategory(null);
+
+        } else {
+            CodeableConcept codeableConcept = new CodeableConcept();
+            Coding coding = codeableConcept.addCoding();
+            coding.setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
+            coding.setCode(category);
+            this.procedure.setCategory(codeableConcept);
+
+            auditValue("category.coding[0].code", sourceCells);
         }
     }
 
@@ -174,5 +191,9 @@ public class ProcedureBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.procedure.getIdentifier().remove(identifier);
+    }
+
+    public void setContext(String context, CsvCell... sourceCells) {
+        super.createOrUpdateContextExtension(context, sourceCells);
     }
 }

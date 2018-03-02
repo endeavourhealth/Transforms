@@ -28,6 +28,10 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         // Skip header line
         parser.nextRecord();
 

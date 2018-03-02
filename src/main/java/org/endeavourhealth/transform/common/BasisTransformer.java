@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -8,7 +9,12 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.terminology.SnomedCode;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -417,10 +423,84 @@ public class BasisTransformer {
 
     }
 
+    public static ProcedureBuilder createProcedureResource(ResourceId procedureResourceId, ResourceId encounterResourceId,
+                                                           ResourceId patientResourceId, Procedure.ProcedureStatus status,
+                                                           String procedureCode, String procedureTerm, String procedureCodeSystem, Date procedureDate,
+                                                           String notes, String cdsId, String context) throws Exception {
+
+        ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+
+        // Turn key into Resource id
+        procedureBuilder.setId(procedureResourceId.getResourceId().toString());
+
+        // Encounter
+        if (encounterResourceId != null) {
+            procedureBuilder.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
+        }
+
+        // set patient reference
+        procedureBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        if (context != null) {
+            procedureBuilder.setContext(context);
+        }
+
+        if (!Strings.isNullOrEmpty(cdsId)) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setValue(cdsId);
+        }
+
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+        codeableConceptBuilder.addCoding(procedureCodeSystem);
+        codeableConceptBuilder.setCodingCode(procedureCode);
+
+        if (procedureCodeSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
+            String term = TerminologyService.lookupOpcs4ProcedureName(procedureCode);
+            if (!Strings.isNullOrEmpty(term)) {
+                codeableConceptBuilder.setCodingDisplay(term);
+                codeableConceptBuilder.setText(term);
+            }
+
+        } else if (procedureCodeSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
+            SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(procedureCode);
+            if (snomedCode != null) {
+                String term = snomedCode.getTerm();
+                codeableConceptBuilder.setCodingDisplay(term);
+                codeableConceptBuilder.setText(term);
+            }
+
+        } else {
+            throw new TransformException("Unknown procedure code system " + procedureCodeSystem);
+        }
+
+        //if we've been supplied a term cell, then set that in the codeable concept text, but leave the coding with the official term
+        if (!Strings.isNullOrEmpty(procedureTerm)) {
+            codeableConceptBuilder.setText(procedureTerm);
+        }
+
+        // status
+        procedureBuilder.setStatus(status);
+
+        // Performed date/time
+        if (procedureDate != null) {
+            DateTimeType dateDt = new DateTimeType(procedureDate);
+            procedureBuilder.setPerformed(dateDt);
+        }
+
+        // set notes
+        if (!Strings.isNullOrEmpty(notes)) {
+            procedureBuilder.addNotes(notes);
+        }
+
+        return procedureBuilder;
+    }
+
     /*
      *
      */
-    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[], String[] metaUri, Extension[] ex) throws Exception {
+    /*public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[], String[] metaUri, Extension[] ex) throws Exception {
         CodeableConcept cc = null;
         Date d = null;
 
@@ -478,7 +558,7 @@ public class BasisTransformer {
             fhirProcedure.addNotes(new Annotation().setText(notes));
         }
 
-    }
+    }*/
 
     /*
      *

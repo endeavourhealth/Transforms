@@ -6,7 +6,10 @@ import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 public class Procedure extends AbstractFixedParser {
     private static final Logger LOG = LoggerFactory.getLogger(Procedure.class);
@@ -15,25 +18,8 @@ public class Procedure extends AbstractFixedParser {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public Procedure(String version, String filePath, boolean openParser) throws Exception {
-        super(version, filePath, openParser, DATE_FORMAT, TIME_FORMAT);
-
-        addFieldList(new FixedParserField("DOB",             1, 14));
-        addFieldList(new FixedParserField("MRN",    13, 45));
-        addFieldList(new FixedParserField("NHSNo",    59, 45));
-        addFieldList(new FixedParserField("AdmissionDateTime",    105, 20));
-        addFieldList(new FixedParserField("DischargeDateTime",    126, 20));
-        addFieldList(new FixedParserField("Consultant",    285, 45));
-        addFieldList(new FixedParserField("Procedure_DT_TM",    331, 20));
-        addFieldList(new FixedParserField("ProcedureText",    352, 200));
-        addFieldList(new FixedParserField("Comment",    553, 200));
-        addFieldList(new FixedParserField("ProcedureCode",    754, 200));
-        addFieldList(new FixedParserField("Create_DT_TM",          1139, 20));
-        addFieldList(new FixedParserField("Update_DT_TM",          1160, 20));
-        addFieldList(new FixedParserField("UpdatedBy",    1181, 45));
-        addFieldList(new FixedParserField("EncounterId",          1227, 14));
-        addFieldList(new FixedParserField("FINNo",          1242, 7));
-
+    public Procedure(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, DATE_FORMAT, TIME_FORMAT);
     }
 
     public Date getDOB() throws TransformException {
@@ -94,6 +80,45 @@ public class Procedure extends AbstractFixedParser {
     }
     public String getFINNo() {
         return super.getString("FINNo").trim();
+    }
+
+    @Override
+    protected String getFileTypeDescription() {
+        return "CDB Procedure file";
+    }
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+
+    @Override
+    protected boolean skipFirstRow() {
+        return true;
+    }
+
+    @Override
+    protected List<FixedParserField> getFieldList(String version) {
+
+        List<FixedParserField> ret = new ArrayList<>();
+
+        ret.add(new FixedParserField("DOB",             1, 14));
+        ret.add(new FixedParserField("MRN",    13, 45));
+        ret.add(new FixedParserField("NHSNo",    59, 45));
+        ret.add(new FixedParserField("AdmissionDateTime",    105, 20));
+        ret.add(new FixedParserField("DischargeDateTime",    126, 20));
+        ret.add(new FixedParserField("Consultant",    285, 45));
+        ret.add(new FixedParserField("Procedure_DT_TM",    331, 20));
+        ret.add(new FixedParserField("ProcedureText",    352, 200));
+        ret.add(new FixedParserField("Comment",    553, 200));
+        ret.add(new FixedParserField("ProcedureCode",    754, 200));
+        ret.add(new FixedParserField("Create_DT_TM",          1139, 20));
+        ret.add(new FixedParserField("Update_DT_TM",          1160, 20));
+        ret.add(new FixedParserField("UpdatedBy",    1181, 45));
+        ret.add(new FixedParserField("EncounterId",          1227, 14));
+        ret.add(new FixedParserField("FINNo",          1242, 7));
+        
+        return ret;
     }
 
 }

@@ -4,6 +4,7 @@ public class FixedParserField {
     private String name;
     private int fieldPosition;
     private int fieldlength;
+    private int columnIndex;
 
     public FixedParserField(String name, int pos, int length) {
         this.name = name;
@@ -21,5 +22,13 @@ public class FixedParserField {
 
     public int getFieldlength() {
         return fieldlength;
+    }
+
+    public int getColumnIndex() {
+        return columnIndex;
+    }
+
+    public void setColumnIndex(int columnIndex) {
+        this.columnIndex = columnIndex;
     }
 }

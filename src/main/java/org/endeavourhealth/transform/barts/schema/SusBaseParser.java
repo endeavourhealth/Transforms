@@ -7,20 +7,21 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.UUID;
 
 /*
     This class should only contain getters for fields which exist in all three file structures
 
  */
-public class SusBaseParser extends AbstractFixedParser {
+public abstract class SusBaseParser extends AbstractFixedParser {
     private static final Logger LOG = LoggerFactory.getLogger(SusBaseParser.class);
     protected ArrayList<String> ICDSecondaryDiagnosisList = null;
     protected ArrayList<String> OPCSSecondaryProcedureCodeList = null;
     protected ArrayList<Date> OPCSSecondaryProcedureDateList = null;
     protected ArrayList<String> OPCSSecondaryProcedureDateAsStringList = null;
 
-    public SusBaseParser(String version, String filePath, boolean openParser, String dateFormat, String timeFormat) throws Exception {
-        super(version, filePath, openParser, dateFormat, timeFormat);
+    public SusBaseParser(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, String dateFormat, String timeFormat) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, dateFormat, timeFormat);
     }
 
     public boolean nextRecord() throws Exception {
@@ -216,4 +217,6 @@ public class SusBaseParser extends AbstractFixedParser {
             startPos = startPos + 40;
         }
     }
+
+
 }

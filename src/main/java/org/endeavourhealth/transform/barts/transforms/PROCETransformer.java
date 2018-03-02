@@ -7,7 +7,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.PROCE;
@@ -171,7 +170,13 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(procedureTypeCodeCell, CernerCodeValueRef.PROCEDURE_TYPE, procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CATEGORY, csvHelper);
+        if (!procedureTypeCodeCell.isEmpty() && procedureTypeCodeCell.getLong() > 0) {
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
+                                                                                CernerCodeValueRef.PROCEDURE_TYPE,
+                                                                                procedureTypeCodeCell.getLong());
+
+            procedureBuilder.setCategory(cernerCodeValueRef.getCodeDispTxt(), procedureTypeCodeCell);
+        }
 
         // save resource
         LOG.debug("Save Procedure (" + procedureBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));

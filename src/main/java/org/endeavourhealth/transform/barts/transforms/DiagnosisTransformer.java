@@ -30,8 +30,6 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
                                  String primaryOrgHL7OrgOID) throws Exception {
 
         for (ParserI parser: parsers) {
-            // Skip header line
-            parser.nextRecord();
 
             while (parser.nextRecord()) {
                 try {

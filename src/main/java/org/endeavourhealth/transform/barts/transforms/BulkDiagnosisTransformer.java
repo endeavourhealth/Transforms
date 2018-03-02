@@ -26,6 +26,10 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
+        if (parser == null) {
+            return;
+        }
+
         while (parser.nextRecord()) {
             try {
                 createDiagnosis((BulkDiagnosis)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);

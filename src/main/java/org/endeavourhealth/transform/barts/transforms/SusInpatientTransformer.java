@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.barts.schema.Tails;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
             //parse corresponding tails file first
             String fName = FilenameUtils.getName(parser.getFilePath());
             String tailFilePath = BartsCsvToFhirTransformer.findTailFile(allFiles, "tailip_DIS." + fName.split("_")[2] + "_susrnj.dat");
-            TailsPreTransformer.transform(version, new Tails(version, tailFilePath, true));
+            TailsPreTransformer.transform(version, new Tails(parser.getServiceId(), parser.getSystemId(), parser.getExchangeId(), version, tailFilePath));
 
             entryCount = 0;
             while (parser.nextRecord()) {
@@ -340,26 +341,20 @@ Data line is of type Inpatient
             procedureStatus = Procedure.ProcedureStatus.INPROGRESS;
         }
 
-        // Code
-        //CodeableConcept procedureCode = new CodeableConcept();
-        //procedureCode = mapToCodeableConcept(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, BartsCsvToFhirTransformer.CODE_CONTEXT_PROCEDURE, parser.getOPCSPrimaryProcedureCode(), FhirCodeUri.CODE_SYSTEM_CERNER_OPCS_4, FhirCodeUri.CODE_SYSTEM_CERNER_SNOMED, "", false);
-        CodeableConcept procedureCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_OPCS4, TerminologyService.lookupOpcs4ProcedureName(parser.getOPCSPrimaryProcedureCode()), parser.getOPCSPrimaryProcedureCode());
-
-        //Identifiers
-        Identifier identifiers[] = {new Identifier().setSystem(FhirCodeUri.CODE_SYSTEM_CERNER_CDS_UNIQUE_ID).setValue(parser.getCDSUniqueID())};
-
-        Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "cds coding")};
-
-        Procedure fhirProcedure = new Procedure ();
-        ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procedureStatus, procedureCode, parser.getOPCSPrimaryProcedureDate(), null, identifiers, null, ex);
+        String code = parser.getOPCSPrimaryProcedureCode();
+        Date date = parser.getOPCSPrimaryProcedureDate();
+        String uniqueId = parser.getCDSUniqueID();
+        ProcedureBuilder procedureBuilder = ProcedureTransformer.createProcedureResource(resourceId, encounterResourceId, patientResourceId, procedureStatus, code, null, FhirCodeUri.CODE_SYSTEM_OPCS4, date, null, uniqueId, "cds coding");
 
         // save resource
         if (parser.getCDSUpdateType() == 1) {
-            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
+
         } else {
-            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+            LOG.debug("Save primary Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
+
             if (currentMappings.contains(resourceId.getResourceId())) {
                 // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
                 currentMappings.remove(resourceId.getResourceId());
@@ -367,7 +362,6 @@ Data line is of type Inpatient
                 // New add
                 mappingsToAdd.add(resourceId.getResourceId());
             }
-
         }
 
         // secondary procedures
@@ -387,17 +381,16 @@ Data line is of type Inpatient
             resourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, tr.getEncounterId(), parser.getOPCSecondaryProcedureDateAsString(i), parser.getOPCSecondaryProcedureCode(i), currCodeDuplicateCount);
 
             // Code
-            procedureCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_OPCS4, TerminologyService.lookupOpcs4ProcedureName(parser.getOPCSecondaryProcedureCode(i)), parser.getOPCSecondaryProcedureCode(i));
-
-            fhirProcedure = new Procedure ();
-            ProcedureTransformer.createProcedureResource(fhirProcedure, resourceId, encounterResourceId, patientResourceId, procedureStatus, procedureCode, parser.getOPCSecondaryProcedureDate(i), null, identifiers, null, ex);
+            code = parser.getOPCSecondaryProcedureCode(i);
+            date = parser.getOPCSecondaryProcedureDate(i);
+            procedureBuilder = ProcedureTransformer.createProcedureResource(resourceId, encounterResourceId, patientResourceId, procedureStatus, code, null, FhirCodeUri.CODE_SYSTEM_OPCS4, date, null, uniqueId, "cds coding");
 
             if (parser.getCDSUpdateType() == 1) {
-                LOG.debug("Delete secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                LOG.debug("Delete secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
             } else {
-                LOG.debug("Save secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirProcedure));
-                savePatientResource(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                LOG.debug("Save secondary Procedure (PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+                savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
                 if (currentMappings.contains(resourceId.getResourceId())) {
                     // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
                     currentMappings.remove(resourceId.getResourceId());
@@ -413,10 +406,12 @@ Data line is of type Inpatient
             //delete all Condition resources in the list
             Iterator it = currentMappings.iterator();
             while (it.hasNext()) {
-                fhirProcedure = new Procedure();
-                fhirProcedure.setId(it.next().toString());
-                fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirProcedure);
+
+                procedureBuilder = new ProcedureBuilder();
+                procedureBuilder.setId(it.next().toString());
+                procedureBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
             }
             //delete all multi-mappings
             database.deleteSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE, currentMappings);

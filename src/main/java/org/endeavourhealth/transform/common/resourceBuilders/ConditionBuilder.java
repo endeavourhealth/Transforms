@@ -189,13 +189,18 @@ public class ConditionBuilder extends ResourceBuilderBase
     }
 
     public void setCategory(String category, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = new CodeableConcept();
-        Coding coding = codeableConcept.addCoding();
-        coding.setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
-        coding.setCode(category);
-        this.condition.setCategory(codeableConcept);
+        if (Strings.isNullOrEmpty(category)) {
+            this.condition.setCategory(null);
 
-        auditValue("category.coding[0].code", sourceCells);
+        } else {
+            CodeableConcept codeableConcept = new CodeableConcept();
+            Coding coding = codeableConcept.addCoding();
+            coding.setSystem(FhirValueSetUri.VALUE_SET_CONDITION_CATEGORY);
+            coding.setCode(category);
+            this.condition.setCategory(codeableConcept);
+
+            auditValue("category.coding[0].code", sourceCells);
+        }
     }
 
     public void setEndDateOrBoolean(Type type, CsvCell... sourceCells) {
