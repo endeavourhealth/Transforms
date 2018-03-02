@@ -55,7 +55,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 if (valStr == null) {
                     createEncounter((ENCNT)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                 } else {
-                    LOG.debug("Validation error:" + valStr);
+                    LOG.warn("Validation error:" + valStr);
                     SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
                 }
             } catch (Exception ex) {
@@ -242,7 +242,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, referrerPersonnelIdentifier);
             } else {
                 String valStr = "Practitioner Resource not found for Referrer-id " + parser.getReferrerMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier() + " in file " + parser.getFilePath();
-                LOG.debug(valStr);
+                LOG.warn(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
         }
@@ -255,7 +255,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, responsibleHCPCell);
             } else {
                 String valStr = "Practitioner Resource not found for Personnel-id " + parser.getResponsibleHealthCareprovidingPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier() + " in file " + parser.getFilePath();
-                LOG.debug(valStr);
+                LOG.warn(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
         }
@@ -268,7 +268,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, registeringPersonnelIdentifierCell);
             } else {
                 String valStr = "Practitioner Resource not found for Personnel-id " + parser.getRegisteringMillenniumPersonnelIdentifier() + " in ENCNT record " + parser.getMillenniumEncounterIdentifier()  + " in file " + parser.getFilePath();
-                LOG.debug(valStr);
+                LOG.warn(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
         }
@@ -281,7 +281,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()), currentLocationCell);
             } else {
                 String valStr = "Location Resource not found for Location-id " + currentLocationCell.getString() + " in ENCNT record " + encounterIdCell.getString() + " in file " + parser.getFilePath();
-                LOG.debug(valStr);
+                LOG.warn(valStr);
                 SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
             }
         }
