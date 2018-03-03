@@ -128,7 +128,10 @@ public class ProblemTransformer extends BartsBasisTransformer {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
 
         } else {
-            throw new TransformException("Unknown VOCAB value [" + vocab + "]");
+            String valStr = "Skipping Problem " + parser.getProblemId().toString() + "Due to unknown VOCAB value [" + vocab + "] in file " + parser.getFilePath();
+            LOG.warn(valStr);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
+            return;
         }
 
         String code = problemCodeCell.getString();
