@@ -20,14 +20,18 @@ import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 public class ENCNTTransformer extends BartsBasisTransformer {
@@ -80,6 +84,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        boolean changeOfPatient = false;
+
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
         }
@@ -107,6 +113,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             return;
         }
 
+        // Create new encounter
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
 
@@ -118,20 +125,45 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             if (dateRecord != null && dateRecord.getEndDate() != null) {
                 encounterBuilder.setPeriodStart(dateRecord.getEndDate(), dateRecord.getEndDateCell());
             }
-        }
+        } else {
+            // Delete existing encounter ?
+            if (!activeCell.getIntAsBoolean()) {
+                encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+                //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+                EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
+                return;
+            }
 
+            // Has patient reference changed?
+            String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
+            if (currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
+                // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
+                // Patient reference on Encounter resources is handled below
+                // Patient reference on EpisodeOfCare resources is handled below
+                changeOfPatient = true;
 
-        if (!activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
+                List<Resource> resourceList = csvHelper.retrieveResourceByPatient(UUID.fromString(currentPatientUuid));
+                for (Resource resource : resourceList) {
+                    if (resource instanceof Condition) {
+                        ConditionBuilder builder = new ConditionBuilder((Condition) resource);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                    } else if (resource instanceof Procedure) {
+                        ProcedureBuilder builder = new ProcedureBuilder((Procedure) resource);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                    } else if (resource instanceof Observation) {
+                        ObservationBuilder builder = new ObservationBuilder((Observation) resource);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                    }
+                }
+            }
         }
 
         // Save visit-id to encounter-id link
-        //TODO - Peter, can you check this? The mapping type says Encounter->Visit, but the parameters are the other way around
-        internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_VISIT_ID, visitIdCell.getString(), encounterIdCell.getString());
+        internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
 
         // Episode resource id
         ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
@@ -149,15 +181,26 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
             episodeOfCareBuilder.setId(episodeResourceId.getResourceId().toString());
 
-            //TODO - can we set more fields on the episode of care? Do we know its start date or end date?
+            episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
+            episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
 
             Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString());
             episodeOfCareBuilder.setManagingOrganisation(organisationReference);
 
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-            episodeOfCareBuilder.setPatient(patientReference);
+            episodeOfCareBuilder.setPatient(patientReference, personIdCell);
 
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), episodeOfCareBuilder);
+        } else {
+            if (changeOfPatient) {
+                EpisodeOfCare eoc = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId());
+                EpisodeOfCareBuilder eocBuilder = new EpisodeOfCareBuilder(eoc);
+
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+                eocBuilder.setPatient(patientReference, personIdCell);
+
+                savePatientResource(fhirResourceFiler, parser.getCurrentState(), eocBuilder);
+            }
         }
 
         //fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));

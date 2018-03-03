@@ -164,6 +164,10 @@ public class EncounterBuilder extends ResourceBuilderBase
         setPeriodEnd(new DateTimeType(endDateTime), sourceCells);
     }
 
+    public Period getPeriod() {
+        return this.encounter.getPeriod();
+    }
+
     /*public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
         getOrCreateCodeableConcept(null).setText(term);
 
@@ -201,6 +205,10 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getLocation().size()-1;
         auditValue("location[" + index + "].location", sourceCells);
+    }
+
+    public Reference getPatient() {
+        return this.encounter.getPatient();
     }
 
     @Override

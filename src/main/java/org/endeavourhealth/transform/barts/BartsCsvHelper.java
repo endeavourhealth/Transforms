@@ -22,7 +22,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -81,6 +83,19 @@ public class BartsCsvHelper {
         return version;
     }
 
+
+    public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
+        List<Resource> ret = null;
+        List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, systemId, patientId);
+        for (ResourceWrapper rw : resourceList) {
+            if (ret == null) {
+                ret = new ArrayList<>();
+            }
+            String json = rw.getResourceData();
+            ret.add(ParserPool.getInstance().parse(json));
+        }
+        return ret;
+    }
 
     public Resource retrieveResource(ResourceType resourceType, UUID resourceId) throws Exception {
 
