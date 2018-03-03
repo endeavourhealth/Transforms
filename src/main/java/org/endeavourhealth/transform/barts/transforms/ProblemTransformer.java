@@ -121,6 +121,9 @@ public class ProblemTransformer extends BartsBasisTransformer {
         if (vocab.equalsIgnoreCase("SNOMED CT")) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
 
+        } else if (vocab.equalsIgnoreCase("ICD-10")) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, vocabCell);
+
         } else if (vocab.equalsIgnoreCase("Cerner")) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
 
