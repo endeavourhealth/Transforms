@@ -328,15 +328,20 @@ public class CLEVETransformer extends BartsBasisTransformer {
         if (!low.isEmpty() || !high.isEmpty()) {
             //going by how lab results were defined in the pathology spec, if we have upper and lower bounds,
             //it's an inclusive range. If we only have one bound, then it's non-inclusive.
-            if (!low.isEmpty() && !high.isEmpty()) {
-                observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_OR_EQUAL, low);
-                observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_OR_EQUAL, high);
+            try {
+                if (!low.isEmpty() && !high.isEmpty()) {
+                    observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_OR_EQUAL, low);
+                    observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_OR_EQUAL, high);
 
-            } else if (!low.isEmpty()) {
-                observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_THAN, low);
+                } else if (!low.isEmpty()) {
+                    observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_THAN, low);
 
-            } else {
-                observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_THAN, high);
+                } else {
+                    observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_THAN, high);
+                }
+            }
+            catch (NumberFormatException ex) {
+                LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
             }
         }
     }
