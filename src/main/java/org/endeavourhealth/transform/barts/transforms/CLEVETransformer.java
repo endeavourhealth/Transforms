@@ -4,7 +4,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -245,7 +244,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
 
         } else {
-            throw new TransformException("Unknown precision code at start of result text [" + resultText + "]");
+            LOG.warn("Unknown precision code at start of result text [" + resultText + "]");
         }
 
         observationBuilder.setValueDate(dateTimeType, resultTextCell, resultDateCell);
@@ -306,7 +305,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             }
 
         } catch (NumberFormatException nfe) {
-            throw new TransformException("Failed to convert [" + resultText + "] to Double");
+            LOG.warn("Failed to convert [" + resultText + "] to Double");
         }
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
@@ -360,7 +359,8 @@ public class CLEVETransformer extends BartsBasisTransformer {
             return Quantity.QuantityComparator.GREATER_THAN;
 
         } else {
-            throw new IllegalArgumentException("Unexpected comparator string [" + str + "]");
+            LOG.warn("Unexpected comparator string [" + str + "]");
+            return null;
         }
     }
 }
