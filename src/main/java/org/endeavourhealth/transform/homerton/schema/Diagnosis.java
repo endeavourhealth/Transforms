@@ -1,14 +1,15 @@
 package org.endeavourhealth.transform.homerton.schema;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.UUID;
 
 public class Diagnosis extends AbstractCsvParser {
 
     public Diagnosis(UUID serviceId, UUID systemId, UUID exchangeId,  String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -87,6 +88,24 @@ public class Diagnosis extends AbstractCsvParser {
 
     }
 
+
+    public CsvCell getDiagnosisId()  {
+        return super.getCell("DIAGNOSIS_ID");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getPersonId() {
+        return super.getCell("PERSON_ID");
+    }
+
+    public CsvCell getEncounterId() {
+        return super.getCell("ENCNTR_ID");
+    }
+
+
     @Override
     protected String getFileTypeDescription() {
         return "Homerton diagnosis file";
@@ -96,33 +115,5 @@ public class Diagnosis extends AbstractCsvParser {
     protected boolean isFileAudited() {
         return true;
     }
-
-    public Long getDiagnosisId()  {
-        return super.getLong("DIAGNOSIS_ID");
-    }
-    public boolean getActiveIndicator() {
-        String val = super.getString("ACTIVE_IND");
-        if(val.compareTo("1")==0)
-        {
-            return true;
-        } else
-        {
-            return false;
-        }
-
-    }
-
-    public String getPersonId() {
-        return super.getString("PERSON_ID");
-    }
-    public String getEncounterId() {
-        return super.getString("ENCNTR_ID");
-    }
-
-    public String getCNN() {
-        return super.getString("CNN");
-    }
-
-
 
 }

@@ -4,7 +4,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
     public static void transform(String version,
                                  org.endeavourhealth.transform.homerton.schema.Procedure parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
         // Skip header line
@@ -43,7 +43,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
      */
     public static void createProcedure(org.endeavourhealth.transform.homerton.schema.Procedure parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode ) throws Exception {
         CodeableConcept cc = null;
         Date d = null;

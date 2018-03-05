@@ -4,7 +4,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.Problem;
 import org.hl7.fhir.instance.model.*;
@@ -19,7 +19,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
     public static void transform(String version,
                                  Problem parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
         // Skip header line
@@ -41,7 +41,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
      */
     public static void createCondition(Problem parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
         CodeableConcept cc = null;
         Date d = null;

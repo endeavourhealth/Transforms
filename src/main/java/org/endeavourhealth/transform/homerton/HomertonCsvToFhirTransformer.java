@@ -25,7 +25,7 @@ public abstract class HomertonCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"; //EMIS spec says "dd/MM/yyyy", but test data is different
+    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
     public static final String PRIMARY_ORG_ODS_CODE = "RQX";
@@ -54,11 +54,12 @@ public abstract class HomertonCsvToFhirTransformer {
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        HomertonCsvHelper csvHelper = new HomertonCsvHelper(serviceId, systemId, exchangeId, null, version);
 
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
-        transformParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors);
+        transformParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors, csvHelper);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         processor.waitToFinish();
@@ -101,7 +102,8 @@ public abstract class HomertonCsvToFhirTransformer {
     private static void transformParsers(UUID serviceId, UUID systemId, UUID exchangeId,
                                          String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors) throws Exception {
+                                         TransformError previousErrors,
+                                         HomertonCsvHelper csvHelper) throws Exception {
 
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);
@@ -110,19 +112,19 @@ public abstract class HomertonCsvToFhirTransformer {
 
             if (fileType.compareTo("PATIENT") == 0) {
                 Patient parser = new Patient(serviceId, systemId, exchangeId, version, filePath);
-                PatientTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                PatientTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROBLEM") == 0) {
                 Problem parser = new Problem(serviceId, systemId, exchangeId, version, filePath);
-                ProblemTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                ProblemTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
                 Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath);
-                DiagnosisTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                DiagnosisTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
                 Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath);
-                ProcedureTransformer.transform(version, parser, fhirResourceFiler, null, PRIMARY_ORG_ODS_CODE);
+                ProcedureTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             }
         }

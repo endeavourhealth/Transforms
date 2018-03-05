@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.homerton.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.Date;
 import java.util.UUID;
@@ -10,7 +10,7 @@ import java.util.UUID;
 public class Patient extends AbstractCsvParser {
 
     public Patient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, EmisCsvToFhirTransformer.CSV_FORMAT, EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, EmisCsvToFhirTransformer.TIME_FORMAT);
+        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

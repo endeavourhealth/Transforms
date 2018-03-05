@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.Patient;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
     public static void transform(String version,
                                  Patient parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper,
+                                 HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
         // Skip header line
@@ -38,7 +38,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
      */
     public static void patientCreateOrUpdate(Patient parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
+                                       HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
 
         org.hl7.fhir.instance.model.Patient fhirPatient = new org.hl7.fhir.instance.model.Patient();
