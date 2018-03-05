@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class VisionCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(VisionCsvHelper.class);
@@ -36,12 +37,15 @@ public class VisionCsvHelper {
     //some resources are referred to by others, so we cache them here for when we need them
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
+    private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
+    private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
     private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
     private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<String, String> drugRecords = new HashMap<>();
 
     public VisionCsvHelper() {
     }
@@ -120,7 +124,7 @@ public class VisionCsvHelper {
         }
         return ReferenceHelper.createReference(ResourceType.Observation, createUniqueId(patientGuid, observationGuid));
     }
-    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) throws Exception {
+    public Reference createMedicationStatementReference(String medicationStatementGuid, String patientGuid) throws Exception {
         if (medicationStatementGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing MedicationStatement ID");
         }
@@ -241,6 +245,22 @@ public class VisionCsvHelper {
         }
     }
 
+    public void cacheProblemPreviousLinkedResources(String problemSourceId, List<Reference> previousReferences) {
+        if (previousReferences == null
+                || previousReferences.isEmpty()) {
+            return;
+        }
+
+        ReferenceList obj = new ReferenceList();
+        obj.add(previousReferences);
+
+        problemPreviousLinkedResources.put(problemSourceId, obj);
+    }
+
+    public ReferenceList findProblemPreviousLinkedResources(String problemSourceId) {
+        return problemPreviousLinkedResources.remove(problemSourceId);
+    }
+
     public ReferenceList getAndRemoveNewProblemChildren(CsvCell problemGuid, CsvCell patientGuid) {
         return newProblemChildren.remove(createUniqueId(patientGuid, problemGuid));
     }
@@ -248,7 +268,8 @@ public class VisionCsvHelper {
     public void cacheProblemRelationship(String problemObservationGuid,
                                          String patientGuid,
                                          String resourceGuid,
-                                         ResourceType resourceType) {
+                                         ResourceType resourceType,
+                                         CsvCell problemLinkCell) {
 
         if (problemObservationGuid.isEmpty()) {
             return;
@@ -263,7 +284,7 @@ public class VisionCsvHelper {
 
         String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
         Reference reference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        referenceList.add(reference); //, problemObservationGuid);
+        referenceList.add(reference, problemLinkCell);
     }
 
     /**
@@ -444,10 +465,28 @@ public class VisionCsvHelper {
         }
     }
 
+    public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
+
+        if (previousReferences == null
+                || previousReferences.isEmpty()) {
+            return;
+        }
+
+        ReferenceList obj = new ReferenceList();
+        obj.add(previousReferences);
+
+        consultationExistingChildMap.put(encounterSourceId, obj);
+    }
+
+    public ReferenceList findConsultationPreviousLinkedResources(String encounterSourceId) {
+        return consultationExistingChildMap.remove(encounterSourceId);
+    }
+
     public void cacheNewConsultationChildRelationship(String consultationGuid,
                                                       String patientGuid,
                                                       String resourceGuid,
-                                                      ResourceType resourceType) {
+                                                      ResourceType resourceType,
+                                                      CsvCell consultationIDCell) {
 
         if (consultationGuid.isEmpty()) {
             return;
@@ -462,7 +501,7 @@ public class VisionCsvHelper {
 
         String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference); //, consultationGuid);
+        list.add(resourceReference, consultationIDCell);
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
@@ -480,6 +519,14 @@ public class VisionCsvHelper {
 
     public boolean isProblemObservationGuid(String patientGuid, String problemGuid) {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
+    }
+
+    public void cacheDrugRecordGuid(CsvCell patientGuid, CsvCell drugRecordGuid, String drugCode) {
+        drugRecords.put(createUniqueId(patientGuid, drugRecordGuid), drugCode);
+    }
+
+    public boolean isDrugRecordGuid(String patientGuid, String drugRecordGuid) {
+        return drugRecords.containsKey(createUniqueId(patientGuid, drugRecordGuid));
     }
 
     public String findProblemObservationReadCode(CsvCell patientGuid, CsvCell problemGuid, FhirResourceFiler fhirResourceFiler) throws Exception {

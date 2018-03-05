@@ -61,7 +61,8 @@ public class JournalPreTransformer {
                     csvHelper.cacheProblemRelationship(problemID,
                             patientID.getString(),
                             observationID.getString(),
-                            resourceType);
+                            resourceType,
+                            parser.getLinks());
                 }
             }
         }
@@ -72,12 +73,13 @@ public class JournalPreTransformer {
             csvHelper.cacheNewConsultationChildRelationship(consultationID,
                     patientID.getString(),
                     observationID.getString(),
-                    resourceType);
+                    resourceType,
+                    parser.getLinks());
         }
 
         //medication issue record - set linked drug record first and last issue dates
         if (resourceType == ResourceType.MedicationOrder) {
-            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString());
+            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString(), patientID.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(drugRecordID)) {
                 Date effectiveDate = parser.getEffectiveDateTime().getDate();
                 String effectiveDatePrecision = "YMD";

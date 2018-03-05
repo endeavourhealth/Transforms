@@ -316,14 +316,13 @@ public class JournalTransformer {
         CsvCell dose = parser.getAssociatedText();
         medicationOrderBuilder.setDose(dose.getString(), dose);
 
-        //TODO: Link issue to drug record - Is the drug record in the links field? - awaiting Vision response
-        if (!Strings.isNullOrEmpty(parser.getLinks().getString())) {
-//            String[] links = parser.getLinks().split("[|]");
-//            String drugRecordID = links[0];
-//            if (!Strings.isNullOrEmpty(drugRecordID)) {
-                 //Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID.getString());
-                 //medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, drugRecordID);
-//            }
+        String links = parser.getLinks().getString();
+        if (!Strings.isNullOrEmpty(links)) {
+            String drugRecordID = extractDrugRecordLinkID (links, patientID.getString(), csvHelper);
+            if (!Strings.isNullOrEmpty(drugRecordID)) {
+                 Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID.getString());
+                 medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, parser.getLinks());
+            }
         }
 
         CsvCell enteredByID = parser.getClinicianUserID();
@@ -580,9 +579,8 @@ public class JournalTransformer {
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
         //carry over linked items from any previous instance of this problem
-        //TODO
-        //ReferenceList previousReferences = csvHelper.findProblemPreviousLinkedResources(conditionBuilder.getResourceId());
-        //containedListBuilder.addReferences(previousReferences);
+        ReferenceList previousReferences = csvHelper.findProblemPreviousLinkedResources(conditionBuilder.getResourceId());
+        containedListBuilder.addReferences(previousReferences);
 
         //apply any linked items from this extract
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewProblemChildren(observationID, patientID);
@@ -603,7 +601,6 @@ public class JournalTransformer {
             Identifier fhirDocIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentId);
             conditionBuilder.addDocumentIdentifier(fhirDocIdentifier, parser.getDocumentID());
         }
-
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
     }
@@ -929,13 +926,15 @@ public class JournalTransformer {
         return null;
     }
 
-    // TODO: if it is a medication issue, how determine linked drug statement? - Asked Vision - invesigating if LastIssueDate can be added
-    public static String extractDrugRecordLinkID(String links) {
+    public static String extractDrugRecordLinkID(String links, String patientID, VisionCsvHelper csvHelper) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("[|]");
-            for (String link : linkIDs) {
-                if (link.startsWith("D")) {
-                    return link.replace("D", "");
+            for (String linkID : linkIDs) {
+                if (!linkID.startsWith("E")) {
+                    //check if link is an actual drug record previously cached in Drug Pre-transformer
+                    if (csvHelper.isDrugRecordGuid(patientID, linkID)) {
+                        return linkID;
+                    }
                 }
             }
         }

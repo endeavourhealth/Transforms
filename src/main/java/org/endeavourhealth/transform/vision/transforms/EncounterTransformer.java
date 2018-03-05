@@ -10,9 +10,9 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.endeavourhealth.transform.emis.openhr.schema.VocDatePart;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Date;
 import java.util.Map;
@@ -106,53 +106,15 @@ public class EncounterTransformer {
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-        //carry over linked items from any previous instance of this consultation
-        //TODO - work out - prev and new in EMIS version
         //carry over linked items from any previous instance of this encounter.
-//        List<Reference> previousReferences = csvHelper.findPreviousLinkedReferences(csvHelper, fhirResourceFiler, fhirEncounter.getId(), ResourceType.Encounter);
-//        if (previousReferences != null && !previousReferences.isEmpty()) {
-//            csvHelper.addLinkedItemsToResource(fhirEncounter, previousReferences, FhirExtensionUri.ENCOUNTER_COMPONENTS);
-//        }
-        //ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
-        //containedListBuilder.addReferences(previousReferences);
+        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(previousReferences);
 
         //apply any new linked items from this extract. Encounter links set-up in Journal pre-transformer
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
         containedListBuilder.addReferences(newLinkedResources);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
-    }
-
-    private static Period createPeriod(Date date, String precision) throws Exception {
-        if (date == null) {
-            return null;
-        }
-
-        VocDatePart vocPrecision = VocDatePart.fromValue(precision);
-        if (vocPrecision == null) {
-            throw new IllegalArgumentException("Unsupported consultation precision [" + precision + "]");
-        }
-
-        Period fhirPeriod = new Period();
-        switch (vocPrecision) {
-            case U:
-                return null;
-            case Y:
-                fhirPeriod.setStartElement(new DateTimeType(date, TemporalPrecisionEnum.YEAR));
-                break;
-            case YM:
-                fhirPeriod.setStartElement(new DateTimeType(date, TemporalPrecisionEnum.MONTH));
-                break;
-            case YMD:
-                fhirPeriod.setStartElement(new DateTimeType(date, TemporalPrecisionEnum.DAY));
-                break;
-            case YMDT:
-                fhirPeriod.setStartElement(new DateTimeType(date, TemporalPrecisionEnum.SECOND));
-                break;
-            default:
-                throw new IllegalArgumentException("Unexpected date precision " + vocPrecision);
-        }
-        return fhirPeriod;
     }
 
     private static String convertSessionTypeCode(String sessionTypeCode) {
