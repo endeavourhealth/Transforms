@@ -64,10 +64,10 @@ public class CLEVETransformer extends BartsBasisTransformer {
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
         UUID patientUuid = csvHelper.findPatientIdFromEncounterId(encounterIdCell);
         if (patientUuid == null) {
-            LOG.warn("Skipping Clinical Event " + parser.getEventId().getString() + " due to missing encounter");
-            return;
+            LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
+            } else {
+            patientUuid = csvHelper.findPatientIdFromEncounterId(parser.getPatientId());
         }
-
         // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
         ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
