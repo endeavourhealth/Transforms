@@ -238,11 +238,16 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
         }
 
-        LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
+        }
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
         //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
+    /*
+    *
+     */
     private static String generateName(BartsCsvHelper csvHelper, CsvCell... sourceCells) throws Exception {
         List<String> tokens = new ArrayList<>();
 

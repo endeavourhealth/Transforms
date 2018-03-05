@@ -332,7 +332,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
-        //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        if (LOG.isDebugEnabled()) {
+            //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        }
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 
