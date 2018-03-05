@@ -59,14 +59,18 @@ public class CLEVETransformer extends BartsBasisTransformer {
                                          BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        // get patient from encounter
+        // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
-        UUID patientUuid = csvHelper.findPatientIdFromEncounterId(encounterIdCell);
-        if (patientUuid == null) {
+        if (encounterUuid == null) {
             LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
-            } else {
-            patientUuid = csvHelper.findPatientIdFromEncounterId(parser.getPatientId());
+        }
+        // check patient data. If we can't link the event to a patient its no use
+        UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
+        if (patientUuid == null) {
+                LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId()
+                        + " for eventId " + parser.getEventId().getString());
+            return;
         }
         // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
@@ -115,10 +119,11 @@ public class CLEVETransformer extends BartsBasisTransformer {
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
-
-        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterUuid.toString());
-        observationBuilder.setEncounter(encounterReference, encounterIdCell);
-
+        // createReference throws an exception if the is null
+        if (encounterUuid != null) {
+            Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterUuid.toString());
+            observationBuilder.setEncounter(encounterReference, encounterIdCell);
+        }
         //link to parent observation if we have a parent event
         CsvCell parentEventId = parser.getParentEventId();
         if (!parentEventId.isEmpty()) {
