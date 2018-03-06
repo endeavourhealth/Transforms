@@ -68,7 +68,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         // check patient data. If we can't link the event to a patient its no use
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
         if (patientUuid == null) {
-                LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId()
+                LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId().getString()
                         + " for eventId " + parser.getEventId().getString());
             return;
         }
