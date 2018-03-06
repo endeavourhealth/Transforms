@@ -65,13 +65,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         if (encounterUuid == null) {
             LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
         }
-        // check patient data. If we can't link the event to a patient its no use
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
-        if (patientUuid == null) {
-                LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId().getString()
-                        + " for eventId " + parser.getEventId().getString());
-            return;
-        }
+
         // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
         ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
@@ -79,16 +73,22 @@ public class CLEVETransformer extends BartsBasisTransformer {
         ObservationBuilder observationBuilder = new ObservationBuilder();
 
         observationBuilder.setId(observationResourceId.getResourceId().toString(), clinicalEventId);
-
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-        observationBuilder.setPatient(patientReference);
-
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
             //LOG.debug("Delete Observation (" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
             return;
         }
+        // check patient data. If we can't link the event to a patient its no use
+        UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
+        if (patientUuid == null) {
+            LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId().getString()
+                    + " for eventId " + parser.getEventId().getString());
+            return;
+        }
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+        observationBuilder.setPatient(patientReference);
+
 
         //there are lots of events that are still active but have a result text of DELETED
         CsvCell resultTextCell = parser.getEventResultText();
