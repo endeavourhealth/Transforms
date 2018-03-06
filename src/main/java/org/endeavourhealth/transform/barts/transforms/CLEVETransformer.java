@@ -62,35 +62,59 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
 
 
-        // this Observation resource id
         CsvCell clinicalEventId = parser.getEventId();
+
         ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
 
         observationBuilder.setId(observationResourceId.getResourceId().toString(), clinicalEventId);
         CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            //LOG.debug("Delete Observation (" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-                        deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
-            return;
-        }
+
         // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
         if (encounterUuid == null) {
-            LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
+           // LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
+            TransformWarnings.log(LOG, parser, "No matching encounter found");
         }
         // check patient data. If we can't link the event to a patient its no use
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
+        if (!activeCell.getIntAsBoolean()) {
+            // If patientId is null try to get from cached Observation if it exist
+            Reference patientReference = new Reference();
+            if (patientUuid == null) {
+                if (encounterUuid != null) {
+                     UUID patIdFromEnc = csvHelper.findPatientIdFromEncounterId(parser.getEncounterId());
+                     if (patIdFromEnc == null) {
+                         // We need a patient id for the delete so can't proceed
+
+                         return;
+                    } else {  // get patient from cached encounter
+                         patientReference = ReferenceHelper.createReference(ResourceType.Patient, patIdFromEnc.toString());
+                    }
+                }
+            } else {
+                patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+            }
+            // If we have patient data we can try to delete the record, otherwise return
+            if (patientReference != null) {
+                observationBuilder.setPatient(patientReference);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
+            } else { // we couldn't get patient id anywhere
+                TransformWarnings.log(LOG, parser, "Unable to find a record to update with inactive flag");
+            }
+            return;
+        }
+
         if (patientUuid == null) {
             LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId().getString()
                     + " for eventId " + parser.getEventId().getString());
             return;
         }
+
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
         observationBuilder.setPatient(patientReference);
-
 
         //there are lots of events that are still active but have a result text of DELETED
         CsvCell resultTextCell = parser.getEventResultText();
@@ -251,7 +275,8 @@ public class CLEVETransformer extends BartsBasisTransformer {
             dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
 
         } else {
-            LOG.warn("Unknown precision code at start of result text [" + resultText + "]");
+            //LOG.warn("Unknown precision code at start of result text [" + resultText + "]");
+            TransformWarnings.log(LOG, parser, "Unknown precision code at start of result text {}", resultText);
         }
 
         observationBuilder.setValueDate(dateTimeType, resultTextCell, resultDateCell);
@@ -317,7 +342,9 @@ public class CLEVETransformer extends BartsBasisTransformer {
             }
 
         } catch (NumberFormatException nfe) {
-            LOG.warn("Failed to convert [" + resultText + "] to Double");
+           // LOG.warn("Failed to convert [" + resultText + "] to Double");
+            TransformWarnings.log(LOG, parser, "Failed to convert {} to Double", resultText);
+
         }
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
@@ -352,7 +379,9 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 }
             }
             catch (NumberFormatException ex) {
-                LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
+               // LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
+                TransformWarnings.log(LOG, parser, "Range not set for clinical event due to invalid reference range");
+
             }
         }
     }
