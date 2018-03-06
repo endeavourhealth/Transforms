@@ -13,6 +13,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeM
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
@@ -23,14 +24,17 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class EmisCsvHelper {
+public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCsvHelper.class);
 
-    private static final String CODEABLE_CONCEPT = "CodeableConcept";
+    //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
+    private UUID serviceId = null;
+    private UUID systemId = null;
+    private UUID exchangeId = null;
     private String dataSharingAgreementGuid = null;
     private boolean allowProcessingDisabledServices = false;
     private boolean allowProcessingMissingCodes = false;
@@ -60,10 +64,29 @@ public class EmisCsvHelper {
 
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
 
-    public EmisCsvHelper(String dataSharingAgreementGuid, boolean allowProcessingDisabledServices, boolean allowProcessingMissingCodes) {
+    public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean allowProcessingDisabledServices, boolean allowProcessingMissingCodes) {
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.exchangeId = exchangeId;
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
         this.allowProcessingDisabledServices = allowProcessingDisabledServices;
         this.allowProcessingMissingCodes = allowProcessingMissingCodes;
+    }
+
+
+    @Override
+    public UUID getServiceId() {
+        return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return systemId;
+    }
+
+    @Override
+    public UUID getExchangeId() {
+        return exchangeId;
     }
 
     public boolean isAllowProcessingDisabledServices() {

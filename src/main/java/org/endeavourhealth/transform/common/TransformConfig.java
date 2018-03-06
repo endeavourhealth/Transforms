@@ -5,8 +5,11 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class TransformConfig {
     private static final Logger LOG = LoggerFactory.getLogger(TransformConfig.class);
@@ -18,6 +21,8 @@ public class TransformConfig {
     private boolean emisAllowMissingCodes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
+    private int maxTransformErrorsBeforeAbort;
+    private List<Pattern> warningsToFailOn = new ArrayList<>();
 
     //singleton
     private static TransformConfig instance;
@@ -44,6 +49,8 @@ public class TransformConfig {
         this.emisAllowMissingCodes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
+        this.maxTransformErrorsBeforeAbort = 50;
+        this.warningsToFailOn = new ArrayList<>();
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -66,6 +73,11 @@ public class TransformConfig {
             node = json.get("shared_storage_path");
             if (node != null) {
                 this.sharedStoragePath = node.asText();
+            }
+
+            node = json.get("transform_errors_before_abort");
+            if (node != null) {
+                this.maxTransformErrorsBeforeAbort = node.asInt();
             }
 
             node = json.get("emis");
@@ -94,6 +106,15 @@ public class TransformConfig {
                 for (int i=0; i<node.size(); i++) {
                     String software = node.get(i).asText();
                     this.softwareFormatsToDrainQueueOnFailure.add(software);
+                }
+            }
+
+            node = json.get("warnings_to_fail_on");
+            if (node != null) {
+                for (int i=0; i<node.size(); i++) {
+                    String s = node.get(i).asText();
+                    Pattern pattern = Pattern.compile(s);
+                    this.warningsToFailOn.add(pattern);
                 }
             }
 
@@ -129,5 +150,13 @@ public class TransformConfig {
 
     public boolean isTransformCerner21Files() {
         return transformCerner21Files;
+    }
+
+    public int getMaxTransformErrorsBeforeAbort() {
+        return maxTransformErrorsBeforeAbort;
+    }
+
+    public List<Pattern> getWarningsToFailOn() {
+        return warningsToFailOn;
     }
 }

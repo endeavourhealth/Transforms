@@ -5,6 +5,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
@@ -52,10 +53,9 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         // Patient
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
         if (patientUuid == null) {
-            LOG.warn("Skipping Diagnosis " + diagnosisId.getString() + " because no Person->MRN mapping (" + personIdCell.getString() +")could be found in file " + parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} because no Person->MRN mapping ({}) could be found in file {}", diagnosisId.getString(), personIdCell.getString(), parser.getFilePath());
             return;
         }
-
 
         // create the FHIR Condition
         ConditionBuilder conditionBuilder = new ConditionBuilder();

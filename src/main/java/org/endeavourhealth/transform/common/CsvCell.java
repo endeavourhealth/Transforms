@@ -113,6 +113,12 @@ public class CsvCell {
         return i.intValue() == 1;
     }
 
+    /**
+     * for logging purposes. To get the value as a String, just use getString()
+     */
+    public String toString() {
+        return "Value [" + value + "] RowAuditId " + rowAuditId + " ColIndex " + colIndex;
+    }
 
     public static Date getDateTimeFromTwoCells(CsvCell dateCell, CsvCell timeCell) throws TransformException {
         Date d = null;

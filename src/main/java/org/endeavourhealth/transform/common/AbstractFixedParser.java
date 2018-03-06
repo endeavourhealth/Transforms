@@ -402,14 +402,20 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
         String value = getFieldValue(this.curentLine, field, fieldPositionAdjuster);
 
-        long rowAuditId = -1;
-        if (isFileAudited()) {
-            rowAuditId = cellAuditIds[currentLineNumber];
-        }
-
+        long rowAuditId = getSourceFileRecordIdForCurrentRow();
         int colIndex = field.getColumnIndex();
 
         return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
+    }
+
+    public long getSourceFileRecordIdForCurrentRow() {
+        if (isFileAudited()) {
+            return cellAuditIds[currentLineNumber];
+
+        } else {
+            //if the file isn't audited, return -1, so it's compatible with CsvCell which uses a primative long
+            return -1;
+        }
     }
 
 

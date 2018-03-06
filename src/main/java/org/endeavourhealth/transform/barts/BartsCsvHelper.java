@@ -15,6 +15,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -22,13 +23,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-public class BartsCsvHelper {
+public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
@@ -61,15 +58,17 @@ public class BartsCsvHelper {
         this.version = version;
     }
 
-
+    @Override
     public UUID getServiceId() {
         return serviceId;
     }
 
+    @Override
     public UUID getSystemId() {
         return systemId;
     }
 
+    @Override
     public UUID getExchangeId() {
         return exchangeId;
     }

@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.barts.schema.DIAGN;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -74,7 +75,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
         UUID patientUuid = csvHelper.findPatientIdFromEncounterId(encounterIdCell);
         if (patientUuid == null) {
-            LOG.warn("Skipping Diagnosis " + parser.getDiagnosisID().getString() + " due to missing encounter");
+            TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} due to missing encounter", parser.getDiagnosisID().getString());
             return;
         }
 
@@ -165,10 +166,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                 throw new TransformException("Unknown DIAGN code type [" + conceptCodeType + "]");
             }
 
-
-
         } else {
-            LOG.warn("Unable to create codeableConcept for Condition ID: "+diagnosisId);
+            TransformWarnings.log(LOG, parser, "Unable to create CodeableConcept for Condition ID {}", diagnosisId);
             return;
         }
 

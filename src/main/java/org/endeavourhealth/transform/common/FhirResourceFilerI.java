@@ -1,12 +1,8 @@
 package org.endeavourhealth.transform.common;
 
-import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface FhirResourceFilerI {
@@ -41,6 +37,6 @@ public interface FhirResourceFilerI {
 
     public UUID getSystemId();
 
-    public void logTransformRecordError(Throwable ex, CsvCurrentState state) ;
+    public void logTransformRecordError(Throwable ex, CsvCurrentState state) throws Exception;
 
     }

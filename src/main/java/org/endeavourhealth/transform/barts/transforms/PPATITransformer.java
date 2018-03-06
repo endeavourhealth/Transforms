@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
@@ -115,7 +116,8 @@ public class PPATITransformer extends BartsBasisTransformer {
                                                                         nhsNumberStatusCell.getLong());
 
             String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
-            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc);
+            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);
+
             patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
 
         } else {
@@ -162,7 +164,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                                                                         CernerCodeValueRef.MARITAL_STATUS,
                                                                         maritalStatusCode.getLong());
 
-            MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt());
+            MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt(), parser);
             patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
 
         } else {
@@ -261,7 +263,7 @@ public class PPATITransformer extends BartsBasisTransformer {
     }
 
 
-    private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus) {
+    private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String nhsNumberStatus, ParserI parser) throws Exception {
 
         //we've got at least one missing code, so return null
         if (nhsNumberStatus == null) {
@@ -286,12 +288,12 @@ public class PPATITransformer extends BartsBasisTransformer {
             case "Trace Postponed":
                 return NhsNumberVerificationStatus.TRACE_POSTPONED;
             default:
-                LOG.warn("Unmapped NHS number status [" + nhsNumberStatus + "]");
+                TransformWarnings.log(LOG, parser, "Unmapped NHS number status {}", nhsNumberStatus);
                 return null;
         }
     }
 
-    private static MaritalStatus convertMaritalStatus(String statusCode) {
+    private static MaritalStatus convertMaritalStatus(String statusCode, ParserI parser) throws Exception {
         switch (statusCode) {
             case "DIVORCED": return MaritalStatus.DIVORCED;
             case "MARRIED": return MaritalStatus.MARRIED;
@@ -301,7 +303,8 @@ public class PPATITransformer extends BartsBasisTransformer {
             case "WIDOW": return MaritalStatus.WIDOWED;
             case "LIFE_PTNR": return MaritalStatus.DOMESTIC_PARTNER;
             default:
-                throw new IllegalArgumentException("Unmapped marital status [" + statusCode + "]");
+                TransformWarnings.log(LOG, parser, "Unmapped marital status {}", statusCode);
+                return null;
         }
     }
 }

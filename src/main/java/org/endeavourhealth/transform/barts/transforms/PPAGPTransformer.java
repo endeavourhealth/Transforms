@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.barts.schema.PPAGP;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         if (patientBuilder == null) {
-            LOG.warn("Skipping PPAGP record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            TransformWarnings.log(LOG, parser, "Skipping PPAGP record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
             return;
         }
 
@@ -75,27 +76,4 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatientGP(PPAGP parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        fhirPatient.addCareProvider(csvHelper.createPractitionerReference(parser.getRegisteredGPMillenniumPersonnelId()));
-
-        PatientResourceCache.savePatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()), fhirPatient);
-
-    }*/
 }

@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
@@ -294,6 +295,11 @@ public class CLEVETransformer extends BartsBasisTransformer {
             if (resultText.startsWith(comparator)) {
                 comparatorValue = convertComparator(comparator);
 
+                //if we failed to map the comparator String to a FHIR comparator value, then log the warning
+                if (comparatorValue == null) {
+                    TransformWarnings.log(LOG, parser, "Unexpected comparator string {}", comparator);
+                }
+
                 //make sure to remove the comparator from the String, and tidy up any whitespace
                 resultText = resultText.substring(comparator.length());
                 resultText = resultText.trim();
@@ -365,7 +371,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
             return Quantity.QuantityComparator.GREATER_THAN;
 
         } else {
-            LOG.warn("Unexpected comparator string [" + str + "]");
             return null;
         }
     }

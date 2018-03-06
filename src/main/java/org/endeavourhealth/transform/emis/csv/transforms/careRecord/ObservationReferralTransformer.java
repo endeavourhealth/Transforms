@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -68,7 +69,7 @@ public class ObservationReferralTransformer {
 
             } else {
                 //if the CSV urgency couldn't be mapped to a FHIR priority, then we can use free-text
-                LOG.warn("Unmapped Emis referral priority {}", urgency);
+                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral priority {}", urgency);
                 referralRequestBuilder.setPriorityFreeText(urgency.getString(), urgency);
             }
         }
@@ -80,7 +81,7 @@ public class ObservationReferralTransformer {
                 referralRequestBuilder.setType(type, serviceType);
 
             } else {
-                LOG.warn("Unmapped Emis referral type {}", serviceType);
+                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral type {}", serviceType);
                 referralRequestBuilder.setTypeFreeText(serviceType.getString(), serviceType);
             }
         }
@@ -92,7 +93,7 @@ public class ObservationReferralTransformer {
                 referralRequestBuilder.setMode(fhirMode, mode);
 
             } else {
-                LOG.warn("Unmapped Emis referral mode " + mode.getString());
+                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral mode {}", mode);
                 referralRequestBuilder.setModeFreeText(mode.getString(), mode);
             }
         }
@@ -137,100 +138,6 @@ public class ObservationReferralTransformer {
         csvHelper.cacheReferral(observationGuid, patientGuid, referralRequestBuilder);
 
     }
-
-    /*private static void createResource(ObservationReferral parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
-
-        ReferralRequest fhirReferral = new ReferralRequest();
-        fhirReferral.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_REFERRAL_REQUEST));
-
-        String observationGuid = parser.getObservationGuid();
-        String patientGuid = parser.getPatientGuid();
-
-        EmisCsvHelper.setUniqueId(fhirReferral, patientGuid, observationGuid);
-
-        fhirReferral.setPatient(csvHelper.createPatientReference(patientGuid));
-
-        String ubrn = parser.getReferralUBRN();
-        fhirReferral.addIdentifier(IdentifierHelper.createUbrnIdentifier(ubrn));
-
-        String urgency = parser.getReferralUrgency();
-        if (!Strings.isNullOrEmpty(urgency)) {
-            ReferralPriority fhirPriority = convertUrgency(urgency);
-            if (fhirPriority != null) {
-                fhirReferral.setPriority(CodeableConceptHelper.createCodeableConcept(fhirPriority));
-            } else {
-                //if the CSV urgency couldn't be mapped to a FHIR priority, then we can use free-text
-                LOG.warn("Unmapped Emis referral priority {}", urgency);
-                fhirReferral.setPriority(CodeableConceptHelper.createCodeableConcept(urgency));
-            }
-        }
-
-        String serviceType = parser.getReferralServiceType();
-        if (!Strings.isNullOrEmpty(serviceType)) {
-            ReferralType type = convertTye(serviceType);
-            if (type != null) {
-                fhirReferral.setType(CodeableConceptHelper.createCodeableConcept(type));
-            } else {
-                LOG.warn("Unmapped Emis referral type {}", serviceType);
-                fhirReferral.setType(CodeableConceptHelper.createCodeableConcept(serviceType));
-            }
-        }
-
-        String mode = parser.getReferralMode();
-        if (!Strings.isNullOrEmpty(mode)) {
-
-            CodeableConcept codeableConcept = null;
-
-            try {
-                ReferralRequestSendMode fhirMode = ReferralRequestSendMode.fromDescription(mode);
-                codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMode);
-            } catch (IllegalArgumentException ex) {
-                //if we couldn't map to a send mode from the value set, just save as a textual codeable concept
-                codeableConcept = CodeableConceptHelper.createCodeableConcept(mode);
-            }
-
-            fhirReferral.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.REFERRAL_REQUEST_SEND_MODE, codeableConcept));
-        }
-
-        String recipientOrgGuid = parser.getReferalTargetOrganisationGuid();
-        //the spec. states that this value will always be present, but there's some live data with a missing value
-        if (!Strings.isNullOrEmpty(recipientOrgGuid)) {
-            fhirReferral.addRecipient(csvHelper.createOrganisationReference(recipientOrgGuid));
-        }
-
-        //the below values are defined in the spec., but the spec also states that they'll be empty, so
-        //none of the below will probably be used
-        String sendingOrgGuid = parser.getReferralSourceOrganisationGuid();
-        if (Strings.isNullOrEmpty(sendingOrgGuid)) {
-            //in the absence of any data, treat the referral as though it was FROM this service so long as it wasn't TO this service
-            if (!parser.getOrganisationGuid().equals(recipientOrgGuid)) {
-                sendingOrgGuid = parser.getOrganisationGuid();
-            }
-        }
-
-        if (!Strings.isNullOrEmpty(sendingOrgGuid)) {
-            fhirReferral.setRequester(csvHelper.createOrganisationReference(sendingOrgGuid));
-        }
-
-        //although the columns exist in the CSV, the spec. states that they'll always be empty
-        //ReferralReceivedDateTime
-        //ReferralEndDate
-        //ReferralSourceId - links to Coding_ClinicalCode
-        //ReferralReasonCodeId - links to Coding_ClinicalCode
-        //ReferringCareProfessionalStaffGroupCodeId - links to Coding_ClinicalCode
-        //ReferralEpisodeRTTMeasurementTypeId - links to Coding_ClinicalCode
-        //ReferralEpisodeClosureDate
-        //ReferralEpisideDischargeLetterIssuedDate
-        //ReferralClosureReasonCodeId - links to Coding_ClinicalCode
-
-        //unlike other resources, we don't save the Referral immediately, as there's data we
-        //require on the corresponding row in the Observation file. So cache in the helper
-        //and we'll finish the job when we get to that.
-        csvHelper.cacheReferral(observationGuid, patientGuid, fhirReferral);
-
-    }*/
 
     private static ReferralType convertTye(String type) throws Exception {
 

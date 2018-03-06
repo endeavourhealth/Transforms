@@ -1,13 +1,9 @@
 package org.endeavourhealth.transform.common;
 
-import java.util.UUID;
-
-public interface ParserI {
+public interface ParserI extends HasServiceSystemAndExchangeIdI {
 
     boolean nextRecord() throws Exception;
     CsvCurrentState getCurrentState();
     String getFilePath();
-    UUID getServiceId();
-    UUID getSystemId();
-    UUID getExchangeId();
+    long getSourceFileRecordIdForCurrentRow();
 }
