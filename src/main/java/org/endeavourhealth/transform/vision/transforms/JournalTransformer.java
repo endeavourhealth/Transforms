@@ -9,10 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
@@ -139,7 +136,7 @@ public class JournalTransformer {
         if (Strings.isNullOrEmpty(parser.getReadCode().getString())
                 && (Strings.isNullOrEmpty(parser.getDrugDMDCode().getString()))
                 && (Strings.isNullOrEmpty(parser.getSnomedCode().getString()))) {
-            LOG.warn("Journal ID: "+parser.getObservationID()+" contains no coded items");
+            TransformWarnings.log(LOG, parser, "Journal ID: {} contains no coded items", parser.getObservationID());
             return;
         }
 

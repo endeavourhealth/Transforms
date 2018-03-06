@@ -528,10 +528,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             value = value.trim();
         }
 
-        long rowAuditId = -1;
-        if (isFileAudited()) {
-            rowAuditId = cellAuditIds[csvRecordLineNumber];
-        }
+        long rowAuditId = getSourceFileRecordIdForCurrentRow();
 
         Integer colIndexObj = csvReader.getHeaderMap().get(column);
         int colIndex = colIndexObj.intValue();
@@ -539,7 +536,15 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
     }
 
+    public long getSourceFileRecordIdForCurrentRow() {
+        if (isFileAudited()) {
+            return cellAuditIds[csvRecordLineNumber];
 
+        } else {
+            //if the file isn't audited, return -1, so it's compatible with CsvCell which uses a primative long
+            return -1;
+        }
+    }
 
 
 

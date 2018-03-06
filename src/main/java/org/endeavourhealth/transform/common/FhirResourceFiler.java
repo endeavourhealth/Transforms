@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class FhirResourceFiler implements FhirResourceFilerI {
+public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAndExchangeIdI {
 
     private static final Logger LOG = LoggerFactory.getLogger(FhirResourceFiler.class);
 
@@ -537,30 +537,36 @@ public class FhirResourceFiler implements FhirResourceFilerI {
         return patientResourceTypes.contains(type);
     }
 
+    @Override
     public UUID getServiceId() {
         return serviceId;
     }
 
+    @Override
     public UUID getSystemId() {
         return systemId;
+    }
+
+    @Override
+    public UUID getExchangeId() {
+        return exchangeId;
     }
 
     /**
      * called when an exception occurs when processing a record in a CSV file, which stores the error in
      * a table which can then be used to re-play the transform for just those records that were in error
      */
-    public void logTransformRecordError(Throwable ex, CsvCurrentState state) {
+    public void logTransformRecordError(Throwable ex, CsvCurrentState state) throws Exception {
 
-        //if we've had more than 100 errors, don't bother logging or adding any more exceptions to the audit trail
-        if (transformError.getError().size() > 50) {
-            LOG.error("Error at " + state + ": " + ex.getMessage() + " (had over 50 exceptions, so not logging any more)");
-            ex = null;
-
-        } else {
-            //don't log the exception here, since we've already logged it from the separate thread
-            //LOG.error("Error at " + state + ": " + ex.getMessage());
-            LOG.error("Error at " + state, ex);
+        //if we've had more than X errors, abort the transform
+        int abortLimit = TransformConfig.instance().getMaxTransformErrorsBeforeAbort();
+        if (transformError.getError().size() >= abortLimit) {
+            throw new TransformException("Had " + abortLimit + " errors so aborting the transform", ex);
         }
+
+        //don't log the exception here, since we've already logged it from the separate thread
+        //LOG.error("Error at " + state + ": " + ex.getMessage());
+        LOG.error("Error at " + state, ex);
 
         //then add the error to our audit object
         Map<String, String> args = new HashMap<>();

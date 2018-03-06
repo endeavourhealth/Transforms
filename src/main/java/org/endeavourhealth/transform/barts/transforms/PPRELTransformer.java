@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -49,7 +50,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         if (patientBuilder == null) {
-            LOG.warn("Skipping PPREL record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            TransformWarnings.log(LOG, parser, "Skipping PPREL record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
             return;
         }
 

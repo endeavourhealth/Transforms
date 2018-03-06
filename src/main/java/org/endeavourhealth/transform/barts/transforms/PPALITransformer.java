@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.barts.schema.PPALI;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Identifier;
@@ -56,7 +57,7 @@ public class PPALITransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         if (patientBuilder == null) {
-            LOG.warn("Skipping PPALI record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            TransformWarnings.log(LOG, parser, "Skipping PPALI record for as no MRN->Person mapping found", milleniumPersonIdCell);
             return;
         }
 
@@ -76,7 +77,13 @@ public class PPALITransformer extends BartsBasisTransformer {
                 CernerCodeValueRef.ALIAS_TYPE,
                 aliasTypeCodeCell.getLong());
 
-        String aliasSystem = convertAliasCode(cernerCodeValueRef.getCodeMeaningTxt());
+        String aliasDesc = cernerCodeValueRef.getCodeMeaningTxt();
+        String aliasSystem = convertAliasCode(aliasDesc);
+
+        if (aliasSystem == null) {
+            TransformWarnings.log(LOG, parser, "Unknown alias system for {}", aliasDesc);
+            aliasSystem = "UNKNWON";
+        }
 
         //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
         //has more information on them, so remove any existing Identifier for the same system that DOES NOT
@@ -169,10 +176,7 @@ public class PPALITransformer extends BartsBasisTransformer {
             case "BIOMETRICID": return FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_BIOMETRIC;
             case "NTKCRDNBR": return FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CARD_NUMBER;
             default:
-                LOG.warn("Unknown alias system [" + statusCode + "]");
-                //TODO - change to throw an IllegalArgumentException when happy we have no unmapped aliases
-                return "UNKNWON";
-                //return null;
+                return null;
         }
     }
 

@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Address;
@@ -47,7 +48,7 @@ public class PPADDTransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         if (patientBuilder == null) {
-            LOG.warn("Skipping PPADD record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            TransformWarnings.log(LOG, parser, "Skipping PPADD record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
             return;
         }
 
@@ -91,35 +92,4 @@ public class PPADDTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*public static void createPatientAddress(PPADD parser,
-                                         FhirResourceFiler fhirResourceFiler,
-                                        BartsCsvHelper csvHelper,
-                                         String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
-        if (cernerCodeValueRefDalI == null) {
-            cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-        }
-
-        Patient fhirPatient = PatientResourceCache.getPatientResource(Long.parseLong(parser.getMillenniumPersonIdentifier()));
-
-        // If we can't find a patient resource from a previous PPATI file, throw an exception but if the line is inactive then just ignore it
-        if (fhirPatient == null) {
-            if (parser.isActive()) {
-                LOG.warn("Patient Resource Not Found In Cache: " + parser.getMillenniumPersonIdentifier());
-            } else {
-                return;
-            }
-        }
-
-        // Patient Address
-        Patient.ContactComponent fhirContactComponent = new Patient.ContactComponent();
-
-
-        Address fhirRelationAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddressLine1(),
-                parser.getAddressLine2(), parser.getAddressLine3(), parser.getAddressLine4(), parser.getCountyText(), parser.getPostcode());
-
-        fhirContactComponent.setAddress(fhirRelationAddress);
-
-    }*/
 }

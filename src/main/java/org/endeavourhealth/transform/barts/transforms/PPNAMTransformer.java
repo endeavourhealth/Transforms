@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.HumanName;
@@ -50,7 +51,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
 
         if (patientBuilder == null) {
-            LOG.warn("Skipping PPNAM record for " + milleniumPersonIdCell.getString() + " as no MRN->Person mapping found");
+            TransformWarnings.log(LOG, parser, "Skipping PPNAM record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
             return;
         }
 

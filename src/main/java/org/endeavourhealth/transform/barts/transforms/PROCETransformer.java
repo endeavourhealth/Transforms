@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
@@ -74,7 +75,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
         UUID patientUuid = csvHelper.findPatientIdFromEncounterId(encounterIdCell);
         if (patientUuid == null) {
-            LOG.warn("Skipping Procedure " + parser.getProcedureID().getString() + " due to missing encounter");
+            TransformWarnings.log(LOG, parser, "Skipping Procedure {} due to missing encounter", parser.getProcedureID());
             return;
         }
 
@@ -165,7 +166,7 @@ public class PROCETransformer extends BartsBasisTransformer {
             }
 
         } else {
-            //LOG.warn("Unable to create codeableConcept for Procedure ID: "+procedureIdCell);
+            TransformWarnings.log(LOG, parser, "Empty CONCEPT_CKI_IDENT cell for Procedure {}", parser.getProcedureID());
             return;
         }
 

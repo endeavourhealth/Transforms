@@ -445,7 +445,9 @@ public abstract class EmisCsvToFhirTransformer {
             allowProcessingDisabledServices = true;
         }
 
-        EmisCsvHelper csvHelper = new EmisCsvHelper(sharingAgreementGuid, allowProcessingDisabledServices, allowMissingCodes);
+        EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
+                                                    fhirResourceFiler.getExchangeId(), sharingAgreementGuid,
+                                                    allowProcessingDisabledServices, allowMissingCodes);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
