@@ -107,7 +107,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         procedureBuilder.setEncounter(encounterReference, encounterIdCell);
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
-        if (!encounterSliceIdCell.isEmpty()) {
+        if (!encounterSliceIdCell.isEmpty() && encounterSliceIdCell.getLong() > 0) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);

@@ -9,10 +9,7 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.ExchangeHelper;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
@@ -453,6 +450,7 @@ public abstract class EmisCsvToFhirTransformer {
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         if (!exchangeDal.isServiceStarted(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
+            AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applying Emis Admin Resource Cache");
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
         }
 
