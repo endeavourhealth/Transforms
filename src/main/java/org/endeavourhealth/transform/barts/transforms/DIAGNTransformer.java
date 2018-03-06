@@ -107,12 +107,12 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterUuid.toString());
         conditionBuilder.setEncounter(encounterReference, encounterIdCell);
 
-        CsvCell encounterSliceID = parser.getEncounterSliceID();
-        if (!encounterSliceID.isEmpty()) {
+        CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
+        if (!encounterSliceIdCell.isEmpty() && encounterSliceIdCell.getLong() > 0) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
-            identifierBuilder.setValue(encounterSliceID.getString(), encounterSliceID);
+            identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
 
         CsvCell nomenclatureId = parser.getNomenclatureID();
