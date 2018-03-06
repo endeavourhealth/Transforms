@@ -4,6 +4,7 @@ import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
@@ -18,6 +19,8 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -492,6 +495,18 @@ public class FhirHl7v2Filer {
             if (resource instanceof Encounter) {
                 Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
                 resource = updateEncounter(oldEncounter, (Encounter)resource);
+            } else if (resource instanceof Patient) {
+                // Do not update Patient resources which have previously been updated by the DW feed (contains Cerner person id)
+                Patient oldPatient = (Patient)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
+                if (oldPatient != null) {
+                    PatientBuilder patientBuilder = new PatientBuilder(oldPatient);
+                    List<Identifier> identifiersForSameSystem = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+                    for (Identifier identifier: identifiersForSameSystem) {
+                        if (identifier.hasId()) {
+                            continue;
+                        }
+                    }
+                }
             }
 
             GenericBuilder builder = new GenericBuilder(resource);
