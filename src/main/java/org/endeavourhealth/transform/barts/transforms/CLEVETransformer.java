@@ -40,15 +40,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
-
         if (parser == null) {
             return;
         }
-
         while (parser.nextRecord()) {
             try {
                 createObservation((CLEVE)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -60,56 +57,36 @@ public class CLEVETransformer extends BartsBasisTransformer {
                                          BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-
-
-        CsvCell clinicalEventId = parser.getEventId();
-
-        ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
-
+        // Order : first handle inactive records, so we need Patient
         ObservationBuilder observationBuilder = new ObservationBuilder();
-
-        observationBuilder.setId(observationResourceId.getResourceId().toString(), clinicalEventId);
+        UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
+        CsvCell clinicalEventId = parser.getEventId();
         CsvCell activeCell = parser.getActiveIndicator();
+        ResourceId observationResourceId = getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, clinicalEventId);
+        observationBuilder.setId(observationResourceId.getResourceId().toString(), clinicalEventId);
+        if (!activeCell.getIntAsBoolean()) {
+            // if we have observation and patient we can delete an existing record else return
+            if (patientUuid != null) {
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+                observationBuilder.setPatient(patientReference);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
+            } else {
+                TransformWarnings.log(LOG, parser, "Unable to delete encounter record as no matching patient. Record id: {} and patient: {}", parser.getEventId().getString(), parser.getPatientId().getString() );
+            }
+            return;
+        }
 
         // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
         UUID encounterUuid = csvHelper.findEncounterResourceIdFromEncounterId(encounterIdCell);
         if (encounterUuid == null) {
-           // LOG.warn("Clinical Event " + parser.getEventId().getString() + " has no matching encounter.");
-            TransformWarnings.log(LOG, parser, "No matching encounter found");
+           //  Nice to have an encounter for events but just log and carry on
+            TransformWarnings.log(LOG, parser, "No matching encounter found for active record id: {}, supplied encounterId: {}", parser.getEventId().getString(), parser.getEncounterId().getString());
         }
         // check patient data. If we can't link the event to a patient its no use
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(parser.getPatientId());
-        if (!activeCell.getIntAsBoolean()) {
-            // If patientId is null try to get from cached Observation if it exist
-            Reference patientReference = new Reference();
-            if (patientUuid == null) {
-                if (encounterUuid != null) {
-                     UUID patIdFromEnc = csvHelper.findPatientIdFromEncounterId(parser.getEncounterId());
-                     if (patIdFromEnc == null) {
-                         // We need a patient id for the delete so can't proceed
-
-                         return;
-                    } else {  // get patient from cached encounter
-                         patientReference = ReferenceHelper.createReference(ResourceType.Patient, patIdFromEnc.toString());
-                    }
-                }
-            } else {
-                patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-            }
-            // If we have patient data we can try to delete the record, otherwise return
-            if (patientReference != null) {
-                observationBuilder.setPatient(patientReference);
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
-            } else { // we couldn't get patient id anywhere
-                TransformWarnings.log(LOG, parser, "Unable to find a record to update with inactive flag");
-            }
-            return;
-        }
-
-        if (patientUuid == null) {
-            LOG.error("Skipping entry. Unable to find patient data for personId " + parser.getPatientId().getString()
-                    + " for eventId " + parser.getEventId().getString());
+        //TODO Potentially another candidate for saving for later processing when we may have more data. Eg scope of patients expands
+      if (patientUuid == null) {
+          TransformWarnings.log(LOG, parser,"Skipping entry. Unable to find patient data for personId {}, eventId:{}", parser.getPatientId().getString(), parser.getEventId().getString());
             return;
         }
 
@@ -344,7 +321,6 @@ public class CLEVETransformer extends BartsBasisTransformer {
         } catch (NumberFormatException nfe) {
            // LOG.warn("Failed to convert [" + resultText + "] to Double");
             TransformWarnings.log(LOG, parser, "Failed to convert {} to Double", resultText);
-
         }
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
@@ -380,7 +356,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             }
             catch (NumberFormatException ex) {
                // LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
-                TransformWarnings.log(LOG, parser, "Range not set for clinical event due to invalid reference range");
+                TransformWarnings.log(LOG, parser, "Range not set for clinical event due to invalid reference range. Id:{}", parser.getEventId().getString());
 
             }
         }
