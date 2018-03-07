@@ -130,92 +130,11 @@ public class LocationTransformer {
             locationBuilder.setManagingOrganisation(organisationReference, organisationCell);
         }
 
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
-
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
         adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
-    /*private static void createResource(Location parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
-
-        org.hl7.fhir.instance.model.Location fhirLocation = new org.hl7.fhir.instance.model.Location();
-        fhirLocation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
-
-        String locationGuid = parser.getLocationGuid();
-        fhirLocation.setId(locationGuid);
-
-        if (parser.getDeleted()) {
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), fhirLocation);
-
-            //this resource exists in our admin resource cache, so we can populate the
-            //main database when new practices come on, so we need to update that too
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), fhirLocation);
-            return;
-        }
-
-        String houseNameFlat = parser.getHouseNameFlatNumber();
-        String numberAndStreet = parser.getNumberAndStreet();
-        String village = parser.getVillage();
-        String town = parser.getTown();
-        String county = parser.getCounty();
-        String postcode = parser.getPostcode();
-
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.WORK, houseNameFlat, numberAndStreet, village, town, county, postcode);
-        fhirLocation.setAddress(fhirAddress);
-
-        String phoneNumber = parser.getPhoneNumber();
-        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, phoneNumber);
-        fhirLocation.addTelecom(fhirContact);
-
-        String faxNumber = parser.getFaxNumber();
-        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.FAX, ContactPoint.ContactPointUse.WORK, faxNumber);
-        fhirLocation.addTelecom(fhirContact);
-
-        String email = parser.getEmailAddress();
-        fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email);
-        fhirLocation.addTelecom(fhirContact);
-
-        Date openDate = parser.getOpenDate();
-        Date closeDate = parser.getCloseDate();
-        boolean deleted = parser.getDeleted();
-        Period fhirPeriod = PeriodHelper.createPeriod(openDate, closeDate);
-        if (PeriodHelper.isActive(fhirPeriod) && !deleted) {
-            fhirLocation.setStatus(org.hl7.fhir.instance.model.Location.LocationStatus.ACTIVE);
-        } else {
-            fhirLocation.setStatus(org.hl7.fhir.instance.model.Location.LocationStatus.INACTIVE);
-        }
-        fhirLocation.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.ACTIVE_PERIOD, fhirPeriod));
-
-        String mainContactName = parser.getMainContactName();
-        if (!Strings.isNullOrEmpty(mainContactName)) {
-            fhirLocation.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.LOCATION_MAIN_CONTACT, new StringType(mainContactName)));
-        }
-
-        String name = parser.getLocationName();
-        fhirLocation.setName(name);
-
-        String type = parser.getLocationTypeDescription();
-        fhirLocation.setType(CodeableConceptHelper.createCodeableConcept(type));
-
-        String parentLocationGuid = parser.getParentLocationId();
-        if (!Strings.isNullOrEmpty(parentLocationGuid)) {
-            fhirLocation.setPartOf(csvHelper.createLocationReference(parentLocationGuid));
-        }
-
-        List<String> organisationGuids = csvHelper.findOrganisationLocationMapping(locationGuid);
-        if (organisationGuids != null) {
-            String organisationGuid = organisationGuids.get(0);
-            fhirLocation.setManagingOrganization(csvHelper.createOrganisationReference(organisationGuid));
-        }
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirLocation);
-
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirLocation);
-    }*/
 }

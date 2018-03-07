@@ -94,64 +94,11 @@ public class UserInRoleTransformer {
             codeableConceptBuilder.setCodingCode(roleCode.getString(), roleCode);
         }
 
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
-
         //this resource exists in our admin resource cache, so we can populate the
         //main database when new practices come on, so we need to update that too
         adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), practitionerBuilder);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
     }
 
-    /*private static void createResource(UserInRole parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
-
-        Practitioner fhirPractitioner = new Practitioner();
-        fhirPractitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
-
-        String userInRoleGuid = parser.getUserInRoleGuid();
-        fhirPractitioner.setId(userInRoleGuid);
-
-        String title = parser.getTitle();
-        String givenName = parser.getGivenName();
-        String surname = parser.getSurname();
-
-        //the sample data contains users with a given name but no surname. FHIR requires all names
-        //to have a surname, so treat the sole given name as the surname
-        if (Strings.isNullOrEmpty(surname)) {
-            surname = givenName;
-            givenName = "";
-        }
-
-        //in the EMIS test pack, we have at least one record with no name details at all, so need to handle it
-        if (Strings.isNullOrEmpty(surname)) {
-            surname = "Unknown";
-        }
-
-        fhirPractitioner.setName(NameConverter.convert(givenName, surname, title));
-
-        Date startDate = parser.getContractStartDate();
-        Date endDate = parser.getContractEndDate();
-        Period fhirPeriod = PeriodHelper.createPeriod(startDate, endDate);
-        boolean active = PeriodHelper.isActive(fhirPeriod);
-
-        fhirPractitioner.setActive(active);
-
-        Practitioner.PractitionerPractitionerRoleComponent fhirRole = fhirPractitioner.addPractitionerRole();
-
-        fhirRole.setPeriod(fhirPeriod);
-
-        String orgUuid = parser.getOrganisationGuid();
-        fhirRole.setManagingOrganization(csvHelper.createOrganisationReference(orgUuid));
-
-        String roleName = parser.getJobCategoryName();
-        String roleCode = parser.getJobCategoryCode();
-        fhirRole.setRole(CodeableConceptHelper.createCodeableConcept(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES, roleName, roleCode));
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), fhirPractitioner);
-
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), fhirPractitioner);
-    }*/
 }

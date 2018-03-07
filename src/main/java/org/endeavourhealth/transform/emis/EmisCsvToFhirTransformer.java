@@ -450,8 +450,9 @@ public abstract class EmisCsvToFhirTransformer {
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         if (!exchangeDal.isServiceStarted(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
-            AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applying Emis Admin Resource Cache");
+
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
+            AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applied Emis Admin Resource Cache");
         }
 
         LOG.trace("Starting pre-transforms to cache data");
