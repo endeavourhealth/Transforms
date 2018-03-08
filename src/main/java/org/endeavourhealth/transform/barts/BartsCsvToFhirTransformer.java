@@ -471,7 +471,7 @@ public abstract class BartsCsvToFhirTransformer {
         throw new TransformException("Failed to find tail file for expected name " + expectedName);
     }
 
-    private static String identifyFileType(String filename) throws TransformException {
+    public static String identifyFileType(String filename) throws TransformException {
         String[] parts = filename.split("_");
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
