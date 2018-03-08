@@ -180,7 +180,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
         if (cernerCodeFromDB == null) {
-            return new CernerCodeValueRef();
+           // return new CernerCodeValueRef();
+            return null;
         }
 
         //seem to have whitespace around some of the fields. As a temporary fix, trim them here
