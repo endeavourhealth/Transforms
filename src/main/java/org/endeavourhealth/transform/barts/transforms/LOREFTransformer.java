@@ -130,7 +130,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
         } else {
             Location location = (Location) csvHelper.retrieveResource(ResourceType.Location, locationResourceId.getResourceId());
-            if (location == null) {
+            if (location != null) {
                 locationBuilder = new LocationBuilder(location);
                 if (location.getPartOf() == null || location.getPartOf().hasReference() == false){
                     String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
