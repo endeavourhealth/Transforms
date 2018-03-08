@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCacheDateRecord;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -307,9 +308,10 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Location
         CsvCell currentLocationCell = parser.getCurrentLocationIdentifier();
         if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
-            ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentLocationCell.getString());
-            if (locationResourceId != null) {
-                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceId.getResourceId().toString()), currentLocationCell);
+            //ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentLocationCell.getString());
+            UUID locationResourceUUID = LocationResourceCache.getEncounterResourceId(currentLocationCell.getString(), csvHelper, fhirResourceFiler, parser);
+            if (locationResourceUUID != null) {
+                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
             } else {
                 TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in ENCNT record {} in file {}", currentLocationCell.getString(), encounterIdCell.getString(), parser.getFilePath());
             }
