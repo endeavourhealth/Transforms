@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
@@ -129,7 +130,10 @@ public class ProblemTransformer extends BartsBasisTransformer {
             String code = problemCodeCell.getString();
 
             if (vocab.equalsIgnoreCase("SNOMED CT")) {
-                String term = TerminologyService.lookupSnomedFromConceptId(code).getTerm();
+                String term = TerminologyService.lookupSnomedTerm(code);
+                if (Strings.isNullOrEmpty(term)) {
+                    TransformWarnings.log(LOG, parser, "Failed to lookup Snomed term for code {}", code);
+                }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
@@ -137,6 +141,9 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
             } else if (vocab.equalsIgnoreCase("ICD-10")) {
                 String term = TerminologyService.lookupIcd10CodeDescription(code);
+                if (Strings.isNullOrEmpty(term)) {
+                    TransformWarnings.log(LOG, parser, "Failed to lookup ICD-10 term for code {}", code);
+                }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
