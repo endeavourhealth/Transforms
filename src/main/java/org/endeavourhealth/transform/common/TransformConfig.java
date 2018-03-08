@@ -17,7 +17,7 @@ public class TransformConfig {
     private String sharedStoragePath;
     private int attemptsPermmitedPerExchange;
     private String killFileLocation;
-    private boolean emisAllowDisabledOrganisations;
+    private List<Pattern> emisDisabledOragnisationsAllowed = new ArrayList<>();
     private boolean emisAllowMissingCodes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
@@ -45,7 +45,7 @@ public class TransformConfig {
         //this.sharedStoragePath = null; //can't really default this
         this.attemptsPermmitedPerExchange = 5;
         //this.killFileLocation = null; //no default
-        this.emisAllowDisabledOrganisations = false;
+        this.emisDisabledOragnisationsAllowed = new ArrayList<>();
         this.emisAllowMissingCodes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
@@ -82,9 +82,14 @@ public class TransformConfig {
 
             node = json.get("emis");
             if (node != null) {
-                JsonNode subNode = node.get("process_disabled_services");
+
+                JsonNode subNode = node.get("disabled_ods_codes_allowed");
                 if (subNode != null) {
-                    this.emisAllowDisabledOrganisations = subNode.asBoolean();
+                    for (int i=0; i<subNode.size(); i++) {
+                        String s = subNode.get(i).asText();
+                        Pattern pattern = Pattern.compile(s);
+                        this.emisDisabledOragnisationsAllowed.add(pattern);
+                    }
                 }
 
                 subNode = node.get("allow_missing_codes");
@@ -136,8 +141,8 @@ public class TransformConfig {
         return killFileLocation;
     }
 
-    public boolean isEmisAllowDisabledOrganisations() {
-        return emisAllowDisabledOrganisations;
+    public List<Pattern> getEmisDisabledOragnisationsAllowed() {
+        return emisDisabledOragnisationsAllowed;
     }
 
     public boolean isEmisAllowMissingCodes() {

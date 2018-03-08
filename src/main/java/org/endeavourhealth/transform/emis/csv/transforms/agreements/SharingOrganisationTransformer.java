@@ -1,15 +1,22 @@
 package org.endeavourhealth.transform.emis.csv.transforms.agreements;
 
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.agreements.SharingOrganisation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SharingOrganisationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SharingOrganisationTransformer.class);
@@ -30,8 +37,28 @@ public class SharingOrganisationTransformer {
 
         CsvCell disabled = parser.getDisabled();
         if (disabled.getBoolean()) {
-            if (!csvHelper.isAllowProcessingDisabledServices()) {
-                throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
+
+            //if we've already decided we don't want to process any patient data, then we don't care what the state
+            //of the sharing agreement is
+            if (csvHelper.isProcessPatientData()) {
+
+                ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+                Service service = serviceDal.getById(csvHelper.getServiceId());
+                String odsCode = service.getLocalId();
+
+                boolean allowed = false;
+                List<Pattern> disabledOrgIdsAllowed = TransformConfig.instance().getEmisDisabledOragnisationsAllowed();
+                for (Pattern pattern : disabledOrgIdsAllowed) {
+                    Matcher matcher = pattern.matcher(odsCode);
+                    if (matcher.matches()) {
+                        allowed = true;
+                        break;
+                    }
+                }
+
+                if (!allowed) {
+                    throw new TransformException("Not processing Exchange because org disabled in sharing agreements file");
+                }
             }
         }
     }

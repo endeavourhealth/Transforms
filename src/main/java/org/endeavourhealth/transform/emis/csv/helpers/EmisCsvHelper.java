@@ -11,10 +11,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
@@ -32,12 +29,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
-    private UUID serviceId = null;
-    private UUID systemId = null;
-    private UUID exchangeId = null;
-    private String dataSharingAgreementGuid = null;
-    private boolean allowProcessingDisabledServices = false;
-    private boolean allowProcessingMissingCodes = false;
+    private final UUID serviceId;
+    private final UUID systemId;
+    private final UUID exchangeId;
+    private final String dataSharingAgreementGuid;
+    private final boolean processPatientData;
 
     //metadata, not relating to patients
     private Map<Long, EmisCsvCodeMap> clinicalCodes = new ConcurrentHashMap<>();
@@ -64,13 +60,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
 
-    public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean allowProcessingDisabledServices, boolean allowProcessingMissingCodes) {
+    public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
-        this.allowProcessingDisabledServices = allowProcessingDisabledServices;
-        this.allowProcessingMissingCodes = allowProcessingMissingCodes;
+        this.processPatientData = processPatientData;
     }
 
 
@@ -89,12 +84,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return exchangeId;
     }
 
-    public boolean isAllowProcessingDisabledServices() {
-        return allowProcessingDisabledServices;
-    }
-
     public String getDataSharingAgreementGuid() {
         return dataSharingAgreementGuid;
+    }
+
+    public boolean isProcessPatientData() {
+        return processPatientData;
     }
 
     /**
@@ -148,7 +143,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (ret == null) {
             ret = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeIdCell.getLong());
             if (ret == null) {
-                if (allowProcessingMissingCodes) {
+                if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
 
                     Coding coding = new Coding();
@@ -187,7 +182,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (ret == null) {
             ret = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, true, codeIdCell.getLong());
             if (ret == null) {
-                if (allowProcessingMissingCodes) {
+                if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
                     LOG.error("Failed to find medication codeable concept for code ID " + codeIdCell.getLong());
 

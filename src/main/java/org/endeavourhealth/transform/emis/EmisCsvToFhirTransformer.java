@@ -9,7 +9,10 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.AuditWriter;
+import org.endeavourhealth.transform.common.ExchangeHelper;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
@@ -431,20 +434,10 @@ public abstract class EmisCsvToFhirTransformer {
                                          TransformError previousErrors,
                                          boolean processPatientData) throws Exception {
 
-        boolean allowProcessingDisabledServices = TransformConfig.instance().isEmisAllowDisabledOrganisations();
-        boolean allowMissingCodes = TransformConfig.instance().isEmisAllowMissingCodes();
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
-        if (!processPatientData) {
-            //if we've already decided that we're not going to process the patient data,
-            //then we've already handled the fact that this service will be disabled,
-            //so allow the extract to be processed
-            allowProcessingDisabledServices = true;
-        }
-
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                                                    fhirResourceFiler.getExchangeId(), sharingAgreementGuid,
-                                                    allowProcessingDisabledServices, allowMissingCodes);
+                                                    fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
