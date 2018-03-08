@@ -1,13 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class BulkDiagnosis extends AbstractCsvParser {
@@ -66,7 +64,49 @@ public class BulkDiagnosis extends AbstractCsvParser {
         return true;
     }
 
-    public Long getDiagnosisId() throws FileFormatException {
+    public CsvCell getDiagnosisId() {
+        return super.getCell("DiagnosisId");
+    }
+
+    public CsvCell getUpdateDateTime() {
+        return super.getCell("Update_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ActiveIndicator");
+    }
+
+    public CsvCell getPersonId() {
+        return super.getCell("PersonId");
+    }
+
+    public CsvCell getEncounterId() {
+        return super.getCell("EncounterId");
+    }
+    public CsvCell getLocalPatientId() {
+        return super.getCell("MRN");
+    }
+    public CsvCell getFINNbr() {
+        return super.getCell("FINNbr");
+    }
+    public CsvCell getDiagnosis() {
+        return super.getCell("Diagnosis");
+    }
+    public CsvCell getDiagnosisDate() {
+        return super.getCell("DiagnosisDate");
+    }
+    
+    public CsvCell getDiagnosisCode() {
+        return super.getCell("DiagnosisCode");
+    }
+    public CsvCell getVocabulary() {
+        return super.getCell("Vocabulary");
+    }
+    public CsvCell getSecondaryDescription() {
+        return super.getCell("SecondaryDescription");
+    }
+
+    /*public Long getDiagnosisId() throws FileFormatException {
         return Long.parseLong(super.getString("DiagnosisId").trim().split("\\.")[0]);
     }
 
@@ -119,7 +159,7 @@ public class BulkDiagnosis extends AbstractCsvParser {
     }
     public String getSecondaryDescription() throws FileFormatException {
         return super.getString("SecondaryDescription").trim();
-    }
+    }*/
 
 
 }

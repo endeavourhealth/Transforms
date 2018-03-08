@@ -1,12 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class PPINF extends AbstractCsvParser {
@@ -39,7 +38,55 @@ public class PPINF extends AbstractCsvParser {
 
     }
 
-    public String getMillenniumPersonInformationId() {
+    public CsvCell getMillenniumPersonInformationId() {
+        return super.getCell("#PERSON_INFO_ID");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
+
+    public CsvCell getBeginEffectiveDate() {
+        return super.getCell("BEG_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getEndEffectiveDater() {
+        return super.getCell("END_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getInfoTypeCode() {
+        return super.getCell("INFO_TYPE_CD");
+    }
+
+    public CsvCell getInfoSubTypeCode() {
+        return super.getCell("INFO_SUB_TYPE_CD");
+    }
+
+    public CsvCell getValueMillenniumCode() {
+        return super.getCell("VALUE_CD");
+    }
+
+    public CsvCell getDateTimeValue() {
+        return super.getCell("VALUE_DT_TM");
+    }
+
+    public CsvCell getNumericValue() {
+        return super.getCell("VALUE_NBR");
+    }
+
+    public CsvCell getValueLongTextMillenniumIdentifier() {
+        return super.getCell("VALUE_LONG_TEXT_ID");
+    }
+
+    /*public String getMillenniumPersonInformationId() {
         return super.getString("#PERSON_INFO_ID");
     }
 
@@ -94,7 +141,7 @@ public class PPINF extends AbstractCsvParser {
 
     public String getValueLongTextMillenniumIdentifier() {
         return super.getString("VALUE_LONG_TEXT_ID");
-    }
+    }*/
 
     @Override
     protected String getFileTypeDescription() {

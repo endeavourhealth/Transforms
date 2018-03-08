@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Problem;
@@ -116,36 +117,41 @@ public class ProblemTransformer extends BartsBasisTransformer {
         // set code to coded problem
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
+        //set the raw term on the codeable concept text
+        CsvCell problemTermCell = parser.getProblem();
+        String suppliedTerm = problemTermCell.getString();
+        codeableConceptBuilder.setText(suppliedTerm, problemTermCell);
+
         //it's rare, but there are cases where records have a textual term but not vocab or code
         CsvCell vocabCell = parser.getVocabulary();
-        if (!vocabCell.isEmpty()) {
+        if (!vocabCell.isEmpty() && !problemCodeCell.isEmpty()) {
             String vocab = vocabCell.getString();
+            String code = problemCodeCell.getString();
+
             if (vocab.equalsIgnoreCase("SNOMED CT")) {
+                String term = TerminologyService.lookupSnomedFromConceptId(code).getTerm();
+
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
+                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
 
             } else if (vocab.equalsIgnoreCase("ICD-10")) {
+                String term = TerminologyService.lookupIcd10CodeDescription(code);
+
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, vocabCell);
+                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
 
             } else if (vocab.equalsIgnoreCase("Cerner")) {
+                //in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any attempt to look up an official term
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
+                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
             } else {
                 TransformWarnings.log(LOG, parser, "Skipping Problem {} due to unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
                 return;
             }
         }
-
-        //it's rare, but there are cases where records have a textual term but not vocab or code
-        if (!problemCodeCell.isEmpty()) {
-            String code = problemCodeCell.getString();
-            codeableConceptBuilder.setCodingCode(code, problemCodeCell);
-        }
-
-        CsvCell problemTermCell = parser.getProblem();
-        String term = problemTermCell.getString();
-
-        codeableConceptBuilder.setCodingDisplay(term, problemTermCell);
-        codeableConceptBuilder.setText(term, problemTermCell);
 
         // set category to 'complaint'
         conditionBuilder.setCategory("complaint");

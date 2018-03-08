@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.common;
 
-import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -12,7 +11,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -547,10 +544,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     }
 
 
-
-    //remove all the below fns
-
-    public String getString(String column) {
+    /*public String getString(String column) {
         return csvRecord.get(column);
     }
     public Integer getInt(String column) {
@@ -619,7 +613,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         return Boolean.parseBoolean(s);
-    }
+    }*/
 
 
 

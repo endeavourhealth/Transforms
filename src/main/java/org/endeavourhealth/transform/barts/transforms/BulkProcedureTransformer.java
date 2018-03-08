@@ -7,6 +7,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.BulkProcedure;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
@@ -36,9 +37,6 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Skip header line
-        parser.nextRecord();
-
         while (parser.nextRecord()) {
             try {
                 createProcedure((BulkProcedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
@@ -65,36 +63,55 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient
-        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, parser.getLocalPatientId());
+        CsvCell localPatientIdCell = parser.getLocalPatientId();
+        String localPatientId = localPatientIdCell.getString();
+        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, localPatientId);
         if (patientResourceId == null) {
-            patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, organisationResourceId, null, null, null, null, null);
+            patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, localPatientId, null, null, null, null, null, organisationResourceId, null, null, null, null, null);
         }
 
         // EpisodeOfCare - Procedure record cannot be linked to an EpisodeOfCare
 
         // Encounter
-        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE,  parser.getEncounterId().toString());
+        CsvCell encounterIdCell = parser.getEncounterId();
+        String encounterId = encounterIdCell.getString().split("\\.")[0];
+        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId);
         if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString());
+            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId);
 
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null, Encounter.EncounterClass.INPATIENT);
+            Date admissionDate = null;
+            Date dischargeDate = null;
+
+            CsvCell admissionDateCell = parser.getAdmissionDateTime();
+            if (!admissionDateCell.isEmpty()) {
+                admissionDate = admissionDateCell.getDate();
+            }
+
+            CsvCell dischargeDateCell = parser.getDischargeDateTime();
+            if (!dischargeDateCell.isEmpty()) {
+                dischargeDate = dischargeDateCell.getDate();
+            }
+
+            createEncounter(parser.getCurrentState(), fhirResourceFiler, patientResourceId, null,  encounterResourceId, Encounter.EncounterState.FINISHED, admissionDate, dischargeDate, null, Encounter.EncounterClass.INPATIENT);
         }
 
 
         // this Diagnosis resource id
-        ResourceId procedureResourceId = readProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+        CsvCell procedureDateCell = parser.getProcedureDateTime();
+        CsvCell procedureCodeCell = parser.getProcedureCode();
+        ResourceId procedureResourceId = readProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId, procedureDateCell.getString(), procedureCodeCell.getString());
         if (procedureResourceId == null) {
-            procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode(), 0);
+            procedureResourceId = getProcedureResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId, procedureDateCell.getString(), procedureCodeCell.getString(), 0);
 
             // Create resource
-            String code = parser.getProcedureCode();
-            String term = parser.getProcedureText();
-            Date date = parser.getProcedureDateTime();
-            String comment = parser.getComment();
+            String code = parser.getProcedureCode().getString();
+            String term = parser.getProcedureText().getString();
+            Date date = parser.getProcedureDateTime().getDate();
+            String comment = parser.getComment().getString();
             ProcedureBuilder procedureBuilder = createProcedureResource(procedureResourceId, encounterResourceId, patientResourceId, Procedure.ProcedureStatus.COMPLETED, code, term, FhirCodeUri.CODE_SYSTEM_SNOMED_CT, date, comment, null, "clinical coding");
 
             // save resource
-            LOG.debug("Save Procedure(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+            LOG.debug("Save Procedure(PatId=" + localPatientId + "):" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
             savePatientResource(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
         }
     }

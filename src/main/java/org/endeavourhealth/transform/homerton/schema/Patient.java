@@ -1,10 +1,9 @@
 package org.endeavourhealth.transform.homerton.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class Patient extends AbstractCsvParser {
@@ -70,7 +69,79 @@ public class Patient extends AbstractCsvParser {
         return true;
     }
 
-    public String getPatientDimID() {
+    public CsvCell getPatientDimID() {
+        return super.getCell("PatientDimID");
+    }
+    public CsvCell getPersonId() {
+        return super.getCell("PersonId");
+    }
+    public CsvCell getCNN() {
+        return super.getCell("CNN");
+    }
+    public CsvCell getNHSNo() {
+        return super.getCell("NHSNo");
+    }
+
+    public CsvCell getFirstname() {
+        return super.getCell("Firstname");
+    }
+    public CsvCell getSurname() {
+        return super.getCell("Surname");
+    }
+    public CsvCell getDOB() {
+        return super.getCell("DOB");
+    }
+    public CsvCell getDOD() {
+        return super.getCell("DOD");
+    }
+
+    public CsvCell getMobileTel() {
+        return super.getCell("MobileTel");
+    }
+    public CsvCell getHomeTel() {
+        return super.getCell("HomeTel");
+    }
+    public CsvCell getWorkTel() {
+        return super.getCell("WorkTel");
+    }
+
+    public CsvCell getGenderID() {
+        return super.getCell("GenderID");
+    }
+    public CsvCell getEthnicGroupID() {
+        return super.getCell("EthnicGroupID");
+    }
+    public CsvCell getEthnicGroupName() {
+        return super.getCell("EthnicGroupName");
+    }
+
+    public CsvCell getGPID() {
+        return super.getCell("GPID");
+    }
+    public CsvCell getPracticeID() {
+        return super.getCell("PracticeID");
+    }
+
+    public CsvCell getAddressLine1() {
+        return super.getCell("AddressLine1");
+    }
+    public CsvCell getAddressLine2() {
+        return super.getCell("AddressLine2");
+    }
+    public CsvCell getAddressLine3() {
+        return super.getCell("AddressLine3");
+    }
+    public CsvCell getCity() {
+        return super.getCell("City");
+    }
+    public CsvCell getCounty() {
+        return super.getCell("County");
+    }
+    public CsvCell getPostcode() {
+        return super.getCell("Postcode");
+    }
+
+    /*public String getPatientDimID() {
         return super.getString("PatientDimID");
     }
     public String getPersonId() {
@@ -140,5 +211,5 @@ public class Patient extends AbstractCsvParser {
     }
     public String getPostcode() {
         return super.getString("Postcode");
-    }
+    }*/
 }

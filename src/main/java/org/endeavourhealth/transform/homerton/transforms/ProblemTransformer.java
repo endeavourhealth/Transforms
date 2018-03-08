@@ -3,9 +3,10 @@ package org.endeavourhealth.transform.homerton.transforms;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -36,10 +37,59 @@ public class ProblemTransformer extends HomertonBasisTransformer {
     }
 
 
+    public static void createCondition(Problem parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       HomertonCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode) throws Exception {
+        CodeableConcept cc = null;
+        Date d = null;
+
+        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
+        // Patient
+        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
+        // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
+        // Encounter - Problem record cannot be linked to an Encounter
+        // this Problem resource id
+        //ResourceId problemResourceId = getProblemResourceId(parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
+
+        //CodeableConcept problemCode = new CodeableConcept();
+        //problemCode.addCoding().setCode(parser.getProblemCode()).setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProblem());
+
+        //Identifiers
+        //Identifier identifiers[] = {new Identifier().setSystem(HomertonCsvToFhirTransformer.CODE_SYSTEM_PROBLEM_ID).setValue(parser.getProblemId().toString())};
+
+        //DateTimeType onsetDate = new DateTimeType(parser.getOnsetDate());
+
+        ConditionBuilder conditionBuilder = new ConditionBuilder();
+        //createConditionResource(fhirCondition, problemResourceId, patientResourceId, null, parser.getUpdateDateTime(), problemCode, onsetDate, parser.getAnnotatedDisp(), identifiers);
+
+        //ResourceId patientResourceId = resolvePatientResource(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getCNN(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null, patientIdentifier, gpResourceId, gpPracticeResourceId, ethnicGroup);
+
+        //ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+
+        CsvCell problemIdCell = parser.getProblemId();
+        conditionBuilder.setId(problemIdCell.getString(), problemIdCell);
+
+        // set patient reference
+        CsvCell cnnCell = parser.getCNN();
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, cnnCell.getString());
+        conditionBuilder.setPatient(patientReference, cnnCell);
+
+        // set category to 'complaint'
+        conditionBuilder.setAsProblem(true);
+        conditionBuilder.setCategory("complaint");
+
+        // save resource
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Save Condition:" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+        }
+        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), conditionBuilder);
+    }
+
     /*
      *
      */
-    public static void createCondition(Problem parser,
+    /*public static void createCondition(Problem parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
@@ -82,7 +132,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         // save resource
         LOG.debug("Save Condition:" + FhirSerializationHelper.serializeResource(fhirCondition));
         savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirCondition.getId(), fhirCondition);
-    }
+    }*/
 
     /*
      *

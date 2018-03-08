@@ -1,9 +1,11 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.Patient;
 import org.hl7.fhir.instance.model.*;
@@ -32,11 +34,127 @@ public class PatientTransformer extends HomertonBasisTransformer {
         }
     }
 
+    public static void patientCreateOrUpdate(Patient parser,
+                                             FhirResourceFiler fhirResourceFiler,
+                                             HomertonCsvHelper csvHelper,
+                                             String version, String primaryOrgOdsCode) throws Exception {
+
+        PatientBuilder patientBuilder = new PatientBuilder();
+
+        CsvCell cnnCell = parser.getCNN();
+        patientBuilder.setId(cnnCell.getString(), cnnCell);
+
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
+        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilder.setValue(cnnCell.getString(), cnnCell);
+
+        patientBuilder.setActive(true);
+
+        CsvCell firstNameCell = parser.getFirstname();
+        CsvCell lastNameCell = parser.getSurname();
+
+        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+        nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+        nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
+
+        // Telecom
+        CsvCell mobileCell = parser.getMobileTel();
+        if (!mobileCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
+            contactPointBuilder.setValue(mobileCell.getString(), mobileCell);
+        }
+
+        CsvCell homeCell = parser.getHomeTel();
+        if (!homeCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+            contactPointBuilder.setValue(homeCell.getString(), homeCell);
+        }
+
+        CsvCell workCell = parser.getWorkTel();
+        if (!workCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+            contactPointBuilder.setValue(workCell.getString(), workCell);
+        }
+
+        // Gender
+        CsvCell genderCell = parser.getGenderID();
+        if (!genderCell.isEmpty()) {
+            Enumerations.AdministrativeGender fhirGender = convertGenderToFHIR(genderCell.getInt().intValue());
+            patientBuilder.setGender(fhirGender, genderCell);
+        }
+
+        // Ethnic group
+        CsvCell ethnicityIdCell = parser.getEthnicGroupID();
+        CsvCell ethnicityTermCell = parser.getEthnicGroupName();
+        /*if (!ethnicityIdCell.isEmpty() || !ethnicityTermCell.isEmpty()) {
+            //TODO - need to convert from Homerton ethnicity term or ID to FHIR ethnicity
+            EthnicCategory fhirEthnicity = null;
+            patientBuilder.setEthnicity(fhirEthnicity, cell??);
+        }*/
+
+        // Date of birth
+        CsvCell dobCell = parser.getDOB();
+        if (!dobCell.isEmpty()) {
+            patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
+        }
+
+        CsvCell dodCell = parser.getDOD();
+        if (!dodCell.isEmpty()) {
+            patientBuilder.setDateOfDeath(dodCell.getDate(), dobCell);
+        }
+
+        // GP
+        CsvCell gpCell = parser.getGPID();
+        if (!gpCell.isEmpty()) {
+            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, gpCell.getString());
+            patientBuilder.addCareProvider(practitionerReference, gpCell);
+        }
+
+        // GP Practice
+        CsvCell practiceCell = parser.getPracticeID();
+        if (!practiceCell.isEmpty()) {
+            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, practiceCell.getString());
+            patientBuilder.addCareProvider(organisationReference, practiceCell);
+        }
+
+        // Address
+        CsvCell line1Cell = parser.getAddressLine1();
+        CsvCell line2Cell = parser.getAddressLine2();
+        CsvCell line3Cell = parser.getAddressLine3();
+        CsvCell cityCell = parser.getCity();
+        CsvCell countyCell = parser.getCounty();
+        CsvCell postcodeCell = parser.getPostcode();
+
+        AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.addLine(line1Cell.getString(), line1Cell);
+        addressBuilder.addLine(line2Cell.getString(), line2Cell);
+        addressBuilder.addLine(line3Cell.getString(), line3Cell);
+        addressBuilder.setTown(cityCell.getString(), cityCell);
+        addressBuilder.setDistrict(countyCell.getString(), countyCell);
+        addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+
+        //fhirPatient set context
+        //TODO fhirPatient.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding"));
+
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
+        }
+        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), patientBuilder);
+    }
 
     /*
      *
      */
-    public static void patientCreateOrUpdate(Patient parser,
+    /*public static void patientCreateOrUpdate(Patient parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
@@ -107,7 +225,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
         savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirPatient.getId(), fhirPatient);
-    }
+    }*/
 
     /*
      *

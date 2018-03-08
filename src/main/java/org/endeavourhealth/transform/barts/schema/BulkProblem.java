@@ -1,13 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class BulkProblem extends AbstractCsvParser {
@@ -73,7 +71,51 @@ public class BulkProblem extends AbstractCsvParser {
         return true;
     }
 
-    public Long getProblemId() throws FileFormatException {
+    public CsvCell getProblemId() {
+        return super.getCell("ProblemId");
+    }
+
+    public CsvCell getUpdateDateTime() {
+        return super.getCell("Update_DT_TM");
+    }
+
+    public CsvCell getLocalPatientId() {
+        return super.getCell("MRN");
+    }
+    public CsvCell getProblem() {
+        return super.getCell("Problem");
+    }
+    public CsvCell getAnnotatedDisp() {
+        return super.getCell("AnnotatedDisp");
+    }
+    public CsvCell getConfirmation() {
+        return super.getCell("Confirmation");
+    }
+
+    public CsvCell getOnsetDate() {
+        return super.getCell("OnsetDate");
+    }
+
+    public CsvCell getStatusLifecycle() {
+        return super.getCell("StatusLifecycle");
+    }
+    public CsvCell getSeverity() {
+        return super.getCell("Severity");
+    }
+    public CsvCell getProblemCode() {
+        return super.getCell("ProblemCode");
+    }
+    public CsvCell getVocabulary() {
+        return super.getCell("Vocabulary");
+    }
+    public CsvCell getDescription() {
+        return super.getCell("Description");
+    }
+    public CsvCell getUpdatedBy() {
+        return super.getCell("UpdatedBy");
+    }
+
+    /*public Long getProblemId() throws FileFormatException {
         String ret = super.getString("ProblemId").split("\\.")[0];
         return Long.parseLong(ret);
     }
@@ -119,6 +161,6 @@ public class BulkProblem extends AbstractCsvParser {
     }
     public String getUpdatedBy() throws FileFormatException {
         return super.getString("UpdatedBy").trim();
-    }
+    }*/
 
 }

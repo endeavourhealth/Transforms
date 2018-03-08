@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.homerton.schema;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.UUID;
@@ -91,7 +92,20 @@ public class Procedure extends AbstractCsvParser {
         return true;
     }
 
-    public String getProcedureId() {
+    public CsvCell getProcedureId() {
+        return super.getCell("PROCEDURE_ID");
+    }
+    public CsvCell getPatientDimID() {
+        return super.getCell("PatientDimID");
+    }
+    public CsvCell getPersonId() {
+        return super.getCell("PersonId");
+    }
+    public CsvCell getCNN() {
+        return super.getCell("CNN");
+    }
+    
+    /*public String getProcedureId() {
         return super.getString("PROCEDURE_ID");
     }
     public String getPatientDimID() {
@@ -102,6 +116,6 @@ public class Procedure extends AbstractCsvParser {
     }
     public String getCNN() {
         return super.getString("CNN");
-    }
+    }*/
 
 }

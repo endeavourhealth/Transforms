@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.emis.csv.schema.audit;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class RegistrationAudit extends AbstractCsvParser {
@@ -35,7 +35,36 @@ public class RegistrationAudit extends AbstractCsvParser {
         return false;
     }
 
-    public String getPatientGuid() {
+    public CsvCell getPatientGuid() {
+        return getCell("PatientGuid");
+    }
+
+    public CsvCell getOrganisationGuid() {
+        return getCell("OrganisationGuid");
+    }
+
+    public CsvCell getModifiedDate() {
+        return getCell("ModifiedDate");
+    }
+
+
+    public CsvCell getModifiedTime() {
+        return getCell("ModifiedTime");
+    }
+
+    public CsvCell getUserInRoleGuid() {
+        return getCell("UserInRoleGuid");
+    }
+
+    public CsvCell getModeType() {
+        return getCell("ModeType");
+    }
+
+    public CsvCell getProcessingId() {
+        return super.getCell("ProcessingId");
+    }
+
+    /*public String getPatientGuid() {
         return getString("PatientGuid");
     }
 
@@ -57,7 +86,7 @@ public class RegistrationAudit extends AbstractCsvParser {
 
     public Integer getProcessingId() {
         return super.getInt("ProcessingId");
-    }
+    }*/
 
 
 }

@@ -33,14 +33,14 @@ public abstract class HomertonCsvToFhirTransformer {
     public static final int CODE_SYSTEM_SNOMED = 1000;
     public static final int CODE_SYSTEM_ICD_10 = 1001;
     public static final int CODE_SYSTEM_OPCS_4 = 1002;
-    public static final String CODE_SYSTEM_CDS_UNIQUE_ID = "http://cerner.com/fhir/cds-unique-id";
+    /*public static final String CODE_SYSTEM_CDS_UNIQUE_ID = "http://cerner.com/fhir/cds-unique-id";
     public static final String CODE_SYSTEM_DIAGNOSIS_ID = "http://cerner.com/fhir/diagnosis-id";
     public static final String CODE_SYSTEM_PROBLEM_ID = "http://cerner.com/fhir/problem-id";
     public static final String CODE_SYSTEM_FIN_NO = "http://cerner.com/fhir/fin-no";
     public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
     public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
     public static final String CODE_SYSTEM_CONDITION_CATEGORY = "http://hl7.org/fhir/condition-category";
-    public static final String CODE_SYSTEM_NHS_NO = "http://fhir.nhs.net/Id/nhs-number";
+    public static final String CODE_SYSTEM_NHS_NO = "http://fhir.nhs.net/Id/nhs-number";*/
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,

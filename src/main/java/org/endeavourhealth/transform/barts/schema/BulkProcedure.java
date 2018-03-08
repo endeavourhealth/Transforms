@@ -3,11 +3,10 @@ package org.endeavourhealth.transform.barts.schema;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class BulkProcedure extends AbstractCsvParser {
@@ -63,7 +62,64 @@ public class BulkProcedure extends AbstractCsvParser {
         return false;
     }
 
-    public Date getDOB() throws TransformException {
+    public CsvCell getDOB() throws TransformException {
+        return super.getCell("DOB");
+    }
+    public CsvCell getLocalPatientId() {
+        return super.getCell("MRN");
+    }
+    public CsvCell getNHSNo() {
+        return super.getCell("NHSNo");
+    }
+    public CsvCell getConsultant() {
+        return super.getCell("Consultant");
+    }
+
+    public CsvCell getProcedureDateTime() {
+        return super.getCell("Procedure_DT_TM");
+    }
+
+    public CsvCell getAdmissionDateTime() {
+        return super.getCell("AdmissionDateTime");
+    }
+    public CsvCell getAdmissionDateTimeAsCsvCell() {
+        return super.getCell("AdmissionDateTime");
+    }
+
+    public CsvCell getDischargeDateTime() {
+        return super.getCell("DischargeDateTime");
+    }
+    public CsvCell getDischargeDateTimeAsCsvCell() {
+        return super.getCell("DischargeDateTime");
+    }
+
+    public CsvCell getProcedureText() {
+        return super.getCell("ProcedureText");
+    }
+    public CsvCell getComment() {
+        return super.getCell("Comment");
+    }
+    public CsvCell getProcedureCode() {
+        return super.getCell("ProcedureCode");
+    }
+
+    public CsvCell getCreateDateTime() {
+        return super.getCell("Create_DT_TM");
+    }
+    public CsvCell getUpdateDateTime() {
+        return super.getCell("Update_DT_TM");
+    }
+    public CsvCell getUpdatedBy() {
+        return super.getCell("UpdatedBy");
+    }
+    public CsvCell getEncounterId() {
+        return super.getCell("EncounterId");
+    }
+    public CsvCell getFINNo() {
+        return super.getCell("FINNo");
+    }
+
+    /*public Date getDOB() throws TransformException {
         return super.getDate("DOB");
     }
     public String getLocalPatientId() throws FileFormatException {
@@ -121,6 +177,6 @@ public class BulkProcedure extends AbstractCsvParser {
     }
     public String getFINNo() throws FileFormatException {
         return super.getString("FINNo").trim();
-    }
+    }*/
 
 }
