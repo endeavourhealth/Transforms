@@ -175,6 +175,12 @@ public class PROCETransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PROCEDURE_TYPE,
                                                                                 procedureTypeCodeCell.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for procedure type {} not found. Row {} Column {} ",
+                        procedureTypeCodeCell.getLong(), parser.getProcedureTypeCode().getString(),
+                        procedureTypeCodeCell.getRowAuditId(), procedureTypeCodeCell.getColIndex());
+                return;
+            }
 
             procedureBuilder.setCategory(cernerCodeValueRef.getCodeDispTxt(), procedureTypeCodeCell);
         }

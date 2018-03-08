@@ -176,6 +176,12 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.DIAGNOSIS_TYPE,
                                                                     diagnosisTypeCode.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for DiagnosisTypeCode {} not found. Row {} Column {} ",
+                        diagnosisTypeCode.getLong(), parser.getDiagnosisTypeCode().getString(),
+                        diagnosisTypeCode.getRowAuditId(), diagnosisTypeCode.getColIndex());
+                return;
+            }
             String category = cernerCodeValueRef.getCodeDispTxt();
             conditionBuilder.setCategory(category, diagnosisTypeCode);
         }

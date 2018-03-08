@@ -330,7 +330,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_UNITS,
                     unitsCodeCell.getLong());
-
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",
+                        unitsCodeCell.getLong(), parser.getEventId().getString(),
+                        unitsCodeCell.getRowAuditId(), unitsCodeCell.getColIndex());
+                return;
+            }
             unitsDesc = cernerCodeValueRef.getCodeDispTxt();
             observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
         }

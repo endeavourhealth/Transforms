@@ -114,12 +114,17 @@ public class PPATITransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.NHS_NUMBER_STATUS,
                                                                         nhsNumberStatusCell.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found. Row {} Column {} ",
+                        nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString(),
+                        nhsNumberStatusCell.getRowAuditId(), nhsNumberStatusCell.getColIndex());
+                } else {
 
-            String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
-            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);
+                String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
+                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);
 
-            patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
-
+                patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
+            }
         } else {
             //we may be updating a patient, so make sure to remove if not set
             patientBuilder.setNhsNumberVerificationStatus(null);
@@ -149,10 +154,15 @@ public class PPATITransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.GENDER,
                                                                                 genderCell.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found. Row {} Column {} ",
+                        genderCell.getLong(), parser.getGenderCode().getString(),
+                        genderCell.getRowAuditId(), genderCell.getColIndex());
+            } else {
 
-            Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
-            patientBuilder.setGender(gender, genderCell);
-
+                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
+                patientBuilder.setGender(gender, genderCell);
+            }
         } else {
             //if updating a record then clear the gender if the field is empty
             patientBuilder.setGender(null);
@@ -163,10 +173,15 @@ public class PPATITransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.MARITAL_STATUS,
                                                                         maritalStatusCode.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found. Row {} Column {} ",
+                        maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString(),
+                        maritalStatusCode.getRowAuditId(), maritalStatusCode.getColIndex());
+            } else {
 
-            MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt(), parser);
-            patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
-
+                MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt(), parser);
+                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
+            }
         } else {
             //if updating a record, make sure to clear the field in this case
             patientBuilder.setMaritalStatus(null);
@@ -177,9 +192,15 @@ public class PPATITransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.ETHNIC_GROUP,
                                                                             ethnicityCode.getLong());
+            if (cernerCodeValueRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found. Row {} Column {} ",
+                        ethnicityCode.getLong(), parser.getEthnicGroupCode().getString(),
+                        ethnicityCode.getRowAuditId(), ethnicityCode.getColIndex());
+            } else {
 
-            EthnicCategory ethnicCategory = convertEthnicCategory(cernerCodeValueRef.getAliasNhsCdAlias());
-            patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
+                EthnicCategory ethnicCategory = convertEthnicCategory(cernerCodeValueRef.getAliasNhsCdAlias());
+                patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
+            }
         } else {
             //if this field is empty we should clear the value from the patient
             patientBuilder.setEthnicity(null);
