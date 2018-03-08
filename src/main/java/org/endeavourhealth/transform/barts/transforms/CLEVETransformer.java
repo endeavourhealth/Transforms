@@ -70,9 +70,11 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
                 observationBuilder.setPatient(patientReference);
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
-            } else {
-                TransformWarnings.log(LOG, parser, "Unable to delete encounter record as no matching patient. Record id: {} and patient: {}", parser.getEventId().getString(), parser.getPatientId().getString() );
             }
+            //removed warning - if we can't find a patient UUID from the person ID, then we'll simply have never encountered the patient before, in which case we won't have saved the resource before
+            /*else {
+                TransformWarnings.log(LOG, parser, "Unable to delete encounter record as no matching patient. Record id: {} and patient: {}", parser.getEventId().getString(), parser.getPatientId().getString() );
+            }*/
             return;
         }
 

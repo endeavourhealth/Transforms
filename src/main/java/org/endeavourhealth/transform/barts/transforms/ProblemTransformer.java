@@ -116,24 +116,30 @@ public class ProblemTransformer extends BartsBasisTransformer {
         // set code to coded problem
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
+        //it's rare, but there are cases where records have a textual term but not vocab or code
         CsvCell vocabCell = parser.getVocabulary();
-        String vocab = vocabCell.getString();
-        if (vocab.equalsIgnoreCase("SNOMED CT")) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
+        if (!vocabCell.isEmpty()) {
+            String vocab = vocabCell.getString();
+            if (vocab.equalsIgnoreCase("SNOMED CT")) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
 
-        } else if (vocab.equalsIgnoreCase("ICD-10")) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, vocabCell);
+            } else if (vocab.equalsIgnoreCase("ICD-10")) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, vocabCell);
 
-        } else if (vocab.equalsIgnoreCase("Cerner")) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
+            } else if (vocab.equalsIgnoreCase("Cerner")) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
 
-        } else {
-            TransformWarnings.log(LOG, parser, "Skipping Problem {} due to unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
-            return;
+            } else {
+                TransformWarnings.log(LOG, parser, "Skipping Problem {} due to unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
+                return;
+            }
         }
 
-        String code = problemCodeCell.getString();
-        codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+        //it's rare, but there are cases where records have a textual term but not vocab or code
+        if (!problemCodeCell.isEmpty()) {
+            String code = problemCodeCell.getString();
+            codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+        }
 
         CsvCell problemTermCell = parser.getProblem();
         String term = problemTermCell.getString();
