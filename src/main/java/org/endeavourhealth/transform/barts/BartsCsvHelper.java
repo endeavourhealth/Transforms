@@ -15,7 +15,10 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.FhirResourceFilerI;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -24,6 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static org.endeavourhealth.transform.common.BasisTransformer.getLocationResourceId;
+import static org.endeavourhealth.transform.common.BasisTransformer.saveResourceId;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
@@ -35,6 +41,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
     private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
+    private static Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
 
     //non-static caches
     private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
@@ -150,6 +157,27 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         } else {
             return null;
         }
+    }
+
+    public void saveLocationUUIDToCache(String locationId, UUID resourceUUID) throws Exception {
+        locationIdMap.put(locationId, resourceUUID);
+    }
+
+    public UUID lookupLocationUUID(String locationId, FhirResourceFilerI fhirResourceFiler, ParserI parser) throws Exception {
+        // Check in cache
+        UUID ret = null;
+        ret = locationIdMap.get(locationId);
+        if (ret != null) {
+            return ret;
+        }
+
+        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationId);
+        if (locationResourceId != null) {
+            locationIdMap.put(locationId, locationResourceId.getResourceId());
+            return locationResourceId.getResourceId();
+        }
+
+        return null;
     }
 
     public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code) throws Exception {
