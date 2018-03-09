@@ -238,11 +238,10 @@ public class LOREFTransformer extends BartsBasisTransformer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
         }
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
-        //saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
+        saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
-    private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFilerI fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
         UUID locationUUID = csvHelper.lookupLocationUUID(facilityCode.getString(), fhirResourceFiler, parser);
         if (locationUUID == null) {
             createPlaceholderLocation(facilityCode.getString(), fhirResourceFiler, parser, csvHelper);
@@ -292,7 +291,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
     }
 
-    private static void createPlaceholderLocation(String locationId, FhirResourceFilerI fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void createPlaceholderLocation(String locationId, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
         CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(Long.getLong("220"), Long.getLong(locationId));
         if (cernerCodeValueRef != null) {
             ResourceId resourceId = new ResourceId();
@@ -307,7 +306,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
             locationBuilder.setMode(Location.LocationMode.INSTANCE);
             locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
+            saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
 
             csvHelper.saveLocationUUIDToCache(locationId, resourceId.getResourceId());
         } else {
