@@ -282,7 +282,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
     }
 
     private static void createPlaceholderLocation(String locationId, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(Long.getLong("220"), Long.getLong(locationId));
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(locationId));
         if (cernerCodeValueRef != null) {
             ResourceId resourceId = new ResourceId();
             resourceId.setScopeId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE);
