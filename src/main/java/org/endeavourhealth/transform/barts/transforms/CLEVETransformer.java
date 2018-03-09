@@ -158,6 +158,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
+        if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getLong()) == null) {
+            TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
+                    codeCell.getLong(), parser.getEventCode().getString(),
+                    codeCell.getRowAuditId(), codeCell.getColIndex());
+            return;
+        }
         CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
 
         //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
@@ -192,6 +198,12 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
+        if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getLong()) == null) {
+            TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
+                    normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
+                    normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
+            return;
+        }
         BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
 
         //TODO - set comments
