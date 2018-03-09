@@ -8,7 +8,9 @@ import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -19,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.endeavourhealth.transform.common.BasisTransformer.createEncounterResourceId;
-import static org.endeavourhealth.transform.common.BasisTransformer.getEncounterResourceId;
+import static org.endeavourhealth.transform.common.BasisTransformer.*;
 
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
+    private static Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> encounterBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
     private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
@@ -65,22 +67,6 @@ public class EncounterResourceCache {
         deletedEncounterBuildersByUuid.put(key, encounterBuilder);
     }
 
-    /*
-    public static void deleteEncounterBuilder(String resourcId) throws Exception {
-        UUID key = UUID.fromString(resourcId);
-        deleteEncounterBuilder(key);
-    }
-
-    public static void deleteEncounterBuilder(UUID key) throws Exception {
-        LOG.trace("Deleting encounter " + key.toString());
-        if (encounterBuildersByUuid.containsKey(key)) {
-            EncounterBuilder savedVersion = encounterBuildersByUuid.get(key);
-            encounterBuildersByUuid.remove(key);
-            deletedEncounterBuildersByUuid.put(key, savedVersion);
-        }
-    }
-    */
-
     public static EncounterBuilder getEncounterBuilder(BartsCsvHelper csvHelper, String encounterId) throws Exception {
 
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId);
@@ -102,6 +88,45 @@ public class EncounterResourceCache {
         }
 
         return encounterBuilder;
+    }
+
+    public static EpisodeOfCareBuilder getEpisodeBuilder(BartsCsvHelper csvHelper, String encounterId) throws Exception {
+
+        ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId);
+
+        if (episodeResourceId == null) {
+            return null;
+        }
+
+        EpisodeOfCareBuilder episodeBuilder = episodeBuildersByUuid.get(episodeResourceId.getResourceId());
+
+        if (episodeBuilder == null) {
+
+            EpisodeOfCare encounter = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId());
+            if (encounter != null) {
+                episodeBuilder = new EpisodeOfCareBuilder(encounter);
+                episodeBuildersByUuid.put(UUID.fromString(episodeBuilder.getResourceId()), episodeBuilder);
+            }
+
+        }
+
+        return episodeBuilder;
+    }
+
+    public static EpisodeOfCareBuilder createEpisodeBuilder(CsvCell episodeIdCell) throws Exception {
+
+        ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdCell.getString());
+
+        if (episodeResourceId == null) {
+            episodeResourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdCell.getString());
+        }
+
+        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
+        episodeBuilder.setId(episodeResourceId.getResourceId().toString(), episodeIdCell);
+
+        episodeBuildersByUuid.put(episodeResourceId.getResourceId(), episodeBuilder);
+
+        return episodeBuilder;
     }
 
     public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell) throws Exception {

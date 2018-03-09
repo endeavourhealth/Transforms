@@ -184,28 +184,16 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //fhirLocation.setPhysicalType(getPhysicalType(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString()));
         CodeableConcept physicalType = new CodeableConcept();
         if (!bedLoc.isEmpty() && bedLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.BD.getDisplay()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType, bedLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.BED, bedLoc);
         } else if (!roomLoc.isEmpty() && roomLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.RO.getDisplay()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType, roomLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.ROOM, roomLoc);
         } else if (!nurseUnitLoc.isEmpty() && nurseUnitLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType,nurseUnitLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.NURSEUNIT, nurseUnitLoc);
         } else if (!ambulatoryLoc.isEmpty() && ambulatoryLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType, ambulatoryLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.AMBULATORY, ambulatoryLoc);
         } else if (!buildingLoc.isEmpty() && buildingLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.BU.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType, buildingLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.BUILDING, buildingLoc);
         } else if (!facilityLoc.isEmpty() && facilityLoc.getLong() > 0) {
-            //physicalType.addCoding().setCode(LocationPhysicalType.NULL.getDisplay()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDefinition());
-            //locationBuilder.setPhysicalType(physicalType, facilityLoc);
             locationBuilder.setPhysicalType(LocationPhysicalType.FACILITY, facilityLoc);
         }
 
@@ -242,48 +230,50 @@ public class LOREFTransformer extends BartsBasisTransformer {
     }
 
     private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
-        UUID locationUUID = csvHelper.lookupLocationUUID(facilityCode.getString(), fhirResourceFiler, parser);
-        if (locationUUID == null) {
-            createPlaceholderLocation(facilityCode.getString(), fhirResourceFiler, parser, csvHelper);
+        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
+            UUID locationUUID = csvHelper.lookupLocationUUID(facilityCode.getString(), fhirResourceFiler, parser);
+            if (locationUUID == null) {
+                createPlaceholderLocation(facilityCode.getString(), fhirResourceFiler, parser, csvHelper);
+            }
         }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(buildingCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(buildingCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(buildingCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(surgeryLocationCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(surgeryLocationCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(surgeryLocationCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(ambulatoryCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(ambulatoryCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(ambulatoryCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(nurseUnitCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(nurseUnitCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(nurseUnitCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(roomCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(roomCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(roomCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            locationUUID = csvHelper.lookupLocationUUID(bedCode.getString(), fhirResourceFiler, parser);
+            UUID locationUUID = csvHelper.lookupLocationUUID(bedCode.getString(), fhirResourceFiler, parser);
             if (locationUUID == null) {
                 createPlaceholderLocation(bedCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
@@ -354,7 +344,9 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         List<String> tokens = new ArrayList<>();
 
-        tokens.add("FacilityLocCode=" + facilityCode.getLong());
+        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
+            tokens.add("FacilityLocCode=" + facilityCode.getLong());
+        }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
             tokens.add("BuildingLocCode=" + buildingCode.getLong());
