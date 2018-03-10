@@ -90,9 +90,9 @@ public class EncounterResourceCache {
         return encounterBuilder;
     }
 
-    public static EpisodeOfCareBuilder getEpisodeBuilder(BartsCsvHelper csvHelper, String encounterId) throws Exception {
+    public static EpisodeOfCareBuilder getEpisodeBuilder(BartsCsvHelper csvHelper, String episodeId) throws Exception {
 
-        ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterId);
+        ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeId);
 
         if (episodeResourceId == null) {
             return null;
@@ -147,13 +147,18 @@ public class EncounterResourceCache {
 
     public static void fileEncounterResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LOG.trace("Saving " + encounterBuildersByUuid.size() + " encounters to the DB");
+        LOG.trace("Saving " + episodeBuildersByUuid.size() + " Episodes to the DB");
+        for (UUID episodeId: episodeBuildersByUuid.keySet()) {
+            EpisodeOfCareBuilder episodeBuilder = episodeBuildersByUuid.get(episodeId);
+            BasisTransformer.savePatientResource(fhirResourceFiler, null, episodeBuilder);
+        }
+        LOG.trace("Finishing saving " + episodeBuildersByUuid.size() + " Episodes to the DB");
 
+        LOG.trace("Saving " + encounterBuildersByUuid.size() + " encounters to the DB");
         for (UUID encounterId: encounterBuildersByUuid.keySet()) {
             EncounterBuilder EncounterBuilder = encounterBuildersByUuid.get(encounterId);
             BasisTransformer.savePatientResource(fhirResourceFiler, null, EncounterBuilder);
         }
-
         LOG.trace("Finishing saving " + encounterBuildersByUuid.size() + " encounters to the DB");
 
         LOG.trace("Deleting " + deletedEncounterBuildersByUuid.size() + " encounters from the DB");
@@ -164,6 +169,7 @@ public class EncounterResourceCache {
         LOG.trace("Finishing deleting " + deletedEncounterBuildersByUuid.size() + " encounters from the DB");
 
         //clear down as everything has been saved
+        episodeBuildersByUuid.clear();
         encounterBuildersByUuid.clear();
         deletedEncounterBuildersByUuid.clear();
         encounterDates.clear();

@@ -160,7 +160,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
 
         // Episode resource id
-        ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
+        //ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
 
         // Organisation - only used if placeholder patient resource is created
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
@@ -169,11 +169,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
-        if (episodeResourceId == null) {
-            episodeResourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
-
-            EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
-            episodeOfCareBuilder.setId(episodeResourceId.getResourceId().toString());
+        EpisodeOfCareBuilder episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, episodeIdentiferCell.getString());
+        if (episodeOfCareBuilder == null) {
+            episodeOfCareBuilder = EncounterResourceCache.createEpisodeBuilder(episodeIdentiferCell);
 
             episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
             episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
@@ -183,17 +181,10 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
             episodeOfCareBuilder.setPatient(patientReference, personIdCell);
-
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), episodeOfCareBuilder);
         } else {
             if (changeOfPatient) {
-                EpisodeOfCare eoc = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId());
-                EpisodeOfCareBuilder eocBuilder = new EpisodeOfCareBuilder(eoc);
-
                 Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-                eocBuilder.setPatient(patientReference, personIdCell);
-
-                savePatientResource(fhirResourceFiler, parser.getCurrentState(), eocBuilder);
+                episodeOfCareBuilder.setPatient(patientReference, personIdCell);
             }
         }
 
@@ -269,7 +260,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // EpisodeOfCare
         //fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));
-        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()), episodeIdentiferCell);
+        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer
         CsvCell referrerPersonnelIdentifier = parser.getReferrerMillenniumPersonnelIdentifier();
@@ -321,7 +312,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (LOG.isDebugEnabled()) {
             //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 
 

@@ -56,7 +56,5 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         // update the encounter
         //TODO: additional data here
 
-        // save / cache the resource
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 }

@@ -79,8 +79,12 @@ public abstract class BartsCsvToFhirTransformer {
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         // Encounters
-        ENCINFTransformer.transform(version, createParser(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //ENCINFTransformer.transform(version, createParser(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        AEATTTransformer.transform(version, createParser(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        OPATTTransformer.transform(version, createParser(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        IPEPITransformer.transform(version, createParser(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        IPWDSTransformer.transform(version, createParser(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
         //clinical transformers
@@ -203,6 +207,14 @@ public abstract class BartsCsvToFhirTransformer {
             return new BulkProcedure(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("CVREF")) {
             return new CVREF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("AEATT")) {
+            return new AEATT(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("OPATT")) {
+            return new OPATT(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("IPEPI")) {
+            return new IPEPI(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("IPWDS")) {
+            return new IPWDS(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
