@@ -148,27 +148,43 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
         //Save triage status
-        encounterBuilder.setStatus(encState, parser.getTriageStartDateTime().getDate(),
-                parser.getTriageCompleteDateTime().getDate(), parser.getTriageCatNbr());
+        CsvCell triageStart = parser.getTriageStartDateTime();
+        CsvCell triageEnd = parser.getTriageCompleteDateTime();
+
+        encounterBuilder.setStatus(encState, triageStart.getDate(),
+                triageEnd.getDate(), parser.getTriageCatNbr());
         Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, parser.getTriagePersonId().toString());
         Period triagePeriod = new Period();
-        triagePeriod.setStart(parser.getTriageStartDateTime().getDate());
-        triagePeriod.setEnd(parser.getTriageCompleteDateTime().getDate());
+        triagePeriod.setStart(triageStart.getDate());
+        triagePeriod.setEnd(triageEnd.getDate());
         encounterBuilder.addParticipant(ref,EncounterParticipantType.PARTICIPANT,triagePeriod, parser.getTriageCatNbr());
         encState = null; // reset
         //  First medical assessment to conclusion
-        if (parser.getFirstAssessDateTime().isEmpty()) {
+        CsvCell startDate  = parser.getFirstAssessDateTime();
+        CsvCell endDate =parser.getConclusionDateTime();
+        if (startDate.isEmpty()) {
             encState = Encounter.EncounterState.PLANNED;
             } else
          {  // All the records I looked at had Conclusion date set. It should at least allow us to keep some kind of progress.
-            if (parser.getConclusionDateTime().isEmpty()) {
+            if (endDate.isEmpty()) {
                 encState = Encounter.EncounterState.INPROGRESS;
             } else {
                 encState = Encounter.EncounterState.FINISHED;
             }
         }
-        encounterBuilder.setStatus(encState, parser.getFirstAssessDateTime().getDate(),
-                parser.getConclusionDateTime().getDate(), parser.getHcpFirstAssignedPersonId());
+        encounterBuilder.setStatus(encState, startDate.getDate(),
+                endDate.getDate(), parser.getCdsBatchContentId());
+
+        // Location
+        CsvCell currentLocationCell = parser.getLastLocCode();
+        if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
+            UUID locationResourceUUID = csvHelper.lookupLocationUUID(currentLocationCell.getString(), fhirResourceFiler, parser);
+            if (locationResourceUUID != null) {
+                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
+            } else {
+                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in AEATT record {} in file {}", currentLocationCell.getString(), parser.getCdsBatchContentId().getString(), parser.getFilePath());
+            }
+        }
 
         //Reason
         CsvCell reasonForVisit = parser.getPresentingCompTxt();
