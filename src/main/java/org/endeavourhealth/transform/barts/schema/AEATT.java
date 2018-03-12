@@ -86,12 +86,12 @@ public class AEATT extends AbstractCsvParser {
     public CsvCell getActiveIndicator() { return super.getCell( "ACTIVE_IND");}
     public CsvCell getEncounterId() { return super.getCell( "ENCNTR_ID");}
     public CsvCell getAttendanceNbrIdent() { return super.getCell( "ATTENDANCE_NBR_IDENT");}
-    public CsvCell getPersonId() { return super.getCell( "PERSON_ID");}
+    public CsvCell getMillenniumPersonIdentifier() { return super.getCell( "PERSON_ID");}
     public CsvCell getAdmissionDateTime() { return super.getCell( "ADMISSION_DT_TM");}
     public CsvCell getArrivalDateTime() { return super.getCell( "ARRIVAL_DT_TM");}
     public CsvCell getArrivalModeCode() { return super.getCell( "ARRIVAL_MODE_CD");}
     public CsvCell getAttendanceCategoryCode() { return super.getCell( "ATTENDANCE_CATEGORY_CD");}
-    public CsvCell getPresentingCompTet() { return super.getCell( "PRESENTING_COMP_TXT");}
+    public CsvCell getPresentingCompTxt() { return super.getCell( "PRESENTING_COMP_TXT");}
     public CsvCell getReceptionistPersonId() { return super.getCell( "RECEPTIONIST_PRSNL_ID");}
     public CsvCell getSourceOfReferralCode() { return super.getCell( "SOURCE_OF_REFERRAL_CD");}
     public CsvCell getStaffLocalId() { return super.getCell( "STAFF_LOCAL_IDENT");}

@@ -132,7 +132,15 @@ public class EncounterBuilder extends ResourceBuilderBase
         Encounter.EncounterParticipantComponent fhirParticipant = this.encounter.addParticipant();
         fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(type));
         fhirParticipant.setIndividual(practitionerReference);
+               int index = this.encounter.getParticipant().size()-1;
+        auditValue("participant[" + index + "].individual.reference", sourceCells);
+    }
 
+    public void addParticipant(Reference practitionerReference, EncounterParticipantType type, Period period, CsvCell... sourceCells) {
+        Encounter.EncounterParticipantComponent fhirParticipant = this.encounter.addParticipant();
+        fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(type));
+        fhirParticipant.setIndividual(practitionerReference);
+        fhirParticipant.setPeriod(period);
         int index = this.encounter.getParticipant().size()-1;
         auditValue("participant[" + index + "].individual.reference", sourceCells);
     }
