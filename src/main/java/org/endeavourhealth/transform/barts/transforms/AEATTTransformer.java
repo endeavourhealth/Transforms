@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCacheDateRecord;
 import org.endeavourhealth.transform.barts.schema.AEATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -92,16 +91,10 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
+            // Using checkin/out date as they largely cover the whole period
+            encounterBuilder.setPeriodStart(parser.getCheckInDateTime().getDate(), parser.getCheckInDateTime());
+            encounterBuilder.setPeriodEnd(parser.getCheckOutDateTime().getDate(), parser.getCheckOutDateTime());
 
-
-            EncounterResourceCacheDateRecord dateRecord = EncounterResourceCache.getEncounterDates(encounterIdCell.getString());
-
-            if (dateRecord != null && dateRecord.getBeginDate() != null) {
-                encounterBuilder.setPeriodStart(dateRecord.getBeginDate(), dateRecord.getBeginDateCell());
-            }
-            if (dateRecord != null && dateRecord.getEndDate() != null) {
-                encounterBuilder.setPeriodStart(dateRecord.getEndDate(), dateRecord.getEndDateCell());
-            }
         } else {
             // Delete existing encounter ?
             if (!activeCell.getIntAsBoolean()) {
@@ -111,8 +104,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
                 EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
                 return;
             }
-
-
         }
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
