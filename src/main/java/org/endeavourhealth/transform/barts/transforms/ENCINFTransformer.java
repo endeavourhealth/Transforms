@@ -93,9 +93,7 @@ public class ENCINFTransformer extends BartsBasisTransformer {
         if (activeCell != null && activeCell.getBoolean() == true) {
             EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
 
-            if (encounterBuilder == null) {
-                EncounterResourceCache.saveEncounterDates(encounterIdCell.getString(), beginEffectiveCell, endEffectiveCell);
-            } else {
+            if (encounterBuilder != null && encounterBuilder.getPeriod() == null) {
                 if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
                     encounterBuilder.setPeriodStart(beginEffectiveCell.getDate(), beginEffectiveCell);
                 }

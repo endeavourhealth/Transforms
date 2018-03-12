@@ -78,12 +78,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        boolean changeOfPatient = false;
-
         if (internalIdDAL == null) {
             internalIdDAL = DalProvider.factoryInternalIdDal();
         }
 
+        boolean changeOfPatient = false;
+        EpisodeOfCareBuilder episodeOfCareBuilder = null;
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell encounterIdCell = parser.getMillenniumEncounterIdentifier();
         CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
@@ -94,8 +94,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
 
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
-        if (encounterBuilder == null
-                && !activeCell.getIntAsBoolean()) {
+        if (encounterBuilder == null && !activeCell.getIntAsBoolean()) {
             // skip - encounter missing but set to delete so do nothing
             return;
         }
@@ -107,27 +106,27 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             return;
         }
 
+        // Delete existing encounter ?
+        if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
+            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
+            return;
+        }
+
+        // Organisation
+        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+
+
+        // Retrieve or create EpisodeOfCare
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, csvHelper, fhirResourceFiler, internalIdDAL);
+
         // Create new encounter
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-
-            EncounterResourceCacheDateRecord dateRecord = EncounterResourceCache.getEncounterDates(encounterIdCell.getString());
-
-            if (dateRecord != null && dateRecord.getBeginDate() != null) {
-                encounterBuilder.setPeriodStart(dateRecord.getBeginDate(), dateRecord.getBeginDateCell());
-            }
-            if (dateRecord != null && dateRecord.getEndDate() != null) {
-                encounterBuilder.setPeriodStart(dateRecord.getEndDate(), dateRecord.getEndDateCell());
-            }
+            TransformWarnings.log(LOG, parser, "New Encounter {} created in ENCNTTRansform from file {} - This should not happen", encounterIdCell.getString(), parser.getFilePath());
         } else {
-            // Delete existing encounter ?
-            if (!activeCell.getIntAsBoolean()) {
-                encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-                //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-                //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-                EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-                return;
-            }
 
             // Has patient reference changed?
             String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
@@ -159,37 +158,18 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Save visit-id to encounter-id link
         internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
 
+        if (changeOfPatient) {
+            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+            episodeOfCareBuilder.setPatient(patientReference, personIdCell);
+        }
+
         // Episode resource id
         //ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
 
-        // Organisation - only used if placeholder patient resource is created
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
 
-        EpisodeOfCareBuilder episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, episodeIdentiferCell.getString());
-        if (episodeOfCareBuilder == null) {
-            episodeOfCareBuilder = EncounterResourceCache.createEpisodeBuilder(episodeIdentiferCell);
-
-            episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
-            episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
-
-            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString());
-            episodeOfCareBuilder.setManagingOrganisation(organisationReference);
-
-            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-            episodeOfCareBuilder.setPatient(patientReference, personIdCell);
-        } else {
-            if (changeOfPatient) {
-                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-                episodeOfCareBuilder.setPatient(patientReference, personIdCell);
-            }
-        }
-
-        //fhirEncounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
-        // Handled in builder now
 
         // Identifiers
         if (!finIdCell.isEmpty()) {
@@ -309,12 +289,14 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
+        // Maintain EpisodeOfCare
+        episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
+        episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
+
         if (LOG.isDebugEnabled()) {
             //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         }
     }
-
-
 
     /*
     *

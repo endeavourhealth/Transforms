@@ -31,7 +31,7 @@ public class EncounterResourceCache {
     private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
     private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
 
-
+    /*
     public static void saveEncounterDates(String encounterId, CsvCell beginDateCell, CsvCell endDateCell) throws TransformException {
         EncounterResourceCacheDateRecord record = new EncounterResourceCacheDateRecord();
 
@@ -56,7 +56,7 @@ public class EncounterResourceCache {
 
     public static EncounterResourceCacheDateRecord getEncounterDates(String encounterId) {
         return encounterDates.get(encounterId);
-    }
+    }*/
 
     public static void deleteEncounterBuilder(EncounterBuilder encounterBuilder) throws Exception {
         UUID key = UUID.fromString(encounterBuilder.getResourceId());
@@ -127,6 +127,10 @@ public class EncounterResourceCache {
         episodeBuildersByUuid.put(episodeResourceId.getResourceId(), episodeBuilder);
 
         return episodeBuilder;
+    }
+
+    public static void saveNewEpisodeBuilderToCache(EpisodeOfCareBuilder episodeBuilder) throws Exception {
+        episodeBuildersByUuid.put(UUID.fromString(episodeBuilder.getResourceId()), episodeBuilder);
     }
 
     public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell) throws Exception {

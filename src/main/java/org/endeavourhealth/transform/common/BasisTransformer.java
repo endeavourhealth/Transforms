@@ -253,7 +253,21 @@ public class BasisTransformer {
         return getResourceId(scope, "EpisodeOfCare", uniqueId);
     }
 
+    public static ResourceId createEpisodeOfCareResourceId(String scope, String episodeId, UUID resourceUUID) throws Exception {
+        String uniqueId = "EpisodeId=" + episodeId;
+        ResourceId resourceId = new ResourceId();
+        resourceId.setScopeId(scope);
+        resourceId.setResourceType("EpisodeOfCare");
+        resourceId.setUniqueId(uniqueId);
+        resourceId.setResourceId(resourceUUID);
+        LOG.trace("Create EpisodeOfCare resourceId:" + resourceId.getUniqueId() + "==>" + resourceId.getResourceId());
+        saveResourceId(resourceId);
+        return resourceId;
+    }
+
     public static ResourceId createEpisodeOfCareResourceId(String scope, String episodeId) throws Exception {
+        return createEpisodeOfCareResourceId(scope, episodeId, UUID.randomUUID());
+        /*
         String uniqueId = "EpisodeId=" + episodeId;
         ResourceId resourceId = new ResourceId();
         resourceId.setScopeId(scope);
@@ -263,6 +277,7 @@ public class BasisTransformer {
         LOG.trace("Create EpisodeOfCare resourceId:" + resourceId.getUniqueId() + "==>" + resourceId.getResourceId());
         saveResourceId(resourceId);
         return resourceId;
+        */
     }
 
     public static EpisodeOfCare createEpisodeOfCare(CsvCurrentState currentParserState, FhirResourceFiler fhirResourceFiler, ResourceId episodeResourceId, ResourceId patientResourceId, ResourceId organisationResourceId, EpisodeOfCare.EpisodeOfCareStatus status, Date episodeStartDate, Date episodeEndDate, Identifier identifiers[]) throws Exception {
