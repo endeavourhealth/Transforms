@@ -227,12 +227,17 @@ public abstract class BartsCsvToFhirTransformer {
     }
 
     private static CSVFormat getFormatType(String file) throws Exception {
+        return BartsCsvToFhirTransformer.CSV_FORMAT;
+        /*
         String firstChar = FileHelper.readFirstCharactersFromSharedStorage(file, 1);
         if (firstChar.compareTo("#") == 0) {
+            LOG.info("Parser format standard(" + firstChar + ")");
             return BartsCsvToFhirTransformer.CSV_FORMAT;
         } else {
+            LOG.info("Parser format no-header(" + firstChar + ")");
             return BartsCsvToFhirTransformer.CSV_FORMAT_NO_HEADER;
         }
+        */
     }
 
     private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
