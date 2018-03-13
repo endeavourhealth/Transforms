@@ -164,10 +164,13 @@ public class LOREFTransformer extends BartsBasisTransformer {
         // Identifier
         //fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
         if (!locationIdCell.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
-            identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
+            if (identifiers.size() == 0) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
+                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+                identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
+            }
         }
 
         // Status
@@ -212,14 +215,10 @@ public class LOREFTransformer extends BartsBasisTransformer {
         locationBuilder.setName(name, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
 
         // managing org
-        //TODO complete
-        //fhirLocation.setManagingOrganization(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
         locationBuilder.setManagingOrganisation(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
 
         // Parent location
         if (parentLocationResourceId != null) {
-            //fhirLocation.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
-            //TODO complete
             locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
         }
 
@@ -304,15 +303,14 @@ public class LOREFTransformer extends BartsBasisTransformer {
         }
     }
 
-    private static void saveParentKeys(CsvCell locationIdCell, String uniqueId, FhirResourceFiler fhirResourceFiler) {
+    private static void saveParentKeys(CsvCell locationIdCell, String uniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
         // Create alternate keys for current location and all parents
         while (uniqueId != null) {
-            try {
-                LOG.debug("Saving altkey(LocationId=" + locationIdCell.getString() + "):" + uniqueId);
-                internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId, UUID.randomUUID().toString());
-            }
-            catch (Exception ex) {
-                // ignore duplicates
+            String tempId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId);
+            if (tempId == null || tempId.length() == 0) {
+                String uuid = UUID.randomUUID().toString();
+                LOG.debug("Saving altkey(LocationId=" + locationIdCell.getString() + "):" + uniqueId + "==>" + uuid);
+                internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId, uuid);
             }
             uniqueId = createParentKey(uniqueId);
         }
