@@ -12,13 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.BasisTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.FhirResourceFilerI;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -29,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.endeavourhealth.transform.common.BasisTransformer.getLocationResourceId;
-import static org.endeavourhealth.transform.common.BasisTransformer.saveResourceId;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
@@ -369,7 +362,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //convert the parent event ID to a UUID
-        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null, null);
+        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null);
         ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, dummyCell);
         Observation observation = (Observation)retrieveResource(ResourceType.Observation, observationResourceId.getResourceId());
         if (observation == null) {

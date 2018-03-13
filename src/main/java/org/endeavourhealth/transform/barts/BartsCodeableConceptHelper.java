@@ -6,9 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
-import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 public class BartsCodeableConceptHelper {
@@ -80,7 +78,7 @@ public class BartsCodeableConceptHelper {
                         int colIndex = colAudit.getCol();
                         long rowAuditId = rowAudit.getAuditId();
 
-                        return new CsvCell(rowAuditId, colIndex, value.toString(), new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD), new SimpleDateFormat(EmisCsvToFhirTransformer.TIME_FORMAT));
+                        return new CsvCell(rowAuditId, colIndex, value.toString(), null);
                     }
                 }
             }

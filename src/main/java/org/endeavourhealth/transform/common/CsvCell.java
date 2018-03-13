@@ -13,19 +13,19 @@ public class CsvCell {
     private String value;
     private int colIndex;
     private long rowAuditId;
-    private DateFormat dateFormat;
-    private DateFormat timeFormat;
+    private ParserI parentParser;
+    /*private DateFormat dateFormat;
+    private DateFormat timeFormat;*/
 
-    public CsvCell(long rowAuditId, int colIndex, String value, DateFormat dateFormat, DateFormat timeFormat) {
+    public CsvCell(long rowAuditId, int colIndex, String value, ParserI parentParser) {
         this.rowAuditId = rowAuditId;
         this.colIndex = colIndex;
         this.value = value;
-        this.dateFormat = dateFormat;
-        this.timeFormat = timeFormat;
+        this.parentParser = parentParser;
     }
 
     public static CsvCell factoryDummyWrapper(String value) {
-        return new CsvCell(-1, -1, value, null, null);
+        return new CsvCell(-1, -1, value, null);
     }
 
     public int getColIndex() {
@@ -81,7 +81,12 @@ public class CsvCell {
             return null;
         }
 
+        if (parentParser == null) {
+            throw new IllegalArgumentException("Can't get getDate on CsvCell that didn't come from a ParserI");
+        }
+
         try {
+            DateFormat dateFormat = parentParser.getDateFormat();
             return dateFormat.parse(value);
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date format [" + value + "]", pe);
@@ -92,7 +97,12 @@ public class CsvCell {
             return null;
         }
 
+        if (parentParser == null) {
+            throw new IllegalArgumentException("Can't get getTime on CsvCell that didn't come from a ParserI");
+        }
+
         try {
+            DateFormat timeFormat = parentParser.getTimeFormat();
             return timeFormat.parse(value);
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid time format [" + value + "]", pe);

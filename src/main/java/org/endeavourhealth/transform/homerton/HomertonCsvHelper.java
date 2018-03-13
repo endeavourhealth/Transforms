@@ -18,19 +18,11 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Observation;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class HomertonCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvHelper.class);
@@ -345,7 +337,7 @@ public class HomertonCsvHelper {
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //convert the parent event ID to a UUID
-        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null, null);
+        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null);
         ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, dummyCell);
         Observation observation = (Observation)retrieveResource(ResourceType.Observation, observationResourceId.getResourceId());
         if (observation == null) {

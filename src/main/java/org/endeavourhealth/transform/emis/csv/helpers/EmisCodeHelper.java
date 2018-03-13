@@ -10,9 +10,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -176,7 +174,7 @@ public class EmisCodeHelper {
                         int colIndex = colAudit.getCol();
                         long rowAuditId = rowAudit.getAuditId();
 
-                        CsvCell cell = new CsvCell(rowAuditId, colIndex, value.toString(), new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD), new SimpleDateFormat(EmisCsvToFhirTransformer.TIME_FORMAT));
+                        CsvCell cell = new CsvCell(rowAuditId, colIndex, value.toString(), null);
                         list.add(cell);
                     }
                 }

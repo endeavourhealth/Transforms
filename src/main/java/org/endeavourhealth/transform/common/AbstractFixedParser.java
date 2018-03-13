@@ -86,6 +86,17 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return exchangeId;
     }
 
+    @Override
+    public DateFormat getDateFormat() {
+        return dateFormat;
+    }
+
+    @Override
+    public DateFormat getTimeFormat() {
+        return timeFormat;
+    }
+
+
     private void open(String action) throws Exception {
 
         if (numLines == null) {
@@ -405,7 +416,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         long rowAuditId = getSourceFileRecordIdForCurrentRow();
         int colIndex = field.getColumnIndex();
 
-        return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
+        return new CsvCell(rowAuditId, colIndex, value, this);
     }
 
     public long getSourceFileRecordIdForCurrentRow() {

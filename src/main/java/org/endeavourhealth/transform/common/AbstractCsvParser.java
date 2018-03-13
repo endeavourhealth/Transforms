@@ -79,6 +79,16 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return exchangeId;
     }
 
+    @Override
+    public DateFormat getDateFormat() {
+        return dateFormat;
+    }
+
+    @Override
+    public DateFormat getTimeFormat() {
+        return timeFormat;
+    }
+
     private void open(String action) throws Exception {
 
         if (numLines == null) {
@@ -530,7 +540,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         Integer colIndexObj = csvReader.getHeaderMap().get(column);
         int colIndex = colIndexObj.intValue();
 
-        return new CsvCell(rowAuditId, colIndex, value, dateFormat, timeFormat);
+        return new CsvCell(rowAuditId, colIndex, value, this);
     }
 
     public long getSourceFileRecordIdForCurrentRow() {
