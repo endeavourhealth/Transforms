@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -9,7 +8,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -25,21 +23,17 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 public class LOREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
-    private String uniqueId;
 
     /*
      *
@@ -81,7 +75,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         }
 
         LocationBuilder locationBuilder = null;
-        String parentLocationResourceId = null;
+        ResourceId parentLocationResourceId = null;
         // Extract locations
         CsvCell facilityLoc = parser.getFacilityLocation();
         CsvCell buildingLoc = parser.getBuildingLocation();
@@ -112,24 +106,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
         if (locationResourceId == null) {
             // New location id - check if other location has referenced this as a parent
-            locationResourceId = new ResourceId();
-            locationResourceId.setScopeId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE);
-            locationResourceId.setResourceType("Location");
-            locationResourceId.setUniqueId("LocationId=" + locationIdCell.getString());
-
-            // Check if this location has previously been saved as a parent-location - Try secondary key
-            String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-            String alternateResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId);
-            // Create main resource key
-            if (alternateResourceId == null) {
-                locationResourceId.setResourceId(UUID.randomUUID());
-            } else {
-                LOG.debug("Found resource id " + alternateResourceId + " using altkey:" + uniqueId + " for locationId " + locationIdCell.getString());
-                locationResourceId.setResourceId(UUID.fromString(alternateResourceId));
-            }
-            saveResourceId(locationResourceId);
-
-            saveParentKeys(locationIdCell, uniqueId, fhirResourceFiler);
+            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
 
             locationBuilder = new LocationBuilder();
             locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
@@ -137,10 +114,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
             Location location = (Location) csvHelper.retrieveResource(ResourceType.Location, locationResourceId.getResourceId());
             if (location != null) {
                 locationBuilder = new LocationBuilder(location);
-                if (location.getPartOf() == null || location.getPartOf().hasReference() == false){
-                    String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-                    saveParentKeys(locationIdCell, uniqueId, fhirResourceFiler);
-                }
             } else {
                 locationBuilder = new LocationBuilder();
                 locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
@@ -149,12 +122,10 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         createMissingReferencedLocations(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc, fhirResourceFiler, parser, csvHelper);
 
-        // Get parent resource id using alternate key
-        String uniqueId = createSecondaryKey(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-        String parentUniqueId = createParentKey(uniqueId);
-        if (parentUniqueId != null) {
-            LOG.debug("Looking for parent location using key(LocationId=" + locationIdCell.getString() + "):" + parentUniqueId);
-            parentLocationResourceId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, parentUniqueId);
+        // Get parent resource id
+        String parentId = getParentId(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
+        if (parentId != null) {
+            parentLocationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parentId);
         }
 
         // Organisation
@@ -162,7 +133,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Identifier
-        //fhirLocation.addIdentifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID).setValue(parser.getLocationId());
         if (!locationIdCell.isEmpty()) {
             List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
             if (identifiers.size() == 0) {
@@ -219,7 +189,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
 
         // Parent location
         if (parentLocationResourceId != null) {
-            locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId));
+            locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId.getResourceId().toString()));
         }
 
         if (LOG.isDebugEnabled()) {
@@ -228,67 +198,69 @@ public class LOREFTransformer extends BartsBasisTransformer {
         saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
+    /*
+     *
+     */
     private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
+        ResourceId locationResourceId = null;
+
         if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(facilityCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, facilityCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(facilityCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(buildingCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, buildingCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(buildingCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(surgeryLocationCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, surgeryLocationCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(surgeryLocationCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(ambulatoryCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, ambulatoryCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(ambulatoryCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(nurseUnitCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, nurseUnitCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(nurseUnitCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(roomCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, roomCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(roomCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
 
         if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            UUID locationUUID = csvHelper.lookupLocationUUID(bedCode.getString(), fhirResourceFiler, parser);
-            if (locationUUID == null) {
+            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, bedCode.getString());
+            if (locationResourceId == null) {
                 createPlaceholderLocation(bedCode.getString(), fhirResourceFiler, parser, csvHelper);
             }
         }
-
     }
 
+    /*
+     *
+     */
     private static void createPlaceholderLocation(String locationId, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
         CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(locationId));
         if (cernerCodeValueRef != null) {
-            ResourceId resourceId = new ResourceId();
-            resourceId.setScopeId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE);
-            resourceId.setResourceType("Location");
-            resourceId.setUniqueId("LocationId=" + locationId);
-            resourceId.setResourceId(UUID.randomUUID());
-            saveResourceId(resourceId);
+            ResourceId resourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationId);
 
             LocationBuilder locationBuilder = new LocationBuilder();
             locationBuilder.setId(resourceId.getResourceId().toString());
@@ -296,23 +268,8 @@ public class LOREFTransformer extends BartsBasisTransformer {
             locationBuilder.setMode(Location.LocationMode.INSTANCE);
             locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
             saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
-
-            csvHelper.saveLocationUUIDToCache(locationId, resourceId.getResourceId());
         } else {
             TransformWarnings.log(LOG, parser, "Location id not found in CVREF for Location-id {} in file {}", locationId, parser.getFilePath());
-        }
-    }
-
-    private static void saveParentKeys(CsvCell locationIdCell, String uniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
-        // Create alternate keys for current location and all parents
-        while (uniqueId != null) {
-            String tempId = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId);
-            if (tempId == null || tempId.length() == 0) {
-                String uuid = UUID.randomUUID().toString();
-                LOG.debug("Saving altkey(LocationId=" + locationIdCell.getString() + "):" + uniqueId + "==>" + uuid);
-                internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ALTKEY_LOCATION, uniqueId, uuid);
-            }
-            uniqueId = createParentKey(uniqueId);
         }
     }
 
@@ -337,210 +294,32 @@ public class LOREFTransformer extends BartsBasisTransformer {
         return String.join(", ", tokens);
     }
 
-
-    private static String createSecondaryKey(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode) {
-
-        List<String> tokens = new ArrayList<>();
-
-        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            tokens.add("FacilityLocCode=" + facilityCode.getLong());
-        }
-
-        if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            tokens.add("BuildingLocCode=" + buildingCode.getLong());
-        }
-
-        if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            tokens.add("SurgeryLocCode=" + surgeryLocationCode.getLong());
-        }
-
-        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            tokens.add("AmbulatoryLocCode=" + ambulatoryCode.getLong());
+    private static String getParentId(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode) {
+        if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
+            return roomCode.getString();
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            tokens.add("NurseUnitLocCode=" + nurseUnitCode.getLong());
+            return nurseUnitCode.getString();
         }
 
-        if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            tokens.add("RoomLocCode=" + roomCode.getLong());
+        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
+            return ambulatoryCode.getString();
         }
 
-        if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            tokens.add("BedLocCode=" + bedCode.getLong());
+        if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
+            return surgeryLocationCode.getString();
         }
 
-        return String.join("-", tokens);
+        if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
+            return buildingCode.getString();
+        }
+
+        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
+            return facilityCode.getString();
+        }
+
+        return null;
     }
 
-    /*private static String createSecondaryKey(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
-        StringBuffer sb = new StringBuffer();
-        sb.append("FacilityLocCode=");
-        sb.append(facilityCode);
-
-        if (buildingCode != null && buildingCode.length() > 0 && buildingCode.compareTo("0") != 0) {
-            sb.append("-");
-            sb.append("BuildingLocCode=");
-            sb.append(buildingCode);
-        }
-
-        if (ambulatoryCode != null && ambulatoryCode.length() > 0 && ambulatoryCode.compareTo("0") != 0) {
-            sb.append("-");
-            sb.append("AmbulatoryLocCode=");
-            sb.append(ambulatoryCode);
-        }
-
-        if (nurseUnitCode != null && nurseUnitCode.length() > 0 && nurseUnitCode.compareTo("0") != 0) {
-            sb.append("-");
-            sb.append("NurseUnitLocCode=");
-            sb.append(nurseUnitCode);
-        }
-
-        if (roomCode != null && roomCode.length() > 0 && roomCode.compareTo("0") != 0) {
-            sb.append("-");
-            sb.append("RoomLocCode=");
-            sb.append(roomCode);
-        }
-
-        if (bedCode != null && bedCode.length() > 0 && bedCode.compareTo("0") != 0) {
-            sb.append("-");
-            sb.append("BedLocCode=");
-            sb.append(bedCode);
-        }
-
-        return sb.toString();
-    }*/
-
-    /*
-     *
-     */
-    private static String createParentKey(String uniqueKey) {
-        // remove current level
-        int lastpos = uniqueKey.lastIndexOf("-");
-        if (lastpos == -1) {
-            return null;
-        } else {
-            return uniqueKey.substring(0, lastpos);
-        }
-    }
-
-    /*
-     *
-     */
-    /*private static String createDescription(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
-        StringBuffer sb = new StringBuffer();
-        if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(getCodeRefValue(fhirResourceFiler, bedCode.getString()));
-            dependencyList.add(bedCode);
-        }
-
-        if (!roomCode.isEmpty() && roomCode.getString().compareTo("0") != 0) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(getCodeRefValue(fhirResourceFiler, roomCode.getString()));
-            dependencyList.add(roomCode);
-        }
-
-        if (!nurseUnitCode.isEmpty() && nurseUnitCode.getString().compareTo("0") != 0) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(getCodeRefValue(fhirResourceFiler, nurseUnitCode.getString()));
-            dependencyList.add(nurseUnitCode);
-        }
-
-        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getString().compareTo("0") != 0) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(getCodeRefValue(fhirResourceFiler, ambulatoryCode.getString()));
-            dependencyList.add(ambulatoryCode);
-        }
-
-        if (!buildingCode.isEmpty() && buildingCode.getString().compareTo("0") != 0) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(getCodeRefValue(fhirResourceFiler, buildingCode.getString()));
-            dependencyList.add(buildingCode);
-        }
-
-        if (sb.length() > 0) {
-            sb.append(", ");
-        }
-        sb.append(getCodeRefValue(fhirResourceFiler, facilityCode.getString()));
-        dependencyList.add(facilityCode);
-
-        return sb.toString();
-    }*/
-
-    /*
-     *
-     */
-    /*private static String getName(FhirResourceFilerI fhirResourceFiler, CsvCell facilityCode, CsvCell buildingCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, ArrayList<CsvCell> dependencyList) throws Exception {
-        if (!bedCode.isEmpty() && bedCode.getString().compareTo("0") != 0) {
-            dependencyList.add(bedCode);
-            return getCodeRefValue(fhirResourceFiler, bedCode.getString());
-        } else if (!roomCode.isEmpty() && roomCode.getString().compareTo("0") != 0) {
-            dependencyList.add(roomCode);
-            return getCodeRefValue(fhirResourceFiler, roomCode.getString());
-        } else if (!nurseUnitCode.isEmpty() && nurseUnitCode.getString().compareTo("0") != 0) {
-            dependencyList.add(nurseUnitCode);
-            return getCodeRefValue(fhirResourceFiler, nurseUnitCode.getString());
-        } else if (!ambulatoryCode.isEmpty() && ambulatoryCode.getString().compareTo("0") != 0) {
-            dependencyList.add(ambulatoryCode);
-            return getCodeRefValue(fhirResourceFiler, ambulatoryCode.getString());
-        } else if (!buildingCode.isEmpty() && buildingCode.getString().compareTo("0") != 0) {
-            dependencyList.add(buildingCode);
-            return getCodeRefValue(fhirResourceFiler, buildingCode.getString());
-        } else {
-            dependencyList.add(facilityCode);
-            return getCodeRefValue(fhirResourceFiler, facilityCode.getString());
-        }
-    }*/
-
-    /*
-     *
-     */
-    /*
-    private static CodeableConcept getPhysicalType(String facilityCode, String buildingCode, String ambulatoryCode, String nurseUnitCode, String roomCode, String bedCode) {
-        CodeableConcept ret = null;
-        if (bedCode != null && bedCode.length() > 0) {
-            ret.addCoding().setCode(LocationPhysicalType.BD.getDefinition()).setSystem(LocationPhysicalType.BD.getSystem()).setDisplay(LocationPhysicalType.BD.getDisplay());
-            return ret;
-        } else if (roomCode != null && roomCode.length() > 0) {
-            ret.addCoding().setCode(LocationPhysicalType.RO.getDefinition()).setSystem(LocationPhysicalType.RO.getSystem()).setDisplay(LocationPhysicalType.RO.getDisplay());
-            return ret;
-        } else if (nurseUnitCode != null && nurseUnitCode.length() > 0) {
-            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
-            return ret;
-        } else if (ambulatoryCode != null && ambulatoryCode.length() > 0) {
-            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
-            return ret;
-        } else if (buildingCode != null && buildingCode.length() > 0) {
-            ret.addCoding().setCode(LocationPhysicalType.BU.getDefinition()).setSystem(LocationPhysicalType.BU.getSystem()).setDisplay(LocationPhysicalType.BU.getDisplay());
-            return ret;
-        } else {
-            ret.addCoding().setCode(LocationPhysicalType.NULL.getDefinition()).setSystem(LocationPhysicalType.NULL.getSystem()).setDisplay(LocationPhysicalType.NULL.getDisplay());
-            return ret;
-        }
-    } */
-
-    /*
-     *
-     */
-    /*private static String getCodeRefValue(FhirResourceFilerI fhirResourceFiler, String code) throws Exception {
-        CernerCodeValueRef cernerCodeDef = cernerCodeValueRefDAL.getCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(code), fhirResourceFiler.getServiceId());
-        if (cernerCodeDef != null) {
-            return cernerCodeDef.getCodeDispTxt();
-        } else {
-            String ret = "??Unknown location " + code;
-            // LOG.warn("Code not found in Code Value lookup:" + ret);
-            return ret;
-        }
-    }*/
 }
