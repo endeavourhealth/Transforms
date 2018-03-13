@@ -118,9 +118,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
-
         // Retrieve or create EpisodeOfCare
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, csvHelper, fhirResourceFiler, internalIdDAL);
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
 
         // Create new encounter
         if (encounterBuilder == null) {
@@ -165,7 +164,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Episode resource id
         //ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
-
 
 
         //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
@@ -290,8 +288,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
         // Maintain EpisodeOfCare
-        episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
-        episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
+        //episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
+        //episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
 
         if (LOG.isDebugEnabled()) {
             //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));

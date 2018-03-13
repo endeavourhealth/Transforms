@@ -85,7 +85,11 @@ public class BartsBasisTransformer extends BasisTransformer{
         }
     }
 
-    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, InternalIdDalI internalIdDAL) throws Exception {
+    /*
+    * Set unknown values to null
+    * For non-AE encounters set 'aeArrivalDateTime' to null
+     */
+    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, CsvCell aeArrivalDateTime, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, InternalIdDalI internalIdDAL) throws Exception {
         String alternateEpisodeUUID = null;
         EpisodeOfCareBuilder episodeOfCareBuilder = null;
 
@@ -132,6 +136,23 @@ public class BartsBasisTransformer extends BasisTransformer{
                 if (episodeOfCareBuilder == null) {
                     episodeOfCareBuilder = new EpisodeOfCareBuilder();
                     episodeOfCareBuilder.setId(alternateEpisodeUUID, finIdCell);
+                    EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
+                }
+            }
+        } else if (aeArrivalDateTime != null) {
+            String aekey = personIdCell.getString() + InternalIdMap.KEY_SPLIT_CHAR + aeArrivalDateTime.getString();
+            alternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_AE_ARRIVAL_DT_TM_TO_EPISODE_UUID, aekey);
+            if (alternateEpisodeUUID == null) {
+                episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                episodeOfCareBuilder.setId(UUID.randomUUID().toString(), personIdCell, aeArrivalDateTime);
+                EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
+
+                internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_AE_ARRIVAL_DT_TM_TO_EPISODE_UUID, aekey, episodeOfCareBuilder.getResourceId());
+            } else {
+                episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, alternateEpisodeUUID);
+                if (episodeOfCareBuilder == null) {
+                    episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                    episodeOfCareBuilder.setId(alternateEpisodeUUID, personIdCell, aeArrivalDateTime);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
             }
