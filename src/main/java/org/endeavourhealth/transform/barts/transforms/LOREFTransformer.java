@@ -295,31 +295,41 @@ public class LOREFTransformer extends BartsBasisTransformer {
     }
 
     private static String getParentId(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode) {
+        ArrayList<String> locationList = new ArrayList<String>();
+
+        if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
+            locationList.add(bedCode.getString());
+        }
+
         if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            return roomCode.getString();
+            locationList.add(roomCode.getString());
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            return nurseUnitCode.getString();
+            locationList.add(nurseUnitCode.getString());
         }
 
         if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            return ambulatoryCode.getString();
+            locationList.add(ambulatoryCode.getString());
         }
 
         if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            return surgeryLocationCode.getString();
+            locationList.add(surgeryLocationCode.getString());
         }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            return buildingCode.getString();
+            locationList.add(buildingCode.getString());
         }
 
         if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            return facilityCode.getString();
+            locationList.add(facilityCode.getString());
         }
 
-        return null;
+        if (locationList.size() > 1) {
+            return locationList.get(1);
+        } else {
+            return null;
+        }
     }
 
 }
