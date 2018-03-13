@@ -33,6 +33,12 @@ public abstract class BartsCsvToFhirTransformer {
                                                 .withQuote((Character)null)
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
 
+    public static final CSVFormat CSV_FORMAT_NO_HEADER = CSVFormat.DEFAULT
+            .withDelimiter('|')
+            .withEscape((Character)null)
+            .withQuote((Character)null)
+            .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
+
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
@@ -158,7 +164,7 @@ public abstract class BartsCsvToFhirTransformer {
         String version = csvHelper.getVersion();
 
         if (type.equalsIgnoreCase("LOREF")) {
-            return new LOREF(serviceId, systemId, exchangeId, version, file);
+            return new LOREF(serviceId, systemId, exchangeId, version, file, getFormatType(file));
         } else if (type.equalsIgnoreCase("PRSNLREF")) {
             return new PRSNLREF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PPATI")) {
@@ -217,6 +223,15 @@ public abstract class BartsCsvToFhirTransformer {
             return new IPWDS(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
+        }
+    }
+
+    private static CSVFormat getFormatType(String file) throws Exception {
+        String firstChar = FileHelper.readFirstCharactersFromSharedStorage(file, 1);
+        if (firstChar.compareTo("#") == 0) {
+            return BartsCsvToFhirTransformer.CSV_FORMAT;
+        } else {
+            return BartsCsvToFhirTransformer.CSV_FORMAT_NO_HEADER;
         }
     }
 
