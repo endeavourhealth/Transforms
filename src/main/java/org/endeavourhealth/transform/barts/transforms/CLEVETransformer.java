@@ -87,7 +87,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
         // check patient data. If we can't link the event to a patient its no use
         //TODO Potentially another candidate for saving for later processing when we may have more data. Eg scope of patients expands
-      if (patientUuid == null) {
+       if (patientUuid == null) {
           TransformWarnings.log(LOG, parser,"Skipping entry. Unable to find patient data for personId {}, eventId:{}", parser.getPatientId().getString(), parser.getEventId().getString());
             return;
         }
@@ -198,13 +198,16 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getLong()) == null) {
-            TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
-                    normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
-                    normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
-            return;
+        if (!normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
+
+            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getLong()) == null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
+                        normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
+                        normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
+                return;
+            }
+            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
         }
-        BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
 
         //TODO - set comments
         CsvCell eventTagCell = parser.getEventTag();
