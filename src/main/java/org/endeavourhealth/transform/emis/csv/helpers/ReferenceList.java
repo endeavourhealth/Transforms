@@ -28,8 +28,8 @@ public class ReferenceList {
         System.arraycopy(referencesValues, 0, newReferenceValues, 0, size);
         System.arraycopy(sourceCells, 0, newSourceCells, 0, size);
 
-        newReferenceValues[size-1] = referenceValue;
-        newSourceCells[size-1] = sourceCells;
+        newReferenceValues[size] = referenceValue;
+        newSourceCells[size] = sourceCells;
 
         /*referencesValuesList.add(referenceValue);
         sourceCellsList.add(sourceCells);*/
