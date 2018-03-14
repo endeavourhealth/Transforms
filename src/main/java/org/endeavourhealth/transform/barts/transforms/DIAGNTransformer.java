@@ -180,10 +180,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for DiagnosisTypeCode {} not found. Row {} Column {} ",
                         diagnosisTypeCode.getLong(), parser.getDiagnosisTypeCode().getString(),
                         diagnosisTypeCode.getRowAuditId(), diagnosisTypeCode.getColIndex());
-                return;
+
+            } else {
+                String category = cernerCodeValueRef.getCodeDispTxt();
+                conditionBuilder.setCategory(category, diagnosisTypeCode);
             }
-            String category = cernerCodeValueRef.getCodeDispTxt();
-            conditionBuilder.setCategory(category, diagnosisTypeCode);
         }
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();

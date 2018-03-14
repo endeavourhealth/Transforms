@@ -118,7 +118,7 @@ public class PPATITransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found. Row {} Column {} ",
                         nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString(),
                         nhsNumberStatusCell.getRowAuditId(), nhsNumberStatusCell.getColIndex());
-                } else {
+            } else {
 
                 String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
                 NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);

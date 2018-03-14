@@ -87,8 +87,8 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
         // check patient data. If we can't link the event to a patient its no use
         //TODO Potentially another candidate for saving for later processing when we may have more data. Eg scope of patients expands
-       if (patientUuid == null) {
-          TransformWarnings.log(LOG, parser,"Skipping entry. Unable to find patient data for personId {}, eventId:{}", parser.getPatientId().getString(), parser.getEventId().getString());
+        if (patientUuid == null) {
+            TransformWarnings.log(LOG, parser,"Skipping entry. Unable to find patient data for personId {}, eventId:{}", parser.getPatientId().getString(), parser.getEventId().getString());
             return;
         }
 
@@ -336,7 +336,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             }
 
         } catch (NumberFormatException nfe) {
-           // LOG.warn("Failed to convert [" + resultText + "] to Double");
+            // LOG.warn("Failed to convert [" + resultText + "] to Double");
             TransformWarnings.log(LOG, parser, "Failed to convert {} to Double", resultText);
         }
 

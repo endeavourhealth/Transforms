@@ -166,7 +166,6 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         } else {
             TransformWarnings.log(LOG, parser, "Empty CONCEPT_CKI_IDENT cell for Procedure {}", parser.getProcedureID());
-            return;
         }
 
         // Procedure type (category) is a Cerner Millenium code so lookup
@@ -175,14 +174,15 @@ public class PROCETransformer extends BartsBasisTransformer {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PROCEDURE_TYPE,
                                                                                 procedureTypeCodeCell.getLong());
-            if (cernerCodeValueRef== null) {
+            if (cernerCodeValueRef == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for procedure type {} not found. Row {} Column {} ",
                         procedureTypeCodeCell.getLong(), parser.getProcedureTypeCode().getString(),
                         procedureTypeCodeCell.getRowAuditId(), procedureTypeCodeCell.getColIndex());
-                return;
-            }
 
-            procedureBuilder.setCategory(cernerCodeValueRef.getCodeDispTxt(), procedureTypeCodeCell);
+            } else {
+
+                procedureBuilder.setCategory(cernerCodeValueRef.getCodeDispTxt(), procedureTypeCodeCell);
+            }
         }
 
         // save resource
