@@ -162,7 +162,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
             TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
                     codeCell.getLong(), parser.getEventCode().getString(),
                     codeCell.getRowAuditId(), codeCell.getColIndex());
-            return;
+            //return;
         }
         CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
 
@@ -204,7 +204,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
                         normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
                         normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
-                return;
+               // return;
             }
             BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
         }
@@ -351,7 +351,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",
                         unitsCodeCell.getLong(), parser.getEventId().getString(),
                         unitsCodeCell.getRowAuditId(), unitsCodeCell.getColIndex());
-                return;
+              //  return;
             }
             unitsDesc = cernerCodeValueRef.getCodeDispTxt();
             observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
