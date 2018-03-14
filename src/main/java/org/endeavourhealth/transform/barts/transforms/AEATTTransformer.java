@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
@@ -11,10 +12,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +80,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             TransformWarnings.log(LOG, parser, "Skipping A&E attendance {} because no Person->MRN mapping {} could be found in file {}", encounterIdCell.getString(), personIdCell.getString(), parser.getFilePath());
             return;
         }
+
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
         if (encounterBuilder == null
                 && !activeCell.getIntAsBoolean()) {
@@ -186,11 +185,31 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
+
         //Reason
         CsvCell reasonForVisit = parser.getPresentingCompTxt();
         CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
         encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
 
-    }// end createAandEAttendance()
+        // Retrieve or create EpisodeOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = null;
+        CsvCell finIdCell = null;
+        CsvCell episodeIdentiferCell = null;
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+        identifierBuilder.setValue(finIdCell.getString(), finIdCell);
+
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, parser.getEncounterId(),
+                personIdCell, parser.getArrivalDateTime(), csvHelper, fhirResourceFiler, internalIdDAL);
+
+        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
+
+       }// end createAandEAttendance()
+
+
+
     }
+
+
 
