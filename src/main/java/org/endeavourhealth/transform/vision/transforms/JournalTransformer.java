@@ -451,7 +451,7 @@ public class JournalTransformer {
             return;
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, null);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder,  ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
         CsvCell snomedCode = parser.getSnomedCode();
@@ -529,7 +529,7 @@ public class JournalTransformer {
         conditionBuilder.setCategory("complaint", observationID);
         conditionBuilder.setAsProblem(true);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, null);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
         CsvCell snomedCode = parser.getSnomedCode();
