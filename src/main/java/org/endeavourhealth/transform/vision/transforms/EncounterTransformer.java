@@ -86,7 +86,7 @@ public class EncounterTransformer {
         if (sessionTypeCode != null) {
             String term = convertSessionTypeCode(sessionTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_SOURCE);
                 codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_SOURCE);
                 codeableConceptBuilder.setCodingCode(sessionTypeCode.getString(), sessionTypeCode);
                 codeableConceptBuilder.setCodingDisplay(term);
@@ -97,7 +97,7 @@ public class EncounterTransformer {
         if (!locationTypeCode.isEmpty()) {
             String term = convertLocationTypeCode(locationTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_LOCATION_TYPE);
                 codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
                 codeableConceptBuilder.setCodingCode(locationTypeCode.getString(), locationTypeCode);
                 codeableConceptBuilder.setCodingDisplay(term);
