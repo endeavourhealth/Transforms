@@ -107,7 +107,7 @@ public class OPATT extends AbstractCsvParser {
 
     public CsvCell getReasonForVisitText() { return super.getCell("REASON_FOR_VISIT_TXT"); }
 
-    public CsvCell getAppointmentTpyeCode() { return super.getCell("APPT_TYPE_CD"); }
+    public CsvCell getAppointmentTypeCode() { return super.getCell("APPT_TYPE_CD"); }
 
     public CsvCell getPatientId() { return super.getCell("PERSON_ID"); }
 

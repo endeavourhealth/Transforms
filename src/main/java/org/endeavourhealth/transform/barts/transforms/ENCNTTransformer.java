@@ -155,7 +155,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }
 
         // Save visit-id to encounter-id link
-        internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
+        if (visitIdCell != null && !visitIdCell.isEmpty()) {
+            internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
+        }
 
         if (changeOfPatient) {
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
@@ -274,23 +276,13 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }
 
         // Location
-        /*
-        CsvCell currentLocationCell = parser.getCurrentLocationIdentifier();
-        if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
-            UUID locationResourceUUID = csvHelper.lookupLocationUUID(currentLocationCell.getString(), fhirResourceFiler, parser);
-            if (locationResourceUUID != null) {
-                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
-            } else {
-                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in ENCNT record {} in file {}", currentLocationCell.getString(), encounterIdCell.getString(), parser.getFilePath());
-            }
-        }*/
+        // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
         // Maintain EpisodeOfCare
-        //episodeOfCareBuilder.setRegistrationStartDate(encounterBuilder.getPeriod().getStart());
-        //episodeOfCareBuilder.setRegistrationEndDate(encounterBuilder.getPeriod().getEnd());
+        // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         if (LOG.isDebugEnabled()) {
             //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));

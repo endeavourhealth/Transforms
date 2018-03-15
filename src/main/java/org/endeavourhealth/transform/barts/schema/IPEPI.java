@@ -74,6 +74,10 @@ public class IPEPI extends AbstractCsvParser {
         return super.getCell("EPISODE_START_DT_TM");
     }
 
+    public CsvCell getEpisodeEndDateTime() {
+        return super.getCell("EPISODE_END_DT_TM");
+    }
+
     public CsvCell getFirstDayNightAdmissionCode() {
         return super.getCell("FIRST_REG_DAY_NIGHT_NHS_CD_ALIAS");
     }

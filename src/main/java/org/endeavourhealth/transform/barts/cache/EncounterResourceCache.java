@@ -29,7 +29,7 @@ public class EncounterResourceCache {
     private static Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> encounterBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
-    private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
+    //private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
 
     /*
     public static void saveEncounterDates(String encounterId, CsvCell beginDateCell, CsvCell endDateCell) throws TransformException {
@@ -176,6 +176,6 @@ public class EncounterResourceCache {
         episodeBuildersByUuid.clear();
         encounterBuildersByUuid.clear();
         deletedEncounterBuildersByUuid.clear();
-        encounterDates.clear();
+        //encounterDates.clear();
     }
 }

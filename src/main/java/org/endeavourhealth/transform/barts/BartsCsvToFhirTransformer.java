@@ -84,11 +84,11 @@ public abstract class BartsCsvToFhirTransformer {
         //we're now good to save our patient resources
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
-        // Encounters
+        // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
+        ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         AEATTTransformer.transform(version, createParser(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         OPATTTransformer.transform(version, createParser(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         IPEPITransformer.transform(version, createParser(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ENCNTTransformer.transform(version, createParser(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         IPWDSTransformer.transform(version, createParser(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         //ENCINFTransformer.transform(version, createParser(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);

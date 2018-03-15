@@ -60,6 +60,10 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         auditValue("period.start", sourceCells);
     }
 
+    public Date getRegistrationStartDate() {
+        return this.episodeOfCare.getPeriod().getStart();
+    }
+
     public void setRegistrationEndDate(Date date, CsvCell... sourceCells) {
         Period period = this.episodeOfCare.getPeriod();
         if (period == null) {
@@ -72,6 +76,11 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
 
         auditValue("period.end", sourceCells);
     }
+
+    public Date getRegistrationEndDate() {
+        return this.episodeOfCare.getPeriod().getEnd();
+    }
+
 
     /**
      * when we set the period, we call this to derive the active status from it
