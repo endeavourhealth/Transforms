@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.LOREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -74,7 +75,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
             internalIdDAL = DalProvider.factoryInternalIdDal();
         }
 
-        LocationBuilder locationBuilder = null;
         ResourceId parentLocationResourceId = null;
         // Extract locations
         CsvCell facilityLoc = parser.getFacilityLocation();
@@ -85,6 +85,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         CsvCell roomLoc = parser.getRoomLocation();
         CsvCell bedLoc = parser.getBedLcoation();
         CsvCell beginDateCell = parser.getBeginEffectiveDateTime();
+        CsvCell locationIdCell = parser.getLocationId();
 
         Date beginDate = null;
         try {
@@ -102,22 +103,9 @@ public class LOREFTransformer extends BartsBasisTransformer {
         //LOG.debug("Location active from " + beginDate.toString() + " until " + endDate.toString());
 
         // Location resource id
-        CsvCell locationIdCell = parser.getLocationId();
-        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
-        if (locationResourceId == null) {
-            // New location id - check if other location has referenced this as a parent
-            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
-
-            locationBuilder = new LocationBuilder();
-            locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
-        } else {
-            Location location = (Location) csvHelper.retrieveResource(ResourceType.Location, locationResourceId.getResourceId());
-            if (location != null) {
-                locationBuilder = new LocationBuilder(location);
-            } else {
-                locationBuilder = new LocationBuilder();
-                locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
-            }
+        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, locationIdCell);
+        if (locationBuilder == null) {
+            locationBuilder = LocationResourceCache.createLocationBuilder(locationIdCell);
         }
 
         createMissingReferencedLocations(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc, fhirResourceFiler, parser, csvHelper);
@@ -203,53 +191,54 @@ public class LOREFTransformer extends BartsBasisTransformer {
      */
     private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
         ResourceId locationResourceId = null;
+        LocationBuilder subLocationBuilder;
 
         if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, facilityCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(facilityCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, facilityCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(facilityCode, parser, csvHelper);
             }
         }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, buildingCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(buildingCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, buildingCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(buildingCode, parser, csvHelper);
             }
         }
 
         if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, surgeryLocationCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(surgeryLocationCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, surgeryLocationCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(surgeryLocationCode, parser, csvHelper);
             }
         }
 
         if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, ambulatoryCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(ambulatoryCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, ambulatoryCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(ambulatoryCode, parser, csvHelper);
             }
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, nurseUnitCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(nurseUnitCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, nurseUnitCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(nurseUnitCode, parser, csvHelper);
             }
         }
 
         if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, roomCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(roomCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, roomCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(roomCode, parser, csvHelper);
             }
         }
 
         if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, bedCode.getString());
-            if (locationResourceId == null) {
-                createPlaceholderLocation(bedCode.getString(), fhirResourceFiler, parser, csvHelper);
+            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, bedCode);
+            if (subLocationBuilder == null) {
+                createPlaceholderLocation(bedCode, parser, csvHelper);
             }
         }
     }
@@ -257,19 +246,15 @@ public class LOREFTransformer extends BartsBasisTransformer {
     /*
      *
      */
-    private static void createPlaceholderLocation(String locationId, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, Long.valueOf(locationId));
+    private static void createPlaceholderLocation(CsvCell locationIdCell, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, locationIdCell.getLong());
         if (cernerCodeValueRef != null) {
-            ResourceId resourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationId);
-
-            LocationBuilder locationBuilder = new LocationBuilder();
-            locationBuilder.setId(resourceId.getResourceId().toString());
+            LocationBuilder locationBuilder = LocationResourceCache.createLocationBuilder(locationIdCell);
             locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
             locationBuilder.setMode(Location.LocationMode.INSTANCE);
             locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
-            saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
         } else {
-            TransformWarnings.log(LOG, parser, "Location id not found in CVREF for Location-id {} in file {}", locationId, parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "Location id not found in CVREF for Location-id {} in file {}", locationIdCell.getString(), parser.getFilePath());
         }
     }
 

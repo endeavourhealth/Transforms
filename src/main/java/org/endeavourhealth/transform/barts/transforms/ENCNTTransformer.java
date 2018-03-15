@@ -274,6 +274,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }
 
         // Location
+        /*
         CsvCell currentLocationCell = parser.getCurrentLocationIdentifier();
         if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
             UUID locationResourceUUID = csvHelper.lookupLocationUUID(currentLocationCell.getString(), fhirResourceFiler, parser);
@@ -282,7 +283,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             } else {
                 TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in ENCNT record {} in file {}", currentLocationCell.getString(), encounterIdCell.getString(), parser.getFilePath());
             }
-        }
+        }*/
 
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());

@@ -216,8 +216,19 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("location[" + index + "].location", sourceCells);
     }
 
+    public void addLocation(Encounter.EncounterLocationComponent location, CsvCell... sourceCells) {
+        this.encounter.addLocation(location);
+
+        int index = this.encounter.getLocation().size()-1;
+        auditValue("location[" + index + "].location", sourceCells);
+    }
+
     public Reference getPatient() {
         return this.encounter.getPatient();
+    }
+
+    public List<Encounter.EncounterLocationComponent> getLocation() {
+        return this.encounter.getLocation();
     }
 
     @Override
