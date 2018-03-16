@@ -98,10 +98,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         // Encounter start and end
         Date beginDate = null;
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
+        if (beginDateCell != null && !beginDateCell.isEmpty()) {
+            try {
+                beginDate = formatDaily.parse(beginDateCell.getString());
+            } catch (ParseException ex) {
+                beginDate = formatBulk.parse(beginDateCell.getString());
+            }
         }
         Date endDate = null;
         if (endDateCell != null && !endDateCell.isEmpty()) {
@@ -113,10 +115,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
         // Triage start and end
         Date triageBeginDate = null;
-        try {
-            triageBeginDate = formatDaily.parse(triageStartCell.getString());
-        } catch (ParseException ex) {
-            triageBeginDate = formatBulk.parse(triageStartCell.getString());
+        if (triageStartCell != null && !triageStartCell.isEmpty()) {
+            try {
+                triageBeginDate = formatDaily.parse(triageStartCell.getString());
+            } catch (ParseException ex) {
+                triageBeginDate = formatBulk.parse(triageStartCell.getString());
+            }
         }
         Date triageEndDate = null;
         if (triageEndCell != null && !triageEndCell.isEmpty()) {
@@ -128,10 +132,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
         // Assessment start and end
         Date assessmentBeginDate = null;
-        try {
-            assessmentBeginDate = formatDaily.parse(triageStartCell.getString());
-        } catch (ParseException ex) {
-            assessmentBeginDate = formatBulk.parse(triageStartCell.getString());
+        if (triageStartCell != null && !triageStartCell.isEmpty()) {
+            try {
+                assessmentBeginDate = formatDaily.parse(triageStartCell.getString());
+            } catch (ParseException ex) {
+                assessmentBeginDate = formatBulk.parse(triageStartCell.getString());
+            }
         }
         Date assessmentEndDate = null;
         if (triageEndCell != null && !triageEndCell.isEmpty()) {
