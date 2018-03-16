@@ -7,9 +7,11 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.AEATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -174,6 +176,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell,
                 personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
+        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
@@ -306,7 +309,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         // Location
         if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
-            UUID locationResourceUUID = csvHelper.lookupLocationUUID(currentLocationCell.getString(), fhirResourceFiler, parser);
+            UUID locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, currentLocationCell);
             if (locationResourceUUID != null) {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
             } else {
