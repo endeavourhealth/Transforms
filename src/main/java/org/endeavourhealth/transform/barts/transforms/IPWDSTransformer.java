@@ -127,6 +127,8 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
         }
 
+        encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
         // Location
         UUID locationResourceUUID = null;
 

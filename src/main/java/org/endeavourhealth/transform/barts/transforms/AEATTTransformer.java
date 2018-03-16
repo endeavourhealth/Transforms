@@ -235,6 +235,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
+        encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
         //We have a number of potential events in the patient journey through A&E. We can't map all the states.
         Encounter.EncounterState encState = null;
 
