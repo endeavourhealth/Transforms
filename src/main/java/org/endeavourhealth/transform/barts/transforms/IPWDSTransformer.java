@@ -135,9 +135,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         elc.setStatus(getLocationStatus(wardStayPeriod));
 
         List<Encounter.EncounterLocationComponent> locationList = encounterBuilder.getLocation();
-        if (sequenceNumberCell.getInt() > locationList.size()) {
-            // New location
-        } else {
+        if (locationList != null && sequenceNumberCell.getInt() <= locationList.size()) {
             // Update existing location
             locationList.remove(sequenceNumberCell.getInt() - 1);
         }
@@ -183,9 +181,9 @@ public class IPWDSTransformer extends BartsBasisTransformer {
 
     private static Encounter.EncounterLocationStatus getLocationStatus(Period p) {
         Date date = new Date();
-        if (p.getStart().after(date)) {
+        if (p.getStart() == null || p.getStart().after(date)) {
             return Encounter.EncounterLocationStatus.PLANNED;
-        } else if (p.getEnd().before(date)) {
+        } else if (p.getEnd() != null) {
             return Encounter.EncounterLocationStatus.COMPLETED;
         } else {
             return Encounter.EncounterLocationStatus.ACTIVE;
