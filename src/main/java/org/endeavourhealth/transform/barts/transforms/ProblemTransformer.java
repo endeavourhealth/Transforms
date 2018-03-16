@@ -156,13 +156,11 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
             } else {
                 TransformWarnings.log(LOG, parser, "Problem {} has unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
-
-
+                codeableConceptBuilder.addCoding("unknown", vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
             }
         }
-        // TODO Drew to fix later
-        codeableConceptBuilder.addCoding("unknown", vocabCell);
+
         // set category to 'complaint'
         conditionBuilder.setCategory("complaint");
 
