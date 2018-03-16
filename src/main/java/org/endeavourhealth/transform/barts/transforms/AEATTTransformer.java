@@ -238,6 +238,21 @@ public class AEATTTransformer extends BartsBasisTransformer {
         Encounter.EncounterState encState = null;
 
         // Triage
+        if (triageStartCell != null) {
+            LOG.debug("triageStartCell=" + triageStartCell.getString());
+        } else {
+            LOG.debug("triageStartCell=null");
+        }
+        if (triageEndCell != null) {
+            LOG.debug("triageEndCell=" + triageEndCell.getString());
+        } else {
+            LOG.debug("triageEndCell=null");
+        }
+        if (triagepersonIdCell != null) {
+            LOG.debug("triagepersonIdCell=" + triagepersonIdCell.getString());
+        } else {
+            LOG.debug("triagepersonIdCell=null");
+        }
         if (triageBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
         } else if (triageEndDate == null) {
@@ -248,9 +263,9 @@ public class AEATTTransformer extends BartsBasisTransformer {
         encounterBuilder.setStatus(encState, triageBeginDate, triageEndDate, triageStartCell, triageEndCell);
 
         if (triagepersonIdCell != null && triagepersonIdCell.getLong() > 0) {
-            ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
-            if (referrerPersonResourceId != null) {
-                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, referrerPersonResourceId.getResourceId().toString());
+            ResourceId triagePersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
+            if (triagePersonResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, triagePersonResourceId.getResourceId().toString());
                 Period triagePeriod = new Period();
                 triagePeriod.setStart(triageBeginDate);
                 if (triageEndDate != null) {
@@ -261,6 +276,17 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         //  First medical assessment to conclusion
+        if (firstAssessmentDateCell != null) {
+            LOG.debug("firstAssessmentDateCell=" + firstAssessmentDateCell.getString());
+        } else {
+            LOG.debug("firstAssessmentDateCell=null");
+        }
+        if (conclusionDateCell != null) {
+            LOG.debug("conclusionDateCell=" + conclusionDateCell.getString());
+        } else {
+            LOG.debug("conclusionDateCell=null");
+        }
+
         if (assessmentBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
         } else if (assessmentEndDate == null) {
