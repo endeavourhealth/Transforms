@@ -172,7 +172,7 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.medicationStatement.setMedication(null);
     }
 }

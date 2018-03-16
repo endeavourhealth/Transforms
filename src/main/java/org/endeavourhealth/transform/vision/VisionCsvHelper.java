@@ -13,6 +13,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -23,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class VisionCsvHelper {
+public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(VisionCsvHelper.class);
 
     private static final String ID_DELIMITER = ":";
@@ -31,6 +32,9 @@ public class VisionCsvHelper {
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
+    private final UUID serviceId;
+    private final UUID systemId;
+    private final UUID exchangeId;
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
 
@@ -47,7 +51,10 @@ public class VisionCsvHelper {
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> drugRecords = new HashMap<>();
 
-    public VisionCsvHelper() {
+    public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.exchangeId = exchangeId;
     }
 
     /**
@@ -393,7 +400,7 @@ public class VisionCsvHelper {
 
                         //the reference we have has already been mapped to an EDS ID, so we need to un-map it
                         //back to the source ID, so the ID mapper can safely map it when we save the resource
-                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler.getServiceId(), previousReference);
+                        Reference unmappedReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(csvHelper, previousReference);
                         if (unmappedReference != null) {
                             ret.add(unmappedReference);
                         }
@@ -618,6 +625,21 @@ public class VisionCsvHelper {
                 fhirResourceFiler.savePatientResource(null, false, fhirMedicationStatement);
             }
         }
+    }
+
+    @Override
+    public UUID getServiceId() {
+        return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return systemId;
+    }
+
+    @Override
+    public UUID getExchangeId() {
+        return exchangeId;
     }
 
     /**

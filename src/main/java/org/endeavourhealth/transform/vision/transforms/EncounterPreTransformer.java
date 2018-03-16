@@ -113,7 +113,7 @@ public class EncounterPreTransformer {
                 List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
 
                 //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
-                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(fhirResourceFiler.getServiceId(), previousReferencesDiscoveryIds);
+                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
 
                 csvHelper.cacheConsultationPreviousLinkedResources(encounterSourceId, previousReferencesLocalIds);
 

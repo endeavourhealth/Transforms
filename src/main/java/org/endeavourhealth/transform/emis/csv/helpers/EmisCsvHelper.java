@@ -11,6 +11,8 @@ import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
@@ -42,7 +44,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
-    private Map<String, ConditionBuilder> problemMap = new HashMap<>();
+    private Map<String, String> problemMap = new HashMap<>(); //ideally would cache ConditionBuilders, but resources are too memory hungry
+    private Map<String, ResourceFieldMappingAudit> problemAuditMap = new HashMap<>();
     private Map<String, ReferralRequestBuilder> referralMap = new HashMap<>();
     private Map<String, ReferenceList> observationChildMap = new HashMap<>();
     private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
@@ -336,8 +339,15 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheProblem(CsvCell observationGuid, CsvCell patientGuid, ConditionBuilder conditionBuilder) throws Exception {
-        problemMap.put(createUniqueId(patientGuid, observationGuid), conditionBuilder);
-        //problemMap.put(createUniqueId(patientGuid, observationGuid), fhirCondition);
+        //cache the resource as a JSON string, as the FHIR conditions take about 4KB memory EACH
+        String uid = createUniqueId(patientGuid, observationGuid);
+        Resource resource = conditionBuilder.getResource();
+        String json = FhirSerializationHelper.serializeResource(resource);
+        ResourceFieldMappingAudit audit = conditionBuilder.getAuditWrapper();
+        problemMap.put(uid, json);
+        problemAuditMap.put(uid, audit);
+
+        //problemMap.put(createUniqueId(patientGuid, observationGuid), conditionBuilder);
     }
 
     public boolean existsProblem(CsvCell observationGuid, CsvCell patientGuid) {
@@ -345,8 +355,22 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public ConditionBuilder findProblem(CsvCell observationGuid, CsvCell patientGuid) throws Exception {
-        String problemLocalUniqueId = createUniqueId(patientGuid, observationGuid);
-        return problemMap.remove(problemLocalUniqueId);
+        String uid = createUniqueId(patientGuid, observationGuid);
+        return findProblem(uid);
+    }
+
+    private ConditionBuilder findProblem(String uid) throws Exception {
+
+        //cache as a JSON string, as the FHIR conditions take about 4KB memory EACH
+        String json = problemMap.remove(uid);
+        if (json != null) {
+            ResourceFieldMappingAudit audit = problemAuditMap.remove(uid);
+            Condition condition = (Condition) FhirSerializationHelper.deserializeResource(json);
+            return new ConditionBuilder(condition, audit);
+        } else {
+            return null;
+        }
+        //return problemMap.remove(problemLocalUniqueId);
     }
 
     public ReferenceList getAndRemoveObservationParentRelationships(String parentObservationSourceId) {
@@ -916,17 +940,21 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void processRemainingProblems(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        for (Map.Entry<String, ConditionBuilder> entry : problemMap.entrySet()) {
+        for (String uid: problemMap.keySet()) {
+            ConditionBuilder conditionBuilder = findProblem(uid);
+
+            if (conditionBuilder == null) {
+                throw new TransformException("Null ConditionBuilder for UID " + uid);
+            }
 
             //if the resource has the Condition profile URI, then it means we have a pre-existing problem
             //that's now been deleted from being a problem, but the root Observation itself has not (i.e.
             //the problem has been down-graded from being a problem to just an observation)
-            ConditionBuilder conditionBuilder = entry.getValue();
             if (conditionBuilder.isProblem()) {
                 updateExistingProblem(conditionBuilder, fhirResourceFiler);
 
             } else {
-                downgradeExistingProblemToCondition(entry.getKey(), fhirResourceFiler);
+                downgradeExistingProblemToCondition(uid, fhirResourceFiler);
             }
         }
     }

@@ -115,7 +115,7 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.allergyIntolerance.setSubstance(null);
     }
 }

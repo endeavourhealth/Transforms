@@ -56,7 +56,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
         CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
-        PatientContactBuilder.removeExistingAddress(patientBuilder, relationshipIdCell.getString());
+        PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
 
         //if the record is now inactive, we've already removed it from the patient so just return out
         CsvCell activeCell = parser.getActiveIndicator();

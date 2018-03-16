@@ -184,7 +184,7 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
 
         if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
             this.immunization.setVaccineCode(null);

@@ -154,7 +154,7 @@ public abstract class VisionCsvToFhirTransformer {
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors) throws Exception {
 
-        VisionCsvHelper csvHelper = new VisionCsvHelper();
+        VisionCsvHelper csvHelper = new VisionCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
         //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
         JournalProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

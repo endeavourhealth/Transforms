@@ -131,7 +131,7 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.diagnosticReport.setCode(null);
     }
 }

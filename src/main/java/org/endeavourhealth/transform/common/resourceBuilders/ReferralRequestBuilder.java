@@ -164,7 +164,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.referralRequest.getServiceRequested().clear();
     }
 

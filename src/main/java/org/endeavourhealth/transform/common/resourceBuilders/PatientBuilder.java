@@ -54,6 +54,11 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void clearDateOfDeath() {
+
+        //if we've already set any death details, we'll have audited it. So remove them.
+        getAuditWrapper().removeAudit("deceasedBoolean");
+        getAuditWrapper().removeAudit("deceasedDateTime");
+
         this.patient.setDeceased(null);
     }
 
@@ -127,6 +132,10 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void removeCareProvider(Reference practitionerOrOrganizationReference) {
+
+        //if we've already set the care provider and then want to clear it, we need to remove any audits
+        getAuditWrapper().removeAudit("careProvider");
+
         //can't just remove from the list because the Reference class doesn't implement equals(..) properly
         for (int i=this.patient.getCareProvider().size()-1; i>=0; i--) {
             Reference reference = patient.getCareProvider().get(i);
@@ -318,7 +327,8 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+
         if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
             Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(false);
             if (communicationComponent != null) {

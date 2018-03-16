@@ -206,8 +206,11 @@ public class PPATITransformer extends BartsBasisTransformer {
             patientBuilder.setEthnicity(null);
         }
 
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION);
+        //since we're working on an existing Patient resource we need to remove any existing language or religion codeable concepts
+        //and since the Patient resource only supports one of each of these, we can get away with passing NULL in rather than needing
+        //to find the CodeableConcept to remove
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, null);
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, null);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
         BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, csvHelper);

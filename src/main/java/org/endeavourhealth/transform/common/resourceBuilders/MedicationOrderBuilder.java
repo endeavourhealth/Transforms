@@ -162,7 +162,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.medicationOrder.setMedication(null);
     }
 }

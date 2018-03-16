@@ -300,7 +300,8 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+
         if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
             this.observation.setCode(null);
 

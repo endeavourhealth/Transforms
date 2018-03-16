@@ -105,7 +105,7 @@ public class SpecimenBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.specimen.setType(null);
     }
 }

@@ -128,7 +128,7 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
         item.setCode(null);
     }

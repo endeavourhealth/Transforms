@@ -14,43 +14,31 @@ public class TransformWarnings {
 
     private static TransformWarningDalI dal = DalProvider.factoryTransformWarningDal();
 
-    public static void log(Logger logger, ParserI parser, String warningText, Object... parameters) throws Exception {
+    public static void log(Logger logger, HasServiceSystemAndExchangeIdI impl, String warningText, Object... parameters) throws Exception {
 
         //get the current source file record ID fromthe parser, which will return -1 if the file isn't audited and we have no ID
         Long sourceFileRecordIdObj = null;
-        long sourceFileRecordId = parser.getSourceFileRecordIdForCurrentRow();
-        if (sourceFileRecordId > -1) {
-            sourceFileRecordIdObj = new Long(sourceFileRecordId);
-        }
 
         //convert the object parameters to Strings using toString() unless it's a CsvCell in which case we can't use the toString()
         String[] stringParameters = new String[parameters.length];
         for (int i=0; i<parameters.length; i++) {
             Object parameter = parameters[i];
             if (parameter instanceof CsvCell) {
-                stringParameters[i] = ((CsvCell)parameter).getString();
+                CsvCell cell = (CsvCell)parameter;
+                stringParameters[i] = cell.getString();
+
+                //link the warning back to the record the CSV cell came from
+                if (sourceFileRecordIdObj == null
+                        && cell.getRowAuditId() > -1) {
+                    sourceFileRecordIdObj = new Long(cell.getRowAuditId());
+                }
             } else {
                 stringParameters[i] = parameter.toString();
             }
         }
 
-        log(logger, parser.getServiceId(), parser.getSystemId(), parser.getExchangeId(), sourceFileRecordIdObj, warningText, stringParameters);
+        log(logger, impl.getServiceId(), impl.getSystemId(), impl.getExchangeId(), sourceFileRecordIdObj, warningText, stringParameters);
     }
-
-    public static void log(Logger logger, HasServiceSystemAndExchangeIdI impl, String warningText, CsvCell sourceCell) throws Exception {
-
-        Long sourceFileRecordId = null;
-        //the row ID in the cell will be -1 if the file isn't audited
-        if (sourceCell.getRowAuditId() > -1) {
-            sourceFileRecordId = new Long(sourceCell.getRowAuditId());
-        }
-
-        String parameter = sourceCell.getString();
-
-        log(logger, impl.getServiceId(), impl.getSystemId(), impl.getExchangeId(), sourceFileRecordId, warningText, parameter);
-    }
-
-
 
     public static void log(Logger logger, UUID serviceId, UUID systemId, UUID exchangeId, Long sourceFileRecordId, String warningText, String... parameters) throws Exception {
 

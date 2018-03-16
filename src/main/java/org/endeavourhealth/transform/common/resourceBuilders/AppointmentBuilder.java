@@ -125,7 +125,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         ExtensionConverter.removeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
     }
 }

@@ -277,11 +277,11 @@ public class IdHelper {
         return ReferenceHelper.createReference(resourceType, globallyUniqueId);
     }
 
-    public static Reference convertEdsReferenceToLocallyUniqueReference(UUID serviceId, Reference edsReference) throws Exception {
+    public static Reference convertEdsReferenceToLocallyUniqueReference(HasServiceSystemAndExchangeIdI serviceSystemAndExchangeIdI, Reference edsReference) throws Exception {
         List<Reference> list = new ArrayList<>();
         list.add(edsReference);
 
-        List<Reference> ret = convertEdsReferencesToLocallyUniqueReferences(serviceId, list);
+        List<Reference> ret = convertEdsReferencesToLocallyUniqueReferences(serviceSystemAndExchangeIdI, list);
         if (ret.isEmpty()) {
             return null;
 
@@ -290,15 +290,17 @@ public class IdHelper {
         }
     }
 
-    public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(UUID serviceId, List<Reference> edsReferences) throws Exception {
+    public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(HasServiceSystemAndExchangeIdI serviceSystemAndExchangeIdI, List<Reference> edsReferences) throws Exception {
         List<Reference> ret = new ArrayList<>();
 
+        UUID serviceId = serviceSystemAndExchangeIdI.getServiceId();
         Map<Reference, Reference> map = repository.findSourceReferencesFromEdsReferences(serviceId, edsReferences);
         for (Reference edsReference: edsReferences) {
             Reference sourceReference = map.get(edsReference);
 
             if (sourceReference == null) {
-                LOG.warn("Failed to find Resource ID Mapping for EDS reference " + edsReference);
+                TransformWarnings.log(LOG, serviceSystemAndExchangeIdI, "Failed to find Resource ID Mapping for EDS reference {}", edsReference.getReference());
+                LOG.warn("Failed to find Resource ID Mapping for EDS reference " + edsReference.getReference());
                 //throw new TransformException("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
 
             } else {

@@ -155,6 +155,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
             } else {
+                //TODO - Drew to investigate why passing in a null system didn't work
                 TransformWarnings.log(LOG, parser, "Problem {} has unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
                 codeableConceptBuilder.addCoding("unknown", vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);

@@ -295,7 +295,8 @@ public class ConditionBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+
         if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
             this.condition.setCode(null);
 

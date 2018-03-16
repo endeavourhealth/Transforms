@@ -121,7 +121,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.procedureRequest.setCode(null);
     }
 }

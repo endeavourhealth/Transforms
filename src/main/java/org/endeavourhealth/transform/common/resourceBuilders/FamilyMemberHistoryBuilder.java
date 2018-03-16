@@ -122,7 +122,7 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
         condition.setCode(null);
     }

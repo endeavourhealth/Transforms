@@ -51,7 +51,14 @@ public class IdentifierBuilder {
             throw new IllegalArgumentException("Found " + matches.size() + " identifiers for ID " + idValue);
 
         } else {
+
             Identifier identifier = matches.get(0);
+
+            //remove any audits we've added for this Identifier
+            String identifierJsonPrefix = parentBuilder.getIdentifierJsonPrefix(identifier);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+            //and remove the Identifier itself
             parentBuilder.removeIdentifier(identifier);
             return true;
         }

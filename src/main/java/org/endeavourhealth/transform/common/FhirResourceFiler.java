@@ -721,6 +721,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilder, isDefinitelyNewResource);
             }
 
+            //seem to be retaining a lot of these in memory, so de-reference the jobs to help the GC
+            this.jobs = null;
+
             return null;
         }
     }

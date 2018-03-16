@@ -53,6 +53,11 @@ public class ContactPointBuilder {
 
         } else {
             ContactPoint contactPoint = matches.get(0);
+
+            //remove any audits we've created for the CodeableConcept
+            String identifierJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
             parentBuilder.removeContactPoint(contactPoint);
             return true;
         }

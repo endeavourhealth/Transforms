@@ -55,6 +55,11 @@ public class AddressBuilder {
 
         } else {
             Address address = matches.get(0);
+
+            //remove any audits we've created for the CodeableConcept
+            String identifierJsonPrefix = parentBuilder.getAddressJsonPrefix(address);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
             parentBuilder.removeAddress(address);
             return true;
         }

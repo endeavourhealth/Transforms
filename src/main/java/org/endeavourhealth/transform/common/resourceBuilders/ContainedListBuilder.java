@@ -45,8 +45,12 @@ public class ContainedListBuilder {
     }
 
     public void removeContainedList() {
+
         DomainResource resource = parentBuilder.getResource();
         List_ list = getOrCreateContainedList();
+
+        //remove any audits we've created for the Contained list
+        parentBuilder.getAuditWrapper().removeAudit("contained");
 
         resource.getContained().remove(list);
 

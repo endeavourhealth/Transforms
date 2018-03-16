@@ -27,7 +27,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
-    public static boolean removeExistingAddress(PatientBuilder parentBuilder, String idValue) {
+    public static boolean removeExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove patient contact without ID");
         }
@@ -52,6 +52,11 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
 
         } else {
             Patient.ContactComponent patientContact = matches.get(0);
+
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getContactJsonPrefix(patientContact);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
             parentBuilder.removePatientContactComponent(patientContact);
             return true;
         }
@@ -163,7 +168,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
         this.contact.getRelationship().clear();
     }
 
@@ -202,6 +207,9 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
 
     @Override
     public void removeAddress(Address address) {
+
+        //TODO - audit removal
+
         this.contact.setAddress(null);
     }
 

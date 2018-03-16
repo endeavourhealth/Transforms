@@ -27,8 +27,14 @@ public class CodeableConceptBuilder {
         }
     }
 
-    public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, String tag) {
-        parentBuilder.removeCodeableConcepts(tag);
+    public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, String tag, CodeableConcept codeableConcept) {
+
+        //remove any audits we've created for the CodeableConcept
+        String identifierJsonPrefix = parentBuilder.getCodeableConceptJsonPath(tag, codeableConcept);
+        parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+        //and remove the CodeableConcept itself
+        parentBuilder.removeCodeableConcept(tag, codeableConcept);
     }
 
     public void addCoding(String systemUrl, CsvCell... sourceCells) {

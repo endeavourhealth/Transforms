@@ -54,6 +54,11 @@ public class NameBuilder {
 
         } else {
             HumanName name = matches.get(0);
+
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getNameJsonPrefix(name);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
             parentBuilder.removeName(name);
             return true;
         }

@@ -141,7 +141,8 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
     }
 
     @Override
-    public void removeCodeableConcepts(String tag) {
+    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+
         if (tag.equals(TAG_ROLE_CODEABLE_CONCEPT)) {
             role.setRole(null);
 

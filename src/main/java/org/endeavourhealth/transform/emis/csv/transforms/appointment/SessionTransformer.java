@@ -126,7 +126,7 @@ public class SessionTransformer {
             List<Reference> edsReferences = ScheduleHelper.getAllActors(fhirScheduleOld);
 
             //the existing resource will have been through the mapping process, so we need to reverse-lookup the source EMIS user GUIDs from the EDS UUIDs
-            List<Reference> rawReferences = IdHelper.convertEdsReferencesToLocallyUniqueReferences(fhirResourceFiler.getServiceId(), edsReferences);
+            List<Reference> rawReferences = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, edsReferences);
 
             for (Reference rawReference : rawReferences) {
                 String emisUserGuid = ReferenceHelper.getReferenceId(rawReference);
