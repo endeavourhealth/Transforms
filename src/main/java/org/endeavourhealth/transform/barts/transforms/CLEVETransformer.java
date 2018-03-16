@@ -158,18 +158,20 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
-        if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getLong()) == null) {
-            TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
-                    codeCell.getLong(), parser.getEventCode().getString(),
-                    codeCell.getRowAuditId(), codeCell.getColIndex());
-            //return;
-        }
-        CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
+        if (codeCell != null && !codeCell.isEmpty()) {
+            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getLong()) == null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
+                        codeCell.getLong(), parser.getEventCode().getString(),
+                        codeCell.getRowAuditId(), codeCell.getColIndex());
+                //return;
+            }
+            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
 
-        //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
-        CsvCell termCell = parser.getEventTitleText();
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
+            //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
+            CsvCell termCell = parser.getEventTitleText();
+            if (termCell!= null && !termCell.isEmpty()) {
+                codeableConceptBuilder.setText(termCell.getString(), termCell);
+            }
         }
 
 
@@ -198,7 +200,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
-        if (!normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
+        if (normalcyCodeCell != null && !normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
 
             if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getLong()) == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
@@ -341,20 +343,22 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
-        String unitsDesc = null;
+        String unitsDesc = "";
         if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_UNITS,
                     unitsCodeCell.getLong());
+
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",
                         unitsCodeCell.getLong(), parser.getEventId().getString(),
                         unitsCodeCell.getRowAuditId(), unitsCodeCell.getColIndex());
-              //  return;
             }
-            unitsDesc = cernerCodeValueRef.getCodeDispTxt();
-            observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
+            if (cernerCodeValueRef != null) {
+                unitsDesc = cernerCodeValueRef.getCodeDispTxt();
+                observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
+            }
         }
 
         // Reference range if supplied

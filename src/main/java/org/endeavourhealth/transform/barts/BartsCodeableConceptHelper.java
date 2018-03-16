@@ -30,13 +30,17 @@ public class BartsCodeableConceptHelper {
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
                                                               Long codeSet, HasCodeableConceptI resourceBuilder,
                                                               String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
-        if (codeCell.isEmpty() || codeCell.getLong() == 0) {
+        if (codeCell == null || codeCell.isEmpty() || codeCell.getLong() == 0) {
             return null;
         }
 
         CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                 codeSet,
                 codeCell.getLong());
+
+        if (cernerCodeValueRef == null) {
+            return null;
+        }
 
         //TODO - apply audit from code reference table
         String term = null;
