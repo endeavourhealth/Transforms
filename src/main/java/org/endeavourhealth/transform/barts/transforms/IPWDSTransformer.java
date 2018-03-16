@@ -79,16 +79,20 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         CsvCell sequenceNumberCell = parser.getWardStaySequenceNumber();
 
         Date beginDate = null;
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
+        if (beginDateCell != null && !beginDateCell.isEmpty()) {
+            try {
+                beginDate = formatDaily.parse(beginDateCell.getString());
+            } catch (ParseException ex) {
+                beginDate = formatBulk.parse(beginDateCell.getString());
+            }
         }
         Date endDate = null;
-        try {
-            endDate = formatDaily.parse(endDateCell.getString());
-        } catch (ParseException ex) {
-            endDate = formatBulk.parse(endDateCell.getString());
+        if (endDateCell != null && !endDateCell.isEmpty()) {
+            try {
+                endDate = formatDaily.parse(endDateCell.getString());
+            } catch (ParseException ex) {
+                endDate = formatBulk.parse(endDateCell.getString());
+            }
         }
         Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 

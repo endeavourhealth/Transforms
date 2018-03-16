@@ -148,11 +148,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
+        /*
         if (personIdCell != null) {
             LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is " + personIdCell.getString());
         } else {
             LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is null");
-        }
+        }*/
 
         // Patient
         boolean changeOfPatient = false;
@@ -238,6 +239,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         Encounter.EncounterState encState = null;
 
         // Triage
+        /*
         if (triageStartCell != null) {
             LOG.debug("triageStartCell=" + triageStartCell.getString());
         } else {
@@ -253,6 +255,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         } else {
             LOG.debug("triagepersonIdCell=null");
         }
+        */
         if (triageBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
         } else if (triageEndDate == null) {
@@ -276,6 +279,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         //  First medical assessment to conclusion
+        /*
         if (firstAssessmentDateCell != null) {
             LOG.debug("firstAssessmentDateCell=" + firstAssessmentDateCell.getString());
         } else {
@@ -285,7 +289,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             LOG.debug("conclusionDateCell=" + conclusionDateCell.getString());
         } else {
             LOG.debug("conclusionDateCell=null");
-        }
+        }*/
 
         if (assessmentBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;

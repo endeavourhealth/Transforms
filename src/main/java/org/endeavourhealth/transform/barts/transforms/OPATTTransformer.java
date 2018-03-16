@@ -71,10 +71,12 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell finIdCell = parser.getFINNo();
 
         Date beginDate = null;
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
+        if (beginDateCell != null && !beginDateCell.isEmpty()) {
+            try {
+                beginDate = formatDaily.parse(beginDateCell.getString());
+            } catch (ParseException ex) {
+                beginDate = formatBulk.parse(beginDateCell.getString());
+            }
         }
         Date endDate = null;
         if (beginDate != null && apptLengthCell != null && !apptLengthCell.isEmpty() && apptLengthCell.getInt() > 0) {

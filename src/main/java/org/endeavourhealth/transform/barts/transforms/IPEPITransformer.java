@@ -70,18 +70,21 @@ public class IPEPITransformer extends BartsBasisTransformer {
         CsvCell endDateCell = parser.getEpisodeEndDateTime();
 
         Date beginDate = null;
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
+        if (beginDateCell != null && !beginDateCell.isEmpty()) {
+            try {
+                beginDate = formatDaily.parse(beginDateCell.getString());
+            } catch (ParseException ex) {
+                beginDate = formatBulk.parse(beginDateCell.getString());
+            }
         }
         Date endDate = null;
-        try {
-            endDate = formatDaily.parse(endDateCell.getString());
-        } catch (ParseException ex) {
-            endDate = formatBulk.parse(endDateCell.getString());
+        if (endDateCell != null && !endDateCell.isEmpty()) {
+            try {
+                endDate = formatDaily.parse(endDateCell.getString());
+            } catch (ParseException ex) {
+                endDate = formatBulk.parse(endDateCell.getString());
+            }
         }
-        Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 
         // get the associated encounter
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
@@ -120,16 +123,18 @@ public class IPEPITransformer extends BartsBasisTransformer {
         // Maintain Encounter
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-        encounterBuilder.setPeriodStart(beginDate);
-        encounterBuilder.setPeriodEnd(endDate);
-
-        // Maintain EpisodeOfCare
-        if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
-            episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+        if (beginDate != null) {
+            encounterBuilder.setPeriodStart(beginDate);
+            if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
+                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+            }
+        }
+        if (endDate != null) {
+            encounterBuilder.setPeriodEnd(endDate);
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
+                episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
+            }
         }
 
-        if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
-            episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
-        }
     }
 }
