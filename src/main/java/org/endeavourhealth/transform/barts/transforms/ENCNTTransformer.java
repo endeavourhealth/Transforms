@@ -196,6 +196,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Patient
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
+        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
         // class
         //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
         encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString()), encounterTypeCodeCell);

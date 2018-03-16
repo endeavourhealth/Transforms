@@ -119,6 +119,9 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         // Maintain Encounter
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
+        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
         encounterBuilder.setPeriodStart(beginDate);
         if (endDate != null) {

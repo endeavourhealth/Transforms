@@ -120,8 +120,11 @@ public class IPEPITransformer extends BartsBasisTransformer {
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
 
-        // Maintain Encounter
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
+        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
+        // Maintain Encounter
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
         if (beginDate != null) {
             encounterBuilder.setPeriodStart(beginDate);

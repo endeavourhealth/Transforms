@@ -129,6 +129,8 @@ public class IPWDSTransformer extends BartsBasisTransformer {
 
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
+        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
         // Location
         UUID locationResourceUUID = null;
 
