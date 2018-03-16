@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -17,6 +18,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,6 +28,9 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AEATTTransformer.class);
     private static InternalIdDalI internalIdDAL = null;
+    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+
 
     /*
      *
@@ -69,10 +76,33 @@ public class AEATTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
+        if (internalIdDAL == null) {
+            internalIdDAL = DalProvider.factoryInternalIdDal();
+        }
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
+        CsvCell beginDateCell = parser.getCheckInDateTime();
+        CsvCell endDateCell = parser.getCheckOutDateTime();
+        CsvCell currentLocationCell = parser.getLastLocCode();
+        CsvCell reasonForVisit = parser.getPresentingCompTxt();
+
+        Date beginDate = null;
+        try {
+            beginDate = formatDaily.parse(beginDateCell.getString());
+        } catch (ParseException ex) {
+            beginDate = formatBulk.parse(beginDateCell.getString());
+        }
+        Date endDate = null;
+        if (endDateCell != null && !endDateCell.isEmpty()) {
+            try {
+                endDate = formatDaily.parse(endDateCell.getString());
+            } catch (ParseException ex) {
+                endDate = formatBulk.parse(endDateCell.getString());
+            }
+        }
+
         if (personIdCell != null) {
             LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is " + personIdCell.getString());
         } else {
@@ -95,11 +125,17 @@ public class AEATTTransformer extends BartsBasisTransformer {
             return;
         }
 
+        // Retrieve or create EpisodeOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, parser.getEncounterId(),
+                personIdCell, parser.getArrivalDateTime(), csvHelper, fhirResourceFiler, internalIdDAL);
+
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-            // Using checkin/out date as they largely cover the whole period
-            encounterBuilder.setPeriodStart(parser.getCheckInDateTime().getDate(), parser.getCheckInDateTime());
-            encounterBuilder.setPeriodEnd(parser.getCheckOutDateTime().getDate(), parser.getCheckOutDateTime());
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+            identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
         } else {
             // Delete existing encounter ?
@@ -112,6 +148,19 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+        // Using checkin/out date as they largely cover the whole period
+        encounterBuilder.setPeriodStart(beginDate, parser.getCheckInDateTime());
+        if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
+            episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+        }
+
+        if (endDate != null) {
+            encounterBuilder.setPeriodEnd(endDate, parser.getCheckOutDateTime());
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
+                episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
+            }
+        }
 
         // Has patient reference changed?
         String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
@@ -140,8 +189,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
-
         //We have a number of potential events in the patient journey through A&E. We can't map all the states.
+        /*
         Encounter.EncounterState encState = null;
         // Triage
         if (parser.getTriageStartDateTime().isEmpty()) {
@@ -168,23 +217,22 @@ public class AEATTTransformer extends BartsBasisTransformer {
         encState = null; // reset
         //  First medical assessment to conclusion
         CsvCell startDate  = parser.getFirstAssessDateTime();
-        CsvCell endDate =parser.getConclusionDateTime();
+        CsvCell conclusionDate =parser.getConclusionDateTime();
         if (startDate.isEmpty()) {
             encState = Encounter.EncounterState.PLANNED;
             } else
          {  // All the records I looked at had Conclusion date set. It should at least allow us to keep some kind of progress.
-            if (endDate.isEmpty()) {
+            if (conclusionDate.isEmpty()) {
                 encState = Encounter.EncounterState.INPROGRESS;
             } else {
                 encState = Encounter.EncounterState.FINISHED;
             }
         }
-        encounterBuilder.setStatus(encState, startDate.getDate(),
-                endDate.getDate(), parser.getCdsBatchContentId());
+        encounterBuilder.setStatus(encState, startDate.getDate(), conclusionDate.getDate(), parser.getCdsBatchContentId());
+        */
 
         // Location
-        CsvCell currentLocationCell = parser.getLastLocCode();
-        if (!currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
+        if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
             UUID locationResourceUUID = csvHelper.lookupLocationUUID(currentLocationCell.getString(), fhirResourceFiler, parser);
             if (locationResourceUUID != null) {
                 encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
@@ -193,25 +241,14 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
-
         //Reason
-        CsvCell reasonForVisit = parser.getPresentingCompTxt();
-        CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-        encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
+        if (reasonForVisit != null && !reasonForVisit.isEmpty()) {
+            CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
+            encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
+        }
 
-        // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = null;
-        CsvCell finIdCell = null;
-        CsvCell episodeIdentiferCell = null;
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
-        identifierBuilder.setValue(finIdCell.getString(), finIdCell);
-
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, parser.getEncounterId(),
-                personIdCell, parser.getArrivalDateTime(), csvHelper, fhirResourceFiler, internalIdDAL);
-
-        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
+        // EoC reference
+        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()));
 
        }// end createAandEAttendance()
 
