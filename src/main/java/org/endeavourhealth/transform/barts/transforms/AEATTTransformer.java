@@ -5,8 +5,10 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.AEATT;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -83,11 +85,18 @@ public class AEATTTransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
+        CsvCell arrivalDateCell = parser.getArrivalDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
         CsvCell endDateCell = parser.getCheckOutDateTime();
         CsvCell currentLocationCell = parser.getLastLocCode();
         CsvCell reasonForVisit = parser.getPresentingCompTxt();
+        CsvCell triageStartCell = parser.getTriageStartDateTime();
+        CsvCell triageEndCell = parser.getTriageCompleteDateTime();
+        CsvCell triagepersonIdCell = parser.getTriagePersonId();
+        CsvCell firstAssessmentDateCell = parser.getFirstAssessDateTime();
+        CsvCell conclusionDateCell =parser.getConclusionDateTime();
 
+        // Encounter start and end
         Date beginDate = null;
         try {
             beginDate = formatDaily.parse(beginDateCell.getString());
@@ -100,6 +109,36 @@ public class AEATTTransformer extends BartsBasisTransformer {
                 endDate = formatDaily.parse(endDateCell.getString());
             } catch (ParseException ex) {
                 endDate = formatBulk.parse(endDateCell.getString());
+            }
+        }
+        // Triage start and end
+        Date triageBeginDate = null;
+        try {
+            triageBeginDate = formatDaily.parse(triageStartCell.getString());
+        } catch (ParseException ex) {
+            triageBeginDate = formatBulk.parse(triageStartCell.getString());
+        }
+        Date triageEndDate = null;
+        if (triageEndCell != null && !triageEndCell.isEmpty()) {
+            try {
+                triageEndDate = formatDaily.parse(triageEndCell.getString());
+            } catch (ParseException ex) {
+                triageEndDate = formatBulk.parse(triageEndCell.getString());
+            }
+        }
+        // Assessment start and end
+        Date assessmentBeginDate = null;
+        try {
+            assessmentBeginDate = formatDaily.parse(triageStartCell.getString());
+        } catch (ParseException ex) {
+            assessmentBeginDate = formatBulk.parse(triageStartCell.getString());
+        }
+        Date assessmentEndDate = null;
+        if (triageEndCell != null && !triageEndCell.isEmpty()) {
+            try {
+                assessmentEndDate = formatDaily.parse(triageEndCell.getString());
+            } catch (ParseException ex) {
+                assessmentEndDate = formatBulk.parse(triageEndCell.getString());
             }
         }
 
@@ -126,8 +165,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, parser.getEncounterId(),
-                personIdCell, parser.getArrivalDateTime(), csvHelper, fhirResourceFiler, internalIdDAL);
+        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell,
+                personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
@@ -150,13 +189,13 @@ public class AEATTTransformer extends BartsBasisTransformer {
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         // Using checkin/out date as they largely cover the whole period
-        encounterBuilder.setPeriodStart(beginDate, parser.getCheckInDateTime());
+        encounterBuilder.setPeriodStart(beginDate, beginDateCell);
         if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
             episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
         }
 
         if (endDate != null) {
-            encounterBuilder.setPeriodEnd(endDate, parser.getCheckOutDateTime());
+            encounterBuilder.setPeriodEnd(endDate, endDateCell);
             if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
             }
@@ -190,46 +229,40 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         //We have a number of potential events in the patient journey through A&E. We can't map all the states.
-        /*
         Encounter.EncounterState encState = null;
-        // Triage
-        if (parser.getTriageStartDateTime().isEmpty()) {
-                encState = Encounter.EncounterState.PLANNED;
-            } else
-        {
-            if (parser.getTriageCompleteDateTime().isEmpty()) {
-                encState = Encounter.EncounterState.INPROGRESS;
-            } else {
-                encState = Encounter.EncounterState.FINISHED;
-            }
-        }
-        //Save triage status
-        CsvCell triageStart = parser.getTriageStartDateTime();
-        CsvCell triageEnd = parser.getTriageCompleteDateTime();
 
-        encounterBuilder.setStatus(encState, triageStart.getDate(),
-                triageEnd.getDate(), parser.getTriageCatNbr());
-        Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, parser.getTriagePersonId().toString());
-        Period triagePeriod = new Period();
-        triagePeriod.setStart(triageStart.getDate());
-        triagePeriod.setEnd(triageEnd.getDate());
-        encounterBuilder.addParticipant(ref,EncounterParticipantType.PARTICIPANT,triagePeriod, parser.getTriageCatNbr());
-        encState = null; // reset
-        //  First medical assessment to conclusion
-        CsvCell startDate  = parser.getFirstAssessDateTime();
-        CsvCell conclusionDate =parser.getConclusionDateTime();
-        if (startDate.isEmpty()) {
+        // Triage
+        if (triageBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
-            } else
-         {  // All the records I looked at had Conclusion date set. It should at least allow us to keep some kind of progress.
-            if (conclusionDate.isEmpty()) {
-                encState = Encounter.EncounterState.INPROGRESS;
-            } else {
-                encState = Encounter.EncounterState.FINISHED;
+        } else if (triageEndDate == null) {
+            encState = Encounter.EncounterState.INPROGRESS;
+        } else {
+            encState = Encounter.EncounterState.FINISHED;
+        }
+        encounterBuilder.setStatus(encState, triageBeginDate, triageEndDate, triageStartCell, triageEndCell);
+
+        if (triagepersonIdCell != null && triagepersonIdCell.getLong() > 0) {
+            ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
+            if (referrerPersonResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, referrerPersonResourceId.getResourceId().toString());
+                Period triagePeriod = new Period();
+                triagePeriod.setStart(triageBeginDate);
+                if (triageEndDate != null) {
+                    triagePeriod.setEnd(triageEndDate);
+                }
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.PARTICIPANT, triagePeriod, triagepersonIdCell);
             }
         }
-        encounterBuilder.setStatus(encState, startDate.getDate(), conclusionDate.getDate(), parser.getCdsBatchContentId());
-        */
+
+        //  First medical assessment to conclusion
+        if (assessmentBeginDate == null) {
+            encState = Encounter.EncounterState.PLANNED;
+        } else if (assessmentEndDate == null) {
+            encState = Encounter.EncounterState.INPROGRESS;
+        } else {
+            encState = Encounter.EncounterState.FINISHED;
+        }
+        encounterBuilder.setStatus(encState, assessmentBeginDate, assessmentEndDate, firstAssessmentDateCell, conclusionDateCell);
 
         // Location
         if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
