@@ -6,8 +6,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
-public class EpisodeOfCareBuilder extends ResourceBuilderBase {
+public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI {
 
     private EpisodeOfCare episodeOfCare = null;
 
@@ -107,6 +108,27 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase {
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.PATIENT_REGISTRATION_TYPE, coding);
 
         auditCodingExtension(extension, sourceCells);
+    }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.episodeOfCare.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.episodeOfCare.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.episodeOfCare.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.episodeOfCare.getIdentifier().remove(identifier);
     }
 
 

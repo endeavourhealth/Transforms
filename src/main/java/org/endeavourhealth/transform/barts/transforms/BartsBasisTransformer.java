@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -9,7 +10,9 @@ import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Enumerations;
+import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.UUID;
@@ -120,13 +123,15 @@ public class BartsBasisTransformer extends BasisTransformer{
             }
             if (episodeOfCareBuilder == null) {
                 // EoC not  found - create new using episode-id
-                episodeOfCareBuilder = EncounterResourceCache.createEpisodeBuilder(episodeIdentiferCell);
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                episodeOfCareBuilder.setId(UUID.randomUUID().toString(), episodeIdentiferCell);
+                EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
             }
         } else if (finIdCell != null && !finIdCell.isEmpty()) {
             // Episode-id not present - use FIN NO
             alternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCell.getString());
             if (alternateEpisodeUUID == null) {
-                episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                 episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -134,7 +139,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, alternateEpisodeUUID);
                 if (episodeOfCareBuilder == null) {
-                    episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                     episodeOfCareBuilder.setId(alternateEpisodeUUID, finIdCell);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
@@ -143,7 +148,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             String aekey = personIdCell.getString() + InternalIdMap.KEY_SPLIT_CHAR + aeArrivalDateTime.getString();
             alternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_AE_ARRIVAL_DT_TM_TO_EPISODE_UUID, aekey);
             if (alternateEpisodeUUID == null) {
-                episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                 episodeOfCareBuilder.setId(UUID.randomUUID().toString(), personIdCell, aeArrivalDateTime);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -151,7 +156,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, alternateEpisodeUUID);
                 if (episodeOfCareBuilder == null) {
-                    episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                     episodeOfCareBuilder.setId(alternateEpisodeUUID, personIdCell, aeArrivalDateTime);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
@@ -160,7 +165,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             // Neither Episode-id nor FIN No present - use encounter-id
             alternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
             if (alternateEpisodeUUID == null) {
-                episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                 episodeOfCareBuilder.setId(UUID.randomUUID().toString(), episodeIdentiferCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -168,11 +173,30 @@ public class BartsBasisTransformer extends BasisTransformer{
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, alternateEpisodeUUID);
                 if (episodeOfCareBuilder == null) {
-                    episodeOfCareBuilder = new EpisodeOfCareBuilder();
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                     episodeOfCareBuilder.setId(alternateEpisodeUUID, encounterIdCell);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
             }
+        }
+
+        return episodeOfCareBuilder;
+    }
+
+    private static EpisodeOfCareBuilder createNewEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell) {
+        EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
+        if (episodeIdentiferCell != null && !episodeIdentiferCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCareBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_EPISODE_ID);
+            identifierBuilder.setValue(episodeIdentiferCell.getString(), episodeIdentiferCell);
+        }
+
+        if (finIdCell != null && !finIdCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCareBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 
         return episodeOfCareBuilder;
