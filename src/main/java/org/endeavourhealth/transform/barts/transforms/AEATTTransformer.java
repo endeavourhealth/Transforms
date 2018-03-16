@@ -173,11 +173,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell,
-                personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
 
@@ -196,6 +191,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
                 return;
             }
         }
+
+        // Retrieve or create EpisodeOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell,
+                personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
+        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         // Using checkin/out date as they largely cover the whole period
