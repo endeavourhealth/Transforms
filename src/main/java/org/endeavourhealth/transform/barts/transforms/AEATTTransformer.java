@@ -73,6 +73,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
+        if (personIdCell != null) {
+            LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is " + personIdCell.getString());
+        } else {
+            LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is null");
+        }
+
         // Patient
         boolean changeOfPatient = false;
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
@@ -80,6 +86,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             TransformWarnings.log(LOG, parser, "Skipping A&E attendance {} because no Person->MRN mapping {} could be found in file {}", encounterIdCell.getString(), personIdCell.getString(), parser.getFilePath());
             return;
         }
+        LOG.debug("person UUID is " + patientUuid.toString());
 
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
         if (encounterBuilder == null
@@ -108,7 +115,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         // Has patient reference changed?
         String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
-        if (currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
+        LOG.debug("currentPatientUuid is " + currentPatientUuid);
+        if (currentPatientUuid!= null && currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
             // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
             // Patient reference on Encounter resources is handled below
             // Patient reference on EpisodeOfCare resources is handled below

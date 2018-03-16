@@ -124,7 +124,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Create new encounter
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-            TransformWarnings.log(LOG, parser, "New Encounter {} created in ENCNTTRansform from file {} - This should not happen", encounterIdCell.getString(), parser.getFilePath());
+            //TransformWarnings.log(LOG, parser, "New Encounter {} created in ENCNTTRansform from file {} - This should not happen", encounterIdCell.getString(), parser.getFilePath());
         } else {
 
             // Has patient reference changed?
