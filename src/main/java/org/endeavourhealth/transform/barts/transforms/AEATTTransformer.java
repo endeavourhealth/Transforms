@@ -262,7 +262,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
         encounterBuilder.setStatus(encState, triageBeginDate, triageEndDate, triageStartCell, triageEndCell);
 
-        if (triagepersonIdCell != null && triagepersonIdCell.getLong() > 0) {
+        if (triagepersonIdCell != null && !triagepersonIdCell.isEmpty() && triagepersonIdCell.getLong() > 0) {
             ResourceId triagePersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
             if (triagePersonResourceId != null) {
                 Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, triagePersonResourceId.getResourceId().toString());
