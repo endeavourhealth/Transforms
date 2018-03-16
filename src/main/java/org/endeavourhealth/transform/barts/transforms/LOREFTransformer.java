@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class LOREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
@@ -191,70 +192,35 @@ public class LOREFTransformer extends BartsBasisTransformer {
      */
     private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
         ResourceId locationResourceId = null;
+        UUID uuid = null;
         LocationBuilder subLocationBuilder;
 
         if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, facilityCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(facilityCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, facilityCode);
         }
 
         if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, buildingCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(buildingCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, buildingCode);
         }
 
         if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, surgeryLocationCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(surgeryLocationCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, surgeryLocationCode);
         }
 
         if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, ambulatoryCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(ambulatoryCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, ambulatoryCode);
         }
 
         if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, nurseUnitCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(nurseUnitCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, nurseUnitCode);
         }
 
         if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, roomCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(roomCode, parser, csvHelper);
-            }
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomCode);
         }
 
         if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            subLocationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, bedCode);
-            if (subLocationBuilder == null) {
-                createPlaceholderLocation(bedCode, parser, csvHelper);
-            }
-        }
-    }
-
-    /*
-     *
-     */
-    private static void createPlaceholderLocation(CsvCell locationIdCell, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, locationIdCell.getLong());
-        if (cernerCodeValueRef != null) {
-            LocationBuilder locationBuilder = LocationResourceCache.createLocationBuilder(locationIdCell);
-            locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
-            locationBuilder.setMode(Location.LocationMode.INSTANCE);
-            locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
-        } else {
-            TransformWarnings.log(LOG, parser, "Location id not found in CVREF for Location-id {} in file {}", locationIdCell.getString(), parser.getFilePath());
+            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedCode);
         }
     }
 

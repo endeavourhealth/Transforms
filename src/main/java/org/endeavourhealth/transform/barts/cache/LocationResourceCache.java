@@ -1,13 +1,18 @@
 package org.endeavourhealth.transform.barts.cache;
 
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -48,6 +53,36 @@ public class LocationResourceCache {
         }
 
         return locationBuilder;
+    }
+
+    public static UUID getOrCreateLocationUUID(BartsCsvHelper csvHelper, CsvCell locationIdCell) throws Exception {
+        UUID uuid = getLocationUUID(csvHelper, locationIdCell);
+
+        if (uuid == null) {
+            // Create place holder location
+            LocationBuilder locationBuilder = createLocationBuilder(locationIdCell);
+
+            locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
+            locationBuilder.setMode(Location.LocationMode.INSTANCE);
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
+
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, locationIdCell.getLong());
+            if (cernerCodeValueRef != null) {
+                locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
+            } else {
+                locationBuilder.setName("Unknown location");
+            }
+
+            uuid = UUID.fromString(locationBuilder.getResourceId());
+
+            locationBuildersByUuid.replace(uuid, locationBuilder);
+        }
+
+        return uuid;
     }
 
     public static UUID getLocationUUID(BartsCsvHelper csvHelper, CsvCell locationIdCell) throws Exception {

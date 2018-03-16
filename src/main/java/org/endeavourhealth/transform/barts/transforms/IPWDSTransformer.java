@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.IPWDS;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -148,7 +149,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
 
         // Use bed location ?
         if (bedLocationIdCell != null && !bedLocationIdCell.isEmpty() && bedLocationIdCell.getLong() > 0) {
-            locationResourceUUID = csvHelper.lookupLocationUUID(bedLocationIdCell.getString(), fhirResourceFiler, parser);
+            locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedLocationIdCell);
         }
         if (locationResourceUUID != null) {
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
@@ -160,7 +161,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         // Use room location ?
         if (locationResourceUUID == null) {
             if (roomLocationIdCell != null && !roomLocationIdCell.isEmpty() && roomLocationIdCell.getLong() > 0) {
-                locationResourceUUID = csvHelper.lookupLocationUUID(roomLocationIdCell.getString(), fhirResourceFiler, parser);
+                locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomLocationIdCell);
             }
             if (locationResourceUUID != null) {
                 elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
@@ -173,7 +174,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         // Use location ?
         if (locationResourceUUID == null) {
             if (locationIdCell != null && !locationIdCell.isEmpty() && locationIdCell.getLong() > 0) {
-                locationResourceUUID = csvHelper.lookupLocationUUID(locationIdCell.getString(), fhirResourceFiler, parser);
+                locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, locationIdCell);
             }
             if (locationResourceUUID != null) {
                 elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
@@ -182,7 +183,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
             }
         }
-
     }
 
     private static Encounter.EncounterLocationStatus getLocationStatus(Period p) {
