@@ -169,7 +169,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
             //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
             CsvCell termCell = parser.getEventTitleText();
-            if (termCell!= null && !termCell.isEmpty()) {
+            if (codeableConceptBuilder != null && termCell != null && !termCell.isEmpty()) {
                 codeableConceptBuilder.setText(termCell.getString(), termCell);
             }
         }
