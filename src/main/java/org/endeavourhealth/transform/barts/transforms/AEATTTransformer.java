@@ -195,7 +195,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell,
                 personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
@@ -325,9 +325,17 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         // EoC reference
+        if (encounterBuilder.getEpisodeOfCare() != null && encounterBuilder.getEpisodeOfCare().size() > 0) {
+            encounterBuilder.getEpisodeOfCare().remove(0);
+        }
         encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()));
 
-       }// end createAandEAttendance()
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        }
+
+    }// end createAandEAttendance()
 
 
 

@@ -120,7 +120,7 @@ public class IPEPITransformer extends BartsBasisTransformer {
 
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
@@ -140,6 +140,12 @@ public class IPEPITransformer extends BartsBasisTransformer {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
             }
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        }
+
 
     }
 }

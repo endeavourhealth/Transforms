@@ -59,6 +59,10 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("episodeOfCare[" + index + "].reference", sourceCells);
     }
 
+    public List<Reference> getEpisodeOfCare() {
+        return this.encounter.getEpisodeOfCare();
+    }
+
     public void setStatus(Encounter.EncounterState status, CsvCell... sourceCells) {
         this.encounter.setStatus(status);
 
@@ -195,6 +199,14 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getReason().size()-1;
         auditValue("reason[" + index + "].value", sourceCells);
+    }
+
+    public List<CodeableConcept> getReason() {
+        return this.encounter.getReason();
+    }
+
+    public boolean hasReason() {
+        return this.encounter.hasReason();
     }
 
     public void setClass(Encounter.EncounterClass encounterClass, CsvCell... sourceCells) {

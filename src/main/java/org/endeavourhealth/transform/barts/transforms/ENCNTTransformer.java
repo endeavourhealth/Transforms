@@ -175,23 +175,35 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Identifiers
         if (!finIdCell.isEmpty()) {
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            if (identifiers.size() > 0) {
+                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
+            }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            identifierBuilder.setUse(Identifier.IdentifierUse.TEMP);
             identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 
         if (!visitIdCell.isEmpty()) {
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+            if (identifiers.size() > 0) {
+                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
+            }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setValue(visitIdCell.getString(), visitIdCell);
         }
 
         if (!encounterIdCell.isEmpty()) {
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+            if (identifiers.size() > 0) {
+                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
+            }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
         }
 
@@ -212,6 +224,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
         CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
+        if (encounterBuilder.hasReason()) {
+            encounterBuilder.getReason().remove(0);
+        }
         encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
 
         // Encounter type
@@ -244,6 +259,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // EpisodeOfCare
         //fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));
+        if (encounterBuilder.getEpisodeOfCare() != null && encounterBuilder.getEpisodeOfCare().size() > 0) {
+            encounterBuilder.getEpisodeOfCare().remove(0);
+        }
         encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer
@@ -289,7 +307,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         if (LOG.isDebugEnabled()) {
-            //LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + parser.getMillenniumPersonIdentifier() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         }
     }
 

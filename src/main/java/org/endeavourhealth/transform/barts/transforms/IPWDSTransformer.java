@@ -69,7 +69,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             internalIdDAL = DalProvider.factoryInternalIdDal();
         }
 
-        EpisodeOfCareBuilder episodeOfCareBuilder = null;
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPatientId();
         CsvCell activeCell = parser.getActiveIndicator();
@@ -129,12 +128,12 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
         }
 
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        //EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
+        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+        //episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         // Location
         UUID locationResourceUUID = null;
@@ -185,6 +184,12 @@ public class IPWDSTransformer extends BartsBasisTransformer {
                 TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
             }
         }
+
+        if (LOG.isDebugEnabled()) {
+            //LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        }
+
     }
 
     private static Encounter.EncounterLocationStatus getLocationStatus(Period p) {

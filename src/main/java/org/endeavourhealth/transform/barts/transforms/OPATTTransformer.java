@@ -117,7 +117,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         // Maintain Encounter
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
@@ -125,19 +125,26 @@ public class OPATTTransformer extends BartsBasisTransformer {
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
-        encounterBuilder.setPeriodStart(beginDate);
-        if (endDate != null) {
-            encounterBuilder.setPeriodEnd(endDate);
-        }
 
-        // Maintain EpisodeOfCare
+        encounterBuilder.setPeriodStart(beginDate);
+
         if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
             episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
         }
 
-        if (endDate != null && (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate))) {
-            episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
+        if (endDate != null) {
+            encounterBuilder.setPeriodEnd(endDate);
+
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
+                episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
+            }
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        }
+
 
     }
 }
