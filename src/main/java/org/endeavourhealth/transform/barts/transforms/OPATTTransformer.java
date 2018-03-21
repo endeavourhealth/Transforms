@@ -147,7 +147,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         }
 
         // Status
-        if (outcomeCell != null && outcomeCell.getInt() == 1) {
+        if (outcomeCell != null && outcomeCell.getString().trim().length() > 0 && outcomeCell.getInt() == 1) {
             encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
             //Status on episodeOfCareBuilder should be set automatically when end-date is set
         }
