@@ -145,6 +145,7 @@ public class EncounterBuilder extends ResourceBuilderBase
     public void addParticipant(Reference practitionerReference, EncounterParticipantType type, boolean removeIfExists, CsvCell... sourceCells) {
         if (removeIfExists) {
             List<Encounter.EncounterParticipantComponent> partList = this.encounter.getParticipant();
+
             for (Iterator<Encounter.EncounterParticipantComponent> iterator = partList.iterator(); iterator.hasNext();) {
                 Encounter.EncounterParticipantComponent epc = iterator.next();
                 if (epc.getType().get(0).getCoding().get(0).getSystem().compareToIgnoreCase(CodeableConceptHelper.createCodeableConcept(type).getCoding().get(0).getSystem()) == 0) {
