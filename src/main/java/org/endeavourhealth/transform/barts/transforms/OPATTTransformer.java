@@ -70,6 +70,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell beginDateCell = parser.getAppointmentDateTime();
         CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
         CsvCell finIdCell = parser.getFINNo();
+        CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
 
         Date beginDate = null;
         if (beginDateCell != null && !beginDateCell.isEmpty()) {
@@ -80,8 +81,12 @@ public class OPATTTransformer extends BartsBasisTransformer {
             }
         }
         Date endDate = null;
-        if (beginDate != null && apptLengthCell != null && !apptLengthCell.isEmpty() && apptLengthCell.getInt() > 0) {
-            endDate = new Date(beginDate.getTime() +(apptLengthCell.getInt() * 60 * 1000));
+        if (beginDate != null) {
+            if (apptLengthCell != null && !apptLengthCell.isEmpty() && apptLengthCell.getInt() > 0) {
+                endDate = new Date(beginDate.getTime() + (apptLengthCell.getInt() * 60 * 1000));
+            } else {
+                endDate = beginDate;
+            }
         }
 
         // get the associated encounter
@@ -119,19 +124,20 @@ public class OPATTTransformer extends BartsBasisTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
         //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
-        // Maintain Encounter
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
+        // Start date
         encounterBuilder.setPeriodStart(beginDate);
 
         if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
             episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
         }
 
+        // End date
         if (endDate != null) {
             encounterBuilder.setPeriodEnd(endDate);
 
@@ -139,6 +145,13 @@ public class OPATTTransformer extends BartsBasisTransformer {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
             }
         }
+
+        // Status
+        if (outcomeCell != null && outcomeCell.getInt() == 1) {
+            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+            //Status on episodeOfCareBuilder should be set automatically when end-date is set
+        }
+
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));

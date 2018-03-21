@@ -199,6 +199,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
+        Encounter.EncounterState encState = Encounter.EncounterState.INPROGRESS;
+
         // Using checkin/out date as they largely cover the whole period
         encounterBuilder.setPeriodStart(beginDate, beginDateCell);
         if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
@@ -206,37 +208,16 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         if (endDate != null) {
+            encState = Encounter.EncounterState.FINISHED;
+
             encounterBuilder.setPeriodEnd(endDate, endDateCell);
+
             if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
             }
-        }
-
-        // Has patient reference changed?
-        String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
-        LOG.debug("currentPatientUuid is " + currentPatientUuid);
-        if (currentPatientUuid!= null && currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
-            // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
-            // Patient reference on Encounter resources is handled below
-            // Patient reference on EpisodeOfCare resources is handled below
-            changeOfPatient = true;
-
-            List<Resource> resourceList = csvHelper.retrieveResourceByPatient(UUID.fromString(currentPatientUuid));
-            for (Resource resource : resourceList) {
-                if (resource instanceof Condition) {
-                    ConditionBuilder builder = new ConditionBuilder((Condition) resource);
-                    builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
-                } else if (resource instanceof Procedure) {
-                    ProcedureBuilder builder = new ProcedureBuilder((Procedure) resource);
-                    builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
-                } else if (resource instanceof Observation) {
-                    ObservationBuilder builder = new ObservationBuilder((Observation) resource);
-                    builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
-                }
-            }
+            encounterBuilder.setStatus(encState, beginDate, endDate, beginDateCell, endDateCell);
+        } else {
+            encounterBuilder.setStatus(encState, beginDateCell);
         }
 
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
@@ -244,7 +225,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         //We have a number of potential events in the patient journey through A&E. We can't map all the states.
-        Encounter.EncounterState encState = null;
 
         // Triage
         /*
@@ -263,7 +243,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
         } else {
             LOG.debug("triagepersonIdCell=null");
         }
-        */
+
+
         if (triageBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
         } else if (triageEndDate == null) {
@@ -272,6 +253,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             encState = Encounter.EncounterState.FINISHED;
         }
         encounterBuilder.setStatus(encState, triageBeginDate, triageEndDate, triageStartCell, triageEndCell);
+        */
 
         if (triagepersonIdCell != null && !triagepersonIdCell.isEmpty() && triagepersonIdCell.getLong() > 0) {
             ResourceId triagePersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
@@ -282,7 +264,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
                 if (triageEndDate != null) {
                     triagePeriod.setEnd(triageEndDate);
                 }
-                encounterBuilder.addParticipant(ref, EncounterParticipantType.PARTICIPANT, triagePeriod, triagepersonIdCell);
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.PARTICIPANT, triagePeriod, true, triagepersonIdCell);
             }
         }
 
@@ -297,7 +279,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             LOG.debug("conclusionDateCell=" + conclusionDateCell.getString());
         } else {
             LOG.debug("conclusionDateCell=null");
-        }*/
+        }
 
         if (assessmentBeginDate == null) {
             encState = Encounter.EncounterState.PLANNED;
@@ -307,6 +289,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             encState = Encounter.EncounterState.FINISHED;
         }
         encounterBuilder.setStatus(encState, assessmentBeginDate, assessmentEndDate, firstAssessmentDateCell, conclusionDateCell);
+        */
 
         // Location
         if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {

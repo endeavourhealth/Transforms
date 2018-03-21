@@ -161,10 +161,10 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
         }
 
-        if (changeOfPatient) {
-            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-            episodeOfCareBuilder.setPatient(patientReference, personIdCell);
-        }
+        //if (changeOfPatient) {
+          //  Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
+            //episodeOfCareBuilder.setPatient(patientReference, personIdCell);
+        //}
 
         // Episode resource id
         //ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
@@ -205,12 +205,18 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
+
+            internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
         }
 
         // Patient
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+
+        // Organisation
+        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
+
 
         // class
         //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
@@ -219,7 +225,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // status
         Date d = null;
         CsvCell status = parser.getEncounterStatusMillenniumCode();
-        encounterBuilder.setStatus(getEncounterStatus(status.getString()), d, d, status);
+        encounterBuilder.setStatus(getEncounterStatus(status.getString()), status);
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
@@ -258,7 +264,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }*/
 
         // EpisodeOfCare
-        //fhirEncounter.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId().toString()));
         if (encounterBuilder.getEpisodeOfCare() != null && encounterBuilder.getEpisodeOfCare().size() > 0) {
             encounterBuilder.getEpisodeOfCare().remove(0);
         }
@@ -269,7 +274,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (!referrerPersonnelIdentifier.isEmpty()) {
             ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, referrerPersonnelIdentifier);
             if (referrerPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, referrerPersonnelIdentifier);
+                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, true, referrerPersonnelIdentifier);
             } else {
                 TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Referrer-id {} in ENCNT record {} in file {}", parser.getReferrerMillenniumPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
             }
@@ -280,7 +285,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (!responsibleHCPCell.isEmpty()) {
             ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, responsibleHCPCell);
             if (respPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, responsibleHCPCell);
+                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, true, responsibleHCPCell);
             } else {
                 TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Personnel-id {} in ENCNT record {} in file {}", parser.getResponsibleHealthCareprovidingPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
             }
@@ -291,7 +296,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         if (!registeringPersonnelIdentifierCell.isEmpty()) {
             ResourceId regPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, registeringPersonnelIdentifierCell);
             if (regPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, registeringPersonnelIdentifierCell);
+                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, true, registeringPersonnelIdentifierCell);
             } else {
                 TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Personnel-id {} in ENCNT record {} in file {}", parser.getRegisteringMillenniumPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
             }

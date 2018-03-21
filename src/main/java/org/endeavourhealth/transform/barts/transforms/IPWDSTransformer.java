@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -99,8 +100,10 @@ public class IPWDSTransformer extends BartsBasisTransformer {
 
         // get the associated encounter
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
-        if (encounterBuilder == null && !activeCell.getIntAsBoolean()) {
-            // skip - encounter missing but set to delete so do nothing
+        if (encounterBuilder == null) {
+            if (activeCell.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "Skipping encounter ward stay {} because Encounter unknown in file {}", encounterIdCell.getString(), parser.getFilePath());
+            }
             return;
         }
 
@@ -111,29 +114,18 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Delete existing encounter ?
+        // Delete existing encounter ? - Assuming this will be signaled in ENCNT
+        /*
         if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
             encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
             //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
             EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
             return;
-        }
+        }*/
 
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
-        // Create new encounter
-        if (encounterBuilder == null) {
-            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-        }
-
-        //EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-
-        encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
-        //episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+        //Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        //ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Location
         UUID locationResourceUUID = null;
@@ -142,48 +134,60 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         elc.setPeriod(wardStayPeriod);
         elc.setStatus(getLocationStatus(wardStayPeriod));
 
-        List<Encounter.EncounterLocationComponent> locationList = encounterBuilder.getLocation();
-        if (locationList != null && sequenceNumberCell.getInt() <= locationList.size()) {
-            // Update existing location
-            locationList.remove(sequenceNumberCell.getInt() - 1);
-        }
-
         // Use bed location ?
         if (bedLocationIdCell != null && !bedLocationIdCell.isEmpty() && bedLocationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedLocationIdCell);
-        }
-        if (locationResourceUUID != null) {
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
+            // Remove duplicate (if exists)
+            List<Encounter.EncounterLocationComponent> locationList = encounterBuilder.getLocation();
+            if (locationList != null) {
+                for (Encounter.EncounterLocationComponent currELC : locationList) {
+                    if (currELC.getLocation().getReference().compareToIgnoreCase(elc.getLocation().getReference()) == 0) {
+                        if (currELC.hasPeriod() && currELC.getPeriod().getStart().compareTo(elc.getPeriod().getStart()) == 0) {
+                            locationList.remove(currELC);
+                        }
+                    }
+                }
+            }
+            // Add location
             encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), bedLocationIdCell, beginDateCell, endDateCell);
+        } else if (roomLocationIdCell != null && !roomLocationIdCell.isEmpty() && roomLocationIdCell.getLong() > 0) {
+            locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomLocationIdCell);
+            elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
+            // Remove duplicate (if exists)
+            List<Encounter.EncounterLocationComponent> locationList = encounterBuilder.getLocation();
+            if (locationList != null) {
+                for (Encounter.EncounterLocationComponent currELC : locationList) {
+                    if (currELC.getLocation().getReference().compareToIgnoreCase(elc.getLocation().getReference()) == 0) {
+                        if (currELC.hasPeriod() && currELC.getPeriod().getStart().compareTo(elc.getPeriod().getStart()) == 0) {
+                            locationList.remove(currELC);
+                        }
+                    }
+                }
+            }
+            // Add location
+            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), roomLocationIdCell, beginDateCell, endDateCell);
+        } else if (locationIdCell != null && !locationIdCell.isEmpty() && locationIdCell.getLong() > 0) {
+            locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, locationIdCell);
+            elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
+            // Remove duplicate (if exists)
+            List<Encounter.EncounterLocationComponent> locationList = encounterBuilder.getLocation();
+            if (locationList != null) {
+                for (Encounter.EncounterLocationComponent currELC : locationList) {
+                    if (currELC.getLocation().getReference().compareToIgnoreCase(elc.getLocation().getReference()) == 0) {
+                        if (currELC.hasPeriod() && currELC.getPeriod().getStart().compareTo(elc.getPeriod().getStart()) == 0) {
+                            locationList.remove(currELC);
+                        }
+                    }
+                }
+            }
+            // Add location
+            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), locationIdCell, beginDateCell, endDateCell);
         } else {
-            TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", bedLocationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
         }
 
-        // Use room location ?
-        if (locationResourceUUID == null) {
-            if (roomLocationIdCell != null && !roomLocationIdCell.isEmpty() && roomLocationIdCell.getLong() > 0) {
-                locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomLocationIdCell);
-            }
-            if (locationResourceUUID != null) {
-                elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), roomLocationIdCell, beginDateCell, endDateCell);
-            } else {
-                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", roomLocationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
-            }
-        }
 
-        // Use location ?
-        if (locationResourceUUID == null) {
-            if (locationIdCell != null && !locationIdCell.isEmpty() && locationIdCell.getLong() > 0) {
-                locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, locationIdCell);
-            }
-            if (locationResourceUUID != null) {
-                elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), locationIdCell, beginDateCell, endDateCell);
-            } else {
-                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
-            }
-        }
 
         if (LOG.isDebugEnabled()) {
             //LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));

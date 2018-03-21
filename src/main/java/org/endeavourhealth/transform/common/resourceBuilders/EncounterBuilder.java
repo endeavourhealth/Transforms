@@ -137,8 +137,22 @@ public class EncounterBuilder extends ResourceBuilderBase
         Encounter.EncounterParticipantComponent fhirParticipant = this.encounter.addParticipant();
         fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(type));
         fhirParticipant.setIndividual(practitionerReference);
-               int index = this.encounter.getParticipant().size()-1;
+        int index = this.encounter.getParticipant().size()-1;
         auditValue("participant[" + index + "].individual.reference", sourceCells);
+    }
+
+    public void addParticipant(Reference practitionerReference, EncounterParticipantType type, boolean removeIfExists, CsvCell... sourceCells) {
+        if (removeIfExists) {
+            List<Encounter.EncounterParticipantComponent> partList = this.encounter.getParticipant();
+            for(Encounter.EncounterParticipantComponent epc : partList) {
+                if (epc.getType().get(0).getCoding().get(0).getSystem().compareToIgnoreCase(CodeableConceptHelper.createCodeableConcept(type).getCoding().get(0).getSystem()) == 0) {
+                    if (epc.getIndividual().getReference().compareToIgnoreCase(practitionerReference.getReference()) == 0) {
+                        partList.remove(epc);
+                    }
+                }
+            }
+        }
+        addParticipant(practitionerReference, type, sourceCells);
     }
 
     public void addParticipant(Reference practitionerReference, EncounterParticipantType type, Period period, CsvCell... sourceCells) {
@@ -149,6 +163,14 @@ public class EncounterBuilder extends ResourceBuilderBase
         int index = this.encounter.getParticipant().size()-1;
         auditValue("participant[" + index + "].individual.reference", sourceCells);
     }
+
+    public void addParticipant(Reference practitionerReference, EncounterParticipantType type, Period period, boolean removeIfExists, CsvCell... sourceCells) {
+        if (removeIfExists) {
+
+        }
+        addParticipant(practitionerReference, type, period, sourceCells);
+    }
+
 
     private Period getOrCreatePeriod() {
         Period period = this.encounter.getPeriod();

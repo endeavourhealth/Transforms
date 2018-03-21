@@ -2,11 +2,14 @@ package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Encounter;
@@ -130,7 +133,13 @@ public class EncounterResourceCache {
     }
 
     public static void saveNewEpisodeBuilderToCache(EpisodeOfCareBuilder episodeBuilder) throws Exception {
-        episodeBuildersByUuid.put(UUID.fromString(episodeBuilder.getResourceId()), episodeBuilder);
+        UUID uuid = UUID.fromString(episodeBuilder.getResourceId());
+        if (episodeBuildersByUuid.containsKey(uuid)) {
+            episodeBuildersByUuid.replace(uuid, episodeBuilder);
+        } else {
+            episodeBuildersByUuid.put(uuid, episodeBuilder);
+        }
+
     }
 
     public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell) throws Exception {
@@ -154,6 +163,27 @@ public class EncounterResourceCache {
         LOG.trace("Saving " + episodeBuildersByUuid.size() + " Episodes to the DB");
         for (UUID episodeId: episodeBuildersByUuid.keySet()) {
             EpisodeOfCareBuilder episodeBuilder = episodeBuildersByUuid.get(episodeId);
+
+            // Validation - to be removed later
+            boolean error = false;
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare) episodeBuilder.getResource();
+
+            if (episodeOfCare.hasStatus() == false) {
+                LOG.error("Data error. Saving EoC without status.");
+                error = true;
+            }
+            if (episodeOfCare.hasPeriod() == false || episodeOfCare.getPeriod().getStart() == null || episodeOfCare.getPeriod().getEnd() == null) {
+                LOG.error("Data error. Saving EoC without dates.");
+                error = true;
+            }
+            if (episodeOfCare.getIdentifier() == null || episodeOfCare.getIdentifier().size() == 0) {
+                LOG.error("Data error. Saving EoC without Identifiers.");
+                error = true;
+            }
+            if (error) {
+                LOG.error("Data error:" + FhirSerializationHelper.serializeResource(episodeOfCare));
+            }
+
             BasisTransformer.savePatientResource(fhirResourceFiler, null, episodeBuilder);
         }
         LOG.trace("Finishing saving " + episodeBuildersByUuid.size() + " Episodes to the DB");
@@ -161,6 +191,35 @@ public class EncounterResourceCache {
         LOG.trace("Saving " + encounterBuildersByUuid.size() + " encounters to the DB");
         for (UUID encounterId: encounterBuildersByUuid.keySet()) {
             EncounterBuilder EncounterBuilder = encounterBuildersByUuid.get(encounterId);
+
+            // Validation - to be removed later
+            boolean error = false;
+            Encounter encounter = (Encounter) EncounterBuilder.getResource();
+
+            if (encounter.hasStatus() == false) {
+                LOG.error("Data error. Saving Encounter without status.");
+                error = true;
+            }
+            if (encounter.hasPeriod() == false || encounter.getPeriod().getStart() == null || encounter.getPeriod().getEnd() == null) {
+                LOG.error("Data error. Saving Encounter without dates.");
+                error = true;
+            }
+            if (encounter.getIdentifier() == null || encounter.getIdentifier().size() == 0) {
+                LOG.error("Data error. Saving Encounter without Identifiers.");
+                error = true;
+            }
+            if (encounter.hasEpisodeOfCare() == false || encounter.getEpisodeOfCare().size() == 0) {
+                LOG.error("Data error. Saving Encounter without EoC reference.");
+                error = true;
+            }
+            if (encounter.hasLocation() == false || encounter.getLocation().size() == 0) {
+                LOG.error("Data error. Saving Encounter without location reference.");
+                error = true;
+            }
+            if (error) {
+                LOG.error("Data error:" + FhirSerializationHelper.serializeResource(encounter));
+            }
+
             BasisTransformer.savePatientResource(fhirResourceFiler, null, EncounterBuilder);
         }
         LOG.trace("Finishing saving " + encounterBuildersByUuid.size() + " encounters to the DB");
@@ -178,4 +237,5 @@ public class EncounterResourceCache {
         deletedEncounterBuildersByUuid.clear();
         //encounterDates.clear();
     }
+
 }
