@@ -72,6 +72,10 @@ public class EncounterBuilder extends ResourceBuilderBase
 
     // Maintain status history
     public void setStatus(Encounter.EncounterState status, Date startPeriod, Date endPeriod, CsvCell... sourceCells) {
+        setStatus(status, startPeriod, endPeriod, false, sourceCells);
+    }
+
+    public void setStatus(Encounter.EncounterState status, Date startPeriod, Date endPeriod, boolean removeIfExists, CsvCell... sourceCells) {
         Encounter.EncounterState currentStatus = this.encounter.getStatus();
 
         if (currentStatus != null) {
@@ -93,7 +97,21 @@ public class EncounterBuilder extends ResourceBuilderBase
             period.setStart(startPeriod);
             period.setEnd(endPeriod);
 
-            //Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent(currentStatus, period);
+            if (removeIfExists && this.encounter.hasStatusHistory()) {
+                List<Encounter.EncounterStatusHistoryComponent> histList = this.encounter.getStatusHistory();
+
+                for (Iterator<Encounter.EncounterStatusHistoryComponent> iterator = histList.iterator(); iterator.hasNext();) {
+                    Encounter.EncounterStatusHistoryComponent encounterStatusHistoryComponent = iterator.next();
+
+                    if (encounterStatusHistoryComponent.getStatus().getDefinition().compareToIgnoreCase(status.getDefinition()) == 0) {
+                        if (encounterStatusHistoryComponent.getPeriod().getStart().compareTo(period.getStart()) == 0) {
+                            if (encounterStatusHistoryComponent.getPeriod().getEnd().compareTo(period.getEnd()) == 0) {
+                                iterator.remove();
+                            }
+                        }
+                    }
+                }
+            }
 
             Encounter.EncounterStatusHistoryComponent eshc = new Encounter.EncounterStatusHistoryComponent()
                     .setPeriod(period)
@@ -226,6 +244,20 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("reason[" + index + "].value", sourceCells);
     }
 
+    public void addReason(CodeableConcept reason, boolean removeIfExists, CsvCell... sourceCells) {
+        if (removeIfExists && this.encounter.hasReason()) {
+            List<CodeableConcept> reasonList = this.encounter.getReason();
+
+            for (Iterator<CodeableConcept> iterator = reasonList.iterator(); iterator.hasNext();) {
+                CodeableConcept cc = iterator.next();
+                if (cc.getText().compareToIgnoreCase(reason.getText()) == 0) {
+                    iterator.remove();
+                }
+            }
+        }
+        addReason(reason, sourceCells);
+    }
+
     public List<CodeableConcept> getReason() {
         return this.encounter.getReason();
     }
@@ -253,11 +285,45 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("location[" + index + "].location", sourceCells);
     }
 
+    public void addLocation(Reference referenceValue, boolean removeIfExists, CsvCell... sourceCells) {
+        if (removeIfExists && this.encounter.hasLocation()) {
+            List<Encounter.EncounterLocationComponent> locationList = this.encounter.getLocation();
+
+            for (Iterator<Encounter.EncounterLocationComponent> iterator = locationList.iterator(); iterator.hasNext();) {
+                Encounter.EncounterLocationComponent currELC = iterator.next();
+                if (currELC.getLocation().getReference().compareToIgnoreCase(referenceValue.getReference()) == 0) {
+                    iterator.remove();
+                }
+            }
+        }
+        addLocation(referenceValue, sourceCells);
+    }
+
     public void addLocation(Encounter.EncounterLocationComponent location, CsvCell... sourceCells) {
         this.encounter.addLocation(location);
 
         int index = this.encounter.getLocation().size()-1;
         auditValue("location[" + index + "].location", sourceCells);
+    }
+
+    public void addLocation(Encounter.EncounterLocationComponent location, boolean removeIfExists, CsvCell... sourceCells) {
+        if (removeIfExists && this.encounter.hasLocation()) {
+            List<Encounter.EncounterLocationComponent> locationList = this.encounter.getLocation();
+
+            for (Iterator<Encounter.EncounterLocationComponent> iterator = locationList.iterator(); iterator.hasNext();) {
+                Encounter.EncounterLocationComponent currELC = iterator.next();
+                if (currELC.getLocation().getReference().compareToIgnoreCase(location.getLocation().getReference()) == 0) {
+                    if (currELC.hasPeriod() && location.hasPeriod()) {
+                         if (location.getPeriod().getStart().compareTo(currELC.getPeriod().getStart()) == 0) {
+                             iterator.remove();
+                         }
+                    } else {
+                        iterator.remove();
+                    }
+                }
+            }
+        }
+        addLocation(location, sourceCells);
     }
 
     public Reference getPatient() {

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.cache;
 
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -12,8 +13,10 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
+import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -152,6 +155,11 @@ public class EncounterResourceCache {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(encounterResourceId.getResourceId().toString(), encounterIdCell);
+
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+        identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+        identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
         encounterBuildersByUuid.put(encounterResourceId.getResourceId(), encounterBuilder);
 

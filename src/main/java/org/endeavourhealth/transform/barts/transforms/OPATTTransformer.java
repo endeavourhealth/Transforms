@@ -69,6 +69,11 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell finIdCell = parser.getFINNo();
         CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
 
+        if (!activeCell.getIntAsBoolean()) {
+            // skip - inactive entries contains no useful data
+            return;
+        }
+
         Date beginDate = null;
         if (beginDateCell != null && !beginDateCell.isEmpty()) {
             try {
@@ -76,6 +81,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
+            LOG.debug("beginDateCell:" + beginDateCell.getString() + " converted date:" + beginDate.toString());
         }
         Date endDate = null;
         if (beginDate != null) {
@@ -84,6 +90,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
             } else {
                 endDate = beginDate;
             }
+            LOG.debug("enddate:" + endDate.toString());
         }
 
         // get the associated encounter
@@ -130,7 +137,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         // Start date
         encounterBuilder.setPeriodStart(beginDate);
 
-        if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
+        if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
             episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
         }
 
@@ -138,7 +145,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         if (endDate != null) {
             encounterBuilder.setPeriodEnd(endDate);
 
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
             }
         }

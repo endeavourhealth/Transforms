@@ -228,17 +228,14 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString()), encounterTypeCodeCell);
 
         // status
-        Date d = null;
+        //Date d = null;
         CsvCell status = parser.getEncounterStatusMillenniumCode();
         encounterBuilder.setStatus(getEncounterStatus(status.getString()), status);
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
         CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-        if (encounterBuilder.hasReason()) {
-            encounterBuilder.getReason().remove(0);
-        }
-        encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
+        encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
 
         // Encounter type
         BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_ADMISSION_TYPE, csvHelper);

@@ -106,6 +106,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
+            LOG.debug("beginDateCell:" + beginDateCell.getString() + " converted date:" + beginDate.toString());
         }
         Date endDate = null;
         if (endDateCell != null && !endDateCell.isEmpty()) {
@@ -114,6 +115,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 endDate = formatBulk.parse(endDateCell.getString());
             }
+            LOG.debug("endDateCell:" + endDateCell.getString() + " converted date:" + endDate.toString());
         }
         // Triage start and end
         Date triageBeginDate = null;
@@ -215,7 +217,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
             if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
                 episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
             }
-            encounterBuilder.setStatus(encState, beginDate, endDate, beginDateCell, endDateCell);
+            encounterBuilder.setStatus(encState, beginDate, endDate, true, beginDateCell, endDateCell);
         } else {
             encounterBuilder.setStatus(encState, beginDateCell);
         }
@@ -295,7 +297,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
             UUID locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, currentLocationCell);
             if (locationResourceUUID != null) {
-                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), currentLocationCell);
+                encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true,currentLocationCell);
             } else {
                 TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in AEATT record {} in file {}", currentLocationCell.getString(), parser.getCdsBatchContentId().getString(), parser.getFilePath());
             }
@@ -304,7 +306,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         //Reason
         if (reasonForVisit != null && !reasonForVisit.isEmpty()) {
             CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-            encounterBuilder.addReason(reasonForVisitText, reasonForVisit);
+            encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
         }
 
         // EoC reference

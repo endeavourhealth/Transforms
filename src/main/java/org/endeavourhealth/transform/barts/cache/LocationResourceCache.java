@@ -126,7 +126,7 @@ public class LocationResourceCache {
         LOG.trace("Saving " + locationBuildersByUuid.size() + " Locations to the DB");
         for (UUID LocationId: locationBuildersByUuid.keySet()) {
             LocationBuilder LocationBuilder = locationBuildersByUuid.get(LocationId);
-            BasisTransformer.savePatientResource(fhirResourceFiler, null, LocationBuilder);
+            BasisTransformer.saveAdminResource(fhirResourceFiler, null, LocationBuilder);
         }
         LOG.trace("Finishing saving " + locationBuildersByUuid.size() + " Locations to the DB");
 

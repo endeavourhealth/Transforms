@@ -181,7 +181,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
         }
-        saveAdminResource(fhirResourceFiler, parser.getCurrentState(), locationBuilder);
     }
 
     /*
