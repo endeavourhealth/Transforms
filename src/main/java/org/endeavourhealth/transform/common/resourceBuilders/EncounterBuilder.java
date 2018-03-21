@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 public class EncounterBuilder extends ResourceBuilderBase
@@ -144,10 +145,11 @@ public class EncounterBuilder extends ResourceBuilderBase
     public void addParticipant(Reference practitionerReference, EncounterParticipantType type, boolean removeIfExists, CsvCell... sourceCells) {
         if (removeIfExists) {
             List<Encounter.EncounterParticipantComponent> partList = this.encounter.getParticipant();
-            for(Encounter.EncounterParticipantComponent epc : partList) {
+            for (Iterator<Encounter.EncounterParticipantComponent> iterator = partList.iterator(); iterator.hasNext();) {
+                Encounter.EncounterParticipantComponent epc = iterator.next();
                 if (epc.getType().get(0).getCoding().get(0).getSystem().compareToIgnoreCase(CodeableConceptHelper.createCodeableConcept(type).getCoding().get(0).getSystem()) == 0) {
                     if (epc.getIndividual().getReference().compareToIgnoreCase(practitionerReference.getReference()) == 0) {
-                        partList.remove(epc);
+                        iterator.remove();
                     }
                 }
             }
