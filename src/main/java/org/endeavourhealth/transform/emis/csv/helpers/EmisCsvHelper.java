@@ -940,7 +940,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void processRemainingProblems(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        for (String uid: problemMap.keySet()) {
+        //the findProblem removes from the map, so we can't iterate directly over the keySet and need to copy that into a separate collection
+        //for (String uid: problemMap.keySet()) {
+        List<String> uids = new ArrayList<>(problemMap.keySet());
+        for (String uid: uids) {
             ConditionBuilder conditionBuilder = findProblem(uid);
 
             if (conditionBuilder == null) {
