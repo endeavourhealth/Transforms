@@ -105,9 +105,9 @@ public class EncounterResourceCache {
 
         if (episodeBuilder == null) {
 
-            EpisodeOfCare encounter = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId());
-            if (encounter != null) {
-                episodeBuilder = new EpisodeOfCareBuilder(encounter);
+            EpisodeOfCare episode = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, episodeResourceId.getResourceId());
+            if (episode != null) {
+                episodeBuilder = new EpisodeOfCareBuilder(episode);
                 episodeBuildersByUuid.put(UUID.fromString(episodeBuilder.getResourceId()), episodeBuilder);
             }
 

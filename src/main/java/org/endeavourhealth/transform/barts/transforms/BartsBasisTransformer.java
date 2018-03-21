@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -100,6 +101,9 @@ public class BartsBasisTransformer extends BasisTransformer{
 
         if (episodeIdentiferCell != null && !episodeIdentiferCell.isEmpty()) {
             episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, episodeIdentiferCell.getString());
+            if (episodeOfCareBuilder == null) {
+                LOG.debug("episodeOfCareBuilder not found for id:" + episodeIdentiferCell.getString());
+            }
 
             if (episodeOfCareBuilder == null && finIdCell != null && !finIdCell.isEmpty()) {
                 // EoC not found using Episode-id - try FIN-no (if it was created before it got the episode id)
