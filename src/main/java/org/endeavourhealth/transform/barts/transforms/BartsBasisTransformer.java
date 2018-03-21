@@ -129,7 +129,10 @@ public class BartsBasisTransformer extends BasisTransformer{
             }
             if (episodeOfCareBuilder == null) {
                 // EoC not  found - create new using episode-id
-                ResourceId resourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
+                ResourceId resourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
+                if (resourceId == null) {
+                    resourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
+                }
                 episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
                 episodeOfCareBuilder.setId(resourceId.getResourceId().toString(), episodeIdentiferCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
