@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
@@ -32,7 +33,7 @@ public class CVREFTransformer {
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
@@ -42,15 +43,13 @@ public class CVREFTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
 
-        if (parser == null) {
-            return;
-        }
-
-        while (parser.nextRecord()) {
-            try {
-                transform((CVREF) parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    transform((CVREF) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

@@ -14,27 +14,27 @@ import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class PPPHOTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPPHOTransformer.class);
 
 
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    createPatientPhone((PPPHO) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
-        while (parser.nextRecord()) {
-            try {
-                createPatientPhone((PPPHO)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

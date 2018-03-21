@@ -17,7 +17,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,26 +42,24 @@ public class AEATTTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
-
-        while (parser.nextRecord()) {
-            try {
-                String valStr = validateEntry((AEATT)parser);
-                if (valStr == null) {
-                    createAandEAttendance((AEATT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((AEATT) parser);
+                    if (valStr == null) {
+                        createAandEAttendance((AEATT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    } else {
+                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }

@@ -16,24 +16,23 @@ import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class PRSNLREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PRSNLREFTransformer.class);
 
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
-
-        while (parser.nextRecord()) {
-            try {
-                createPractitioner((PRSNLREF)parser, fhirResourceFiler, csvHelper);
-            }
-            catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    createPractitioner((PRSNLREF) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

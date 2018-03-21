@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class BulkProblemTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BulkProblemTransformer.class);
@@ -23,25 +24,22 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    createConditionProblem((BulkProblem) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
-        while (parser.nextRecord()) {
-            try {
-                createConditionProblem((BulkProblem)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
-
     }
 
     /*

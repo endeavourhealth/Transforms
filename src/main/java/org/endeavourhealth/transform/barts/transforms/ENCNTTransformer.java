@@ -15,7 +15,6 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCacheDateRecord;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -39,26 +38,24 @@ public class ENCNTTransformer extends BartsBasisTransformer {
      *
      */
     public static void transform(String version,
-                                 ParserI parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
                                  String primaryOrgOdsCode,
                                  String primaryOrgHL7OrgOID) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
-
-        while (parser.nextRecord()) {
-            try {
-                String valStr = validateEntry((ENCNT)parser);
-                if (valStr == null) {
-                    createEncounter((ENCNT)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((ENCNT) parser);
+                    if (valStr == null) {
+                        createEncounter((ENCNT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    } else {
+                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
