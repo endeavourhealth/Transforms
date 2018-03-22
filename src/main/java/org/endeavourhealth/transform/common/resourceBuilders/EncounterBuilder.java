@@ -212,10 +212,11 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     public void setPeriodEnd(DateTimeType endDateTime, CsvCell... sourceCells) {
-        getOrCreatePeriod().setStartElement(endDateTime);
+        getOrCreatePeriod().setEndElement(endDateTime);
 
         auditValue("period.end", sourceCells);
     }
+
     public void setPeriodEnd(Date endDateTime, CsvCell... sourceCells) {
         setPeriodEnd(new DateTimeType(endDateTime), sourceCells);
     }
