@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -8,6 +9,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.OPATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -17,6 +19,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +71,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
         CsvCell finIdCell = parser.getFINNo();
         CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
+        CsvCell currentLocationCell = parser.getLocationCode();
 
         if (!activeCell.getIntAsBoolean()) {
             // skip - inactive entries contains no useful data
@@ -81,7 +85,6 @@ public class OPATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
-            LOG.debug("beginDateCell:" + beginDateCell.getString() + " converted date:" + beginDate.toString());
         }
         Date endDate = null;
         if (beginDate != null) {
@@ -90,7 +93,6 @@ public class OPATTTransformer extends BartsBasisTransformer {
             } else {
                 endDate = beginDate;
             }
-            LOG.debug("enddate:" + endDate.toString());
         }
 
         // get the associated encounter
@@ -128,6 +130,8 @@ public class OPATTTransformer extends BartsBasisTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
         //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
+        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
+
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
@@ -143,19 +147,38 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         // End date
         if (endDate != null) {
-            encounterBuilder.setPeriodEnd(endDate);
+            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
 
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
-            }
+            encounterBuilder.setPeriodEnd(endDate);
+        } else if (beginDate.before(new Date())) {
+            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+        } else {
+            encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
         }
 
-        // Status
+        // EoC Status
         if (outcomeCell != null && outcomeCell.getString().trim().length() > 0 && outcomeCell.getInt() == 1) {
-            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+            episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
             //Status on episodeOfCareBuilder should be set automatically when end-date is set
         }
 
+        // Location
+        if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
+            UUID locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, currentLocationCell);
+            if (locationResourceUUID != null) {
+                if (beginDate == null || endDate == null) {
+                    encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, currentLocationCell);
+                } else {
+                    Period apptPeriod = PeriodHelper.createPeriod(beginDate, endDate);
+                    Encounter.EncounterLocationComponent elc = new Encounter.EncounterLocationComponent();
+                    elc.setPeriod(apptPeriod);
+                    elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
+                    encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, currentLocationCell, beginDateCell, apptLengthCell);
+                }
+            } else {
+                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in OPATT record {} in file {}", currentLocationCell.getString(), encounterIdCell.getString(), parser.getFilePath());
+            }
+        }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
