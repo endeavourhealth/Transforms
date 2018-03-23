@@ -35,34 +35,6 @@ public class EncounterResourceCache {
     private static Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> encounterBuildersByUuid = new HashMap<>();
     private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
-    //private static Map<String, EncounterResourceCacheDateRecord> encounterDates = new HashMap<String, EncounterResourceCacheDateRecord>();
-
-    /*
-    public static void saveEncounterDates(String encounterId, CsvCell beginDateCell, CsvCell endDateCell) throws TransformException {
-        EncounterResourceCacheDateRecord record = new EncounterResourceCacheDateRecord();
-
-        record.setEncounterId(encounterId);
-
-        if (beginDateCell != null) {
-            record.setBeginDate(beginDateCell.getDate());
-        }
-        record.setBeginDateCell(beginDateCell);
-
-        if (endDateCell != null) {
-            record.setEndDate(endDateCell.getDate());
-        }
-        record.setEndDateCell(endDateCell);
-
-        if (encounterDates.containsKey(record.getEncounterId())) {
-            encounterDates.replace(record.getEncounterId(), record);
-        } else {
-            encounterDates.put(record.getEncounterId(), record);
-        }
-    }
-
-    public static EncounterResourceCacheDateRecord getEncounterDates(String encounterId) {
-        return encounterDates.get(encounterId);
-    }*/
 
     public static void deleteEncounterBuilder(EncounterBuilder encounterBuilder) throws Exception {
         UUID key = UUID.fromString(encounterBuilder.getResourceId());
@@ -180,7 +152,7 @@ public class EncounterResourceCache {
                 LOG.error("Data error. Saving EoC without status.");
                 error = true;
             }
-            if (episodeOfCare.hasPeriod() == false || episodeOfCare.getPeriod().getStart() == null || episodeOfCare.getPeriod().getEnd() == null) {
+            if (episodeOfCare.hasPeriod() == false || episodeOfCare.getPeriod().getStart() == null ) {
                 LOG.error("Data error. Saving EoC without dates.");
                 error = true;
             }
@@ -208,7 +180,7 @@ public class EncounterResourceCache {
                 LOG.error("Data error. Saving Encounter without status.");
                 error = true;
             }
-            if (encounter.hasPeriod() == false || encounter.getPeriod().getStart() == null || encounter.getPeriod().getEnd() == null) {
+            if (encounter.hasPeriod() == false || encounter.getPeriod().getStart() == null ) {
                 LOG.error("Data error. Saving Encounter without dates.");
                 error = true;
             }

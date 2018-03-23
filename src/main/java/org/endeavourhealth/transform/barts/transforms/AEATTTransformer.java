@@ -106,7 +106,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
-            LOG.debug("beginDateCell:" + beginDateCell.getString() + " converted date:" + beginDate.toString());
         }
         Date endDate = null;
         if (endDateCell != null && !endDateCell.isEmpty()) {
@@ -115,7 +114,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 endDate = formatBulk.parse(endDateCell.getString());
             }
-            LOG.debug("endDateCell:" + endDateCell.getString() + " converted date:" + endDate.toString());
         }
         // Triage start and end
         Date triageBeginDate = null;
@@ -177,12 +175,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
-
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
-            identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
-
         } else {
             // Delete existing encounter ?
             if (!activeCell.getIntAsBoolean()) {
