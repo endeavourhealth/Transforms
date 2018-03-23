@@ -122,7 +122,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Create new encounter
         if (encounterBuilder == null) {
-            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell);
+            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
             //TransformWarnings.log(LOG, parser, "New Encounter {} created in ENCNTTRansform from file {} - This should not happen", encounterIdCell.getString(), parser.getFilePath());
         } else {
 
@@ -266,9 +266,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }*/
 
         // EpisodeOfCare
-        if (encounterBuilder.getEpisodeOfCare() != null && encounterBuilder.getEpisodeOfCare().size() > 0) {
-            encounterBuilder.getEpisodeOfCare().remove(0);
-        }
         encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer

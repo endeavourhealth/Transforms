@@ -54,6 +54,10 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     public void addEpisodeOfCare(Reference episodeReference, CsvCell... sourceCells) {
+        if (this.encounter.hasEpisodeOfCare()) {
+            this.encounter.getEpisodeOfCare().remove(0);
+        }
+
         this.encounter.addEpisodeOfCare(episodeReference);
 
         int index = this.encounter.getEpisodeOfCare().size()-1;

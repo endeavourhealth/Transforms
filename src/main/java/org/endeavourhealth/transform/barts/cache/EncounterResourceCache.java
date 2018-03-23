@@ -117,7 +117,7 @@ public class EncounterResourceCache {
 
     }
 
-    public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell) throws Exception {
+    public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell, CsvCell finIdCell) throws Exception {
 
         ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
 
@@ -132,6 +132,13 @@ public class EncounterResourceCache {
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
+
+        if (finIdCell != null && !finIdCell.isEmpty()) {
+            identifierBuilder = new IdentifierBuilder(encounterBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            identifierBuilder.setValue(finIdCell.getString(), finIdCell);
+        }
 
         encounterBuildersByUuid.put(encounterResourceId.getResourceId(), encounterBuilder);
 

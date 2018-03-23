@@ -133,7 +133,7 @@ public class BartsBasisTransformer extends BasisTransformer{
                 if (resourceId == null) {
                     resourceId = createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
                 }
-                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell);
                 episodeOfCareBuilder.setId(resourceId.getResourceId().toString(), episodeIdentiferCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -148,7 +148,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             // Episode-id not present - use FIN NO
             FINalternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCell.getString());
             if (FINalternateEpisodeUUID == null) {
-                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell);
                 episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -156,7 +156,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, FINalternateEpisodeUUID);
                 if (episodeOfCareBuilder == null) {
-                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell);
                     episodeOfCareBuilder.setId(FINalternateEpisodeUUID, finIdCell);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
@@ -185,7 +185,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             // Neither Episode-id nor FIN No present - use encounter-id
             encounterAlternateEpisodeUUID = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
             if (encounterAlternateEpisodeUUID == null) {
-                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell);
                 episodeOfCareBuilder.setId(UUID.randomUUID().toString(), episodeIdentiferCell);
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
 
@@ -193,7 +193,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, encounterAlternateEpisodeUUID);
                 if (episodeOfCareBuilder == null) {
-                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell);
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell);
                     episodeOfCareBuilder.setId(encounterAlternateEpisodeUUID, encounterIdCell);
                     EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 }
@@ -203,20 +203,13 @@ public class BartsBasisTransformer extends BasisTransformer{
         return episodeOfCareBuilder;
     }
 
-    private static EpisodeOfCareBuilder createNewEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell) {
+    private static EpisodeOfCareBuilder createNewEpisodeOfCareBuilder(CsvCell episodeIdentiferCell) {
         EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
         if (episodeIdentiferCell != null && !episodeIdentiferCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCareBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_EPISODE_ID);
             identifierBuilder.setValue(episodeIdentiferCell.getString(), episodeIdentiferCell);
-        }
-
-        if (finIdCell != null && !finIdCell.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCareBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
-            identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 
         return episodeOfCareBuilder;
