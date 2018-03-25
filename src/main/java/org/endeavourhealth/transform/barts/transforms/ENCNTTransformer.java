@@ -225,12 +225,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // class
         //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
-        encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString()), encounterTypeCodeCell);
+        encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString(), encounterIdCell, parser), encounterTypeCodeCell);
 
         // status
         //Date d = null;
         CsvCell status = parser.getEncounterStatusMillenniumCode();
-        encounterBuilder.setStatus(getEncounterStatus(status.getString()), status);
+        encounterBuilder.setStatus(getEncounterStatus(status.getString(), encounterIdCell, parser), status);
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
@@ -319,7 +319,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
     /*
     *
      */
-    private static Encounter.EncounterClass getEncounterClass(String millenniumCode) {
+    private static Encounter.EncounterClass getEncounterClass(String millenniumCode, CsvCell encounterIdCell,  ParserI parser) throws Exception {
         if (millenniumCode.compareTo("309308") == 0) { return Encounter.EncounterClass.INPATIENT; }
         else if (millenniumCode.compareTo("309309") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
         else if (millenniumCode.compareTo("309313") == 0) { return Encounter.EncounterClass.INPATIENT; }
@@ -337,6 +337,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         else if (millenniumCode.compareTo("3768747") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
         else if (millenniumCode.compareTo("3768748") == 0) { return Encounter.EncounterClass.INPATIENT; }
         else {
+            TransformWarnings.log(LOG, parser, "Millennium encouter-type {} not found for Personnel-id {} in ENCNT record {} in file {}", millenniumCode, encounterIdCell.getString(), parser.getFilePath());
             return Encounter.EncounterClass.OTHER;
         }
     }
@@ -344,7 +345,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
     /*
     *
      */
-    private static Encounter.EncounterState getEncounterStatus(String millenniumCode) {
+    private static Encounter.EncounterState getEncounterStatus(String millenniumCode, CsvCell encounterIdCell,  ParserI parser) throws Exception {
         if (millenniumCode.compareTo("666807") == 0) { return Encounter.EncounterState.CANCELLED; }
         else if (millenniumCode.compareTo("666808") == 0) { return Encounter.EncounterState.PLANNED; }
         else if (millenniumCode.compareTo("666809") == 0) { return Encounter.EncounterState.PLANNED; }
@@ -356,7 +357,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         else if (millenniumCode.compareTo("859") == 0) { return Encounter.EncounterState.PLANNED; }
         else if (millenniumCode.compareTo("860") == 0) { return Encounter.EncounterState.INPROGRESS; }
         else {
-            return Encounter.EncounterState.NULL;
+            TransformWarnings.log(LOG, parser, "Millennium status-code {} not found for Personnel-id {} in ENCNT record {} in file {}. Status set to in-progress", millenniumCode, encounterIdCell.getString(), parser.getFilePath());
+            return Encounter.EncounterState.INPROGRESS;
         }
     }
 
