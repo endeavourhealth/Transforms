@@ -141,22 +141,26 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        // Start date
-        encounterBuilder.setPeriodStart(beginDate);
+        if (beginDate != null) {
+            // Start date
+            encounterBuilder.setPeriodStart(beginDate);
 
-        if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-            episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-        }
+            if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+            }
 
-        // End date
-        if (endDate != null) {
-            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+            // End date
+            if (endDate != null) {
+                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
 
-            encounterBuilder.setPeriodEnd(endDate);
-        } else if (beginDate.before(new Date())) {
-            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+                encounterBuilder.setPeriodEnd(endDate);
+            } else if (beginDate.before(new Date())) {
+                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, outcomeCell);
+            } else {
+                encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
+            }
         } else {
-            encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
+            encounterBuilder.setStatus(Encounter.EncounterState.NULL);
         }
 
         // EoC Status
