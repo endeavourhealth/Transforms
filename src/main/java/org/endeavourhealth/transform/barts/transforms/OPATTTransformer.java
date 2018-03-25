@@ -160,7 +160,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
                 encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
             }
         } else {
-            encounterBuilder.setStatus(Encounter.EncounterState.NULL);
+            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         }
 
         // EoC Status
