@@ -118,7 +118,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Retrieve or create EpisodeOfCare
         episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         // Create new encounter
         if (encounterBuilder == null) {
@@ -134,6 +134,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                 // Patient reference on Encounter resources is handled below
                 // Patient reference on EpisodeOfCare resources is handled below
                 changeOfPatient = true;
+                LOG.debug("Encounter has changed patient from " + currentPatientUuid + " to " + patientUuid.toString());
 
                 List<Resource> resourceList = csvHelper.retrieveResourceByPatient(UUID.fromString(currentPatientUuid));
                 for (Resource resource : resourceList) {
@@ -160,16 +161,8 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }
 
         //if (changeOfPatient) {
-          //  Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-            //episodeOfCareBuilder.setPatient(patientReference, personIdCell);
+            // Re-establish EpisodeOfCare
         //}
-
-        // Episode resource id
-        //ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCell.getString());
-
-
-        //Extension[] ex = {ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding")};
-
 
         // Identifiers
         if (!finIdCell.isEmpty()) {

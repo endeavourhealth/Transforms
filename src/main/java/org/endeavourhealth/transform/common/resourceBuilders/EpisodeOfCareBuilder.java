@@ -78,6 +78,17 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditValue("period.end", sourceCells);
     }
 
+    public void setRegistrationEndDateNoStatusUpdate(Date date, CsvCell... sourceCells) {
+        Period period = this.episodeOfCare.getPeriod();
+        if (period == null) {
+            period = new Period();
+            this.episodeOfCare.setPeriod(period);
+        }
+        period.setEnd(date);
+
+        auditValue("period.end", sourceCells);
+    }
+
     public Date getRegistrationEndDate() {
         return this.episodeOfCare.getPeriod().getEnd();
     }
@@ -91,10 +102,19 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         boolean active = PeriodHelper.isActive(this.episodeOfCare.getPeriod());
 
         if (active) {
-            this.episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+            //this.episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+            setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE, sourceCells);
         } else {
-            this.episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+            //this.episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+            setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, sourceCells);
         }
+
+        //auditValue("status", sourceCells);
+    }
+
+    public void setStatus(EpisodeOfCare.EpisodeOfCareStatus status, CsvCell... sourceCells) {
+
+        this.episodeOfCare.setStatus(status);
 
         auditValue("status", sourceCells);
     }

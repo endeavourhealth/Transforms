@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -123,7 +124,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, patientUuid, null, csvHelper, fhirResourceFiler, internalIdDAL);
-        //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         // Create new encounter
         if (encounterBuilder == null) {
@@ -154,19 +155,23 @@ public class OPATTTransformer extends BartsBasisTransformer {
                 encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
 
                 encounterBuilder.setPeriodEnd(endDate);
+
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                    episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, apptLengthCell);
+                }
+
             } else if (beginDate.before(new Date())) {
                 encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, outcomeCell);
             } else {
                 encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
             }
         } else {
-            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
         }
 
-        // EoC Status
+        // EoC Status (for some reason it can contain just spaces)
         if (outcomeCell != null && outcomeCell.getString().trim().length() > 0 && outcomeCell.getInt() == 1) {
-            episodeOfCareBuilder.setRegistrationEndDate(endDate, apptLengthCell);
-            //Status on episodeOfCareBuilder should be set automatically when end-date is set
+            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
         }
 
         // Location

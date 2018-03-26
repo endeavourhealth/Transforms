@@ -213,6 +213,7 @@ public class EncounterResourceCache {
 
         LOG.trace("Deleting " + deletedEncounterBuildersByUuid.size() + " encounters from the DB");
         for (UUID encounterId: deletedEncounterBuildersByUuid.keySet()) {
+            LOG.trace("Deleting Encounter " + encounterId.toString());
             EncounterBuilder EncounterBuilder = deletedEncounterBuildersByUuid.get(encounterId);
             BasisTransformer.deletePatientResource(fhirResourceFiler, null, EncounterBuilder);
         }
