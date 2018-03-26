@@ -174,7 +174,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
+        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, arrivalDateCell, csvHelper, fhirResourceFiler, internalIdDAL);
         //LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         if (encounterBuilder == null) {

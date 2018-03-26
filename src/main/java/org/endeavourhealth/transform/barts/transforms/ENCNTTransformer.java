@@ -117,13 +117,14 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Retrieve or create EpisodeOfCare
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, null, csvHelper, fhirResourceFiler, internalIdDAL);
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, null, csvHelper, fhirResourceFiler, internalIdDAL);
         LOG.debug("episodeOfCareBuilder:" + episodeOfCareBuilder.getResourceId() + ":" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
 
         // Create new encounter
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
-            //TransformWarnings.log(LOG, parser, "New Encounter {} created in ENCNTTRansform from file {} - This should not happen", encounterIdCell.getString(), parser.getFilePath());
+
+            encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
         } else {
 
             // Has patient reference changed?
