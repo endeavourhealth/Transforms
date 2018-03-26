@@ -52,7 +52,7 @@ public class SRRotaSlot extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRRotaSlot Entry file ";}
+protected String getFileTypeDescription() {return "TPP Rota Slot Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

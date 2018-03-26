@@ -60,7 +60,7 @@ public class SRVisit extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRVisit Entry file ";}
+protected String getFileTypeDescription() {return "TPP Visit Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

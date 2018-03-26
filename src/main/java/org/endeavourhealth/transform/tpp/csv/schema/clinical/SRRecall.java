@@ -68,7 +68,7 @@ public class SRRecall extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRRecall Entry file ";}
+protected String getFileTypeDescription() {return "TPP Patient Recall Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

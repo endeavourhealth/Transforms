@@ -80,7 +80,7 @@ public class SRMedia extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRMedia Entry file ";}
+protected String getFileTypeDescription() {return "TPP Patient record attachments Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

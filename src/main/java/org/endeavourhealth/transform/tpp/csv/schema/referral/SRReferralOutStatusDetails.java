@@ -60,7 +60,7 @@ public class SRReferralOutStatusDetails extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRReferralOutStatusDetails Entry file ";}
+protected String getFileTypeDescription() {return "TPP Referral Out Status Details Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

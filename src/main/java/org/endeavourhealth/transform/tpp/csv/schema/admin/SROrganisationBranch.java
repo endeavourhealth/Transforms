@@ -60,7 +60,7 @@ public class SROrganisationBranch extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SROrganisationBranch Entry file ";}
+protected String getFileTypeDescription() {return "TPP Organisation Branch Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

@@ -66,7 +66,7 @@ public class SRPatient extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRPatient Entry file ";}
+protected String getFileTypeDescription() {return "TPP Patient Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

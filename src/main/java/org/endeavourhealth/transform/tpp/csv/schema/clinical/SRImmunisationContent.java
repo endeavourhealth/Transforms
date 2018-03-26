@@ -40,7 +40,7 @@ public class SRImmunisationContent extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRImmunisationContent Entry file ";}
+protected String getFileTypeDescription() {return "TPP Immunisation Content Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

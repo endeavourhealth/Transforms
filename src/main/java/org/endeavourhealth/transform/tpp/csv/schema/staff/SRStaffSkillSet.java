@@ -52,7 +52,7 @@ public class SRStaffSkillSet extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRStaffSkillSet Entry file ";}
+protected String getFileTypeDescription() {return "TPP Staff Skill Set Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

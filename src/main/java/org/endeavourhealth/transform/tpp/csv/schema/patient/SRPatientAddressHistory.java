@@ -76,7 +76,7 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRPatientAddressHistory Entry file ";}
+protected String getFileTypeDescription() {return "TPP Patient Address History Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

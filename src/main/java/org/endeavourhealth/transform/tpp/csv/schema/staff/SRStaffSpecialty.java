@@ -56,7 +56,7 @@ public class SRStaffSpecialty extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRStaffSpecialty Entry file ";}
+protected String getFileTypeDescription() {return "TPP Staff Specialty Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

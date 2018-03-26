@@ -64,7 +64,7 @@ public class SRImmunisationConsent extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRImmunisationConsent Entry file ";}
+protected String getFileTypeDescription() {return "TPP Immunisation Consent Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

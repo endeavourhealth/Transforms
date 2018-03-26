@@ -74,7 +74,7 @@ public class SREvent extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SREvent Entry file ";}
+protected String getFileTypeDescription() {return "TPP Event Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

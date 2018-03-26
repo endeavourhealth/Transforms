@@ -42,7 +42,7 @@ public class SRAppointmentFlags extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRAppointmentFlags Entry file ";}
+protected String getFileTypeDescription() {return "TPP Appointment Flags Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

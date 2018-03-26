@@ -54,7 +54,7 @@ public class SRChildAtRisk extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRChildAtRisk Entry file ";}
+protected String getFileTypeDescription() {return "TPP Child At Risk Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

@@ -58,7 +58,7 @@ public class SRRecordStatus extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRRecordStatus Entry file ";}
+protected String getFileTypeDescription() {return "TPP Patient Record Status Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

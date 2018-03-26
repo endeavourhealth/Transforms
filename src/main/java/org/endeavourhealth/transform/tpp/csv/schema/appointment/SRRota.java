@@ -58,7 +58,7 @@ public class SRRota extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRRota Entry file ";}
+protected String getFileTypeDescription() {return "TPP Rota Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

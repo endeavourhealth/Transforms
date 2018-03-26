@@ -40,7 +40,7 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRCtv3ToVersion2 Entry file ";}
+protected String getFileTypeDescription() {return "TPP Ctv3 Read Codes To Version2 Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}
