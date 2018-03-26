@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.admin;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;

@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.patient;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRChildAtRisk extends AbstractCsvParser {
+public class SREventLink extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRChildAtRisk.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SREventLink.class); 
 
-  public SRChildAtRisk(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+  public SREventLink(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
             super(serviceId, systemId, exchangeId, version, filePath,
                     TppCsvToFhirTransformer.CSV_FORMAT,
                     TppCsvToFhirTransformer.DATE_FORMAT,
@@ -25,15 +25,18 @@ public class SRChildAtRisk extends AbstractCsvParser {
             return new String[]{
                       "RowIdentifier",
                       "IDOrganisationVisibleTo",
-                      "DateAdded",
+                      "DateEventRecorded",
+                      "DateEvent",
                       "IDProfileEnteredBy",
-                      "ChildProtectionPlan",
-                      "DateRemoved",
-                      "IDProfileRemovedBy",
-                      "RemovalReason",
+                      "IDDoneBy",
+                      "TextualEventDoneBy",
+                      "IDOrganisationDoneAt",
+                      "IDEvent",
                       "IDPatient",
+                      "IDReferralIn",
                       "IDOrganisation",
-                      "RemovedData"
+                      "IDAppointment",
+                      "IDVisit"
                     
 
             };
@@ -41,20 +44,23 @@ public class SRChildAtRisk extends AbstractCsvParser {
         }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateAdded() { return super.getCell("DateAdded");};
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");};
  public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getChildProtectionPlan() { return super.getCell("ChildProtectionPlan");};
- public CsvCell getDateRemoved() { return super.getCell("DateRemoved");};
- public CsvCell getIDProfileRemovedBy() { return super.getCell("IDProfileRemovedBy");};
- public CsvCell getRemovalReason() { return super.getCell("RemovalReason");};
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
+ public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getIDAppointment() { return super.getCell("IDAppointment");};
+ public CsvCell getIDVisit() { return super.getCell("IDVisit");};
 
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRChildAtRisk Entry file ";}
+protected String getFileTypeDescription() {return "TPP SREventLink Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

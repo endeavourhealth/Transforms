@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.treatment;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRPrimaryCareMedication extends AbstractCsvParser {
+public class SRRepeatTemplate extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRPrimaryCareMedication.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SRRepeatTemplate.class); 
 
-  public SRPrimaryCareMedication(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+  public SRRepeatTemplate(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
             super(serviceId, systemId, exchangeId, version, filePath,
                     TppCsvToFhirTransformer.CSV_FORMAT,
                     TppCsvToFhirTransformer.DATE_FORMAT,
@@ -35,19 +35,19 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
                       "IDMultiLexPack",
                       "IDMultiLexDMD",
                       "NameOfMedication",
-                      "DateMedicationStart",
-                      "DateMedicationEnd",
+                      "DateMedicationTemplateStart",
+                      "DateMedicationTemplateEnd",
+                      "DateMedicationTemplateReview",
                       "MedicationDosage",
                       "MedicationQuantity",
-                      "IsRepeatMedication",
-                      "IsOtherMedication",
-                      "IsDentalMedication",
-                      "IsHospitalMedication",
-                      "IDRepeatTemplate",
+                      "MaxIssues",
+                      "CourseLengthPerIssue",
+                      "DrugStatus",
                       "IDReferralIn",
                       "IDEvent",
                       "IDPatient",
-                      "IDOrganisation"
+                      "IDOrganisation",
+                      "RemovedData"
                     
 
             };
@@ -65,24 +65,24 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
  public CsvCell getIDMultiLexPack() { return super.getCell("IDMultiLexPack");};
  public CsvCell getIDMultiLexDMD() { return super.getCell("IDMultiLexDMD");};
  public CsvCell getNameOfMedication() { return super.getCell("NameOfMedication");};
- public CsvCell getDateMedicationStart() { return super.getCell("DateMedicationStart");};
- public CsvCell getDateMedicationEnd() { return super.getCell("DateMedicationEnd");};
+ public CsvCell getDateMedicationTemplateStart() { return super.getCell("DateMedicationTemplateStart");};
+ public CsvCell getDateMedicationTemplateEnd() { return super.getCell("DateMedicationTemplateEnd");};
+ public CsvCell getDateMedicationTemplateReview() { return super.getCell("DateMedicationTemplateReview");};
  public CsvCell getMedicationDosage() { return super.getCell("MedicationDosage");};
  public CsvCell getMedicationQuantity() { return super.getCell("MedicationQuantity");};
- public CsvCell getIsRepeatMedication() { return super.getCell("IsRepeatMedication");};
- public CsvCell getIsOtherMedication() { return super.getCell("IsOtherMedication");};
- public CsvCell getIsDentalMedication() { return super.getCell("IsDentalMedication");};
- public CsvCell getIsHospitalMedication() { return super.getCell("IsHospitalMedication");};
- public CsvCell getIDRepeatTemplate() { return super.getCell("IDRepeatTemplate");};
+ public CsvCell getMaxIssues() { return super.getCell("MaxIssues");};
+ public CsvCell getCourseLengthPerIssue() { return super.getCell("CourseLengthPerIssue");};
+ public CsvCell getDrugStatus() { return super.getCell("DrugStatus");};
  public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
  public CsvCell getIDEvent() { return super.getCell("IDEvent");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRPrimaryCareMedication Entry file ";}
+protected String getFileTypeDescription() {return "TPP SRRepeatTemplate Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

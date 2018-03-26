@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.patient;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRDrugSensitivity extends AbstractCsvParser {
+public class SRImmunisation extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRDrugSensitivity.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SRImmunisation.class); 
 
-  public SRDrugSensitivity(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+  public SRImmunisation(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
             super(serviceId, systemId, exchangeId, version, filePath,
                     TppCsvToFhirTransformer.CSV_FORMAT,
                     TppCsvToFhirTransformer.DATE_FORMAT,
@@ -31,16 +31,20 @@ public class SRDrugSensitivity extends AbstractCsvParser {
                       "IDDoneBy",
                       "TextualEventDoneBy",
                       "IDOrganisationDoneAt",
-                      "DateStarted",
-                      "DateEnded",
-                      "FormulationSpecific",
-                      "IDDrugCode",
-                      "IDMultiLexAction",
-                      "IDReferralIn",
+                      "IDVaccination",
+                      "IDImmunisationContent",
+                      "Dose",
+                      "Location",
+                      "Method",
+                      "DateExpiry",
+                      "ImmsReadCode",
+                      "VaccPart",
+                      "VaccBatchNumber",
+                      "VaccAreaCode",
+                      "VaccinationStatus",
                       "IDEvent",
                       "IDPatient",
-                      "IDOrganisation",
-                      "RemovedData"
+                      "IDOrganisation"
                     
 
             };
@@ -54,21 +58,25 @@ public class SRDrugSensitivity extends AbstractCsvParser {
  public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
  public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
  public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getDateStarted() { return super.getCell("DateStarted");};
- public CsvCell getDateEnded() { return super.getCell("DateEnded");};
- public CsvCell getFormulationSpecific() { return super.getCell("FormulationSpecific");};
- public CsvCell getIDDrugCode() { return super.getCell("IDDrugCode");};
- public CsvCell getIDMultiLexAction() { return super.getCell("IDMultiLexAction");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
+ public CsvCell getIDVaccination() { return super.getCell("IDVaccination");};
+ public CsvCell getIDImmunisationContent() { return super.getCell("IDImmunisationContent");};
+ public CsvCell getDose() { return super.getCell("Dose");};
+ public CsvCell getLocation() { return super.getCell("Location");};
+ public CsvCell getMethod() { return super.getCell("Method");};
+ public CsvCell getDateExpiry() { return super.getCell("DateExpiry");};
+ public CsvCell getImmsReadCode() { return super.getCell("ImmsReadCode");};
+ public CsvCell getVaccPart() { return super.getCell("VaccPart");};
+ public CsvCell getVaccBatchNumber() { return super.getCell("VaccBatchNumber");};
+ public CsvCell getVaccAreaCode() { return super.getCell("VaccAreaCode");};
+ public CsvCell getVaccinationStatus() { return super.getCell("VaccinationStatus");};
  public CsvCell getIDEvent() { return super.getCell("IDEvent");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRDrugSensitivity Entry file ";}
+protected String getFileTypeDescription() {return "TPP SRImmunisation Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}

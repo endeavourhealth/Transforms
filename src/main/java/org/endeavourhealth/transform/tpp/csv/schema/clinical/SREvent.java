@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.treatment;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRImmunisation extends AbstractCsvParser {
+public class SREvent extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRImmunisation.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SREvent.class); 
 
-  public SRImmunisation(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+  public SREvent(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
             super(serviceId, systemId, exchangeId, version, filePath,
                     TppCsvToFhirTransformer.CSV_FORMAT,
                     TppCsvToFhirTransformer.DATE_FORMAT,
@@ -29,22 +29,21 @@ public class SRImmunisation extends AbstractCsvParser {
                       "DateEvent",
                       "IDProfileEnteredBy",
                       "IDDoneBy",
+                      "IDStaffMemberProfileRole",
                       "TextualEventDoneBy",
                       "IDOrganisationDoneAt",
-                      "IDVaccination",
-                      "IDImmunisationContent",
-                      "Dose",
-                      "Location",
-                      "Method",
-                      "DateExpiry",
-                      "ImmsReadCode",
-                      "VaccPart",
-                      "VaccBatchNumber",
-                      "VaccAreaCode",
-                      "VaccinationStatus",
-                      "IDEvent",
+                      "IDAuthorisedBy",
+                      "IDProfileAuthorisedBy",
+                      "ContactEventLocation",
+                      "ContactMethod",
+                      "EventIncomplete",
+                      "ClinicalEvent",
+                      "IDReferralIn",
                       "IDPatient",
-                      "IDOrganisation"
+                      "IDOrganisation",
+                      "IDTeam",
+                      "IDBranch",
+                      "RemovedData"
                     
 
             };
@@ -56,27 +55,26 @@ public class SRImmunisation extends AbstractCsvParser {
  public CsvCell getDateEvent() { return super.getCell("DateEvent");};
  public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
  public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
+ public CsvCell getIDStaffMemberProfileRole() { return super.getCell("IDStaffMemberProfileRole");};
  public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
  public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getIDVaccination() { return super.getCell("IDVaccination");};
- public CsvCell getIDImmunisationContent() { return super.getCell("IDImmunisationContent");};
- public CsvCell getDose() { return super.getCell("Dose");};
- public CsvCell getLocation() { return super.getCell("Location");};
- public CsvCell getMethod() { return super.getCell("Method");};
- public CsvCell getDateExpiry() { return super.getCell("DateExpiry");};
- public CsvCell getImmsReadCode() { return super.getCell("ImmsReadCode");};
- public CsvCell getVaccPart() { return super.getCell("VaccPart");};
- public CsvCell getVaccBatchNumber() { return super.getCell("VaccBatchNumber");};
- public CsvCell getVaccAreaCode() { return super.getCell("VaccAreaCode");};
- public CsvCell getVaccinationStatus() { return super.getCell("VaccinationStatus");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
+ public CsvCell getIDAuthorisedBy() { return super.getCell("IDAuthorisedBy");};
+ public CsvCell getIDProfileAuthorisedBy() { return super.getCell("IDProfileAuthorisedBy");};
+ public CsvCell getContactEventLocation() { return super.getCell("ContactEventLocation");};
+ public CsvCell getContactMethod() { return super.getCell("ContactMethod");};
+ public CsvCell getEventIncomplete() { return super.getCell("EventIncomplete");};
+ public CsvCell getClinicalEvent() { return super.getCell("ClinicalEvent");};
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getIDTeam() { return super.getCell("IDTeam");};
+ public CsvCell getIDBranch() { return super.getCell("IDBranch");};
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRImmunisation Entry file ";}
+protected String getFileTypeDescription() {return "TPP SREvent Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}
