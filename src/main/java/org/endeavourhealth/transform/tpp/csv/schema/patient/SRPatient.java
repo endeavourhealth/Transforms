@@ -39,6 +39,7 @@ public class SRPatient extends AbstractCsvParser {
                       "EmailAddress",
                       "TestPatient",
                       "SSRef",
+                      "SpineMatched",
                       "RemovedData"
                     
 
@@ -61,6 +62,7 @@ public class SRPatient extends AbstractCsvParser {
  public CsvCell getEmailAddress() { return super.getCell("EmailAddress");};
  public CsvCell getTestPatient() { return super.getCell("TestPatient");};
  public CsvCell getSSRef() { return super.getCell("SSRef");};
+ public CsvCell getSpineMatched() { return  super.getCell("SpineMatched");};
  public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
