@@ -7,7 +7,9 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
+import org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
@@ -131,7 +133,8 @@ public abstract class TppCsvToFhirTransformer {
         PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
 
         LOG.trace("Starting patient transforms");
-
+        SRPatientTransformer.transform(parsers, fhirResourceFiler,csvHelper);
+        PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         LOG.trace("Starting clinical transforms");
     }
