@@ -160,6 +160,12 @@ public class NameBuilder {
         updateDisplayName(sourceCells);
     }
 
+    public void addFullName(String fullName, CsvCell... sourceCells) {
+
+        name.setText(fullName);
+
+        auditNameValue("text", sourceCells);
+    }
 
     private void auditNameValue(String jsonSuffix, CsvCell... sourceCells) {
 
