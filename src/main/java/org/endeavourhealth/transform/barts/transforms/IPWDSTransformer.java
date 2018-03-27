@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -28,7 +27,6 @@ import java.util.UUID;
 
 public class IPWDSTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(IPWDSTransformer.class);
-    private static InternalIdDalI internalIdDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
@@ -58,10 +56,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        if (internalIdDAL == null) {
-            internalIdDAL = DalProvider.factoryInternalIdDal();
-        }
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPatientId();

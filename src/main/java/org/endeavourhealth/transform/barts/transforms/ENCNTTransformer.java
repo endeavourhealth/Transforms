@@ -7,7 +7,6 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -32,7 +31,6 @@ import java.util.UUID;
 public class ENCNTTransformer extends BartsBasisTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
-    private static InternalIdDalI internalIdDAL = null;
 
     /*
      *
@@ -76,10 +74,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        if (internalIdDAL == null) {
-            internalIdDAL = DalProvider.factoryInternalIdDal();
-        }
-
         boolean changeOfPatient = false;
         EpisodeOfCareBuilder episodeOfCareBuilder = null;
         CsvCell activeCell = parser.getActiveIndicator();
@@ -117,8 +111,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Retrieve or create EpisodeOfCare
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, null, csvHelper, fhirResourceFiler, internalIdDAL);
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
+            LOG.debug("episodeOfCare reference has chagned from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
+        }
 
         // Create new encounter
         if (encounterBuilder == null) {
@@ -157,7 +154,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Save visit-id to encounter-id link
         if (visitIdCell != null && !visitIdCell.isEmpty()) {
-            internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
+            csvHelper.saveInternalId(InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
         }
 
         //if (changeOfPatient) {
@@ -197,13 +194,13 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
-            String checkDest = internalIdDAL.getDestinationId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
+            String checkDest = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
             if (checkDest == null) {
-                internalIdDAL.insertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
+                csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
             } else {
                 if (checkDest.compareToIgnoreCase(episodeOfCareBuilder.getResourceId()) != 0) {
                     TransformWarnings.log(LOG, parser, "Encounter {} previously pointed to EoC {} but this has changed to {} in file {}", encounterIdCell.getString(), checkDest, episodeOfCareBuilder.getResourceId(), parser.getFilePath());
-                    internalIdDAL.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
+                    csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
                 }
             }
         }

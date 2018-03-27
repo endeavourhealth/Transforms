@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -32,7 +31,6 @@ import java.util.UUID;
 
 public class LOREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
-    private static InternalIdDalI internalIdDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
@@ -68,10 +66,6 @@ public class LOREFTransformer extends BartsBasisTransformer {
                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         //LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId().getString());
-
-        if (internalIdDAL == null) {
-            internalIdDAL = DalProvider.factoryInternalIdDal();
-        }
 
         ResourceId parentLocationResourceId = null;
         // Extract locations

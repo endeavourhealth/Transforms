@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -32,7 +31,6 @@ import java.util.UUID;
 
 public class IPEPITransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(IPEPITransformer.class);
-    private static InternalIdDalI internalIdDAL = null;
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
@@ -59,10 +57,6 @@ public class IPEPITransformer extends BartsBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-        if (internalIdDAL == null) {
-            internalIdDAL = DalProvider.factoryInternalIdDal();
-        }
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell activeCell = parser.getActiveIndicator();
@@ -114,8 +108,11 @@ public class IPEPITransformer extends BartsBasisTransformer {
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, null, csvHelper, fhirResourceFiler, internalIdDAL);
+        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
+            LOG.debug("episodeOfCare reference has chagned from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
+        }
 
         // Create new encounter
         if (encounterBuilder == null) {

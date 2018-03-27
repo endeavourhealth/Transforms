@@ -8,9 +8,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -38,7 +36,6 @@ import java.util.UUID;
 public class ENCINFTransformer extends BartsBasisTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ENCINFTransformer.class);
-    private static InternalIdDalI internalIdDAL = null;
 
     /*
      *

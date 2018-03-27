@@ -4,8 +4,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
@@ -34,9 +32,6 @@ import java.util.List;
 public class PPATITransformer extends BartsBasisTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
-
-    private static InternalIdDalI internalIdDalI = null;
-
     private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
@@ -66,19 +61,13 @@ public class PPATITransformer extends BartsBasisTransformer {
                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
 
-        if (internalIdDalI == null) {
-            internalIdDalI = DalProvider.factoryInternalIdDal();
-        }
-
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
         CsvCell mrnCell = parser.getLocalPatientId();
 
         //store the MRN/PersonID mapping in BOTH directions
-        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
-                                    mrnCell.getString(), millenniumPersonIdCell.getString());
+        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, mrnCell.getString(), millenniumPersonIdCell.getString());
 
-        internalIdDalI.upsertRecord(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN,
-                                    millenniumPersonIdCell.getString(), mrnCell.getString());
+        csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, millenniumPersonIdCell.getString(), mrnCell.getString());
 
         CsvCell millenniumPersonId = parser.getMillenniumPersonId();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);

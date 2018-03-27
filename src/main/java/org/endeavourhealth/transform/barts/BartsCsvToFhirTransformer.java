@@ -7,6 +7,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
@@ -69,6 +70,7 @@ public abstract class BartsCsvToFhirTransformer {
         //admin transformers
         CVREFTransformer.transform(version, createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         LOREFTransformer.transform(version, createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        LocationResourceCache.fileLocationResources(fhirResourceFiler);
         PRSNLREFTransformer.transform(version, createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
 
         //patient transformers
@@ -91,7 +93,7 @@ public abstract class BartsCsvToFhirTransformer {
         IPEPITransformer.transform(version, createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         IPWDSTransformer.transform(version, createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         //ENCINFTransformer.transform(version, createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        
+
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
         //clinical transformers
