@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Enumerations;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -181,6 +182,8 @@ public class BartsBasisTransformer extends BasisTransformer{
 
     private static EpisodeOfCareBuilder createNewEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell personIdCell, UUID personUUID, CsvCell finIdCell, CsvCell encounterIdCell) {
         EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder();
+
+        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
 
         if (episodeIdentiferCell != null && !episodeIdentiferCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCareBuilder);

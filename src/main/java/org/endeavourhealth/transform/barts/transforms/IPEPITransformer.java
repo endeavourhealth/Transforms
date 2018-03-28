@@ -18,6 +18,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class IPEPITransformer extends BartsBasisTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
         if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
-            LOG.debug("episodeOfCare reference has chagned from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
+            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
         }
 
         // Create new encounter
@@ -126,18 +127,36 @@ public class IPEPITransformer extends BartsBasisTransformer {
 
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-        // Maintain Encounter
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
         if (beginDate != null) {
+            // Start date
             encounterBuilder.setPeriodStart(beginDate);
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null || episodeOfCareBuilder.getRegistrationStartDate().after(beginDate)) {
+
+            if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
                 episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
             }
-        }
-        if (endDate != null) {
-            encounterBuilder.setPeriodEnd(endDate);
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null || episodeOfCareBuilder.getRegistrationEndDate().before(endDate)) {
-                episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
+
+            // End date
+            if (endDate != null) {
+                encounterBuilder.setPeriodEnd(endDate);
+
+                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                    episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, endDateCell);
+                }
+
+            } else if (beginDate.before(new Date())) {
+                encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, beginDateCell);
+            } else {
+                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, beginDateCell);
+            }
+        } else {
+            encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
             }
         }
 

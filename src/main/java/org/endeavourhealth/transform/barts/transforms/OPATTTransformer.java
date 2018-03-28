@@ -120,7 +120,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
         if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
-            LOG.debug("episodeOfCare reference has chagned from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
+            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
         }
 
         // Create new encounter
@@ -145,6 +145,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
             if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
                 episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
             }
 
             // End date
@@ -164,9 +165,13 @@ public class OPATTTransformer extends BartsBasisTransformer {
             }
         } else {
             encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
+            if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+            }
         }
 
         // EoC Status (for some reason it can contain just spaces)
+        // Outcome = 1 means discharged from care
         if (outcomeCell != null && outcomeCell.getString().trim().length() > 0 && outcomeCell.getInt() == 1) {
             episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
         }

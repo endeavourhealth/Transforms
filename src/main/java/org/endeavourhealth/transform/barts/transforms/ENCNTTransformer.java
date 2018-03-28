@@ -114,7 +114,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
         if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
-            LOG.debug("episodeOfCare reference has chagned from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
+            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
         }
 
         // Create new encounter
