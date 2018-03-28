@@ -45,7 +45,7 @@ public class SRStaffMemberProfileTransformer {
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell orgID = parser.getIDOrganisation();
-        Reference organisationReference = csvHelper.createOrganisationReference(orgID.getString());
+        Reference organisationReference = csvHelper.createOrganisationReference(orgID);
         roleBuilder.setRoleManagingOrganisation(organisationReference, orgID);
 
         CsvCell roleStart = parser.getDateEmploymentStart();

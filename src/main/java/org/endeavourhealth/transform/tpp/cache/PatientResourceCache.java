@@ -58,7 +58,7 @@ public class PatientResourceCache {
 
         for (Long rowId: PatientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
-            BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
+            fhirResourceFiler.savePatientResource(null, patientBuilder);
         }
 
         //clear down as everything has been saved

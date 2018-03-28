@@ -41,6 +41,12 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("patient.reference", sourceCells);
     }
 
+    public void setStatus(ReferralRequest.ReferralStatus status, CsvCell... sourceCells) {
+        this.referralRequest.setStatus(status);
+
+        auditValue("status", sourceCells);
+    }
+
     public void setDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.referralRequest.setDateElement(dateTimeType);
 

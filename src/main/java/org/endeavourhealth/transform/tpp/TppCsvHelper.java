@@ -5,9 +5,11 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -19,7 +21,6 @@ import java.util.UUID;
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvHelper.class);
 
-    //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
@@ -41,9 +42,36 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    public Reference createOrganisationReference(String organizationGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    public Reference createOrganisationReference(CsvCell organizationGuid) {
+        return ReferenceHelper.createReference(ResourceType.Organization, createUniqueId(organizationGuid, null));
     }
+
+    public Reference createPatientReference(CsvCell patientGuid) {
+        return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
+    }
+
+    public Reference createPractitionerReference(CsvCell practitionerGuid) {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, createUniqueId(practitionerGuid, null));
+    }
+
+    public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
+        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
+    }
+
+    public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
+        String resourceId = createUniqueId(patientGuid, sourceGuid);
+        resourceBuilder.setId(resourceId, patientGuid, sourceGuid);
+    }
+
+    public static String createUniqueId(CsvCell patientGuid, CsvCell sourceGuid) {
+        if (sourceGuid == null) {
+            return patientGuid.getString();
+        } else {
+            return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
+        }
+    }
+
+
 
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
 

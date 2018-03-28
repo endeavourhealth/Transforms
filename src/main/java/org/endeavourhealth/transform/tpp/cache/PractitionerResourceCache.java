@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.tpp.cache;
 
-import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
@@ -41,7 +40,7 @@ public class PractitionerResourceCache {
 
         for (Long staffMemberId: practitionerBuildersById.keySet()) {
             PractitionerBuilder practitionerBuilder = practitionerBuildersById.get(staffMemberId);
-            BasisTransformer.saveAdminResource(fhirResourceFiler, null, practitionerBuilder);
+            fhirResourceFiler.saveAdminResource( null, practitionerBuilder);
         }
 
         //clear down as everything has been saved
