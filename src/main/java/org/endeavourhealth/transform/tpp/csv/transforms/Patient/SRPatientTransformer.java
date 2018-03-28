@@ -44,6 +44,7 @@ public class SRPatientTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
+        CsvCell nhsNumberCell = parser.getNHSNumber();
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
             return;
@@ -64,7 +65,7 @@ public class SRPatientTransformer {
         // non-UK patients.
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
-        CsvCell nhsNumberCell = parser.getNHSNumber();
+
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
