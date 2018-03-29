@@ -229,6 +229,12 @@ public class EncounterBuilder extends ResourceBuilderBase
         return this.encounter.getPeriod();
     }
 
+    public void setDuration(Duration value, CsvCell... sourceCells) {
+        this.encounter.setLength(value);
+
+        auditValue("length", sourceCells);
+    }
+
     /*public void setEncounterSourceTerm(String term, CsvCell... sourceCells) {
         getOrCreateCodeableConcept(null).setText(term);
 

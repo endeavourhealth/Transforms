@@ -38,6 +38,13 @@ public class SRReferralOutStatusDetailsTransformer {
         ReferralRequestBuilder referralRequestBuilder
                 = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
 
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        CsvCell deleted = parser.getRemovedData();
+        if (deleted.getBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
+            return;
+        }
+
         CsvCell referralStatus = parser.getStatusOfReferralOut();
         if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {
 

@@ -129,7 +129,6 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setParentResource(eventReference, referralParentEvent);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), referralRequestBuilder);
     }
 
     private static ReferralPriority convertPriority(String priority) throws Exception {
