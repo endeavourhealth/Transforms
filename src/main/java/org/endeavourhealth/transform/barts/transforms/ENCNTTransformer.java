@@ -84,6 +84,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         CsvCell finIdCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
+        CsvCell currentMainSpecialtyMillenniumCodeCell = parser.getCurrentMainSpecialtyMillenniumCode();
 
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
         if (encounterBuilder == null && !activeCell.getIntAsBoolean()) {
@@ -294,6 +295,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Location
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
+
+        // TODO
+        if (currentMainSpecialtyMillenniumCodeCell != null && !currentMainSpecialtyMillenniumCodeCell.isEmpty()) {
+            //Reference ref = ReferenceHelper.
+            //encounterBuilder.setServiceProvider(???,currentMainSpecialtyMillenniumCodeCell);
+        }
 
         //cache our encounter details so subsequent transforms can use them
         csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
