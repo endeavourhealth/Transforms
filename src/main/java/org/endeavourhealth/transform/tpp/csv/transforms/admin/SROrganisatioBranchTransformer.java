@@ -53,6 +53,14 @@ public class SROrganisatioBranchTransformer {
 
         LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
+        CsvCell obsoleteCell  = parser.getBranchObsolete();
+        CsvCell deleted = parser.getRemovedData();
+
+        if (obsoleteCell.getBoolean() || deleted.getBoolean() ) {
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
+            return;
+        }
+
         CsvCell nameCell = parser.getBranchName();
         if (!nameCell.getString().isEmpty()) {
             locationBuilder.setName(nameCell.getString());
