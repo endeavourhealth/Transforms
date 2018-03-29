@@ -81,7 +81,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell arrivalDateCell = parser.getArrivalDateTime();
+        CsvCell admissionDateTimeCell = parser.getAdmissionDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
         CsvCell endDateCell = parser.getCheckOutDateTime();
         CsvCell currentLocationCell = parser.getLastLocCode();
@@ -170,7 +170,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, csvHelper, fhirResourceFiler);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(encounterBuilder.getEpisodeOfCare().get(0).getReference()) != 0) {
+        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
             LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
         }
 
@@ -221,6 +221,12 @@ public class AEATTTransformer extends BartsBasisTransformer {
             if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
                 episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
             }
+        }
+
+        // Check whether to Finish EpisodeOfCare
+        // If the patient has left AE (checkout-time/enddatetime) and not been admitted (admittedDateTime empty) complete EpisodeOfCare
+        if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (admissionDateTimeCell == null && admissionDateTimeCell.getString().trim().length() == 0)) {
+            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, endDateCell);
         }
 
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
