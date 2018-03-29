@@ -61,8 +61,7 @@ public class SRPatientTransformer {
             }
             return;
         }
-        // Not sure what RowId is but we an use it as the unique key for the cache. We might get dupes on NHS no or missing for
-        // non-UK patients.
+
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
 
