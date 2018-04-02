@@ -296,10 +296,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // Location
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
-        // TODO
         if (currentMainSpecialtyMillenniumCodeCell != null && !currentMainSpecialtyMillenniumCodeCell.isEmpty()) {
-            //Reference ref = ReferenceHelper.
-            //encounterBuilder.setServiceProvider(???,currentMainSpecialtyMillenniumCodeCell);
+            ResourceId specialtyResourceid = getOrCreateSpecialtyResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentMainSpecialtyMillenniumCodeCell.getString());
+            if (specialtyResourceid != null) {
+                encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, specialtyResourceid.getResourceId().toString()),currentMainSpecialtyMillenniumCodeCell);
+            }
         }
 
         //cache our encounter details so subsequent transforms can use them
