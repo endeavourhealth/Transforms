@@ -43,17 +43,23 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     public Reference createOrganisationReference(CsvCell organizationGuid) {
-        return ReferenceHelper.createReference(ResourceType.Organization, createUniqueId(organizationGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
-
+    public Reference createLocationReference(CsvCell locationGuid) {
+        return ReferenceHelper.createReference(ResourceType.Location, locationGuid.getString());
+    }
     public Reference createPatientReference(CsvCell patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
-
     public Reference createPractitionerReference(CsvCell practitionerGuid) {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, createUniqueId(practitionerGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
-
+    public Reference createScheduleReference(CsvCell scheduleGuid) {
+        return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
+    }
+    public Reference createSlotReference(CsvCell slotGuid) {
+        return ReferenceHelper.createReference(ResourceType.Slot, slotGuid.getString());
+    }
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }

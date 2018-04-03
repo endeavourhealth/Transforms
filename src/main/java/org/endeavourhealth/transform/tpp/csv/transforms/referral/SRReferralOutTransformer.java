@@ -73,7 +73,7 @@ public class SRReferralOutTransformer {
         CsvCell referralType = parser.getTypeOfReferral();
         if (!referralType.isEmpty() && referralType.getLong()>0) {
 
-            //TODO:  lookup SRConfigureListOption then convert
+            //TODO:  lookup SRMapping table then convert
 
             ReferralType type = convertReferralType(referralType.getString());
             if (type != null) {
@@ -152,7 +152,7 @@ public class SRReferralOutTransformer {
 
     private static Boolean recipientIsPerson (String recipientTypeId) {
 
-        //TODO  case GMC etc.
+        //TODO  case GMC etc. Lookup via SRMapping table
 
         return true;
     }

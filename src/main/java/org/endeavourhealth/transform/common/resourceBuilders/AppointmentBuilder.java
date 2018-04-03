@@ -57,6 +57,12 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditValue("minutesDuration", sourceCells);
     }
 
+    public void setComments(String comments, CsvCell... sourceCells) {
+        this.appointment.setComment(comments);
+
+        auditValue("comments", sourceCells);
+    }
+
     public void addSlot(Reference slotReference, CsvCell... sourceCells) {
         this.appointment.addSlot(slotReference);
 
