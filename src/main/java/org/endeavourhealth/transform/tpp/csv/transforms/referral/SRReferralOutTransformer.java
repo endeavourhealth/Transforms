@@ -1,10 +1,14 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.referral;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.terminology.SnomedCode;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -13,6 +17,7 @@ import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
+import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
 
@@ -128,10 +133,17 @@ public class SRReferralOutTransformer {
             }
         }
 
+        //code is Ctv3 so translate to Snomed
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
-        //TODO: Ctv3 mapped to Snomed
         if (!referralPrimaryDiagnosisCode.isEmpty()) {
-
+            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
+            if (snomedCode != null) {
+                CodeableConcept codeableConcept
+                        = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT,
+                                                                        snomedCode.getTerm(),
+                                                                        snomedCode.getConceptCode());
+                referralRequestBuilder.setReason(codeableConcept, referralPrimaryDiagnosisCode);
+            }
         }
 
         CsvCell referralRecipientType = parser.getRecipientIDType();
