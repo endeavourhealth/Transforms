@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.referral;
 
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -73,11 +74,12 @@ public class SRReferralOutTransformer {
         CsvCell referralType = parser.getTypeOfReferral();
         if (!referralType.isEmpty() && referralType.getLong()>0) {
 
-            //TODO:  lookup SRMapping table then convert
-
-            ReferralType type = convertReferralType(referralType.getString());
-            if (type != null) {
-                referralRequestBuilder.setType(type, referralType);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(referralType.getLong());
+            if(!tppMappingRef.getMappedTerm().isEmpty()) {
+                ReferralType type = convertReferralType(tppMappingRef.getMappedTerm());
+                if (type != null) {
+                    referralRequestBuilder.setType(type, referralType);
+                }
             }
         }
 
@@ -106,13 +108,13 @@ public class SRReferralOutTransformer {
         }
 
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
-        //TODO: Read mapped to Ctv3
+        //TODO: Ctv3 mapped to Snomed
 
         CsvCell referralRecipientType = parser.getRecipientIDType();
         if (!referralRecipientType.isEmpty()) {
 
             CsvCell referralRecipientId = parser.getRecipientID();
-            if (recipientIsPerson(referralRecipientType.getString())) {
+            if (recipientIsPerson(referralRecipientType.getLong(), csvHelper)) {
                 Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
                 referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
             } else {
@@ -150,9 +152,14 @@ public class SRReferralOutTransformer {
 //        }
     }
 
-    private static Boolean recipientIsPerson (String recipientTypeId) {
+    private static Boolean recipientIsPerson (Long recipientTypeId, TppCsvHelper csvHelper) throws Exception {
 
-        //TODO  case GMC etc. Lookup via SRMapping table
+        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeId);
+        String term = tppMappingRef.getMappedTerm();
+
+        if (term.toLowerCase().startsWith("organisation")) {
+            return false;
+        }
 
         return true;
     }

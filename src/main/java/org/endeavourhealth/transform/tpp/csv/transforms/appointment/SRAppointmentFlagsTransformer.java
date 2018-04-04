@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -38,10 +40,13 @@ public class SRAppointmentFlagsTransformer {
 
         //flags could range from Interpretor Required to Transport Booked so add the detail to the appointment comments
         CsvCell appointmentFlag = parser.getFlag();
-        if (!appointmentFlag.isEmpty()) {
-            String flagMapping = "TODO: lookup SRMapping table";
+        if (!appointmentFlag.isEmpty() && appointmentFlag.getLong()>0) {
 
-            appointmentBuilder.setComments(flagMapping);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentFlag.getLong());
+            String flagMapping = tppMappingRef.getMappedTerm();
+            if (!Strings.isNullOrEmpty(flagMapping)) {
+                appointmentBuilder.setComments(flagMapping);
+            }
         }
     }
 }

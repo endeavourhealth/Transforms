@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -92,9 +93,10 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell appointmentStatus = parser.getAppointmentStatus();
-        if (!appointmentStatus.isEmpty()) {
-            //TODO:  lookup SRMapping table then convert
-            String statusTerm = "TODO";
+        if (!appointmentStatus.isEmpty() && appointmentStatus.getLong()>0) {
+
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong());
+            String statusTerm = tppMappingRef.getMappedTerm();
             Appointment.AppointmentStatus status = convertAppointmentStatus (statusTerm);
             appointmentBuilder.setStatus(status, appointmentStatus);
         }
