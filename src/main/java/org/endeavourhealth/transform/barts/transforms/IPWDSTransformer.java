@@ -74,6 +74,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
+            LOG.debug("wardStayPeriod - from " + beginDate.toString());
         }
         Date endDate = null;
         if (endDateCell != null && !endDateCell.isEmpty()) {
@@ -82,8 +83,8 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 endDate = formatBulk.parse(endDateCell.getString());
             }
+            LOG.debug("wardStayPeriod - to " + endDate.toString());
         }
-        LOG.debug("wardStayPeriod - from " + beginDate.toString() + " to " + endDate.toString());
         Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 
         // get the associated encounter
