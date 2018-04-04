@@ -83,6 +83,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
                 endDate = formatBulk.parse(endDateCell.getString());
             }
         }
+        LOG.debug("wardStayPeriod - from " + beginDate.toString() + " to " + endDate.toString());
         Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 
         // get the associated encounter
@@ -112,15 +113,15 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         if (bedLocationIdCell != null && !bedLocationIdCell.isEmpty() && bedLocationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedLocationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, bedLocationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, bedLocationIdCell, beginDateCell, endDateCell);
         } else if (roomLocationIdCell != null && !roomLocationIdCell.isEmpty() && roomLocationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomLocationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, roomLocationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, roomLocationIdCell, beginDateCell, endDateCell);
         } else if (locationIdCell != null && !locationIdCell.isEmpty() && locationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, locationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, locationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, locationIdCell, beginDateCell, endDateCell);
         } else {
             TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
         }
