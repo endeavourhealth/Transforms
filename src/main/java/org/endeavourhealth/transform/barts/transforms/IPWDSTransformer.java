@@ -101,19 +101,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Delete existing encounter ? - Assuming this will be signaled in ENCNT
-        /*
-        if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
-        }*/
-
-        // Organisation
-        //Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        //ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
         // Location
         UUID locationResourceUUID = null;
 
@@ -137,8 +124,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         } else {
             TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
         }
-
-
 
         if (LOG.isDebugEnabled()) {
             //LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));

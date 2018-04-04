@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.AddressConverter;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -89,8 +90,10 @@ public class AEATTTransformer extends BartsBasisTransformer {
         CsvCell triageStartCell = parser.getTriageStartDateTime();
         CsvCell triageEndCell = parser.getTriageCompleteDateTime();
         CsvCell triagepersonIdCell = parser.getTriagePersonId();
-        CsvCell firstAssessmentDateCell = parser.getFirstAssessDateTime();
-        CsvCell conclusionDateCell =parser.getConclusionDateTime();
+        CsvCell hcpFirstAssignedPersonIdCell = parser.getHcpFirstAssignedPersonId();
+        CsvCell firstSpecPersonIdCell = parser.getFirstSpecPersonId();
+        CsvCell respHcpPersonIdCell = parser.getRespHcpPersonId();
+        CsvCell referralPersonIdCell = parser.getReferralPersonId();
 
         // Encounter start and end
         Date beginDate = null;
@@ -126,30 +129,6 @@ public class AEATTTransformer extends BartsBasisTransformer {
                 triageEndDate = formatBulk.parse(triageEndCell.getString());
             }
         }
-        // Assessment start and end
-        Date assessmentBeginDate = null;
-        if (triageStartCell != null && !triageStartCell.isEmpty()) {
-            try {
-                assessmentBeginDate = formatDaily.parse(triageStartCell.getString());
-            } catch (ParseException ex) {
-                assessmentBeginDate = formatBulk.parse(triageStartCell.getString());
-            }
-        }
-        Date assessmentEndDate = null;
-        if (triageEndCell != null && !triageEndCell.isEmpty()) {
-            try {
-                assessmentEndDate = formatDaily.parse(triageEndCell.getString());
-            } catch (ParseException ex) {
-                assessmentEndDate = formatBulk.parse(triageEndCell.getString());
-            }
-        }
-
-        /*
-        if (personIdCell != null) {
-            LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is " + personIdCell.getString());
-        } else {
-            LOG.debug("Current line " + parser.getCurrentLineNumber() + " personId is null");
-        }*/
 
         // Patient
         boolean changeOfPatient = false;
@@ -167,12 +146,18 @@ public class AEATTTransformer extends BartsBasisTransformer {
             return;
         }
 
+        // Organisation
+        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
         if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
             LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
         }
+
+        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, null);
@@ -233,37 +218,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-        //We have a number of potential events in the patient journey through A&E. We can't map all the states.
-
-        // Triage
-        /*
-        if (triageStartCell != null) {
-            LOG.debug("triageStartCell=" + triageStartCell.getString());
-        } else {
-            LOG.debug("triageStartCell=null");
-        }
-        if (triageEndCell != null) {
-            LOG.debug("triageEndCell=" + triageEndCell.getString());
-        } else {
-            LOG.debug("triageEndCell=null");
-        }
-        if (triagepersonIdCell != null) {
-            LOG.debug("triagepersonIdCell=" + triagepersonIdCell.getString());
-        } else {
-            LOG.debug("triagepersonIdCell=null");
-        }
-
-
-        if (triageBeginDate == null) {
-            encState = Encounter.EncounterState.PLANNED;
-        } else if (triageEndDate == null) {
-            encState = Encounter.EncounterState.INPROGRESS;
-        } else {
-            encState = Encounter.EncounterState.FINISHED;
-        }
-        encounterBuilder.setStatus(encState, triageBeginDate, triageEndDate, triageStartCell, triageEndCell);
-        */
-
+        // Triage person
         if (triagepersonIdCell != null && !triagepersonIdCell.isEmpty() && triagepersonIdCell.getLong() > 0) {
             ResourceId triagePersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, triagepersonIdCell);
             if (triagePersonResourceId != null) {
@@ -277,28 +232,37 @@ public class AEATTTransformer extends BartsBasisTransformer {
             }
         }
 
-        //  First medical assessment to conclusion
-        /*
-        if (firstAssessmentDateCell != null) {
-            LOG.debug("firstAssessmentDateCell=" + firstAssessmentDateCell.getString());
-        } else {
-            LOG.debug("firstAssessmentDateCell=null");
-        }
-        if (conclusionDateCell != null) {
-            LOG.debug("conclusionDateCell=" + conclusionDateCell.getString());
-        } else {
-            LOG.debug("conclusionDateCell=null");
+        if (hcpFirstAssignedPersonIdCell != null && !hcpFirstAssignedPersonIdCell.isEmpty() && hcpFirstAssignedPersonIdCell.getLong() > 0) {
+            ResourceId hcpFirstAssignedResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, hcpFirstAssignedPersonIdCell);
+            if (hcpFirstAssignedResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, hcpFirstAssignedResourceId.getResourceId().toString());
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.ATTENDER,  true, hcpFirstAssignedPersonIdCell);
+            }
         }
 
-        if (assessmentBeginDate == null) {
-            encState = Encounter.EncounterState.PLANNED;
-        } else if (assessmentEndDate == null) {
-            encState = Encounter.EncounterState.INPROGRESS;
-        } else {
-            encState = Encounter.EncounterState.FINISHED;
+        if (firstSpecPersonIdCell != null && !firstSpecPersonIdCell.isEmpty() && firstSpecPersonIdCell.getLong() > 0) {
+            ResourceId firstSpecResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, firstSpecPersonIdCell);
+            if (firstSpecResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, firstSpecResourceId.getResourceId().toString());
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.PRIMARY_PERFORMER,  true, firstSpecPersonIdCell);
+            }
         }
-        encounterBuilder.setStatus(encState, assessmentBeginDate, assessmentEndDate, firstAssessmentDateCell, conclusionDateCell);
-        */
+
+        if (respHcpPersonIdCell != null && !respHcpPersonIdCell.isEmpty() && respHcpPersonIdCell.getLong() > 0) {
+            ResourceId respHcpResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, respHcpPersonIdCell);
+            if (respHcpResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, respHcpResourceId.getResourceId().toString());
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.CONSULTANT,  true, respHcpPersonIdCell);
+            }
+        }
+
+        if (referralPersonIdCell != null && !referralPersonIdCell.isEmpty() && referralPersonIdCell.getLong() > 0) {
+            ResourceId referralResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, referralPersonIdCell);
+            if (referralResourceId != null) {
+                Reference ref = ReferenceHelper.createReference(ResourceType.Practitioner, referralResourceId.getResourceId().toString());
+                encounterBuilder.addParticipant(ref, EncounterParticipantType.REFERRER,  true, referralPersonIdCell);
+            }
+        }
 
         // Location
         if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {

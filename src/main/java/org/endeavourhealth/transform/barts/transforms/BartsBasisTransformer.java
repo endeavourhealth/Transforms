@@ -165,15 +165,26 @@ public class BartsBasisTransformer extends BasisTransformer{
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 newEoCCreated = true;
             }
+
         } else if (finIdCellString != null) {
             LOG.debug("Search using FINNo");
             // Episode-id not present - use FIN NO
+
             FINalternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCellString);
             if (FINalternateEpisodeUUID == null) {
-                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, finIdCell, null);
-                episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
-                EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
-                newEoCCreated = true;
+                // Check if encounter was previously saved using encounter id
+                encounterAlternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCellString);
+                if (encounterAlternateEpisodeUUID != null) {
+                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(encounterAlternateEpisodeUUID));
+                }
+
+                if(episodeOfCareBuilder == null) {
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, finIdCell, null);
+                    episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
+                    EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
+                    newEoCCreated = true;
+                }
+
             } else {
                 episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(FINalternateEpisodeUUID));
                 if (episodeOfCareBuilder == null) {
@@ -183,6 +194,7 @@ public class BartsBasisTransformer extends BasisTransformer{
                     newEoCCreated = true;
                 }
             }
+
         } else {
             LOG.debug("Search using EncounterId");
             // Neither Episode-id nor FIN No present - use encounter-id
@@ -210,6 +222,7 @@ public class BartsBasisTransformer extends BasisTransformer{
             csvHelper.saveInternalId(InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCellString, episodeOfCareBuilder.getResourceId());
         }
         csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCellString, episodeOfCareBuilder.getResourceId());
+
         return episodeOfCareBuilder;
     }
 
