@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.referral;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -58,17 +60,20 @@ public class SRReferralOutTransformer {
         }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-
-        CsvCell requestedByStaff = parser.getIDDoneBy();
         if (!recordedBy.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(requestedByStaff);
-            referralRequestBuilder.setRequester(practitionerReference, recordedBy);
+            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
+            //Reference staffReference = csvHelper.createPractitionerReference("TODO");
+            //referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
         }
 
+        CsvCell requestedByStaff = parser.getIDDoneBy();
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
-        if (!requestedByOrg.isEmpty()) {
-            //TODO: there can only be a single requester
+        if (!requestedByStaff.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(requestedByStaff);
+            referralRequestBuilder.setRequester(practitionerReference, requestedByStaff);
+        } else if (!requestedByOrg.isEmpty()) {
+            Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
+            referralRequestBuilder.setRequester(orgReference, requestedByOrg);
         }
 
         CsvCell referralType = parser.getTypeOfReferral();
@@ -79,36 +84,55 @@ public class SRReferralOutTransformer {
                 ReferralType type = convertReferralType(tppMappingRef.getMappedTerm());
                 if (type != null) {
                     referralRequestBuilder.setType(type, referralType);
+                } else {
+                    referralRequestBuilder.setTypeFreeText(tppMappingRef.getMappedTerm(), referralType);
                 }
             }
         }
 
         CsvCell reason = parser.getReason();
         if (!reason.isEmpty() && reason.getLong()>0) {
-            //TODO:  lookup SRConfigureListOption
+
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong());
+            if (tppConfigListOption != null) {
+                String referralReason = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(referralReason)) {
+                    referralRequestBuilder.setReasonFreeText(referralReason, reason);
+                }
+            }
         }
 
         CsvCell serviceOffered = parser.getServiceOffered();
         if (!serviceOffered.isEmpty() && serviceOffered.getLong()>0) {
-            //TODO:  lookup SRConfigureListOption
-        }
 
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(serviceOffered.getLong());
+            if (tppConfigListOption != null) {
+                String referralServiceOffered = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(referralServiceOffered)) {
+                    referralRequestBuilder.setServiceRequestedFreeText(referralServiceOffered, serviceOffered);
+                }
+            }
+        }
 
         CsvCell referralPriority = parser.getUrgency();
         if (!referralPriority.isEmpty()) {
 
-            //TODO:  lookup SRConfigureListOption
-
-            ReferralPriority priority = convertPriority(referralPriority.getString());
-            if (priority != null) {
-                referralRequestBuilder.setPriority(priority, referralPriority);
-            } else {
-                referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralType.getLong());
+            if (tppConfigListOption != null) {
+                ReferralPriority priority = convertPriority(tppConfigListOption.getListOptionName());
+                if (priority != null) {
+                    referralRequestBuilder.setPriority(priority, referralPriority);
+                } else {
+                    referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
+                }
             }
         }
 
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
         //TODO: Ctv3 mapped to Snomed
+        if (!referralPrimaryDiagnosisCode.isEmpty()) {
+
+        }
 
         CsvCell referralRecipientType = parser.getRecipientIDType();
         if (!referralRecipientType.isEmpty()) {
@@ -126,30 +150,30 @@ public class SRReferralOutTransformer {
         CsvCell referralParentEvent = parser.getIDEvent();
         if (!referralParentEvent.isEmpty()) {
 
-            //TODO: how get event type to create reference, assume Problem ?
+            //TODO: how get event type to create reference (pre-transformer?), assume Problem ?
             Reference eventReference = csvHelper.createConditionReference (referralParentEvent, patientId);
             referralRequestBuilder.setParentResource(eventReference, referralParentEvent);
         }
 
     }
 
-    private static ReferralPriority convertPriority(String priority) throws Exception {
+    private static ReferralPriority convertPriority(String priority) {
 
-//        if (urgency.equalsIgnoreCase("Routine")) {
-//            return ReferralPriority.ROUTINE;
-//
-//        } else if (urgency.equalsIgnoreCase("Urgent")) {
-//            return ReferralPriority.URGENT;
-//
-//        } else if (urgency.equalsIgnoreCase("2 Week Wait")) {
-//            return ReferralPriority.TWO_WEEK_WAIT;
-//
-//        } else if (urgency.equalsIgnoreCase("Soon")) {
-//            return ReferralPriority.SOON;
-//
-//        } else {
+        if (priority.equalsIgnoreCase("routine")) {
+            return ReferralPriority.ROUTINE;
+
+        } else if (priority.equalsIgnoreCase("urgent")) {
+            return ReferralPriority.URGENT;
+
+        } else if (priority.equalsIgnoreCase("2 week wait")) {
+            return ReferralPriority.TWO_WEEK_WAIT;
+
+        } else if (priority.equalsIgnoreCase("soon")) {
+            return ReferralPriority.SOON;
+
+        } else {
             return null;
-//        }
+        }
     }
 
     private static Boolean recipientIsPerson (Long recipientTypeId, TppCsvHelper csvHelper) throws Exception {
@@ -164,7 +188,7 @@ public class SRReferralOutTransformer {
         return true;
     }
 
-    private static ReferralType convertReferralType(String type) throws Exception {
+    private static ReferralType convertReferralType(String type) {
 
         if (type.equalsIgnoreCase("Unknown")) {
             return ReferralType.UNKNOWN;

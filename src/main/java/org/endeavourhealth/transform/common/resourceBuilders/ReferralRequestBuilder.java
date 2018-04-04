@@ -62,6 +62,12 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
     public void setDescription(String notes, CsvCell... sourceCells) {
         this.referralRequest.setDescription(notes);
+
+        auditValue("description", sourceCells);
+    }
+
+    public String getDescription() {
+        return this.referralRequest.getDescription();
     }
 
     public void setRecordedBy(Reference practitionerReference, CsvCell... sourceCells) {
@@ -124,6 +130,20 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest.setPriority(codeableConcept);
 
         auditValue("priority.text", sourceCells);
+    }
+
+    public void setReasonFreeText(String freeText, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
+        this.referralRequest.setReason(codeableConcept);
+
+        auditValue("reason.text", sourceCells);
+    }
+
+    public void setServiceRequestedFreeText(String freeText, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
+        this.referralRequest.addServiceRequested(codeableConcept);
+
+        auditValue("serviceRequested[0].text", sourceCells);
     }
 
     public void setType(ReferralType type, CsvCell... sourceCells) {

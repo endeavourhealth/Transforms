@@ -5,7 +5,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -30,6 +32,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
     private static HashMap<String, TppMappingRef> tppMappingRefs = new HashMap<>();
+
+    private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
+    private static HashMap<String, TppConfigListOption> tppConfigListOptions = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -109,6 +114,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return PARSER_POOL.parse(json);
     }
 
+    // Lookup code reference from SRMapping generated db
     public TppMappingRef lookUpTppMappingRef(Long rowId) throws Exception {
 
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
@@ -130,6 +136,30 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         tppMappingRefs.put(codeLookup, tppMappingRefFromDB);
 
         return tppMappingRefFromDB;
+    }
+
+    // Lookup code reference from SRConfigureListOption generated db
+    public TppConfigListOption lookUpTppConfigListOption(Long rowId) throws Exception {
+
+        String codeLookup = rowId.toString() + "|" + serviceId.toString();
+
+        //Find the code in the cache
+        TppConfigListOption tppConfigListOptionFromCache = tppConfigListOptions.get(codeLookup);
+
+        // return cached version if exists
+        if (tppConfigListOptionFromCache != null) {
+            return tppConfigListOptionFromCache;
+        }
+
+        TppConfigListOption tppConfigListOptionFromDB = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
+        if (tppConfigListOptionFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        tppConfigListOptions.put(codeLookup, tppConfigListOptionFromDB);
+
+        return tppConfigListOptionFromDB;
     }
 
     @Override
