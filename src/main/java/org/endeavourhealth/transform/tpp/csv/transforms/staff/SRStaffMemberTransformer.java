@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -53,10 +54,13 @@ public class SRStaffMemberTransformer {
 
         CsvCell nationalIdType = parser.getNationalIdType();
         if (!nationalIdType.isEmpty()) {
-            CsvCell nationalId = parser.getIDNational();
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-            identifierBuilder.setSystem(getNationalIdTypeIdentifier(nationalIdType.toString()));
-            identifierBuilder.setValue(nationalId.getString(), nationalId);
+            String nationalIdTypeSystem = getNationalIdTypeIdentifierSystem(nationalIdType.toString());
+            if (!Strings.isNullOrEmpty(nationalIdTypeSystem)) {
+                CsvCell nationalId = parser.getIDNational();
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                identifierBuilder.setSystem(nationalIdTypeSystem);
+                identifierBuilder.setValue(nationalId.getString(), nationalId);
+            }
         }
 
         CsvCell smartCardId = parser.getIDSmartCard();
@@ -72,36 +76,13 @@ public class SRStaffMemberTransformer {
 
     }
 
-    private static String getNationalIdTypeIdentifier (String nationalIdType) {
+    private static String getNationalIdTypeIdentifierSystem (String nationalIdType) {
 
         switch (nationalIdType.toUpperCase()) {
             case "GMC": return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
+            case "NMC": return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
             default: return null;
         }
     }
 
-//    public static String getJobCategoryName(String jobCategoryCode) {
-//
-//        switch (jobCategoryCode){
-//            case "A": return "Principal GP";
-//            case "B": return "Locum GP";
-//            case "C": return "GP Registrar";
-//            case "D": return "Other Practice staff";
-//            case "D06": return "Practice Nurse";
-//            case "D07": return "Dispenser";
-//            case "D08": return "Physiotherapist";
-//            case "D09": return "Chiropodist";
-//            case "D10": return "Interpreter /Link Worker";
-//            case "D11": return "Counsellor";
-//            case "D12": return "Osteopath";
-//            case "D13": return "Chiropractor";
-//            case "D14": return "Acupuncturist";
-//            case "D15": return "Homeopath";
-//            case "D16": return "Health Visitor";
-//            case "D17": return "District Nurse";
-//            case "D18": return "Community Psychiatric Nurse";
-//            case "D19": return "Mental Handicap Nurse";
-//            default: return "None";
-//        }
-//    }
 }

@@ -91,6 +91,23 @@ public class EncounterResourceCache {
         return episodeBuilder;
     }
 
+    public static EpisodeOfCareBuilder getEpisodeBuilder(BartsCsvHelper csvHelper, UUID resourceId) throws Exception {
+
+        EpisodeOfCareBuilder episodeBuilder = episodeBuildersByUuid.get(resourceId);
+
+        if (episodeBuilder == null) {
+
+            EpisodeOfCare episode = (EpisodeOfCare)csvHelper.retrieveResource(ResourceType.EpisodeOfCare, resourceId);
+            if (episode != null) {
+                episodeBuilder = new EpisodeOfCareBuilder(episode);
+                episodeBuildersByUuid.put(UUID.fromString(episodeBuilder.getResourceId()), episodeBuilder);
+            }
+
+        }
+
+        return episodeBuilder;
+    }
+
     public static EpisodeOfCareBuilder createEpisodeBuilder(CsvCell episodeIdCell) throws Exception {
 
         ResourceId episodeResourceId = getEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdCell.getString());

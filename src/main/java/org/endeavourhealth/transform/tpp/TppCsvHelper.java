@@ -5,6 +5,10 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -16,6 +20,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
@@ -24,6 +29,12 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final String ID_DELIMITER = ":";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
+
+    private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
+    private static HashMap<String, TppMappingRef> tppMappingRefs = new HashMap<>();
+
+    private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
+    private static HashMap<String, TppConfigListOption> tppConfigListOptions = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -43,17 +54,23 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     public Reference createOrganisationReference(CsvCell organizationGuid) {
-        return ReferenceHelper.createReference(ResourceType.Organization, createUniqueId(organizationGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
-
+    public Reference createLocationReference(CsvCell locationGuid) {
+        return ReferenceHelper.createReference(ResourceType.Location, locationGuid.getString());
+    }
     public Reference createPatientReference(CsvCell patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
-
     public Reference createPractitionerReference(CsvCell practitionerGuid) {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, createUniqueId(practitionerGuid, null));
+        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
-
+    public Reference createScheduleReference(CsvCell scheduleGuid) {
+        return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
+    }
+    public Reference createSlotReference(CsvCell slotGuid) {
+        return ReferenceHelper.createReference(ResourceType.Slot, slotGuid.getString());
+    }
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
@@ -95,6 +112,54 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
+    }
+
+    // Lookup code reference from SRMapping generated db
+    public TppMappingRef lookUpTppMappingRef(Long rowId) throws Exception {
+
+        String codeLookup = rowId.toString() + "|" + serviceId.toString();
+
+        //Find the code in the cache
+        TppMappingRef tppMappingRefFromCache = tppMappingRefs.get(codeLookup);
+
+        // return cached version if exists
+        if (tppMappingRefFromCache != null) {
+            return tppMappingRefFromCache;
+        }
+
+        TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId, serviceId);
+        if (tppMappingRefFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        tppMappingRefs.put(codeLookup, tppMappingRefFromDB);
+
+        return tppMappingRefFromDB;
+    }
+
+    // Lookup code reference from SRConfigureListOption generated db
+    public TppConfigListOption lookUpTppConfigListOption(Long rowId) throws Exception {
+
+        String codeLookup = rowId.toString() + "|" + serviceId.toString();
+
+        //Find the code in the cache
+        TppConfigListOption tppConfigListOptionFromCache = tppConfigListOptions.get(codeLookup);
+
+        // return cached version if exists
+        if (tppConfigListOptionFromCache != null) {
+            return tppConfigListOptionFromCache;
+        }
+
+        TppConfigListOption tppConfigListOptionFromDB = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
+        if (tppConfigListOptionFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        tppConfigListOptions.put(codeLookup, tppConfigListOptionFromDB);
+
+        return tppConfigListOptionFromDB;
     }
 
     @Override

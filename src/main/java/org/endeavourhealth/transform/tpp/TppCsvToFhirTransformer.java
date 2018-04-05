@@ -7,10 +7,15 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.clinical.SRVisitTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
@@ -134,12 +139,20 @@ public abstract class TppCsvToFhirTransformer {
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
+        // Appointment Sessions (Rotas)
+        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler,csvHelper);
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
+        LOG.trace("Starting appointment transforms");
+        SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        AppointmentResourceCache.fileAppointmentResources(fhirResourceFiler);
+
         LOG.trace("Starting clinical transforms");
+        SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         ReferralRequestResourceCache.fileReferralRequestResources(fhirResourceFiler);

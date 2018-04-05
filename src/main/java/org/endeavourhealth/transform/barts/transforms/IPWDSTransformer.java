@@ -74,6 +74,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 beginDate = formatBulk.parse(beginDateCell.getString());
             }
+            LOG.debug("wardStayPeriod - from " + beginDate.toString());
         }
         Date endDate = null;
         if (endDateCell != null && !endDateCell.isEmpty()) {
@@ -82,6 +83,7 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             } catch (ParseException ex) {
                 endDate = formatBulk.parse(endDateCell.getString());
             }
+            LOG.debug("wardStayPeriod - to " + endDate.toString());
         }
         Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 
@@ -101,19 +103,6 @@ public class IPWDSTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Delete existing encounter ? - Assuming this will be signaled in ENCNT
-        /*
-        if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
-        }*/
-
-        // Organisation
-        //Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        //ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
         // Location
         UUID locationResourceUUID = null;
 
@@ -125,20 +114,18 @@ public class IPWDSTransformer extends BartsBasisTransformer {
         if (bedLocationIdCell != null && !bedLocationIdCell.isEmpty() && bedLocationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedLocationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, bedLocationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, bedLocationIdCell, beginDateCell, endDateCell);
         } else if (roomLocationIdCell != null && !roomLocationIdCell.isEmpty() && roomLocationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomLocationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, roomLocationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, roomLocationIdCell, beginDateCell, endDateCell);
         } else if (locationIdCell != null && !locationIdCell.isEmpty() && locationIdCell.getLong() > 0) {
             locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, locationIdCell);
             elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-            encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, locationIdCell, beginDateCell, endDateCell);
+            encounterBuilder.addLocation(elc, true, locationIdCell, beginDateCell, endDateCell);
         } else {
             TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", locationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
         }
-
-
 
         if (LOG.isDebugEnabled()) {
             //LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));

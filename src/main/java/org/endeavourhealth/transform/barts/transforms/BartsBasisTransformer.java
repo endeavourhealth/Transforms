@@ -12,6 +12,8 @@ import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Enumerations;
@@ -85,11 +87,7 @@ public class BartsBasisTransformer extends BasisTransformer{
     * Set unknown values to null
     * For non-AE encounters set 'aeArrivalDateTime' to null
      */
-    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, UUID personUUID, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
-        return readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, personUUID, null, csvHelper, fhirResourceFiler, null);
-    }
-
-    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, UUID personUUID, CsvCell aeArrivalDateTime, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, InternalIdDalI internalIdDAL) throws Exception {
+    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, UUID personUUID, BartsCsvHelper csvHelper, ParserI parser) throws Exception {
         boolean newEoCCreated = false;
         String FINalternateEpisodeUUID = null;
         String encounterAlternateEpisodeUUID = null;
@@ -107,7 +105,7 @@ public class BartsBasisTransformer extends BasisTransformer{
         if (encounterIdCell != null && encounterIdCell.getString().trim().length() > 0) {
             encounterIdCellString = encounterIdCell.getString().trim();
         }
-        LOG.debug("Search for episodeOfCareBuilder. EpisodeId=" + episodeIdentiferCellString + " FNNO="  + finIdCellString + " EncounterId=" + encounterIdCellString);
+        LOG.debug("Search for episodeOfCareBuilder. EpisodeId=" + episodeIdentiferCellString + " FINNo="  + finIdCellString + " EncounterId=" + encounterIdCellString);
 
 
         if (episodeIdentiferCellString != null) {
@@ -120,10 +118,19 @@ public class BartsBasisTransformer extends BasisTransformer{
                 // EoC not found using Episode-id - try FIN-no (if it was created before it got the episode id)
                 FINalternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCell.getString());
                 if (FINalternateEpisodeUUID != null) {
-                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, FINalternateEpisodeUUID);
+                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(FINalternateEpisodeUUID));
                     if (episodeOfCareBuilder != null) {
                         // Save the resource UUID so it can be found using episode-id next time
-                        createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCellString, UUID.fromString(FINalternateEpisodeUUID));
+                        try {
+                            createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCellString, UUID.fromString(FINalternateEpisodeUUID));
+                        }
+                        catch (Exception ex) {
+                            if (ex.getMessage().indexOf("duplicate key") > 0 && ex.getMessage().indexOf("duplicate key") > 0) {
+                                TransformWarnings.log(LOG, parser, "FINNo {} previously belonged to different EpisodeOfCare({}). Record {} in file {}", finIdCellString, FINalternateEpisodeUUID, parser.getCurrentState().getRecordNumber(), parser.getFilePath());
+                            } else {
+                                throw ex;
+                            }
+                        }
                     }
                 }
             }
@@ -131,10 +138,19 @@ public class BartsBasisTransformer extends BasisTransformer{
                 // EoC not found using Episode-id or FIN-no - try Encounter-id (if it was created before it got the episode id and FIN no)
                 encounterAlternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCellString);
                 if (encounterAlternateEpisodeUUID != null) {
-                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, encounterAlternateEpisodeUUID);
+                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(encounterAlternateEpisodeUUID));
                     if (episodeOfCareBuilder != null) {
                         // Save the resource UUID so it can be found using episode-id next time
-                        createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCellString, UUID.fromString(encounterAlternateEpisodeUUID));
+                        try {
+                            createEpisodeOfCareResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, episodeIdentiferCellString, UUID.fromString(encounterAlternateEpisodeUUID));
+                        }
+                        catch (Exception ex) {
+                            if (ex.getMessage().indexOf("duplicate key") > 0 && ex.getMessage().indexOf("duplicate key") > 0) {
+                                TransformWarnings.log(LOG, parser, "EncounterId {} previously belonged to different EpisodeOfCare({}). Record {} in file {}", encounterIdCellString, encounterAlternateEpisodeUUID, parser.getCurrentState().getRecordNumber(), parser.getFilePath());
+                            } else {
+                                throw ex;
+                            }
+                        }
                     }
                 }
             }
@@ -149,17 +165,28 @@ public class BartsBasisTransformer extends BasisTransformer{
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 newEoCCreated = true;
             }
+
         } else if (finIdCellString != null) {
             LOG.debug("Search using FINNo");
             // Episode-id not present - use FIN NO
+
             FINalternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCellString);
             if (FINalternateEpisodeUUID == null) {
-                episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, finIdCell, null);
-                episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
-                EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
-                newEoCCreated = true;
+                // Check if encounter was previously saved using encounter id
+                encounterAlternateEpisodeUUID = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCellString);
+                if (encounterAlternateEpisodeUUID != null) {
+                    episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(encounterAlternateEpisodeUUID));
+                }
+
+                if(episodeOfCareBuilder == null) {
+                    episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, finIdCell, null);
+                    episodeOfCareBuilder.setId(UUID.randomUUID().toString(), finIdCell);
+                    EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
+                    newEoCCreated = true;
+                }
+
             } else {
-                episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, FINalternateEpisodeUUID);
+                episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(FINalternateEpisodeUUID));
                 if (episodeOfCareBuilder == null) {
                     episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, finIdCell, null);
                     episodeOfCareBuilder.setId(FINalternateEpisodeUUID, finIdCell);
@@ -167,6 +194,7 @@ public class BartsBasisTransformer extends BasisTransformer{
                     newEoCCreated = true;
                 }
             }
+
         } else {
             LOG.debug("Search using EncounterId");
             // Neither Episode-id nor FIN No present - use encounter-id
@@ -177,7 +205,7 @@ public class BartsBasisTransformer extends BasisTransformer{
                 EncounterResourceCache.saveNewEpisodeBuilderToCache(episodeOfCareBuilder);
                 newEoCCreated = true;
             } else {
-                episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, encounterAlternateEpisodeUUID);
+                episodeOfCareBuilder = EncounterResourceCache.getEpisodeBuilder(csvHelper, UUID.fromString(encounterAlternateEpisodeUUID));
                 if (episodeOfCareBuilder == null) {
                     episodeOfCareBuilder = createNewEpisodeOfCareBuilder(episodeIdentiferCell, personIdCell, personUUID, null, encounterIdCell);
                     episodeOfCareBuilder.setId(encounterAlternateEpisodeUUID, encounterIdCell);
@@ -188,12 +216,13 @@ public class BartsBasisTransformer extends BasisTransformer{
         }
 
         if (newEoCCreated) {
-            LOG.debug("Create new episodeOfCareBuilder " + episodeOfCareBuilder.getResourceId() + " EpisodeId=" + (episodeIdentiferCell == null ? "null" : episodeIdentiferCell.getString()) + " FNNO="  + (finIdCell == null ? "null" : finIdCell.getString()) + " EncounterId=" + (encounterIdCell == null ? "null" : encounterIdCell.getString()));
+            LOG.debug("Create new episodeOfCareBuilder " + episodeOfCareBuilder.getResourceId() + " EpisodeId=" + episodeIdentiferCellString + " FINNo="  + finIdCellString + " EncounterId=" + encounterIdCellString);
         }
         if (finIdCellString != null) {
             csvHelper.saveInternalId(InternalIdMap.TYPE_FIN_NO_TO_EPISODE_UUID, finIdCellString, episodeOfCareBuilder.getResourceId());
         }
         csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCellString, episodeOfCareBuilder.getResourceId());
+
         return episodeOfCareBuilder;
     }
 

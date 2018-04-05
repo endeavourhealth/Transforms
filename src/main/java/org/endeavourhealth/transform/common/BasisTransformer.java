@@ -795,6 +795,23 @@ public class BasisTransformer {
         return resourceId;
     }
 
+    public static ResourceId getOrCreateSpecialtyResourceId(String scope, String specialtyId) throws Exception {
+        String uniqueId = "SpecialtyId=" + specialtyId;
+        ResourceId resourceId = getResourceId(scope, ResourceType.Organization.toString(), uniqueId);
+
+        //if we failed to find a UUID, generate one and return it
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType(ResourceType.Organization.toString());
+            resourceId.setUniqueId(uniqueId);
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+
+        return resourceId;
+    }
+
 
     /*public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
         String uniqueId = "PersonnelId=" + personnelId;
