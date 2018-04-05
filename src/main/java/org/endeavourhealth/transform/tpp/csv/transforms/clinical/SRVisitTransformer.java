@@ -82,7 +82,7 @@ public class SRVisitTransformer {
 
         CsvCell visitOrg = parser.getIDOrganisation();
         if (!visitOrg.isEmpty()) {
-            //TODO: these are practice ODS codes
+            //TODO: these are practice ODS codes NOT linked references
             Reference orgReference = csvHelper.createOrganisationReference(visitOrg);
             encounterBuilder.setServiceProvider(orgReference, visitOrg);
         }
