@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.core.terminology.SnomedCode;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -43,7 +45,7 @@ public class SRPatientAddressHistoryTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
             return;
         }
         CsvCell removeDataCell = parser.getRemovedData();
@@ -60,8 +62,8 @@ public class SRPatientAddressHistoryTransformer {
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setValue(IdPatientCell.getString(), IdPatientCell);
             } else {
-            TransformWarnings.log(LOG, parser, "No Patient record found for row: {}, id: {}, file: {}",
-                    parser.getRowIdentifier().getString(), parser.getIDPatient() ,parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString() ,parser.getFilePath());
             return;
         }
 
@@ -111,7 +113,23 @@ public class SRPatientAddressHistoryTransformer {
         if (!dateToCell.isEmpty()) {
             addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
         }
-        //TODO - addressType when we know what values we're getting
+        //TODO - Using Address.AddressUse but check to see if fhir Address.type is included in data
+        CsvCell addressTypeCell = parser.getAddressType();
+        if (!addressTypeCell.isEmpty()) {
+            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(addressTypeCell.getString());
+            if (snomedCode != null) {
+                try {
+                   Address.AddressUse addressUse = Address.AddressUse.fromCode(snomedCode.getConceptCode());
+                if (addressUse != null) {
+                    addressBuilder.setUse(addressUse, addressTypeCell);
+                }
+                } catch (Exception ex) {
+                    TransformWarnings.log(LOG, parser, "Unrecognized address type {} in file {}",
+                            addressTypeCell.getString(), parser.getFilePath());
+                    }
+
+            }
+        }
     }
 
 }

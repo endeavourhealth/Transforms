@@ -131,6 +131,23 @@ public class SRPatientTransformer {
                         spineMatched.getString(), parser.getRowIdentifier().toString(), parser.getFilePath());
             }
         }
+
+        // Speaks English
+//        CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
+//        if (!speaksEnglishCell.isEmpty()) {
+//
+//            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(speaksEnglishCell.getString());
+//            if (snomedCode != null) {
+//                CodeableConcept codeableConcept
+//                        = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT,
+//                        snomedCode.getTerm(),
+//                        snomedCode.getConceptCode());
+//                //TODO figure out how to map english proficiency to FHIR preferred language
+//                //
+//                //patientBuilder.setTODO
+//                //referralRequestBuilder.setReason(codeableConcept, referralPrimaryDiagnosisCode);
+//            }
+//        }
     }
 
 }

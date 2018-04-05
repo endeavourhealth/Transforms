@@ -33,6 +33,7 @@ public class SRPatientRegistration extends AbstractCsvParser {
                       "PreferredPharmacy",
                       "IDPatient",
                       "IDOrganisation",
+                      "IDOrganisationRegisteredAt",
                       "RemovedData"
                     
 
@@ -49,6 +50,7 @@ public class SRPatientRegistration extends AbstractCsvParser {
  public CsvCell getPreferredPharmacy() { return super.getCell("PreferredPharmacy");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getIDOrganisationRegisteredAt() {return super.getCell("IDOrganisationRegisteredAt");};
  public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
