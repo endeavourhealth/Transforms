@@ -17,6 +17,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmen
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.SRVisitTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRConfiguredListOptionTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRMappingTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
@@ -136,13 +137,14 @@ public abstract class TppCsvToFhirTransformer {
         LOG.trace("Starting pre-transforms to cache data");
 
         LOG.trace("Starting admin transforms");
-        // Codes
+        // Code lookups
+        SRMappingTransformer.transform(parsers, fhirResourceFiler);
         SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
         // Staff
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
-        // Appointment Sessions (Rotas)
+        // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting patient transforms");
