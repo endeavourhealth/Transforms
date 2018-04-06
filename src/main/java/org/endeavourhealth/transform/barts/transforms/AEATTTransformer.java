@@ -82,7 +82,7 @@ public class AEATTTransformer extends BartsBasisTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell admissionDateTimeCell = parser.getAdmissionDateTime();
+        CsvCell decisionToAdmitDateTimeCell = parser.getDecisionToAdmitDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
         CsvCell endDateCell = parser.getCheckOutDateTime();
         CsvCell currentLocationCell = parser.getLastLocCode();
@@ -209,8 +209,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         // Check whether to Finish EpisodeOfCare
-        // If the patient has left AE (checkout-time/enddatetime) and not been admitted (admittedDateTime empty) complete EpisodeOfCare
-        if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (admissionDateTimeCell == null && admissionDateTimeCell.getString().trim().length() == 0)) {
+        // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
+        if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (decisionToAdmitDateTimeCell == null || decisionToAdmitDateTimeCell.getString().trim().length() == 0)) {
             episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, endDateCell);
         }
 
