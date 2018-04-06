@@ -19,7 +19,7 @@ public class ReferenceList {
     /**
      * these may be populated by multiple threads, so synchronise the fn
      */
-    public synchronized void add(Reference reference, CsvCell... sourceCells) {
+    public synchronized void add(Reference reference, CsvCell... csvCells) {
         String referenceValue = reference.getReference();
 
         int size = size();
@@ -29,7 +29,10 @@ public class ReferenceList {
         System.arraycopy(sourceCells, 0, newSourceCells, 0, size);
 
         newReferenceValues[size] = referenceValue;
-        newSourceCells[size] = sourceCells;
+        newSourceCells[size] = csvCells;
+
+        this.referencesValues = newReferenceValues;
+        this.sourceCells = newSourceCells;
 
         /*referencesValuesList.add(referenceValue);
         sourceCellsList.add(sourceCells);*/
