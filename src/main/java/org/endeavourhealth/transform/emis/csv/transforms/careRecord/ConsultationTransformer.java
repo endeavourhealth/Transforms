@@ -16,11 +16,14 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class ConsultationTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ConsultationTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,

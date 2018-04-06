@@ -369,7 +369,7 @@ public abstract class EmisCsvToFhirTransformer {
     }*/
 
 
-    private static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath: files) {
 
@@ -400,7 +400,7 @@ public abstract class EmisCsvToFhirTransformer {
     }
 
 
-    private static String findDataSharingAgreementGuid(Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static String findDataSharingAgreementGuid(Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         //we need a file name to work out the data sharing agreement ID, so just the first file we can find
         String firstFilePath = parsers

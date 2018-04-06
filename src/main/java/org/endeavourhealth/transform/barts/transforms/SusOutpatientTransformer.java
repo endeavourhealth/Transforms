@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.BartsSusResourceMapDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.SusResourceMapDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -205,7 +205,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
         List<UUID> mappingsToAdd = new ArrayList<UUID>();
         LOG.debug("Mapping Diagnosis from file entry (" + entryCount + ")");
 
-        BartsSusResourceMapDalI database = DalProvider.factoryBartsSusResourceMapDal();
+        SusResourceMapDalI database = DalProvider.factoryBartsSusResourceMapDal();
         List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), resourceMapSourceRowId, Enumerations.ResourceType.CONDITION);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
         if (currentMappings != null) {
@@ -329,7 +329,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
         LOG.debug("Mapping Procedure from file entry (" + entryCount + ")");
         LOG.debug("Testing-Deployment");
 
-        BartsSusResourceMapDalI database = DalProvider.factoryBartsSusResourceMapDal();
+        SusResourceMapDalI database = DalProvider.factoryBartsSusResourceMapDal();
         List<UUID> currentMappings = database.getSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE);
         LOG.debug("Number of SUS multi-mappings found:" + (currentMappings == null ? "0" : currentMappings.size()));
         if (currentMappings != null) {
