@@ -1,13 +1,12 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -44,7 +43,8 @@ public class SRPatientRegistrationTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}",
+                    rowIdCell.getString(), parser.getFilePath());
             return;
         }
         CsvCell removeDataCell = parser.getRemovedData();
@@ -54,35 +54,26 @@ public class SRPatientRegistrationTransformer {
 
 
         CsvCell IdPatientCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-        if (!IdPatientCell.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setValue(IdPatientCell.getString(), IdPatientCell);
-        } else {
+
+        if (IdPatientCell.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
         }
 
-
-
-        //ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId);
-        //Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
         Reference organizationReference = null;
-        CsvCell orgIdCell = parser.getIDOrganisation();
+        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
+        CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
             organizationBuilder.setId(orgIdCell.getString());
             organizationReference = csvHelper.createOrganisationReference(orgIdCell);
             patientBuilder.addCareProvider(organizationReference);
+            episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
         }
 
-        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
-        CsvCell idOrgAssigned = parser.getIDOrganisationRegisteredAt();
-        episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
         CsvCell regStartDateCell = parser.getDateRegistration();
-
         if (!regStartDateCell.isEmpty()) {
             episodeBuilder.setRegistrationStartDate(regStartDateCell.getDate(), regStartDateCell);
         }
@@ -90,5 +81,30 @@ public class SRPatientRegistrationTransformer {
         if (!regEndDateCell.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
         }
+
+        CsvCell regTypeCell = parser.getRegistrationStatus();
+        if (!regTypeCell.isEmpty()) {
+            episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
+            }
+    }
+
+    private static RegistrationType mapToFhirRegistrationType (CsvCell regTypeCell) {
+        // Fold to upper for easy comparison. Main concern is whether
+        // patient is GMS, Private or temporary.
+        String target = regTypeCell.getString().toUpperCase();
+
+        if (target.contains("GMS")) {
+            return RegistrationType.REGULAR_GMS;
+        } else if (target.contains("IMMEDIATELY NECESSARY")) {
+            return RegistrationType.IMMEDIATELY_NECESSARY; // Historical
+        } else if(target.contains("PRIVATE")) {
+            return RegistrationType.PRIVATE;
+        } else if(target.contains("TEMPORARY")) {
+            return RegistrationType.TEMPORARY;
+        } else {
+            return RegistrationType.OTHER;
+        }
+
+
     }
 }
