@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
@@ -66,9 +67,11 @@ public class SRReferralOutTransformer {
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-            //Reference staffReference = csvHelper.createPractitionerReference("TODO");
-            //referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
+
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                                                             recordedBy.getString());
+            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+            referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
         }
 
         CsvCell requestedByStaff = parser.getIDDoneBy();

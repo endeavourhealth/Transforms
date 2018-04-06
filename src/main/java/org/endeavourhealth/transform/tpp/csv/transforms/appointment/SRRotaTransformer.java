@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -7,6 +9,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Map;
 
@@ -49,7 +52,7 @@ public class SRRotaTransformer {
 
         CsvCell sessionName = parser.getName();
         if (!sessionName.isEmpty()) {
-            //the FHIR description of "Comment" seems approproate to store the category
+            //the FHIR description of "Comment" seems appropriate to store the category
             scheduleBuilder.addComment(sessionName.getString(), sessionName);
         }
 
@@ -58,10 +61,12 @@ public class SRRotaTransformer {
 
         CsvCell sessionActorStaffProfileId = parser.getIDProfileCreatedBy();
         if (!sessionActorStaffProfileId.isEmpty()) {
-            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-            //Reference practitionerReference
-            //        = ReferenceHelper.createReference(ResourceType.Practitioner, sessionActorStaffProfileId.getString());
-            //scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
+
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                    sessionActorStaffProfileId.getString());
+            Reference practitionerReference
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+            scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);

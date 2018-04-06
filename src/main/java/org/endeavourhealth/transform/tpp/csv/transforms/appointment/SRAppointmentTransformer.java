@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -12,6 +14,7 @@ import org.endeavourhealth.transform.tpp.cache.SlotResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Date;
 import java.util.Map;
@@ -80,9 +83,12 @@ public class SRAppointmentTransformer {
 
         CsvCell appointmentStaffProfileId = parser.getIDProfileClinician();
         if (!appointmentStaffProfileId.isEmpty()) {
-            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-            //Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, appointmentStaffProfileId.getString());
-            //appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
+
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                    appointmentStaffProfileId.getString());
+            Reference practitionerReference
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+            appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
         }
 
         CsvCell patientSeenDate = parser.getDatePatientSeen();

@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.QuantityHelper;
+import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -52,16 +54,20 @@ public class SRVisitTransformer {
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-            //Reference staffReference = csvHelper.createPractitionerReference("TODO");
-            //encounterBuilder.setRecordedBy(staffReference, recordedBy);
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                    recordedBy.getString());
+
+            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+            encounterBuilder.setRecordedBy(staffReference, recordedBy);
         }
 
         CsvCell visitStaffAssigned = parser.getIDProfileAssigned();
         if (!visitStaffAssigned.isEmpty()) {
-            //TODO:  this links to SRStaffMemberProfile -> how get staff reference?
-            //Reference staffReference = csvHelper.createPractitionerReference("TODO");
-            //encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, visitStaffAssigned);
+
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                    recordedBy.getString());
+            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, visitStaffAssigned);
         }
 
         CsvCell visitStatus = parser.getCurrentStatus();

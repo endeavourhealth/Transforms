@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
@@ -36,6 +37,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
     private static HashMap<String, TppConfigListOption> tppConfigListOptions = new HashMap<>();
 
+    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private static HashMap<String, String> internalIdMapCache = new HashMap<>();
+
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID exchangeId;
@@ -65,6 +69,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createPractitionerReference(CsvCell practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
+    public Reference createPractitionerReference(String practitionerGuid) {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
+    }
     public Reference createScheduleReference(CsvCell scheduleGuid) {
         return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
     }
@@ -73,6 +80,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
+    }
+    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
     }
 
     public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
@@ -160,6 +170,33 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         tppConfigListOptions.put(codeLookup, tppConfigListOptionFromDB);
 
         return tppConfigListOptionFromDB;
+    }
+
+    public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
+        String cacheKey = idType + "|" + sourceId;
+
+        internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
+
+        if (internalIdMapCache.containsKey(cacheKey)) {
+            internalIdMapCache.replace(cacheKey, destinationId);
+        } else {
+            internalIdMapCache.put(cacheKey, destinationId);
+        }
+    }
+
+    public String getInternalId(String idType, String sourceId) throws Exception {
+        String cacheKey = idType + "|" + sourceId;
+        if (internalIdMapCache.containsKey(cacheKey)) {
+            return internalIdMapCache.get(cacheKey);
+        }
+
+        String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
+
+        if (ret != null) {
+            internalIdMapCache.put(cacheKey, ret);
+        }
+
+        return ret;
     }
 
     @Override

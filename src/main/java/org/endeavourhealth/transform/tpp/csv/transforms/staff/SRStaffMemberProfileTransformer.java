@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -37,11 +38,18 @@ public class SRStaffMemberProfileTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
-        // get practitioner builder from the cache
+        CsvCell staffMemberProfileId = parser.getRowIdentifier();
+
+        // get practitioner builder from the cache using the staff member Id
         CsvCell staffMemberId = parser.getIDStaffMember();
         PractitionerBuilder practitionerBuilder
                 = PractitionerResourceCache.getPractitionerBuilder(staffMemberId, csvHelper, fhirResourceFiler);
 
+        // create the internal link between staff member role and staff member
+        csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                                    staffMemberProfileId.getString(), staffMemberId.getString());
+
+        //TODO: how deal with edits/deletes to roles?
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell orgID = parser.getIDOrganisation();
