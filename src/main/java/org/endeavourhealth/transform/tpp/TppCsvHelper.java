@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -22,7 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvHelper.class);
@@ -39,6 +43,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
+
+    private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
+    private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
+
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -81,8 +89,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
-    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) throws Exception {
+    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
+    }
+    public Reference createEncounterReference(CsvCell encounterGuid, CsvCell patientGuid) {
+        return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
 
     public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
@@ -122,6 +133,49 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
+    }
+
+    public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
+                                                      CsvCell patientGuid,
+                                                      CsvCell resourceGuid,
+                                                      ResourceType resourceType,
+                                                      CsvCell consultationIDCell) {
+
+        if (consultationGuid.isEmpty()) {
+            return;
+        }
+
+        String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
+        ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
+        if (list == null) {
+            list = new ReferenceList();
+            consultationNewChildMap.put(consultationLocalUniqueId, list);
+        }
+
+        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        list.add(resourceReference, consultationIDCell);
+    }
+
+    public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
+        return consultationNewChildMap.remove(encounterSourceId);
+    }
+
+    public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
+
+        if (previousReferences == null
+                || previousReferences.isEmpty()) {
+            return;
+        }
+
+        ReferenceList obj = new ReferenceList();
+        obj.add(previousReferences);
+
+        consultationExistingChildMap.put(encounterSourceId, obj);
+    }
+
+    public ReferenceList findConsultationPreviousLinkedResources(String encounterSourceId) {
+        return consultationExistingChildMap.remove(encounterSourceId);
     }
 
     // Lookup code reference from SRMapping generated db

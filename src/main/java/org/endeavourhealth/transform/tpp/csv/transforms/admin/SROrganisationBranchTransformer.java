@@ -21,15 +21,15 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-public class SROrganisatioBranchTransformer {
+public class SROrganisationBranchTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SROrganisatioBranchTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SROrganisationBranchTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SROrganisatioBranchTransformer.class);
+        AbstractCsvParser parser = parsers.get(SROrganisationBranchTransformer.class);
         while (parser.nextRecord()) {
 
             try {

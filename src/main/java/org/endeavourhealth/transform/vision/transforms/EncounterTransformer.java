@@ -90,6 +90,7 @@ public class EncounterTransformer {
                 codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_SOURCE);
                 codeableConceptBuilder.setCodingCode(sessionTypeCode.getString(), sessionTypeCode);
                 codeableConceptBuilder.setCodingDisplay(term);
+                codeableConceptBuilder.setText(term);
             }
         }
 
@@ -101,6 +102,7 @@ public class EncounterTransformer {
                 codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
                 codeableConceptBuilder.setCodingCode(locationTypeCode.getString(), locationTypeCode);
                 codeableConceptBuilder.setCodingDisplay(term);
+                codeableConceptBuilder.setText(term);
             }
         }
 

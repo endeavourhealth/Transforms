@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappin
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -15,11 +16,15 @@ import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class SRAppointmentTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -42,6 +47,12 @@ public class SRAppointmentTransformer {
 
         CsvCell appointmentId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+
+        if (patientId.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder

@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
@@ -15,10 +16,14 @@ import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRPrimaryCareMedica
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.MedicationStatement;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class SRPrimaryCareMedicationTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SRPrimaryCareMedicationTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -63,7 +68,6 @@ public class SRPrimaryCareMedicationTransformer {
             // the initial medication statement will have been created by the repeat template transform
             createOrDeleteMedicationOrder(parser, fhirResourceFiler, csvHelper);
         }
-
     }
 
     private static void createMedicationStatement(SRPrimaryCareMedication parser,
@@ -72,6 +76,12 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+
+        if (patientId.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
         TppCsvHelper.setUniqueId(medicationStatementBuilder, patientId, medicationId);
@@ -148,22 +158,13 @@ public class SRPrimaryCareMedicationTransformer {
             medicationStatementBuilder.setAuthorisationType(MedicationAuthorisationType.ACUTE, isRepeat);
         }
 
-        //TODO: establish first and last issue dates
+        // set consultation/encounter reference
+        CsvCell eventId = parser.getIDEvent();
+        if (!eventId.isEmpty()) {
 
-//        DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordID, patientID);
-//        if (firstIssueDate != null) {
-//            medicationStatementBuilder.setFirstIssueDate(firstIssueDate); //, firstIssueDate.getSourceCells());
-//        }
-//
-//        DateType mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordID, patientID);
-//        if (mostRecentDate != null) {
-//            medicationStatementBuilder.setLastIssueDate(mostRecentDate); //, mostRecentDate.getSourceCells());
-//        }
-
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
-//            medicationStatementBuilder.setEncounter(reference, parser.getLinks());
-//        }
+            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            medicationStatementBuilder.setEncounter (eventReference, eventId);
+        }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationStatementBuilder);
     }
@@ -174,6 +175,12 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+
+        if (patientId.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
 
         MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder();
         TppCsvHelper.setUniqueId(medicationOrderBuilder, patientId, medicationId);
@@ -247,17 +254,19 @@ public class SRPrimaryCareMedicationTransformer {
             medicationOrderBuilder.setQuantityUnit(units, quantity);
         }
 
-
         CsvCell dose = parser.getMedicationDosage();
         if (!dose.isEmpty()) {
+
             medicationOrderBuilder.setDose(dose.getString(), dose);
         }
 
+        // set consultation/encounter reference
+        CsvCell eventId = parser.getIDEvent();
+        if (!eventId.isEmpty()) {
 
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
-//            medicationOrderBuilder.setEncounter(reference, parser.getLinks());
-//        }
+            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            medicationOrderBuilder.setEncounter (eventReference, eventId);
+        }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);
     }

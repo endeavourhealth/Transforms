@@ -13,6 +13,7 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -21,10 +22,14 @@ import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class SRReferralOutTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SRReferralOutTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -47,6 +52,12 @@ public class SRReferralOutTransformer {
 
         CsvCell referralOutId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+
+        if (patientId.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
 
         ReferralRequestBuilder referralRequestBuilder
                 = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
@@ -162,14 +173,13 @@ public class SRReferralOutTransformer {
             }
         }
 
-        CsvCell referralParentEvent = parser.getIDEvent();
-        if (!referralParentEvent.isEmpty()) {
+        // set consultation/encounter reference
+        CsvCell eventId = parser.getIDEvent();
+        if (!eventId.isEmpty()) {
 
-            //TODO: how get event type to create reference (pre-transformer?), assume Problem ?
-            Reference eventReference = csvHelper.createConditionReference (referralParentEvent, patientId);
-            referralRequestBuilder.setParentResource(eventReference, referralParentEvent);
+            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            referralRequestBuilder.setEncounter (eventReference, eventId);
         }
-
     }
 
     private static ReferralPriority convertPriority(String priority) {

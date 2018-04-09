@@ -1,15 +1,19 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.QuantityHelper;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRVisit;
+import org.endeavourhealth.transform.tpp.csv.schema.clinical.SREvent;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
@@ -17,26 +21,26 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class SRVisitTransformer {
+public class SREventTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SRVisitTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SREventTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRVisit.class);
+        AbstractCsvParser parser = parsers.get(SREvent.class);
         while (parser.nextRecord()) {
 
             try {
-                createResource((SRVisit)parser, fhirResourceFiler, csvHelper);
+                createResource((SREvent)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    private static void createResource(SRVisit parser,
+    private static void createResource(SREvent parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
@@ -60,8 +64,8 @@ public class SRVisitTransformer {
             encounterBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
         }
 
-        CsvCell visitDate = parser.getDateBooked();
-        encounterBuilder.setPeriodStart(visitDate.getDate(), visitDate);
+        CsvCell eventDate = parser.getDateEvent();
+        encounterBuilder.setPeriodStart(eventDate.getDate(), eventDate);
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -72,29 +76,31 @@ public class SRVisitTransformer {
             encounterBuilder.setRecordedBy(staffReference, recordedBy);
         }
 
-        CsvCell visitStaffAssigned = parser.getIDProfileAssigned();
-        if (!visitStaffAssigned.isEmpty()) {
+        CsvCell encounterDoneBy = parser.getIDDoneBy();
+        if (!encounterDoneBy.isEmpty()) {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    visitStaffAssigned.getString());
+                    encounterDoneBy.getString());
             Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, visitStaffAssigned);
+            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, encounterDoneBy);
         }
 
-        CsvCell visitStatus = parser.getCurrentStatus();
-        if (!visitStatus.isEmpty()) {
-            if (visitStatus.getString().equalsIgnoreCase("cancelled")) {
-                encounterBuilder.setStatus(Encounter.EncounterState.CANCELLED);
-            } else if (visitStatus.getString().equalsIgnoreCase("deferred")) {
-                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
-            } else {
-                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+        CsvCell contactTypeCell = parser.getContactMethod();
+        if (!contactTypeCell.isEmpty()) {
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell.getLong());
+            if (tppConfigListOption != null) {
+                String contactType = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(contactType)) {
+
+                    CodeableConceptBuilder codeableConceptbuilder
+                            = new CodeableConceptBuilder(encounterBuilder, encounterBuilder.TAG_SOURCE);
+                    codeableConceptbuilder.setCodingCode(contactTypeCell.getString());
+                    codeableConceptbuilder.setCodingDisplay(contactType);
+                    codeableConceptbuilder.setText(contactType);
+                }
             }
-        }
-
-        CsvCell visitDuration = parser.getDuration();
-        if (!visitDuration.isEmpty()) {
-            encounterBuilder.setDuration(QuantityHelper.createDuration(Integer.valueOf(visitDuration.getInt()), "minutes"));
         }
 
         CsvCell visitOrg = parser.getIDOrganisation();
@@ -104,10 +110,15 @@ public class SRVisitTransformer {
             encounterBuilder.setServiceProvider(orgReference, visitOrg);
         }
 
-        CsvCell followUpDetails = parser.getFollowUpDetails();
-        if (!followUpDetails.isEmpty()) {
-            //TODO - where store follow up text?
-        }
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+        //carry over linked items from any previous instance of this encounter.
+        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(previousReferences);
+
+        //apply any new linked items from this extract. Encounter links set-up in Codes/Referral/Medication etc. pre-transformers
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
+        containedListBuilder.addReferences(newLinkedResources);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }

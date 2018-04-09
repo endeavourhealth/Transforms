@@ -216,6 +216,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell quantity = parser.getValue1();
@@ -380,6 +381,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell effectiveDate = parser.getEffectiveDateTime();
@@ -461,6 +463,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell effectiveDate = parser.getEffectiveDateTime();
@@ -539,6 +542,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell comments = parser.getAssociatedText();
@@ -638,6 +642,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell clinicianID = parser.getClinicianUserID();
@@ -678,6 +683,7 @@ public class JournalTransformer {
             comOneCodeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             comOneCodeableConceptBuilder.setCodingCode("163030003");
             comOneCodeableConceptBuilder.setCodingDisplay("Systolic blood pressure reading");
+            comOneCodeableConceptBuilder.setText("Systolic blood pressure reading");
 
             observationBuilder.addComponent();
             observationBuilder.setComponentValue(value2, parser.getValue2());
@@ -686,6 +692,7 @@ public class JournalTransformer {
             comTwoCodeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             comTwoCodeableConceptBuilder.setCodingCode("163031004");
             comTwoCodeableConceptBuilder.setCodingDisplay("Diastolic blood pressure reading");
+            comTwoCodeableConceptBuilder.setText("Diastolic blood pressure reading");
         }
         else {
             //otherwise, add in the 1st value if it exists
@@ -769,6 +776,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell associatedText = parser.getAssociatedText();
@@ -850,6 +858,7 @@ public class JournalTransformer {
         CsvCell term = parser.getRubric();
         if (!term.isEmpty()) {
             codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell clinicianID = parser.getClinicianUserID();
