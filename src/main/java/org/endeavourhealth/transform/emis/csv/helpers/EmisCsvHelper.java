@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
-import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
@@ -28,8 +27,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
-
-    private static final ParserPool PARSER_POOL = new ParserPool();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -424,7 +421,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         String json = resourceHistory.getResourceData();
-        return PARSER_POOL.parse(json);
+        try {
+            return FhirSerializationHelper.deserializeResource(json);
+        } catch (Throwable t) {
+            throw new Exception("Error deserialising " + resourceType + " " + globallyUniqueId + " (raw ID " + locallyUniqueId + ")", t);
+        }
+
     }
 
     public List<Resource> retrieveAllResourcesForPatient(String patientGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -445,7 +447,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         for (ResourceWrapper resourceWrapper: resourceWrappers) {
             String json = resourceWrapper.getResourceData();
-            Resource resource = PARSER_POOL.parse(json);
+            Resource resource = FhirSerializationHelper.deserializeResource(json);
             ret.add(resource);
         }
 
@@ -911,7 +913,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         for (EmisAdminResourceCache cachedResource: cachedResources) {
 
             //wrap the resource and audit trail in a generic resource builder for saving
-            Resource fhirResource = PARSER_POOL.parse(cachedResource.getResourceData());
+            Resource fhirResource = FhirSerializationHelper.deserializeResource(cachedResource.getResourceData());
             ResourceFieldMappingAudit audit = cachedResource.getAudit();
             GenericBuilder genericBuilder = new GenericBuilder(fhirResource, audit);
 
