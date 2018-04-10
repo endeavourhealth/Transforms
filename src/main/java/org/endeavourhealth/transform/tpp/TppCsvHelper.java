@@ -47,6 +47,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
 
+    private Map<String, String> problemReadCodes = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -138,8 +139,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
                                                       CsvCell patientGuid,
                                                       CsvCell resourceGuid,
-                                                      ResourceType resourceType,
-                                                      CsvCell consultationIDCell) {
+                                                      ResourceType resourceType) {
 
         if (consultationGuid.isEmpty()) {
             return;
@@ -154,7 +154,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference, consultationIDCell);
+        list.add(resourceReference, consultationGuid);
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
@@ -176,6 +176,14 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public ReferenceList findConsultationPreviousLinkedResources(String encounterSourceId) {
         return consultationExistingChildMap.remove(encounterSourceId);
+    }
+
+    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
+        problemReadCodes.put(createUniqueId(patientGuid, problemGuid), readCode);
+    }
+
+    public boolean isProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
+        return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
     }
 
     // Lookup code reference from SRMapping generated db

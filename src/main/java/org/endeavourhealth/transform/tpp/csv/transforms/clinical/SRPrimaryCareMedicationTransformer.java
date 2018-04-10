@@ -96,10 +96,10 @@ public class SRPrimaryCareMedicationTransformer {
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
-        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), "YMD");
-        if (date != null) {
+        if (!effectiveDate.isEmpty()) {
 
-            medicationStatementBuilder.setAssertedDate(date, effectiveDate);
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
         CsvCell recordedById = parser.getIDProfileEnteredBy();

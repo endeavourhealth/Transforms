@@ -69,9 +69,9 @@ public class SREventTransformer {
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedBy.getString());
 
+            String staffMemberId =
+                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
             encounterBuilder.setRecordedBy(staffReference, recordedBy);
         }
@@ -79,9 +79,7 @@ public class SREventTransformer {
         CsvCell encounterDoneBy = parser.getIDDoneBy();
         if (!encounterDoneBy.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    encounterDoneBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+            Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
             encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, encounterDoneBy);
         }
 

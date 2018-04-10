@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRRepeatTemplate;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -73,10 +72,10 @@ public class SRRepeatTemplateTransformer {
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
-        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), "YMD");
-        if (date != null) {
+        if (!effectiveDate.isEmpty()) {
 
-            medicationStatementBuilder.setAssertedDate(date, effectiveDate);
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
         CsvCell recordedById = parser.getIDProfileEnteredBy();

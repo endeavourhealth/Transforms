@@ -15,7 +15,6 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
@@ -71,8 +70,8 @@ public class SRReferralOutTransformer {
         }
 
         CsvCell referralDate = parser.getDateEvent();
-        DateTimeType dateTimeType = EmisDateTimeHelper.createDateTimeType(referralDate.getDate(), "YMD" );
-        if (dateTimeType != null) {
+        if (!referralDate.isEmpty()) {
+            DateTimeType dateTimeType = new DateTimeType(referralDate.getDate());
             referralRequestBuilder.setDate(dateTimeType, referralDate);
         }
 

@@ -22,8 +22,7 @@ import java.util.concurrent.Callable;
 public class SREventPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SREventPreTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 

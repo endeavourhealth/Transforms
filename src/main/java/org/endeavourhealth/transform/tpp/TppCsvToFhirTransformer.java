@@ -7,17 +7,12 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
-import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
-import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
+import org.endeavourhealth.transform.tpp.cache.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.clinical.SRPrimaryCareMedicationTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.clinical.SRRepeatTemplateTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.clinical.SRVisitTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRConfiguredListOptionTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRMappingTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
@@ -117,12 +112,12 @@ public abstract class TppCsvToFhirTransformer {
                 || fileName.startsWith("SRRota")) {
             return "appointment";
         } else if (fileName.startsWith("SRAddressBook")
-                || fileName.startsWith("SROrganisation")
-                || fileName.startsWith("SRConfigured")) {
+                || fileName.startsWith("SROrganisation")) {
             return "admin";
-        } else if (fileName.startsWith("SRCode")
-                || fileName.startsWith("SRCtv3")
-                || fileName.startsWith("SRTemplate")) {
+        } else if (fileName.startsWith("SRCtv3")
+                || fileName.startsWith("SRTemplate")
+                || fileName.startsWith("SRMapping")
+                || fileName.startsWith("SRConfiguredList")) {
             return "codes";
         } else
             return "clinical";
@@ -137,6 +132,10 @@ public abstract class TppCsvToFhirTransformer {
                 fhirResourceFiler.getExchangeId(), sharingAgreementGuid, true);
 
         LOG.trace("Starting pre-transforms to cache data");
+        // Consultations (Events)
+        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        // Codes
+        SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting admin transforms");
         // Code lookups
@@ -159,13 +158,22 @@ public abstract class TppCsvToFhirTransformer {
         AppointmentResourceCache.fileAppointmentResources(fhirResourceFiler);
 
         LOG.trace("Starting clinical transforms");
-        //medication (Repeats first, then acutes)
+        SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        // medication (Repeats first, then acutes and orders)
         SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPrimaryCareMedicationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        // referrals
         SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         ReferralRequestResourceCache.fileReferralRequestResources(fhirResourceFiler);
+
+        // problems and codes (observations)
+        SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        ConditionResourceCache.fileConditionResources(fhirResourceFiler);
+
     }
 }
