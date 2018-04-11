@@ -78,15 +78,7 @@ public class SROrganisationTransformer {
         }
 
         CsvCell locationIdCell = parser.getID();
-        if (!locationIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_ORGANIZATION_ID);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_ORGANIZATION_ID);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
-            }
-        }
+        locationBuilder.setId(locationIdCell.getString(), locationIdCell);
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
@@ -173,16 +165,8 @@ public class SROrganisationTransformer {
             organizationBuilder.setName(nameCell.getString());
         }
 
-        CsvCell locationIdCell = parser.getID();
-        if (!locationIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(organizationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_ORGANIZATION_ID);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_ORGANIZATION_ID);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
-            }
-        }
+        CsvCell organizationId = parser.getID();
+        organizationBuilder.setId(organizationId.getString(), organizationId);
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
