@@ -50,7 +50,7 @@ public class DemographicTransformer {
         //TODO - need to get proper object type for registrationType
         String registrationType = tppDemographics.getRegistrationType();
 
-        Extension ext = ExtensionConverter.createExtension(FhirExtensionUri.PATIENT_REGISTRATION_TYPE, new StringType(registrationType));
+        Extension ext = ExtensionConverter.createExtension(FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE, new StringType(registrationType));
         //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
         fhirEpisode.addExtension(ext);
         //fhirPatient.addExtension(ext);

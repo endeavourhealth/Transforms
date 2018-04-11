@@ -125,7 +125,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
 
     public void setRegistrationType(RegistrationType registrationType, CsvCell... sourceCells) {
         Coding coding = CodingHelper.createCoding(registrationType);
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.PATIENT_REGISTRATION_TYPE, coding);
+        Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE, coding);
 
         auditCodingExtension(extension, sourceCells);
     }

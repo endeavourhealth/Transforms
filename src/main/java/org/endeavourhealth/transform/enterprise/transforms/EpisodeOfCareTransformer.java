@@ -47,12 +47,12 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
 
         //registration type has moved to the EpisodeOfCare resource, although there will be some old instances (for now)
         //where the extension is on the Patient resource
-        Extension extension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
+        Extension extension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
         if (extension == null) {
             //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
             Patient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
             if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
-                extension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_REGISTRATION_TYPE);
+                extension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
             }
         }
 
