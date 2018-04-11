@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 public class OrganizationBuilder extends ResourceBuilderBase
-                                implements HasAddressI, HasIdentifierI {
+                                implements HasAddressI, HasIdentifierI, HasContactPointI {
 
     private Organization organization = null;
 
@@ -151,5 +151,26 @@ public class OrganizationBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.organization.getIdentifier().remove(identifier);
+    }
+
+    @Override
+    public ContactPoint addContactPoint() {
+        return this.organization.addTelecom();
+    }
+
+    @Override
+    public String getContactPointJsonPrefix(ContactPoint contactPoint) {
+        int index = organization.getTelecom().indexOf(contactPoint);
+        return "telecom[" + index + "]";
+    }
+
+    @Override
+    public List<ContactPoint> getContactPoint() {
+        return this.organization.getTelecom();
+    }
+
+    @Override
+    public void removeContactPoint(ContactPoint contactPoint) {
+        this.organization.getTelecom().remove(contactPoint);
     }
 }

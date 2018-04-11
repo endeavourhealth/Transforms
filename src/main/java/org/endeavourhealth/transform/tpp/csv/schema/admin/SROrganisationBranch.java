@@ -37,25 +37,24 @@ public class SROrganisationBranch extends AbstractCsvParser {
                       "BranchObsolete",
                       "IDOrganisation",
                       "RemovedData"
-                    
 
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getID() { return super.getCell("ID");};
- public CsvCell getBranchName() { return super.getCell("BranchName");};
- public CsvCell getHouseName() { return super.getCell("HouseName");};
- public CsvCell getHouseNumber() { return super.getCell("HouseNumber");};
- public CsvCell getRoadName() { return super.getCell("RoadName");};
- public CsvCell getLocality() { return super.getCell("Locality");};
- public CsvCell getTown() { return super.getCell("Town");};
- public CsvCell getCounty() { return super.getCell("County");};
- public CsvCell getPostCode() { return super.getCell("PostCode");};
- public CsvCell getBranchObsolete() { return super.getCell("BranchObsolete");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getID() { return super.getCell("ID");}
+ public CsvCell getBranchName() { return super.getCell("BranchName");}
+ public CsvCell getHouseName() { return super.getCell("HouseName");}
+ public CsvCell getHouseNumber() { return super.getCell("HouseNumber");}
+ public CsvCell getRoadName() { return super.getCell("RoadName");}
+ public CsvCell getLocality() { return super.getCell("Locality");}
+ public CsvCell getTown() { return super.getCell("Town");}
+ public CsvCell getCounty() { return super.getCell("County");}
+ public CsvCell getPostCode() { return super.getCell("PostCode");}
+ public CsvCell getBranchObsolete() { return super.getCell("BranchObsolete");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
 

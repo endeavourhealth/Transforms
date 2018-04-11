@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 public class LocationBuilder extends ResourceBuilderBase
-                            implements HasAddressI, HasIdentifierI {
+                            implements HasAddressI, HasIdentifierI, HasContactPointI {
 
     private Location location = null;
 
@@ -184,5 +184,26 @@ public class LocationBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.location.getIdentifier().remove(identifier);
+    }
+
+    @Override
+    public ContactPoint addContactPoint() {
+        return this.location.addTelecom();
+    }
+
+    @Override
+    public String getContactPointJsonPrefix(ContactPoint contactPoint) {
+        int index = location.getTelecom().indexOf(contactPoint);
+        return "telecom[" + index + "]";
+    }
+
+    @Override
+    public List<ContactPoint> getContactPoint() {
+        return this.location.getTelecom();
+    }
+
+    @Override
+    public void removeContactPoint(ContactPoint contactPoint) {
+        this.location.getTelecom().remove(contactPoint);
     }
 }
