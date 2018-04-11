@@ -55,6 +55,12 @@ public class SRVisitTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         encounterBuilder.setPatient(patientReference, patientId);
 
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+//            return;
+//        }
+
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
             encounterBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
@@ -97,11 +103,10 @@ public class SRVisitTransformer {
             encounterBuilder.setDuration(QuantityHelper.createDuration(Integer.valueOf(visitDuration.getInt()), "minutes"));
         }
 
-        CsvCell visitOrg = parser.getIDOrganisation();
-        if (!visitOrg.isEmpty()) {
-            //TODO: these are practice ODS codes NOT linked references
-            Reference orgReference = csvHelper.createOrganisationReference(visitOrg);
-            encounterBuilder.setServiceProvider(orgReference, visitOrg);
+        CsvCell visitOrgId = parser.getIDOrganisation();
+        if (!visitOrgId.isEmpty()) {
+            Reference orgReference = csvHelper.createOrganisationReference(visitOrgId);
+            encounterBuilder.setServiceProvider(orgReference, visitOrgId);
         }
 
         CsvCell followUpDetails = parser.getFollowUpDetails();

@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRPrimaryCareMedication;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -88,6 +87,12 @@ public class SRPrimaryCareMedicationTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
+
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+//            return;
+//        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
@@ -226,9 +231,9 @@ public class SRPrimaryCareMedicationTransformer {
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
-        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), "YMD");
-        if (date != null) {
+        if (!effectiveDate.isEmpty()) {
 
+            DateTimeType date = new DateTimeType(effectiveDate.getDate());
             medicationOrderBuilder.setDateWritten(date, effectiveDate);
         }
 

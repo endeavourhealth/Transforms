@@ -65,6 +65,12 @@ public class SRRepeatTemplateTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
 
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+            return;
+        }
+
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
 

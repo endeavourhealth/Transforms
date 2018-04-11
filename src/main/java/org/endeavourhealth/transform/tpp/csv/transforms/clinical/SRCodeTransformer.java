@@ -180,6 +180,12 @@ public class SRCodeTransformer {
 
         procedureBuilder.setPatient(csvHelper.createPatientReference(patientId));
 
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
+//            return;
+//        }
+
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
@@ -269,6 +275,12 @@ public class SRCodeTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
 
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+//            return;
+//        }
+
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
@@ -339,6 +351,14 @@ public class SRCodeTransformer {
             }
         }
 
+        // set consultation/encounter reference
+        CsvCell eventId = parser.getIDEvent();
+        if (!eventId.isEmpty()) {
+
+            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            conditionBuilder.setEncounter (eventReference, eventId);
+        }
+
     }
 
     private static void createObservation(SRCode parser,
@@ -358,6 +378,12 @@ public class SRCodeTransformer {
         TppCsvHelper.setUniqueId(observationBuilder, patientId, rowId);
 
         observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
+
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+//            return;
+//        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -464,6 +490,12 @@ public class SRCodeTransformer {
         TppCsvHelper.setUniqueId(familyMemberHistoryBuilder, patientId, rowId);
 
         familyMemberHistoryBuilder.setPatient(csvHelper.createPatientReference(patientId));
+
+//        CsvCell deleteData = parser.getRemovedData();
+//        if (deleteData.getIntAsBoolean()) {
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
+//            return;
+//        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

@@ -58,6 +58,12 @@ public class SRProblemTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
 
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+            return;
+        }
+
         // the linked SRCode entry - cache the reference
         CsvCell linkedObsCodeId = parser.getIDCode();
         CsvCell readV3Code = parser.getCTV3Code();

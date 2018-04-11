@@ -100,7 +100,7 @@ public class SREventPreTransformer {
         @Override
         public Object call() throws Exception {
             try {
-                //carry over linked items from any previous instance of this problem
+                //carry over linked items from any previous instance of this Consultation
                 Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter, fhirResourceFiler);
                 if (previousVersion == null) {
                     //if this is the first time, then we'll have a null resource

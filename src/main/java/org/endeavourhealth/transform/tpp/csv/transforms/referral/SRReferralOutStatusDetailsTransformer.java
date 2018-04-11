@@ -6,7 +6,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOutStatusDetails;
@@ -45,7 +44,7 @@ public class SRReferralOutStatusDetailsTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell deleted = parser.getRemovedData();
-        if (deleted.getBoolean()) {
+        if (deleted.getIntAsBoolean()) {
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
             return;
         }
@@ -61,7 +60,7 @@ public class SRReferralOutStatusDetailsTransformer {
 
                 //Update the referral description with status details
                 CsvCell referralStatusDate = parser.getDateEvent();
-                DateTimeType dateTimeType = EmisDateTimeHelper.createDateTimeType(referralStatusDate.getDate(), "YMD" );
+                DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDate());
                 if (dateTimeType != null) {
                     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
                     String displayDate = sdf.format(dateTimeType);
