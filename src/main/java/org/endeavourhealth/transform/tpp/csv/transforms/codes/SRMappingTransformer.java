@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -16,7 +16,7 @@ import java.util.Map;
 public class SRMappingTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRMappingTransformer.class);
 
-    private static TppConfigListOptionDalI repository = DalProvider.factoryTppConfigListOptionDal();
+    private static TppMappingRefDalI repository = DalProvider.factoryTppMappingRefDal();
     public static final String ROW_ID = "RowId";
     public static final String GROUP_ID = "groupId";
     public static final String MAPPED_TERM = "mappedTerm";
@@ -47,7 +47,7 @@ public class SRMappingTransformer {
         auditWrapper.auditValue(groupId.getRowAuditId(), groupId.getColIndex(), GROUP_ID);
         auditWrapper.auditValue(mappedTerm.getRowAuditId(), mappedTerm.getColIndex(), MAPPED_TERM);
 
-        TppConfigListOption mapping = new TppConfigListOption(rowId.getLong(),
+        TppMappingRef mapping = new TppMappingRef(rowId.getLong(),
                                     groupId.getLong(),
                                     mappedTerm.getString(),
                                     fhirResourceFiler.getServiceId().toString(),
