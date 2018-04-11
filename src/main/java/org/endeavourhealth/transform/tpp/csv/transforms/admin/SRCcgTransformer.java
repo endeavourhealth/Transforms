@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -9,37 +11,38 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
-import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisation;
+import org.endeavourhealth.transform.tpp.csv.schema.admin.SRCcg;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
-public class SROrganisationTransformer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SROrganisationTransformer.class);
+public class SRCcgTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SRCcgTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SROrganisationTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRCcgTransformer.class);
         while (parser.nextRecord()) {
 
             try {
-                createResource((SROrganisation)parser, fhirResourceFiler, csvHelper);
+                createResource((SRCcg)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
 
-    public static void createResource(SROrganisation parser,
-                                              FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+    public static void createResource(SRCcg parser,
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
         //first up, create the organisation resource
         createOrganisationResource(parser, fhirResourceFiler, csvHelper);
@@ -49,9 +52,9 @@ public class SROrganisationTransformer {
 
     }
 
-    public static void createLocationResource(SROrganisation parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+    public static void createLocationResource(SRCcg parser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
@@ -62,7 +65,7 @@ public class SROrganisationTransformer {
 
         LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
-        CsvCell obsoleteCell  = parser.getMadeObsolete();
+        CsvCell obsoleteCell  = parser.getRemovedData();
 
         if (obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
@@ -74,8 +77,16 @@ public class SROrganisationTransformer {
             locationBuilder.setName(nameCell.getString());
         }
 
-        CsvCell locationIdCell = parser.getID();
-        locationBuilder.setId(locationIdCell.getString(), locationIdCell);
+        CsvCell odsCell = parser.getOdsCode();
+        if (!odsCell.isEmpty()) {
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            if (identifiers.size() == 0) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+                identifierBuilder.setValue(odsCell.getString(), odsCell);
+            }
+        }
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
@@ -133,13 +144,13 @@ public class SROrganisationTransformer {
         }
 
         //set the managing organisation for the location, basically itself!
-        Reference organisationReference = csvHelper.createOrganisationReference(locationIdCell);
-        locationBuilder.setManagingOrganisation(organisationReference, locationIdCell);
+        Reference organisationReference = csvHelper.createOrganisationReference(rowIdCell);
+        locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
 
-    public static void createOrganisationResource(SROrganisation parser,
-                                              FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+    public static void createOrganisationResource(SRCcg parser,
+                                                  FhirResourceFiler fhirResourceFiler,
+                                                  TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
@@ -150,7 +161,7 @@ public class SROrganisationTransformer {
 
         OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
 
-        CsvCell obsoleteCell  = parser.getMadeObsolete();
+        CsvCell obsoleteCell  = parser.getRemovedData();
 
         if (obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
@@ -162,8 +173,16 @@ public class SROrganisationTransformer {
             organizationBuilder.setName(nameCell.getString());
         }
 
-        CsvCell organizationId = parser.getID();
-        organizationBuilder.setId(organizationId.getString(), organizationId);
+        CsvCell odsCell = parser.getOdsCode();
+        if (!odsCell.isEmpty()) {
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(organizationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            if (identifiers.size() == 0) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+                identifierBuilder.setValue(odsCell.getString(), odsCell);
+            }
+        }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
@@ -219,17 +238,6 @@ public class SROrganisationTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
-
-        CsvCell trustCell = parser.getIDTrust();
-        //set the trust as a parent organisation for the organisation
-        Reference trustReference = csvHelper.createOrganisationReference(trustCell);
-        organizationBuilder.setParentOrganisation(trustReference, trustCell);
-
-        CsvCell ccgCell = parser.getIDCcg();
-        //set the trust as a parent organisation for the organisation
-        Reference ccgReference = csvHelper.createOrganisationReference(trustCell);
-        organizationBuilder.setParentOrganisation(ccgReference, trustCell);
-
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
@@ -243,5 +251,4 @@ public class SROrganisationTransformer {
 
         contactPointBuilder.setValue(contactCell.getString(), contactCell);
     }
-
 }

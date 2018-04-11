@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.unused;
+package org.endeavourhealth.transform.tpp.csv.schema.admin;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRCcg extends AbstractCsvParser {
+public class SRTrust extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRCcg.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SRTrust.class); 
 
-  public SRCcg(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+  public SRTrust(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
             super(serviceId, systemId, exchangeId, version, filePath,
                     TppCsvToFhirTransformer.CSV_FORMAT,
                     TppCsvToFhirTransformer.DATE_FORMAT,
@@ -64,7 +64,7 @@ public class SRCcg extends AbstractCsvParser {
 
  //TODO fix the string below to make it meaningful
      @Override
-protected String getFileTypeDescription() {return "TPP SRCcg Entry file ";}
+protected String getFileTypeDescription() {return "TPP SRTrust Entry file ";}
 
      @Override
 protected boolean isFileAudited() {return true;}
