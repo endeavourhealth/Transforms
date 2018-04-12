@@ -147,7 +147,7 @@ public class IPEPITransformer extends BartsBasisTransformer {
                 encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
                 if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                    episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, endDateCell);
+                    episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
                 }
 
             } else if (beginDate.before(new Date())) {
