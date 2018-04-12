@@ -88,11 +88,11 @@ public class SRPrimaryCareMedicationTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+            return;
+        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
@@ -192,6 +192,12 @@ public class SRPrimaryCareMedicationTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationOrderBuilder.setPatient(patientReference, patientId);
+
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
+            return;
+        }
 
         // set the medication statement reference link
         // in TPP, use the same medicationId for statement and order if it is an Acute

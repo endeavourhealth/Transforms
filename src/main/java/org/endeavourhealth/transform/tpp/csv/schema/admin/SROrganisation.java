@@ -19,7 +19,6 @@ public class SROrganisation extends AbstractCsvParser {
                 TppCsvToFhirTransformer.TIME_FORMAT);
     }
 
-
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
@@ -38,7 +37,8 @@ public class SROrganisation extends AbstractCsvParser {
                 "Fax",
                 "MadeObsolete",
                 "IDTrust",
-                "IDCcg"
+                "IDCcg",
+                "RemovedData"
         };
 
     }
@@ -58,8 +58,7 @@ public class SROrganisation extends AbstractCsvParser {
     public CsvCell getMadeObsolete() { return super.getCell("MadeObsolete");}
     public CsvCell getIDTrust() { return super.getCell("IDTrust");}
     public CsvCell getIDCcg() { return super.getCell("IDCcg");}
-
-
+    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
     @Override
     protected String getFileTypeDescription() {return "TPP Organisation Entry file ";}

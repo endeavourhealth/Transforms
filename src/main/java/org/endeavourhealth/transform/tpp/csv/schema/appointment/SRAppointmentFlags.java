@@ -27,9 +27,8 @@ public class SRAppointmentFlags extends AbstractCsvParser {
                       "IDOrganisationVisibleTo",
                       "IDAppointment",
                       "Flag",
+                      "OldRowIdentifier",
                       "RemovedData"
-                    
-
             };
 
         }

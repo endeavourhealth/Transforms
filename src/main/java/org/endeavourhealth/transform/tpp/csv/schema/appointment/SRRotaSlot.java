@@ -32,9 +32,9 @@ public class SRRotaSlot extends AbstractCsvParser {
                       "EmbargoDuration",
                       "EmbargoExpiryTime",
                       "BlockedSlot",
-                      "BookableCAndB"
-                    
-
+                      "BookableCAndB",
+                      "OldRowIdentifier",
+                      "RemovedData"
             };
 
         }
@@ -48,7 +48,7 @@ public class SRRotaSlot extends AbstractCsvParser {
  public CsvCell getEmbargoExpiryTime() { return super.getCell("EmbargoExpiryTime");};
  public CsvCell getBlockedSlot() { return super.getCell("BlockedSlot");};
  public CsvCell getBookableCAndB() { return super.getCell("BookableCAndB");};
-
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
  //TODO fix the string below to make it meaningful
      @Override

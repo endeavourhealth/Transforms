@@ -35,9 +35,8 @@ public class SRRota extends AbstractCsvParser {
                       "AllowOverBooking",
                       "BookingContactNumber",
                       "IDAppointmentRoom",
-                      "IDBranch"
-                    
-
+                      "IDBranch",
+                      "RemovedData"
             };
 
         }
@@ -54,6 +53,7 @@ public class SRRota extends AbstractCsvParser {
  public CsvCell getBookingContactNumber() { return super.getCell("BookingContactNumber");};
  public CsvCell getIDAppointmentRoom() { return super.getCell("IDAppointmentRoom");};
  public CsvCell getIDBranch() { return super.getCell("IDBranch");};
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
  //TODO fix the string below to make it meaningful

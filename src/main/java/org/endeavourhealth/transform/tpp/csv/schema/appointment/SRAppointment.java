@@ -47,9 +47,9 @@ public class SRAppointment extends AbstractCsvParser {
                       "IDRota",
                       "IDReferralIn",
                       "IDPatient",
-                      "IDOrganisation"
-                    
-
+                      "IDOrganisation",
+                      "IDOrganisationRegisteredAt",
+                      "RemovedData"
             };
 
         }
@@ -78,6 +78,8 @@ public class SRAppointment extends AbstractCsvParser {
  public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
  public CsvCell getIDPatient() { return super.getCell("IDPatient");};
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
  //TODO fix the string below to make it meaningful

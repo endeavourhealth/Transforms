@@ -10,47 +10,47 @@ import java.util.UUID;
 
 public class SRPatientAddressHistory extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistory.class); 
+ private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistory.class);
 
-  public SRPatientAddressHistory(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-            super(serviceId, systemId, exchangeId, version, filePath,
-                    TppCsvToFhirTransformer.CSV_FORMAT,
-                    TppCsvToFhirTransformer.DATE_FORMAT,
-                    TppCsvToFhirTransformer.TIME_FORMAT);
-        }
+    public SRPatientAddressHistory(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
+                TppCsvToFhirTransformer.CSV_FORMAT,
+                TppCsvToFhirTransformer.DATE_FORMAT,
+                TppCsvToFhirTransformer.TIME_FORMAT);
+    }
 
 
-        @Override
-        protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "DateEventRecorded",
-                      "DateEvent",
-                      "IDProfileEnteredBy",
-                      "IDDoneBy",
-                      "TextualEventDoneBy",
-                      "IDOrganisationDoneAt",
-                      "NameOfBuilding",
-                      "NumberOfBuilding",
-                      "NameOfRoad",
-                      "NameOfLocality",
-                      "NameOfTown",
-                      "NameOfCounty",
-                      "FullPostCode",
-                      "DateTo",
-                      "AddressType",
-                      "IDEvent",
-                      "IDPatient",
-                      "IDOrganisation",
-                      "CcgOfResidence",
-                      "RemovedData"
-                    
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[]{
+                "RowIdentifier",
+                "IDOrganisationVisibleTo",
+                "DateEventRecorded",
+                "DateEvent",
+                "IDProfileEnteredBy",
+                "IDDoneBy",
+                "TextualEventDoneBy",
+                "IDOrganisationDoneAt",
+                "NameOfBuilding",
+                "NumberOfBuilding",
+                "NameOfRoad",
+                "NameOfLocality",
+                "NameOfTown",
+                "NameOfCounty",
+                "FullPostCode",
+                "DateTo",
+                "AddressType",
+                "IDEvent",
+                "IDPatient",
+                "IDOrganisation",
+                "CcgOfResidence",
+                "RemovedData"
 
-            };
 
-        }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+        };
+
+    }
+    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
 
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
 
@@ -98,7 +98,7 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
     @Override
     protected String getFileTypeDescription() {return "TPP Patient Address History Entry file ";}
 
-     @Override
+    @Override
     protected boolean isFileAudited() {return true;}
 
 }

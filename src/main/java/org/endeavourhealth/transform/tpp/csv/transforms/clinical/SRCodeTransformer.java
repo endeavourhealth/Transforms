@@ -180,11 +180,11 @@ public class SRCodeTransformer {
 
         procedureBuilder.setPatient(csvHelper.createPatientReference(patientId));
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
+            return;
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -275,11 +275,11 @@ public class SRCodeTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+            return;
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -379,11 +379,11 @@ public class SRCodeTransformer {
 
         observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+            return;
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -491,11 +491,11 @@ public class SRCodeTransformer {
 
         familyMemberHistoryBuilder.setPatient(csvHelper.createPatientReference(patientId));
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
+            return;
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRCtv3ToVersion2 extends AbstractCsvParser {
+public class SRMedicationReadCodeDetails extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRCtv3ToVersion2.class);
+ private static final Logger LOG = LoggerFactory.getLogger(SRMedicationReadCodeDetails.class);
 
-    public SRCtv3ToVersion2(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public SRMedicationReadCodeDetails(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 TppCsvToFhirTransformer.CSV_FORMAT,
                 TppCsvToFhirTransformer.DATE_FORMAT,
@@ -23,23 +23,23 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         return new String[]{
                 "RowIdentifier",
-                "Ctv3Code",
-                "Version2Code",
+                "IDMultiLexProduct",
+                "DrugReadCode",
+                "DrugReadCodeDesc",
                 "RemovedData"
-
-
         };
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getCtv3Code() { return super.getCell("Ctv3Code");};
-    public CsvCell getVersion2Code() { return super.getCell("Version2Code");};
+    public CsvCell getIDMultiLexProduct() { return super.getCell("IDMultiLexProduct");};
+    public CsvCell getDrugReadCode() { return super.getCell("DrugReadCode");};
+    public CsvCell getDrugReadCodeDesc() { return super.getCell("DrugReadCodeDesc");};
     public CsvCell getRemovedData() { return super.getCell("RemovedData");};
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Ctv3 Read Codes To Version2 Entry file ";}
+    protected String getFileTypeDescription() {return "TPP Medication Read Code Details Entry file ";}
 
     @Override
     protected boolean isFileAudited() {return true;}

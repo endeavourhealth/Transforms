@@ -124,6 +124,7 @@ public abstract class TppCsvToFhirTransformer {
         } else if (fileName.startsWith("SRCtv3")
                 || fileName.startsWith("SRTemplate")
                 || fileName.startsWith("SRMapping")
+                || fileName.startsWith("SRMedicationReadCode")
                 || fileName.startsWith("SRConfiguredList")) {
             return "codes";
         } else
@@ -167,6 +168,7 @@ public abstract class TppCsvToFhirTransformer {
         LOG.trace("Starting appointment transforms");
         SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SlotResourceCache.fileSlotResources(fhirResourceFiler);
         AppointmentResourceCache.fileAppointmentResources(fhirResourceFiler);
 
         LOG.trace("Starting clinical transforms");

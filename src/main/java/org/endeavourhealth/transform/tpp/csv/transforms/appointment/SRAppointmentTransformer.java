@@ -63,6 +63,12 @@ public class SRAppointmentTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
 
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+            return;
+        }
+
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
