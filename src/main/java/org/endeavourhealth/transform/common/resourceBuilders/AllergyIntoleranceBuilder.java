@@ -68,6 +68,18 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
         auditValue("certainty", sourceCells);
     }
 
+    public void setCategory(AllergyIntolerance.AllergyIntoleranceCategory allergyIntoleranceCategory, CsvCell... sourceCells) {
+        this.allergyIntolerance.setCategory(allergyIntoleranceCategory);
+
+        auditValue("category", sourceCells);
+    }
+
+    public void setStatus(AllergyIntolerance.AllergyIntoleranceStatus allergyIntoleranceStatus, CsvCell... sourceCells) {
+        this.allergyIntolerance.setStatus(allergyIntoleranceStatus);
+
+        auditValue("status", sourceCells);
+    }
+
     public void setNote(String text, CsvCell... sourceCells) {
         Annotation annotation = AnnotationHelper.createAnnotation(text);
         this.allergyIntolerance.setNote(annotation);

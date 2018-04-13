@@ -55,11 +55,11 @@ public class SRVisitTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         encounterBuilder.setPatient(patientReference, patientId);
 
-//        CsvCell deleteData = parser.getRemovedData();
-//        if (deleteData.getIntAsBoolean()) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-//            return;
-//        }
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            return;
+        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {

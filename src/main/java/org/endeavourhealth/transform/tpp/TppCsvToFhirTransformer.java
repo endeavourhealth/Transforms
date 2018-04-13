@@ -175,7 +175,7 @@ public abstract class TppCsvToFhirTransformer {
         SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        // medication (Repeats first, then acutes and orders)
+        // medication (repeats first, then acutes and issues/orders)
         SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPrimaryCareMedicationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
@@ -189,5 +189,7 @@ public abstract class TppCsvToFhirTransformer {
         SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         ConditionResourceCache.fileConditionResources(fhirResourceFiler);
 
+        // drug allergies
+        SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
     }
 }

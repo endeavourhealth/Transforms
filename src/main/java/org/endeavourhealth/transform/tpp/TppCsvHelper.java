@@ -10,6 +10,8 @@ import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOpt
 import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.reference.MultiLexToCTV3MapDalI;
+import org.endeavourhealth.core.database.dal.reference.models.MultiLexToCTV3Map;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -41,8 +43,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
     private static HashMap<String, TppConfigListOption> tppConfigListOptions = new HashMap<>();
 
-    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private static InternalIdDalI internalIdDalI = DalProvider.factoryInternalIdDal();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
+
+    private static MultiLexToCTV3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryMultiLexToCTV3MapDal();
+    private static HashMap<String, MultiLexToCTV3Map> multiLexToCTV3Map = new HashMap<>();
 
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
@@ -234,10 +239,34 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return tppConfigListOptionFromDB;
     }
 
+    // Lookup multi-lex read code map
+    public MultiLexToCTV3Map lookUpMultiLexToCTV3Map(Long multiLexProductId) throws Exception {
+
+        String codeLookup = multiLexProductId.toString();
+
+        //Find the code in the cache
+        MultiLexToCTV3Map multiLexToCTV3MapFromCache = multiLexToCTV3Map.get(codeLookup);
+
+        // return cached version if exists
+        if (multiLexToCTV3MapFromCache != null) {
+            return multiLexToCTV3MapFromCache;
+        }
+
+        MultiLexToCTV3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId);
+        if (multiLexToCTV3MapFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        multiLexToCTV3Map.put(codeLookup, multiLexToCTV3MapFromDB);
+
+        return multiLexToCTV3MapFromDB;
+    }
+
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
 
-        internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
+        internalIdDalI.upsertRecord(serviceId, idType, sourceId, destinationId);
 
         if (internalIdMapCache.containsKey(cacheKey)) {
             internalIdMapCache.replace(cacheKey, destinationId);
@@ -252,7 +281,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return internalIdMapCache.get(cacheKey);
         }
 
-        String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
+        String ret = internalIdDalI.getDestinationId(serviceId, idType, sourceId);
 
         if (ret != null) {
             internalIdMapCache.put(cacheKey, ret);
