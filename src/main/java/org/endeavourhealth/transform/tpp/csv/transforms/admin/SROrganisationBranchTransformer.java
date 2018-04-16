@@ -1,24 +1,21 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
+import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisationBranch;
 import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SROrganisationBranchTransformer {
@@ -68,18 +65,22 @@ public class SROrganisationBranchTransformer {
 
         CsvCell orgIdCell = parser.getIDOrganisation();
         if (!orgIdCell.isEmpty()) {
+            if (!OrganisationResourceCache.OrganizationInCache(orgIdCell)) {
+                TransformWarnings.log(LOG,parser, "Organisation id {} not found in cache. Row {} in file {}",
+                        orgIdCell.getString(),rowIdCell.getString(),parser.getFilePath());
+                return;
+            }
+
             Reference organisationReference = csvHelper.createOrganisationReference(orgIdCell);
             locationBuilder.setManagingOrganisation(organisationReference,orgIdCell);
+        } else {
+            TransformWarnings.log(LOG,parser,"Missing Organization for row Id {} in {}",
+                    rowIdCell.getString(), parser.getFilePath());
+            return;
         }
         CsvCell locationIdCell = parser.getID();
         if (!locationIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_LOCATION_ID);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_LOCATION_ID);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
-            }
+           locationBuilder.setId(locationIdCell.getString());
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
