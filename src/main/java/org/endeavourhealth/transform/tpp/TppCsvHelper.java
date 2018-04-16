@@ -10,8 +10,8 @@ import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOpt
 import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.reference.MultiLexToCTV3MapDalI;
-import org.endeavourhealth.core.database.dal.reference.models.MultiLexToCTV3Map;
+import org.endeavourhealth.core.database.dal.publisherTransform.MultiLexToCTV3MapDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -252,7 +252,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return multiLexToCTV3MapFromCache;
         }
 
-        MultiLexToCTV3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId);
+        MultiLexToCTV3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId, serviceId);
         if (multiLexToCTV3MapFromDB == null) {
             return null;
         }

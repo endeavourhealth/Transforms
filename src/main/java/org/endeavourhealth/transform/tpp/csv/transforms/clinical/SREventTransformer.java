@@ -44,7 +44,7 @@ public class SREventTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell visitId = parser.getRowIdentifier();
+        CsvCell eventId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
 
         if (patientId.isEmpty()) {
@@ -54,7 +54,7 @@ public class SREventTransformer {
         }
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        TppCsvHelper.setUniqueId(encounterBuilder, patientId, visitId);
+        TppCsvHelper.setUniqueId(encounterBuilder, patientId, eventId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         encounterBuilder.setPatient(patientReference, patientId);
