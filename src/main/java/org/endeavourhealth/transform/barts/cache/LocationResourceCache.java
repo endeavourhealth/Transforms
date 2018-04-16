@@ -70,7 +70,7 @@ public class LocationResourceCache {
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, locationIdCell.getLong());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, locationIdCell.getString());
             if (cernerCodeValueRef != null) {
                 locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
             } else {

@@ -84,7 +84,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PHONE_TYPE,
-                                                                                phoneTypeCell.getLong());
+                                                                                phoneTypeCell.getString());
 
             use = convertPhoneType(cernerCodeValueRef.getCodeMeaningTxt());
             system = convertPhoneSystem(cernerCodeValueRef.getCodeMeaningTxt());

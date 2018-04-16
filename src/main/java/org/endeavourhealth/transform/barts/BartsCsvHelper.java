@@ -200,7 +200,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return null;
     }
 
-    public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, Long code) throws Exception {
+    public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, String code) throws Exception {
 
         String codeLookup = code.toString() + "|" + serviceId.toString();
 

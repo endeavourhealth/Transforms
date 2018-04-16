@@ -159,7 +159,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
         if (codeCell != null && !codeCell.isEmpty()) {
-            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getLong()) == null) {
+            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getString()) == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
                         codeCell.getLong(), parser.getEventCode().getString(),
                         codeCell.getRowAuditId(), codeCell.getColIndex());
@@ -202,7 +202,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
         if (normalcyCodeCell != null && !normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
 
-            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getLong()) == null) {
+            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getString()) == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
                         normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
                         normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
@@ -348,7 +348,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                     CernerCodeValueRef.CLINICAL_EVENT_UNITS,
-                    unitsCodeCell.getLong());
+                    unitsCodeCell.getString());
 
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",

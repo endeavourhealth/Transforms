@@ -174,7 +174,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         if (!diagnosisTypeCode.isEmpty() && diagnosisTypeCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.DIAGNOSIS_TYPE,
-                                                                    diagnosisTypeCode.getLong());
+                                                                    diagnosisTypeCode.getString());
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for DiagnosisTypeCode {} not found. Row {} Column {} ",
                         diagnosisTypeCode.getLong(), parser.getDiagnosisTypeCode().getString(),

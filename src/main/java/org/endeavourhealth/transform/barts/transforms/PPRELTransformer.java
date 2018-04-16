@@ -142,7 +142,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                     CernerCodeValueRef.RELATIONSHIP_TO_PATIENT,
-                                                                    relationshipToPatientCell.getLong());
+                                                                    relationshipToPatientCell.getString());
 
             String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
 
@@ -155,7 +155,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.PERSON_RELATIONSHIP_TYPE,
-                                                                        relationshipTypeCell.getLong());
+                                                                        relationshipTypeCell.getString());
 
             String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
 

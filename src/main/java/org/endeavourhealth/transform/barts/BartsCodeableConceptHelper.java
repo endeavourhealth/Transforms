@@ -36,7 +36,7 @@ public class BartsCodeableConceptHelper {
 
         CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                 codeSet,
-                codeCell.getLong());
+                codeCell.getString());
 
         if (cernerCodeValueRef == null) {
             return null;

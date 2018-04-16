@@ -100,7 +100,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.NHS_NUMBER_STATUS,
-                                                                        nhsNumberStatusCell.getLong());
+                                                                        nhsNumberStatusCell.getString());
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found. Row {} Column {} ",
                         nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString(),
@@ -140,7 +140,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!genderCell.isEmpty() && genderCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.GENDER,
-                                                                                genderCell.getLong());
+                                                                                genderCell.getString());
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found. Row {} Column {} ",
                         genderCell.getLong(), parser.getGenderCode().getString(),
@@ -159,7 +159,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!maritalStatusCode.isEmpty() && maritalStatusCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                         CernerCodeValueRef.MARITAL_STATUS,
-                                                                        maritalStatusCode.getLong());
+                                                                        maritalStatusCode.getString());
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found. Row {} Column {} ",
                         maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString(),
@@ -178,7 +178,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         if (!ethnicityCode.isEmpty() && ethnicityCode.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                             CernerCodeValueRef.ETHNIC_GROUP,
-                                                                            ethnicityCode.getLong());
+                                                                            ethnicityCode.getString());
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found. Row {} Column {} ",
                         ethnicityCode.getLong(), parser.getEthnicGroupCode().getString(),

@@ -6,10 +6,12 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.homerton.schema.CVREF;
 import org.endeavourhealth.transform.homerton.schema.Diagnosis;
 import org.endeavourhealth.transform.homerton.schema.Patient;
 import org.endeavourhealth.transform.homerton.schema.Problem;
 import org.endeavourhealth.transform.homerton.schema.Procedure;
+import org.endeavourhealth.transform.homerton.transforms.CVREFTransformer;
 import org.endeavourhealth.transform.homerton.transforms.DiagnosisTransformer;
 import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
 import org.endeavourhealth.transform.homerton.transforms.ProblemTransformer;
@@ -121,6 +123,10 @@ public abstract class HomertonCsvToFhirTransformer {
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
                 Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath);
                 DiagnosisTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+                parser.close();
+            } else if (fileType.compareTo("CVREF") == 0) {
+                CVREF parser = new CVREF(serviceId, systemId, exchangeId, version, filePath);
+                CVREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
                 Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath);

@@ -223,7 +223,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         for (CsvCell cell: sourceCells) {
             if ((cell != null) && (!cell.isEmpty()) && (cell.getLong() > 0)) {
 
-                CernerCodeValueRef cernerCodeDef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getLong());
+                CernerCodeValueRef cernerCodeDef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getString());
                 if (cernerCodeDef !=null && cernerCodeDef.getCodeDispTxt() != null) {
                     tokens.add(cernerCodeDef.getCodeDispTxt());
                 } else {

@@ -172,7 +172,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         if (!procedureTypeCodeCell.isEmpty() && procedureTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
                                                                                 CernerCodeValueRef.PROCEDURE_TYPE,
-                                                                                procedureTypeCodeCell.getLong());
+                                                                                procedureTypeCodeCell.getString());
             if (cernerCodeValueRef == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for procedure type {} not found. Row {} Column {} ",
                         procedureTypeCodeCell.getLong(), parser.getProcedureTypeCode().getString(),
