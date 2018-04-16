@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransf
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRConfiguredListOptionTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRMappingTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRMedicationReadCodeDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
@@ -149,6 +150,7 @@ public abstract class TppCsvToFhirTransformer {
         // Code lookups
         SRMappingTransformer.transform(parsers, fhirResourceFiler);
         SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
         // Staff
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);

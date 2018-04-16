@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.dal.reference.models.MultiLexToCTV3Map;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
