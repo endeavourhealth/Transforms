@@ -121,9 +121,7 @@ public class SROrganisationBranchTransformer {
         if (!fullPostCodeCell.isEmpty()) {
             addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
         }
-
-
-
+    fhirResourceFiler.saveAdminResource(parser.getCurrentState(),locationBuilder);
 
     }
 
