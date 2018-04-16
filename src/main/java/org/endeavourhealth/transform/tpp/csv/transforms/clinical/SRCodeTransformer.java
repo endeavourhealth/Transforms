@@ -60,9 +60,9 @@ public class SRCodeTransformer {
             case Procedure:
                 createProcedure(parser, fhirResourceFiler, csvHelper);
                 break;
-//            case AllergyIntolerance:
-//                createOrDeleteAllergy(parser, fhirResourceFiler, csvHelper);
-//                break;
+            case AllergyIntolerance:
+                createAllergy(parser, fhirResourceFiler, csvHelper);
+                break;
             case FamilyMemberHistory:
                 createFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
                 break;
@@ -71,96 +71,100 @@ public class SRCodeTransformer {
         }
     }
 
+    public static void createAllergy(SRCode parser,
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
-//    private static void createAllergy(SRCode parser,
-//                                              FhirResourceFiler fhirResourceFiler,
-//                                              TppCsvHelper csvHelper) throws Exception {
-//
-//        AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder();
-//        CsvCell observationID = parser.getObservationID();
-//        CsvCell patientID = parser.getPatientID();
-//
-//        VisionCsvHelper.setUniqueId(allergyIntoleranceBuilder, patientID, observationID);
-//
-//        allergyIntoleranceBuilder.setPatient(csvHelper.createPatientReference(patientID));
-//
-//        //if the Resource is to be deleted from the data store, then stop processing the CSV row
-//        if (parser.getAction().getString().equalsIgnoreCase("D")) {
-//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-//            return;
-//        }
-//
-//        CsvCell clinicianID = parser.getClinicianUserID();
-//        if (!clinicianID.isEmpty()) {
-//            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
-//            allergyIntoleranceBuilder.setClinician(csvHelper.createPractitionerReference(cleanUserId));
-//        }
-//
-//        CsvCell enteredDate = parser.getEnteredDateTime();
-//        allergyIntoleranceBuilder.setRecordedDate(enteredDate.getDate(), enteredDate);
-//
-//        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, null);
-//        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-//
-//        CsvCell snomedCode = parser.getSnomedCode();
-//        if (!snomedCode.isEmpty()) {
-//            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-//        }
-//        CsvCell term = parser.getRubric();
-//        if (!term.isEmpty()) {
-//            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
-//            codeableConceptBuilder.setText(term.getString(), term);
-//        }
-//
-//        CsvCell effectiveDate = parser.getEffectiveDateTime();
-//        String effectiveDatePrecision = "YMD";
-//        allergyIntoleranceBuilder.setOnsetDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
-//
-//        CsvCell associatedText = parser.getAssociatedText();
-//        if (!associatedText.isEmpty()) {
-//            allergyIntoleranceBuilder.setNote(associatedText.getString(), associatedText);
-//        }
-//
-//        CsvCell severity = parser.getAllergySeverity();
-//        if (!severity.isEmpty()) {
-//            AllergyIntolerance.AllergyIntoleranceSeverity allergyIntoleranceSeverity = convertSnomedToAllergySeverity(severity.getString());
-//            if (allergyIntoleranceSeverity != null) {
-//                allergyIntoleranceBuilder.setSeverity(allergyIntoleranceSeverity, severity);
-//            }
-//        }
-//
-//        CsvCell certainty = parser.getAllergyCertainty();
-//        if (!certainty.isEmpty()) {
-//            AllergyIntolerance.AllergyIntoleranceCertainty allergyIntoleranceCertainty = convertSnomedToAllergyCertainty(certainty.getString());
-//            if (allergyIntoleranceCertainty != null) {
-//                allergyIntoleranceBuilder.setCertainty(allergyIntoleranceCertainty, certainty);
-//            }
-//        }
-//
-//        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
-//        if (!Strings.isNullOrEmpty(consultationID)) {
-//            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
-//            allergyIntoleranceBuilder.setEncounter(reference, parser.getLinks());
-//        }
-//
-//        CsvCell enteredByID = parser.getClinicianUserID();
-//        if (!enteredByID.isEmpty()) {
-//            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
-//            Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-//            allergyIntoleranceBuilder.setRecordedBy(reference, enteredByID);
-//        }
-//
-//        String documentId = getDocumentId(parser);
-//        if (!Strings.isNullOrEmpty(documentId)) {
-//            Identifier fhirDocIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentId);
-//            allergyIntoleranceBuilder.addDocumentIdentifier(fhirDocIdentifier, parser.getDocumentID());
-//        }
-//
-//        //assert that these cells are empty, as we don't stored them in this resource type
-//        assertValueEmpty(allergyIntoleranceBuilder, parser);
-//
-//        fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-//    }
+
+        CsvCell rowId = parser.getRowIdentifier();
+        CsvCell patientId = parser.getIDPatient();
+
+        if (patientId.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
+
+        AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder();
+        TppCsvHelper.setUniqueId(allergyIntoleranceBuilder, patientId, rowId);
+
+        allergyIntoleranceBuilder.setPatient(csvHelper.createPatientReference(patientId));
+
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData.getIntAsBoolean()) {
+
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
+            return;
+        }
+
+        CsvCell recordedBy = parser.getIDProfileEnteredBy();
+        if (!recordedBy.isEmpty()) {
+
+            String staffMemberId =
+                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+            allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
+        }
+
+        CsvCell procedureDoneBy = parser.getIDDoneBy();
+        if (!procedureDoneBy.isEmpty()) {
+
+            Reference staffReference = csvHelper.createPractitionerReference(procedureDoneBy);
+            allergyIntoleranceBuilder.setClinician(staffReference, procedureDoneBy);
+        }
+
+        CsvCell dateRecored = parser.getDateEventRecorded();
+        if (!dateRecored.isEmpty()) {
+
+            allergyIntoleranceBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+        }
+
+        CsvCell effectiveDate = parser.getDateEvent();
+        if (!effectiveDate.isEmpty()) {
+
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            allergyIntoleranceBuilder.setOnsetDate(dateTimeType, effectiveDate);
+        }
+
+        allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.ACTIVE);
+
+        // these are non drug allergies
+        allergyIntoleranceBuilder.setCategory(AllergyIntolerance.AllergyIntoleranceCategory.OTHER);
+
+        CsvCell readV3Code = parser.getCTV3Code();
+        if (!readV3Code.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(allergyIntoleranceBuilder, null);
+
+            // add Ctv3 coding
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+            codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
+            CsvCell readV3Term = parser.getCTV3Text();
+            codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
+            codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
+
+            // translate to Snomed
+            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
+            if (snomedCode != null) {
+
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                codeableConceptBuilder.setText(snomedCode.getTerm());
+            }
+        }
+
+        // set consultation/encounter reference
+        CsvCell eventId = parser.getIDEvent();
+        if (!eventId.isEmpty()) {
+
+            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            allergyIntoleranceBuilder.setEncounter (eventReference, eventId);
+        }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
+    }
 
     private static void createProcedure(SRCode parser,
                                         FhirResourceFiler fhirResourceFiler,
@@ -216,12 +220,11 @@ public class SRCodeTransformer {
             procedureBuilder.setPerformed(dateTimeType, effectiveDate);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(procedureBuilder,  ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(procedureBuilder,  ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -317,12 +320,11 @@ public class SRCodeTransformer {
         boolean isProblem = csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier());
         conditionBuilder.setAsProblem(isProblem);
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -417,11 +419,11 @@ public class SRCodeTransformer {
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
-
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -533,12 +535,11 @@ public class SRCodeTransformer {
         //so just use the generic family member term
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(familyMemberHistoryBuilder, null);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(familyMemberHistoryBuilder, null);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -590,8 +591,9 @@ public class SRCodeTransformer {
         } else if ((!Strings.isNullOrEmpty(readV3Code) && Read2.isDisorder(readV3Code)
                 || csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier()))) {
             return ResourceType.Condition;
-//        } else if (subset.equalsIgnoreCase("L")) {
-//            return ResourceType.AllergyIntolerance;
+        } else if ((!Strings.isNullOrEmpty(readV3Code)
+                && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
+            return ResourceType.AllergyIntolerance;
         } else if (!Strings.isNullOrEmpty(readV3Code)
                 && Read2.isFamilyHistory(readV3Code)) {
             return ResourceType.FamilyMemberHistory;

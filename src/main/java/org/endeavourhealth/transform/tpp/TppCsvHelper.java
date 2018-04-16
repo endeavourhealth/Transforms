@@ -5,13 +5,10 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.*;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.MultiLexToCTV3MapDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -35,6 +32,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static final String ID_DELIMITER = ":";
 
+    private static final String ALLERGIC_DISORDER = "Xa1pQ";
+
     private static final ParserPool PARSER_POOL = new ParserPool();
 
     private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
@@ -49,10 +48,13 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static MultiLexToCTV3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryMultiLexToCTV3MapDal();
     private static HashMap<String, MultiLexToCTV3Map> multiLexToCTV3Map = new HashMap<>();
 
+    private static CTV3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryCTV3HierarchyRefDal();
+
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
 
     private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<String, String> allergyReadCodes = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -189,6 +191,28 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public boolean isProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
+    }
+
+    public void cacheAllergyCode(String readCode, String readTerm) {
+        problemReadCodes.put(readCode, readTerm);
+    }
+
+    public boolean isAllergyCode(String readCode, String readTerm) throws Exception {
+
+        // check cache first
+        if (problemReadCodes.containsKey(readCode))
+            return true;
+
+        // check db and cache if true
+        boolean isAllergy
+                = ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ALLERGIC_DISORDER, serviceId);
+        if (isAllergy) {
+            cacheAllergyCode(readCode, readTerm);
+            return true;
+        }
+
+        // otherwise, it's not an allergy code
+        return false;
     }
 
     // Lookup code reference from SRMapping generated db

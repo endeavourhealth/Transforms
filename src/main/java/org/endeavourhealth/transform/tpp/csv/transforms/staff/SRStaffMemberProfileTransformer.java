@@ -49,7 +49,6 @@ public class SRStaffMemberProfileTransformer {
         csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                                     staffMemberProfileId.getString(), staffMemberId.getString());
 
-        //TODO: how deal with edits/deletes to roles?
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell orgID = parser.getIDOrganisation();
