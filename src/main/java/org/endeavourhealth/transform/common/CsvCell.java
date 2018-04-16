@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.common;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -188,6 +190,31 @@ public class CsvCell {
                     removeFrom.remove(i);
                 }
             }
+        }
+    }
+
+    public static DateTimeType getDateTimeType(Date date, String precision) throws TransformException {
+
+        if (date == null) {
+            return null;
+        }
+        if (!Strings.isNullOrEmpty(precision)) {
+            throw new IllegalArgumentException("Unsupported precision [" + precision + "]");
+        }
+
+        switch (precision) {
+            case "U":
+                return null;
+            case "Y":
+                return new DateTimeType(date, TemporalPrecisionEnum.YEAR);
+            case "YM":
+                return new DateTimeType(date, TemporalPrecisionEnum.MONTH);
+            case "YMD":
+                return new DateTimeType(date, TemporalPrecisionEnum.DAY);
+            case "YMDT":
+                return new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
+            default:
+                throw new IllegalArgumentException("Unknown date precision [" + precision + "]");
         }
     }
 }

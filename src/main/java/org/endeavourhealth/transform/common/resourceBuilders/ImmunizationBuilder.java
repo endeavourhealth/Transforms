@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -38,6 +39,58 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         this.immunization.setPatient(patientReference);
 
         auditValue("patient.reference", sourceCells);
+    }
+
+    public void setLocation(Reference locationReference, CsvCell... sourceCells) {
+        this.immunization.setLocation(locationReference);
+
+        auditValue("location.reference", sourceCells);
+    }
+
+    public void setSite(String site, CsvCell... sourceCells) {
+        if (!Strings.isNullOrEmpty(site)) {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(site);
+            this.immunization.setSite(codeableConcept);
+
+            auditValue("site", sourceCells);
+        }
+    }
+
+    public void setRoute(String route, CsvCell... sourceCells) {
+        if (!Strings.isNullOrEmpty(route)) {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(route);
+            this.immunization.setRoute(codeableConcept);
+
+            auditValue("route", sourceCells);
+        }
+    }
+
+    public void setVaccineCode(CodeableConcept code, CsvCell... sourceCells) {
+        if (code != null) {
+            this.immunization.setVaccineCode(code);
+
+            auditValue("vaccineCode", sourceCells);
+        }
+    }
+
+    public void setVaccinationProtocol(Immunization.ImmunizationVaccinationProtocolComponent protocol, CsvCell... sourceCells) {
+        if (protocol != null) {
+            this.immunization.addVaccinationProtocol(protocol);
+
+            auditValue("vaccinationProtocol", sourceCells);
+        }
+    }
+
+    public void setDoseQuantity(SimpleQuantity dose, CsvCell... sourceCells) {
+        this.immunization.setDoseQuantity(dose);
+
+        auditValue("doseQuantity", sourceCells);
+    }
+
+    public void setExpirationDate(Date expirationDate, CsvCell... sourceCells) {
+        this.immunization.setExpirationDate(expirationDate);
+
+        auditValue("expirationDate", sourceCells);
     }
 
     public void setStatus(String status, CsvCell... sourceCells) {
