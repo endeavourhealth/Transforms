@@ -195,5 +195,9 @@ public abstract class TppCsvToFhirTransformer {
 
         // drug allergies
         SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        //Immunisations (content first, then immunisations)
+        SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
+        SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
     }
 }

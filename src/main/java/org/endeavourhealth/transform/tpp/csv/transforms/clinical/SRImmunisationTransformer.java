@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -143,12 +144,25 @@ public class SRImmunisationTransformer {
         }
 
         Immunization.ImmunizationVaccinationProtocolComponent protocolComponent = new Immunization.ImmunizationVaccinationProtocolComponent();
+        boolean addProtocol = false;
 
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
+            addProtocol = true;
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart.getLong());
             String mappedTerm = tppMappingRef.getMappedTerm();
             protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+        }
+
+        CsvCell immContent = parser.getIDImmunisationContent();
+        if (!immContent.isEmpty()) {
+            addProtocol = true;
+            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong());
+            String contentName = tppImmunisationContent.getName();
+            protocolComponent.setSeries(contentName);
+        }
+
+        if (addProtocol) {
             immunizationBuilder.setVaccinationProtocol(protocolComponent);
         }
 
