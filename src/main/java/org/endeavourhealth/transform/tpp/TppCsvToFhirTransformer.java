@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
+import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRChildAtRisk;
 import org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
@@ -203,6 +204,9 @@ public abstract class TppCsvToFhirTransformer {
 
         // Media (documents - this is just a reference to documents that we are not getting so ignoring for now
         SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        // Child at risk
+        SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
     }
 }
