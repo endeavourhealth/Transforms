@@ -198,13 +198,13 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheAllergyCode(String readCode, String readTerm) {
-        problemReadCodes.put(readCode, readTerm);
+        allergyReadCodes.put(readCode, readTerm);
     }
 
     public boolean isAllergyCode(String readCode, String readTerm) throws Exception {
 
         // check cache first
-        if (problemReadCodes.containsKey(readCode))
+        if (allergyReadCodes.containsKey(readCode))
             return true;
 
         // check db and cache if true
