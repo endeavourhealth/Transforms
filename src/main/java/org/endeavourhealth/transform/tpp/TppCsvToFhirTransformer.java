@@ -199,5 +199,6 @@ public abstract class TppCsvToFhirTransformer {
         //Immunisations (content first, then immunisations)
         SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
         SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRImmunisationConsentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
     }
 }
