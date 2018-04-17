@@ -33,7 +33,7 @@ public class ConditionResourceCache {
             if (condition == null) {
                 //if the Condition doesn't exist yet, create a new one
                 conditionBuilder = new ConditionBuilder();
-                TppCsvHelper.setUniqueId(conditionBuilder, patientIdCell, problemIdCell);
+                conditionBuilder.setId(problemIdCell.getString(), problemIdCell);
 
             } else {
                 conditionBuilder = new ConditionBuilder(condition);

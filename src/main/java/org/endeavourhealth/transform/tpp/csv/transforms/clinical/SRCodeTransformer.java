@@ -78,24 +78,35 @@ public class SRCodeTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.AllergyIntolerance allergyIntolerance
+                        = (org.hl7.fhir.instance.model.AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.AllergyIntolerance,
+                        fhirResourceFiler);
+
+                if (allergyIntolerance != null) {
+                    AllergyIntoleranceBuilder allergyIntoleranceBuilder
+                            = new AllergyIntoleranceBuilder(allergyIntolerance);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
+                    return;
+                }
+            }
         }
 
         AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder();
-        TppCsvHelper.setUniqueId(allergyIntoleranceBuilder, patientId, rowId);
+        allergyIntoleranceBuilder.setId(rowId.getString(), rowId);
 
         allergyIntoleranceBuilder.setPatient(csvHelper.createPatientReference(patientId));
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-            return;
-        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -172,23 +183,34 @@ public class SRCodeTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Procedure procedure
+                        = (org.hl7.fhir.instance.model.Procedure) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.Procedure,
+                        fhirResourceFiler);
+
+                if (procedure != null) {
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
+                    return;
+                }
+            }
         }
 
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-        TppCsvHelper.setUniqueId(procedureBuilder, patientId, rowId);
+        procedureBuilder.setId(rowId.getString(), rowId);
 
         procedureBuilder.setPatient(csvHelper.createPatientReference(patientId));
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
-            return;
-        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -265,11 +287,28 @@ public class SRCodeTransformer {
 
         CsvCell problemId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Condition condition
+                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(problemId.getString(),
+                        ResourceType.Condition,
+                        fhirResourceFiler);
+
+                if (condition != null) {
+                    ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+                    return;
+                }
+            }
         }
 
         ConditionBuilder conditionBuilder
@@ -277,12 +316,6 @@ public class SRCodeTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-            return;
-        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -369,23 +402,34 @@ public class SRCodeTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Observation observation
+                        = (org.hl7.fhir.instance.model.Observation) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.Observation,
+                        fhirResourceFiler);
+
+                if (observation != null) {
+                    ObservationBuilder observationBuilder = new ObservationBuilder(observation);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+                    return;
+                }
+            }
         }
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
-        TppCsvHelper.setUniqueId(observationBuilder, patientId, rowId);
+        observationBuilder.setId(rowId.getString(), rowId);
 
         observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
-            return;
-        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
@@ -481,23 +525,35 @@ public class SRCodeTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.FamilyMemberHistory familyMemberHistory
+                        = (org.hl7.fhir.instance.model.FamilyMemberHistory) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.FamilyMemberHistory,
+                        fhirResourceFiler);
+
+                if (familyMemberHistory != null) {
+                    FamilyMemberHistoryBuilder familyMemberHistoryBuilder
+                            = new FamilyMemberHistoryBuilder(familyMemberHistory);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
+                    return;
+                }
+            }
         }
 
         FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder();
-        TppCsvHelper.setUniqueId(familyMemberHistoryBuilder, patientId, rowId);
+        familyMemberHistoryBuilder.setId(rowId.getString(), rowId);
 
         familyMemberHistoryBuilder.setPatient(csvHelper.createPatientReference(patientId));
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
-            return;
-        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

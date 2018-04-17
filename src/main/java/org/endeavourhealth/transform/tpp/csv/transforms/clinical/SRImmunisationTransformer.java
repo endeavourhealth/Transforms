@@ -45,17 +45,35 @@ public class SRImmunisationTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
-        CsvCell eventId = parser.getIDEvent();
-
-        ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder();
-        TppCsvHelper.setUniqueId(immunizationBuilder, patientId, rowId);
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Immunization immunization
+                        = (org.hl7.fhir.instance.model.Immunization) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.Immunization,
+                        fhirResourceFiler);
+
+                if (immunization != null) {
+                    ImmunizationBuilder immunizationBuilder
+                            = new ImmunizationBuilder(immunization);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
+                    return;
+                }
+            }
         }
 
+        ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder();
+        immunizationBuilder.setId(rowId.getString(), rowId);
+
+        CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             immunizationBuilder.setEncounter(eventReference, eventId);
@@ -63,12 +81,6 @@ public class SRImmunisationTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         immunizationBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
-            return;
-        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {

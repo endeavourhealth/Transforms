@@ -16,6 +16,7 @@ import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SREvent;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,24 +47,35 @@ public class SREventTransformer {
 
         CsvCell eventId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Encounter encounter
+                        = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(eventId.getString(),
+                        ResourceType.Encounter,
+                        fhirResourceFiler);
+
+                if (encounter != null) {
+                    EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+                    return;
+                }
+            }
         }
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        TppCsvHelper.setUniqueId(encounterBuilder, patientId, eventId);
+        encounterBuilder.setId(eventId.getString(), eventId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         encounterBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-            return;
-        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {

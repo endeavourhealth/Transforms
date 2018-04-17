@@ -5,17 +5,23 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfig
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOutStatusDetails;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.ReferralRequest;
+import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Map;
 
 public class SRReferralOutStatusDetailsTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SRReferralOutStatusDetailsTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -38,16 +44,32 @@ public class SRReferralOutStatusDetailsTransformer {
 
         CsvCell referralOutId = parser.getIDReferralOut();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
+
+        if (patientId.isEmpty()) {
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.ReferralRequest referralRequest
+                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
+                        ResourceType.ReferralRequest,
+                        fhirResourceFiler);
+
+                if (referralRequest != null) {
+                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
+                    return;
+                }
+            }
+        }
 
         ReferralRequestBuilder referralRequestBuilder
                 = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
-
-        //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getRemovedData();
-        if (deleted.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
-            return;
-        }
 
         CsvCell referralStatus = parser.getStatusOfReferralOut();
         if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {

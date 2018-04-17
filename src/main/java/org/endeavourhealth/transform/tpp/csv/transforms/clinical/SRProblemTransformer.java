@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRProblem;
 import org.hl7.fhir.instance.model.Condition;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +46,28 @@ public class SRProblemTransformer {
 
         CsvCell problemId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Condition condition
+                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(problemId.getString(),
+                        ResourceType.Condition,
+                        fhirResourceFiler);
+
+                if (condition != null) {
+                    ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+                    return;
+                }
+            }
         }
 
         ConditionBuilder conditionBuilder
@@ -57,12 +75,6 @@ public class SRProblemTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-            return;
-        }
 
         // the linked SRCode entry - cache the reference
         CsvCell linkedObsCodeId = parser.getIDCode();
