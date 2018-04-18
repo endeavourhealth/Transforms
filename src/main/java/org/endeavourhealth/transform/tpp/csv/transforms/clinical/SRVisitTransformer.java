@@ -1,16 +1,15 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import org.endeavourhealth.common.fhir.QuantityHelper;
-import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRVisit;
-import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -42,6 +41,7 @@ public class SRVisitTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell visitId = parser.getRowIdentifier();
+        String visitIdUnique = "Visit:"+visitId.getString();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
@@ -55,7 +55,7 @@ public class SRVisitTransformer {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Encounter encounter
-                        = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(visitId.getString(),
+                        = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(visitIdUnique,
                         ResourceType.Encounter,
                         fhirResourceFiler);
 
@@ -67,28 +67,14 @@ public class SRVisitTransformer {
             }
         }
 
-        EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(visitId.getString(), visitId);
+        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+        appointmentBuilder.setId(visitIdUnique, visitId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
-        encounterBuilder.setPatient(patientReference, patientId);
-
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            encounterBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
-        }
+        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
 
         CsvCell visitDate = parser.getDateBooked();
-        encounterBuilder.setPeriodStart(visitDate.getDate(), visitDate);
-
-        CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        if (!recordedBy.isEmpty()) {
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedBy.getString());
-
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            encounterBuilder.setRecordedBy(staffReference, recordedBy);
-        }
+        appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
 
         CsvCell visitStaffAssigned = parser.getIDProfileAssigned();
         if (!visitStaffAssigned.isEmpty()) {
@@ -96,36 +82,30 @@ public class SRVisitTransformer {
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     visitStaffAssigned.getString());
             Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, visitStaffAssigned);
+            appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, visitStaffAssigned);
         }
 
         CsvCell visitStatus = parser.getCurrentStatus();
         if (!visitStatus.isEmpty()) {
             if (visitStatus.getString().equalsIgnoreCase("cancelled")) {
-                encounterBuilder.setStatus(Encounter.EncounterState.CANCELLED);
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
             } else if (visitStatus.getString().equalsIgnoreCase("deferred")) {
-                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
             } else {
-                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
             }
         }
 
         CsvCell visitDuration = parser.getDuration();
         if (!visitDuration.isEmpty()) {
-            encounterBuilder.setDuration(QuantityHelper.createDuration(Integer.valueOf(visitDuration.getInt()), "minutes"));
-        }
-
-        CsvCell visitOrgId = parser.getIDOrganisation();
-        if (!visitOrgId.isEmpty()) {
-            Reference orgReference = csvHelper.createOrganisationReference(visitOrgId);
-            encounterBuilder.setServiceProvider(orgReference, visitOrgId);
+            appointmentBuilder.setMinutesDuration(visitDuration.getInt());
         }
 
         CsvCell followUpDetails = parser.getFollowUpDetails();
         if (!followUpDetails.isEmpty()) {
-            //TODO - where store follow up text?
+            appointmentBuilder.setComments(followUpDetails.getString(), followUpDetails);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder);
     }
 }

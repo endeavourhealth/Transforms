@@ -47,11 +47,34 @@ public class SRAppointmentTransformer {
 
         CsvCell appointmentId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resources for deletion
+                org.hl7.fhir.instance.model.Appointment appointment
+                        = (org.hl7.fhir.instance.model.Appointment) csvHelper.retrieveResource(appointmentId.getString(),
+                        ResourceType.Appointment,
+                        fhirResourceFiler);
+
+                org.hl7.fhir.instance.model.Slot slot
+                        = (org.hl7.fhir.instance.model.Slot) csvHelper.retrieveResource(appointmentId.getString(),
+                        ResourceType.Slot,
+                        fhirResourceFiler);
+
+                if (appointment != null && slot != null) {
+                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+                    SlotBuilder slotBuilder = new SlotBuilder(slot);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+                    return;
+                }
+            }
         }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
@@ -62,12 +85,6 @@ public class SRAppointmentTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
-            return;
-        }
 
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {

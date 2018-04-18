@@ -42,20 +42,23 @@ public class SREventLinkTransformer {
         if (!eventLinkId.isEmpty()) {
 
             if (!appointmentId.isEmpty()) {
-                csvHelper.cacheNewEncounterAppointmentMap(eventLinkId,
+
+                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId,
                         patientId,
-                        appointmentId,
+                        appointmentId.getString(),
                         ResourceType.Appointment);
             }
 
             if (!visitId.isEmpty()) {
-                csvHelper.cacheNewConsultationChildRelationship(eventLinkId,
+
+                // appointments and visits are transformed into Appointments, so make sure Id is unique for visits
+                String visitIdUnique = "Visit:" + appointmentId.getString();
+                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId,
                         patientId,
-                        visitId,
-                        ResourceType.Encounter);
+                        visitIdUnique,
+                        ResourceType.Appointment);
             }
         }
-
     }
 
 }
