@@ -128,11 +128,14 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public static String createUniqueId(CsvCell patientGuid, CsvCell sourceGuid) {
-        if (sourceGuid == null) {
-            return patientGuid.getString();
-        } else {
-            return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
-        }
+        // uniqueId is literally now the sourceId without the patientId
+        return sourceGuid.getString();
+
+//        if (sourceGuid == null) {
+//            return patientGuid.getString();
+//        } else {
+//            return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
+//        }
     }
 
 
