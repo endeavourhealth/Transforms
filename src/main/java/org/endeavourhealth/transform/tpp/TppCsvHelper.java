@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3LookupDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherTransform.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
@@ -53,6 +55,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static HashMap<String, MultiLexToCTV3Map> multiLexToCTV3Map = new HashMap<>();
 
     private static CTV3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryCTV3HierarchyRefDal();
+
+    private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
+    private static HashMap<String, TppCtv3Lookup> tppCtv3Lookups = new HashMap<>();
 
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
@@ -276,7 +281,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return tppConfigListOptionFromDB;
     }
 
-    // Lookup code reference from SRMapping generated db
+    // Lookup code reference from SRImmunisationContent generated db
     public TppImmunisationContent lookUpTppImmunisationContent(Long rowId) throws Exception {
 
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
@@ -298,6 +303,30 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         tppImmunisationContents.put(codeLookup, tppImmunisationContentFromDB);
 
         return tppImmunisationContentFromDB;
+    }
+
+    // Lookup code reference from SRCtv3Transformer generated db
+    public TppCtv3Lookup lookUpTppCtv3Code(String ctv3Code) throws Exception {
+
+        String codeLookup = ctv3Code;
+
+        //Find the code in the cache
+        TppCtv3Lookup tppCtv3LookupFromCache = tppCtv3Lookups.get(codeLookup);
+
+        // return cached version if exists
+        if (tppCtv3LookupFromCache != null) {
+            return tppCtv3LookupFromCache;
+        }
+
+        TppCtv3Lookup tppCtv3LookupFromDB = tppCtv3LookupRefDal.getContentFromCtv3Code(ctv3Code);
+        if (tppCtv3LookupFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        tppCtv3Lookups.put(codeLookup, tppCtv3LookupFromDB);
+
+        return tppCtv3LookupFromDB;
     }
 
     // Lookup multi-lex read code map
