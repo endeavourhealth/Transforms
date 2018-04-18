@@ -48,7 +48,7 @@ public class SRPatientRegistrationTransformer {
             return;
         }
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.getIntAsBoolean()) {
+        if (removeDataCell.getIntAsBoolean()) {
             return;
         }
 

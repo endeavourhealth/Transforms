@@ -47,7 +47,7 @@ public class SRPatientAddressHistoryTransformer {
             return;
         }
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.getIntAsBoolean()) {
+        if (removeDataCell.getIntAsBoolean()) {
             return;
         }
 
