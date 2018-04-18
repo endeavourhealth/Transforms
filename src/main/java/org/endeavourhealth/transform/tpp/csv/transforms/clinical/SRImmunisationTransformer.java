@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -44,17 +45,35 @@ public class SRImmunisationTransformer {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
-        CsvCell eventId = parser.getIDEvent();
-
-        ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder();
-        TppCsvHelper.setUniqueId(immunizationBuilder, patientId, rowId);
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.Immunization immunization
+                        = (org.hl7.fhir.instance.model.Immunization) csvHelper.retrieveResource(rowId.getString(),
+                        ResourceType.Immunization,
+                        fhirResourceFiler);
+
+                if (immunization != null) {
+                    ImmunizationBuilder immunizationBuilder
+                            = new ImmunizationBuilder(immunization);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
+                    return;
+                }
+            }
         }
 
+        ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder();
+        immunizationBuilder.setId(rowId.getString(), rowId);
+
+        CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             immunizationBuilder.setEncounter(eventReference, eventId);
@@ -62,12 +81,6 @@ public class SRImmunisationTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         immunizationBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
-            return;
-        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
@@ -143,12 +156,25 @@ public class SRImmunisationTransformer {
         }
 
         Immunization.ImmunizationVaccinationProtocolComponent protocolComponent = new Immunization.ImmunizationVaccinationProtocolComponent();
+        boolean addProtocol = false;
 
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
+            addProtocol = true;
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart.getLong());
             String mappedTerm = tppMappingRef.getMappedTerm();
             protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+        }
+
+        CsvCell immContent = parser.getIDImmunisationContent();
+        if (!immContent.isEmpty()) {
+            addProtocol = true;
+            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong());
+            String contentName = tppImmunisationContent.getName();
+            protocolComponent.setSeries(contentName);
+        }
+
+        if (addProtocol) {
             immunizationBuilder.setVaccinationProtocol(protocolComponent);
         }
 

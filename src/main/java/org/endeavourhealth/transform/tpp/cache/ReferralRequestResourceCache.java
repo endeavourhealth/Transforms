@@ -29,7 +29,7 @@ public class ReferralRequestResourceCache {
             if (referralRequest == null) {
                 //if the ReferalRequest doesn't exist yet, create a new one
                 referralRequestBuilder = new ReferralRequestBuilder();
-                TppCsvHelper.setUniqueId(referralRequestBuilder, patientIdCell, referralOutIdCell);
+                referralRequestBuilder.setId(referralOutIdCell.getString(), referralOutIdCell);
 
             } else {
                 referralRequestBuilder = new ReferralRequestBuilder(referralRequest);

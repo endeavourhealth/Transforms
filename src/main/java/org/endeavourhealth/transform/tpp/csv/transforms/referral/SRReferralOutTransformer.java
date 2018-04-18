@@ -21,6 +21,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +52,34 @@ public class SRReferralOutTransformer {
 
         CsvCell referralOutId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
+        }
+
+        if (patientId.isEmpty()) {
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.ReferralRequest referralRequest
+                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
+                        ResourceType.ReferralRequest,
+                        fhirResourceFiler);
+
+                if (referralRequest != null) {
+                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
+                    return;
+                }
+            }
         }
 
         ReferralRequestBuilder referralRequestBuilder

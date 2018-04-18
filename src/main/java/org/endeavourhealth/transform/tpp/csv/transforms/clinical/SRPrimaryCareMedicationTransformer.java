@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRPrimaryCareMedica
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.MedicationStatement;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,24 +76,36 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.MedicationStatement medicationStatement
+                        = (org.hl7.fhir.instance.model.MedicationStatement) csvHelper.retrieveResource(medicationId.getString(),
+                        ResourceType.MedicationStatement,
+                        fhirResourceFiler);
+
+                if (medicationStatement != null) {
+                    MedicationStatementBuilder medicationStatementBuilder
+                            = new MedicationStatementBuilder(medicationStatement);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+                    return;
+                }
+            }
         }
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
-        TppCsvHelper.setUniqueId(medicationStatementBuilder, patientId, medicationId);
+        medicationStatementBuilder.setId(medicationId.getString(), medicationId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-            return;
-        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
@@ -180,24 +193,36 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.MedicationOrder medicationOrder
+                        = (org.hl7.fhir.instance.model.MedicationOrder) csvHelper.retrieveResource(medicationId.getString(),
+                        ResourceType.MedicationOrder,
+                        fhirResourceFiler);
+
+                if (medicationOrder != null) {
+                    MedicationOrderBuilder medicationOrderBuilder
+                            = new MedicationOrderBuilder(medicationOrder);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
+                    return;
+                }
+            }
         }
 
         MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder();
-        TppCsvHelper.setUniqueId(medicationOrderBuilder, patientId, medicationId);
+        medicationOrderBuilder.setId(medicationId.getString(), medicationId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationOrderBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
-            return;
-        }
 
         // set the medication statement reference link
         // in TPP, use the same medicationId for statement and order if it is an Acute

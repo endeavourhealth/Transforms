@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRRepeatTemplate;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.MedicationStatement;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,24 +53,36 @@ public class SRRepeatTemplateTransformer {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        CsvCell deleteData = parser.getRemovedData();
 
         if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+
+            if (!deleteData.getIntAsBoolean()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            } else {
+
+                // get previously filed resource for deletion
+                org.hl7.fhir.instance.model.MedicationStatement medicationStatement
+                        = (org.hl7.fhir.instance.model.MedicationStatement) csvHelper.retrieveResource(medicationId.getString(),
+                        ResourceType.MedicationStatement,
+                        fhirResourceFiler);
+
+                if (medicationStatement != null) {
+                    MedicationStatementBuilder medicationStatementBuilder
+                            = new MedicationStatementBuilder(medicationStatement);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+                    return;
+                }
+            }
         }
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
-        TppCsvHelper.setUniqueId(medicationStatementBuilder, patientId, medicationId);
+        medicationStatementBuilder.setId(medicationId.getString(), medicationId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
-
-        CsvCell deleteData = parser.getRemovedData();
-        if (deleteData.getIntAsBoolean()) {
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-            return;
-        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {

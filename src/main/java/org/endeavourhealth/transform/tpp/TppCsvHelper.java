@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -41,6 +42,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
     private static HashMap<String, TppConfigListOption> tppConfigListOptions = new HashMap<>();
+
+    private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
+    private static HashMap<String, TppImmunisationContent> tppImmunisationContents = new HashMap<>();
 
     private static InternalIdDalI internalIdDalI = DalProvider.factoryInternalIdDal();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
@@ -127,6 +131,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
+
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceId = fhirResourceFiler.getServiceId();
@@ -202,13 +207,13 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheAllergyCode(String readCode, String readTerm) {
-        problemReadCodes.put(readCode, readTerm);
+        allergyReadCodes.put(readCode, readTerm);
     }
 
     public boolean isAllergyCode(String readCode, String readTerm) throws Exception {
 
         // check cache first
-        if (problemReadCodes.containsKey(readCode))
+        if (allergyReadCodes.containsKey(readCode))
             return true;
 
         // check db and cache if true
@@ -269,6 +274,30 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         tppConfigListOptions.put(codeLookup, tppConfigListOptionFromDB);
 
         return tppConfigListOptionFromDB;
+    }
+
+    // Lookup code reference from SRMapping generated db
+    public TppImmunisationContent lookUpTppImmunisationContent(Long rowId) throws Exception {
+
+        String codeLookup = rowId.toString() + "|" + serviceId.toString();
+
+        //Find the code in the cache
+        TppImmunisationContent tppImmunisationContentFromCache = tppImmunisationContents.get(codeLookup);
+
+        // return cached version if exists
+        if (tppImmunisationContentFromCache != null) {
+            return tppImmunisationContentFromCache;
+        }
+
+        TppImmunisationContent tppImmunisationContentFromDB = tppImmunisationContentDalI.getContentFromRowId(rowId, serviceId);
+        if (tppImmunisationContentFromDB == null) {
+            return null;
+        }
+
+        // Add to the cache
+        tppImmunisationContents.put(codeLookup, tppImmunisationContentFromDB);
+
+        return tppImmunisationContentFromDB;
     }
 
     // Lookup multi-lex read code map
