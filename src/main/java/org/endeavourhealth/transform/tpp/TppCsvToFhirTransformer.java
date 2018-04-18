@@ -144,6 +144,8 @@ public abstract class TppCsvToFhirTransformer {
         SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Codes
         SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        // EventLink
+        SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting admin transforms");
         // Code lookups

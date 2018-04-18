@@ -144,6 +144,14 @@ public class SREventTransformer {
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
         containedListBuilder.addReferences(newLinkedResources);
 
+        //apply any linked appointments
+        ReferenceList appLinkedResources = csvHelper.getAndRemoveEncounterAppointmentMap(encounterBuilder.getResourceId());
+        encounterBuilder.setAppointment(appLinkedResources.getReference(0), null);
+
+        //apply any linked visits
+        ReferenceList visitLinkedResources = csvHelper.getAndRemoveEncounterVisitMap(encounterBuilder.getResourceId());
+        encounterBuilder.setPartOf(visitLinkedResources.getReference(0), null);
+
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 }

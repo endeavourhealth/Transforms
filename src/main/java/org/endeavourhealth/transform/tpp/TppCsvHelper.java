@@ -62,6 +62,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
 
+    private Map<String, ReferenceList> encounterAppointmentMap = new HashMap<>();
+    private Map<String, ReferenceList> encounterVisitMap = new HashMap<>();
+
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
 
@@ -187,6 +190,56 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
         return consultationNewChildMap.remove(encounterSourceId);
+    }
+
+    public void cacheNewEncounterAppointmentMap(CsvCell encounterId,
+                                                CsvCell patientGuid,
+                                                CsvCell resourceGuid,
+                                                ResourceType resourceType) {
+
+        if (encounterId.isEmpty()) {
+            return;
+        }
+
+        String consultationLocalUniqueId = createUniqueId(patientGuid, encounterId);
+        ReferenceList list = encounterAppointmentMap.get(consultationLocalUniqueId);
+        if (list == null) {
+            list = new ReferenceList();
+            encounterAppointmentMap.put(consultationLocalUniqueId, list);
+        }
+
+        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        list.add(resourceReference, encounterId);
+    }
+
+    public ReferenceList getAndRemoveEncounterAppointmentMap(String encounterSourceId) {
+        return encounterAppointmentMap.remove(encounterSourceId);
+    }
+
+    public void cacheNewEncounterVisitMap(CsvCell encounterId,
+                                                CsvCell patientGuid,
+                                                CsvCell resourceGuid,
+                                                ResourceType resourceType) {
+
+        if (encounterId.isEmpty()) {
+            return;
+        }
+
+        String consultationLocalUniqueId = createUniqueId(patientGuid, encounterId);
+        ReferenceList list = encounterVisitMap.get(consultationLocalUniqueId);
+        if (list == null) {
+            list = new ReferenceList();
+            encounterVisitMap.put(consultationLocalUniqueId, list);
+        }
+
+        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        list.add(resourceReference, encounterId);
+    }
+
+    public ReferenceList getAndRemoveEncounterVisitMap(String encounterSourceId) {
+        return encounterVisitMap.remove(encounterSourceId);
     }
 
     public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
