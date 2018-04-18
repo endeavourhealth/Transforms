@@ -76,30 +76,39 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createOrganisationReference(CsvCell organizationGuid) {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
+
     public Reference createLocationReference(CsvCell locationGuid) {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid.getString());
     }
+
     public Reference createPatientReference(CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
+
     public Reference createPractitionerReference(CsvCell practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
+
     public Reference createPractitionerReference(String practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
+
     public Reference createScheduleReference(CsvCell scheduleGuid) {
         return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
     }
+
     public Reference createSlotReference(CsvCell slotGuid) {
         return ReferenceHelper.createReference(ResourceType.Slot, slotGuid.getString());
     }
+
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
+
     public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
     }
+
     public Reference createEncounterReference(CsvCell encounterGuid, CsvCell patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
@@ -116,7 +125,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
         }
     }
-
 
 
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -336,5 +344,37 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public boolean isProcessPatientData() {
         return processPatientData;
     }
+
+    public String tppRelationtoFhir(String tppTerm) {
+        // I considered an enum but e.g. father will include step, foster, grand etc fathers
+        // Notes: contains instead of equals for fiance in case they include fiancee later
+        // contains(GRAND) as the only case where a xxxFATHER is not a parent
+        // Return empty string where no applicable FHIR type
+        String upper = tppTerm.toUpperCase();
+        if (upper.contains("CHILD") || upper.contains("BROTHER") ||
+                upper.contains("SISTER") || upper.equals("UNCLE") || upper.equals("AUNT") ||
+                upper.equals("FAMILY MEMBER") || upper.contains("FIANCE") ||
+                upper.contains("HUSBAND") || upper.contains("WIFE") || upper.equals("NEPHEW") ||
+                upper.equals("NIECE") || upper.equals("SIBLING") || upper.contains("GRAND")) {
+            return "family";
+        } else if (upper.contains("FATHER") || upper.contains("MOTHER")) {
+            return "parent";
+        } else if (upper.equals("GUARDIAN")) {
+            return "guardian";
+        } else if (upper.contains("PARTNER")) {
+            return "partner";
+        } else if (upper.equals("FRIEND") || upper.contains("FLATMATE")) {
+            return "friend";
+        } else if (upper.equals("POWER OF ATTORNEY") || upper.equals("SOLICITOR") || upper.contains("PROXY")) {
+            return "agent";
+        } else if (upper.equals("OTHER") || upper.equals("UNKNOWN") || upper.equals("NONE")) {
+            return "";
+        } else if (upper.equals("LANDLORD") || upper.equals("NEIGHBOUR")) {
+            return "";
+        } else {
+            return "caregiver";
+        }
+    }
+
 
 }
