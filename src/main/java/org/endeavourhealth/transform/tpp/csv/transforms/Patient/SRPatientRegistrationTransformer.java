@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +86,12 @@ public class SRPatientRegistrationTransformer {
         CsvCell regTypeCell = parser.getRegistrationStatus();
         if (!regTypeCell.isEmpty()) {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
-            }
+        }
+
+        EpisodeOfCare.EpisodeOfCareStatus medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
+        if (medicalRecordStatus != null) {
+            episodeBuilder.setStatus(medicalRecordStatus, null);
+        }
     }
 
     private static RegistrationType mapToFhirRegistrationType (CsvCell regTypeCell) {
