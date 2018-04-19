@@ -7,7 +7,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.schema.Problem;
+import org.endeavourhealth.transform.homerton.schema.ProblemTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
 
     public static void transform(String version,
-                                 Problem parser,
+                                 ProblemTable parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
@@ -37,7 +37,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
     }
 
 
-    public static void createCondition(Problem parser,
+    public static void createCondition(ProblemTable parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
@@ -45,11 +45,11 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         Date d = null;
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
-        // Patient
+        // PatientTable
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
-        // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
-        // Encounter - Problem record cannot be linked to an Encounter
-        // this Problem resource id
+        // EpisodeOfCare - ProblemTable record cannot be linked to an EpisodeOfCare
+        // EncounterTable - ProblemTable record cannot be linked to an EncounterTable
+        // this ProblemTable resource id
         //ResourceId problemResourceId = getProblemResourceId(parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
         //CodeableConcept problemCode = new CodeableConcept();
@@ -65,15 +65,15 @@ public class ProblemTransformer extends HomertonBasisTransformer {
 
         //ResourceId patientResourceId = resolvePatientResource(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getCNN(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null, patientIdentifier, gpResourceId, gpPracticeResourceId, ethnicGroup);
 
-        //ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+        //ReferenceHelper.createReference(ResourceType.PatientTable, patientResourceId.getResourceId().toString()));
 
         CsvCell problemIdCell = parser.getProblemId();
         conditionBuilder.setId(problemIdCell.getString(), problemIdCell);
 
         // set patient reference
-        CsvCell cnnCell = parser.getCNN();
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, cnnCell.getString());
-        conditionBuilder.setPatient(patientReference, cnnCell);
+        CsvCell personIdCell = parser.getPersonId();
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
+        conditionBuilder.setPatient(patientReference, personIdCell);
 
         // set category to 'complaint'
         conditionBuilder.setAsProblem(true);
@@ -89,7 +89,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
     /*
      *
      */
-    /*public static void createCondition(Problem parser,
+    /*public static void createCondition(ProblemTable parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
@@ -97,11 +97,11 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         Date d = null;
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
-        // Patient
+        // PatientTable
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
-        // EpisodeOfCare - Problem record cannot be linked to an EpisodeOfCare
-        // Encounter - Problem record cannot be linked to an Encounter
-        // this Problem resource id
+        // EpisodeOfCare - ProblemTable record cannot be linked to an EpisodeOfCare
+        // EncounterTable - ProblemTable record cannot be linked to an EncounterTable
+        // this ProblemTable resource id
         //ResourceId problemResourceId = getProblemResourceId(parser.getLocalPatientId(), parser.getOnsetDateAsString(), parser.getProblemCode());
 
         //CodeableConcept problemCode = new CodeableConcept();
@@ -117,12 +117,12 @@ public class ProblemTransformer extends HomertonBasisTransformer {
 
         //ResourceId patientResourceId = resolvePatientResource(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getCNN(), parser.getNHSNo(), name, fhirAddress, convertSusGenderToFHIR(parser.getGender()), parser.getDOB(), organisationResourceId, null, patientIdentifier, gpResourceId, gpPracticeResourceId, ethnicGroup);
 
-        //ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
+        //ReferenceHelper.createReference(ResourceType.PatientTable, patientResourceId.getResourceId().toString()));
 
         fhirCondition.setId(parser.getProblemId());
 
         // set patient reference
-        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, parser.getCNN()));
+        fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.PatientTable, parser.getCNN()));
 
         // set category to 'complaint'
         cc = new CodeableConcept();

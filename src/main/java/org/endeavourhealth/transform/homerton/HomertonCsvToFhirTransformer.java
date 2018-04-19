@@ -3,23 +3,26 @@ package org.endeavourhealth.transform.homerton;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.homerton.schema.CVREF;
-import org.endeavourhealth.transform.homerton.schema.Diagnosis;
-import org.endeavourhealth.transform.homerton.schema.Patient;
-import org.endeavourhealth.transform.homerton.schema.Problem;
-import org.endeavourhealth.transform.homerton.schema.Procedure;
-import org.endeavourhealth.transform.homerton.transforms.CVREFTransformer;
-import org.endeavourhealth.transform.homerton.transforms.DiagnosisTransformer;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
+import org.endeavourhealth.transform.homerton.schema.CodeTable;
+import org.endeavourhealth.transform.homerton.schema.EncounterTable;
+import org.endeavourhealth.transform.homerton.schema.PatientTable;
+import org.endeavourhealth.transform.homerton.transforms.CodeTransformer;
+import org.endeavourhealth.transform.homerton.transforms.EncounterTransformer;
 import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
-import org.endeavourhealth.transform.homerton.transforms.ProblemTransformer;
-import org.endeavourhealth.transform.homerton.transforms.ProcedureTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public abstract class HomertonCsvToFhirTransformer {
@@ -27,7 +30,8 @@ public abstract class HomertonCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
-    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
+    //public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String DATE_FORMAT = "dd/MM/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
     public static final String PRIMARY_ORG_ODS_CODE = "RQX";
@@ -55,16 +59,27 @@ public abstract class HomertonCsvToFhirTransformer {
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
         HomertonCsvHelper csvHelper = new HomertonCsvHelper(serviceId, systemId, exchangeId, null, version);
 
         //Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
-        transformParsers(serviceId, systemId, exchangeId, files, version, processor, previousErrors, csvHelper);
+        //transformParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, previousErrors, csvHelper);
+
+        Map<String, List<String>> fileMap = hashFilesByType(files);
+        Map<String, List<ParserI>> parserMap = new HashMap<>();
+
+        CodeTransformer.transform(version, createParsers(fileMap, parserMap, "CodeTable", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+
+        PatientTransformer.transform(version, createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+        PatientResourceCache.filePatientResources(fhirResourceFiler);
+
+        EncounterTransformer.transform(version, createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+        EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
-        processor.waitToFinish();
+        fhirResourceFiler.waitToFinish();
     }
 
 
@@ -101,6 +116,7 @@ public abstract class HomertonCsvToFhirTransformer {
     */
 
 
+    /*
     private static void transformParsers(UUID serviceId, UUID systemId, UUID exchangeId,
                                          String[] files, String version,
                                          FhirResourceFiler fhirResourceFiler,
@@ -113,27 +129,88 @@ public abstract class HomertonCsvToFhirTransformer {
             LOG.debug("currFile:" + filePath + " Type:" + fileType);
 
             if (fileType.compareTo("PATIENT") == 0) {
-                Patient parser = new Patient(serviceId, systemId, exchangeId, version, filePath);
+                PatientTable parser = new PatientTable(serviceId, systemId, exchangeId, version, filePath);
                 PatientTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROBLEM") == 0) {
-                Problem parser = new Problem(serviceId, systemId, exchangeId, version, filePath);
+                ProblemTable parser = new ProblemTable(serviceId, systemId, exchangeId, version, filePath);
                 ProblemTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("DIAGNOSIS") == 0) {
-                Diagnosis parser = new Diagnosis(serviceId, systemId, exchangeId, version, filePath);
+                DiagnosisTable parser = new DiagnosisTable(serviceId, systemId, exchangeId, version, filePath);
                 DiagnosisTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
-            } else if (fileType.compareTo("CVREF") == 0) {
-                CVREF parser = new CVREF(serviceId, systemId, exchangeId, version, filePath);
-                CVREFTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+            } else if (fileType.compareTo("CodeTable") == 0) {
+                CodeTable parser = new CodeTable(serviceId, systemId, exchangeId, version, filePath);
+                CodeTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             } else if (fileType.compareTo("PROCEDURE") == 0) {
-                Procedure parser = new Procedure(serviceId, systemId, exchangeId, version, filePath);
+                ProcedureTable parser = new ProcedureTable(serviceId, systemId, exchangeId, version, filePath);
                 ProcedureTransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
                 parser.close();
             }
         }
+    }*/
+
+    private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
+        Map<String, List<String>> ret = new HashMap<>();
+
+        for (String file: files) {
+            String fileName = FilenameUtils.getBaseName(file);
+            String type = identifyFileType(fileName);
+
+            //always force into upper case, just in case
+            type = type.toUpperCase();
+
+            List<String> list = ret.get(type);
+            if (list == null) {
+                list = new ArrayList<>();
+                ret.put(type, list);
+            }
+            list.add(file);
+        }
+
+        return ret;
+    }
+
+    private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, HomertonCsvHelper csvHelper) throws Exception {
+        List<ParserI> ret = parserMap.get(type);
+        if (ret == null) {
+            ret = new ArrayList<>();
+
+            List<String> files = fileMap.get(type);
+            if (files != null) {
+                for (String file: files) {
+                    ParserI parser = createParser(file, type, csvHelper);
+                    ret.add(parser);
+                }
+            }
+
+            parserMap.put(type, ret);
+        }
+        return ret;
+    }
+
+    private static ParserI createParser(String file, String type, HomertonCsvHelper csvHelper) throws Exception {
+
+        UUID serviceId = csvHelper.getServiceId();
+        UUID systemId = csvHelper.getSystemId();
+        UUID exchangeId = csvHelper.getExchangeId();
+        String version = csvHelper.getVersion();
+
+        if (type.equalsIgnoreCase("CodeTable")) {
+            return new CodeTable(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PATIENT")) {
+            return new PatientTable(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ENCOUNTER")) {
+            return new EncounterTable(serviceId, systemId, exchangeId, version, file);
+        } else {
+            throw new TransformException("Unknown file type [" + type + "]");
+        }
+    }
+
+    private static CSVFormat getFormatType(String file) throws Exception {
+        return HomertonCsvToFhirTransformer.CSV_FORMAT;
     }
 
     private static String identifyFileType(String filename) {

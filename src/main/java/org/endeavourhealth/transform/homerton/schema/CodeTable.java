@@ -8,10 +8,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class CVREF extends AbstractCsvParser {
-    private static final Logger LOG = LoggerFactory.getLogger(CVREF.class);
+public class CodeTable extends AbstractCsvParser {
+    private static final Logger LOG = LoggerFactory.getLogger(CodeTable.class);
 
-    public CVREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public CodeTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,

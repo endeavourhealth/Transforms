@@ -6,10 +6,10 @@ import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.UUID;
 
-public class Diagnosis extends AbstractCsvParser {
+public class DiagnosisTable extends AbstractCsvParser {
 
-    public Diagnosis(UUID serviceId, UUID systemId, UUID exchangeId,  String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, HomertonCsvToFhirTransformer.TIME_FORMAT);
+    public DiagnosisTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT, HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
