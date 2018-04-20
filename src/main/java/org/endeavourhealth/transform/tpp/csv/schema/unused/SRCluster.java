@@ -41,19 +41,19 @@ public class SRCluster extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getCluster() { return super.getCell("Cluster");};
- public CsvCell getClusterDateStart() { return super.getCell("ClusterDateStart");};
- public CsvCell getReviewDate() { return super.getCell("ReviewDate");};
- public CsvCell getClusterDateEnd() { return super.getCell("ClusterDateEnd");};
- public CsvCell getEndReason() { return super.getCell("EndReason");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getCluster() { return super.getCell("Cluster");}
+ public CsvCell getClusterDateStart() { return super.getCell("ClusterDateStart");}
+ public CsvCell getReviewDate() { return super.getCell("ReviewDate");}
+ public CsvCell getClusterDateEnd() { return super.getCell("ClusterDateEnd");}
+ public CsvCell getEndReason() { return super.getCell("EndReason");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -53,33 +53,33 @@ public class SRAppointment extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateEnd() { return super.getCell("DateEnd");};
- public CsvCell getAppointmentStatus() { return super.getCell("AppointmentStatus");};
- public CsvCell getDateAppointmentBooked() { return super.getCell("DateAppointmentBooked");};
- public CsvCell getDatePatientArrival() { return super.getCell("DatePatientArrival");};
- public CsvCell getDatePatientSeen() { return super.getCell("DatePatientSeen");};
- public CsvCell getFollowUpAppointment() { return super.getCell("FollowUpAppointment");};
- public CsvCell getTelephoneAppointment() { return super.getCell("TelephoneAppointment");};
- public CsvCell getIDClinician() { return super.getCell("IDClinician");};
- public CsvCell getIDProfileClinician() { return super.getCell("IDProfileClinician");};
- public CsvCell getRotaName() { return super.getCell("RotaName");};
- public CsvCell getRotaType() { return super.getCell("RotaType");};
- public CsvCell getRotaLocation() { return super.getCell("RotaLocation");};
- public CsvCell getRotaCode() { return super.getCell("RotaCode");};
- public CsvCell getIDRotaOwner() { return super.getCell("IDRotaOwner");};
- public CsvCell getIDProfileRotaOwner() { return super.getCell("IDProfileRotaOwner");};
- public CsvCell getAllowsOverbooking() { return super.getCell("AllowsOverbooking");};
- public CsvCell getBookingContactNumber() { return super.getCell("BookingContactNumber");};
- public CsvCell getDateAppointmentCancelled() { return super.getCell("DateAppointmentCancelled");};
- public CsvCell getIDRota() { return super.getCell("IDRota");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateEnd() { return super.getCell("DateEnd");}
+ public CsvCell getAppointmentStatus() { return super.getCell("AppointmentStatus");}
+ public CsvCell getDateAppointmentBooked() { return super.getCell("DateAppointmentBooked");}
+ public CsvCell getDatePatientArrival() { return super.getCell("DatePatientArrival");}
+ public CsvCell getDatePatientSeen() { return super.getCell("DatePatientSeen");}
+ public CsvCell getFollowUpAppointment() { return super.getCell("FollowUpAppointment");}
+ public CsvCell getTelephoneAppointment() { return super.getCell("TelephoneAppointment");}
+ public CsvCell getIDClinician() { return super.getCell("IDClinician");}
+ public CsvCell getIDProfileClinician() { return super.getCell("IDProfileClinician");}
+ public CsvCell getRotaName() { return super.getCell("RotaName");}
+ public CsvCell getRotaType() { return super.getCell("RotaType");}
+ public CsvCell getRotaLocation() { return super.getCell("RotaLocation");}
+ public CsvCell getRotaCode() { return super.getCell("RotaCode");}
+ public CsvCell getIDRotaOwner() { return super.getCell("IDRotaOwner");}
+ public CsvCell getIDProfileRotaOwner() { return super.getCell("IDProfileRotaOwner");}
+ public CsvCell getAllowsOverbooking() { return super.getCell("AllowsOverbooking");}
+ public CsvCell getBookingContactNumber() { return super.getCell("BookingContactNumber");}
+ public CsvCell getDateAppointmentCancelled() { return super.getCell("DateAppointmentCancelled");}
+ public CsvCell getIDRota() { return super.getCell("IDRota");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

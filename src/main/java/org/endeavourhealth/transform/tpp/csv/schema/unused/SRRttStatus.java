@@ -37,15 +37,15 @@ public class SRRttStatus extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDateStatus() { return super.getCell("DateStatus");};
- public CsvCell getRttStatus() { return super.getCell("RttStatus");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDateStatus() { return super.getCell("DateStatus");}
+ public CsvCell getRttStatus() { return super.getCell("RttStatus");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

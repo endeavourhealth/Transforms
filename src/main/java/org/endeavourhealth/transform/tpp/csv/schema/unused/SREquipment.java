@@ -52,30 +52,30 @@ public class SREquipment extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
- public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getEquipmentName() { return super.getCell("EquipmentName");};
- public CsvCell getEquipmentID() { return super.getCell("EquipmentID");};
- public CsvCell getEquipmentMaintained() { return super.getCell("EquipmentMaintained");};
- public CsvCell getIndicativeCost() { return super.getCell("IndicativeCost");};
- public CsvCell getDirectPayment() { return super.getCell("DirectPayment");};
- public CsvCell getEquipmentTrustFunded() { return super.getCell("EquipmentTrustFunded");};
- public CsvCell getIDAssessment() { return super.getCell("IDAssessment");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateEnd() { return super.getCell("DateEnd");};
- public CsvCell getEquipmentEndReason() { return super.getCell("EquipmentEndReason");};
- public CsvCell getDateApproved() { return super.getCell("DateApproved");};
- public CsvCell getIDProfileApproved() { return super.getCell("IDProfileApproved");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+ public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+ public CsvCell getEquipmentName() { return super.getCell("EquipmentName");}
+ public CsvCell getEquipmentID() { return super.getCell("EquipmentID");}
+ public CsvCell getEquipmentMaintained() { return super.getCell("EquipmentMaintained");}
+ public CsvCell getIndicativeCost() { return super.getCell("IndicativeCost");}
+ public CsvCell getDirectPayment() { return super.getCell("DirectPayment");}
+ public CsvCell getEquipmentTrustFunded() { return super.getCell("EquipmentTrustFunded");}
+ public CsvCell getIDAssessment() { return super.getCell("IDAssessment");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateEnd() { return super.getCell("DateEnd");}
+ public CsvCell getEquipmentEndReason() { return super.getCell("EquipmentEndReason");}
+ public CsvCell getDateApproved() { return super.getCell("DateApproved");}
+ public CsvCell getIDProfileApproved() { return super.getCell("IDProfileApproved");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

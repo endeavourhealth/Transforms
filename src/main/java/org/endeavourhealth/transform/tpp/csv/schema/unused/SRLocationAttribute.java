@@ -36,14 +36,14 @@ public class SRLocationAttribute extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getAttribute() { return super.getCell("Attribute");};
- public CsvCell getIDLocation() { return super.getCell("IDLocation");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getAttribute() { return super.getCell("Attribute");}
+ public CsvCell getIDLocation() { return super.getCell("IDLocation");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

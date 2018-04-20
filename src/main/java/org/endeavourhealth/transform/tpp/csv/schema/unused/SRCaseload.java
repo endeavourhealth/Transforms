@@ -38,16 +38,16 @@ public class SRCaseload extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getCaseloadName() { return super.getCell("CaseloadName");};
- public CsvCell getCaseloadTeam() { return super.getCell("CaseloadTeam");};
- public CsvCell getIDProfileCaseloadOwner() { return super.getCell("IDProfileCaseloadOwner");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIDProfileCreated() { return super.getCell("IDProfileCreated");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDProfileDeleted() { return super.getCell("IDProfileDeleted");};
- public CsvCell getAgencyCode() { return super.getCell("AgencyCode");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getCaseloadName() { return super.getCell("CaseloadName");}
+ public CsvCell getCaseloadTeam() { return super.getCell("CaseloadTeam");}
+ public CsvCell getIDProfileCaseloadOwner() { return super.getCell("IDProfileCaseloadOwner");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIDProfileCreated() { return super.getCell("IDProfileCreated");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDProfileDeleted() { return super.getCell("IDProfileDeleted");}
+ public CsvCell getAgencyCode() { return super.getCell("AgencyCode");}
 
 
  //TODO fix the string below to make it meaningful

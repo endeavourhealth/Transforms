@@ -44,22 +44,22 @@ public class SRRtt extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateClockStop() { return super.getCell("DateClockStop");};
- public CsvCell getRttStatus() { return super.getCell("RttStatus");};
- public CsvCell getBreachReason() { return super.getCell("BreachReason");};
- public CsvCell getErrorInClockCausedBreach() { return super.getCell("ErrorInClockCausedBreach");};
- public CsvCell getLedBy() { return super.getCell("LedBy");};
- public CsvCell getWaitType() { return super.getCell("WaitType");};
- public CsvCell getIDPatientPathWay() { return super.getCell("IDPatientPathWay");};
- public CsvCell getCancerSite() { return super.getCell("CancerSite");};
- public CsvCell getRequestRaisedReason() { return super.getCell("RequestRaisedReason");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateClockStop() { return super.getCell("DateClockStop");}
+ public CsvCell getRttStatus() { return super.getCell("RttStatus");}
+ public CsvCell getBreachReason() { return super.getCell("BreachReason");}
+ public CsvCell getErrorInClockCausedBreach() { return super.getCell("ErrorInClockCausedBreach");}
+ public CsvCell getLedBy() { return super.getCell("LedBy");}
+ public CsvCell getWaitType() { return super.getCell("WaitType");}
+ public CsvCell getIDPatientPathWay() { return super.getCell("IDPatientPathWay");}
+ public CsvCell getCancerSite() { return super.getCell("CancerSite");}
+ public CsvCell getRequestRaisedReason() { return super.getCell("RequestRaisedReason");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

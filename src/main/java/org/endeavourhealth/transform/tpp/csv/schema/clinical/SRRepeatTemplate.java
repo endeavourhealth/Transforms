@@ -52,32 +52,32 @@ public class SRRepeatTemplate extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
-    public CsvCell getDateEvent() { return super.getCell("DateEvent");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
-    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
-    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
-    public CsvCell getIDMultiLexProduct() { return super.getCell("IDMultiLexProduct");};
-    public CsvCell getIDMultiLexPack() { return super.getCell("IDMultiLexPack");};
-    public CsvCell getIDMultiLexDMD() { return super.getCell("IDMultiLexDMD");};
-    public CsvCell getNameOfMedication() { return super.getCell("NameOfMedication");};
-    public CsvCell getDateMedicationTemplateStart() { return super.getCell("DateMedicationTemplateStart");};
-    public CsvCell getDateMedicationTemplateEnd() { return super.getCell("DateMedicationTemplateEnd");};
-    public CsvCell getDateMedicationTemplateReview() { return super.getCell("DateMedicationTemplateReview");};
-    public CsvCell getMedicationDosage() { return super.getCell("MedicationDosage");};
-    public CsvCell getMedicationQuantity() { return super.getCell("MedicationQuantity");};
-    public CsvCell getMaxIssues() { return super.getCell("MaxIssues");};
-    public CsvCell getCourseLengthPerIssue() { return super.getCell("CourseLengthPerIssue");};
-    public CsvCell getDrugStatus() { return super.getCell("DrugStatus");};
-    public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
-    public CsvCell getIDEvent() { return super.getCell("IDEvent");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+    public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+    public CsvCell getIDMultiLexProduct() { return super.getCell("IDMultiLexProduct");}
+    public CsvCell getIDMultiLexPack() { return super.getCell("IDMultiLexPack");}
+    public CsvCell getIDMultiLexDMD() { return super.getCell("IDMultiLexDMD");}
+    public CsvCell getNameOfMedication() { return super.getCell("NameOfMedication");}
+    public CsvCell getDateMedicationTemplateStart() { return super.getCell("DateMedicationTemplateStart");}
+    public CsvCell getDateMedicationTemplateEnd() { return super.getCell("DateMedicationTemplateEnd");}
+    public CsvCell getDateMedicationTemplateReview() { return super.getCell("DateMedicationTemplateReview");}
+    public CsvCell getMedicationDosage() { return super.getCell("MedicationDosage");}
+    public CsvCell getMedicationQuantity() { return super.getCell("MedicationQuantity");}
+    public CsvCell getMaxIssues() { return super.getCell("MaxIssues");}
+    public CsvCell getCourseLengthPerIssue() { return super.getCell("CourseLengthPerIssue");}
+    public CsvCell getDrugStatus() { return super.getCell("DrugStatus");}
+    public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+    public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+    public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");}
+    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
     //TODO fix the string below to make it meaningful

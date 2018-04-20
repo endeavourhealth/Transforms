@@ -38,16 +38,16 @@ public class SRCPA extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getCPADateStart() { return super.getCell("CPADateStart");};
- public CsvCell getCPADateEnd() { return super.getCell("CPADateEnd");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getCPAReviewDate() { return super.getCell("CPAReviewDate");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getCPADateStart() { return super.getCell("CPADateStart");}
+ public CsvCell getCPADateEnd() { return super.getCell("CPADateEnd");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getCPAReviewDate() { return super.getCell("CPAReviewDate");}
 
 
  //TODO fix the string below to make it meaningful

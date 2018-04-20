@@ -42,21 +42,21 @@ public class SRAAddressBookEntry extends AbstractCsvParser {
 };
 }
     public CsvCell getRowId() { return super.getCell("RowIdentifier"); };
-    public CsvCell  getIdOrgVisibleTo() {return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell  getDateCreated() {return super.getCell("DateCreated");};
-    public CsvCell  getTitle() {return super.getCell("Title");};
-    public CsvCell  getFirstName() {return super.getCell("FirstName");};
-    public CsvCell  getMiddleNames() {return super.getCell("MiddleNames");};
-    public CsvCell  getSurname() {return super.getCell("Surname");};
-    public CsvCell  getOrgName() {return super.getCell("OrganisationName");};
-    public CsvCell  getIdParentAddressBookEntry() {return super.getCell("IDParentAddressBookEntry");};
-    public CsvCell  getHouseName() {return super.getCell("HouseName");};
-    public CsvCell  getHouseNbr() {return super.getCell("HouseNumber");};
-    public CsvCell  getNameOfRoad() {return super.getCell("NameOfRoad");};
-    public CsvCell  getNameofLocality() {return super.getCell("NameOfLocality");};
-    public CsvCell  getTown() {return super.getCell("NameOfTown");};
-    public CsvCell  getCounty() {return super.getCell("NameOfCounty");};
-    public CsvCell  getPostCode() {return super.getCell("FullPostcode");};
+    public CsvCell  getIdOrgVisibleTo() {return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell  getDateCreated() {return super.getCell("DateCreated");}
+    public CsvCell  getTitle() {return super.getCell("Title");}
+    public CsvCell  getFirstName() {return super.getCell("FirstName");}
+    public CsvCell  getMiddleNames() {return super.getCell("MiddleNames");}
+    public CsvCell  getSurname() {return super.getCell("Surname");}
+    public CsvCell  getOrgName() {return super.getCell("OrganisationName");}
+    public CsvCell  getIdParentAddressBookEntry() {return super.getCell("IDParentAddressBookEntry");}
+    public CsvCell  getHouseName() {return super.getCell("HouseName");}
+    public CsvCell  getHouseNbr() {return super.getCell("HouseNumber");}
+    public CsvCell  getNameOfRoad() {return super.getCell("NameOfRoad");}
+    public CsvCell  getNameofLocality() {return super.getCell("NameOfLocality");}
+    public CsvCell  getTown() {return super.getCell("NameOfTown");}
+    public CsvCell  getCounty() {return super.getCell("NameOfCounty");}
+    public CsvCell  getPostCode() {return super.getCell("FullPostcode");}
     @Override
     protected String getFileTypeDescription() {
         return "TPP SRA Address Book Entry file";

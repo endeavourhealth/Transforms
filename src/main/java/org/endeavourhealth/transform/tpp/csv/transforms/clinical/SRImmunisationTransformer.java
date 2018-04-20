@@ -12,10 +12,13 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisation;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Immunization;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,6 +153,7 @@ public class SRImmunisationTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
                 codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
                 String readV3Term = ctv3Lookup.getCtv3Text();
+                //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
                 codeableConceptBuilder.setCodingDisplay(readV3Term, null);
                 codeableConceptBuilder.setText(readV3Term, null);
             }

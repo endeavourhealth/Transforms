@@ -38,16 +38,16 @@ public class SRAnsweredQuestionnaire extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDQuestionnaire() { return super.getCell("IDQuestionnaire");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDQuestionnaire() { return super.getCell("IDQuestionnaire");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
 
 
  //TODO fix the string below to make it meaningful

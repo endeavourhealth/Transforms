@@ -41,19 +41,19 @@ public class SRAAndEEvent extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
- public CsvCell getIDAttendance() { return super.getCell("IDAttendance");};
- public CsvCell getIDAAndEAttendance() { return super.getCell("IDAAndEAttendance");};
- public CsvCell getDateEventPerformed() { return super.getCell("DateEventPerformed");};
- public CsvCell getEventType() { return super.getCell("EventType");};
- public CsvCell getIDProfileEventPerformedBy() { return super.getCell("IDProfileEventPerformedBy");};
- public CsvCell getDateEventDeleted() { return super.getCell("DateEventDeleted");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");}
+ public CsvCell getIDAttendance() { return super.getCell("IDAttendance");}
+ public CsvCell getIDAAndEAttendance() { return super.getCell("IDAAndEAttendance");}
+ public CsvCell getDateEventPerformed() { return super.getCell("DateEventPerformed");}
+ public CsvCell getEventType() { return super.getCell("EventType");}
+ public CsvCell getIDProfileEventPerformedBy() { return super.getCell("IDProfileEventPerformedBy");}
+ public CsvCell getDateEventDeleted() { return super.getCell("DateEventDeleted");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

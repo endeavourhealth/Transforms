@@ -49,27 +49,27 @@ public class SRMHConsent extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getConsentType() { return super.getCell("ConsentType");};
- public CsvCell getConsentSetting() { return super.getCell("ConsentSetting");};
- public CsvCell getConsentDate() { return super.getCell("ConsentDate");};
- public CsvCell getConsentExpiryDate() { return super.getCell("ConsentExpiryDate");};
- public CsvCell getReviewDate() { return super.getCell("ReviewDate");};
- public CsvCell getSourceTableSecondOpinionRequestedBy() { return super.getCell("SourceTableSecondOpinionRequestedBy");};
- public CsvCell getSecondOpinionRequestedDate() { return super.getCell("SecondOpinionRequestedDate");};
- public CsvCell getReasonsExplainedToPatientDate() { return super.getCell("ReasonsExplainedToPatientDate");};
- public CsvCell getFormType() { return super.getCell("FormType");};
- public CsvCell getSourceTableSecondOpinion() { return super.getCell("SourceTableSecondOpinion");};
- public CsvCell getIDSecondOpinion() { return super.getCell("IDSecondOpinion");};
- public CsvCell getIDSecondOpinionRequestedBy() { return super.getCell("IDSecondOpinionRequestedBy");};
- public CsvCell getConsentSecondOpinionDate() { return super.getCell("ConsentSecondOpinionDate");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDSection() { return super.getCell("IDSection");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getConsentType() { return super.getCell("ConsentType");}
+ public CsvCell getConsentSetting() { return super.getCell("ConsentSetting");}
+ public CsvCell getConsentDate() { return super.getCell("ConsentDate");}
+ public CsvCell getConsentExpiryDate() { return super.getCell("ConsentExpiryDate");}
+ public CsvCell getReviewDate() { return super.getCell("ReviewDate");}
+ public CsvCell getSourceTableSecondOpinionRequestedBy() { return super.getCell("SourceTableSecondOpinionRequestedBy");}
+ public CsvCell getSecondOpinionRequestedDate() { return super.getCell("SecondOpinionRequestedDate");}
+ public CsvCell getReasonsExplainedToPatientDate() { return super.getCell("ReasonsExplainedToPatientDate");}
+ public CsvCell getFormType() { return super.getCell("FormType");}
+ public CsvCell getSourceTableSecondOpinion() { return super.getCell("SourceTableSecondOpinion");}
+ public CsvCell getIDSecondOpinion() { return super.getCell("IDSecondOpinion");}
+ public CsvCell getIDSecondOpinionRequestedBy() { return super.getCell("IDSecondOpinionRequestedBy");}
+ public CsvCell getConsentSecondOpinionDate() { return super.getCell("ConsentSecondOpinionDate");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDSection() { return super.getCell("IDSection");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

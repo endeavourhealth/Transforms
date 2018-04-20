@@ -37,18 +37,18 @@ public class SRChildAtRisk extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateAdded() { return super.getCell("DateAdded");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getChildProtectionPlan() { return super.getCell("ChildProtectionPlan");};
-    public CsvCell getDateRemoved() { return super.getCell("DateRemoved");};
-    public CsvCell getIDProfileRemovedBy() { return super.getCell("IDProfileRemovedBy");};
-    public CsvCell getRemovalReason() { return super.getCell("RemovalReason");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell getDateAdded() { return super.getCell("DateAdded");}
+    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+    public CsvCell getChildProtectionPlan() { return super.getCell("ChildProtectionPlan");}
+    public CsvCell getDateRemoved() { return super.getCell("DateRemoved");}
+    public CsvCell getIDProfileRemovedBy() { return super.getCell("IDProfileRemovedBy");}
+    public CsvCell getRemovalReason() { return super.getCell("RemovalReason");}
+    public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");}
+    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
     //TODO fix the string below to make it meaningful

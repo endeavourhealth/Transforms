@@ -38,16 +38,16 @@ public class SRRiskReview extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getRiskCategory() { return super.getCell("RiskCategory");};
- public CsvCell getRiskSubCategory() { return super.getCell("RiskSubCategory");};
- public CsvCell getRiskRating() { return super.getCell("RiskRating");};
- public CsvCell getRiskReviewDate() { return super.getCell("RiskReviewDate");};
- public CsvCell getRiskReviewDueDate() { return super.getCell("RiskReviewDueDate");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getRiskCategory() { return super.getCell("RiskCategory");}
+ public CsvCell getRiskSubCategory() { return super.getCell("RiskSubCategory");}
+ public CsvCell getRiskRating() { return super.getCell("RiskRating");}
+ public CsvCell getRiskReviewDate() { return super.getCell("RiskReviewDate");}
+ public CsvCell getRiskReviewDueDate() { return super.getCell("RiskReviewDueDate");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -48,26 +48,26 @@ public class SRDischargeDelay extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
- public CsvCell getDateAdmitted() { return super.getCell("DateAdmitted");};
- public CsvCell getDateDischarged() { return super.getCell("DateDischarged");};
- public CsvCell getIDDischargedBy() { return super.getCell("IDDischargedBy");};
- public CsvCell getIDProfileDischargedBy() { return super.getCell("IDProfileDischargedBy");};
- public CsvCell getMedicallyReadyForDischarge() { return super.getCell("MedicallyReadyForDischarge");};
- public CsvCell getDateMedicallyReadyForDischarge() { return super.getCell("DateMedicallyReadyForDischarge");};
- public CsvCell getReasonForDelay() { return super.getCell("ReasonForDelay");};
- public CsvCell getResponsibility() { return super.getCell("Responsibility");};
- public CsvCell getDateDelayStart() { return super.getCell("DateDelayStart");};
- public CsvCell getDateDelayEnd() { return super.getCell("DateDelayEnd");};
- public CsvCell getIDAdmission() { return super.getCell("IDAdmission");};
- public CsvCell getIDHospitalAdmissionAndDischarge() { return super.getCell("IDHospitalAdmissionAndDischarge");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");}
+ public CsvCell getDateAdmitted() { return super.getCell("DateAdmitted");}
+ public CsvCell getDateDischarged() { return super.getCell("DateDischarged");}
+ public CsvCell getIDDischargedBy() { return super.getCell("IDDischargedBy");}
+ public CsvCell getIDProfileDischargedBy() { return super.getCell("IDProfileDischargedBy");}
+ public CsvCell getMedicallyReadyForDischarge() { return super.getCell("MedicallyReadyForDischarge");}
+ public CsvCell getDateMedicallyReadyForDischarge() { return super.getCell("DateMedicallyReadyForDischarge");}
+ public CsvCell getReasonForDelay() { return super.getCell("ReasonForDelay");}
+ public CsvCell getResponsibility() { return super.getCell("Responsibility");}
+ public CsvCell getDateDelayStart() { return super.getCell("DateDelayStart");}
+ public CsvCell getDateDelayEnd() { return super.getCell("DateDelayEnd");}
+ public CsvCell getIDAdmission() { return super.getCell("IDAdmission");}
+ public CsvCell getIDHospitalAdmissionAndDischarge() { return super.getCell("IDHospitalAdmissionAndDischarge");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

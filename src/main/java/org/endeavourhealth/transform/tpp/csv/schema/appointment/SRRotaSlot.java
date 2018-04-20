@@ -38,17 +38,17 @@ public class SRRotaSlot extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDRota() { return super.getCell("IDRota");};
- public CsvCell getRotaSlotType() { return super.getCell("RotaSlotType");};
- public CsvCell getDuration() { return super.getCell("Duration");};
- public CsvCell getQuantity() { return super.getCell("Quantity");};
- public CsvCell getEmbargoDuration() { return super.getCell("EmbargoDuration");};
- public CsvCell getEmbargoExpiryTime() { return super.getCell("EmbargoExpiryTime");};
- public CsvCell getBlockedSlot() { return super.getCell("BlockedSlot");};
- public CsvCell getBookableCAndB() { return super.getCell("BookableCAndB");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDRota() { return super.getCell("IDRota");}
+ public CsvCell getRotaSlotType() { return super.getCell("RotaSlotType");}
+ public CsvCell getDuration() { return super.getCell("Duration");}
+ public CsvCell getQuantity() { return super.getCell("Quantity");}
+ public CsvCell getEmbargoDuration() { return super.getCell("EmbargoDuration");}
+ public CsvCell getEmbargoExpiryTime() { return super.getCell("EmbargoExpiryTime");}
+ public CsvCell getBlockedSlot() { return super.getCell("BlockedSlot");}
+ public CsvCell getBookableCAndB() { return super.getCell("BookableCAndB");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
  //TODO fix the string below to make it meaningful
      @Override

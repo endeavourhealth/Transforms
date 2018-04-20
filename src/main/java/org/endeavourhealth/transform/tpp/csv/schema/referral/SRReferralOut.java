@@ -48,30 +48,30 @@ public class SRReferralOut extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
-    public CsvCell getDateEvent() { return super.getCell("DateEvent");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
-    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
-    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
-    public CsvCell getTypeOfReferral() { return super.getCell("TypeOfReferral");};
-    public CsvCell getReason() { return super.getCell("Reason");};
-    public CsvCell getIDProfileReferrer() { return super.getCell("IDProfileReferrer");};
-    public CsvCell getServiceOffered() { return super.getCell("ServiceOffered");};
-    public CsvCell getReReferral() { return super.getCell("ReReferral");};
-    public CsvCell getUrgency() { return super.getCell("Urgency");};
-    public CsvCell getPrimaryDiagnosis() { return super.getCell("PrimaryDiagnosis");};
-    public CsvCell getRecipientID() { return super.getCell("RecipientID");};
-    public CsvCell getRecipientIDType() { return super.getCell("RecipientIDType");};
-    public CsvCell getIDEvent() { return super.getCell("IDEvent");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+    public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+    public CsvCell getTypeOfReferral() { return super.getCell("TypeOfReferral");}
+    public CsvCell getReason() { return super.getCell("Reason");}
+    public CsvCell getIDProfileReferrer() { return super.getCell("IDProfileReferrer");}
+    public CsvCell getServiceOffered() { return super.getCell("ServiceOffered");}
+    public CsvCell getReReferral() { return super.getCell("ReReferral");}
+    public CsvCell getUrgency() { return super.getCell("Urgency");}
+    public CsvCell getPrimaryDiagnosis() { return super.getCell("PrimaryDiagnosis");}
+    public CsvCell getRecipientID() { return super.getCell("RecipientID");}
+    public CsvCell getRecipientIDType() { return super.getCell("RecipientIDType");}
+    public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+    public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
     public CsvCell getM101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth() {
-        return super.getCell("M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth");};
-    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+        return super.getCell("M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth");}
+    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");}
+    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
     //TODO fix the string below to make it meaningful

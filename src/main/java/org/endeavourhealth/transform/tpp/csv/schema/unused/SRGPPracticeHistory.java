@@ -36,14 +36,14 @@ public class SRGPPracticeHistory extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPractice() { return super.getCell("IDPractice");};
- public CsvCell getIDProfileRegisteredGP() { return super.getCell("IDProfileRegisteredGP");};
- public CsvCell getDateFrom() { return super.getCell("DateFrom");};
- public CsvCell getDateTo() { return super.getCell("DateTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPractice() { return super.getCell("IDPractice");}
+ public CsvCell getIDProfileRegisteredGP() { return super.getCell("IDProfileRegisteredGP");}
+ public CsvCell getDateFrom() { return super.getCell("DateFrom");}
+ public CsvCell getDateTo() { return super.getCell("DateTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

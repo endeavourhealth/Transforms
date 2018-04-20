@@ -38,16 +38,16 @@ public class SROohPathways extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDateTriageStart() { return super.getCell("DateTriageStart");};
- public CsvCell getDateTriageEnd() { return super.getCell("DateTriageEnd");};
- public CsvCell getFinalDispositionCode() { return super.getCell("FinalDispositionCode");};
- public CsvCell getIDOohCase() { return super.getCell("IDOohCase");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDateTriageStart() { return super.getCell("DateTriageStart");}
+ public CsvCell getDateTriageEnd() { return super.getCell("DateTriageEnd");}
+ public CsvCell getFinalDispositionCode() { return super.getCell("FinalDispositionCode");}
+ public CsvCell getIDOohCase() { return super.getCell("IDOohCase");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

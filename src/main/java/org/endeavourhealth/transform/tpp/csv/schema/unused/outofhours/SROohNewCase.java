@@ -61,39 +61,39 @@ public class SROohNewCase extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getCallOriginCallCentre() { return super.getCell("CallOriginCallCentre");};
- public CsvCell getCallStreamAE() { return super.getCell("CallStreamAE");};
- public CsvCell getCallStreamMIU() { return super.getCell("CallStreamMIU");};
- public CsvCell getCategoryC() { return super.getCell("CategoryC");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getCurrentNameOfBuilding() { return super.getCell("CurrentNameOfBuilding");};
- public CsvCell getCurrentNumberOfBuilding() { return super.getCell("CurrentNumberOfBuilding");};
- public CsvCell getCurrentNameOfRoad() { return super.getCell("CurrentNameOfRoad");};
- public CsvCell getCurrentNameOfLocality() { return super.getCell("CurrentNameOfLocality");};
- public CsvCell getCurrentNameOfTown() { return super.getCell("CurrentNameOfTown");};
- public CsvCell getCurrentFullPostcode() { return super.getCell("CurrentFullPostcode");};
- public CsvCell getCaseType() { return super.getCell("CaseType");};
- public CsvCell getDateStarted() { return super.getCell("DateStarted");};
- public CsvCell getDateWalkedIn() { return super.getCell("DateWalkedIn");};
- public CsvCell getPatientCall() { return super.getCell("PatientCall");};
- public CsvCell getPatientCallBehalfContact() { return super.getCell("PatientCallBehalfContact");};
- public CsvCell getPatientCallInformantContact() { return super.getCell("PatientCallInformantContact");};
- public CsvCell getPatientCallInformantContactExt() { return super.getCell("PatientCallInformantContactExt");};
- public CsvCell getContactNumber() { return super.getCell("ContactNumber");};
- public CsvCell getContactNumberExt() { return super.getCell("ContactNumberExt");};
- public CsvCell getSecondContactNumber() { return super.getCell("SecondContactNumber");};
- public CsvCell getSecondContactNumberExt() { return super.getCell("SecondContactNumberExt");};
- public CsvCell getDateInterpreterRequired() { return super.getCell("DateInterpreterRequired");};
- public CsvCell getDateInterpreterProvided() { return super.getCell("DateInterpreterProvided");};
- public CsvCell getInterpreterLanguage() { return super.getCell("InterpreterLanguage");};
- public CsvCell getDateClosed() { return super.getCell("DateClosed");};
- public CsvCell getClosedCoreActivity() { return super.getCell("ClosedCoreActivity");};
- public CsvCell getCloseCaseFollowUp() { return super.getCell("CloseCaseFollowUp");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getCallOriginCallCentre() { return super.getCell("CallOriginCallCentre");}
+ public CsvCell getCallStreamAE() { return super.getCell("CallStreamAE");}
+ public CsvCell getCallStreamMIU() { return super.getCell("CallStreamMIU");}
+ public CsvCell getCategoryC() { return super.getCell("CategoryC");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getCurrentNameOfBuilding() { return super.getCell("CurrentNameOfBuilding");}
+ public CsvCell getCurrentNumberOfBuilding() { return super.getCell("CurrentNumberOfBuilding");}
+ public CsvCell getCurrentNameOfRoad() { return super.getCell("CurrentNameOfRoad");}
+ public CsvCell getCurrentNameOfLocality() { return super.getCell("CurrentNameOfLocality");}
+ public CsvCell getCurrentNameOfTown() { return super.getCell("CurrentNameOfTown");}
+ public CsvCell getCurrentFullPostcode() { return super.getCell("CurrentFullPostcode");}
+ public CsvCell getCaseType() { return super.getCell("CaseType");}
+ public CsvCell getDateStarted() { return super.getCell("DateStarted");}
+ public CsvCell getDateWalkedIn() { return super.getCell("DateWalkedIn");}
+ public CsvCell getPatientCall() { return super.getCell("PatientCall");}
+ public CsvCell getPatientCallBehalfContact() { return super.getCell("PatientCallBehalfContact");}
+ public CsvCell getPatientCallInformantContact() { return super.getCell("PatientCallInformantContact");}
+ public CsvCell getPatientCallInformantContactExt() { return super.getCell("PatientCallInformantContactExt");}
+ public CsvCell getContactNumber() { return super.getCell("ContactNumber");}
+ public CsvCell getContactNumberExt() { return super.getCell("ContactNumberExt");}
+ public CsvCell getSecondContactNumber() { return super.getCell("SecondContactNumber");}
+ public CsvCell getSecondContactNumberExt() { return super.getCell("SecondContactNumberExt");}
+ public CsvCell getDateInterpreterRequired() { return super.getCell("DateInterpreterRequired");}
+ public CsvCell getDateInterpreterProvided() { return super.getCell("DateInterpreterProvided");}
+ public CsvCell getInterpreterLanguage() { return super.getCell("InterpreterLanguage");}
+ public CsvCell getDateClosed() { return super.getCell("DateClosed");}
+ public CsvCell getClosedCoreActivity() { return super.getCell("ClosedCoreActivity");}
+ public CsvCell getCloseCaseFollowUp() { return super.getCell("CloseCaseFollowUp");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

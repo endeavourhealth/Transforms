@@ -44,22 +44,22 @@ public class SRMHEpisode extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getMHEpisodeStartDate() { return super.getCell("MHEpisodeStartDate");};
- public CsvCell getMHEpisodeEndDate() { return super.getCell("MHEpisodeEndDate");};
- public CsvCell getMHEpisodeStaff() { return super.getCell("MHEpisodeStaff");};
- public CsvCell getCareCoOrdinator() { return super.getCell("CareCoOrdinator");};
- public CsvCell getNamedNurse() { return super.getCell("NamedNurse");};
- public CsvCell getLeadProfessional() { return super.getCell("LeadProfessional");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDTeam() { return super.getCell("IDTeam");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getMHEpisodeStartDate() { return super.getCell("MHEpisodeStartDate");}
+ public CsvCell getMHEpisodeEndDate() { return super.getCell("MHEpisodeEndDate");}
+ public CsvCell getMHEpisodeStaff() { return super.getCell("MHEpisodeStaff");}
+ public CsvCell getCareCoOrdinator() { return super.getCell("CareCoOrdinator");}
+ public CsvCell getNamedNurse() { return super.getCell("NamedNurse");}
+ public CsvCell getLeadProfessional() { return super.getCell("LeadProfessional");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDTeam() { return super.getCell("IDTeam");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

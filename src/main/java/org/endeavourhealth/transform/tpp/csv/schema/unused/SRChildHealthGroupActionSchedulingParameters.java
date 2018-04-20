@@ -39,17 +39,17 @@ public class SRChildHealthGroupActionSchedulingParameters extends AbstractCsvPar
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDChildHealthAction() { return super.getCell("IDChildHealthAction");};
- public CsvCell getActionPriority() { return super.getCell("ActionPriority");};
- public CsvCell getMinAge() { return super.getCell("MinAge");};
- public CsvCell getMaxAge() { return super.getCell("MaxAge");};
- public CsvCell getMinIntervalAnyVac() { return super.getCell("MinIntervalAnyVac");};
- public CsvCell getMinIntervalThisVacc() { return super.getCell("MinIntervalThisVacc");};
- public CsvCell getMinIntervalPart1() { return super.getCell("MinIntervalPart1");};
- public CsvCell getTreatmentSpecificTreatmentCentreName() { return super.getCell("TreatmentSpecificTreatmentCentreName");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDChildHealthAction() { return super.getCell("IDChildHealthAction");}
+ public CsvCell getActionPriority() { return super.getCell("ActionPriority");}
+ public CsvCell getMinAge() { return super.getCell("MinAge");}
+ public CsvCell getMaxAge() { return super.getCell("MaxAge");}
+ public CsvCell getMinIntervalAnyVac() { return super.getCell("MinIntervalAnyVac");}
+ public CsvCell getMinIntervalThisVacc() { return super.getCell("MinIntervalThisVacc");}
+ public CsvCell getMinIntervalPart1() { return super.getCell("MinIntervalPart1");}
+ public CsvCell getTreatmentSpecificTreatmentCentreName() { return super.getCell("TreatmentSpecificTreatmentCentreName");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

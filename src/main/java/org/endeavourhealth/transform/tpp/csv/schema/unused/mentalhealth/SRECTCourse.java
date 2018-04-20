@@ -38,16 +38,16 @@ public class SRECTCourse extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getCourseStartDate() { return super.getCell("CourseStartDate");};
- public CsvCell getCourseEndDate() { return super.getCell("CourseEndDate");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getCourseStartDate() { return super.getCell("CourseStartDate");}
+ public CsvCell getCourseEndDate() { return super.getCell("CourseEndDate");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

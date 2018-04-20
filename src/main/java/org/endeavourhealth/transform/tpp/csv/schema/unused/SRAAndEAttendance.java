@@ -57,35 +57,35 @@ public class SRAAndEAttendance extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getArrivalMode() { return super.getCell("ArrivalMode");};
- public CsvCell getAttendanceCategory() { return super.getCell("AttendanceCategory");};
- public CsvCell getReferralSource() { return super.getCell("ReferralSource");};
- public CsvCell getIDProfileLeadClinician() { return super.getCell("IDProfileLeadClinician");};
- public CsvCell getAccompaniedBy() { return super.getCell("AccompaniedBy");};
- public CsvCell getIncidentLocationType() { return super.getCell("IncidentLocationType");};
- public CsvCell getPatientGroup() { return super.getCell("PatientGroup");};
- public CsvCell getPresentingComplaint() { return super.getCell("PresentingComplaint");};
- public CsvCell getPresentingComplaintText() { return super.getCell("PresentingComplaintText");};
- public CsvCell getIncidentNotes() { return super.getCell("IncidentNotes");};
- public CsvCell getTriageCategory() { return super.getCell("TriageCategory");};
- public CsvCell getPatientCategory() { return super.getCell("PatientCategory");};
- public CsvCell getDateAttendanceConcluded() { return super.getCell("DateAttendanceConcluded");};
- public CsvCell getDepartureMethod() { return super.getCell("DepartureMethod");};
- public CsvCell getPrimaryBreachReason() { return super.getCell("PrimaryBreachReason");};
- public CsvCell getSecondaryBreachReason() { return super.getCell("SecondaryBreachReason");};
- public CsvCell getAAndEAttendanceComplete() { return super.getCell("AAndEAttendanceComplete");};
- public CsvCell getExpectedOutcome() { return super.getCell("ExpectedOutcome");};
- public CsvCell getDateExpectedOutcomeConfirmed() { return super.getCell("DateExpectedOutcomeConfirmed");};
- public CsvCell getAdditionalGpInfo() { return super.getCell("AdditionalGpInfo");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getArrivalMode() { return super.getCell("ArrivalMode");}
+ public CsvCell getAttendanceCategory() { return super.getCell("AttendanceCategory");}
+ public CsvCell getReferralSource() { return super.getCell("ReferralSource");}
+ public CsvCell getIDProfileLeadClinician() { return super.getCell("IDProfileLeadClinician");}
+ public CsvCell getAccompaniedBy() { return super.getCell("AccompaniedBy");}
+ public CsvCell getIncidentLocationType() { return super.getCell("IncidentLocationType");}
+ public CsvCell getPatientGroup() { return super.getCell("PatientGroup");}
+ public CsvCell getPresentingComplaint() { return super.getCell("PresentingComplaint");}
+ public CsvCell getPresentingComplaintText() { return super.getCell("PresentingComplaintText");}
+ public CsvCell getIncidentNotes() { return super.getCell("IncidentNotes");}
+ public CsvCell getTriageCategory() { return super.getCell("TriageCategory");}
+ public CsvCell getPatientCategory() { return super.getCell("PatientCategory");}
+ public CsvCell getDateAttendanceConcluded() { return super.getCell("DateAttendanceConcluded");}
+ public CsvCell getDepartureMethod() { return super.getCell("DepartureMethod");}
+ public CsvCell getPrimaryBreachReason() { return super.getCell("PrimaryBreachReason");}
+ public CsvCell getSecondaryBreachReason() { return super.getCell("SecondaryBreachReason");}
+ public CsvCell getAAndEAttendanceComplete() { return super.getCell("AAndEAttendanceComplete");}
+ public CsvCell getExpectedOutcome() { return super.getCell("ExpectedOutcome");}
+ public CsvCell getDateExpectedOutcomeConfirmed() { return super.getCell("DateExpectedOutcomeConfirmed");}
+ public CsvCell getAdditionalGpInfo() { return super.getCell("AdditionalGpInfo");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

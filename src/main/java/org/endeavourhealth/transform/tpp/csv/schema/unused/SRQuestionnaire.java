@@ -36,14 +36,14 @@ public class SRQuestionnaire extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDtPublished() { return super.getCell("DtPublished");};
- public CsvCell getIDProfilePublishedBy() { return super.getCell("IDProfilePublishedBy");};
- public CsvCell getQuestionnaireName() { return super.getCell("QuestionnaireName");};
- public CsvCell getQuestionnaireVersion() { return super.getCell("QuestionnaireVersion");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDtPublished() { return super.getCell("DtPublished");}
+ public CsvCell getIDProfilePublishedBy() { return super.getCell("IDProfilePublishedBy");}
+ public CsvCell getQuestionnaireName() { return super.getCell("QuestionnaireName");}
+ public CsvCell getQuestionnaireVersion() { return super.getCell("QuestionnaireVersion");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

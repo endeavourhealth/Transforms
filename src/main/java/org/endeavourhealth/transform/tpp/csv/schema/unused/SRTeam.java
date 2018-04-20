@@ -36,14 +36,14 @@ public class SRTeam extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTeamName() { return super.getCell("TeamName");};
- public CsvCell getTeamType() { return super.getCell("TeamType");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getTeamCreated() { return super.getCell("TeamCreated");};
- public CsvCell getTeamDeleted() { return super.getCell("TeamDeleted");};
- public CsvCell getIDParentTeam() { return super.getCell("IDParentTeam");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTeamName() { return super.getCell("TeamName");}
+ public CsvCell getTeamType() { return super.getCell("TeamType");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getTeamCreated() { return super.getCell("TeamCreated");}
+ public CsvCell getTeamDeleted() { return super.getCell("TeamDeleted");}
+ public CsvCell getIDParentTeam() { return super.getCell("IDParentTeam");}
 
 
  //TODO fix the string below to make it meaningful

@@ -51,29 +51,29 @@ public class SR18WeekWait extends AbstractCsvParser {
         };
 
     }
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
-    public CsvCell getDateEvent() { return super.getCell("DateEvent");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
-    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
-    public CsvCell getIDNumber() { return super.getCell("IDNumber");};
-    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
-    public CsvCell getTreatmentFunction() { return super.getCell("TreatmentFunction");};
-    public CsvCell getDateStart() { return super.getCell("DateStart");};
-    public CsvCell getDateExpectedEnd() { return super.getCell("DateExpectedEnd");};
-    public CsvCell getDateCompleted() { return super.getCell("DateCompleted");};
-    public CsvCell getDateAppointmentOffered() { return super.getCell("DateAppointmentOffered");};
-    public CsvCell getReasonableOffer() { return super.getCell("ReasonableOffer");};
-    public CsvCell getClockStarted() { return super.getCell("ClockStarted");};
-    public CsvCell getDateStatus() { return super.getCell("DateStatus");};
-    public CsvCell getStatus() { return super.getCell("Status");};
-    public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
-    public CsvCell getIDEvent() { return super.getCell("IDEvent");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+    public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+    public CsvCell getIDNumber() { return super.getCell("IDNumber");}
+    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+    public CsvCell getTreatmentFunction() { return super.getCell("TreatmentFunction");}
+    public CsvCell getDateStart() { return super.getCell("DateStart");}
+    public CsvCell getDateExpectedEnd() { return super.getCell("DateExpectedEnd");}
+    public CsvCell getDateCompleted() { return super.getCell("DateCompleted");}
+    public CsvCell getDateAppointmentOffered() { return super.getCell("DateAppointmentOffered");}
+    public CsvCell getReasonableOffer() { return super.getCell("ReasonableOffer");}
+    public CsvCell getClockStarted() { return super.getCell("ClockStarted");}
+    public CsvCell getDateStatus() { return super.getCell("DateStatus");}
+    public CsvCell getStatus() { return super.getCell("Status");}
+    public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+    public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+    public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
     //TODO file the string below

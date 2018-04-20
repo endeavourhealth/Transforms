@@ -46,24 +46,24 @@ public class SRAppointmentVisitOutcomes extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
- public CsvCell getDateRecorded() { return super.getCell("DateRecorded");};
- public CsvCell getIDProfileResponsibleProfessional() { return super.getCell("IDProfileResponsibleProfessional");};
- public CsvCell getConsultantSpecialtyMappingCode() { return super.getCell("ConsultantSpecialtyMappingCode");};
- public CsvCell getTreatmentCodeMappingCode() { return super.getCell("TreatmentCodeMappingCode");};
- public CsvCell getTreatmentCode() { return super.getCell("TreatmentCode");};
- public CsvCell getOutcomeOfAttendanceMappingCode() { return super.getCell("OutcomeOfAttendanceMappingCode");};
- public CsvCell getOperationStatus() { return super.getCell("OperationStatus");};
- public CsvCell getAdministrativeCategory() { return super.getCell("AdministrativeCategory");};
- public CsvCell getIDAppointment() { return super.getCell("IDAppointment");};
- public CsvCell getIDVisit() { return super.getCell("IDVisit");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getOutcomeOfAttendance() { return super.getCell("OutcomeOfAttendance");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");}
+ public CsvCell getDateRecorded() { return super.getCell("DateRecorded");}
+ public CsvCell getIDProfileResponsibleProfessional() { return super.getCell("IDProfileResponsibleProfessional");}
+ public CsvCell getConsultantSpecialtyMappingCode() { return super.getCell("ConsultantSpecialtyMappingCode");}
+ public CsvCell getTreatmentCodeMappingCode() { return super.getCell("TreatmentCodeMappingCode");}
+ public CsvCell getTreatmentCode() { return super.getCell("TreatmentCode");}
+ public CsvCell getOutcomeOfAttendanceMappingCode() { return super.getCell("OutcomeOfAttendanceMappingCode");}
+ public CsvCell getOperationStatus() { return super.getCell("OperationStatus");}
+ public CsvCell getAdministrativeCategory() { return super.getCell("AdministrativeCategory");}
+ public CsvCell getIDAppointment() { return super.getCell("IDAppointment");}
+ public CsvCell getIDVisit() { return super.getCell("IDVisit");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getOutcomeOfAttendance() { return super.getCell("OutcomeOfAttendance");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

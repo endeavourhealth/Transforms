@@ -35,13 +35,13 @@ public class SRTeamMember extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTeamStaff() { return super.getCell("TeamStaff");};
- public CsvCell getIDTeam() { return super.getCell("IDTeam");};
- public CsvCell getMemberCreated() { return super.getCell("MemberCreated");};
- public CsvCell getMemberDeleted() { return super.getCell("MemberDeleted");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTeamStaff() { return super.getCell("TeamStaff");}
+ public CsvCell getIDTeam() { return super.getCell("IDTeam");}
+ public CsvCell getMemberCreated() { return super.getCell("MemberCreated");}
+ public CsvCell getMemberDeleted() { return super.getCell("MemberDeleted");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

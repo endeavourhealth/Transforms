@@ -45,23 +45,23 @@ public class SRPatientLeave extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getLeaveType() { return super.getCell("LeaveType");};
- public CsvCell getDateExpectedStart() { return super.getCell("DateExpectedStart");};
- public CsvCell getDateExpectedEnd() { return super.getCell("DateExpectedEnd");};
- public CsvCell getDateActualStart() { return super.getCell("DateActualStart");};
- public CsvCell getDateActualEnd() { return super.getCell("DateActualEnd");};
- public CsvCell getEndReason() { return super.getCell("EndReason");};
- public CsvCell getSCTConsideredDate() { return super.getCell("SCTConsideredDate");};
- public CsvCell getLeaveApproved() { return super.getCell("LeaveApproved");};
- public CsvCell getIDSection() { return super.getCell("IDSection");};
- public CsvCell getIDHospitalAdmission() { return super.getCell("IDHospitalAdmission");};
- public CsvCell getIDHospitalAdmissionAndDischarge() { return super.getCell("IDHospitalAdmissionAndDischarge");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getFreeBed() { return super.getCell("FreeBed");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getLeaveType() { return super.getCell("LeaveType");}
+ public CsvCell getDateExpectedStart() { return super.getCell("DateExpectedStart");}
+ public CsvCell getDateExpectedEnd() { return super.getCell("DateExpectedEnd");}
+ public CsvCell getDateActualStart() { return super.getCell("DateActualStart");}
+ public CsvCell getDateActualEnd() { return super.getCell("DateActualEnd");}
+ public CsvCell getEndReason() { return super.getCell("EndReason");}
+ public CsvCell getSCTConsideredDate() { return super.getCell("SCTConsideredDate");}
+ public CsvCell getLeaveApproved() { return super.getCell("LeaveApproved");}
+ public CsvCell getIDSection() { return super.getCell("IDSection");}
+ public CsvCell getIDHospitalAdmission() { return super.getCell("IDHospitalAdmission");}
+ public CsvCell getIDHospitalAdmissionAndDischarge() { return super.getCell("IDHospitalAdmissionAndDischarge");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getFreeBed() { return super.getCell("FreeBed");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -39,17 +39,17 @@ public class SRChildHealthGroupAction extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getGroupName() { return super.getCell("GroupName");};
- public CsvCell getGroupCategory() { return super.getCell("GroupCategory");};
- public CsvCell getGroupTreatment() { return super.getCell("GroupTreatment");};
- public CsvCell getGroupScheduleAllChildren() { return super.getCell("GroupScheduleAllChildren");};
- public CsvCell getActionName() { return super.getCell("ActionName");};
- public CsvCell getActionPriority() { return super.getCell("ActionPriority");};
- public CsvCell getActionCTV3Code() { return super.getCell("ActionCTV3Code");};
- public CsvCell getActionExaminerType() { return super.getCell("ActionExaminerType");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getGroupName() { return super.getCell("GroupName");}
+ public CsvCell getGroupCategory() { return super.getCell("GroupCategory");}
+ public CsvCell getGroupTreatment() { return super.getCell("GroupTreatment");}
+ public CsvCell getGroupScheduleAllChildren() { return super.getCell("GroupScheduleAllChildren");}
+ public CsvCell getActionName() { return super.getCell("ActionName");}
+ public CsvCell getActionPriority() { return super.getCell("ActionPriority");}
+ public CsvCell getActionCTV3Code() { return super.getCell("ActionCTV3Code");}
+ public CsvCell getActionExaminerType() { return super.getCell("ActionExaminerType");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

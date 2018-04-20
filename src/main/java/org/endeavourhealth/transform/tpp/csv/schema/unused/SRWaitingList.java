@@ -47,25 +47,25 @@ public class SRWaitingList extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getWaitingListName() { return super.getCell("WaitingListName");};
- public CsvCell getDateAdded() { return super.getCell("DateAdded");};
- public CsvCell getDateAppointmentStart() { return super.getCell("DateAppointmentStart");};
- public CsvCell getDateAppointmentEnd() { return super.getCell("DateAppointmentEnd");};
- public CsvCell getRotaType() { return super.getCell("RotaType");};
- public CsvCell getRestrictedToCaseload() { return super.getCell("RestrictedToCaseload");};
- public CsvCell getTargetMaximumWait() { return super.getCell("TargetMaximumWait");};
- public CsvCell getIDClinician() { return super.getCell("IDClinician");};
- public CsvCell getIDProfileClinician() { return super.getCell("IDProfileClinician");};
- public CsvCell getPriority() { return super.getCell("Priority");};
- public CsvCell getDateDue() { return super.getCell("DateDue");};
- public CsvCell getNotes() { return super.getCell("Notes");};
- public CsvCell getDateWaitCompleted() { return super.getCell("DateWaitCompleted");};
- public CsvCell getDateDeletedFromWaitingList() { return super.getCell("DateDeletedFromWaitingList");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getWaitingListName() { return super.getCell("WaitingListName");}
+ public CsvCell getDateAdded() { return super.getCell("DateAdded");}
+ public CsvCell getDateAppointmentStart() { return super.getCell("DateAppointmentStart");}
+ public CsvCell getDateAppointmentEnd() { return super.getCell("DateAppointmentEnd");}
+ public CsvCell getRotaType() { return super.getCell("RotaType");}
+ public CsvCell getRestrictedToCaseload() { return super.getCell("RestrictedToCaseload");}
+ public CsvCell getTargetMaximumWait() { return super.getCell("TargetMaximumWait");}
+ public CsvCell getIDClinician() { return super.getCell("IDClinician");}
+ public CsvCell getIDProfileClinician() { return super.getCell("IDProfileClinician");}
+ public CsvCell getPriority() { return super.getCell("Priority");}
+ public CsvCell getDateDue() { return super.getCell("DateDue");}
+ public CsvCell getNotes() { return super.getCell("Notes");}
+ public CsvCell getDateWaitCompleted() { return super.getCell("DateWaitCompleted");}
+ public CsvCell getDateDeletedFromWaitingList() { return super.getCell("DateDeletedFromWaitingList");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

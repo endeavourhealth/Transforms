@@ -48,26 +48,26 @@ public class SRSection extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getSectionStartDate() { return super.getCell("SectionStartDate");};
- public CsvCell getSectionExpiryDate() { return super.getCell("SectionExpiryDate");};
- public CsvCell getSectionType() { return super.getCell("SectionType");};
- public CsvCell getSectionCategory() { return super.getCell("SectionCategory");};
- public CsvCell getConsentDueDate() { return super.getCell("ConsentDueDate");};
- public CsvCell getResponsibleClinician() { return super.getCell("ResponsibleClinician");};
- public CsvCell getSectionOutcome() { return super.getCell("SectionOutcome");};
- public CsvCell getMHRTReferralDue() { return super.getCell("MHRTReferralDue");};
- public CsvCell getSectionEndDate() { return super.getCell("SectionEndDate");};
- public CsvCell getResponsibleCCG() { return super.getCell("ResponsibleCCG");};
- public CsvCell getResponsibleTrust() { return super.getCell("ResponsibleTrust");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getDateClinicianBecameResponsible() { return super.getCell("DateClinicianBecameResponsible");};
- public CsvCell getActive() { return super.getCell("Active");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getSectionStartDate() { return super.getCell("SectionStartDate");}
+ public CsvCell getSectionExpiryDate() { return super.getCell("SectionExpiryDate");}
+ public CsvCell getSectionType() { return super.getCell("SectionType");}
+ public CsvCell getSectionCategory() { return super.getCell("SectionCategory");}
+ public CsvCell getConsentDueDate() { return super.getCell("ConsentDueDate");}
+ public CsvCell getResponsibleClinician() { return super.getCell("ResponsibleClinician");}
+ public CsvCell getSectionOutcome() { return super.getCell("SectionOutcome");}
+ public CsvCell getMHRTReferralDue() { return super.getCell("MHRTReferralDue");}
+ public CsvCell getSectionEndDate() { return super.getCell("SectionEndDate");}
+ public CsvCell getResponsibleCCG() { return super.getCell("ResponsibleCCG");}
+ public CsvCell getResponsibleTrust() { return super.getCell("ResponsibleTrust");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getDateClinicianBecameResponsible() { return super.getCell("DateClinicianBecameResponsible");}
+ public CsvCell getActive() { return super.getCell("Active");}
 
 
  //TODO fix the string below to make it meaningful

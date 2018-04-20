@@ -39,17 +39,17 @@ public class SRHospitalPatientAlertIndicator extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getRecurringAlert() { return super.getCell("RecurringAlert");};
- public CsvCell getDateDormant() { return super.getCell("DateDormant");};
- public CsvCell getDateReview() { return super.getCell("DateReview");};
- public CsvCell getIDHospitalAlertIndicator() { return super.getCell("IDHospitalAlertIndicator");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getRecurringAlert() { return super.getCell("RecurringAlert");}
+ public CsvCell getDateDormant() { return super.getCell("DateDormant");}
+ public CsvCell getDateReview() { return super.getCell("DateReview");}
+ public CsvCell getIDHospitalAlertIndicator() { return super.getCell("IDHospitalAlertIndicator");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -53,31 +53,31 @@ public class SROnAdmissionMedication extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
- public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getNameOfMedication() { return super.getCell("NameOfMedication");};
- public CsvCell getDoseFrequency() { return super.getCell("DoseFrequency");};
- public CsvCell getDateMedicationStart() { return super.getCell("DateMedicationStart");};
- public CsvCell getDateMedicationEnd() { return super.getCell("DateMedicationEnd");};
- public CsvCell getMedicationInformationSource() { return super.getCell("MedicationInformationSource");};
- public CsvCell getIDProfileMedicationInformationSource() { return super.getCell("IDProfileMedicationInformationSource");};
- public CsvCell getMedicationEndReason() { return super.getCell("MedicationEndReason");};
- public CsvCell getIDProfileMedicationEndedBy() { return super.getCell("IDProfileMedicationEndedBy");};
- public CsvCell getReprescribed() { return super.getCell("Represcribed");};
- public CsvCell getIDProfileReprescribedBy() { return super.getCell("IDProfileReprescribedBy");};
- public CsvCell getHistoryChecked() { return super.getCell("HistoryChecked");};
- public CsvCell getIDHistoryCheckedBy() { return super.getCell("IDHistoryCheckedBy");};
- public CsvCell getIDProfileHistoryCheckedBy() { return super.getCell("IDProfileHistoryCheckedBy");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+ public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+ public CsvCell getNameOfMedication() { return super.getCell("NameOfMedication");}
+ public CsvCell getDoseFrequency() { return super.getCell("DoseFrequency");}
+ public CsvCell getDateMedicationStart() { return super.getCell("DateMedicationStart");}
+ public CsvCell getDateMedicationEnd() { return super.getCell("DateMedicationEnd");}
+ public CsvCell getMedicationInformationSource() { return super.getCell("MedicationInformationSource");}
+ public CsvCell getIDProfileMedicationInformationSource() { return super.getCell("IDProfileMedicationInformationSource");}
+ public CsvCell getMedicationEndReason() { return super.getCell("MedicationEndReason");}
+ public CsvCell getIDProfileMedicationEndedBy() { return super.getCell("IDProfileMedicationEndedBy");}
+ public CsvCell getReprescribed() { return super.getCell("Represcribed");}
+ public CsvCell getIDProfileReprescribedBy() { return super.getCell("IDProfileReprescribedBy");}
+ public CsvCell getHistoryChecked() { return super.getCell("HistoryChecked");}
+ public CsvCell getIDHistoryCheckedBy() { return super.getCell("IDHistoryCheckedBy");}
+ public CsvCell getIDProfileHistoryCheckedBy() { return super.getCell("IDProfileHistoryCheckedBy");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
 
 
  //TODO fix the string below to make it meaningful

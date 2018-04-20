@@ -54,32 +54,32 @@ public class SRAssessment extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
- public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getAssessmentFor() { return super.getCell("AssessmentFor");};
- public CsvCell getIDPatientRelationship() { return super.getCell("IDPatientRelationship");};
- public CsvCell getAssessmentType() { return super.getCell("AssessmentType");};
- public CsvCell getAssessmentReview() { return super.getCell("AssessmentReview");};
- public CsvCell getIDContact() { return super.getCell("IDContact");};
- public CsvCell getQuestionnaireName() { return super.getCell("QuestionnaireName");};
- public CsvCell getDateAssessmentTarget() { return super.getCell("DateAssessmentTarget");};
- public CsvCell getDateAssessmentCompleted() { return super.getCell("DateAssessmentCompleted");};
- public CsvCell getDateAssessmentReview() { return super.getCell("DateAssessmentReview");};
- public CsvCell getAssessmentScore() { return super.getCell("AssessmentScore");};
- public CsvCell getScoreOverrideReason() { return super.getCell("ScoreOverrideReason");};
- public CsvCell getAssessmentBudget() { return super.getCell("AssessmentBudget");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getReasonForReview() { return super.getCell("ReasonForReview");};
- public CsvCell getReasonForUnplannedReview() { return super.getCell("ReasonForUnplannedReview");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+ public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+ public CsvCell getAssessmentFor() { return super.getCell("AssessmentFor");}
+ public CsvCell getIDPatientRelationship() { return super.getCell("IDPatientRelationship");}
+ public CsvCell getAssessmentType() { return super.getCell("AssessmentType");}
+ public CsvCell getAssessmentReview() { return super.getCell("AssessmentReview");}
+ public CsvCell getIDContact() { return super.getCell("IDContact");}
+ public CsvCell getQuestionnaireName() { return super.getCell("QuestionnaireName");}
+ public CsvCell getDateAssessmentTarget() { return super.getCell("DateAssessmentTarget");}
+ public CsvCell getDateAssessmentCompleted() { return super.getCell("DateAssessmentCompleted");}
+ public CsvCell getDateAssessmentReview() { return super.getCell("DateAssessmentReview");}
+ public CsvCell getAssessmentScore() { return super.getCell("AssessmentScore");}
+ public CsvCell getScoreOverrideReason() { return super.getCell("ScoreOverrideReason");}
+ public CsvCell getAssessmentBudget() { return super.getCell("AssessmentBudget");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getReasonForReview() { return super.getCell("ReasonForReview");}
+ public CsvCell getReasonForUnplannedReview() { return super.getCell("ReasonForUnplannedReview");}
 
 
  //TODO fix the string below to make it meaningful

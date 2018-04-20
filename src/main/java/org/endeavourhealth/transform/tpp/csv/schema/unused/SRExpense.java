@@ -43,21 +43,21 @@ public class SRExpense extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
- public CsvCell getIDActivityEvent() { return super.getCell("IDActivityEvent");};
- public CsvCell getIDStaffActivity() { return super.getCell("IDStaffActivity");};
- public CsvCell getExpenseType() { return super.getCell("ExpenseType");};
- public CsvCell getExpenseTypeCost() { return super.getCell("ExpenseTypeCost");};
- public CsvCell getReceiptObtained() { return super.getCell("ReceiptObtained");};
- public CsvCell getBudgetCode() { return super.getCell("BudgetCode");};
- public CsvCell getMiles() { return super.getCell("Miles");};
- public CsvCell getDuration() { return super.getCell("Duration");};
- public CsvCell getOccurences() { return super.getCell("Occurences");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");}
+ public CsvCell getIDActivityEvent() { return super.getCell("IDActivityEvent");}
+ public CsvCell getIDStaffActivity() { return super.getCell("IDStaffActivity");}
+ public CsvCell getExpenseType() { return super.getCell("ExpenseType");}
+ public CsvCell getExpenseTypeCost() { return super.getCell("ExpenseTypeCost");}
+ public CsvCell getReceiptObtained() { return super.getCell("ReceiptObtained");}
+ public CsvCell getBudgetCode() { return super.getCell("BudgetCode");}
+ public CsvCell getMiles() { return super.getCell("Miles");}
+ public CsvCell getDuration() { return super.getCell("Duration");}
+ public CsvCell getOccurences() { return super.getCell("Occurences");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

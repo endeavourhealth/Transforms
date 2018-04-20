@@ -46,24 +46,24 @@ public class SRTreatmentCentreSession extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTreatmentCentreName() { return super.getCell("TreatmentCentreName");};
- public CsvCell getTreatmentCentrePostCode() { return super.getCell("TreatmentCentrePostCode");};
- public CsvCell getDateSessionStart() { return super.getCell("DateSessionStart");};
- public CsvCell getDateSessionEnd() { return super.getCell("DateSessionEnd");};
- public CsvCell getActionGroups() { return super.getCell("ActionGroups");};
- public CsvCell getSessionFrequencyType() { return super.getCell("SessionFrequencyType");};
- public CsvCell getSessionFixedFrequency() { return super.getCell("SessionFixedFrequency");};
- public CsvCell getSessionWeekInMonthFrequency() { return super.getCell("SessionWeekInMonthFrequency");};
- public CsvCell getSessionWeekOfSchedulingFrequency() { return super.getCell("SessionWeekOfSchedulingFrequency");};
- public CsvCell getSessionDay() { return super.getCell("SessionDay");};
- public CsvCell getSessionSpecifiedTimeStart() { return super.getCell("SessionSpecifiedTimeStart");};
- public CsvCell getSessionSpecifiedTimeEnd() { return super.getCell("SessionSpecifiedTimeEnd");};
- public CsvCell getPatientNumber() { return super.getCell("PatientNumber");};
- public CsvCell getSlotDuration() { return super.getCell("SlotDuration");};
- public CsvCell getPatientsPerAppointment() { return super.getCell("PatientsPerAppointment");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTreatmentCentreName() { return super.getCell("TreatmentCentreName");}
+ public CsvCell getTreatmentCentrePostCode() { return super.getCell("TreatmentCentrePostCode");}
+ public CsvCell getDateSessionStart() { return super.getCell("DateSessionStart");}
+ public CsvCell getDateSessionEnd() { return super.getCell("DateSessionEnd");}
+ public CsvCell getActionGroups() { return super.getCell("ActionGroups");}
+ public CsvCell getSessionFrequencyType() { return super.getCell("SessionFrequencyType");}
+ public CsvCell getSessionFixedFrequency() { return super.getCell("SessionFixedFrequency");}
+ public CsvCell getSessionWeekInMonthFrequency() { return super.getCell("SessionWeekInMonthFrequency");}
+ public CsvCell getSessionWeekOfSchedulingFrequency() { return super.getCell("SessionWeekOfSchedulingFrequency");}
+ public CsvCell getSessionDay() { return super.getCell("SessionDay");}
+ public CsvCell getSessionSpecifiedTimeStart() { return super.getCell("SessionSpecifiedTimeStart");}
+ public CsvCell getSessionSpecifiedTimeEnd() { return super.getCell("SessionSpecifiedTimeEnd");}
+ public CsvCell getPatientNumber() { return super.getCell("PatientNumber");}
+ public CsvCell getSlotDuration() { return super.getCell("SlotDuration");}
+ public CsvCell getPatientsPerAppointment() { return super.getCell("PatientsPerAppointment");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

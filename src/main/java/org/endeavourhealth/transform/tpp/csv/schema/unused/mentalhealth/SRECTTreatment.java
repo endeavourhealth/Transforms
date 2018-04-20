@@ -41,19 +41,19 @@ public class SRECTTreatment extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTreatmentDate() { return super.getCell("TreatmentDate");};
- public CsvCell getRecoveryPerson() { return super.getCell("RecoveryPerson");};
- public CsvCell getOdpPerson() { return super.getCell("OdpPerson");};
- public CsvCell getAnaesthetist() { return super.getCell("Anaesthetist");};
- public CsvCell getTreatingDoctor() { return super.getCell("TreatingDoctor");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getIDECTCourse() { return super.getCell("IDECTCourse");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTreatmentDate() { return super.getCell("TreatmentDate");}
+ public CsvCell getRecoveryPerson() { return super.getCell("RecoveryPerson");}
+ public CsvCell getOdpPerson() { return super.getCell("OdpPerson");}
+ public CsvCell getAnaesthetist() { return super.getCell("Anaesthetist");}
+ public CsvCell getTreatingDoctor() { return super.getCell("TreatingDoctor");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getIDECTCourse() { return super.getCell("IDECTCourse");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

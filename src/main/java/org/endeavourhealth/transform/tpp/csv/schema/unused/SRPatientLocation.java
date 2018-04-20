@@ -40,18 +40,18 @@ public class SRPatientLocation extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDLocation() { return super.getCell("IDLocation");};
- public CsvCell getDateRecorded() { return super.getCell("DateRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateEnd() { return super.getCell("DateEnd");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getStatus() { return super.getCell("Status");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDLocation() { return super.getCell("IDLocation");}
+ public CsvCell getDateRecorded() { return super.getCell("DateRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateEnd() { return super.getCell("DateEnd");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getStatus() { return super.getCell("Status");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

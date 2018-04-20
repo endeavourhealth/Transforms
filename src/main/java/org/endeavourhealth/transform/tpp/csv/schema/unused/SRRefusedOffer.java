@@ -42,20 +42,20 @@ public class SRRefusedOffer extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getOfferType() { return super.getCell("OfferType");};
- public CsvCell getDateOfferedFor() { return super.getCell("DateOfferedFor");};
- public CsvCell getDateOfferMade() { return super.getCell("DateOfferMade");};
- public CsvCell getIDProfileOfferMadeBy() { return super.getCell("IDProfileOfferMadeBy");};
- public CsvCell getDateOfferRefused() { return super.getCell("DateOfferRefused");};
- public CsvCell getReasonable() { return super.getCell("Reasonable");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getOfferType() { return super.getCell("OfferType");}
+ public CsvCell getDateOfferedFor() { return super.getCell("DateOfferedFor");}
+ public CsvCell getDateOfferMade() { return super.getCell("DateOfferMade");}
+ public CsvCell getIDProfileOfferMadeBy() { return super.getCell("IDProfileOfferMadeBy");}
+ public CsvCell getDateOfferRefused() { return super.getCell("DateOfferRefused");}
+ public CsvCell getReasonable() { return super.getCell("Reasonable");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

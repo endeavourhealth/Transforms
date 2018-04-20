@@ -40,20 +40,20 @@ public class SRRota extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreation() { return super.getCell("DateCreation");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getName() { return super.getCell("Name");};
- public CsvCell getRotaType() { return super.getCell("RotaType");};
- public CsvCell getLocation() { return super.getCell("Location");};
- public CsvCell getCode() { return super.getCell("Code");};
- public CsvCell getIDProfileOwner() { return super.getCell("IDProfileOwner");};
- public CsvCell getAllowOverBooking() { return super.getCell("AllowOverBooking");};
- public CsvCell getBookingContactNumber() { return super.getCell("BookingContactNumber");};
- public CsvCell getIDAppointmentRoom() { return super.getCell("IDAppointmentRoom");};
- public CsvCell getIDBranch() { return super.getCell("IDBranch");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreation() { return super.getCell("DateCreation");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getName() { return super.getCell("Name");}
+ public CsvCell getRotaType() { return super.getCell("RotaType");}
+ public CsvCell getLocation() { return super.getCell("Location");}
+ public CsvCell getCode() { return super.getCell("Code");}
+ public CsvCell getIDProfileOwner() { return super.getCell("IDProfileOwner");}
+ public CsvCell getAllowOverBooking() { return super.getCell("AllowOverBooking");}
+ public CsvCell getBookingContactNumber() { return super.getCell("BookingContactNumber");}
+ public CsvCell getIDAppointmentRoom() { return super.getCell("IDAppointmentRoom");}
+ public CsvCell getIDBranch() { return super.getCell("IDBranch");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -99,6 +99,7 @@ public class SRPatientRegistrationTransformer {
 
         EpisodeOfCare.EpisodeOfCareStatus medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
         if (medicalRecordStatus != null) {
+            //TODO - need to carry through the audit of where this status came from, in whatever file it was originally read
             episodeBuilder.setStatus(medicalRecordStatus, null);
         }
     }

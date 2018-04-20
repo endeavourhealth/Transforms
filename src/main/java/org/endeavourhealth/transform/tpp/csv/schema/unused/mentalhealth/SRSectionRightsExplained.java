@@ -37,15 +37,15 @@ public class SRSectionRightsExplained extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDSection() { return super.getCell("IDSection");};
- public CsvCell getDateRightsExplained() { return super.getCell("DateRightsExplained");};
- public CsvCell getPatientUnderstandingType() { return super.getCell("PatientUnderstandingType");};
- public CsvCell getDateReview() { return super.getCell("DateReview");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDSection() { return super.getCell("IDSection");}
+ public CsvCell getDateRightsExplained() { return super.getCell("DateRightsExplained");}
+ public CsvCell getPatientUnderstandingType() { return super.getCell("PatientUnderstandingType");}
+ public CsvCell getDateReview() { return super.getCell("DateReview");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

@@ -48,26 +48,26 @@ public class SRGoal extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getDateEvent() { return super.getCell("DateEvent");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
- public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
- public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
- public CsvCell getGoalCategory() { return super.getCell("GoalCategory");};
- public CsvCell getGoalType() { return super.getCell("GoalType");};
- public CsvCell getGoalOutcome() { return super.getCell("GoalOutcome");};
- public CsvCell getGoalImportance() { return super.getCell("GoalImportance");};
- public CsvCell getDateGoalTarget() { return super.getCell("DateGoalTarget");};
- public CsvCell getActionPlanCategory() { return super.getCell("ActionPlanCategory");};
- public CsvCell getActionPlanPatientConfidence() { return super.getCell("ActionPlanPatientConfidence");};
- public CsvCell getActionPlanOutcome() { return super.getCell("ActionPlanOutcome");};
- public CsvCell getDateEndedActionPlan() { return super.getCell("DateEndedActionPlan");};
- public CsvCell getIDEvent() { return super.getCell("IDEvent");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+ public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+ public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+ public CsvCell getGoalCategory() { return super.getCell("GoalCategory");}
+ public CsvCell getGoalType() { return super.getCell("GoalType");}
+ public CsvCell getGoalOutcome() { return super.getCell("GoalOutcome");}
+ public CsvCell getGoalImportance() { return super.getCell("GoalImportance");}
+ public CsvCell getDateGoalTarget() { return super.getCell("DateGoalTarget");}
+ public CsvCell getActionPlanCategory() { return super.getCell("ActionPlanCategory");}
+ public CsvCell getActionPlanPatientConfidence() { return super.getCell("ActionPlanPatientConfidence");}
+ public CsvCell getActionPlanOutcome() { return super.getCell("ActionPlanOutcome");}
+ public CsvCell getDateEndedActionPlan() { return super.getCell("DateEndedActionPlan");}
+ public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

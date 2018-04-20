@@ -44,22 +44,22 @@ public class SRStaffActivity extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDateActivity() { return super.getCell("DateActivity");};
- public CsvCell getIDProfileDoneBy() { return super.getCell("IDProfileDoneBy");};
- public CsvCell getDoneByTeam() { return super.getCell("DoneByTeam");};
- public CsvCell getActivityType() { return super.getCell("ActivityType");};
- public CsvCell getAttendance() { return super.getCell("Attendance");};
- public CsvCell getMaleAttendance() { return super.getCell("MaleAttendance");};
- public CsvCell getFemaleAttendance() { return super.getCell("FemaleAttendance");};
- public CsvCell getLowerAgeAttendance() { return super.getCell("LowerAgeAttendance");};
- public CsvCell getUpperAgeAttendance() { return super.getCell("UpperAgeAttendance");};
- public CsvCell getLocation() { return super.getCell("Location");};
- public CsvCell getTimeTaken() { return super.getCell("TimeTaken");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDateActivity() { return super.getCell("DateActivity");}
+ public CsvCell getIDProfileDoneBy() { return super.getCell("IDProfileDoneBy");}
+ public CsvCell getDoneByTeam() { return super.getCell("DoneByTeam");}
+ public CsvCell getActivityType() { return super.getCell("ActivityType");}
+ public CsvCell getAttendance() { return super.getCell("Attendance");}
+ public CsvCell getMaleAttendance() { return super.getCell("MaleAttendance");}
+ public CsvCell getFemaleAttendance() { return super.getCell("FemaleAttendance");}
+ public CsvCell getLowerAgeAttendance() { return super.getCell("LowerAgeAttendance");}
+ public CsvCell getUpperAgeAttendance() { return super.getCell("UpperAgeAttendance");}
+ public CsvCell getLocation() { return super.getCell("Location");}
+ public CsvCell getTimeTaken() { return super.getCell("TimeTaken");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

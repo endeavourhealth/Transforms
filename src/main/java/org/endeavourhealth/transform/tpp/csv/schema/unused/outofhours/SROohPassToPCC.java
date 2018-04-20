@@ -37,15 +37,15 @@ public class SROohPassToPCC extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDatePassToPcc() { return super.getCell("DatePassToPcc");};
- public CsvCell getIDPassToPccOrganisation() { return super.getCell("IDPassToPccOrganisation");};
- public CsvCell getIDOohCase() { return super.getCell("IDOohCase");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDatePassToPcc() { return super.getCell("DatePassToPcc");}
+ public CsvCell getIDPassToPccOrganisation() { return super.getCell("IDPassToPccOrganisation");}
+ public CsvCell getIDOohCase() { return super.getCell("IDOohCase");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

@@ -39,17 +39,17 @@ public class SRSpecialNotes extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getType() { return super.getCell("Type");};
- public CsvCell getNote() { return super.getCell("Note");};
- public CsvCell getDateExpired() { return super.getCell("DateExpired");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+ public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getType() { return super.getCell("Type");}
+ public CsvCell getNote() { return super.getCell("Note");}
+ public CsvCell getDateExpired() { return super.getCell("DateExpired");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

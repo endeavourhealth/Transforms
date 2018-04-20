@@ -44,22 +44,22 @@ public class SRLocation extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getLocationName() { return super.getCell("LocationName");};
- public CsvCell getLocationShortName() { return super.getCell("LocationShortName");};
- public CsvCell getIDLocationParent() { return super.getCell("IDLocationParent");};
- public CsvCell getLocationUse() { return super.getCell("LocationUse");};
- public CsvCell getADTSiteCode() { return super.getCell("ADTSiteCode");};
- public CsvCell getCDSSiteCode() { return super.getCell("CDSSiteCode");};
- public CsvCell getLocationNotes() { return super.getCell("LocationNotes");};
- public CsvCell getWardOpeningHours() { return super.getCell("WardOpeningHours");};
- public CsvCell getWardCareIntensity() { return super.getCell("WardCareIntensity");};
- public CsvCell getWardIntendedAgeGroup() { return super.getCell("WardIntendedAgeGroup");};
- public CsvCell getWardBroadPatientGroup() { return super.getCell("WardBroadPatientGroup");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getLocationName() { return super.getCell("LocationName");}
+ public CsvCell getLocationShortName() { return super.getCell("LocationShortName");}
+ public CsvCell getIDLocationParent() { return super.getCell("IDLocationParent");}
+ public CsvCell getLocationUse() { return super.getCell("LocationUse");}
+ public CsvCell getADTSiteCode() { return super.getCell("ADTSiteCode");}
+ public CsvCell getCDSSiteCode() { return super.getCell("CDSSiteCode");}
+ public CsvCell getLocationNotes() { return super.getCell("LocationNotes");}
+ public CsvCell getWardOpeningHours() { return super.getCell("WardOpeningHours");}
+ public CsvCell getWardCareIntensity() { return super.getCell("WardCareIntensity");}
+ public CsvCell getWardIntendedAgeGroup() { return super.getCell("WardIntendedAgeGroup");}
+ public CsvCell getWardBroadPatientGroup() { return super.getCell("WardBroadPatientGroup");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

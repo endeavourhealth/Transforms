@@ -40,18 +40,18 @@ public class SRHospitalWaitingListSuspension extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateEnd() { return super.getCell("DateEnd");};
- public CsvCell getSuspensionReason() { return super.getCell("SuspensionReason");};
- public CsvCell getWaitingListName() { return super.getCell("WaitingListName");};
- public CsvCell getSuspensionType() { return super.getCell("SuspensionType");};
- public CsvCell getNotes() { return super.getCell("Notes");};
- public CsvCell getDateClinicalReview() { return super.getCell("DateClinicalReview");};
- public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateEnd() { return super.getCell("DateEnd");}
+ public CsvCell getSuspensionReason() { return super.getCell("SuspensionReason");}
+ public CsvCell getWaitingListName() { return super.getCell("WaitingListName");}
+ public CsvCell getSuspensionType() { return super.getCell("SuspensionType");}
+ public CsvCell getNotes() { return super.getCell("Notes");}
+ public CsvCell getDateClinicalReview() { return super.getCell("DateClinicalReview");}
+ public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

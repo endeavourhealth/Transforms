@@ -40,18 +40,18 @@ public class SRHospitalWaitingListIntendedProcedure extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getProcedureTest() { return super.getCell("ProcedureTest");};
- public CsvCell getProcedureTestCode() { return super.getCell("ProcedureTestCode");};
- public CsvCell getSiteLaterality() { return super.getCell("SiteLaterality");};
- public CsvCell getNotes() { return super.getCell("Notes");};
- public CsvCell getPrimary() { return super.getCell("Primary");};
- public CsvCell getIsDeleted() { return super.getCell("IsDeleted");};
- public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getProcedureTest() { return super.getCell("ProcedureTest");}
+ public CsvCell getProcedureTestCode() { return super.getCell("ProcedureTestCode");}
+ public CsvCell getSiteLaterality() { return super.getCell("SiteLaterality");}
+ public CsvCell getNotes() { return super.getCell("Notes");}
+ public CsvCell getPrimary() { return super.getCell("Primary");}
+ public CsvCell getIsDeleted() { return super.getCell("IsDeleted");}
+ public CsvCell getIDHospitalWaitingList() { return super.getCell("IDHospitalWaitingList");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

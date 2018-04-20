@@ -36,14 +36,14 @@ public class SRSectionedBy extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDSection() { return super.getCell("IDSection");};
- public CsvCell getSourceTableForSectionedBy() { return super.getCell("SourceTableForSectionedBy");};
- public CsvCell getIDForSectionedBy() { return super.getCell("IDForSectionedBy");};
- public CsvCell getRole() { return super.getCell("Role");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDSection() { return super.getCell("IDSection");}
+ public CsvCell getSourceTableForSectionedBy() { return super.getCell("SourceTableForSectionedBy");}
+ public CsvCell getIDForSectionedBy() { return super.getCell("IDForSectionedBy");}
+ public CsvCell getRole() { return super.getCell("Role");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

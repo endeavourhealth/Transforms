@@ -46,24 +46,24 @@ public class SRContacts extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
- public CsvCell getDateContact() { return super.getCell("DateContact");};
- public CsvCell getContactMethod() { return super.getCell("ContactMethod");};
- public CsvCell getCommissioningTeam() { return super.getCell("CommissioningTeam");};
- public CsvCell getContactWith() { return super.getCell("ContactWith");};
- public CsvCell getContactSource() { return super.getCell("ContactSource");};
- public CsvCell getClientAwareOfContact() { return super.getCell("ClientAwareOfContact");};
- public CsvCell getResponsibleAdultAware() { return super.getCell("ResponsibleAdultAware");};
- public CsvCell getContactReason() { return super.getCell("ContactReason");};
- public CsvCell getRouteOfAccess() { return super.getCell("RouteOfAccess");};
- public CsvCell getContactOutcome() { return super.getCell("ContactOutcome");};
- public CsvCell getDateClosed() { return super.getCell("DateClosed");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");}
+ public CsvCell getDateContact() { return super.getCell("DateContact");}
+ public CsvCell getContactMethod() { return super.getCell("ContactMethod");}
+ public CsvCell getCommissioningTeam() { return super.getCell("CommissioningTeam");}
+ public CsvCell getContactWith() { return super.getCell("ContactWith");}
+ public CsvCell getContactSource() { return super.getCell("ContactSource");}
+ public CsvCell getClientAwareOfContact() { return super.getCell("ClientAwareOfContact");}
+ public CsvCell getResponsibleAdultAware() { return super.getCell("ResponsibleAdultAware");}
+ public CsvCell getContactReason() { return super.getCell("ContactReason");}
+ public CsvCell getRouteOfAccess() { return super.getCell("RouteOfAccess");}
+ public CsvCell getContactOutcome() { return super.getCell("ContactOutcome");}
+ public CsvCell getDateClosed() { return super.getCell("DateClosed");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

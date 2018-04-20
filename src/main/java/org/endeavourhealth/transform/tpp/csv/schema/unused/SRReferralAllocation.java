@@ -39,17 +39,17 @@ public class SRReferralAllocation extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
- public CsvCell getIDTeam() { return super.getCell("IDTeam");};
- public CsvCell getDateStart() { return super.getCell("DateStart");};
- public CsvCell getDateEnd() { return super.getCell("DateEnd");};
- public CsvCell getDateCreated() { return super.getCell("DateCreated");};
- public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");};
- public CsvCell getDateDeleted() { return super.getCell("DateDeleted");};
- public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
+ public CsvCell getIDTeam() { return super.getCell("IDTeam");}
+ public CsvCell getDateStart() { return super.getCell("DateStart");}
+ public CsvCell getDateEnd() { return super.getCell("DateEnd");}
+ public CsvCell getDateCreated() { return super.getCell("DateCreated");}
+ public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
+ public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
+ public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");}
 
 
  //TODO fix the string below to make it meaningful

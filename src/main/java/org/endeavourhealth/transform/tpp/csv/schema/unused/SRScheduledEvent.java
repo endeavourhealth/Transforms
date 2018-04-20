@@ -44,22 +44,22 @@ public class SRScheduledEvent extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTreatmentCentreName() { return super.getCell("TreatmentCentreName");};
- public CsvCell getTreatmentCentrePostCode() { return super.getCell("TreatmentCentrePostCode");};
- public CsvCell getScheduleAction() { return super.getCell("ScheduleAction");};
- public CsvCell getDateAppointmentExact() { return super.getCell("DateAppointmentExact");};
- public CsvCell getDateAppointmentBetweenStart() { return super.getCell("DateAppointmentBetweenStart");};
- public CsvCell getDateAppointmentBetweenEnd() { return super.getCell("DateAppointmentBetweenEnd");};
- public CsvCell getDateAppointmentWeekCommencing() { return super.getCell("DateAppointmentWeekCommencing");};
- public CsvCell getDateScheduled() { return super.getCell("DateScheduled");};
- public CsvCell getIDProfileRecordedBy() { return super.getCell("IDProfileRecordedBy");};
- public CsvCell getEventStatus() { return super.getCell("EventStatus");};
- public CsvCell getIDProfileUpdatedBy() { return super.getCell("IDProfileUpdatedBy");};
- public CsvCell getBatchNumber() { return super.getCell("BatchNumber");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTreatmentCentreName() { return super.getCell("TreatmentCentreName");}
+ public CsvCell getTreatmentCentrePostCode() { return super.getCell("TreatmentCentrePostCode");}
+ public CsvCell getScheduleAction() { return super.getCell("ScheduleAction");}
+ public CsvCell getDateAppointmentExact() { return super.getCell("DateAppointmentExact");}
+ public CsvCell getDateAppointmentBetweenStart() { return super.getCell("DateAppointmentBetweenStart");}
+ public CsvCell getDateAppointmentBetweenEnd() { return super.getCell("DateAppointmentBetweenEnd");}
+ public CsvCell getDateAppointmentWeekCommencing() { return super.getCell("DateAppointmentWeekCommencing");}
+ public CsvCell getDateScheduled() { return super.getCell("DateScheduled");}
+ public CsvCell getIDProfileRecordedBy() { return super.getCell("IDProfileRecordedBy");}
+ public CsvCell getEventStatus() { return super.getCell("EventStatus");}
+ public CsvCell getIDProfileUpdatedBy() { return super.getCell("IDProfileUpdatedBy");}
+ public CsvCell getBatchNumber() { return super.getCell("BatchNumber");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
  //TODO fix the string below to make it meaningful

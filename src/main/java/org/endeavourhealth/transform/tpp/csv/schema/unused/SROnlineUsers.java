@@ -39,17 +39,17 @@ public class SROnlineUsers extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getTitle() { return super.getCell("Title");};
- public CsvCell getFirstName() { return super.getCell("FirstName");};
- public CsvCell getMiddleNames() { return super.getCell("MiddleNames");};
- public CsvCell getSurname() { return super.getCell("Surname");};
- public CsvCell getNHSNumber() { return super.getCell("NHSNumber");};
- public CsvCell getDateBirth() { return super.getCell("DateBirth");};
- public CsvCell getGender() { return super.getCell("Gender");};
- public CsvCell getEmailAddress() { return super.getCell("EmailAddress");};
- public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getTitle() { return super.getCell("Title");}
+ public CsvCell getFirstName() { return super.getCell("FirstName");}
+ public CsvCell getMiddleNames() { return super.getCell("MiddleNames");}
+ public CsvCell getSurname() { return super.getCell("Surname");}
+ public CsvCell getNHSNumber() { return super.getCell("NHSNumber");}
+ public CsvCell getDateBirth() { return super.getCell("DateBirth");}
+ public CsvCell getGender() { return super.getCell("Gender");}
+ public CsvCell getEmailAddress() { return super.getCell("EmailAddress");}
+ public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
  //TODO fix the string below to make it meaningful

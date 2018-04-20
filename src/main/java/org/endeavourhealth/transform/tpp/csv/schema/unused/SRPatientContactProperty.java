@@ -35,13 +35,13 @@ public class SRPatientContactProperty extends AbstractCsvParser {
             };
 
         }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
- public CsvCell getIDPatient() { return super.getCell("IDPatient");};
- public CsvCell getPatientContactType() { return super.getCell("PatientContactType");};
- public CsvCell getPatientContactId() { return super.getCell("PatientContactId");};
- public CsvCell getPropertyType() { return super.getCell("PropertyType");};
- public CsvCell getProperty() { return super.getCell("Property");};
+ public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
+ public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+ public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+ public CsvCell getPatientContactType() { return super.getCell("PatientContactType");}
+ public CsvCell getPatientContactId() { return super.getCell("PatientContactId");}
+ public CsvCell getPropertyType() { return super.getCell("PropertyType");}
+ public CsvCell getProperty() { return super.getCell("Property");}
 
 
  //TODO fix the string below to make it meaningful
