@@ -49,21 +49,17 @@ public class SRPatientTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
             return;
         }
-        CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.getIntAsBoolean()) {
-            if (PatientResourceCache.patientInCache(rowIdCell)) {
-                PatientResourceCache.removePatientByRowId(rowIdCell, fhirResourceFiler,parser);
-            }
-            else {
-                TransformWarnings.log(LOG, parser,
-                        "Unable to delete encounter record as no matching patient. Record id: {} and patient: {} in file: {}",
-                        parser.getRowIdentifier().getString(), parser.getNHSNumber().getString(), parser.getFilePath() );
-            }
-            return;
-        }
 
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
+        CsvCell removeDataCell = parser.getRemovedData();
+        if (removeDataCell.getIntAsBoolean()) {
+            if (PatientResourceCache.patientInCache(rowIdCell)) {
+                PatientResourceCache.removePatientByRowId(rowIdCell, fhirResourceFiler,parser);
+            }
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientBuilder);
+            return;
+        }
 
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
