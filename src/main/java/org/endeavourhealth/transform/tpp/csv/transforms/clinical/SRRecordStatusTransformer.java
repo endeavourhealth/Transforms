@@ -1,13 +1,13 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRRecordStatus;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,18 +57,25 @@ public class SRRecordStatusTransformer {
         }
 
         if (!medicalRecordStatus.isEmpty() && !dateEvent.isEmpty()) {
+            //TODO - medicalRecordStatus CsvCell needs to be cached here too, so that it can be passed into the EpisodeOfCareBuilder when the cached value is used
             csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDate(), convertMedicalRecordStatus(medicalRecordStatus.getInt()));
         }
     }
 
-    private static EpisodeOfCare.EpisodeOfCareStatus convertMedicalRecordStatus(Integer medicalRecordStatus) throws Exception {
-        // TODO create a lookup for the id values and populate the switch statement correctly depending on the lookup
+    private static String convertMedicalRecordStatus(Integer medicalRecordStatus) throws Exception {
         switch (medicalRecordStatus) {
-            case 0: return EpisodeOfCare.EpisodeOfCareStatus.PLANNED;
-            case 1: return EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
-            case 2: return EpisodeOfCare.EpisodeOfCareStatus.CANCELLED;
-            case 3: return EpisodeOfCare.EpisodeOfCareStatus.FINISHED;
-            default: return null;
+            case 0:
+                return "No medical records";
+            case 1:
+                return "Medical records are on the way";
+            case 2:
+                return "Medical records here";
+            case 3:
+                return "Medical records sent";
+            case 4:
+                return "Medical records need to be sent";
+            default:
+                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
         }
     }
 }

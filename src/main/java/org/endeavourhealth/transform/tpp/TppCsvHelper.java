@@ -18,7 +18,6 @@ import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -62,7 +61,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private Map<String, ReferenceList> encounterAppointmentOrVisitMap = new HashMap<>();
 
-    private Map<String, Map.Entry<Date, EpisodeOfCare.EpisodeOfCareStatus>> medicalRecordStatusMap = new HashMap<>();
+    private Map<String, Map.Entry<Date, String>> medicalRecordStatusMap = new HashMap<>();
 
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
@@ -241,31 +240,31 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
     }
 
-    public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, EpisodeOfCare.EpisodeOfCareStatus status) {
+    public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, String medicalRecordStatus) {
 
         // Create the unique Id
         String uniquePatientId = createUniqueId(patientGuid, null);
 
         // Check if we already have a status for this patient
-        Map.Entry<Date, EpisodeOfCare.EpisodeOfCareStatus> statusForPatient = medicalRecordStatusMap.get(patientGuid);
+        Map.Entry<Date, String> statusForPatient = medicalRecordStatusMap.get(patientGuid);
 
         if (statusForPatient != null) {
             Date existingDate = statusForPatient.getKey();
             // Check if the new status has a data after the existing status
             if (newStatusDate.after(existingDate)) {
                 // Overwrite the existing status the the new status
-                medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, status));
+                medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatus));
             }
         } else {
-            medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, status));
+            medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatus));
         }
     }
 
-    public EpisodeOfCare.EpisodeOfCareStatus getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
+    public String getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
         // Create the unique Id
         String uniquePatientId = createUniqueId(patientGuid, null);
         // Find and remove the status entry
-        Map.Entry<Date, EpisodeOfCare.EpisodeOfCareStatus> statusForPatient = medicalRecordStatusMap.remove(patientGuid);
+        Map.Entry<Date, String> statusForPatient = medicalRecordStatusMap.remove(patientGuid);
         // return the status
         return statusForPatient.getValue();
     }

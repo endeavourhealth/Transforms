@@ -12,7 +12,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -97,10 +96,10 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
         }
 
-        EpisodeOfCare.EpisodeOfCareStatus medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
+        String medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
         if (medicalRecordStatus != null) {
             //TODO - need to carry through the audit of where this status came from, in whatever file it was originally read
-            episodeBuilder.setStatus(medicalRecordStatus, null);
+            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, null);
         }
     }
 
