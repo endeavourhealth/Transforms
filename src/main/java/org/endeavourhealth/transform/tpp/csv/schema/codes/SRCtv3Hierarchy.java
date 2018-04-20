@@ -66,15 +66,15 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Ctv3 Hierarchy Entry file ";
+        return "TPP CTV3 Hierarchy file";
     }
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //data from this file is used to populate a reference table, but it's not actually used
+        //to look up content, so no need to audit it
+        return false;
     }
 }
