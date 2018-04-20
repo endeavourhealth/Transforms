@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +51,17 @@ public class SRPatientRegistrationTransformer {
         }
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell.getIntAsBoolean()) {
+            org.hl7.fhir.instance.model.EpisodeOfCare episode
+                    = (org.hl7.fhir.instance.model.EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(),
+                    ResourceType.EpisodeOfCare,
+                    fhirResourceFiler);
+
+            if (episode != null) {
+                EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episode);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), episodeOfCareBuilder);
+            }
             return;
         }
-
 
         CsvCell IdPatientCell = parser.getIDPatient();
 
