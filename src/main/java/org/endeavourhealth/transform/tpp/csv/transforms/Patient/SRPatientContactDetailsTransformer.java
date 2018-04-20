@@ -1,8 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.terminology.SnomedCode;
-import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -62,15 +61,18 @@ public class SRPatientContactDetailsTransformer {
 
 
         ContactPoint.ContactPointUse use = null;
+
         CsvCell contactTypeCell = parser.getContactType();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong() > 0) {
-            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(contactTypeCell.getString());
-            try {
-                use = ContactPoint.ContactPointUse.fromCode(snomedCode.getConceptCode());
-            } catch (Exception ex) {
-                TransformWarnings.log(LOG, parser, "Unrecognized contact type {} in file {}",
-                        contactTypeCell.getString(), parser.getFilePath());
-                return;
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell.getLong());
+            if (mapping != null) {
+                try {
+                    use = ContactPoint.ContactPointUse.fromCode(mapping.getMappedTerm().toLowerCase());
+                } catch (Exception ex) {
+                    TransformWarnings.log(LOG, parser, "Unrecognized contact type {} in file {}",
+                            contactTypeCell.getString(), parser.getFilePath());
+                    return;
+                }
             }
         }
 

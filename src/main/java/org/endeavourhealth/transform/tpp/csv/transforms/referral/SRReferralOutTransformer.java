@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.referral;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
@@ -14,11 +14,11 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
-import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -173,13 +173,32 @@ public class SRReferralOutTransformer {
         //code is Ctv3 so translate to Snomed
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
         if (!referralPrimaryDiagnosisCode.isEmpty()) {
-            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
-            if (snomedCode != null) {
-                CodeableConcept codeableConcept
-                        = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT,
-                                                                        snomedCode.getTerm(),
-                                                                        snomedCode.getConceptCode());
-                referralRequestBuilder.setReason(codeableConcept, referralPrimaryDiagnosisCode);
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(referralRequestBuilder, ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT);
+
+            // add Ctv3 coding
+            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString());
+
+            if (ctv3Lookup != null) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+                codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCode.getString(), referralPrimaryDiagnosisCode);
+                String readV3Term = ctv3Lookup.getCtv3Text();
+                codeableConceptBuilder.setCodingDisplay(readV3Term, null);
+                codeableConceptBuilder.setText(readV3Term, null);
+            }
+
+            // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
+            if (!referralPrimaryDiagnosisCode.getString().startsWith("Y")) {
+                // translate to Snomed
+                SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
+                if (snomedCode != null) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                    codeableConceptBuilder.setText(snomedCode.getTerm());
+                }
             }
         }
 

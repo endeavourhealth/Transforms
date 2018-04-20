@@ -1,8 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.terminology.SnomedCode;
-import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -71,7 +70,7 @@ public class SRPatientAddressHistoryTransformer {
 
 
         if (!addressTypeCell.isEmpty()) {
-            addressUse = getAddressUse(addressTypeCell,dateToCell,parser);
+            addressUse = getAddressUse(addressTypeCell,dateToCell,parser, csvHelper);
             addressBuilder.setUse(addressUse);
                 }
 
@@ -121,32 +120,31 @@ public class SRPatientAddressHistoryTransformer {
 
     }
     private static Address.AddressUse getAddressUse(CsvCell addressTypeCell, CsvCell dateToCell,
-                                             SRPatientAddressHistory parser)  throws Exception {
+                                             SRPatientAddressHistory parser, TppCsvHelper csvHelper)  throws Exception {
         Address.AddressUse addressUse = null;
         try {
-        SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(addressTypeCell.getString());
-        if (snomedCode != null) {
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell.getLong());
+            if (mapping != null) {
 
-            addressUse = Address.AddressUse.fromCode(snomedCode.getConceptCode());
-            if (addressUse != null) {
-                return addressUse;
-            }
-        }
-            } catch (Exception ex) {
-                TransformWarnings.log(LOG, parser, "Unrecognized address type {} in file {}",
-                        addressTypeCell.getString(), parser.getFilePath());
-            } finally {
-                if (addressUse == null) {
-                    if (dateToCell.isEmpty()) {
-                        addressUse = Address.AddressUse.HOME;
-                    } else {
-                        addressUse = Address.AddressUse.OLD;
-                    }
+                addressUse = Address.AddressUse.fromCode(mapping.getMappedTerm().toLowerCase());
+                if (addressUse != null) {
+                    return addressUse;
                 }
             }
-            return addressUse;
+        } catch (Exception ex) {
+            TransformWarnings.log(LOG, parser, "Unrecognized address type {} in file {}",
+                    addressTypeCell.getString(), parser.getFilePath());
+        } finally {
+            if (addressUse == null) {
+                if (dateToCell.isEmpty()) {
+                    addressUse = Address.AddressUse.HOME;
+                } else {
+                    addressUse = Address.AddressUse.OLD;
+                }
+            }
         }
-
+        return addressUse;
     }
+}
 
 

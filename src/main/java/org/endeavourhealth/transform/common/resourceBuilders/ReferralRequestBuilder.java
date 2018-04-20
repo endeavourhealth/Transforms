@@ -17,6 +17,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
                                     implements HasCodeableConceptI, HasIdentifierI {
 
     private ReferralRequest referralRequest = null;
+    public static final String TAG_REASON_CODEABLE_CONCEPT = "Reason";
 
     public ReferralRequestBuilder() {
         this(null);
@@ -182,6 +183,15 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
     @Override
     public CodeableConcept createNewCodeableConcept(String tag) {
+
+        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
+            if (this.referralRequest.hasReason()) {
+                throw new IllegalArgumentException("Trying to add reason to referral when it already has one");
+            }
+
+            this.referralRequest.setReason(new CodeableConcept());
+            return this.referralRequest.getReason();
+        }
 
         //although the FHIR resource supports multiple codeable concepts, we only want to use a single one
         if (this.referralRequest.hasServiceRequested()) {

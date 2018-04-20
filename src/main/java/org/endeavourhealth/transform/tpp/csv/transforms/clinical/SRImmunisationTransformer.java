@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
@@ -142,17 +143,28 @@ public class SRImmunisationTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(immunizationBuilder, immunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT);
 
-            // translate to Snomed
-            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-            if (snomedCode != null) {
+            // add Ctv3 coding
+            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(readV3Code.getString());
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                codeableConceptBuilder.setText(snomedCode.getTerm());
+            if (ctv3Lookup != null) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+                codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
+                String readV3Term = ctv3Lookup.getCtv3Text();
+                codeableConceptBuilder.setCodingDisplay(readV3Term, null);
+                codeableConceptBuilder.setText(readV3Term, null);
             }
 
-            immunizationBuilder.setVaccineCode(codeableConceptBuilder.getCodeableConcept());
+            // translate to Snomed if code does not start with "Y" as they are local TPP codes
+            if (!readV3Code.getString().startsWith("Y")) {
+                SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
+                if (snomedCode != null) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                    codeableConceptBuilder.setText(snomedCode.getTerm());
+                }
+            }
         }
 
         Immunization.ImmunizationVaccinationProtocolComponent protocolComponent = new Immunization.ImmunizationVaccinationProtocolComponent();
