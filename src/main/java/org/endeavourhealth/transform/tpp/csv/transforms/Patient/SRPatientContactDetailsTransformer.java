@@ -15,6 +15,7 @@ import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 public class SRPatientContactDetailsTransformer {
@@ -41,18 +42,25 @@ public class SRPatientContactDetailsTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
+
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return;
         }
+        CsvCell IdPatientCell = parser.getIDPatient();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
+
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell.getIntAsBoolean()) {
+            List<ContactPoint> contacts =  patientBuilder.getContactPoint();
+            for (ContactPoint contact : contacts) {
+                if (contact.getId().equals(rowIdCell.getString())) {
+                    patientBuilder.removeContactPoint(contact);
+                }
+            }
             return;
         }
 
-
-        CsvCell IdPatientCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
         if (IdPatientCell.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());

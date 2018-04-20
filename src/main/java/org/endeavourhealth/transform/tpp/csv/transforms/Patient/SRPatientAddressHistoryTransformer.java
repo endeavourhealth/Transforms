@@ -15,6 +15,7 @@ import org.hl7.fhir.instance.model.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 public class SRPatientAddressHistoryTransformer {
@@ -45,15 +46,20 @@ public class SRPatientAddressHistoryTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return;
         }
-        CsvCell removeDataCell = parser.getRemovedData();
-        if (removeDataCell.getIntAsBoolean()) {
-            return;
-        }
-
 
         CsvCell IdPatientCell = parser.getIDPatient();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-         if (IdPatientCell.isEmpty()) {
+        CsvCell removeDataCell = parser.getRemovedData();
+        if (removeDataCell.getIntAsBoolean()) {
+            List<Address> addresses = patientBuilder.getAddresses();
+            for (Address address : addresses) {
+                if (address.getId().equals(rowIdCell.getString())) {
+                    patientBuilder.removeAddress(address);
+                }
+            }
+            return;
+        }
+        if (IdPatientCell.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
@@ -61,6 +67,7 @@ public class SRPatientAddressHistoryTransformer {
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+
         CsvCell dateToCell = parser.getDateTo();
         //TODO may need to revisit when we see the codes. Not sure of codes are in CTV3 or elsewhere. Try to map
         // via lookup else set based on whether address has an end date
