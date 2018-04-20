@@ -34,6 +34,7 @@ public class HomertonCsvHelper {
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
     private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
+    private static HashMap<String, String> internalIdMapCache = new HashMap<>();
 
     //non-static caches
     private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
@@ -362,5 +363,32 @@ public class HomertonCsvHelper {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
             fhirResourceFiler.savePatientResource(null, false, resourceBuilder);
         }
+    }
+
+    public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
+        String cacheKey = idType + "|" + sourceId;
+
+        internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
+
+        if (internalIdMapCache.containsKey(cacheKey)) {
+            internalIdMapCache.replace(cacheKey, destinationId);
+        } else {
+            internalIdMapCache.put(cacheKey, destinationId);
+        }
+    }
+
+    public String getInternalId(String idType, String sourceId) throws Exception {
+        String cacheKey = idType + "|" + sourceId;
+        if (internalIdMapCache.containsKey(cacheKey)) {
+            return internalIdMapCache.get(cacheKey);
+        }
+
+        String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
+
+        if (ret != null) {
+            internalIdMapCache.put(cacheKey, ret);
+        }
+
+        return ret;
     }
 }

@@ -6,10 +6,10 @@ import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.UUID;
 
-public class Problem extends AbstractCsvParser {
+public class ProblemTable extends AbstractCsvParser {
 
-    public Problem(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, HomertonCsvToFhirTransformer.TIME_FORMAT);
+    public ProblemTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT, HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -116,27 +116,8 @@ public class Problem extends AbstractCsvParser {
     public CsvCell getProblemId() {
         return super.getCell("PROBLEM_ID");
     }
-    public CsvCell getPatientDimID() {
-        return super.getCell("PatientDimID");
-    }
     public CsvCell getPersonId() {
-        return super.getCell("PersonId");
+        return super.getCell("PERSON_ID");
     }
-    public CsvCell getCNN() {
-        return super.getCell("CNN");
-    }
-
-    /*public String getProblemId() {
-        return super.getString("PROBLEM_ID");
-    }
-    public String getPatientDimID() {
-        return super.getString("PatientDimID");
-    }
-    public String getPersonId() {
-        return super.getString("PersonId");
-    }
-    public String getCNN() {
-        return super.getString("CNN");
-    }*/
 
 }

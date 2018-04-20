@@ -5,44 +5,45 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.schema.Patient;
+import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
+import org.endeavourhealth.transform.homerton.schema.PatientTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class PatientTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
     public static void transform(String version,
-                                 Patient parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
-        while (parser.nextRecord()) {
-            try {
-                patientCreateOrUpdate(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    transform((PatientTable) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
 
-    public static void patientCreateOrUpdate(Patient parser,
+    public static void transform(PatientTable parser,
                                              FhirResourceFiler fhirResourceFiler,
-                                             HomertonCsvHelper csvHelper,
-                                             String version, String primaryOrgOdsCode) throws Exception {
+                                             HomertonCsvHelper csvHelper) throws Exception {
 
-        PatientBuilder patientBuilder = new PatientBuilder();
-
+        CsvCell millenniumPersonId = parser.getPersonId();
         CsvCell cnnCell = parser.getCNN();
-        patientBuilder.setId(cnnCell.getString(), cnnCell);
+
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
@@ -146,20 +147,20 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //TODO fhirPatient.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding"));
 
         if (LOG.isTraceEnabled()) {
-            LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
+            LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
         }
-        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), patientBuilder);
+        //savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), patientBuilder);
     }
 
     /*
      *
      */
-    /*public static void patientCreateOrUpdate(Patient parser,
+    /*public static void patientCreateOrUpdate(PatientTable parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
 
-        org.hl7.fhir.instance.model.Patient fhirPatient = new org.hl7.fhir.instance.model.Patient();
+        org.hl7.fhir.instance.model.PatientTable fhirPatient = new org.hl7.fhir.instance.model.PatientTable();
 
         fhirPatient.setId(parser.getCNN());
 
@@ -223,7 +224,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //fhirPatient set context
         //TODO fhirPatient.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding"));
 
-        LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
+        LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(fhirPatient));
         savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirPatient.getId(), fhirPatient);
     }*/
 

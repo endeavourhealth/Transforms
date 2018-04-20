@@ -9,7 +9,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.schema.CVREF;
+import org.endeavourhealth.transform.homerton.schema.CodeTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +18,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class CVREFTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
+public class CodeTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(CodeTransformer.class);
 
     private static CernerCodeValueRefDalI repository = DalProvider.factoryCernerCodeValueRefDal();
     public static final String CODE_VALUE = "Codeval";
@@ -33,7 +33,7 @@ public class CVREFTransformer {
     private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
-                                 CVREF parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
@@ -42,18 +42,20 @@ public class CVREFTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
 
-        while (parser.nextRecord()) {
-            try {
-                transform(parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    transform((CodeTable) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
 
 
-    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler) throws Exception {
-        //For CVREF the first column should always resolve as a numeric code. We've seen some bad data appended to CVREF files
+    public static void transform(CodeTable parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+        //For CodeTable the first column should always resolve as a numeric code. We've seen some bad data appended to CodeTable files
         if (!StringUtils.isNumeric(parser.getCodeValueCode().getString())) {
                     return;
         }

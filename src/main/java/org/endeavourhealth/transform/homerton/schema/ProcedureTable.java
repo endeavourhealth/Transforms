@@ -6,10 +6,10 @@ import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 
 import java.util.UUID;
 
-public class Procedure extends AbstractCsvParser {
+public class ProcedureTable extends AbstractCsvParser {
 
-    public Procedure(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD, HomertonCsvToFhirTransformer.TIME_FORMAT);
+    public ProcedureTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath, HomertonCsvToFhirTransformer.CSV_FORMAT, HomertonCsvToFhirTransformer.DATE_FORMAT, HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -82,6 +82,10 @@ public class Procedure extends AbstractCsvParser {
 
     }
 
+    public CsvCell getProcedureId() {
+        return super.getCell("PROCEDURE_ID");
+    }
+
     @Override
     protected String getFileTypeDescription() {
         return "Homerton procedure file";
@@ -92,30 +96,5 @@ public class Procedure extends AbstractCsvParser {
         return true;
     }
 
-    public CsvCell getProcedureId() {
-        return super.getCell("PROCEDURE_ID");
-    }
-    public CsvCell getPatientDimID() {
-        return super.getCell("PatientDimID");
-    }
-    public CsvCell getPersonId() {
-        return super.getCell("PersonId");
-    }
-    public CsvCell getCNN() {
-        return super.getCell("CNN");
-    }
-    
-    /*public String getProcedureId() {
-        return super.getString("PROCEDURE_ID");
-    }
-    public String getPatientDimID() {
-        return super.getString("PatientDimID");
-    }
-    public String getPersonId() {
-        return super.getString("PersonId");
-    }
-    public String getCNN() {
-        return super.getString("CNN");
-    }*/
 
 }

@@ -1,21 +1,21 @@
 package org.endeavourhealth.transform.homerton.schema;
 
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class Encounter extends AbstractCsvParser {
-    private static final Logger LOG = LoggerFactory.getLogger(Encounter.class);
+public class EncounterTable extends AbstractCsvParser {
+    private static final Logger LOG = LoggerFactory.getLogger(EncounterTable.class);
 
-    public Encounter(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public EncounterTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT,
-                BartsCsvToFhirTransformer.TIME_FORMAT);
+                HomertonCsvToFhirTransformer.CSV_FORMAT,
+                HomertonCsvToFhirTransformer.DATE_FORMAT,
+                HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
@@ -185,10 +185,25 @@ public class Encounter extends AbstractCsvParser {
     public CsvCell getActiveInd() {
         return super.getCell("ACTIVE_IND");
     }
+    public CsvCell getReasonForVisitText() {
+        return super.getCell("REASON_FOR_VISIT");
+    }
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
+    public CsvCell getMillenniumFinancialNumberIdentifier() {
+        return super.getCell("ENCNTR_FINANCIAL_ID");
+    }
+    public CsvCell getEncounterStatusMillenniumCode() {
+        return super.getCell("ENCNTR_STATUS_CD");
+    }
+    public CsvCell getEncounterTypeMillenniumCode() {
+        return super.getCell("ENCNTR_TYPE_CLASS_CD");
+    }
 
     @Override
     protected String getFileTypeDescription() {
-        return "Cerner Encounter file";
+        return "Cerner EncounterTable file";
     }
 
     @Override

@@ -9,7 +9,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
-import org.endeavourhealth.transform.homerton.schema.Diagnosis;
+import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
     public static void transform(String version,
-                                 Diagnosis parser,
+                                 DiagnosisTable parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
@@ -40,7 +40,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
     /*
      *
      */
-    public static void createDiagnosis(Diagnosis parser,
+    public static void createDiagnosis(DiagnosisTable parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
@@ -50,10 +50,10 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
         ResourceId conditionResourceId = getOrCreateConditionResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, diagnosisId);
 
-        // Patient
+        // PatientTable
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
         if (patientUuid == null) {
-            TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} because no Person->MRN mapping ({}) could be found in file {}", diagnosisId.getString(), personIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "Skipping DiagnosisTable {} because no Person->MRN mapping ({}) could be found in file {}", diagnosisId.getString(), personIdCell.getString(), parser.getFilePath());
             return;
         }
 
@@ -68,11 +68,11 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
 
-        // EpisodeOfCare - Diagnosis record cannot be linked to an EpisodeOfCare
+        // EpisodeOfCare - DiagnosisTable record cannot be linked to an EpisodeOfCare
 
         // fhirCondition.setEncounter()
 
-        // this Diagnosis resource id
+        // this DiagnosisTable resource id
         //ResourceId diagnosisResourceId = getDiagnosisResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, parser.getCNN(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
 
         //CodeableConcept diagnosisCode = new CodeableConcept();
@@ -85,7 +85,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         //createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers, cvs);
 
         // save resource
-        LOG.debug("Save Encounter (PatId=" + patientUuid + ")(PersonId:" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+        LOG.debug("Save EncounterTable (PatId=" + patientUuid + ")(PersonId:" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
 
     }
