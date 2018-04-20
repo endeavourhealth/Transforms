@@ -300,6 +300,9 @@ public abstract class EmisCsvToFhirTransformer {
 
             //calling this will return the possible versions that apply to this parser
             possibleVersions = parser.testForValidVersions(possibleVersions);
+            if (possibleVersions.isEmpty()) {
+                break;
+            }
         }
 
         //if we end up with one or more possible versions that do apply, then

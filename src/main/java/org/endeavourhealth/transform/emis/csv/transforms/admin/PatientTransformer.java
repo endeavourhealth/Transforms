@@ -699,6 +699,47 @@ public class PatientTransformer {
         } else {
             return RegistrationType.OTHER;
         }
+
+        /**
+         * This is the FULL list of registration types from Emis Web, although only
+         *
+         Immediately Necessary
+         Private
+         Regular
+         Temporary
+         Community Registered
+         Dummy
+         Other
+         Contraceptive Services
+         Maternity Services
+         Child Health Services
+         Walk-In Patient
+         Minor Surgery
+         Sexual Health
+         Pre Registration
+         Yellow Fever
+         Dermatology
+         Diabetic
+         Rheumatology
+         Chiropody
+         Coronary Health Checks
+         Ultrasound
+         BCG Clinic
+         Vasectomy
+         Acupuncture
+         Reflexology
+         Hypnotherapy
+         Out of Hours
+         Rehabilitation
+         Antenatal
+         Audiology
+         Gynaecology
+         Doppler
+         Secondary Registration
+         Urgent and Emergency Care
+         Externally Registered
+
+         */
     }
 
 }

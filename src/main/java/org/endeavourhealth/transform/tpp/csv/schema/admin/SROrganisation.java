@@ -21,49 +21,127 @@ public class SROrganisation extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "Name",
-                "ID",
-                "HouseName",
-                "HouseNumber",
-                "NameOfRoad",
-                "NameOfLocality",
-                "NameOfTown",
-                "NameOfCounty",
-                "FullPostCode",
-                "Telephone",
-                "SecondaryTelephone",
-                "Fax",
-                "MadeObsolete",
-                "IDTrust",
-                "IDCcg",
-                "RemovedData"
-        };
-
+        //TODO - update transform to check for null cells when using fields not in the older version
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "Name",
+                    "ID",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "Telephone",
+                    "SecondaryTelephone",
+                    "Fax",
+                    "MadeObsolete",
+                    "IDTrust",
+                    "IDCcg"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "Name",
+                    "ID",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "Telephone",
+                    "SecondaryTelephone",
+                    "Fax",
+                    "MadeObsolete",
+                    "IDTrust",
+                    "IDCcg",
+                    "RemovedData"
+            };
+        }
     }
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
-    public CsvCell getName() { return super.getCell("Name");}
-    public CsvCell getID() { return super.getCell("ID");}
-    public CsvCell getHouseName() { return super.getCell("HouseName");}
-    public CsvCell getHouseNumber() { return super.getCell("HouseNumber");}
-    public CsvCell getNameOfRoad() { return super.getCell("NameOfRoad");}
-    public CsvCell getNameOfLocality() { return super.getCell("NameOfLocality");}
-    public CsvCell getNameOfTown() { return super.getCell("NameOfTown");}
-    public CsvCell getNameOfCounty() { return super.getCell("NameOfCounty");}
-    public CsvCell getFullPostCode() { return super.getCell("FullPostCode");}
-    public CsvCell getTelephone() { return super.getCell("Telephone");}
-    public CsvCell getSecondaryTelephone() { return super.getCell("SecondaryTelephone");}
-    public CsvCell getFax() { return super.getCell("Fax");}
-    public CsvCell getMadeObsolete() { return super.getCell("MadeObsolete");}
-    public CsvCell getIDTrust() { return super.getCell("IDTrust");}
-    public CsvCell getIDCcg() { return super.getCell("IDCcg");}
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getName() {
+        return super.getCell("Name");
+    }
+
+    public CsvCell getID() {
+        return super.getCell("ID");
+    }
+
+    public CsvCell getHouseName() {
+        return super.getCell("HouseName");
+    }
+
+    public CsvCell getHouseNumber() {
+        return super.getCell("HouseNumber");
+    }
+
+    public CsvCell getNameOfRoad() {
+        return super.getCell("NameOfRoad");
+    }
+
+    public CsvCell getNameOfLocality() {
+        return super.getCell("NameOfLocality");
+    }
+
+    public CsvCell getNameOfTown() {
+        return super.getCell("NameOfTown");
+    }
+
+    public CsvCell getNameOfCounty() {
+        return super.getCell("NameOfCounty");
+    }
+
+    public CsvCell getFullPostCode() {
+        return super.getCell("FullPostCode");
+    }
+
+    public CsvCell getTelephone() {
+        return super.getCell("Telephone");
+    }
+
+    public CsvCell getSecondaryTelephone() {
+        return super.getCell("SecondaryTelephone");
+    }
+
+    public CsvCell getFax() {
+        return super.getCell("Fax");
+    }
+
+    public CsvCell getMadeObsolete() {
+        return super.getCell("MadeObsolete");
+    }
+
+    public CsvCell getIDTrust() {
+        return super.getCell("IDTrust");
+    }
+
+    public CsvCell getIDCcg() {
+        return super.getCell("IDCcg");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
+
+    ;
 
     @Override
-    protected String getFileTypeDescription() {return "TPP Organisation Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Organisation Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 
 }

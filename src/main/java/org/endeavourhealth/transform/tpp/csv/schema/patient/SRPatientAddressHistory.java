@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRPatientAddressHistory extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistory.class);
 
     public SRPatientAddressHistory(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -22,83 +22,156 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "NameOfBuilding",
-                "NumberOfBuilding",
-                "NameOfRoad",
-                "NameOfLocality",
-                "NameOfTown",
-                "NameOfCounty",
-                "FullPostCode",
-                "DateTo",
-                "AddressType",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "CcgOfResidence",
-                "RemovedData"
-
-
-        };
-
+        //TODO - update transform to check for null cells when using fields not in the older version
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "NameOfBuilding",
+                    "NumberOfBuilding",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "DateTo",
+                    "AddressType",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "CcgOfResidence"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "NameOfBuilding",
+                    "NumberOfBuilding",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "DateTo",
+                    "AddressType",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "CcgOfResidence",
+                    "RemovedData"
+            };
+        }
     }
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
 
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
 
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
 
-    public CsvCell getDateEvent() { return super.getCell("DateEvent");}
+    public CsvCell getDateEventRecorded() {
+        return super.getCell("DateEventRecorded");
+    }
 
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
+    public CsvCell getDateEvent() {
+        return super.getCell("DateEvent");
+    }
 
-    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");}
+    public CsvCell getIDProfileEnteredBy() {
+        return super.getCell("IDProfileEnteredBy");
+    }
 
-    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");}
+    public CsvCell getIDDoneBy() {
+        return super.getCell("IDDoneBy");
+    }
 
-    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");}
+    public CsvCell getTextualEventDoneBy() {
+        return super.getCell("TextualEventDoneBy");
+    }
 
-    public CsvCell getNameOfBuilding() { return super.getCell("NameOfBuilding");}
+    public CsvCell getIDOrganisationDoneAt() {
+        return super.getCell("IDOrganisationDoneAt");
+    }
 
-    public CsvCell getNumberOfBuilding() { return super.getCell("NumberOfBuilding");}
+    public CsvCell getNameOfBuilding() {
+        return super.getCell("NameOfBuilding");
+    }
 
-    public CsvCell getNameOfRoad() { return super.getCell("NameOfRoad");}
+    public CsvCell getNumberOfBuilding() {
+        return super.getCell("NumberOfBuilding");
+    }
 
-    public CsvCell getNameOfLocality() { return super.getCell("NameOfLocality");}
+    public CsvCell getNameOfRoad() {
+        return super.getCell("NameOfRoad");
+    }
 
-    public CsvCell getNameOfTown() { return super.getCell("NameOfTown");}
+    public CsvCell getNameOfLocality() {
+        return super.getCell("NameOfLocality");
+    }
 
-    public CsvCell getNameOfCounty() { return super.getCell("NameOfCounty");}
+    public CsvCell getNameOfTown() {
+        return super.getCell("NameOfTown");
+    }
 
-    public CsvCell getFullPostCode() { return super.getCell("FullPostCode");}
+    public CsvCell getNameOfCounty() {
+        return super.getCell("NameOfCounty");
+    }
 
-    public CsvCell getDateTo() { return super.getCell("DateTo");}
+    public CsvCell getFullPostCode() {
+        return super.getCell("FullPostCode");
+    }
 
-    public CsvCell getAddressType() { return super.getCell("AddressType");}
+    public CsvCell getDateTo() {
+        return super.getCell("DateTo");
+    }
 
-    public CsvCell getIDEvent() { return super.getCell("IDEvent");}
+    public CsvCell getAddressType() {
+        return super.getCell("AddressType");
+    }
 
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");}
+    public CsvCell getIDEvent() {
+        return super.getCell("IDEvent");
+    }
 
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
+    public CsvCell getIDPatient() {
+        return super.getCell("IDPatient");
+    }
 
-    public CsvCell getCcgOfResidence() { return super.getCell("CcgOfResidence");}
+    public CsvCell getIDOrganisation() {
+        return super.getCell("IDOrganisation");
+    }
 
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
+    public CsvCell getCcgOfResidence() {
+        return super.getCell("CcgOfResidence");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
     @Override
-    protected String getFileTypeDescription() {return "TPP Patient Address History Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Patient Address History Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 
 }

@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -65,9 +64,10 @@ public class SRCcgTransformer {
 
         LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
-        CsvCell obsoleteCell  = parser.getRemovedData();
-
-        if (obsoleteCell.getBoolean() ) {
+        //removed data column wasn't present prior to v88
+        CsvCell obsoleteCell = parser.getRemovedData();
+        if (obsoleteCell != null //note this cell wasn't present in all versions, so need to check for null cell
+            && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }

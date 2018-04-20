@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SREvent extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SREvent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SREvent.class);
 
     public SREvent(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -22,60 +22,154 @@ public class SREvent extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "IDStaffMemberProfileRole",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "IDAuthorisedBy",
-                "IDProfileAuthorisedBy",
-                "ContactEventLocation",
-                "ContactMethod",
-                "EventIncomplete",
-                "ClinicalEvent",
-                "IDReferralIn",
-                "IDPatient",
-                "IDOrganisation",
-                "IDTeam",
-                "IDBranch",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+        //TODO - update transform to check for null cells when using fields not in the older version
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "IDStaffMemberProfileRole",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDAuthorisedBy",
+                    "IDProfileAuthorisedBy",
+                    "ContactEventLocation",
+                    "ContactMethod",
+                    "EventIncomplete",
+                    "ClinicalEvent",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDTeam",
+                    "IDBranch"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "IDStaffMemberProfileRole",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDAuthorisedBy",
+                    "IDProfileAuthorisedBy",
+                    "ContactEventLocation",
+                    "ContactMethod",
+                    "EventIncomplete",
+                    "ClinicalEvent",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDTeam",
+                    "IDBranch",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        }
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
-    public CsvCell getDateEvent() { return super.getCell("DateEvent");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getIDDoneBy() { return super.getCell("IDDoneBy");};
-    public CsvCell getIDStaffMemberProfileRole() { return super.getCell("IDStaffMemberProfileRole");};
-    public CsvCell getTextualEventDoneBy() { return super.getCell("TextualEventDoneBy");};
-    public CsvCell getIDOrganisationDoneAt() { return super.getCell("IDOrganisationDoneAt");};
-    public CsvCell getIDAuthorisedBy() { return super.getCell("IDAuthorisedBy");};
-    public CsvCell getIDProfileAuthorisedBy() { return super.getCell("IDProfileAuthorisedBy");};
-    public CsvCell getContactEventLocation() { return super.getCell("ContactEventLocation");};
-    public CsvCell getContactMethod() { return super.getCell("ContactMethod");};
-    public CsvCell getEventIncomplete() { return super.getCell("EventIncomplete");};
-    public CsvCell getClinicalEvent() { return super.getCell("ClinicalEvent");};
-    public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getIDTeam() { return super.getCell("IDTeam");};
-    public CsvCell getIDBranch() { return super.getCell("IDBranch");};
-    public CsvCell getIDOrganisationRegisteredAt() { return super.getCell("IDOrganisationRegisteredAt");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
 
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getDateEventRecorded() {
+        return super.getCell("DateEventRecorded");
+    }
+
+    public CsvCell getDateEvent() {
+        return super.getCell("DateEvent");
+    }
+
+    public CsvCell getIDProfileEnteredBy() {
+        return super.getCell("IDProfileEnteredBy");
+    }
+
+    public CsvCell getIDDoneBy() {
+        return super.getCell("IDDoneBy");
+    }
+
+    public CsvCell getIDStaffMemberProfileRole() {
+        return super.getCell("IDStaffMemberProfileRole");
+    }
+
+    public CsvCell getTextualEventDoneBy() {
+        return super.getCell("TextualEventDoneBy");
+    }
+
+    public CsvCell getIDOrganisationDoneAt() {
+        return super.getCell("IDOrganisationDoneAt");
+    }
+
+    public CsvCell getIDAuthorisedBy() {
+        return super.getCell("IDAuthorisedBy");
+    }
+
+    public CsvCell getIDProfileAuthorisedBy() {
+        return super.getCell("IDProfileAuthorisedBy");
+    }
+
+    public CsvCell getContactEventLocation() {
+        return super.getCell("ContactEventLocation");
+    }
+
+    public CsvCell getContactMethod() {
+        return super.getCell("ContactMethod");
+    }
+
+    public CsvCell getEventIncomplete() {
+        return super.getCell("EventIncomplete");
+    }
+
+    public CsvCell getClinicalEvent() {
+        return super.getCell("ClinicalEvent");
+    }
+
+    public CsvCell getIDReferralIn() {
+        return super.getCell("IDReferralIn");
+    }
+
+    public CsvCell getIDPatient() {
+        return super.getCell("IDPatient");
+    }
+
+    public CsvCell getIDOrganisation() {
+        return super.getCell("IDOrganisation");
+    }
+
+    public CsvCell getIDTeam() {
+        return super.getCell("IDTeam");
+    }
+
+    public CsvCell getIDBranch() {
+        return super.getCell("IDBranch");
+    }
+
+    public CsvCell getIDOrganisationRegisteredAt() {
+        return super.getCell("IDOrganisationRegisteredAt");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Event Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Event Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

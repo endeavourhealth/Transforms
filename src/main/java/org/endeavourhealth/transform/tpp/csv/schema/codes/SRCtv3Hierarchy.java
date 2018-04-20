@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRCtv3Hierarchy extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRCtv3Hierarchy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRCtv3Hierarchy.class);
 
     public SRCtv3Hierarchy(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -21,28 +21,60 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "Ctv3CodeParent",
-                "Ctv3CodeChild",
-                "ChildLevel",
-                "RemovedData"
-        };
+        //TODO - update transform to check for null cells when using fields not in the older version
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Ctv3CodeParent",
+                    "Ctv3CodeChild",
+                    "ChildLevel",
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Ctv3CodeParent",
+                    "Ctv3CodeChild",
+                    "ChildLevel",
+                    "RemovedData"
+            };
+        }
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getCtv3CodeParent() { return super.getCell("Ctv3CodeParent");};
-    public CsvCell getCtv3CodeChild() { return super.getCell("Ctv3CodeChild");};
-    public CsvCell getChildLevel() { return super.getCell("ChildLevel");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getCtv3CodeParent() {
+        return super.getCell("Ctv3CodeParent");
+    }
+
+    public CsvCell getCtv3CodeChild() {
+        return super.getCell("Ctv3CodeChild");
+    }
+
+    public CsvCell getChildLevel() {
+        return super.getCell("ChildLevel");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Ctv3 Hierarchy Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Ctv3 Hierarchy Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

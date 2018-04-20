@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRAddressBookEntry extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRAddressBookEntry.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRAddressBookEntry.class);
 
     public SRAddressBookEntry(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -41,28 +41,79 @@ public class SRAddressBookEntry extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateCreated() { return super.getCell("DateCreated");};
-    public CsvCell getTitle() { return super.getCell("Title");};
-    public CsvCell getFirstName() { return super.getCell("FirstName");};
-    public CsvCell getMiddleNames() { return super.getCell("MiddleNames");};
-    public CsvCell getSurname() { return super.getCell("Surname");};
-    public CsvCell getOrganisationName() { return super.getCell("OrganisationName");};
-    public CsvCell getIDParentAddressBookEntry() { return super.getCell("IDParentAddressBookEntry");};
-    public CsvCell getHouseName() { return super.getCell("HouseName");};
-    public CsvCell getHouseNumber() { return super.getCell("HouseNumber");};
-    public CsvCell getNameOfRoad() { return super.getCell("NameOfRoad");};
-    public CsvCell getNameOfLocality() { return super.getCell("NameOfLocality");};
-    public CsvCell getNameOfTown() { return super.getCell("NameOfTown");};
-    public CsvCell getNameOfCounty() { return super.getCell("NameOfCounty");};
-    public CsvCell getFullPostcode() { return super.getCell("FullPostcode");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getDateCreated() {
+        return super.getCell("DateCreated");
+    }
+
+    public CsvCell getTitle() {
+        return super.getCell("Title");
+    }
+
+    public CsvCell getFirstName() {
+        return super.getCell("FirstName");
+    }
+
+    public CsvCell getMiddleNames() {
+        return super.getCell("MiddleNames");
+    }
+
+    public CsvCell getSurname() {
+        return super.getCell("Surname");
+    }
+
+    public CsvCell getOrganisationName() {
+        return super.getCell("OrganisationName");
+    }
+
+    public CsvCell getIDParentAddressBookEntry() {
+        return super.getCell("IDParentAddressBookEntry");
+    }
+
+    public CsvCell getHouseName() {
+        return super.getCell("HouseName");
+    }
+
+    public CsvCell getHouseNumber() {
+        return super.getCell("HouseNumber");
+    }
+
+    public CsvCell getNameOfRoad() {
+        return super.getCell("NameOfRoad");
+    }
+
+    public CsvCell getNameOfLocality() {
+        return super.getCell("NameOfLocality");
+    }
+
+    public CsvCell getNameOfTown() {
+        return super.getCell("NameOfTown");
+    }
+
+    public CsvCell getNameOfCounty() {
+        return super.getCell("NameOfCounty");
+    }
+
+    public CsvCell getFullPostcode() {
+        return super.getCell("FullPostcode");
+    }
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Address Book Entry Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Address Book Entry Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRStaff extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRStaff.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRStaff.class);
 
     public SRStaff(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -41,26 +41,71 @@ public class SRStaff extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDStaff() { return super.getCell("IDStaff");};
-    public CsvCell getIDStaffProfile() { return super.getCell("IDStaffProfile");};
-    public CsvCell getStaffName() { return super.getCell("StaffName");};
-    public CsvCell getStaffRole() { return super.getCell("StaffRole");};
-    public CsvCell getStaffUserName() { return super.getCell("StaffUserName");};
-    public CsvCell getDateProfileCreated() { return super.getCell("DateProfileCreated");};
-    public CsvCell getDateEmploymentStart() { return super.getCell("DateEmploymentStart");};
-    public CsvCell getDateEmploymentEnd() { return super.getCell("DateEmploymentEnd");};
-    public CsvCell getNationalIdType() { return super.getCell("NationalIdType");};
-    public CsvCell getIDNational() { return super.getCell("IDNational");};
-    public CsvCell getPPAID() { return super.getCell("PPAID");};
-    public CsvCell getGPLocalCode() { return super.getCell("GPLocalCode");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDStaff() {
+        return super.getCell("IDStaff");
+    }
+
+    public CsvCell getIDStaffProfile() {
+        return super.getCell("IDStaffProfile");
+    }
+
+    public CsvCell getStaffName() {
+        return super.getCell("StaffName");
+    }
+
+    public CsvCell getStaffRole() {
+        return super.getCell("StaffRole");
+    }
+
+    public CsvCell getStaffUserName() {
+        return super.getCell("StaffUserName");
+    }
+
+    public CsvCell getDateProfileCreated() {
+        return super.getCell("DateProfileCreated");
+    }
+
+    public CsvCell getDateEmploymentStart() {
+        return super.getCell("DateEmploymentStart");
+    }
+
+    public CsvCell getDateEmploymentEnd() {
+        return super.getCell("DateEmploymentEnd");
+    }
+
+    public CsvCell getNationalIdType() {
+        return super.getCell("NationalIdType");
+    }
+
+    public CsvCell getIDNational() {
+        return super.getCell("IDNational");
+    }
+
+    public CsvCell getPPAID() {
+        return super.getCell("PPAID");
+    }
+
+    public CsvCell getGPLocalCode() {
+        return super.getCell("GPLocalCode");
+    }
+
+    public CsvCell getIDOrganisation() {
+        return super.getCell("IDOrganisation");
+    }
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Staff Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Staff Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

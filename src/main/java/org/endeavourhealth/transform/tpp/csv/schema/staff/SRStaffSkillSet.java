@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRStaffSkillSet extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRStaffSkillSet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRStaffSkillSet.class);
 
     public SRStaffSkillSet(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -37,22 +37,55 @@ public class SRStaffSkillSet extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateCreated() { return super.getCell("DateCreated");};
-    public CsvCell getIdProfileCreatedBy() { return super.getCell("IdProfileCreatedBy");};
-    public CsvCell getIDStaffProfile() { return super.getCell("IDStaffProfile");};
-    public CsvCell getDateSkillSetStart() { return super.getCell("DateSkillSetStart");};
-    public CsvCell getDateSkillSetEnd() { return super.getCell("DateSkillSetEnd");};
-    public CsvCell getSkillSetName() { return super.getCell("SkillSetName");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getDateCreated() {
+        return super.getCell("DateCreated");
+    }
+
+    public CsvCell getIdProfileCreatedBy() {
+        return super.getCell("IdProfileCreatedBy");
+    }
+
+    public CsvCell getIDStaffProfile() {
+        return super.getCell("IDStaffProfile");
+    }
+
+    public CsvCell getDateSkillSetStart() {
+        return super.getCell("DateSkillSetStart");
+    }
+
+    public CsvCell getDateSkillSetEnd() {
+        return super.getCell("DateSkillSetEnd");
+    }
+
+    public CsvCell getSkillSetName() {
+        return super.getCell("SkillSetName");
+    }
+
+    public CsvCell getIDOrganisation() {
+        return super.getCell("IDOrganisation");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Staff Skill Set Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Staff Skill Set Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

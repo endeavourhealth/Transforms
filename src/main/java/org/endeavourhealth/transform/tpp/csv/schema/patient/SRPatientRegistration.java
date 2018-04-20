@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class SRPatientRegistration extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRPatientRegistration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRPatientRegistration.class);
 
     public SRPatientRegistration(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
@@ -22,40 +22,95 @@ public class SRPatientRegistration extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "DateRegistration",
-                "DateDeRegistration",
-                "RegistrationStatus",
-                "PreferredPharmacy",
-                "IDPatient",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+        //TODO - update transform to check for null cells when using fields not in the older version
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateRegistration",
+                    "DateDeRegistration",
+                    "RegistrationStatus",
+                    "PreferredPharmacy",
+                    "IDPatient",
+                    "IDOrganisation"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateRegistration",
+                    "DateDeRegistration",
+                    "RegistrationStatus",
+                    "PreferredPharmacy",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        }
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");};
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");};
-    public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");};
-    public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");};
-    public CsvCell getDateRegistration() { return super.getCell("DateRegistration");};
-    public CsvCell getDateDeRegistration() { return super.getCell("DateDeRegistration");};
-    public CsvCell getRegistrationStatus() { return super.getCell("RegistrationStatus");};
-    public CsvCell getPreferredPharmacy() { return super.getCell("PreferredPharmacy");};
-    public CsvCell getIDPatient() { return super.getCell("IDPatient");};
-    public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");};
-    public CsvCell getIDOrganisationRegisteredAt() {return super.getCell("IDOrganisationRegisteredAt");};
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");};
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getDateEventRecorded() {
+        return super.getCell("DateEventRecorded");
+    }
+
+    public CsvCell getIDProfileEnteredBy() {
+        return super.getCell("IDProfileEnteredBy");
+    }
+
+    public CsvCell getDateRegistration() {
+        return super.getCell("DateRegistration");
+    }
+
+    public CsvCell getDateDeRegistration() {
+        return super.getCell("DateDeRegistration");
+    }
+
+    public CsvCell getRegistrationStatus() {
+        return super.getCell("RegistrationStatus");
+    }
+
+    public CsvCell getPreferredPharmacy() {
+        return super.getCell("PreferredPharmacy");
+    }
+
+    public CsvCell getIDPatient() {
+        return super.getCell("IDPatient");
+    }
+
+    public CsvCell getIDOrganisation() {
+        return super.getCell("IDOrganisation");
+    }
+
+    public CsvCell getIDOrganisationRegisteredAt() {
+        return super.getCell("IDOrganisationRegisteredAt");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
     //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Patient Registration Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Patient Registration Entry file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

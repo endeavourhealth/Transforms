@@ -89,6 +89,10 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return timeFormat;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
     private void open(String action) throws Exception {
 
         if (numLines == null) {
@@ -365,8 +369,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             stringReader.close();
         }
 
-        if (possibleVersions.isEmpty()) {
+        if (ret.isEmpty()) {
             LOG.error("Ruled out all possible versions because of file " + filePath);
+            LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
         }
 
         return ret;
@@ -528,7 +533,14 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
 
     public CsvCell getCell(String column) {
-        String value = csvRecord.get(column);
+
+        String value = null;
+        try {
+            value = csvRecord.get(column);
+        } catch (IllegalArgumentException ex) {
+            //if the column doesn't exist, then we'll get this exception, in which case return null
+            return null;
+        }
 
         //to save messy handling of non-empty but "empty" strings, trim whitespace of any non-null value
         if (value != null) {

@@ -100,9 +100,9 @@ public class SRChildAtRiskTransformer {
             }
         }
 
-        flagBuilder.setCode("On Child Protection Plan", null);
+        flagBuilder.setCode("On Child Protection Plan");
 
-        flagBuilder.setCategory("Clinical", null);
+        flagBuilder.setCategory("Clinical");
 
     }
 }
