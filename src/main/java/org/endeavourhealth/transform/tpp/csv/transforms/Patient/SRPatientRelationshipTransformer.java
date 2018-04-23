@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRelationshi
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,6 @@ public class SRPatientRelationshipTransformer {
 
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell.getIntAsBoolean()) {
-
             List<Patient.ContactComponent> contacts =  patientBuilder.getPatientContactComponents();
             for (Patient.ContactComponent cc : contacts) {
               if (cc.getId().equals(rowIdCell.getString())) {
@@ -75,13 +75,11 @@ public class SRPatientRelationshipTransformer {
 
         }
 
-
         CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
         if (!relationshipWithNameCell.isEmpty()) {
             HumanName name = new HumanName();
             name.setText(relationshipWithNameCell.getString());
             contactBuilder.addContactName(name);
-
         }
         AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
         CsvCell nameOfBuildingCell = parser.getRelationshipWithHouseName();
@@ -154,6 +152,29 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
 
+        Reference organizationReference = null;
+        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
+        CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
+        if (!orgIdCell.isEmpty()) {
+            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+            organizationBuilder.setId(orgIdCell.getString());
+            organizationReference = csvHelper.createOrganisationReference(orgIdCell);
+            patientBuilder.addCareProvider(organizationReference);
+            episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
+        }
+        CsvCell regStartDateCell = parser.getDateEvent();
+        if (!regStartDateCell.isEmpty()) {
+            episodeBuilder.setRegistrationStartDate(regStartDateCell.getDate(), regStartDateCell);
+        }
+        CsvCell regEndDateCell = parser.getDateEnded();
+        if (!regEndDateCell.isEmpty()) {
+            episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
+        }
+        String medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
+        if (medicalRecordStatus != null) {
+            //TODO - need to carry through the audit of where this status came from, in whatever file it was originally read
+            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, null);
+        }
 
     }
 }
