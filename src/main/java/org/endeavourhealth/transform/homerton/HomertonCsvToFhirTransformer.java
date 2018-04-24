@@ -216,6 +216,6 @@ public abstract class HomertonCsvToFhirTransformer {
     }
 
     private static String identifyFileType(String filename) {
-        return  filename.split("\\.")[0].toUpperCase();
+        return  filename.split("_")[0].toUpperCase();
     }
 }
