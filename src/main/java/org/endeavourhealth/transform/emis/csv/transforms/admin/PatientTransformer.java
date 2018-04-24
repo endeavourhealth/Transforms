@@ -120,6 +120,11 @@ public class PatientTransformer {
         nameBuilder.addGiven(middleNames.getString(), middleNames);
         nameBuilder.addFamily(surname.getString(), surname);
 
+        //we need to know the registration type to work out the address use
+        CsvCell patientType = parser.getPatientTypedescription();
+        CsvCell dummyType = parser.getDummyType();
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+
         CsvCell houseNameFlat = parser.getHouseNameFlatNumber();
         CsvCell numberAndStreet = parser.getNumberAndStreet();
         CsvCell village = parser.getVillage();
@@ -131,7 +136,11 @@ public class PatientTransformer {
         //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
         //Address.AddressUse use = Address.AddressUse.HOME;
         Address.AddressUse use = null;
-
+        if (registrationType == RegistrationType.TEMPORARY) {
+            use = Address.AddressUse.TEMP;
+        } else {
+            use = Address.AddressUse.HOME;
+        }
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setUse(use);
@@ -222,9 +231,6 @@ public class PatientTransformer {
             patientBuilder.setSpineSensitive(true, spineSensitive);
         }
 
-        CsvCell patientType = parser.getPatientTypedescription();
-        CsvCell dummyType = parser.getDummyType();
-        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
         episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
 
         //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
