@@ -21,8 +21,7 @@ public class SRCcg extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
                     "DateCreated",
@@ -61,6 +60,7 @@ public class SRCcg extends AbstractCsvParser {
             };
         }
     }
+
 
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
