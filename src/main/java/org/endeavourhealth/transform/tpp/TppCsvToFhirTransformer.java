@@ -41,7 +41,8 @@ public abstract class TppCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hh:mm:ss a";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
 
-    public static final String VERSION_87 = "87";
+    public static final String VERSION_TEST_PACK = "TestPack"; //file format we got from the demo environment mid-2017
+    public static final String VERSION_87 = "87"; //file format first received from the pilot practice
     public static final String VERSION_88 = "88";
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
@@ -87,6 +88,7 @@ public abstract class TppCsvToFhirTransformer {
         List<String> possibleVersions = new ArrayList<>();
         possibleVersions.add(VERSION_88);
         possibleVersions.add(VERSION_87);
+        possibleVersions.add(VERSION_TEST_PACK);
 
         for (String filePath: files) {
 
