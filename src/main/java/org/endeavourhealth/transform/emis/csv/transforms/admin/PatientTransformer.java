@@ -127,8 +127,14 @@ public class PatientTransformer {
         CsvCell county = parser.getCounty();
         CsvCell postcode = parser.getPostcode();
 
+        //apparently if the patient is a temp patient, then the address supplied will be the temporary address,
+        //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
+        //Address.AddressUse use = Address.AddressUse.HOME;
+        Address.AddressUse use = null;
+
+
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.setUse(use);
         addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
         addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
         addressBuilder.addLine(village.getString(), village);
@@ -218,7 +224,7 @@ public class PatientTransformer {
 
         CsvCell patientType = parser.getPatientTypedescription();
         CsvCell dummyType = parser.getDummyType();
-        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean());
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
         episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
 
         //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
@@ -677,7 +683,7 @@ public class PatientTransformer {
      * converts the patientDescription String from the CSV to the FHIR registration type
      * possible registration types based on the VocPatientType enum from EMIS Open
      */
-    private static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord) {
+    private static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord, ParserI parserI) throws Exception {
 
         //EMIS both test and Live data has leading spaces
         csvRegType = csvRegType.trim();
@@ -696,7 +702,10 @@ public class PatientTransformer {
             return RegistrationType.TEMPORARY;
         } else if (csvRegType.equalsIgnoreCase("Community Registered")) {
             return RegistrationType.COMMUNITY;
+        } else if (csvRegType.equalsIgnoreCase("Other")) {
+            return RegistrationType.OTHER;
         } else {
+            TransformWarnings.log(LOG, parserI, "Unhandled Emis registration type {}", csvRegType);
             return RegistrationType.OTHER;
         }
 
