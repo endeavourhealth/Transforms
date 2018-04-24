@@ -474,7 +474,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(referralRequestBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(referralRequestBuilder, false, codeId, ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT, csvHelper);
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
