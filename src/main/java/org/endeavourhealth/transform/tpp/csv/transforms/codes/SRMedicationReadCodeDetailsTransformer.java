@@ -1,8 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.MultiLexToCTV3MapDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3MapDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -15,7 +16,11 @@ import java.util.Map;
 public class SRMedicationReadCodeDetailsTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRMedicationReadCodeDetailsTransformer.class);
 
-    private static MultiLexToCTV3MapDalI repository = DalProvider.factoryMultiLexToCTV3MapDal();
+    private static TppMultiLexToCtv3MapDalI repository = DalProvider.factoryTppMultiLexToCtv3MapDal();
+    public static final String ROW_ID = "RowId";
+    public static final String MULTILEX_PRODUCT_ID = "multiLexProductId";
+    public static final String CTV3_READ_CODE = "ctv3ReadCode";
+    public static final String CTV3_READ_TERM = "ctv3ReadTerm";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -38,12 +43,21 @@ public class SRMedicationReadCodeDetailsTransformer {
         CsvCell ctv3ReadCode = parser.getDrugReadCode();
         CsvCell ctv3ReadTerm = parser.getDrugReadCodeDesc();
 
-        MultiLexToCTV3Map mapping = new MultiLexToCTV3Map(rowId.getLong(),
+
+        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+
+        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(multiLexProductId.getRowAuditId(), multiLexProductId.getColIndex(), MULTILEX_PRODUCT_ID);
+        auditWrapper.auditValue(ctv3ReadCode.getRowAuditId(), ctv3ReadCode.getColIndex(), CTV3_READ_CODE);
+        auditWrapper.auditValue(ctv3ReadTerm.getRowAuditId(), ctv3ReadTerm.getColIndex(), CTV3_READ_TERM);
+
+        TppMultiLexToCtv3Map mapping = new TppMultiLexToCtv3Map(rowId.getLong(),
                 multiLexProductId.getLong(),
                 ctv3ReadCode.getString(),
-                ctv3ReadTerm.getString());
+                ctv3ReadTerm.getString(),
+                auditWrapper);
 
         //save to the DB
-        repository.save(mapping, fhirResourceFiler.getServiceId());
+        repository.save(mapping);
     }
 }
