@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CTV3HierarchyRefDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CTV3HierarchyRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3HierarchyRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -15,7 +15,7 @@ import java.util.Map;
 public class SRCtv3HierarchyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRCtv3HierarchyTransformer.class);
 
-    private static CTV3HierarchyRefDalI repository = DalProvider.factoryCTV3HierarchyRefDal();
+    private static TppCtv3HierarchyRefDalI repository = DalProvider.factoryTppCtv3HierarchyRefDal();
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -38,12 +38,12 @@ public class SRCtv3HierarchyTransformer {
         CsvCell ctv3ChildReadCode = parser.getCtv3CodeChild();
         CsvCell ctv3ChildLevel = parser.getChildLevel();
 
-        CTV3HierarchyRef ref = new CTV3HierarchyRef(rowId.getLong(),
+        TppCtv3HierarchyRef ref = new TppCtv3HierarchyRef(rowId.getLong(),
                 ctv3ParentReadCode.getString(),
                 ctv3ChildReadCode.getString(),
                 ctv3ChildLevel.getInt());
 
         //save to the DB
-        repository.save(ref, fhirResourceFiler.getServiceId());
+        repository.save(ref);
     }
 }

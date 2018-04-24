@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -128,15 +128,15 @@ public class SRDrugSensitivityTransformer {
         CsvCell drugCodeId = parser.getIDDrugCode();
         if (!drugCodeId.isEmpty()) {
 
-            MultiLexToCTV3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong());
+            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong());
             if (lookUpMultiLexToCTV3Map != null) {
                 // add Ctv3 coding
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(allergyIntoleranceBuilder,  null);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(lookUpMultiLexToCTV3Map.getCTV3ReadCode());
-                codeableConceptBuilder.setCodingDisplay(lookUpMultiLexToCTV3Map.getCTV3ReadTerm());
-                codeableConceptBuilder.setText(lookUpMultiLexToCTV3Map.getCTV3ReadTerm());
+                codeableConceptBuilder.setCodingCode(lookUpMultiLexToCTV3Map.getCtv3ReadCode());
+                codeableConceptBuilder.setCodingDisplay(lookUpMultiLexToCTV3Map.getCtv3ReadTerm());
+                codeableConceptBuilder.setText(lookUpMultiLexToCTV3Map.getCtv3ReadTerm());
             }
         }
 

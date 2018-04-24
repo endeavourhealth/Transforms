@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppImmunisationContentDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppImmunisationContentDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -59,7 +59,7 @@ public class SRImmunisationContentTransformer {
 
 
         //save to the DB
-        repository.save(mapping, fhirResourceFiler.getServiceId());
+        repository.save(mapping);
 
     }
 }

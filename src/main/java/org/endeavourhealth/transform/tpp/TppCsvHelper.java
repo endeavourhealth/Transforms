@@ -5,12 +5,15 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3LookupDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppImmunisationContentDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3MapDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.*;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.MultiLexToCTV3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -48,10 +51,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static InternalIdDalI internalIdDalI = DalProvider.factoryInternalIdDal();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
 
-    private static MultiLexToCTV3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryMultiLexToCTV3MapDal();
-    private static HashMap<String, MultiLexToCTV3Map> multiLexToCTV3Map = new HashMap<>();
+    private static TppMultiLexToCtv3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexToCtv3MapDal();
+    private static HashMap<String, TppMultiLexToCtv3Map> multiLexToCTV3Map = new HashMap<>();
 
-    private static CTV3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryCTV3HierarchyRefDal();
+    private static TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
 
     private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
     private static HashMap<String, TppCtv3Lookup> tppCtv3Lookups = new HashMap<>();
@@ -281,7 +284,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         // check db and cache if true
         boolean isAllergy
-                = ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ALLERGIC_DISORDER, serviceId);
+                = ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ALLERGIC_DISORDER);
         if (isAllergy) {
             cacheAllergyCode(readCode, readTerm);
             return true;
@@ -352,7 +355,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return tppImmunisationContentFromCache;
         }
 
-        TppImmunisationContent tppImmunisationContentFromDB = tppImmunisationContentDalI.getContentFromRowId(rowId, serviceId);
+        TppImmunisationContent tppImmunisationContentFromDB = tppImmunisationContentDalI.getContentFromRowId(rowId);
         if (tppImmunisationContentFromDB == null) {
             return null;
         }
@@ -388,19 +391,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup multi-lex read code map
-    public MultiLexToCTV3Map lookUpMultiLexToCTV3Map(Long multiLexProductId) throws Exception {
+    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(Long multiLexProductId) throws Exception {
 
         String codeLookup = multiLexProductId.toString();
 
         //Find the code in the cache
-        MultiLexToCTV3Map multiLexToCTV3MapFromCache = multiLexToCTV3Map.get(codeLookup);
+        TppMultiLexToCtv3Map multiLexToCTV3MapFromCache = multiLexToCTV3Map.get(codeLookup);
 
         // return cached version if exists
         if (multiLexToCTV3MapFromCache != null) {
             return multiLexToCTV3MapFromCache;
         }
 
-        MultiLexToCTV3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId, serviceId);
+        TppMultiLexToCtv3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId);
         if (multiLexToCTV3MapFromDB == null) {
             return null;
         }
