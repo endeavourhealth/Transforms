@@ -23,6 +23,7 @@ public class SRCode extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - update transform to check for null cells when using fields not in the older version
+        //TODO - use IsNumeric column to know when a record is numeric or not
         if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
@@ -60,6 +61,7 @@ public class SRCode extends AbstractCsvParser {
                     "CTV3Code",
                     "CTV3Text",
                     "NumericComparator",
+                    "IsNumeric",
                     "NumericValue",
                     "NumericUnit",
                     "EpisodeType",
