@@ -73,7 +73,7 @@ public class PatientTable extends AbstractCsvParser {
         return super.getCell("PatientDimID");
     }
     public CsvCell getPersonId() {
-        return super.getCell("PersonId");
+        return super.getCell("PersonID");
     }
     public CsvCell getCNN() {
         return super.getCell("CNN");

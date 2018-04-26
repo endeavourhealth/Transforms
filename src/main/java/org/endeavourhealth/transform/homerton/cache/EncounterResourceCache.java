@@ -141,14 +141,14 @@ public class EncounterResourceCache {
         encounterBuilder.setId(encounterResourceId.getResourceId().toString(), encounterIdCell);
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_ENCOUNTER_ID);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
         if (finIdCell != null && !finIdCell.isEmpty()) {
             identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_FIN_EPISODE_ID);
             identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 

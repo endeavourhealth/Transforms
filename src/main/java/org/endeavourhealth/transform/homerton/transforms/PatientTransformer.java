@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -40,10 +41,15 @@ public class PatientTransformer extends HomertonBasisTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonCsvHelper csvHelper) throws Exception {
 
-        CsvCell millenniumPersonId = parser.getPersonId();
+        CsvCell millenniumPersonIdCell = parser.getPersonId();
         CsvCell cnnCell = parser.getCNN();
 
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
+        //store the MRN/PersonID mapping in BOTH directions
+        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, cnnCell.getString(), millenniumPersonIdCell.getString());
+
+        csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, millenniumPersonIdCell.getString(), cnnCell.getString());
+
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);

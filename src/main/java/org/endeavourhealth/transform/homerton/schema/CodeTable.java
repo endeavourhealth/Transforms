@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.homerton.schema;
 
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,9 +13,9 @@ public class CodeTable extends AbstractCsvParser {
 
     public CodeTable(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT,
-                BartsCsvToFhirTransformer.TIME_FORMAT);
+                HomertonCsvToFhirTransformer.CSV_FORMAT,
+                HomertonCsvToFhirTransformer.DATE_FORMAT,
+                HomertonCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override

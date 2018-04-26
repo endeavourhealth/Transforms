@@ -118,8 +118,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         }
 
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+        ResourceId organisationResourceId = getPrimaryOrgResourceId(parser, primaryOrgOdsCode, fhirResourceFiler);
 
         // Retrieve or create EpisodeOfCare
         // TODO
@@ -176,35 +175,35 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         // Identifiers
         if (!finIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_FIN_EPISODE_ID);
             if (identifiers.size() > 0) {
                 encounterBuilder.getIdentifiers().remove(identifiers.get(0));
             }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_FIN_EPISODE_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.TEMP);
             identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 
         /*
         if (!visitIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_VISIT_NO_EPISODE_ID);
             if (identifiers.size() > 0) {
                 encounterBuilder.getIdentifiers().remove(identifiers.get(0));
             }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_VISIT_NO_EPISODE_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setValue(visitIdCell.getString(), visitIdCell);
         }*/
 
         if (!encounterIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_ENCOUNTER_ID);
             if (identifiers.size() > 0) {
                 encounterBuilder.getIdentifiers().remove(identifiers.get(0));
             }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_ENCOUNTER_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
@@ -252,7 +251,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
                                                             fhirResourceFiler.getServiceId());
 
             String encounterDispTxt = ret.getCodeDispTxt();
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
+            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
             encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept, encounterTypeCodeCell);
         }*/
 
@@ -267,7 +266,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
                                                             fhirResourceFiler.getServiceId());
 
             String treatFuncDispTxt = ret.getCodeDispTxt();
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
+            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
             encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept);
         }*/
 
