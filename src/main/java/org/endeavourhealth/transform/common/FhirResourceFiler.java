@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.common;
 
-import com.datastax.driver.core.utils.UUIDs;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
@@ -355,7 +354,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public static ExchangeBatch createExchangeBatch(UUID exchangeId, UUID edsPatientId) {
 
         ExchangeBatch ret = new ExchangeBatch();
-        ret.setBatchId(UUIDs.timeBased());
+        ret.setBatchId(UUID.randomUUID());
         ret.setExchangeId(exchangeId);
         ret.setInsertedAt(new Date());
         ret.setEdsPatientId(edsPatientId);
