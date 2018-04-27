@@ -66,7 +66,7 @@ public class SRTrustTransformer {
 
         CsvCell obsoleteCell  = parser.getRemovedData();
 
-        if (obsoleteCell.getBoolean() ) {
+        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -160,9 +160,9 @@ public class SRTrustTransformer {
 
         OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
 
-        CsvCell obsoleteCell  = parser.getRemovedData();
+        CsvCell deleted  = parser.getRemovedData();
 
-        if (obsoleteCell.getBoolean() ) {
+        if (!deleted.isEmpty() && deleted.getBoolean()) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }

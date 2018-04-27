@@ -163,7 +163,7 @@ public class SRCcgTransformer {
 
         CsvCell obsoleteCell  = parser.getRemovedData();
 
-        if (obsoleteCell.getBoolean() ) {
+        if (obsoleteCell != null && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }

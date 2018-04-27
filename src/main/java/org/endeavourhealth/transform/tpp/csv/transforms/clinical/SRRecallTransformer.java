@@ -49,11 +49,11 @@ public class SRRecallTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.getIntAsBoolean()) {
+            if (!deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
                 TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;
-            } else {
+            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.ProcedureRequest procedureRequest

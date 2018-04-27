@@ -98,19 +98,27 @@ public class SRAppointmentTransformer {
         //cell is both date and time, so create datetime from both
         CsvCell startDate = parser.getDateStart();
         CsvCell startTime = parser.getDateStart();
-        Date startDateTime = CsvCell.getDateTimeFromTwoCells(startDate, startTime);
-        slotBuilder.setStartDateTime(startDateTime, startDate);
-        appointmentBuilder.setStartDateTime(startDateTime, startDate);
+        Date startDateTime = null;
+        if (!startDate.isEmpty()) {
+            startDateTime = CsvCell.getDateTimeFromTwoCells(startDate, startTime);
+            slotBuilder.setStartDateTime(startDateTime, startDate);
+            appointmentBuilder.setStartDateTime(startDateTime, startDate);
+        }
 
         CsvCell endDate = parser.getDateEnd();
         CsvCell endTime = parser.getDateEnd();
-        Date endDateTime = CsvCell.getDateTimeFromTwoCells(endDate, endTime);
-        slotBuilder.setEndDateTime(endDateTime, endDate);
-        appointmentBuilder.setEndDateTime(endDateTime, endDate);
+        Date endDateTime = null;
+        if (!endDate.isEmpty()) {
+            endDateTime = CsvCell.getDateTimeFromTwoCells(endDate, endTime);
+            slotBuilder.setEndDateTime(endDateTime, endDate);
+            appointmentBuilder.setEndDateTime(endDateTime, endDate);
+        }
 
-        long durationMillis = endDateTime.getTime() - startDateTime.getTime();
-        int durationMins = (int)(durationMillis / 1000 / 60);
-        appointmentBuilder.setMinutesDuration(durationMins);
+        if (endDateTime != null && startDateTime != null) {
+            long durationMillis = endDateTime.getTime() - startDateTime.getTime();
+            int durationMins = (int) (durationMillis / 1000 / 60);
+            appointmentBuilder.setMinutesDuration(durationMins);
+        }
 
         Reference slotReference = csvHelper.createSlotReference(appointmentId);
         appointmentBuilder.addSlot(slotReference, appointmentId);
@@ -128,6 +136,7 @@ public class SRAppointmentTransformer {
         CsvCell patientSeenDate = parser.getDatePatientSeen();
         CsvCell patientSeenTime = parser.getDatePatientSeen();
         if (!patientSeenDate.isEmpty()) {
+
             Date seenDateTime = CsvCell.getDateTimeFromTwoCells(patientSeenDate, patientSeenTime);
             appointmentBuilder.setSentInDateTime(seenDateTime, patientSeenDate);
         }

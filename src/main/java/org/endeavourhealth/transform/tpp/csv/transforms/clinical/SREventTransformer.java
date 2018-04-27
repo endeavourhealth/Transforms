@@ -51,11 +51,11 @@ public class SREventTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.getIntAsBoolean()) {
+            if (!deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
                 TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;
-            } else {
+            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Encounter encounter
@@ -83,7 +83,9 @@ public class SREventTransformer {
         }
 
         CsvCell eventDate = parser.getDateEvent();
-        encounterBuilder.setPeriodStart(eventDate.getDate(), eventDate);
+        if (!eventDate.isEmpty()) {
+            encounterBuilder.setPeriodStart(eventDate.getDate(), eventDate);
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

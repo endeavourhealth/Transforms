@@ -53,11 +53,11 @@ public class SRImmunisationTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.getIntAsBoolean()) {
+            if (!deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
                 TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;
-            } else {
+            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Immunization immunization
@@ -92,7 +92,9 @@ public class SRImmunisationTransformer {
         }
 
         CsvCell eventDate = parser.getDateEvent();
-        immunizationBuilder.setPerformedDate(eventDate.getDateTimeType(eventDate.getDate(), "YMDT"), eventDate);
+        if (!eventDate.isEmpty()) {
+            immunizationBuilder.setPerformedDate(eventDate.getDateTimeType(eventDate.getDate(), "YMDT"), eventDate);
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

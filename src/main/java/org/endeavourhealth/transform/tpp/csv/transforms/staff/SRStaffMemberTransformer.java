@@ -71,9 +71,14 @@ public class SRStaffMemberTransformer {
         }
 
         CsvCell obsolete = parser.getObsolete();
-        Boolean active = !obsolete.getBoolean();
-        practitionerBuilder.setActive(active, obsolete);
+        if (!obsolete.isEmpty()) {
 
+            Boolean isActive = !obsolete.getBoolean();
+            practitionerBuilder.setActive(isActive, obsolete);
+        } else {
+
+            practitionerBuilder.setActive(true, obsolete);
+        }
     }
 
     private static String getNationalIdTypeIdentifierSystem (String nationalIdType) {

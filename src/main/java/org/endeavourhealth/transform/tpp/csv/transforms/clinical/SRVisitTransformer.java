@@ -74,7 +74,9 @@ public class SRVisitTransformer {
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
 
         CsvCell visitDate = parser.getDateBooked();
-        appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
+        if (!visitDate.isEmpty()) {
+            appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
+        }
 
         CsvCell visitStaffAssigned = parser.getIDProfileAssigned();
         if (!visitStaffAssigned.isEmpty()) {

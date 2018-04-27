@@ -53,13 +53,14 @@ public class SROrganisationBranchTransformer {
         CsvCell obsoleteCell  = parser.getBranchObsolete();
         CsvCell deleted = parser.getRemovedData();
 
-        if (obsoleteCell.getBoolean() || deleted.getBoolean() ) {
+        if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
+                (!deleted.isEmpty() && deleted.getBoolean())) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
 
         CsvCell nameCell = parser.getBranchName();
-        if (!nameCell.getString().isEmpty()) {
+        if (!nameCell.isEmpty()) {
             locationBuilder.setName(nameCell.getString());
         }
 
@@ -121,8 +122,7 @@ public class SROrganisationBranchTransformer {
         if (!fullPostCodeCell.isEmpty()) {
             addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
         }
-    fhirResourceFiler.saveAdminResource(parser.getCurrentState(),locationBuilder);
 
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),locationBuilder);
     }
-
 }

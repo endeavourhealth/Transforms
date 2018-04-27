@@ -79,7 +79,9 @@ public class SRProblemTransformer {
         // the linked SRCode entry - cache the reference
         CsvCell linkedObsCodeId = parser.getIDCode();
         CsvCell readV3Code = parser.getCTV3Code();
-        csvHelper.cacheProblemObservationGuid(patientId, linkedObsCodeId, readV3Code.getString());
+        if (!linkedObsCodeId.isEmpty() && ! readV3Code.isEmpty()) {
+            csvHelper.cacheProblemObservationGuid(patientId, linkedObsCodeId, readV3Code.getString());
+        }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {

@@ -64,7 +64,7 @@ public class SROrganisationTransformer {
 
         CsvCell obsoleteCell  = parser.getMadeObsolete();
 
-        if (obsoleteCell.getBoolean() ) {
+        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -151,8 +151,10 @@ public class SROrganisationTransformer {
         OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
 
         CsvCell obsoleteCell  = parser.getMadeObsolete();
+        CsvCell deleted = parser.getRemovedData();
 
-        if (obsoleteCell.getBoolean() ) {
+        if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
+                (!deleted.isEmpty() && deleted.getIntAsBoolean())) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -227,8 +229,8 @@ public class SROrganisationTransformer {
 
         CsvCell ccgCell = parser.getIDCcg();
         //set the trust as a parent organisation for the organisation
-        Reference ccgReference = csvHelper.createOrganisationReference(trustCell);
-        organizationBuilder.setParentOrganisation(ccgReference, trustCell);
+        Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
+        organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
 
     }
 
