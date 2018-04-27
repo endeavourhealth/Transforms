@@ -5,6 +5,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -35,7 +36,9 @@ public class BasisTransformer {
     private static PreparedStatement resourceIdInsertStatement;
     private static PreparedStatement mappingSelectStatement;
     private static PreparedStatement getAllCodeSystemsSelectStatement;
-    private static PreparedStatement getCodeSystemsSelectStatement;
+    //private static PreparedStatement getCodeSystemsSelectStatement;
+    private static Hl7ResourceIdDalI hl7ResourceIdDal = DalProvider.factoryHL7ResourceDal();
+    private static boolean useHL7ResourceIdDal = true;
     private static HashMap<Integer, String> codeSystemCache = new HashMap<Integer, String>();
     private static int lastLookupCodeSystemId = 0;
     private static String lastLookupCodeSystemIdentifier = "";
@@ -44,8 +47,7 @@ public class BasisTransformer {
     /*
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
      */
-    public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws SQLException, ClassNotFoundException, IOException {
-
+    public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws Exception {
         //Try to find the resourceId in the cache first
         String resourceIdLookup = scope + "|" + resourceType + "|" + uniqueId;
         ResourceId resourceId  = BartsCsvHelper.getResourceIdFromCache (resourceIdLookup);
@@ -53,51 +55,60 @@ public class BasisTransformer {
             return resourceId;
         }
 
-        //otherwise, hit the DB
-        if (hl7receiverConnection == null) {
-            prepareJDBCConnection();
+        if (useHL7ResourceIdDal) {
+            resourceId = hl7ResourceIdDal.getResourceId(scope, resourceType, uniqueId);
+        } else {
+            //otherwise, hit the DB
+            if (hl7receiverConnection == null) {
+                prepareJDBCConnection();
+            }
+
+            resourceIdSelectStatement.setString(1, scope);
+            resourceIdSelectStatement.setString(2, resourceType);
+            resourceIdSelectStatement.setString(3, uniqueId);
+
+            ResultSet rs = resourceIdSelectStatement.executeQuery();
+            if (rs.next()) {
+                resourceId = new ResourceId();
+                resourceId.setScopeId(scope);
+                resourceId.setResourceType(resourceType);
+                resourceId.setResourceId((UUID) rs.getObject(1));
+                resourceId.setUniqueId(uniqueId);
+
+                // Add to the cache
+                BartsCsvHelper.addResourceIdToCache(resourceId);
+            }
+            rs.close();
         }
 
-        resourceIdSelectStatement.setString(1, scope);
-        resourceIdSelectStatement.setString(2, resourceType);
-        resourceIdSelectStatement.setString(3, uniqueId);
-
-        ResultSet rs = resourceIdSelectStatement.executeQuery();
-        if (rs.next()) {
-            resourceId = new ResourceId();
-            resourceId.setScopeId(scope);
-            resourceId.setResourceType(resourceType);
-            resourceId.setResourceId((UUID) rs.getObject(1));
-            resourceId.setUniqueId(uniqueId);
-
-            // Add to the cache
-            BartsCsvHelper.addResourceIdToCache(resourceId);
-        }
-        rs.close();
 
         return resourceId;
     }
 
 
-    public static void saveResourceId(ResourceId resourceId) throws SQLException, ClassNotFoundException, IOException {
-        if (hl7receiverConnection == null) {
-            prepareJDBCConnection();
-        }
-
-        resourceIdInsertStatement.setString(1, resourceId.getScopeId());
-        resourceIdInsertStatement.setString(2, resourceId.getResourceType());
-        resourceIdInsertStatement.setString(3, resourceId.getUniqueId());
-        resourceIdInsertStatement.setObject(4, resourceId.getResourceId());
-
-        if (resourceIdInsertStatement.executeUpdate() != 1) {
-            throw new SQLException("Could not create ResourceId:"
-                    + resourceId.getScopeId()
-                    + ":" + resourceId.getResourceType() + ":"
-                    + resourceId.getUniqueId()
-                    + ":" + resourceId.getResourceId().toString());
+    public static void saveResourceId(ResourceId resourceId) throws Exception {
+        if (useHL7ResourceIdDal) {
+            hl7ResourceIdDal.saveResourceId(resourceId);
         } else {
-            // Add to the cache
-            BartsCsvHelper.addResourceIdToCache(resourceId);
+            if (hl7receiverConnection == null) {
+                prepareJDBCConnection();
+            }
+
+            resourceIdInsertStatement.setString(1, resourceId.getScopeId());
+            resourceIdInsertStatement.setString(2, resourceId.getResourceType());
+            resourceIdInsertStatement.setString(3, resourceId.getUniqueId());
+            resourceIdInsertStatement.setObject(4, resourceId.getResourceId());
+
+            if (resourceIdInsertStatement.executeUpdate() != 1) {
+                throw new SQLException("Could not create ResourceId:"
+                        + resourceId.getScopeId()
+                        + ":" + resourceId.getResourceType() + ":"
+                        + resourceId.getUniqueId()
+                        + ":" + resourceId.getResourceId().toString());
+            } else {
+                // Add to the cache
+                BartsCsvHelper.addResourceIdToCache(resourceId);
+            }
         }
     }
 
@@ -204,7 +215,7 @@ public class BasisTransformer {
         resourceIdInsertStatement = hl7receiverConnection.prepareStatement("insert into mapping.resource_uuid (scope_id, resource_type, unique_identifier, resource_uuid) values (?, ?, ?, ?)");
         mappingSelectStatement = hl7receiverConnection.prepareStatement("SELECT target_code, source_term, target_term FROM mapping.code a INNER JOIN  mapping.code_context d on a.source_code_context_id = d.code_context_id where scope_id=? and d.code_context_name=? and source_code=? and source_code_system_id=? and target_code_system_id=? and is_mapped=true");
         getAllCodeSystemsSelectStatement = hl7receiverConnection.prepareStatement("SELECT code_system_id, code_system_identifier from mapping.code_system order by code_system_id asc");
-        getCodeSystemsSelectStatement = hl7receiverConnection.prepareStatement("SELECT code_system_identifier from mapping.code_system where code_system_id=?");
+        //getCodeSystemsSelectStatement = hl7receiverConnection.prepareStatement("SELECT code_system_identifier from mapping.code_system where code_system_id=?");
     }
 
     /*
