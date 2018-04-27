@@ -64,7 +64,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private Map<String, ReferenceList> encounterAppointmentOrVisitMap = new HashMap<>();
 
-    private Map<String, Map.Entry<Date, String>> medicalRecordStatusMap = new HashMap<>();
+    private Map<String, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new HashMap<>();
 
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
@@ -243,31 +243,31 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
     }
 
-    public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, String medicalRecordStatus) {
+    public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, CsvCell medicalRecordStatusCell) {
 
         // Create the unique Id
         String uniquePatientId = createUniqueId(patientGuid, null);
 
         // Check if we already have a status for this patient
-        Map.Entry<Date, String> statusForPatient = medicalRecordStatusMap.get(patientGuid);
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientGuid);
 
         if (statusForPatient != null) {
             Date existingDate = statusForPatient.getKey();
             // Check if the new status has a data after the existing status
             if (newStatusDate.after(existingDate)) {
                 // Overwrite the existing status the the new status
-                medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatus));
+                medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
             }
         } else {
-            medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatus));
+            medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
         }
     }
 
-    public String getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
+    public CsvCell getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
         // Create the unique Id
         String uniquePatientId = createUniqueId(patientGuid, null);
         // Find and remove the status entry
-        Map.Entry<Date, String> statusForPatient = medicalRecordStatusMap.remove(patientGuid);
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid);
         // return the status
         return statusForPatient.getValue();
     }

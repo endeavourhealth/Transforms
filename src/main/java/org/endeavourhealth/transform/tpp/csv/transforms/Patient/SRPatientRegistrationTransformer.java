@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -96,10 +97,10 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
         }
 
-        String medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
-        if (medicalRecordStatus != null) {
-            //TODO - need to carry through the audit of where this status came from, in whatever file it was originally read
-            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, null);
+        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
+        if (!medicalRecordStatusCell.isEmpty()) {
+            String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
+            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
     }
 
@@ -119,7 +120,22 @@ public class SRPatientRegistrationTransformer {
         } else {
             return RegistrationType.OTHER;
         }
+    }
 
-
+    public static String convertMedicalRecordStatus(Integer medicalRecordStatus) throws Exception {
+        switch (medicalRecordStatus) {
+            case 0:
+                return "No medical records";
+            case 1:
+                return "Medical records are on the way";
+            case 2:
+                return "Medical records here";
+            case 3:
+                return "Medical records sent";
+            case 4:
+                return "Medical records need to be sent";
+            default:
+                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
+        }
     }
 }

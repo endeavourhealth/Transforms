@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
+import static org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientRegistrationTransformer.convertMedicalRecordStatus;
+
 public class SRPatientRelationshipTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRelationshipTransformer.class);
@@ -170,10 +172,10 @@ public class SRPatientRelationshipTransformer {
         if (!regEndDateCell.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
         }
-        String medicalRecordStatus = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
-        if (medicalRecordStatus != null) {
-            //TODO - need to carry through the audit of where this status came from, in whatever file it was originally read
-            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, null);
+        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
+        if (!medicalRecordStatusCell.isEmpty()) {
+            String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
+            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
 
     }

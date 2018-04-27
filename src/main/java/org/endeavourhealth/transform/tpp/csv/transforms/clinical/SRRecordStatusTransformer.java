@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -48,7 +47,7 @@ public class SRRecordStatusTransformer {
         }
 
         CsvCell dateEvent = parser.getDateEvent();
-        CsvCell medicalRecordStatus = parser.getMedicalRecordStatus();
+        CsvCell medicalRecordStatusCell = parser.getMedicalRecordStatus();
         CsvCell patientId = parser.getIDPatient();
         if (patientId.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
@@ -56,26 +55,8 @@ public class SRRecordStatusTransformer {
             return;
         }
 
-        if (!medicalRecordStatus.isEmpty() && !dateEvent.isEmpty()) {
-            //TODO - medicalRecordStatus CsvCell needs to be cached here too, so that it can be passed into the EpisodeOfCareBuilder when the cached value is used
-            csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDate(), convertMedicalRecordStatus(medicalRecordStatus.getInt()));
-        }
-    }
-
-    private static String convertMedicalRecordStatus(Integer medicalRecordStatus) throws Exception {
-        switch (medicalRecordStatus) {
-            case 0:
-                return "No medical records";
-            case 1:
-                return "Medical records are on the way";
-            case 2:
-                return "Medical records here";
-            case 3:
-                return "Medical records sent";
-            case 4:
-                return "Medical records need to be sent";
-            default:
-                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
+        if (!medicalRecordStatusCell.isEmpty() && !dateEvent.isEmpty()) {
+            csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDate(), medicalRecordStatusCell);
         }
     }
 }
