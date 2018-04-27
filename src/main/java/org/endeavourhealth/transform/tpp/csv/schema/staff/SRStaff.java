@@ -21,25 +21,44 @@ public class SRStaff extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDStaff",
-                "IDStaffProfile",
-                "StaffName",
-                "StaffRole",
-                "StaffUserName",
-                "DateProfileCreated",
-                "DateEmploymentStart",
-                "DateEmploymentEnd",
-                "NationalIdType",
-                "IDNational",
-                "PPAID",
-                "GPLocalCode",
-                "IDOrganisation"
-
-
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDStaff",
+                    "IDStaffProfile",
+                    "StaffName",
+                    "StaffRole",
+                    "StaffUserName",
+                    "DateProfileCreated",
+                    "DateEmploymentStart",
+                    "DateEmploymentEnd",
+                    "NationalIdType",
+                    "IDNational",
+                    "PPAID",
+                    "GPLocalCode",
+                    "IDOrganisation"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDStaff",
+                    "IDStaffProfile",
+                    "StaffName",
+                    "StaffRole",
+                    "StaffUserName",
+                    "DateProfileCreated",
+                    "DateEmploymentStart",
+                    "DateEmploymentEnd",
+                    "NationalIdType",
+                    "IDNational",
+                    "PPAID",
+                    "GPLocalCode",
+                    "IDOrganisation",
+                    "RemovedData"
+            };
+        }
     }
+
 
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
