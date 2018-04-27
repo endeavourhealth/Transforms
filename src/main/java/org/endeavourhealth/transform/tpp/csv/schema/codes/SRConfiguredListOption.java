@@ -22,6 +22,7 @@ public class SRConfiguredListOption extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - update transform to check for null cells when using fields not in the older version
+        //TODO - make sure we're not using the MHLDDSCode column which has been removed from newer versions
         if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
@@ -38,14 +39,12 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "ConfiguredList",
                     "ConfiguredListOption",
                     "CDSCode",
-                    "MHLDDSCode",
                     "CAMHSCode",
                     "MHSDSCode",
                     "RemovedData"
             };
         }
     }
-
 
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
