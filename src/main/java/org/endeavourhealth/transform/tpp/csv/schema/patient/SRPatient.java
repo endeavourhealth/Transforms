@@ -22,8 +22,7 @@ public class SRPatient extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - update transform to check for null cells when using fields not in the older version
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -65,6 +64,7 @@ public class SRPatient extends AbstractCsvParser {
             };
         }
     }
+
 
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
