@@ -592,7 +592,11 @@ public class BasisTransformer {
     public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice, CodeableConcept ethnicGroup) throws Exception {
         if (uniqueId == null) {
             // Default format is for Barts
-            uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+            if (scope.compareToIgnoreCase("H") == 0) {
+                uniqueId = "PatIdTypeCode=CNN-PatIdValue=" + mrn;
+            } else {
+                uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+            }
         }
         ResourceId patientResourceId = getResourceId(scope, "Patient", uniqueId);
         if (patientResourceId == null) {
@@ -682,7 +686,12 @@ public class BasisTransformer {
     }
 
     public static ResourceId getPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
-        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        String uniqueId = null;
+        if (scope.compareToIgnoreCase("H") == 0) {
+            uniqueId = "PatIdTypeCode=CNN-PatIdValue=" + mrn;
+        } else {
+            uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        }
         return getResourceId(scope, "Patient", uniqueId);
     }
 
@@ -846,7 +855,12 @@ public class BasisTransformer {
     }*/
 
     public static ResourceId createPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
-        String uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        String uniqueId = null;
+        if (scope.compareToIgnoreCase("H") == 0) {
+            uniqueId = "PatIdTypeCode=CNN-PatIdValue=" + mrn;
+        } else {
+            uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
+        }
         ResourceId patientResourceId = new ResourceId();
         patientResourceId.setScopeId(scope);
         patientResourceId.setResourceType("Patient");
