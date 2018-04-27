@@ -10,4 +10,5 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     long getSourceFileRecordIdForCurrentRow();
     DateFormat getDateFormat();
     DateFormat getTimeFormat();
+    DateFormat getDateTimeFormat();
 }

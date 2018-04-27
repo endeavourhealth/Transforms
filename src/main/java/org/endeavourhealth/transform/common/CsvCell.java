@@ -121,7 +121,7 @@ public class CsvCell {
         }
 
         try {
-            DateFormat dateTimeFormat = new SimpleDateFormat(parentParser.getDateFormat().toString() + " " + parentParser.getTimeFormat().toString());
+            DateFormat dateTimeFormat = parentParser.getDateTimeFormat();
             return dateTimeFormat.parse(value);
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date time format [" + value + "]", pe);

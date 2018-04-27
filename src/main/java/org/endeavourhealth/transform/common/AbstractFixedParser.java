@@ -96,6 +96,10 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return timeFormat;
     }
 
+    @Override
+    public DateFormat getDateTimeFormat() {
+        return dateTimeFormat;
+    }
 
     private void open(String action) throws Exception {
 

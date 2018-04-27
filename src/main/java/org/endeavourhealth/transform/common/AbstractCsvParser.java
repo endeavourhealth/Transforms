@@ -34,6 +34,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private final CSVFormat csvFormat;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
+    private final DateFormat dateTimeFormat;
     private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
 
     private CSVParser csvReader = null;
@@ -59,8 +60,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.csvFormat = csvFormat;
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
-        LOG.info("dateFormat:" + this.dateFormat.toString());
-        LOG.info("timeFormat:" + this.timeFormat.toString());
+        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
         //create (or find if re-processing) an audit entry for this file
         ensureFileAudited();
     }
@@ -88,6 +88,11 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     @Override
     public DateFormat getTimeFormat() {
         return timeFormat;
+    }
+
+    @Override
+    public DateFormat getDateTimeFormat() {
+        return dateTimeFormat;
     }
 
     public String getVersion() {
