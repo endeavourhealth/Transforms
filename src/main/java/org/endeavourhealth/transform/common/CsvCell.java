@@ -8,6 +8,7 @@ import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -108,6 +109,22 @@ public class CsvCell {
             return timeFormat.parse(value);
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid time format [" + value + "]", pe);
+        }
+    }
+    public Date getDateTime() throws TransformException {
+        if (Strings.isNullOrEmpty(value)) {
+            return null;
+        }
+
+        if (parentParser == null) {
+            throw new IllegalArgumentException("Can't get getDateTime on CsvCell that didn't come from a ParserI");
+        }
+
+        try {
+            DateFormat dateTimeFormat = new SimpleDateFormat(parentParser.getDateFormat().toString() + " " + parentParser.getTimeFormat().toString());
+            return dateTimeFormat.parse(value);
+        } catch (ParseException pe) {
+            throw new FileFormatException("", "Invalid date time format [" + value + "]", pe);
         }
     }
     public boolean getBoolean() {

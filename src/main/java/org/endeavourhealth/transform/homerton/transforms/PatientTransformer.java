@@ -110,12 +110,12 @@ public class PatientTransformer extends HomertonBasisTransformer {
         // Date of birth
         CsvCell dobCell = parser.getDOB();
         if (!dobCell.isEmpty()) {
-            patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
+            patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
         }
 
         CsvCell dodCell = parser.getDOD();
         if (!dodCell.isEmpty()) {
-            patientBuilder.setDateOfDeath(dodCell.getDate(), dobCell);
+            patientBuilder.setDateOfDeath(dodCell.getDateTime(), dobCell);
         }
 
         // GP

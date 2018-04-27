@@ -32,7 +32,7 @@ public abstract class HomertonCsvToFhirTransformer {
     public static final String VERSION_1_0 = "1.0"; //initial version
     //public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
     public static final String DATE_FORMAT = "dd/MM/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
+    public static final String TIME_FORMAT = "hh:mm:ss.SSSSSSS";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
     public static final String PRIMARY_ORG_ODS_CODE = "RQX";
     public static final String HOMERTON_RESOURCE_ID_SCOPE = "H";
