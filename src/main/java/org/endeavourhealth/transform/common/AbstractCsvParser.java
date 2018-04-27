@@ -59,7 +59,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.csvFormat = csvFormat;
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
-
+        LOG.info("dateFormat:" + this.dateFormat.toString());
+        LOG.info("timeFormat:" + this.timeFormat.toString());
         //create (or find if re-processing) an audit entry for this file
         ensureFileAudited();
     }
