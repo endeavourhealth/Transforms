@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -9,6 +10,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.endeavourhealth.transform.homerton.schema.PatientTable;
 import org.hl7.fhir.instance.model.*;
@@ -120,15 +122,23 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         // GP
         CsvCell gpCell = parser.getGPID();
-        if (!gpCell.isEmpty()) {
-            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, gpCell.getString());
+        if (!gpCell.isEmpty() && gpCell.getString().length() > 0) {
+            ResourceId resourceId = getGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
+            if (resourceId == null) {
+                resourceId = createGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
+            }
+            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString());
             patientBuilder.addCareProvider(practitionerReference, gpCell);
         }
 
         // GP Practice
         CsvCell practiceCell = parser.getPracticeID();
-        if (!practiceCell.isEmpty()) {
-            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, practiceCell.getString());
+        if (!practiceCell.isEmpty() && practiceCell.getString().length() > 0) {
+            ResourceId resourceId = getGlobalOrgResourceId(practiceCell.getString());
+            if (resourceId == null) {
+                resourceId = createGlobalOrgResourceId(practiceCell.getString());
+            }
+            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, resourceId.getResourceId().toString());
             patientBuilder.addCareProvider(organisationReference, practiceCell);
         }
 
