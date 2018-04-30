@@ -69,11 +69,9 @@ public class SRPatientAddressHistoryTransformer {
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell dateToCell = parser.getDateTo();
-        //TODO may need to revisit when we see the codes. Not sure of codes are in CTV3 or elsewhere. Try to map
-        // via lookup else set based on whether address has an end date
-        CsvCell addressTypeCell = parser.getAddressType();
+         CsvCell addressTypeCell = parser.getAddressType();
 
-        Address.AddressUse addressUse = null;
+        Address.AddressUse addressUse;
 
 
         if (!addressTypeCell.isEmpty()) {

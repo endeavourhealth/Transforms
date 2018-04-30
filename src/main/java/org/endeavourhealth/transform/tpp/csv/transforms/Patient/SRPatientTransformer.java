@@ -7,12 +7,15 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
+import org.hl7.fhir.instance.model.CodeableConcept;
+import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.Enumerations;
 import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
@@ -69,7 +72,6 @@ public class SRPatientTransformer {
             } else {
             TransformWarnings.log(LOG, parser, "No NHS number found record id: {}, file: {}", parser.getRowIdentifier().getString(), parser.getFilePath());
         }
-        //TODO I think for TTP if the NHS number is missing we should treat it more severely?
 
         //Construct the name from individual fields
         CsvCell firstNameCell = parser.getFirstName();
@@ -111,8 +113,15 @@ public class SRPatientTransformer {
             }
         }
 
-        //TODO add email address if needed.
 
+        CsvCell emailCell = parser.getEmailAddress();
+
+        if (!emailCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setValue(emailCell.getString(), emailCell);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL,emailCell);
+
+        }
         CsvCell spineMatched = parser.getSpineMatched();
         if (!spineMatched.isEmpty()) {
             NhsNumberVerificationStatus numberVerificationStatus;
@@ -129,21 +138,16 @@ public class SRPatientTransformer {
         }
 
         // Speaks English
-//        CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
-//        if (!speaksEnglishCell.isEmpty()) {
-//
-//            SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(speaksEnglishCell.getString());
-//            if (snomedCode != null) {
-//                CodeableConcept codeableConcept
-//                        = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT,
-//                        snomedCode.getTerm(),
-//                        snomedCode.getConceptCode());
-//                //TODO figure out how to map english proficiency to FHIR preferred language
-//                //
-//                //patientBuilder.setTODO
-//                //referralRequestBuilder.setReason(codeableConcept, referralPrimaryDiagnosisCode);
-//            }
-//        }
+        // In TPP we just have a "speaks english" column with these values so do what we can
+        //        "54771","Unknown"
+        //        "54770","Yes"
+        //        "54772","No"
+
+        CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
+        if (!speaksEnglishCell.isEmpty() && speaksEnglishCell.getString().equals("54770")) {
+            CodeableConcept englishSpoken = patientBuilder.createNewCodeableConcept(PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
+            englishSpoken.setText("en");
+        }
     }
 
 }
