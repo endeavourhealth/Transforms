@@ -22,7 +22,6 @@ public class SRPatientRegistration extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        //TODO - update transform to check for null cells when using fields not in the older version
         if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
@@ -104,7 +103,6 @@ public class SRPatientRegistration extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Patient Registration Entry file ";
