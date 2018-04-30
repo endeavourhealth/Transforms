@@ -220,9 +220,14 @@ public class JournalTransformer {
         }
 
         CsvCell quantity = parser.getValue1();
+        if (!quantity.isEmpty()) {
+            medicationStatementBuilder.setQuantityValue(quantity.getDouble(), quantity);
+        }
+
         CsvCell quantityUnit = parser.getDrugPrep();
-        medicationStatementBuilder.setQuantityValue(quantity.getDouble(), quantity);
-        medicationStatementBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+        if (!quantityUnit.isEmpty()) {
+            medicationStatementBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+        }
 
         CsvCell dose = parser.getAssociatedText();
         if (!dose.isEmpty()) {
@@ -307,9 +312,14 @@ public class JournalTransformer {
         }
 
         CsvCell quantity = parser.getValue1();
+        if (!quantity.isEmpty()) {
+            medicationOrderBuilder.setQuantityValue(quantity.getDouble(), quantity);
+        }
+
         CsvCell quantityUnit = parser.getDrugPrep();
-        medicationOrderBuilder.setQuantityValue(quantity.getDouble(), quantity);
-        medicationOrderBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+        if (!quantityUnit.isEmpty()) {
+            medicationOrderBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+        }
 
         CsvCell dose = parser.getAssociatedText();
         medicationOrderBuilder.setDose(dose.getString(), dose);
@@ -667,9 +677,14 @@ public class JournalTransformer {
         }
         else {
             //get the numeric values and units
-            value1 = parser.getValue1().getDouble();
+            if (!parser.getValue1().isEmpty()) {
+                value1 = parser.getValue1().getDouble();
+            }
             units1 = parser.getValue1NumericUnit().getString();
-            value2 = parser.getValue2().getDouble();
+
+            if (!parser.getValue2().isEmpty()) {
+                value2 = parser.getValue2().getDouble();
+            }
             units2 = parser.getValue2NumericUnit().getString();
         }
 
@@ -698,8 +713,11 @@ public class JournalTransformer {
             //otherwise, add in the 1st value if it exists
             if (value1 != null) {
                 observationBuilder.setValueNumber(value1, parser.getValue1());
+            } else if (!value1AsText.isEmpty()){
+                observationBuilder.setValueString(value1AsText.getString(), parser.getValue1());
             }
-            if (units1 != null) {
+
+            if (!Strings.isNullOrEmpty(units1)) {
                 observationBuilder.setValueNumberUnits(units1, parser.getValue1NumericUnit());
             }
 
