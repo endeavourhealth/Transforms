@@ -76,7 +76,7 @@ public class PatientTransformer {
         if (!patientID.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
             identifierBuilder.setValue(patientID.getString(), patientID);
         }
 
@@ -84,7 +84,7 @@ public class PatientTransformer {
         if (!patientNumber.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
             identifierBuilder.setValue(patientNumber.getString(), patientNumber);
         }
 
