@@ -19,6 +19,7 @@ public class PatientBuilder extends ResourceBuilderBase
 
     public static final String TAG_CODEABLE_CONCEPT_LANGUAGE = "Language";
     public static final String TAG_CODEABLE_CONCEPT_RELIGION = "Religion";
+    public static final String TAG_CODEABLE_CONCEPT_INTERPRETER_REQUIRED = "Interpreter required";
 
     private Patient patient = null;
 
@@ -318,6 +319,10 @@ public class PatientBuilder extends ResourceBuilderBase
 
         } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+            int index = this.patient.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+        } else if (tag.equals(TAG_CODEABLE_CONCEPT_INTERPRETER_REQUIRED)) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED);
             int index = this.patient.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 

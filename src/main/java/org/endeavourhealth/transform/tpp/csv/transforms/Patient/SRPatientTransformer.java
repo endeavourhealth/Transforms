@@ -1,23 +1,18 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
 
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
-import org.hl7.fhir.instance.model.CodeableConcept;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Enumerations;
-import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +21,8 @@ import java.util.Map;
 public class SRPatientTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientTransformer.class);
+
+
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -140,13 +137,29 @@ public class SRPatientTransformer {
         // Speaks English
         // In TPP we just have a "speaks english" column with these values so do what we can
         //        "54771","Unknown"
-        //        "54770","Yes"
-        //        "54772","No"
+        //        "54770","Yes" - set language as English
+        //        "54772","No"  - set interpreter required to true
 
         CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
-        if (!speaksEnglishCell.isEmpty() && speaksEnglishCell.getString().equals("54770")) {
+        if (!speaksEnglishCell.isEmpty()) {
             CodeableConcept englishSpoken = patientBuilder.createNewCodeableConcept(PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
-            englishSpoken.setText("en");
+
+                switch (speaksEnglishCell.getString().toLowerCase()) {
+                    case "54770" :
+                        englishSpoken.setText("yes");
+                        break;
+                    case "54772" :
+                        englishSpoken.setText("no");
+                        break;
+                    case "54771":
+                        englishSpoken.setText("unknown");
+                        break;
+                    default:
+                        englishSpoken.setText("");
+                        TransformWarnings.log(LOG, parser, "Unrecognized EnglishSpoken value {} for Id: {} in file {}",
+                                speaksEnglishCell.getString(),parser.getRowIdentifier().getString(), parser.getFilePath());
+            }
+
         }
     }
 
