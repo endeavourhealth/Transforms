@@ -29,8 +29,8 @@ public class CodeTransformer {
     public static final String MEANING_TXT = "MeanTxt";
     private final static String DECIMAL_POINT = ".";
 
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+    //private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    //private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
                                  List<ParserI> parsers,
@@ -69,15 +69,7 @@ public class CodeTransformer {
         //CsvCell codeSetDescTxt = parser.getCodeSetDescTxt();
         //CsvCell aliasNhsCdAlias = parser.getAliasNhsCdAlias();
 
-        //we need to handle multiple formats, so attempt to apply both formats here
-        // Just to keep the log tidier from exceptions - if the date string has a period it's likely the bulk format
-        Date formattedDate = null;
-        if (!date.isEmpty()) {
-          formattedDate = formDate(date.getString());
-        }
-
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-
         auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), CODE_VALUE);
         auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), CODE_SET_NBR);
         auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
@@ -86,7 +78,7 @@ public class CodeTransformer {
 
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),
-                                    formattedDate,
+                                    date.getDate(),
                                     active,
                                     "",
                                     codeDispTxt.getString(),
@@ -102,23 +94,5 @@ public class CodeTransformer {
             repository.save(mapping, fhirResourceFiler.getServiceId());
 
 
-    }
-    private static Date formDate(String dateString) throws Exception{
-        // try to avoid expected ParseExceptions by guessing the correct dateFormat
-        Date formattedDate = null;
-        if (dateString.contains(DECIMAL_POINT)) {
-            try {
-                formattedDate = formatBulk.parse(dateString);
-            } catch (ParseException ex) {
-                formattedDate = formatDaily.parse(dateString);
-            }
-        } else {
-            try {
-                formattedDate = formatDaily.parse(dateString);
-            } catch (ParseException ex) {
-                formattedDate = formatBulk.parse(dateString);
-            }
-        }
-        return formattedDate;
     }
  }

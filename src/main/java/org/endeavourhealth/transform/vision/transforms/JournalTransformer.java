@@ -597,9 +597,6 @@ public class JournalTransformer {
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewProblemChildren(observationID, patientID);
         containedListBuilder.addReferences(newLinkedResources);
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
-        conditionBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
-
         CsvCell enteredByID = parser.getClinicianUserID();
         if (!enteredByID.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
