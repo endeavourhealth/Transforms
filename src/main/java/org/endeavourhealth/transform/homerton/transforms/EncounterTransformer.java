@@ -296,8 +296,8 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            LOG.debug("Save episodeOfCare:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
+            LOG.debug("Save encounter:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         }
     }
 
