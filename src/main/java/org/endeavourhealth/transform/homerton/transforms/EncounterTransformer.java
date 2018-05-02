@@ -55,7 +55,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((Encounter) parser);
+                    String valStr = validateEntry((EncounterTable) parser);
                     if (valStr == null) {
                         createEncounter((EncounterTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
                     } else {
@@ -71,7 +71,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
     /*
      *
      */
-    public static String validateEntry(Encounter parser) {
+    public static String validateEntry(EncounterTable parser) {
         return null;
     }
 
@@ -122,7 +122,8 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         // Retrieve or create EpisodeOfCare
         // TODO
-        //episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
+
+        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
         LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
         if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
             LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
@@ -132,7 +133,8 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
 
-            encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
+            // TODO
+            //encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
         } else {
 
             // Has patient reference changed?
