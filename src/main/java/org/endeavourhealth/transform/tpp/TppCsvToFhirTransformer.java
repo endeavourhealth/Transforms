@@ -36,9 +36,10 @@ import java.util.*;
 public abstract class TppCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvToFhirTransformer.class);
 
-    //public static final String DATE_FORMAT = "dd MMM yyyy";
-    public static final String DATE_FORMAT = "mm/dd/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss a";
+    public static final String DATE_FORMAT = "dd MMM yyyy";
+    public static final String TIME_FORMAT = "hh:mm:ss";
+    /*public static final String DATE_FORMAT = "mm/dd/yyyy";
+    public static final String TIME_FORMAT = "hh:mm:ss a";*/
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
 
     public static final String VERSION_TEST_PACK = "TestPack"; //file format we got from the demo environment mid-2017
