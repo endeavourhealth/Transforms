@@ -88,14 +88,12 @@ public class SRAppointmentTransformer {
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder
                 = SlotResourceCache.getSlotBuilder(appointmentId, csvHelper, fhirResourceFiler);
-        if (!patientId.isEmpty()) {
-            Reference patientReference = csvHelper.createPatientReference(patientId);
-            appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
-        } else {
-            return; // We can't file it without a patient id as FhirResourceFiler needs the patient id
-        }
+
+
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
@@ -104,6 +102,7 @@ public class SRAppointmentTransformer {
 
         //because we're only storing slots with patients, all slots are "busy"
         slotBuilder.setFreeBusyType(org.hl7.fhir.instance.model.Slot.SlotStatus.BUSY);
+
 
         //cell is both date and time, so create datetime from both
         CsvCell startDate = parser.getDateStart();
