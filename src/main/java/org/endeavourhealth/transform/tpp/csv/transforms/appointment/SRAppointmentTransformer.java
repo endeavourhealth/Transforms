@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import jdk.internal.joptsimple.internal.Strings;
+import  com.google.common.base.Strings;;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
