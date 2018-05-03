@@ -15,12 +15,14 @@ public class SRStaffMemberProfileRoleTransformer {
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRStaffMemberProfileRole.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRStaffMemberProfileRole) parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRStaffMemberProfileRole) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

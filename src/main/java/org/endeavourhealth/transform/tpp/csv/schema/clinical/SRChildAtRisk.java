@@ -51,8 +51,7 @@ public class SRChildAtRisk extends AbstractCsvParser {
     public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
-    //TODO fix the string below to make it meaningful
-    @Override
+   @Override
     protected String getFileTypeDescription() {return "TPP Child At Risk Entry file ";}
 
     @Override

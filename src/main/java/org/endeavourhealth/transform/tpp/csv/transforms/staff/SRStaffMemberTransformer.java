@@ -22,12 +22,15 @@ public class SRStaffMemberTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRStaffMember.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((SRStaffMember)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((SRStaffMember) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
