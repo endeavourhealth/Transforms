@@ -20,12 +20,16 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
 public class SRAppointmentTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
+
+    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -176,5 +180,8 @@ public class SRAppointmentTransformer {
         } else {
             return Appointment.AppointmentStatus.NULL;
         }
+    }
+    public DateFormat getDateFormat() {
+        return DATE_FORMAT;
     }
 }
