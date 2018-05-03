@@ -29,7 +29,7 @@ public class SRAppointmentTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
 
-    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
+    public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -113,10 +113,9 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell endDate = parser.getDateEnd();
-        CsvCell endTime = parser.getDateEnd();
         Date endDateTime = null;
         if (!endDate.isEmpty()) {
-            endDateTime = CsvCell.getDateTimeFromTwoCells(endDate, endTime);
+            endDateTime = DATETIME_FORMAT.parse(endDate.getString());
             slotBuilder.setEndDateTime(endDateTime, endDate);
             appointmentBuilder.setEndDateTime(endDateTime, endDate);
         }
@@ -181,13 +180,6 @@ public class SRAppointmentTransformer {
             return Appointment.AppointmentStatus.NULL;
         }
     }
-    public DateFormat getDateFormat() {
-        return DATE_FORMAT;
-    }
-    public DateFormat getTimeFormat() {
-        return DATE_FORMAT;
-    }
-    public DateFormat getDateTimeFormat() {
-        return DATE_FORMAT;
-    }
+
+
 }
