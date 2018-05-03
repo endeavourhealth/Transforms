@@ -92,6 +92,8 @@ public class SRAppointmentTransformer {
         if (!patientId.isEmpty()) {
             Reference patientReference = csvHelper.createPatientReference(patientId);
             appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
+        } else {
+            return; // We can't file it without a patient id as FhirResourceFiler needs the patient id
         }
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
