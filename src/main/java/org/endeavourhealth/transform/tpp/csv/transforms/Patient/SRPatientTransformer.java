@@ -152,7 +152,8 @@ public class SRPatientTransformer {
                         englishSpoken.setText("no");
                         break;
                     case "54771":
-                        englishSpoken.setText("unknown");
+                        // removed below as unknown is TPP default but still a valid value
+                        // englishSpoken.setText("unknown");
                         break;
                     default:
                         englishSpoken.setText("");
