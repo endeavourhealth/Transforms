@@ -19,12 +19,14 @@ public class SRAppointmentFlagsTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRAppointmentFlags.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRAppointmentFlags)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRAppointmentFlags) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

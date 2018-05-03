@@ -33,12 +33,14 @@ public class SRImmunisationTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRImmunisation.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRImmunisation)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRImmunisation) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

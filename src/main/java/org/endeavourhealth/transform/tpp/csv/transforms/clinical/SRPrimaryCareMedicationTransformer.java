@@ -30,12 +30,14 @@ public class SRPrimaryCareMedicationTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRPrimaryCareMedication.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRPrimaryCareMedication)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRPrimaryCareMedication) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

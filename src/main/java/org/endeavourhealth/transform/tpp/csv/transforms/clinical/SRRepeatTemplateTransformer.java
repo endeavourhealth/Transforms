@@ -29,12 +29,14 @@ public class SRRepeatTemplateTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRRepeatTemplate.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRRepeatTemplate)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRRepeatTemplate) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

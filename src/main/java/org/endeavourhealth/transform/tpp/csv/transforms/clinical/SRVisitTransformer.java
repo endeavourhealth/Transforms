@@ -26,12 +26,14 @@ public class SRVisitTransformer {
                                  TppCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRVisit.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRVisit)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRVisit) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
