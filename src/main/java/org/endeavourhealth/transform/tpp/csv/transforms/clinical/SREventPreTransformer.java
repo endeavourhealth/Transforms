@@ -34,12 +34,14 @@ public class SREventPreTransformer {
         //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(SREvent.class);
-            while (parser.nextRecord()) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                try {
-                    transform((SREvent)parser, fhirResourceFiler, csvHelper, threadPool);
-                } catch (Exception ex) {
-                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                    try {
+                        transform((SREvent) parser, fhirResourceFiler, csvHelper, threadPool);
+                    } catch (Exception ex) {
+                        throw new TransformException(parser.getCurrentState().toString(), ex);
+                    }
                 }
             }
 

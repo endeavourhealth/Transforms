@@ -26,12 +26,14 @@ public class SRImmunisationContentTransformer {
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRImmunisationContent.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRImmunisationContent) parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRImmunisationContent) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
