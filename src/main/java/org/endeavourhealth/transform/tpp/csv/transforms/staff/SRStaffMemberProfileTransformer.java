@@ -51,18 +51,20 @@ public class SRStaffMemberProfileTransformer {
 
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
-        CsvCell orgID = parser.getIDOrganisation();
-        Reference organisationReference = csvHelper.createOrganisationReference(orgID);
-        roleBuilder.setRoleManagingOrganisation(organisationReference, orgID);
+        CsvCell orgId = parser.getIDOrganisation();
+        if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
+            Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+            roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
+        }
 
         CsvCell roleStart = parser.getDateEmploymentStart();
         if (!roleStart.isEmpty()) {
-            roleBuilder.setRoleStartDate(roleStart.getDate(), roleStart);
+            roleBuilder.setRoleStartDate(roleStart.getDateTime(), roleStart);
         }
 
         CsvCell roleEnd = parser.getDateEmploymentEnd();
         if (!roleEnd.isEmpty()) {
-            roleBuilder.setRoleEndDate(roleEnd.getDate(), roleEnd);
+            roleBuilder.setRoleEndDate(roleEnd.getDateTime(), roleEnd);
         }
 
         CsvCell roleName = parser.getStaffRole();
