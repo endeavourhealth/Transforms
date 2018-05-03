@@ -5,6 +5,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
@@ -15,26 +16,39 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
 
 public class DiagnosisTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
     public static void transform(String version,
-                                 DiagnosisTable parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
-        while (parser.nextRecord()) {
-            try {
-                createDiagnosis(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((DiagnosisTable) parser);
+                    if (valStr == null) {
+                        createDiagnosis((DiagnosisTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
+                    } else {
+                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
+    }
 
+    /*
+     *
+     */
+    public static String validateEntry(DiagnosisTable parser) {
+        return null;
     }
 
     /*
@@ -85,7 +99,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         //createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers, cvs);
 
         // save resource
-        LOG.debug("Save EncounterTable (PatId=" + patientUuid + ")(PersonId:" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+        LOG.debug("Save Diagnosis (PatId=" + patientUuid + ")(PersonId:" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
 
     }

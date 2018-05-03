@@ -5,8 +5,11 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
+import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
 import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -15,29 +18,39 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class ProcedureTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     public static void transform(String version,
-                                 ProcedureTable parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
-        while (parser.nextRecord()) {
-            try {
-                createProcedure(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((ProcedureTable) parser);
+                    if (valStr == null) {
+                        createProcedure((ProcedureTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
+                    } else {
+                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
+    }
 
+    /*
+     *
+     */
+    public static String validateEntry(ProcedureTable parser) {
+        return null;
     }
 
     public static void createProcedure(ProcedureTable parser,

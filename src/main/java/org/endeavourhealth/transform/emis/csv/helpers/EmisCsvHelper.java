@@ -281,52 +281,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-
-    /*public Reference createPatientReference(String patientGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
-    }
-    public Reference createAppointmentReference(String appointmentGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(appointmentGuid)) {
-            throw new IllegalArgumentException("Missing appointmentGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Appointment, createUniqueId(patientGuid, appointmentGuid));
-    }
-    public Reference createEncounterReference(String encounterGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(encounterGuid)) {
-            throw new IllegalArgumentException("Missing encounterGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
-    }
-    public Reference createObservationReference(String observationGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(observationGuid)) {
-            throw new IllegalArgumentException("Missing observationGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Observation, createUniqueId(patientGuid, observationGuid));
-    }
-    public Reference createMedicationStatementReference(String medicationStatementGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(medicationStatementGuid)) {
-            throw new IllegalArgumentException("Missing medicationStatementGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
-    }
-    public Reference createProblemReference(String problemGuid, String patientGuid) throws Exception {
-        if (Strings.isNullOrEmpty(problemGuid)) {
-            throw new IllegalArgumentException("Missing problemGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
-    }
-    public Type createConditionReference(String problemGuid, String patientGuid) {
-        if (Strings.isNullOrEmpty(problemGuid)) {
-            throw new IllegalArgumentException("Missing problemGuid");
-        }
-        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
-    }
-    public Reference createEpisodeReference(String patientGuid) {
-        //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
-        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid);
-    }*/
-
-
     public void cacheReferral(CsvCell observationGuid, CsvCell patientGuid, ReferralRequestBuilder referralRequestBuilder) {
         referralMap.put(createUniqueId(patientGuid, observationGuid), referralRequestBuilder);
     }

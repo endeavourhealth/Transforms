@@ -5,37 +5,50 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.ProblemTable;
+import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class ProblemTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
 
     public static void transform(String version,
-                                 ProblemTable parser,
+                                 List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonCsvHelper csvHelper,
                                  String primaryOrgOdsCode) throws Exception {
 
-        // Skip header line
-        parser.nextRecord();
-
-        while (parser.nextRecord()) {
-            try {
-                createCondition(parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    String valStr = validateEntry((ProblemTable) parser);
+                    if (valStr == null) {
+                        createCondition((ProblemTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
+                    } else {
+                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
 
+    /*
+     *
+     */
+    public static String validateEntry(ProblemTable parser) {
+        return null;
+    }
 
     public static void createCondition(ProblemTable parser,
                                        FhirResourceFiler fhirResourceFiler,
