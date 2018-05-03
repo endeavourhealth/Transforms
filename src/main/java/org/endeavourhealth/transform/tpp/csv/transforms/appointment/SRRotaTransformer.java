@@ -61,15 +61,18 @@ public class SRRotaTransformer {
         //not strictly necessary, since we're creating a NEW schedule resource (even if it's a delta), but good practice
         scheduleBuilder.clearActors();
 
-        CsvCell sessionActorStaffProfileId = parser.getIDProfileCreatedBy();
+        CsvCell sessionActorStaffProfileId = parser.getIDProfileOwner();
         if (!sessionActorStaffProfileId.isEmpty()) {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     sessionActorStaffProfileId.getString());
-            Reference practitionerReference
-                    = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-            scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
+            if (!staffMemberId.isEmpty()) {
+                Reference practitionerReference
+                        = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+                scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
+            }
         }
+
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);
     }
