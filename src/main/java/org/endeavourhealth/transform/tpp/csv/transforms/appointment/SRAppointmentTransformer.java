@@ -92,6 +92,8 @@ public class SRAppointmentTransformer {
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder
                 = SlotResourceCache.getSlotBuilder(appointmentId, csvHelper, fhirResourceFiler);
+        Reference slotRef = csvHelper.createSlotReference(appointmentId);
+        appointmentBuilder.addSlot(slotRef,appointmentId);
 
 
         CsvCell rotaId = parser.getIDRota();
