@@ -143,10 +143,9 @@ public class SRAppointmentTransformer {
 
 
         CsvCell patientSeenDate = parser.getDatePatientSeen();
-        CsvCell patientSeenTime = parser.getDatePatientSeen();
         if (!patientSeenDate.isEmpty()) {
 
-            Date seenDateTime = CsvCell.getDateTimeFromTwoCells(patientSeenDate, patientSeenTime);
+            Date seenDateTime = DATETIME_FORMAT.parse(patientSeenDate.getString());
             appointmentBuilder.setSentInDateTime(seenDateTime, patientSeenDate);
         }
 
