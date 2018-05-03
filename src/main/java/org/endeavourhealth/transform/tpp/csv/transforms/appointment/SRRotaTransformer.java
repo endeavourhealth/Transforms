@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -66,13 +67,12 @@ public class SRRotaTransformer {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     sessionActorStaffProfileId.getString());
-            if (!staffMemberId.isEmpty()) {
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference practitionerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
                 scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
             }
         }
-
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);
     }
