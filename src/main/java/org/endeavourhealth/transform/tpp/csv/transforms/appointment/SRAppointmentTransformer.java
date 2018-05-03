@@ -75,13 +75,14 @@ public class SRAppointmentTransformer {
                         ResourceType.Slot,
                         fhirResourceFiler);
 
-//                if (appointment != null && slot != null) {
-//                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-//                    SlotBuilder slotBuilder = new SlotBuilder(slot);
-//                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
-//                    return;
-//                }
+                if (appointment != null && slot != null) {
+                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+                    SlotBuilder slotBuilder = new SlotBuilder(slot);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+                    return;
+                }
             }
+            return;
         }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
