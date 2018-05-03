@@ -292,15 +292,13 @@ public class PatientBuilder extends ResourceBuilderBase
     public CodeableConcept createNewCodeableConcept(String tag) {
         if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
             Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(true);
-            if (communicationComponent.hasLanguage()) {
-                throw new IllegalArgumentException("Trying to add code to Patient Communication that already has one");
-            }
-            communicationComponent.setLanguage(new CodeableConcept());
+                        communicationComponent.setLanguage(new CodeableConcept());
             return communicationComponent.getLanguage();
 
         } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             if (extension.hasValue()) {
+                ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
                 throw new IllegalArgumentException("Trying to add religion code to Patient when it already has one");
             }
             CodeableConcept ret = new CodeableConcept();
