@@ -117,8 +117,9 @@ public class PractitionerBuilder extends ResourceBuilderBase
 
     @Override
     public HumanName addName() {
+        // remove existing name
         if (this.practitioner.hasName()) {
-            throw new IllegalArgumentException("Trying to set name on practitioner that already has one");
+            this.practitioner.setName(null);
         }
         HumanName name = new HumanName();
         this.practitioner.setName(name);
