@@ -299,8 +299,7 @@ public class PatientBuilder extends ResourceBuilderBase
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             if (extension.hasValue()) {
                 ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
-                throw new IllegalArgumentException("Trying to add religion code to Patient when it already has one");
-            }
+                }
             CodeableConcept ret = new CodeableConcept();
             extension.setValue(ret);
             return ret;
