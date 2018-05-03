@@ -184,4 +184,10 @@ public class SRAppointmentTransformer {
     public DateFormat getDateFormat() {
         return DATE_FORMAT;
     }
+    public DateFormat getTimeFormat() {
+        return DATE_FORMAT;
+    }
+    public DateFormat getDateTimeFormat() {
+        return DATE_FORMAT;
+    }
 }
