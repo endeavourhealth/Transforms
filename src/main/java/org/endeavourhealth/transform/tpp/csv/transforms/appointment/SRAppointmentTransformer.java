@@ -107,7 +107,7 @@ public class SRAppointmentTransformer {
         CsvCell startTime = parser.getDateStart();
         Date startDateTime = null;
         if (!startDate.isEmpty()) {
-            startDateTime = CsvCell.getDateTimeFromTwoCells(startDate, startTime);
+            startDateTime = DATETIME_FORMAT.parse(startTime.getString());
             slotBuilder.setStartDateTime(startDateTime, startDate);
             appointmentBuilder.setStartDateTime(startDateTime, startDate);
         }
