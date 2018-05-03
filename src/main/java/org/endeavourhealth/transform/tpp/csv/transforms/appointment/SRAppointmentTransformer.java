@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import jdk.internal.joptsimple.internal.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
@@ -84,10 +85,10 @@ public class SRAppointmentTransformer {
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
         SlotBuilder slotBuilder
                 = SlotResourceCache.getSlotBuilder(appointmentId, csvHelper, fhirResourceFiler);
-
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
-
+        if (!patientId.isEmpty()) {
+            Reference patientReference = csvHelper.createPatientReference(patientId);
+            appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
+        }
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
@@ -130,10 +131,13 @@ public class SRAppointmentTransformer {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     appointmentStaffProfileId.getString());
-            Reference practitionerReference
-                    = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-            appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference practitionerReference
+                        = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+                appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
+            }
         }
+
 
         CsvCell patientSeenDate = parser.getDatePatientSeen();
         CsvCell patientSeenTime = parser.getDatePatientSeen();
