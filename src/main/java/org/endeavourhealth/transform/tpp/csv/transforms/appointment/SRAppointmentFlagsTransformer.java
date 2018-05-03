@@ -40,15 +40,16 @@ public class SRAppointmentFlagsTransformer {
         if (!appointmentId.isEmpty()) {
             AppointmentBuilder appointmentBuilder
                     = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
+            if (!appointmentBuilder.getResource().isEmpty()) {
+                //flags could range from Interpreter Required to Transport Booked so add the detail to the appointment comments
+                CsvCell appointmentFlag = parser.getFlag();
+                if (!appointmentFlag.isEmpty() && appointmentFlag.getLong() > 0) {
 
-            //flags could range from Interpretor Required to Transport Booked so add the detail to the appointment comments
-            CsvCell appointmentFlag = parser.getFlag();
-            if (!appointmentFlag.isEmpty() && appointmentFlag.getLong() > 0) {
-
-                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentFlag.getLong());
-                String flagMapping = tppMappingRef.getMappedTerm();
-                if (!Strings.isNullOrEmpty(flagMapping)) {
-                    appointmentBuilder.setComments(flagMapping);
+                    TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentFlag.getLong());
+                    String flagMapping = tppMappingRef.getMappedTerm();
+                    if (!Strings.isNullOrEmpty(flagMapping)) {
+                        appointmentBuilder.setComments(flagMapping);
+                    }
                 }
             }
         }
