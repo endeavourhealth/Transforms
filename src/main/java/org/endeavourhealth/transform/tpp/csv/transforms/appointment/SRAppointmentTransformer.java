@@ -75,12 +75,12 @@ public class SRAppointmentTransformer {
                         ResourceType.Slot,
                         fhirResourceFiler);
 
-                if (appointment != null && slot != null) {
-                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-                    SlotBuilder slotBuilder = new SlotBuilder(slot);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
-                    return;
-                }
+//                if (appointment != null && slot != null) {
+//                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+//                    SlotBuilder slotBuilder = new SlotBuilder(slot);
+//                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+//                    return;
+//                }
             }
         }
 
