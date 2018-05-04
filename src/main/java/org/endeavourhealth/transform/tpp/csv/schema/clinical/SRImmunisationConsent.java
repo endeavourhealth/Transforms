@@ -21,26 +21,48 @@ public class SRImmunisationConsent extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "ConsentedToVacc",
-                "RefusalOrConsentCurrent",
-                "DateEnded",
-                "VaccName",
-                "VaccContent",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "ConsentedToVacc",
+                    "RefusalOrConsentCurrent",
+                    "DateEnded",
+                    "VaccName",
+                    "VaccContent",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "ConsentedToVacc",
+                    "RefusalOrConsentCurrent",
+                    "DateEnded",
+                    "VaccName",
+                    "VaccContent",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}

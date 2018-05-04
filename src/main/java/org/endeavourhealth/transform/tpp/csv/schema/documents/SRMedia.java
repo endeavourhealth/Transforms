@@ -21,34 +21,64 @@ public class SRMedia extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DocumentUID",
-                "IDPatient",
-                "IDEvent",
-                "DateEvent",
-                "IDDoneBy",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "IDOrganisationDoneAt",
-                "FileName",
-                "FileSize",
-                "SenderTitle",
-                "SenderFirstName",
-                "SenderSurname",
-                "SenderOrganisation",
-                "RecipientTitle",
-                "RecipientFirstName",
-                "RecipientSurname",
-                "RecipientOrganisation",
-                "EmailAddress",
-                "Direction",
-                "CommunicationType",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DocumentUID",
+                    "IDPatient",
+                    "IDEvent",
+                    "DateEvent",
+                    "IDDoneBy",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "IDOrganisationDoneAt",
+                    "FileName",
+                    "FileSize",
+                    "SenderTitle",
+                    "SenderFirstName",
+                    "SenderSurname",
+                    "SenderOrganisation",
+                    "RecipientTitle",
+                    "RecipientFirstName",
+                    "RecipientSurname",
+                    "RecipientOrganisation",
+                    "EmailAddress",
+                    "Direction",
+                    "CommunicationType",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DocumentUID",
+                    "IDPatient",
+                    "IDEvent",
+                    "DateEvent",
+                    "IDDoneBy",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "IDOrganisationDoneAt",
+                    "FileName",
+                    "FileSize",
+                    "SenderTitle",
+                    "SenderFirstName",
+                    "SenderSurname",
+                    "SenderOrganisation",
+                    "RecipientTitle",
+                    "RecipientFirstName",
+                    "RecipientSurname",
+                    "RecipientOrganisation",
+                    "EmailAddress",
+                    "Direction",
+                    "CommunicationType",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        }
     }
 
 

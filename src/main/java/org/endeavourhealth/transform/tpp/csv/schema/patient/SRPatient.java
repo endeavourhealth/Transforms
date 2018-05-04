@@ -40,6 +40,26 @@ public class SRPatient extends AbstractCsvParser {
                     "TestPatient",
                     "SSRef"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Title",
+                    "FirstName",
+                    "MiddleNames",
+                    "Surname",
+                    "PreviousSurname",
+                    "NHSNumber",
+                    "DateBirth",
+                    "DateDeath",
+                    "BirthPlace",
+                    "Gender",
+                    "SpeaksEnglish",
+                    "EmailAddress",
+                    "TestPatient",
+                    "SSRef",
+                    "SpineMatched"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",
