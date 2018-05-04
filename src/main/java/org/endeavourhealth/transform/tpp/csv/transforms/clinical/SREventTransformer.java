@@ -154,7 +154,7 @@ public class SREventTransformer {
 
         //apply any linked appointments / visits
         ReferenceList appLinkedResources = csvHelper.getAndRemoveEncounterAppointmentOrVisitMap(encounterBuilder.getResourceId());
-        if (appLinkedResources.size()>0) {
+        if (appLinkedResources != null) {
             encounterBuilder.setAppointment(appLinkedResources.getReference(0));
         }
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
