@@ -86,6 +86,10 @@ public class ProcedureTable extends AbstractCsvParser {
         return super.getCell("PROCEDURE_ID");
     }
 
+    public CsvCell getEncounterId() {
+        return super.getCell("ENCNTR_ID");
+    }
+
     @Override
     protected String getFileTypeDescription() {
         return "Homerton procedure file";
