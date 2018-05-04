@@ -12,7 +12,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
-import org.endeavourhealth.transform.tpp.cache.SlotResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
@@ -98,8 +97,9 @@ public class SRAppointmentTransformer {
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
 
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
-        SlotBuilder slotBuilder
-                = SlotResourceCache.getSlotBuilder(appointmentId, csvHelper, fhirResourceFiler);
+        SlotBuilder slotBuilder = new SlotBuilder();
+        slotBuilder.setId(appointmentId.getString(), appointmentId);
+
         Reference slotRef = csvHelper.createSlotReference(appointmentId);
         appointmentBuilder.addSlot(slotRef,appointmentId);
 
@@ -138,9 +138,6 @@ public class SRAppointmentTransformer {
             appointmentBuilder.setMinutesDuration(durationMins);
         }
 
-        Reference slotReference = csvHelper.createSlotReference(appointmentId);
-        appointmentBuilder.addSlot(slotReference, appointmentId);
-
         CsvCell appointmentStaffProfileId = parser.getIDProfileClinician();
         if (!appointmentStaffProfileId.isEmpty()) {
 
@@ -152,7 +149,6 @@ public class SRAppointmentTransformer {
                 appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
             }
         }
-
 
         CsvCell patientSeenDate = parser.getDatePatientSeen();
         if (!patientSeenDate.isEmpty()) {
@@ -169,6 +165,8 @@ public class SRAppointmentTransformer {
             Appointment.AppointmentStatus status = convertAppointmentStatus (statusTerm);
             appointmentBuilder.setStatus(status, appointmentStatus);
         }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
     }
 
     private static Appointment.AppointmentStatus convertAppointmentStatus(String status) {

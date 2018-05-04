@@ -49,4 +49,8 @@ public class AppointmentResourceCache {
         //clear down as everything has been saved
         appointmentBuildersById.clear();
     }
+
+    public static void clearAppointmentResourceCache() throws Exception {
+        appointmentBuildersById.clear();
+    }
 }

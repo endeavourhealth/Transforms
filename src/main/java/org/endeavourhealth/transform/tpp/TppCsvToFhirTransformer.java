@@ -311,10 +311,9 @@ public abstract class TppCsvToFhirTransformer {
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         LOG.trace("Starting appointment transforms");
-        SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SlotResourceCache.fileSlotResources(fhirResourceFiler);
-        AppointmentResourceCache.fileAppointmentResources(fhirResourceFiler);
+        SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        AppointmentResourceCache.clearAppointmentResourceCache();
 
         LOG.trace("Starting clinical transforms");
         SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
