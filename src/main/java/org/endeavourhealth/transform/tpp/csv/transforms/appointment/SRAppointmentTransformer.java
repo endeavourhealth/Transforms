@@ -87,7 +87,7 @@ public class SRAppointmentTransformer {
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
         Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (patientReference == null) {
+        if (patientReference.isEmpty()) {
             TransformWarnings.log(LOG, parser, "Patient reference not found for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
