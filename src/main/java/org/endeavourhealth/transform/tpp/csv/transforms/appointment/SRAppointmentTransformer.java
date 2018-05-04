@@ -85,10 +85,18 @@ public class SRAppointmentTransformer {
             return;
         }
 
+        // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (patientReference == null) {
+            TransformWarnings.log(LOG, parser, "Patient reference not found for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
+
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
-        Reference patientReference = csvHelper.createPatientReference(patientId);
+
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder
                 = SlotResourceCache.getSlotBuilder(appointmentId, csvHelper, fhirResourceFiler);
