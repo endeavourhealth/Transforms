@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import jdk.internal.joptsimple.internal.Strings;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;

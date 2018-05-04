@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import jdk.internal.joptsimple.internal.Strings;
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
