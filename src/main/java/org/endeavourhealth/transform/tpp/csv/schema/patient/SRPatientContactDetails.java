@@ -54,8 +54,7 @@ public class SRPatientContactDetails extends AbstractCsvParser {
                     "ContactNumber",
                     "IDEvent",
                     "IDPatient",
-                    "IDOrganisation",
-                    "RemovedData"
+                    "IDOrganisation"
             };
         }
     }
