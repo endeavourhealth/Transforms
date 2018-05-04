@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
+import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
 import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
 import org.hl7.fhir.instance.model.*;
@@ -60,19 +61,24 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         CodeableConcept cc = null;
         Date d = null;
 
+        CsvCell procedureIdCell = parser.getProcedureId();
+        CsvCell encounterIdCell = parser.getEncounterId();
+
         // Organisation - Since EpisodeOfCare record is not established no need for Organization either
         // PatientTable
         //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
         // EpisodeOfCare - ProcedureTable record cannot be linked to an EpisodeOfCare
-        // EncounterTable
-        //ResourceId encounterResourceId = getEncounterResourceId( parser.getEncounterId().toString());
-        /*
-        if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
 
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, EncounterTable.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null, EncounterTable.EncounterClass.INPATIENT);
+        // EncounterTable
+        ResourceId encounterResourceId = getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.toString());
+        if (encounterResourceId == null) {
+            TransformWarnings.log(LOG, parser, "Skipping Procedure {} because Encounter not found {} could be found in file {}", procedureIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
+            return;
         }
-        */
+
+        Encounter encounter = (Encounter)csvHelper.retrieveResource(ResourceType.Encounter, encounterResourceId.getResourceId());
+
+        Reference patientReference = encounter.getPatient();
 
         // this DiagnosisTable resource id
         //ResourceId procedureResourceId = getProcedureResourceId(parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
@@ -85,13 +91,10 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
         //createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, ProcedureTable.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
 
-        CsvCell procedureIdCell = parser.getProcedureId();
         procedureBuilder.setId(procedureIdCell.getString(), procedureIdCell);
 
         // set patient reference
-        //CsvCell cnnCell = parser..getCNN();
-        //Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, cnnCell.getString());
-        //procedureBuilder.setPatient(patientReference, cnnCell);
+        procedureBuilder.setPatient(patientReference, encounterIdCell);
 
         // save resource
         if (LOG.isTraceEnabled()) {
