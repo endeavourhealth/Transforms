@@ -73,6 +73,7 @@ public class SRImmunisationTransformer {
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
                     return;
                 }
+                return;
             }
         }
 

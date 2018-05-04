@@ -431,6 +431,7 @@ public class SRCodeTransformer {
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
                     return;
                 }
+                return;
             }
         }
 
