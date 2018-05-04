@@ -21,27 +21,50 @@ public class SRDrugSensitivity extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "DateStarted",
-                "DateEnded",
-                "FormulationSpecific",
-                "IDDrugCode",
-                "IDMultiLexAction",
-                "IDReferralIn",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "DateStarted",
+                  "DateEnded",
+                  "FormulationSpecific",
+                  "IDDrugCode",
+                  "IDMultiLexAction",
+                  "IDReferralIn",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "DateStarted",
+                  "DateEnded",
+                  "FormulationSpecific",
+                  "IDDrugCode",
+                  "IDMultiLexAction",
+                  "IDReferralIn",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}

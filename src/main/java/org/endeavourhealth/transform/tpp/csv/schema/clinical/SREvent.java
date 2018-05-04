@@ -161,8 +161,7 @@ public class SREvent extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    //TODO fix the string below to make it meaningful
-    @Override
+   @Override
     protected String getFileTypeDescription() {
         return "TPP Event Entry file ";
     }
