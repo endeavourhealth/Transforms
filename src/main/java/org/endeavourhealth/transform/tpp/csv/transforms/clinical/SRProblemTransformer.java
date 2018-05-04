@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
@@ -67,8 +68,9 @@ public class SRProblemTransformer {
                 if (condition != null) {
                     ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -90,8 +92,10 @@ public class SRProblemTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            conditionBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                conditionBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell clinicianDoneBy = parser.getIDDoneBy();

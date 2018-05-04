@@ -444,8 +444,10 @@ public class SRCodeTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            observationBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                observationBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell observationDoneBy = parser.getIDDoneBy();

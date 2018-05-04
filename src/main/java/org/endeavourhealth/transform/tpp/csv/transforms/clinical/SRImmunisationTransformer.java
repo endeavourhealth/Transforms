@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
@@ -71,7 +72,6 @@ public class SRImmunisationTransformer {
                     ImmunizationBuilder immunizationBuilder
                             = new ImmunizationBuilder(immunization);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
-                    return;
                 }
                 return;
             }
@@ -104,8 +104,10 @@ public class SRImmunisationTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            immunizationBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                immunizationBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell encounterDoneBy = parser.getIDDoneBy();

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import jdk.internal.joptsimple.internal.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -64,8 +65,9 @@ public class SRVisitTransformer {
                 if (encounter != null) {
                     EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -85,8 +87,10 @@ public class SRVisitTransformer {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     visitStaffAssigned.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, visitStaffAssigned);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, visitStaffAssigned);
+            }
         }
 
         CsvCell visitStatus = parser.getCurrentStatus();

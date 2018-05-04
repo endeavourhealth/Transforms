@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
@@ -75,8 +76,9 @@ public class SRRepeatTemplateTransformer {
                     MedicationStatementBuilder medicationStatementBuilder
                             = new MedicationStatementBuilder(medicationStatement);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -104,8 +106,10 @@ public class SRRepeatTemplateTransformer {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     recordedById.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            medicationStatementBuilder.setRecordedBy(staffReference, recordedById);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                medicationStatementBuilder.setRecordedBy(staffReference, recordedById);
+            }
         }
 
         CsvCell doneByClinicianId = parser.getIDDoneBy();

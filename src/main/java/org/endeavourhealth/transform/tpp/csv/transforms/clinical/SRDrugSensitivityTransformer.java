@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import jdk.internal.joptsimple.internal.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
@@ -70,8 +71,9 @@ public class SRDrugSensitivityTransformer {
                     AllergyIntoleranceBuilder allergyIntoleranceBuilder
                             = new AllergyIntoleranceBuilder(allergyIntolerance);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -85,8 +87,10 @@ public class SRDrugSensitivityTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell procedureDoneBy = parser.getIDDoneBy();

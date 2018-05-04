@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -67,8 +68,9 @@ public class SRRecallTransformer {
                     ProcedureRequestBuilder procedureRequestBuilder
                             = new ProcedureRequestBuilder(procedureRequest);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureRequestBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -93,9 +95,10 @@ public class SRRecallTransformer {
         if (!recordedBy.isEmpty()) {
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     recordedBy.getString());
-
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            procedureRequestBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                procedureRequestBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell clinicianDoneBy = parser.getIDDoneBy();

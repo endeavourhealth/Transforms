@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import jdk.internal.joptsimple.internal.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -63,8 +64,9 @@ public class SRChildAtRiskTransformer {
                     FlagBuilder flagBuilder
                             = new FlagBuilder(flag);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), flagBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -89,8 +91,10 @@ public class SRChildAtRiskTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            flagBuilder.setAuthor(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                flagBuilder.setAuthor(staffReference, recordedBy);
+            }
         }
 
         CsvCell onPlan = parser.getChildProtectionPlan();
