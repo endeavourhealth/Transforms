@@ -99,8 +99,9 @@ public class SRPrimaryCareMedicationTransformer {
                     MedicationStatementBuilder medicationStatementBuilder
                             = new MedicationStatementBuilder(medicationStatement);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
