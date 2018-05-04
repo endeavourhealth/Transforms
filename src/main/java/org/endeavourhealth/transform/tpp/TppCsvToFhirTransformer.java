@@ -28,6 +28,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTrans
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -166,11 +167,32 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRAddressBookEntry");
 
             //TODO - confirm that these files ARE OK to be ignored
+
+            set.add("SRActivityEvent");
+            set.add("SRAppointmentRoom");
+            set.add("SRCarePlanDetail");
+            set.add("SRCarePlanItem");
+            set.add("SRCarePlanReview");
+            set.add("SRCarePlanSkillset");
+            set.add("SRCaseload");
+            set.add("SRCtv3ToVersion2");
             set.add("SRGPPracticeHistory");
+            set.add("SRLetter");
             set.add("SRMappingGroup");
+            set.add("SROnlineServices");
+            set.add("SROnlineUsers");
+            set.add("SRPatientGroups");
             set.add("SRPatientInformation");
             set.add("SRQuestionnaire");
-
+            set.add("SRReferralContactEvent");
+            set.add("SRReferralIn");
+            set.add("SRReferralInStatusDetails");
+            set.add("SRRotaSlot");
+            set.add("SRSmsConsent");
+            set.add("SRSpecialNotes");
+            set.add("SRStaff");
+            set.add("SRSystmOnline");
+            set.add("SRTemplate");
 
             cachedFileNamesToIgnore = set;
         }
