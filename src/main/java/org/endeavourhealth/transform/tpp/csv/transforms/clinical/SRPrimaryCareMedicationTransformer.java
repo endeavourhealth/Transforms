@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import jdk.internal.joptsimple.internal.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
@@ -215,8 +216,9 @@ public class SRPrimaryCareMedicationTransformer {
                     MedicationOrderBuilder medicationOrderBuilder
                             = new MedicationOrderBuilder(medicationOrder);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
-                    return;
                 }
+                return;
+
             }
         }
 
@@ -259,8 +261,10 @@ public class SRPrimaryCareMedicationTransformer {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     recordedById.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            medicationOrderBuilder.setRecordedBy(staffReference, recordedById);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                medicationOrderBuilder.setRecordedBy(staffReference, recordedById);
+            }
         }
 
         CsvCell effectiveDate = parser.getDateEvent();

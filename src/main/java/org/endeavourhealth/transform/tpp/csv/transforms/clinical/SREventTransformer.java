@@ -68,8 +68,8 @@ public class SREventTransformer {
                 if (encounter != null) {
                     EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-                    return;
                 }
+                return;
             }
         }
 
@@ -112,8 +112,10 @@ public class SREventTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
+            }
         }
 
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);

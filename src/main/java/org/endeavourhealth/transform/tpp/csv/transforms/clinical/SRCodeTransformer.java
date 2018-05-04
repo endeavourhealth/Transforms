@@ -429,7 +429,6 @@ public class SRCodeTransformer {
                 if (observation != null) {
                     ObservationBuilder observationBuilder = new ObservationBuilder(observation);
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
-                    return;
                 }
                 return;
             }
