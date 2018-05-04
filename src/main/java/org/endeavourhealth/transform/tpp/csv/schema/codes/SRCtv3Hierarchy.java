@@ -28,7 +28,7 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
                     "IDOrganisationVisibleTo",
                     "Ctv3CodeParent",
                     "Ctv3CodeChild",
-                    "ChildLevel",
+                    "ChildLevel"
             };
         } else {
             return new String[]{
