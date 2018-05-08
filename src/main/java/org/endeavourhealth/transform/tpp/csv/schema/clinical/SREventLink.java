@@ -21,7 +21,8 @@ public class SREventLink extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+               || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
           return new String[]{
                   "RowIdentifier",
                   "IDOrganisationVisibleTo",
@@ -39,6 +40,24 @@ public class SREventLink extends AbstractCsvParser {
                   "IDVisit",
                   "IDOrganisationRegisteredAt",
                   "RemovedData"
+          };
+       } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDReferralIn",
+                  "IDOrganisation",
+                  "IDAppointment",
+                  "IDVisit",
+                  "IDOrganisationRegisteredAt"
           };
        } else {
           return new String[]{

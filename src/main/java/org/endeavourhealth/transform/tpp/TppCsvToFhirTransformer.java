@@ -46,6 +46,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_TEST_PACK = "TestPack"; //file format we got from the demo environment mid-2017
     public static final String VERSION_87 = "87"; //file format first received from the pilot practice
     public static final String VERSION_88 = "88";
+    public static final String VERSION_89 = "89"; //Basically 88 plus RemovedData as needed
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
@@ -88,6 +89,7 @@ public abstract class TppCsvToFhirTransformer {
     public static String determineVersion(String[] files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(VERSION_89);
         possibleVersions.add(VERSION_88);
         possibleVersions.add(VERSION_87);
         possibleVersions.add(VERSION_TEST_PACK);

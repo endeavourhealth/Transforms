@@ -21,7 +21,8 @@ public class SROrganisationBranch extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -37,7 +38,8 @@ public class SROrganisationBranch extends AbstractCsvParser {
                     "BranchObsolete",
                     "IDOrganisation"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87))  {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_89))  {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

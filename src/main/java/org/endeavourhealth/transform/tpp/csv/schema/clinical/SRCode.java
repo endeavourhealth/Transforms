@@ -23,7 +23,8 @@ public class SRCode extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - use IsNumeric column to know when a record is numeric or not
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -47,7 +48,8 @@ public class SRCode extends AbstractCsvParser {
                     "IDVisit",
                     "IDOrganisation"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

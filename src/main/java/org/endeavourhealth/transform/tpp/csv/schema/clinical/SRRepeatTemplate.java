@@ -23,7 +23,8 @@ public class SRRepeatTemplate extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-               || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+               || version.equals(TppCsvToFhirTransformer.VERSION_87)
+               || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
           return new String[]{
                   "RowIdentifier",
                   "IDOrganisationVisibleTo",
@@ -51,6 +52,34 @@ public class SRRepeatTemplate extends AbstractCsvParser {
                   "IDOrganisation",
                   "IDOrganisationRegisteredAt",
                   "RemovedData"
+          };
+       } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDMultiLexProduct",
+                  "IDMultiLexPack",
+                  "IDMultiLexDMD",
+                  "NameOfMedication",
+                  "DateMedicationTemplateStart",
+                  "DateMedicationTemplateEnd",
+                  "DateMedicationTemplateReview",
+                  "MedicationDosage",
+                  "MedicationQuantity",
+                  "MaxIssues",
+                  "CourseLengthPerIssue",
+                  "DrugStatus",
+                  "IDReferralIn",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
           };
        } else {
           return new String[]{

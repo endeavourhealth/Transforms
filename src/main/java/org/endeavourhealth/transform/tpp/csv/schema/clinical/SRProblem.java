@@ -21,27 +21,48 @@ public class SRProblem extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "CTV3Code",
-                "DateEnd",
-                "Severity",
-                "IDCode",
-                "IDEvent",
-                "IDPatient",
-                "IDReferralIn",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+               || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+           return new String[]{
+                   "RowIdentifier",
+                   "IDOrganisationVisibleTo",
+                   "DateEventRecorded",
+                   "DateEvent",
+                   "IDProfileEnteredBy",
+                   "IDDoneBy",
+                   "TextualEventDoneBy",
+                   "IDOrganisationDoneAt",
+                   "CTV3Code",
+                   "DateEnd",
+                   "Severity",
+                   "IDCode",
+                   "IDEvent",
+                   "IDPatient",
+                   "IDReferralIn",
+                   "IDOrganisation",
+                   "IDOrganisationRegisteredAt",
+                   "RemovedData"
+           };
+       } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+           return new String[]{
+                   "RowIdentifier",
+                   "IDOrganisationVisibleTo",
+                   "DateEventRecorded",
+                   "DateEvent",
+                   "IDProfileEnteredBy",
+                   "IDDoneBy",
+                   "TextualEventDoneBy",
+                   "IDOrganisationDoneAt",
+                   "CTV3Code",
+                   "DateEnd",
+                   "Severity",
+                   "IDCode",
+                   "IDEvent",
+                   "IDPatient",
+                   "IDReferralIn",
+                   "IDOrganisation",
+                   "IDOrganisationRegisteredAt"
+           };
     } else {
           return new String[]{
                   "RowIdentifier",

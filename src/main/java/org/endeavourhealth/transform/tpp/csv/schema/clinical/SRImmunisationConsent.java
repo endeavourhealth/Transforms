@@ -21,7 +21,8 @@ public class SRImmunisationConsent extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -41,6 +42,26 @@ public class SRImmunisationConsent extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "ConsentedToVacc",
+                    "RefusalOrConsentCurrent",
+                    "DateEnded",
+                    "VaccName",
+                    "VaccContent",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
             };
         } else {
             return new String[]{

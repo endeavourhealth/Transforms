@@ -22,7 +22,8 @@ public class SRRecordStatus extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+       if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+               || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
           return new String[]{
                   "RowIdentifier",
                   "IDOrganisationVisibleTo",
@@ -38,6 +39,22 @@ public class SRRecordStatus extends AbstractCsvParser {
                   "IDOrganisation",
                   "IDOrganisationRegisteredAt",
                   "RemovedData"
+          };
+       } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEvent",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "MedicalRecordStatus",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
           };
        } else {
           return new String[]{

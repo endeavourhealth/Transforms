@@ -22,7 +22,8 @@ public class SRRecall extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -42,7 +43,8 @@ public class SRRecall extends AbstractCsvParser {
                     "IDPatient",
                     "IDOrganisation"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

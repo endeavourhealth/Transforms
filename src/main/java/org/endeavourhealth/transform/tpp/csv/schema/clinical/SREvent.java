@@ -22,7 +22,8 @@ public class SREvent extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -46,6 +47,30 @@ public class SREvent extends AbstractCsvParser {
                     "IDBranch",
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "IDStaffMemberProfileRole",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDAuthorisedBy",
+                    "IDProfileAuthorisedBy",
+                    "ContactEventLocation",
+                    "ContactMethod",
+                    "EventIncomplete",
+                    "ClinicalEvent",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDTeam",
+                    "IDBranch",
+                    "IDOrganisationRegisteredAt"
             };
         } else {
             return new String[]{
@@ -162,7 +187,7 @@ public class SREvent extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-   @Override
+    @Override
     protected String getFileTypeDescription() {
         return "TPP Event Entry file ";
     }
