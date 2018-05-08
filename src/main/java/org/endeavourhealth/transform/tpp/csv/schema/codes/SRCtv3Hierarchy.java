@@ -21,8 +21,8 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        //TODO - update transform to check for null cells when using fields not in the older version
-        if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -30,6 +30,14 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
                     "Ctv3CodeChild",
                     "ChildLevel",
                     "RemovedData"
+            };
+        } else if(version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Ctv3CodeParent",
+                    "Ctv3CodeChild",
+                    "ChildLevel"
             };
         } else {
             return new String[]{
