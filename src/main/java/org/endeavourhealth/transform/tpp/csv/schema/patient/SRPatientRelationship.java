@@ -122,8 +122,7 @@ public class SRPatientRelationship extends AbstractCsvParser {
                "IDEvent",
                "IDPatient",
                "IDOrganisation",
-               "IDOrganisationRegisteredAt",
-               "RemovedData"
+               "IDOrganisationRegisteredAt"
        };
     } else {
        return new String[]{
