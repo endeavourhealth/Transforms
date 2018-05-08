@@ -33,8 +33,7 @@ public class SRTemplate extends AbstractCsvParser {
                     "TemplateVersion",
                     "IDOrganisation"
             };
-
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -44,6 +43,16 @@ public class SRTemplate extends AbstractCsvParser {
                     "TemplateVersion",
                     "IDOrganisation",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DatePublished",
+                    "IDProfilePublishedBy",
+                    "TemplateName",
+                    "TemplateVersion",
+                    "IDOrganisation"
             };
         }
     }
@@ -82,7 +91,6 @@ public class SRTemplate extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Templates Entry file ";

@@ -22,37 +22,69 @@ public class SRAppointment extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "DateStart",
-                      "DateEnd",
-                      "AppointmentStatus",
-                      "DateAppointmentBooked",
-                      "DatePatientArrival",
-                      "DatePatientSeen",
-                      "FollowUpAppointment",
-                      "TelephoneAppointment",
-                      "IDClinician",
-                      "IDProfileClinician",
-                      "RotaName",
-                      "RotaType",
-                      "RotaLocation",
-                      "RotaCode",
-                      "IDRotaOwner",
-                      "IDProfileRotaOwner",
-                      "AllowsOverbooking",
-                      "BookingContactNumber",
-                      "DateAppointmentCancelled",
-                      "IDRota",
-                      "IDReferralIn",
-                      "IDPatient",
-                      "IDOrganisation",
-                      "IDOrganisationRegisteredAt",
-                      "RemovedData"
-            };
+      if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                 version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateStart",
+                  "DateEnd",
+                  "AppointmentStatus",
+                  "DateAppointmentBooked",
+                  "DatePatientArrival",
+                  "DatePatientSeen",
+                  "FollowUpAppointment",
+                  "TelephoneAppointment",
+                  "IDClinician",
+                  "IDProfileClinician",
+                  "RotaName",
+                  "RotaType",
+                  "RotaLocation",
+                  "RotaCode",
+                  "IDRotaOwner",
+                  "IDProfileRotaOwner",
+                  "AllowsOverbooking",
+                  "BookingContactNumber",
+                  "DateAppointmentCancelled",
+                  "IDRota",
+                  "IDReferralIn",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+      } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateStart",
+                  "DateEnd",
+                  "AppointmentStatus",
+                  "DateAppointmentBooked",
+                  "DatePatientArrival",
+                  "DatePatientSeen",
+                  "FollowUpAppointment",
+                  "TelephoneAppointment",
+                  "IDClinician",
+                  "IDProfileClinician",
+                  "RotaName",
+                  "RotaType",
+                  "RotaLocation",
+                  "RotaCode",
+                  "IDRotaOwner",
+                  "IDProfileRotaOwner",
+                  "AllowsOverbooking",
+                  "BookingContactNumber",
+                  "DateAppointmentCancelled",
+                  "IDRota",
+                  "IDReferralIn",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
 
-        }
+      }
+  }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
  public CsvCell getDateStart() { return super.getCell("DateStart");}

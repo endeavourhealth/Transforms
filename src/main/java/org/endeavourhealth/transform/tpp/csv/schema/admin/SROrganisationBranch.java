@@ -37,7 +37,7 @@ public class SROrganisationBranch extends AbstractCsvParser {
                     "BranchObsolete",
                     "IDOrganisation"
             };
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87))  {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -53,6 +53,22 @@ public class SROrganisationBranch extends AbstractCsvParser {
                     "BranchObsolete",
                     "IDOrganisation",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "ID",
+                    "BranchName",
+                    "HouseName",
+                    "HouseNumber",
+                    "RoadName",
+                    "Locality",
+                    "Town",
+                    "County",
+                    "PostCode",
+                    "BranchObsolete",
+                    "IDOrganisation"
             };
         }
     }

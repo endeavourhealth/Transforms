@@ -21,6 +21,8 @@ public class SRChildAtRisk extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_87)) {
         return new String[]{
                 "RowIdentifier",
                 "IDOrganisationVisibleTo",
@@ -35,7 +37,22 @@ public class SRChildAtRisk extends AbstractCsvParser {
                 "IDOrganisationRegisteredAt",
                 "RemovedData"
         };
-    }
+    } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateAdded",
+                    "IDProfileEnteredBy",
+                    "ChildProtectionPlan",
+                    "DateRemoved",
+                    "IDProfileRemovedBy",
+                    "RemovalReason",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        }
+        }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}

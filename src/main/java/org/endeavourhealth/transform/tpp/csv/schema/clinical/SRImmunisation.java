@@ -46,7 +46,7 @@ public class SRImmunisation extends AbstractCsvParser {
                     "IDPatient",
                     "IDOrganisation"
             };
-        } else {
+        } else if(version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -72,6 +72,33 @@ public class SRImmunisation extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
+            };
+
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDVaccination",
+                    "IDImmunisationContent",
+                    "Dose",
+                    "Location",
+                    "Method",
+                    "DateExpiry",
+                    "ImmsReadCode",
+                    "VaccPart",
+                    "VaccBatchNumber",
+                    "VaccAreaCode",
+                    "VaccinationStatus",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
             };
         }
     }

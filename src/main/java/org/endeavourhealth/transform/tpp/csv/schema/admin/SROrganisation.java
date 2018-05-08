@@ -40,7 +40,7 @@ public class SROrganisation extends AbstractCsvParser {
                     "IDTrust",
                     "IDCcg"
             };
-        } else {
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_87)){
             return new String[]{
                     "RowIdentifier",
                     "Name",
@@ -60,6 +60,25 @@ public class SROrganisation extends AbstractCsvParser {
                     "IDCcg",
                     "RemovedData"
             };
+        } else {return new String[]{
+                "RowIdentifier",
+                "Name",
+                "ID",
+                "HouseName",
+                "HouseNumber",
+                "NameOfRoad",
+                "NameOfLocality",
+                "NameOfTown",
+                "NameOfCounty",
+                "FullPostCode",
+                "Telephone",
+                "SecondaryTelephone",
+                "Fax",
+                "MadeObsolete",
+                "IDTrust",
+                "IDCcg"
+        };
+
         }
     }
 

@@ -83,8 +83,7 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
                     "IDEvent",
                     "IDPatient",
                     "IDOrganisation",
-                    "IDOrganisationRegisteredAt",
-                    "RemovedData"
+                    "IDOrganisationRegisteredAt"
             };
         }
     }

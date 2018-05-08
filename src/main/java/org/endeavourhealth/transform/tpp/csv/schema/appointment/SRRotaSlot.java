@@ -22,21 +22,37 @@ public class SRRotaSlot extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "IDRota",
-                      "RotaSlotType",
-                      "Duration",
-                      "Quantity",
-                      "EmbargoDuration",
-                      "EmbargoExpiryTime",
-                      "BlockedSlot",
-                      "BookableCAndB",
-                      "OldRowIdentifier",
-                      "RemovedData"
-            };
-
+            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                    version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDRota",
+                        "RotaSlotType",
+                        "Duration",
+                        "Quantity",
+                        "EmbargoDuration",
+                        "EmbargoExpiryTime",
+                        "BlockedSlot",
+                        "BookableCAndB",
+                        "OldRowIdentifier",
+                        "RemovedData"
+                };
+            } else {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDRota",
+                        "RotaSlotType",
+                        "Duration",
+                        "Quantity",
+                        "EmbargoDuration",
+                        "EmbargoExpiryTime",
+                        "BlockedSlot",
+                        "BookableCAndB",
+                        "OldRowIdentifier"
+                };
+            }
         }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}

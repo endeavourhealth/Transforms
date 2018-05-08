@@ -21,32 +21,60 @@ public class SRLetter extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "IDPatient",
-                "IDEvent",
-                "DateEvent",
-                "IDDoneBy",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "IDOrganisationDoneAt",
-                "DateFinalised",
-                "SenderTitle",
-                "SenderFirstName",
-                "SenderSurname",
-                "SenderOrganisation",
-                "RecipientTitle",
-                "RecipientFirstName",
-                "RecipientSurname",
-                "RecipientOrganisation",
-                "Direction",
-                "CommunicationType",
-                "IDAppointment",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "IDPatient",
+                  "IDEvent",
+                  "DateEvent",
+                  "IDDoneBy",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "IDOrganisationDoneAt",
+                  "DateFinalised",
+                  "SenderTitle",
+                  "SenderFirstName",
+                  "SenderSurname",
+                  "SenderOrganisation",
+                  "RecipientTitle",
+                  "RecipientFirstName",
+                  "RecipientSurname",
+                  "RecipientOrganisation",
+                  "Direction",
+                  "CommunicationType",
+                  "IDAppointment",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "IDPatient",
+                  "IDEvent",
+                  "DateEvent",
+                  "IDDoneBy",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "IDOrganisationDoneAt",
+                  "DateFinalised",
+                  "SenderTitle",
+                  "SenderFirstName",
+                  "SenderSurname",
+                  "SenderOrganisation",
+                  "RecipientTitle",
+                  "RecipientFirstName",
+                  "RecipientSurname",
+                  "RecipientOrganisation",
+                  "Direction",
+                  "CommunicationType",
+                  "IDAppointment",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}

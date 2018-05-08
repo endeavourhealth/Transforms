@@ -21,6 +21,7 @@ public class SRProblem extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
         return new String[]{
                 "RowIdentifier",
                 "IDOrganisationVisibleTo",
@@ -41,7 +42,28 @@ public class SRProblem extends AbstractCsvParser {
                 "IDOrganisationRegisteredAt",
                 "RemovedData"
         };
-    }
+    } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "CTV3Code",
+                  "DateEnd",
+                  "Severity",
+                  "IDCode",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDReferralIn",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
+   }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
@@ -63,7 +85,6 @@ public class SRProblem extends AbstractCsvParser {
     public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {return "TPP Problem Entry file ";}
 

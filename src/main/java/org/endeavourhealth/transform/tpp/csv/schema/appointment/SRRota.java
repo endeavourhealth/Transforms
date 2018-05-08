@@ -22,23 +22,41 @@ public class SRRota extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "DateCreation",
-                      "IDProfileCreatedBy",
-                      "Name",
-                      "RotaType",
-                      "Location",
-                      "Code",
-                      "IDProfileOwner",
-                      "AllowOverBooking",
-                      "BookingContactNumber",
-                      "IDAppointmentRoom",
-                      "IDBranch",
-                      "RemovedData"
-            };
-
+            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                    version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "DateCreation",
+                        "IDProfileCreatedBy",
+                        "Name",
+                        "RotaType",
+                        "Location",
+                        "Code",
+                        "IDProfileOwner",
+                        "AllowOverBooking",
+                        "BookingContactNumber",
+                        "IDAppointmentRoom",
+                        "IDBranch",
+                        "RemovedData"
+                };
+            } else {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "DateCreation",
+                        "IDProfileCreatedBy",
+                        "Name",
+                        "RotaType",
+                        "Location",
+                        "Code",
+                        "IDProfileOwner",
+                        "AllowOverBooking",
+                        "BookingContactNumber",
+                        "IDAppointmentRoom",
+                        "IDBranch"
+                };
+            }
         }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}

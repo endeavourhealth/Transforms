@@ -28,6 +28,13 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
                     "Ctv3Code",
                     "Version2Code"
             };
+        }else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "Ctv3Code",
+                    "Version2Code"
+            };
+
         } else {
             return new String[]{
                     "RowIdentifier",
@@ -54,7 +61,6 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Ctv3 Read Codes To Version2 Entry file ";

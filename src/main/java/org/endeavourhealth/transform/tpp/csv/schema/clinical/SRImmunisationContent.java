@@ -29,13 +29,20 @@ public class SRImmunisationContent extends AbstractCsvParser {
                     "Content",
                     "DateDeleted"
             };
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "Name",
                     "Content",
                     "DateDeleted",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "Name",
+                    "Content",
+                    "DateDeleted"
             };
         }
     }

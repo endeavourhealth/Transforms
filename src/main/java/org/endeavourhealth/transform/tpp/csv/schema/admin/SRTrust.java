@@ -39,7 +39,7 @@ public class SRTrust extends AbstractCsvParser {
                     "SecondaryTelephone",
                     "Fax"
             };
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "DateCreated",
@@ -57,6 +57,24 @@ public class SRTrust extends AbstractCsvParser {
                     "SecondaryTelephone",
                     "Fax",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "DateCreated",
+                    "IdProfileCreatedBy",
+                    "Name",
+                    "OdsCode",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "Telephone",
+                    "SecondaryTelephone",
+                    "Fax"
             };
         }
     }

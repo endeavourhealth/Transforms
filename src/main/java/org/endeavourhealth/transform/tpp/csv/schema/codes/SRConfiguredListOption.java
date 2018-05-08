@@ -32,7 +32,7 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "CAMHSCode",
                     "MHSDSCode"
             };
-        } else {
+        }   else if(version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "ConfiguredList",
@@ -41,6 +41,16 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "CAMHSCode",
                     "MHSDSCode",
                     "RemovedData"
+            };
+
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "ConfiguredList",
+                    "ConfiguredListOption",
+                    "CDSCode",
+                    "CAMHSCode",
+                    "MHSDSCode"
             };
         }
     }
@@ -78,7 +88,6 @@ public class SRConfiguredListOption extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Configured List Option Entry file ";

@@ -22,24 +22,41 @@ public class SRRecordStatus extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEvent",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "MedicalRecordStatus",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEvent",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "MedicalRecordStatus",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEvent",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "MedicalRecordStatus",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
-
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
     public CsvCell getDateEvent() { return super.getCell("DateEvent");}
@@ -56,7 +73,6 @@ public class SRRecordStatus extends AbstractCsvParser {
     public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {return "TPP Patient Record Status Entry file ";}
 

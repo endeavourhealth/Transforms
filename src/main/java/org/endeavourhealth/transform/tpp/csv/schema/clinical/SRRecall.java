@@ -42,8 +42,7 @@ public class SRRecall extends AbstractCsvParser {
                     "IDPatient",
                     "IDOrganisation"
             };
-
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -64,6 +63,27 @@ public class SRRecall extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "DateRecall",
+                    "RecallType",
+                    "RecallInitialStatus",
+                    "RecallStatus",
+                    "RecallStatusDate",
+                    "IDReferralIn",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
             };
         }
     }
@@ -145,7 +165,6 @@ public class SRRecall extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Patient Recall Entry file ";

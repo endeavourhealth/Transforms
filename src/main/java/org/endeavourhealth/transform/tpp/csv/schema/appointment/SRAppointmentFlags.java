@@ -22,15 +22,25 @@ public class SRAppointmentFlags extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "IDAppointment",
-                      "Flag",
-                      "OldRowIdentifier",
-                      "RemovedData"
-            };
-
+            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                    version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDAppointment",
+                        "Flag",
+                        "OldRowIdentifier",
+                        "RemovedData"
+                };
+            } else {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDAppointment",
+                        "Flag",
+                        "OldRowIdentifier"
+                };
+            }
         }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}

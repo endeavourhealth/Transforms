@@ -29,6 +29,13 @@ public class SRMedicationReadCodeDetails extends AbstractCsvParser {
                     "DrugReadCode",
                     "DrugReadCodeDesc"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDMultiLexProduct",
+                    "DrugReadCode",
+                    "DrugReadCodeDesc"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",
@@ -61,7 +68,6 @@ public class SRMedicationReadCodeDetails extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Medication Read Code Details Entry file ";

@@ -78,8 +78,7 @@ public class SRPatient extends AbstractCsvParser {
                     "EmailAddress",
                     "TestPatient",
                     "SSRef",
-                    "SpineMatched",
-                    "RemovedData"
+                    "SpineMatched"
             };
         }
     }
