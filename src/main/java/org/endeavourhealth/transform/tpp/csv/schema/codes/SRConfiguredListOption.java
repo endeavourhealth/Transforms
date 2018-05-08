@@ -22,7 +22,8 @@ public class SRConfiguredListOption extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - update transform to check for null cells when using fields not in the older version
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "ConfiguredList",
@@ -32,7 +33,8 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "CAMHSCode",
                     "MHSDSCode"
             };
-        }   else if(version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        }   else if(version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "ConfiguredList",

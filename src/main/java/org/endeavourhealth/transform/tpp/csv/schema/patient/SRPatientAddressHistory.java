@@ -72,6 +72,32 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
                     "CcgOfResidence",
                     "IDOrganisationRegisteredAt"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+            return new String [] {
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "NameOfBuilding",
+                    "NumberOfBuilding",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "DateTo",
+                    "AddressType",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "CcgOfResidence",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",
