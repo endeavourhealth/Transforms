@@ -21,20 +21,45 @@ public class SRStaffSkillSet extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateCreated",
-                "IdProfileCreatedBy",
-                "IDStaffProfile",
-                "DateSkillSetStart",
-                "DateSkillSetEnd",
-                "SkillSetName",
-                "IDOrganisation",
-                "RemovedData"
-
-
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals((TppCsvToFhirTransformer.VERSION_87))) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreated",
+                    "IdProfileCreatedBy",
+                    "IDStaffProfile",
+                    "DateSkillSetStart",
+                    "DateSkillSetEnd",
+                    "SkillSetName",
+                    "IDOrganisation",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreated",
+                    "IdProfileCreatedBy",
+                    "IDStaffProfile",
+                    "DateSkillSetStart",
+                    "DateSkillSetEnd",
+                    "SkillSetName",
+                    "IDOrganisation"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreated",
+                    "IdProfileCreatedBy",
+                    "IDStaffProfile",
+                    "DateSkillSetStart",
+                    "DateSkillSetEnd",
+                    "SkillSetName",
+                    "IDOrganisation"
+            };
+        }
     }
 
     public CsvCell getRowIdentifier() {
@@ -78,7 +103,6 @@ public class SRStaffSkillSet extends AbstractCsvParser {
     }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Staff Skill Set Entry file ";

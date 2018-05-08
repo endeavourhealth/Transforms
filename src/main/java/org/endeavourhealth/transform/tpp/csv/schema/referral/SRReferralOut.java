@@ -21,31 +21,84 @@ public class SRReferralOut extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "TypeOfReferral",
-                "Reason",
-                "IDProfileReferrer",
-                "ServiceOffered",
-                "ReReferral",
-                "Urgency",
-                "PrimaryDiagnosis",
-                "RecipientID",
-                "RecipientIDType",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "TypeOfReferral",
+                  "Reason",
+                  "IDProfileReferrer",
+                  "ServiceOffered",
+                  "ReReferral",
+                  "Urgency",
+                  "PrimaryDiagnosis",
+                  "RecipientID",
+                  "RecipientIDType",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "TypeOfReferral",
+                  "Reason",
+                  "IDProfileReferrer",
+                  "ServiceOffered",
+                  "ReReferral",
+                  "Urgency",
+                  "PrimaryDiagnosis",
+                  "RecipientID",
+                  "RecipientIDType",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "TypeOfReferral",
+                  "Reason",
+                  "IDProfileReferrer",
+                  "ServiceOffered",
+                  "ReReferral",
+                  "Urgency",
+                  "PrimaryDiagnosis",
+                  "RecipientID",
+                  "RecipientIDType",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}

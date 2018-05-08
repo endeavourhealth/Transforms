@@ -21,7 +21,8 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "DateProfileCreated",
@@ -35,6 +36,23 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
                     "IDStaffMember",
                     "IDOrganisation",
                     "GmpID"
+            };
+        } else if(version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "DateProfileCreated",
+                    "IdProfileCreatedBy",
+                    "IDStaffMemberProfileRole",
+                    "StaffRole",
+                    "DateEmploymentStart",
+                    "DateEmploymentEnd",
+                    "PPAID",
+                    "GPLocalCode",
+                    "IDStaffMember",
+                    "IDOrganisation",
+                    "GmpID",
+                    "RemovedData"
             };
         } else {
             return new String[]{
