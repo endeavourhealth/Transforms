@@ -156,6 +156,12 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
         return super.getCell("MedicationQuantity");
     }
 
+    public CsvCell getIsSupervised() { return super.getCell("IsSupervised");};
+
+    public CsvCell getSupervisedDose() { return super.getCell("SupervisedDose");};
+
+    public CsvCell getUnsupervisedDose() { return super.getCell("UnsupervisedDose");};
+
     public CsvCell getIsRepeatMedication() {
         return super.getCell("IsRepeatMedication");
     }
@@ -200,7 +206,6 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
         return "TPP Primary Care Medication Entry file ";
