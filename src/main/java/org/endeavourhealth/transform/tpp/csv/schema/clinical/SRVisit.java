@@ -22,24 +22,45 @@ public class SRVisit extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "DateBooked",
-                "DateRequested",
-                "CurrentStatus",
-                "IDProfileRequested",
-                "IDProfileAssigned",
-                "FollowUpDetails",
-                "IDReferralIn",
-                "IDPatient",
-                "IDOrganisation",
-                "Duration",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+               || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "DateBooked",
+                  "DateRequested",
+                  "CurrentStatus",
+                  "IDProfileRequested",
+                  "IDProfileAssigned",
+                  "FollowUpDetails",
+                  "IDReferralIn",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "Duration",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "IDProfileEnteredBy",
+                  "DateBooked",
+                  "DateRequested",
+                  "CurrentStatus",
+                  "IDProfileRequested",
+                  "IDProfileAssigned",
+                  "FollowUpDetails",
+                  "IDReferralIn",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "Duration",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
