@@ -21,26 +21,45 @@ public class SREventLink extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "IDEvent",
-                "IDPatient",
-                "IDReferralIn",
-                "IDOrganisation",
-                "IDAppointment",
-                "IDVisit",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDReferralIn",
+                  "IDOrganisation",
+                  "IDAppointment",
+                  "IDVisit",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDReferralIn",
+                  "IDOrganisation",
+                  "IDAppointment",
+                  "IDVisit",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
-
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
     public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
