@@ -55,6 +55,38 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDMultiLexProduct",
+                    "IDMultiLexPack",
+                    "IDMultiLexDMD",
+                    "NameOfMedication",
+                    "DateMedicationStart",
+                    "DateMedicationEnd",
+                    "MedicationDosage",
+                    "MedicationQuantity",
+                    "IsSupervised",
+                    "SupervisedDose",
+                    "UnsupervisedDose",
+                    "IsRepeatMedication",
+                    "IsOtherMedication",
+                    "IsDentalMedication",
+                    "IsHospitalMedication",
+                    "IDRepeatTemplate",
+                    "IDReferralIn",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
 
         } else {
             return new String[]{
@@ -156,11 +188,17 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
         return super.getCell("MedicationQuantity");
     }
 
-    public CsvCell getIsSupervised() { return super.getCell("IsSupervised");};
+    public CsvCell getIsSupervised() {
+        return super.getCell("IsSupervised");
+    }
 
-    public CsvCell getSupervisedDose() { return super.getCell("SupervisedDose");};
+    public CsvCell getSupervisedDose() {
+        return super.getCell("SupervisedDose");
+    }
 
-    public CsvCell getUnsupervisedDose() { return super.getCell("UnsupervisedDose");};
+    public CsvCell getUnsupervisedDose() {
+        return super.getCell("UnsupervisedDose");
+    }
 
     public CsvCell getIsRepeatMedication() {
         return super.getCell("IsRepeatMedication");
