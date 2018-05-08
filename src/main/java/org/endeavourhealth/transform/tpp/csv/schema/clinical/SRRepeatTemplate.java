@@ -22,34 +22,65 @@ public class SRRepeatTemplate extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "DateEvent",
-                "IDProfileEnteredBy",
-                "IDDoneBy",
-                "TextualEventDoneBy",
-                "IDOrganisationDoneAt",
-                "IDMultiLexProduct",
-                "IDMultiLexPack",
-                "IDMultiLexDMD",
-                "NameOfMedication",
-                "DateMedicationTemplateStart",
-                "DateMedicationTemplateEnd",
-                "DateMedicationTemplateReview",
-                "MedicationDosage",
-                "MedicationQuantity",
-                "MaxIssues",
-                "CourseLengthPerIssue",
-                "DrugStatus",
-                "IDReferralIn",
-                "IDEvent",
-                "IDPatient",
-                "IDOrganisation",
-                "IDOrganisationRegisteredAt",
-                "RemovedData"
-        };
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+               || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDMultiLexProduct",
+                  "IDMultiLexPack",
+                  "IDMultiLexDMD",
+                  "NameOfMedication",
+                  "DateMedicationTemplateStart",
+                  "DateMedicationTemplateEnd",
+                  "DateMedicationTemplateReview",
+                  "MedicationDosage",
+                  "MedicationQuantity",
+                  "MaxIssues",
+                  "CourseLengthPerIssue",
+                  "DrugStatus",
+                  "IDReferralIn",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt",
+                  "RemovedData"
+          };
+       } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDProfileEnteredBy",
+                  "IDDoneBy",
+                  "TextualEventDoneBy",
+                  "IDOrganisationDoneAt",
+                  "IDMultiLexProduct",
+                  "IDMultiLexPack",
+                  "IDMultiLexDMD",
+                  "NameOfMedication",
+                  "DateMedicationTemplateStart",
+                  "DateMedicationTemplateEnd",
+                  "DateMedicationTemplateReview",
+                  "MedicationDosage",
+                  "MedicationQuantity",
+                  "MaxIssues",
+                  "CourseLengthPerIssue",
+                  "DrugStatus",
+                  "IDReferralIn",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
     }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
