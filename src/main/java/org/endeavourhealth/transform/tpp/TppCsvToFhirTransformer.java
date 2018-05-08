@@ -109,6 +109,8 @@ public abstract class TppCsvToFhirTransformer {
                 //that we don't transform, but we also want to make sure that they're EMPTY unless we explicitly
                 //have decided to ignore a non-empty file
                 ensureFileIsEmpty(filePath);
+            } catch (IOException eio) {
+                LOG.error(eio.getMessage());
             }
         }
 
