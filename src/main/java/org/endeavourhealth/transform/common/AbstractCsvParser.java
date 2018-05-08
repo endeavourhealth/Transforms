@@ -368,6 +368,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 } catch (IllegalArgumentException ex) {
                     //if we get this exception, the headers don't match the possible version
                     //LOG.trace("Not valid version " + possibleVersion);
+                    LOG.error("Illegal argument exception " + ex.getMessage());
                 }
             }
 
