@@ -133,12 +133,12 @@ public class JournalTransformer {
                                        String version) throws Exception {
 
         //the coded elements should NEVER all be null, adding this to handle those rows gracefully
-        if (Strings.isNullOrEmpty(parser.getReadCode().getString())
-                && (Strings.isNullOrEmpty(parser.getDrugDMDCode().getString()))
-                && (Strings.isNullOrEmpty(parser.getSnomedCode().getString()))) {
-            TransformWarnings.log(LOG, parser, "Journal ID: {} contains no coded items", parser.getObservationID());
-            return;
-        }
+//        if (Strings.isNullOrEmpty(parser.getReadCode().getString())
+//                && (Strings.isNullOrEmpty(parser.getDrugDMDCode().getString()))
+//                && (Strings.isNullOrEmpty(parser.getSnomedCode().getString()))) {
+//            TransformWarnings.log(LOG, parser, "Journal ID: {} contains no coded items", parser.getObservationID());
+//            return;
+//        }
 
         ResourceType resourceType = getTargetResourceType(parser);
         switch (resourceType) {
@@ -639,17 +639,23 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         observationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+        // is there any coding in the row?
+        boolean coded = (!Strings.isNullOrEmpty(parser.getReadCode().getString()) ||
+                            !Strings.isNullOrEmpty(parser.getSnomedCode().getString()));
 
-        CsvCell snomedCode = parser.getSnomedCode();
-        if (!snomedCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-        }
-        CsvCell term = parser.getRubric();
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (coded) {
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
+
+            CsvCell snomedCode = parser.getSnomedCode();
+            if (!snomedCode.isEmpty()) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
+            }
+            CsvCell term = parser.getRubric();
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+                codeableConceptBuilder.setText(term.getString(), term);
+            }
         }
 
         CsvCell clinicianID = parser.getClinicianUserID();
@@ -686,7 +692,7 @@ public class JournalTransformer {
         }
 
         //BP is a special case - create systolic and diastolic coded components
-        if (isBPCode (parser.getReadCode().getString()) && value1 != null && value2 != null) {
+        if (!parser.getReadCode().isEmpty() && isBPCode (parser.getReadCode().getString()) && value1 != null && value2 != null) {
 
             observationBuilder.addComponent();
             observationBuilder.setComponentValue(value1, parser.getValue1());
@@ -724,6 +730,14 @@ public class JournalTransformer {
                 associatedTextAsStr = value2NarrativeText.concat(associatedTextAsStr);
             }
         }
+
+        String obsEntity = parser.getObservationEntity().getString();
+        if (!obsEntity.isEmpty()) {
+            if (obsEntity.equalsIgnoreCase("LETTERS") || obsEntity.equalsIgnoreCase("ATTACHMENT")) {
+                associatedTextAsStr = obsEntity.replace("S", "").concat(". " + associatedTextAsStr);
+            }
+        }
+
         observationBuilder.setNotes(associatedTextAsStr,associatedText);
 
         //set linked encounter
@@ -744,7 +758,8 @@ public class JournalTransformer {
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
-            Identifier fhirDocIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentId);
+            Identifier fhirDocIdentifier
+                    = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentId);
             observationBuilder.addDocumentIdentifier(fhirDocIdentifier, parser.getDocumentID());
         }
 
