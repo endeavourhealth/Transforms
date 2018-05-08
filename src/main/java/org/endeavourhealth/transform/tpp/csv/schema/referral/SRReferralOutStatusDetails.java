@@ -21,6 +21,8 @@ public class SRReferralOutStatusDetails extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+       if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+               || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
         return new String[]{
                 "RowIdentifier",
                 "IDOrganisationVisibleTo",
@@ -38,7 +40,26 @@ public class SRReferralOutStatusDetails extends AbstractCsvParser {
                 "IDOrganisationRegisteredAt",
                 "RemovedData"
         };
-    }
+    } else {
+          return new String[]{
+                  "RowIdentifier",
+                  "IDOrganisationVisibleTo",
+                  "DateEventRecorded",
+                  "DateEvent",
+                  "IDOrganisationDoneAt",
+                  "IDProfileEnteredBy",
+                  "TextualEventDoneBy",
+                  "IDDoneBy",
+                  "StatusOfReferralOut",
+                  "IDReferralOut",
+                  "IDEvent",
+                  "IDPatient",
+                  "IDOrganisation",
+                  "IDOrganisationRegisteredAt"
+          };
+       }
+
+       }
 
     public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
     public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
