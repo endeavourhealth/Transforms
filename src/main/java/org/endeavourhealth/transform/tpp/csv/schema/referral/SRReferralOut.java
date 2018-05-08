@@ -70,8 +70,7 @@ public class SRReferralOut extends AbstractCsvParser {
                   "IDPatient",
                   "IDOrganisation",
                   "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
-                  "IDOrganisationRegisteredAt",
-                  "RemovedData"
+                  "IDOrganisationRegisteredAt"
           };
        } else {
           return new String[]{
