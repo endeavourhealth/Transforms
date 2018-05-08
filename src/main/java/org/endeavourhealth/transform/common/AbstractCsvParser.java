@@ -42,6 +42,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private CSVRecord csvRecord = null;
     private int csvRecordLineNumber = -1;
     private Set<Long> recordNumbersToProcess = null;
+    private final static String REMOVED_DATA_HEADER ="RemovedData";
 
     //audit data
     private Integer fileAuditId = null;
@@ -369,6 +370,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                     //if we get this exception, the headers don't match the possible version
                     //LOG.trace("Not valid version " + possibleVersion);
                     //LOG.error("Illegal argument exception " + ex.getMessage());
+
                 } catch (Exception e) { //
                     LOG.error(e.getMessage());
                 }
@@ -378,6 +380,58 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             stringReader.close();
         }
 
+        if (ret.isEmpty()) {
+            LOG.error("Ruled out all possible versions because of file " + filePath);
+            LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
+            //TODO - this if might give some false hits. Anything more robust we can do?
+            if (filePath.toUpperCase().contains("TPP")) {
+                LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
+                ret = reTestForValidVersionsForTpp(possibleVersions);
+            }
+        }
+        return ret;
+    }
+
+    private List<String> reTestForValidVersionsForTpp(List<String> possibleVersions) throws Exception {
+        // Handle tpp files where only difference is we may or may not have the RemovedData column
+        // All TPP transforms should include a null check anyway
+        List<String> ret = new ArrayList<>();
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1000); //assuming we never have headers longer than 1000 bytes
+
+        StringReader stringReader = new StringReader(firstChars);
+        CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation
+        try {
+            for (String possibleVersion: possibleVersions) {
+                String[] expectedHeaders = getCsvHeaders(possibleVersion);
+                try {
+                    List<String> expectedHeadersPlus = new ArrayList<String>();
+                    String[] expectedArray = new String[expectedHeaders.length+1];
+                    if (!Arrays.asList(expectedHeaders).contains(REMOVED_DATA_HEADER)) {
+                        // If the only difference is we don't have removedData try again with that
+                        expectedHeadersPlus.addAll(Arrays.asList(expectedHeaders));
+                        expectedHeadersPlus.add(REMOVED_DATA_HEADER);
+                        expectedArray = expectedHeadersPlus.toArray(expectedArray);
+                    } else {
+                     // Check if it works when we remove RemovedData header
+                        for (String s : expectedHeaders) {
+                            if (!s.equals(REMOVED_DATA_HEADER)) {
+                                expectedHeadersPlus.add(s);
+                            }
+                        }
+                        expectedArray = expectedHeadersPlus.toArray(expectedArray);
+                    }
+                    CsvHelper.validateCsvHeaders(csvReader, filePath, expectedArray);
+                    //if we call the above and don't get an exception, the possible version is valid for the headers found
+                    ret.add(possibleVersion);
+                } catch (IllegalArgumentException ex) {
+                    //if we get this exception, the headers don't match the possible version. Treat as WAD.
+                } catch (Exception e) { // I got an IO error which looked to be a special char issue. Try to catch
+                    LOG.error(e.getMessage());
+                }
+            }
+        } finally {
+            stringReader.close();
+        }
         if (ret.isEmpty()) {
             LOG.error("Ruled out all possible versions because of file " + filePath);
             LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
