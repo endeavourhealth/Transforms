@@ -45,7 +45,8 @@ public class SRImmunisation extends AbstractCsvParser {
                     "VaccinationStatus",
                     "IDEvent",
                     "IDPatient",
-                    "IDOrganisation"
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
             };
         } else if(version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
