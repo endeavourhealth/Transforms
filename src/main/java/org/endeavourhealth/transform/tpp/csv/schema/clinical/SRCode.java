@@ -24,6 +24,7 @@ public class SRCode extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         //TODO - use IsNumeric column to know when a record is numeric or not
         if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
@@ -49,7 +50,35 @@ public class SRCode extends AbstractCsvParser {
                     "IDOrganisation"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "CTV3Code",
+                    "CTV3Text",
+                    "NumericComparator",
+                    "IsNumeric",
+                    "NumericValue",
+                    "NumericUnit",
+                    "EpisodeType",
+                    "IDTemplate",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDReferralIn",
+                    "IDAppointment",
+                    "IDVisit",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
