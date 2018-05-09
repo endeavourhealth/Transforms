@@ -641,7 +641,7 @@ public class BasisTransformer {
                 fhirPatient.addName(name);
             }
 
-            //Example: Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
+            //Example: Address fhirAddress = AddressHelper.createAddress(Address.AddressUse.HOME, parser.getAddress1(), parser.getAddress2(), parser.getAddress3(), parser.getAddress4(), parser.getAddress5(), parser.getPostCode());
             if (fhirAddress != null) {
                 fhirPatient.addAddress(fhirAddress);
             }

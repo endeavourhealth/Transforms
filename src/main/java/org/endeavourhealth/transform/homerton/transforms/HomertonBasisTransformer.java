@@ -1,27 +1,20 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.BasisTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.Enumerations;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.UUID;
 
 public class HomertonBasisTransformer extends BasisTransformer {
@@ -212,7 +205,7 @@ public class HomertonBasisTransformer extends BasisTransformer {
     }
 
     public static ResourceId getPrimaryOrgResourceId(ParserI parser, String primaryOrgOdsCode, FhirResourceFiler fhirResourceFiler) throws Exception {
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "Homerton University Hospital NHS Foundation Trust", "Homerton Row", "London", "", "", "E9 6SR");
+        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "Homerton University Hospital NHS Foundation Trust", "Homerton Row", "London", "", "", "E9 6SR");
         return resolveOrganisationResource(parser.getCurrentState(),primaryOrgOdsCode,fhirResourceFiler, "Homerton University Hospital NHS Foundation Trust",fhirOrgAddress);
     }
 

@@ -124,18 +124,13 @@ public class PatientTransformer extends AbstractTransformer {
             patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
-        if (fhirPatient.hasAddress()) {
-            for (Address address: fhirPatient.getAddress()) {
-                if (address.getUse() != null //got Homerton data will null address use
-                        && address.getUse().equals(Address.AddressUse.HOME)) {
-                    postcode = address.getPostalCode();
-                    postcodePrefix = findPostcodePrefix(postcode);
+        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
+        if (fhirAddress != null) {
+            postcode = fhirAddress.getPostalCode();
+            postcodePrefix = findPostcodePrefix(postcode);
 
-                    HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
-                    householdId = householdIdDal.findOrCreateHouseholdId(address);
-                    break;
-                }
-            }
+            HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
+            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);
         }
 
         //if we've found a postcode, then get the LSOA etc. for it

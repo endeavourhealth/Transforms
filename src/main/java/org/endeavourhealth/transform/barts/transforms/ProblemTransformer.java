@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -77,7 +77,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
                                               BartsCsvHelper csvHelper,
                                               String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient

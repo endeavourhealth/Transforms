@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressConverter;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -15,11 +13,9 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +101,7 @@ public class IPEPITransformer extends BartsBasisTransformer {
         }
 
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         //EpisodOfCare

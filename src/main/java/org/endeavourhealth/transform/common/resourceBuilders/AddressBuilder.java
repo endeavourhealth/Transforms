@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.AddressConverter;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Address;
@@ -162,7 +162,7 @@ public class AddressBuilder {
 
     private void updateAddressDisplay(CsvCell... sourceCells) {
 
-        String displayText = AddressConverter.generateDisplayText(address);
+        String displayText = AddressHelper.generateDisplayText(address);
         address.setText(displayText);
 
         auditNameValue("text", sourceCells);

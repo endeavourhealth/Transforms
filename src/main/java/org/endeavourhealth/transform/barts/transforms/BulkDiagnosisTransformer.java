@@ -48,7 +48,7 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient - only create if missing
@@ -131,7 +131,7 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         // Organisation
-        Address fhirOrgAddress = AddressConverter.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
+        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Patient - only create if missing
