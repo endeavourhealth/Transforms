@@ -383,7 +383,7 @@ public class PatientTransformer {
         String county = parser.getCounty();
         String postcode = parser.getPostcode();
 
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, houseNameFlat, numberAndStreet, village, town, county, postcode);
+        Address fhirAddress = AddressHelper.createAddress(Address.AddressUse.HOME, houseNameFlat, numberAndStreet, village, town, county, postcode);
         fhirPatient.addAddress(fhirAddress);
 
         String residentialInstituteCode = parser.getResidentialInstituteCode();

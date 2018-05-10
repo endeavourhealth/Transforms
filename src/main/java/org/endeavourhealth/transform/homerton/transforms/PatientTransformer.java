@@ -234,7 +234,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         }
 
         // Address
-        Address fhirAddress = AddressConverter.createAddress(Address.AddressUse.HOME, parser.getAddressLine1(), parser.getAddressLine2(), parser.getAddressLine3(), parser.getCity(), parser.getCounty(), parser.getPostcode());
+        Address fhirAddress = AddressHelper.createAddress(Address.AddressUse.HOME, parser.getAddressLine1(), parser.getAddressLine2(), parser.getAddressLine3(), parser.getCity(), parser.getCounty(), parser.getPostcode());
         fhirPatient.addAddress(fhirAddress);
 
         //fhirPatient set context

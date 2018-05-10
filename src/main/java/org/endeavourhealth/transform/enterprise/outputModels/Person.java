@@ -36,7 +36,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                                          Long householdId,
                                          String lsoaCode,
                                          String msoaCode,
-                                         String ethnicCode) throws Exception {
+                                         String ethnicCode,
+                                         String wardCode,
+                                         String localAuthorityCode,
+                                         Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -50,7 +53,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                 convertLong(householdId),
                 lsoaCode,
                 msoaCode,
-                ethnicCode);
+                ethnicCode,
+                wardCode,
+                localAuthorityCode,
+                convertLong(registeredPracticeId));
     }
 
 
@@ -63,7 +69,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                                         Long householdId,
                                         String lsoaCode,
                                         String msoaCode,
-                                        String ethnicCode) throws Exception {
+                                        String ethnicCode,
+                                        String wardCode,
+                                        String localAuthorityCode,
+                                        Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -75,7 +84,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                 convertLong(householdId),
                 lsoaCode,
                 msoaCode,
-                ethnicCode);
+                ethnicCode,
+                wardCode,
+                localAuthorityCode,
+                convertLong(registeredPracticeId));
     }
 
     @Override
@@ -94,7 +106,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                     "household_id",
                     "lsoa_code",
                     "msoa_code",
-                    "ethnic_code"
+                    "ethnic_code",
+                    "ward_code",
+                    "local_authority_code",
+                    "registered_practice_organization_id"
             };
         } else {
             return new String[]{
@@ -108,7 +123,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                     "household_id",
                     "lsoa_code",
                     "msoa_code",
-                    "ethnic_code"
+                    "ethnic_code",
+                    "ward_code",
+                    "local_authority_code",
+                    "registered_practice_organization_id"
             };
         }
     }
@@ -129,7 +147,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                     Long.TYPE,
                     String.class,
                     String.class,
-                    String.class
+                    String.class,
+                    String.class,
+                    String.class,
+                    Long.class
             };
         } else {
             return new Class[] {
@@ -143,7 +164,10 @@ public class Person extends AbstractEnterpriseCsvWriter {
                     Long.TYPE,
                     String.class,
                     String.class,
-                    String.class
+                    String.class,
+                    String.class,
+                    String.class,
+                    Long.class
             };
         }
     }

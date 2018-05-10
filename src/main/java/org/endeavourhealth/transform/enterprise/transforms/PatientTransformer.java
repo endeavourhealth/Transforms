@@ -89,6 +89,9 @@ public class PatientTransformer extends AbstractTransformer {
         String lsoaCode = null;
         String msoaCode = null;
         String ethnicCode = null;
+        String wardCode = null;
+        String localAuthorityCode = null;
+        Long registeredPracticeId = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -121,18 +124,13 @@ public class PatientTransformer extends AbstractTransformer {
             patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
-        if (fhirPatient.hasAddress()) {
-            for (Address address: fhirPatient.getAddress()) {
-                if (address.getUse() != null //got Homerton data will null address use
-                        && address.getUse().equals(Address.AddressUse.HOME)) {
-                    postcode = address.getPostalCode();
-                    postcodePrefix = findPostcodePrefix(postcode);
+        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
+        if (fhirAddress != null) {
+            postcode = fhirAddress.getPostalCode();
+            postcodePrefix = findPostcodePrefix(postcode);
 
-                    HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
-                    householdId = householdIdDal.findOrCreateHouseholdId(address);
-                    break;
-                }
-            }
+            HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
+            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);
         }
 
         //if we've found a postcode, then get the LSOA etc. for it
@@ -142,6 +140,8 @@ public class PatientTransformer extends AbstractTransformer {
             if (postcodeReference != null) {
                 lsoaCode = postcodeReference.getLsoaCode();
                 msoaCode = postcodeReference.getMsoaCode();
+                wardCode = postcodeReference.getWardCode();
+                localAuthorityCode = postcodeReference.getLocalAuthorityCode();
                 //townsendScore = postcodeReference.getTownsendScore();
             }
         }
@@ -150,6 +150,14 @@ public class PatientTransformer extends AbstractTransformer {
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
             ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+        }
+
+        if (fhirPatient.hasCareProvider()) {
+
+            Reference orgReference = findOrgReference(fhirPatient, params);
+            if (orgReference != null) {
+                registeredPracticeId = super.findEnterpriseId(params, orgReference);
+            }
         }
 
         //check if our patient demographics also should be used as the person demographics. This is typically
@@ -194,7 +202,10 @@ public class PatientTransformer extends AbstractTransformer {
                     householdId,
                     lsoaCode,
                     msoaCode,
-                    ethnicCode);
+                    ethnicCode,
+                    wardCode,
+                    localAuthorityCode,
+                    registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
@@ -209,7 +220,10 @@ public class PatientTransformer extends AbstractTransformer {
                         householdId,
                         lsoaCode,
                         msoaCode,
-                        ethnicCode);
+                        ethnicCode,
+                        wardCode,
+                        localAuthorityCode,
+                        registeredPracticeId);
             }
 
         } else {
@@ -227,7 +241,10 @@ public class PatientTransformer extends AbstractTransformer {
                     householdId,
                     lsoaCode,
                     msoaCode,
-                    ethnicCode);
+                    ethnicCode,
+                    wardCode,
+                    localAuthorityCode,
+                    registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
@@ -240,9 +257,50 @@ public class PatientTransformer extends AbstractTransformer {
                         householdId,
                         lsoaCode,
                         msoaCode,
-                        ethnicCode);
+                        ethnicCode,
+                        wardCode,
+                        localAuthorityCode,
+                        registeredPracticeId);
             }
         }
+    }
+
+    private Reference findOrgReference(Patient fhirPatient, EnterpriseTransformParams params) throws Exception {
+
+        //find a direct org reference first
+        for (Reference reference: fhirPatient.getCareProvider()) {
+            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+
+            if (comps.getResourceType() == ResourceType.Organization) {
+                return reference;
+            }
+        }
+
+        //if no org reference, look for a practitioner one
+        for (Reference reference: fhirPatient.getCareProvider()) {
+            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+            if (comps.getResourceType() == ResourceType.Practitioner) {
+
+                Practitioner practitioner = (Practitioner)super.findResource(reference, params);
+                if (practitioner == null
+                        || !practitioner.hasPractitionerRole()) {
+                    continue;
+                }
+
+                for (Practitioner.PractitionerPractitionerRoleComponent role: practitioner.getPractitionerRole()) {
+
+                    //ignore any ended roles
+                    if (role.hasPeriod()
+                        && !PeriodHelper.isActive(role.getPeriod())) {
+                        continue;
+                    }
+
+                    return role.getManagingOrganization();
+                }
+            }
+        }
+
+        return null;
     }
 
     private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {

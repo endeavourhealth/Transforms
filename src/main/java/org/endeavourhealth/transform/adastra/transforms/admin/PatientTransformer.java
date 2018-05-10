@@ -139,7 +139,7 @@ public class PatientTransformer {
             throw new Exception("Unexpected address type [" + type + "]");
         }
 
-        return AddressConverter.createAddress(addressUse, line1, line2, village, town, county, postcode);
+        return AddressHelper.createAddress(addressUse, line1, line2, village, town, county, postcode);
     }
 
     private static NhsNumberVerificationStatus convertNhsNumberVeriticationStatus(String status) throws Exception {
