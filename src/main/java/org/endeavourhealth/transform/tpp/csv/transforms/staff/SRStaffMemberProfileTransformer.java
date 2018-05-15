@@ -1,25 +1,18 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
-import org.hl7.fhir.instance.model.Reference;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 
+
 public class SRStaffMemberProfileTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberProfile.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -108,5 +101,8 @@ public class SRStaffMemberProfileTransformer {
 
         //We have the pojo so write it out
         StaffMemberProfileCache.addStaffPojo(staffPojo);
+        if ((StaffMemberProfileCache.size())%10000==0) { //Cache size every 10k records
+            LOG.info("Staff member profile cache at " + StaffMemberProfileCache.size());
+        }
     }
 }

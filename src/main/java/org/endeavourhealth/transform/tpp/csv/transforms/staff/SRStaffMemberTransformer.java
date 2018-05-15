@@ -97,48 +97,62 @@ public class SRStaffMemberTransformer {
 
                 PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
-                CsvCell orgId = pojo.getIDOrganisation();
-                if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
-                    Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                    roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
+                if (!pojo.getIDOrganisation().equals(null)) {
+                    CsvCell orgId = pojo.getIDOrganisation();
+                    if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
+                        Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+                        roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
+                    }
                 }
 
-                CsvCell roleStart = pojo.getDateEmploymentStart();
-                if (!roleStart.isEmpty()) {
-                    roleBuilder.setRoleStartDate(roleStart.getDateTime(), roleStart);
+                if (!pojo.getDateEmploymentStart().equals(null)) {
+                    CsvCell roleStart = pojo.getDateEmploymentStart();
+                    if (!roleStart.isEmpty()) {
+                        roleBuilder.setRoleStartDate(roleStart.getDateTime(), roleStart);
+                    }
                 }
 
-                CsvCell roleEnd = pojo.getDateEmploymentEnd();
-                if (!roleEnd.isEmpty()) {
-                    roleBuilder.setRoleEndDate(roleEnd.getDateTime(), roleEnd);
+                if (!pojo.getDateEmploymentEnd().equals(null)) {
+                    CsvCell roleEnd = pojo.getDateEmploymentEnd();
+                    if (!roleEnd.isEmpty()) {
+                        roleBuilder.setRoleEndDate(roleEnd.getDateTime(), roleEnd);
+                    }
                 }
 
-                CsvCell roleName = pojo.getStaffRole();
-                if (!roleName.isEmpty()) {
-                    CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
-                    codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
-                    codeableConceptBuilder.setCodingDisplay(roleName.getString(),roleName);
+                if (!pojo.getStaffRole().equals(null)) {
+                    CsvCell roleName = pojo.getStaffRole();
+                    if (!roleName.isEmpty()) {
+                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+                        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+                        codeableConceptBuilder.setCodingDisplay(roleName.getString(), roleName);
+                    }
                 }
 
-                CsvCell ppaId = pojo.getPPAID();
-                if (!ppaId.isEmpty()) {
-                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
-                    identifierBuilder.setValue(ppaId.getString(), ppaId);
+                if (!pojo.getPPAID().equals(null)) {
+                    CsvCell ppaId = pojo.getPPAID();
+                    if (!!ppaId.isEmpty()) {
+                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+                        identifierBuilder.setValue(ppaId.getString(), ppaId);
+                    }
                 }
 
-                CsvCell gpLocalCode = pojo.getGPLocalCode();
-                if (!gpLocalCode.isEmpty()) {
-                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
-                    identifierBuilder.setValue(gpLocalCode.getString(), gpLocalCode);
+                if (!pojo.getGPLocalCode().equals(null)) {
+                    CsvCell gpLocalCode = pojo.getGPLocalCode();
+                    if (!gpLocalCode.isEmpty()) {
+                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+                        identifierBuilder.setValue(gpLocalCode.getString(), gpLocalCode);
+                    }
                 }
 
-                CsvCell gmpCode = pojo.getGmpID();
-                if (!gmpCode.isEmpty()) {
-                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
-                    identifierBuilder.setValue(gmpCode.getString(), gmpCode);
+                if (!pojo.getGmpID().equals(null)) {
+                    CsvCell gmpCode = pojo.getGmpID();
+                    if (!gmpCode.isEmpty()) {
+                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+                        identifierBuilder.setValue(gmpCode.getString(), gmpCode);
+                    }
                 }
 
                 StaffMemberProfileCache.removeStaffPojo(pojo);

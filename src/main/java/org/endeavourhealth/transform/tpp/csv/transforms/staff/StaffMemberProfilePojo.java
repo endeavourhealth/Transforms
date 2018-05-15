@@ -43,7 +43,7 @@ public class StaffMemberProfilePojo {
         IdProfileCreatedBy = idProfileCreatedBy;
     }
 
-       public CsvCell getRowIdentifier() {
+    public CsvCell getRowIdentifier() {
         return RowIdentifier;
     }
 
@@ -134,20 +134,21 @@ public class StaffMemberProfilePojo {
 
     @Override
     public String toString() {
+
         return "StaffMemberProfilePojo{" +
-                "IDStaffMember=" + IDStaffMember.toString() +
-                ", RowIdentifier='" + RowIdentifier.toString() + '\'' +
-                ", DateProfileCreated=" + DateProfileCreated.toString() +
-                ", IdProfileCreatedBy='" + IdProfileCreatedBy.toString() + '\'' +
-                ", IDStaffMemberProfileRole='" + IDStaffMemberProfileRole.toString() + '\'' +
-                ", StaffRole='" + StaffRole.toString() + '\'' +
-                ", DateEmploymentStart=" + DateEmploymentStart.toString() +
-                ", DateEmploymentEnd=" + DateEmploymentEnd.toString() +
-                ", PPAID='" + PPAID.toString() + '\'' +
-                ", GPLocalCode='" + GPLocalCode.toString()
+                "IDStaffMember=" + IDStaffMember +
+                ", RowIdentifier='" + RowIdentifier.getString() + '\'' +
+                ", DateProfileCreated=" + DateProfileCreated.getString() +
+                ", IdProfileCreatedBy='" + IdProfileCreatedBy.getString() + '\'' +
+                ", IDStaffMemberProfileRole='" + IDStaffMemberProfileRole.getString() + '\'' +
+                ", StaffRole='" + StaffRole.getString() + '\'' +
+                ", DateEmploymentStart=" + DateEmploymentStart.getString() +
+                ", DateEmploymentEnd=" + DateEmploymentEnd.getString() +
+                ", PPAID='" + PPAID.getString() + '\'' +
+                ", GPLocalCode='" + GPLocalCode.getString()
                 + '\'' +
-                ", IDOrganisation='" + IDOrganisation.toString() + '\'' +
-                ", GmpID='" + GmpID.toString() + '\'' +
+                ", IDOrganisation='" + IDOrganisation.getString() + '\'' +
+                ", GmpID='" + GmpID.getString() + '\'' +
                 ", RemovedData=" + RemovedData +
                 '}';
     }

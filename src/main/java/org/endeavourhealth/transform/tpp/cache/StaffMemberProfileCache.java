@@ -39,7 +39,7 @@ public class StaffMemberProfileCache {
         return (StaffMemberProfileByStaffId.containsKey(staffId));
     }
 
-    public int size() {
+    public static int size() {
         return StaffMemberProfileByStaffId.size();
     }
 }
