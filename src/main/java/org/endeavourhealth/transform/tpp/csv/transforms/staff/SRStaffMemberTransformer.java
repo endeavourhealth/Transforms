@@ -2,17 +2,21 @@ package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
+import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMember;
+import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Reference;
 
+import java.util.List;
 import java.util.Map;
 
 public class SRStaffMemberTransformer {
@@ -82,7 +86,68 @@ public class SRStaffMemberTransformer {
 
             practitionerBuilder.setActive(true, obsolete);
         }
+        // Get cached StaffMemberProfile records
+        if (StaffMemberProfileCache.containsStaffId(staffMemberId.getLong())) {
+            List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getStaffMemberProfilePojo(staffMemberId.getLong());
+
+            for (StaffMemberProfilePojo  pojo : pojoList) {
+                // create the internal link between staff member role and staff member
+                csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                       pojo.getIDStaffMemberProfileRole().getString(), staffMemberId.getString());
+
+                PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
+
+                CsvCell orgId = pojo.getIDOrganisation();
+                if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
+                    Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+                    roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
+                }
+
+                CsvCell roleStart = pojo.getDateEmploymentStart();
+                if (!roleStart.isEmpty()) {
+                    roleBuilder.setRoleStartDate(roleStart.getDateTime(), roleStart);
+                }
+
+                CsvCell roleEnd = pojo.getDateEmploymentEnd();
+                if (!roleEnd.isEmpty()) {
+                    roleBuilder.setRoleEndDate(roleEnd.getDateTime(), roleEnd);
+                }
+
+                CsvCell roleName = pojo.getStaffRole();
+                if (!roleName.isEmpty()) {
+                    CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+                    codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+                    codeableConceptBuilder.setCodingDisplay(roleName.getString(),roleName);
+                }
+
+                CsvCell ppaId = pojo.getPPAID();
+                if (!ppaId.isEmpty()) {
+                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+                    identifierBuilder.setValue(ppaId.getString(), ppaId);
+                }
+
+                CsvCell gpLocalCode = pojo.getGPLocalCode();
+                if (!gpLocalCode.isEmpty()) {
+                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+                    identifierBuilder.setValue(gpLocalCode.getString(), gpLocalCode);
+                }
+
+                CsvCell gmpCode = pojo.getGmpID();
+                if (!gmpCode.isEmpty()) {
+                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+                    identifierBuilder.setValue(gmpCode.getString(), gmpCode);
+                }
+
+                StaffMemberProfileCache.removeStaffPojo(pojo);
+            }
+        }
+
     }
+
+
 
     private static String getNationalIdTypeIdentifierSystem (String nationalIdType) {
 

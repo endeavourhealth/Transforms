@@ -28,10 +28,9 @@ import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTrans
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Constructor;
+import java.nio.file.Files;
 import java.util.*;
 
 public abstract class TppCsvToFhirTransformer {
@@ -94,7 +93,7 @@ public abstract class TppCsvToFhirTransformer {
         possibleVersions.add(VERSION_87);
         possibleVersions.add(VERSION_TEST_PACK);
 
-        for (String filePath: files) {
+        for (String filePath : files) {
 
             try {
                 //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
@@ -127,7 +126,7 @@ public abstract class TppCsvToFhirTransformer {
 
     private static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String version, String[] files, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        for (String filePath: files) {
+        for (String filePath : files) {
 
             try {
                 AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
@@ -321,8 +320,8 @@ public abstract class TppCsvToFhirTransformer {
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3Transformer.transform(parsers, fhirResourceFiler);
         // Staff
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
         // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -333,7 +332,7 @@ public abstract class TppCsvToFhirTransformer {
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting patient transforms");
-        SRPatientTransformer.transform(parsers, fhirResourceFiler,csvHelper);
+        SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         LOG.trace("Starting appointment transforms");
@@ -374,4 +373,38 @@ public abstract class TppCsvToFhirTransformer {
         SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
     }
+
+    private boolean isFileBulk(String[] infiles) {
+        // We try to deduce if this is a bulk file (whole table) or a delta file of updates.
+        // We look at the first 3 rows and if they're very low values then probably old stable
+        // values so this is probably a bulk file.
+        int probabilityBulk = 0;
+        int probabilityThreshold = 3;
+        int lowValue = 150;
+        int count = 0;
+        int max = 3;
+
+        for (String filename : infiles) {
+            try {
+                CSVParser csvFileParser = CSVFormat.DEFAULT.parse(new FileReader(new File(filename)));
+                for (CSVRecord csvRecord : csvFileParser) {
+                    count++;
+                    // Accessing Values by Column Index - 0 based.
+                    if (Integer.parseInt(csvRecord.get(0)) < lowValue) {
+                        probabilityBulk++;
+                    }
+                    if (count > max && probabilityBulk >= probabilityThreshold) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            } catch (Exception ex) {
+                LOG.error("Check for bulk file exception. " + ex.getMessage() );
+            }
+        }
+        return false;
+    }
+
+    ;
 }
