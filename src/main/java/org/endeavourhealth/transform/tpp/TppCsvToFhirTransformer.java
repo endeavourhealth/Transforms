@@ -280,8 +280,7 @@ public abstract class TppCsvToFhirTransformer {
                 || fileName.equals("SRReferralOutStatusDetails")) {
             return "referral";
 
-        } else if (fileName.equals("SRStaff")
-                || fileName.equals("SRStaffMember")
+        } else if (fileName.equals("SRStaffMember")
                 || fileName.equals("SRStaffMemberProfile")
                 || fileName.equals("SRStaffMemberProfileRole")
                 || fileName.equals("SRStaffSkillSet")

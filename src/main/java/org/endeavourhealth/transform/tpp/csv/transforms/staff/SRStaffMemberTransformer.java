@@ -97,7 +97,7 @@ public class SRStaffMemberTransformer {
 
                 PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
-                if (!pojo.getIDOrganisation().equals(null)) {
+                if (pojo.getIDOrganisation() != null) {
                     CsvCell orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
@@ -105,21 +105,21 @@ public class SRStaffMemberTransformer {
                     }
                 }
 
-                if (!pojo.getDateEmploymentStart().equals(null)) {
+                if (pojo.getDateEmploymentStart() !=null) {
                     CsvCell roleStart = pojo.getDateEmploymentStart();
                     if (!roleStart.isEmpty()) {
                         roleBuilder.setRoleStartDate(roleStart.getDateTime(), roleStart);
                     }
                 }
 
-                if (!pojo.getDateEmploymentEnd().equals(null)) {
+                if (pojo.getDateEmploymentEnd() != null) {
                     CsvCell roleEnd = pojo.getDateEmploymentEnd();
                     if (!roleEnd.isEmpty()) {
                         roleBuilder.setRoleEndDate(roleEnd.getDateTime(), roleEnd);
                     }
                 }
 
-                if (!pojo.getStaffRole().equals(null)) {
+                if (pojo.getStaffRole() != null) {
                     CsvCell roleName = pojo.getStaffRole();
                     if (!roleName.isEmpty()) {
                         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
@@ -128,7 +128,7 @@ public class SRStaffMemberTransformer {
                     }
                 }
 
-                if (!pojo.getPPAID().equals(null)) {
+                if (pojo.getPPAID() != null) {
                     CsvCell ppaId = pojo.getPPAID();
                     if (!!ppaId.isEmpty()) {
                         IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
@@ -137,7 +137,7 @@ public class SRStaffMemberTransformer {
                     }
                 }
 
-                if (!pojo.getGPLocalCode().equals(null)) {
+                if (pojo.getGPLocalCode() != null) {
                     CsvCell gpLocalCode = pojo.getGPLocalCode();
                     if (!gpLocalCode.isEmpty()) {
                         IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
@@ -146,7 +146,7 @@ public class SRStaffMemberTransformer {
                     }
                 }
 
-                if (!pojo.getGmpID().equals(null)) {
+                if (pojo.getGmpID() != null) {
                     CsvCell gmpCode = pojo.getGmpID();
                     if (!gmpCode.isEmpty()) {
                         IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
