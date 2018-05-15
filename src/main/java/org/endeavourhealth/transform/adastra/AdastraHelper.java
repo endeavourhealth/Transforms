@@ -1,8 +1,8 @@
-package org.endeavourhealth.transform.adastra.transforms.helpers;
+package org.endeavourhealth.transform.adastra;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.adastra.schema.CodedItem;
+import org.endeavourhealth.transform.adastra.xml.schema.*;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 

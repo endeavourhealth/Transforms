@@ -1,5 +1,5 @@
 
-package org.endeavourhealth.transform.adastra.schema;
+package org.endeavourhealth.transform.adastra.xml.schema;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

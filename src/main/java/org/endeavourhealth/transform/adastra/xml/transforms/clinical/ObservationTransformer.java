@@ -1,19 +1,19 @@
-package org.endeavourhealth.transform.adastra.transforms.clinical;
+package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Observation;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.observationIds;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.observationIds;
 
 public class ObservationTransformer {
 

@@ -1,9 +1,9 @@
-package org.endeavourhealth.transform.adastra.transforms.clinical;
+package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
@@ -12,7 +12,7 @@ import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
 
 public class EpisodeTransformer {
 

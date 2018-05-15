@@ -1,11 +1,11 @@
-package org.endeavourhealth.transform.adastra.transforms.clinical;
+package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.Encounter;
@@ -14,8 +14,8 @@ import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.consultationIds;
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.consultationIds;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
 
 public class EncounterTransform {
 

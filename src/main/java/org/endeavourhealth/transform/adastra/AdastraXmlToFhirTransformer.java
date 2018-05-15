@@ -3,22 +3,20 @@ package org.endeavourhealth.transform.adastra;
 import org.endeavourhealth.common.utility.XmlHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.transforms.admin.LocationTransform;
-import org.endeavourhealth.transform.adastra.transforms.admin.OrganisationTransformer;
-import org.endeavourhealth.transform.adastra.transforms.admin.PatientTransformer;
-import org.endeavourhealth.transform.adastra.transforms.admin.UserTransform;
-import org.endeavourhealth.transform.adastra.transforms.clinical.EncounterTransform;
-import org.endeavourhealth.transform.adastra.transforms.clinical.EpisodeTransformer;
-import org.endeavourhealth.transform.adastra.transforms.clinical.FlagTransform;
-import org.endeavourhealth.transform.adastra.transforms.clinical.ObservationTransformer;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
+import org.endeavourhealth.transform.adastra.xml.transforms.admin.LocationTransform;
+import org.endeavourhealth.transform.adastra.xml.transforms.admin.OrganisationTransformer;
+import org.endeavourhealth.transform.adastra.xml.transforms.admin.PatientTransformer;
+import org.endeavourhealth.transform.adastra.xml.transforms.admin.UserTransform;
+import org.endeavourhealth.transform.adastra.xml.transforms.clinical.EncounterTransform;
+import org.endeavourhealth.transform.adastra.xml.transforms.clinical.EpisodeTransformer;
+import org.endeavourhealth.transform.adastra.xml.transforms.clinical.FlagTransform;
+import org.endeavourhealth.transform.adastra.xml.transforms.clinical.ObservationTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 
 import java.util.List;
 import java.util.UUID;
-
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
 
 public abstract class AdastraXmlToFhirTransformer {
 
@@ -39,7 +37,7 @@ public abstract class AdastraXmlToFhirTransformer {
         PatientTransformer.transform(caseReport, processor);
         EpisodeTransformer.transform(caseReport, processor);
         EncounterTransform.createMainCaseEncounter(caseReport, processor);
-        String mainEncounterId = uniqueIdMapper.get("caseEncounter");
+        String mainEncounterId = AdastraHelper.uniqueIdMapper.get("caseEncounter");
 
         if (caseReport.getConsultation() != null) {
             EncounterTransform.createChildEncountersFromConsultations(caseReport, processor);

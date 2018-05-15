@@ -1,10 +1,10 @@
-package org.endeavourhealth.transform.adastra.transforms.admin;
+package org.endeavourhealth.transform.adastra.xml.transforms.admin;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.transform.adastra.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Meta;
@@ -13,7 +13,7 @@ import org.hl7.fhir.instance.model.Practitioner;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
 
 public class UserTransform {
 

@@ -1,10 +1,10 @@
-package org.endeavourhealth.transform.adastra.transforms.admin;
+package org.endeavourhealth.transform.adastra.xml.transforms.admin;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.transform.adastra.schema.*;
-import org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper;
+import org.endeavourhealth.transform.adastra.AdastraHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
@@ -12,7 +12,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.transforms.helpers.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
 
 public class PatientTransformer {
 
