@@ -146,6 +146,12 @@ public class SRDrugSensitivityTransformer {
             }
         }
 
+        // get multi-lex action group / thereputic category
+        CsvCell drugMultiLexActionId = parser.getIDMultiLexAction();
+        if (!drugMultiLexActionId.isEmpty()) {
+            //TODO: implement lookup
+        }
+
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
