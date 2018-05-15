@@ -322,7 +322,7 @@ public abstract class TppCsvToFhirTransformer {
         // Staff
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
+        //PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
         // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Organisations

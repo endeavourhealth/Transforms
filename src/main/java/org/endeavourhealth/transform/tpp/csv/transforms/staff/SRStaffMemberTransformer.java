@@ -44,8 +44,8 @@ public class SRStaffMemberTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell staffMemberId = parser.getRowIdentifier();
-        PractitionerBuilder practitionerBuilder
-                = PractitionerResourceCache.getPractitionerBuilder(staffMemberId, csvHelper, fhirResourceFiler);
+        PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
+        practitionerBuilder.setId(staffMemberId.getString(), staffMemberId);
 
         CsvCell fullName = parser.getStaffName();
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
