@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -87,9 +86,6 @@ public class EncounterTransformer {
             String term = convertSessionTypeCode(sessionTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_SOURCE);
-                codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_SOURCE);
-                codeableConceptBuilder.setCodingCode(sessionTypeCode.getString(), sessionTypeCode);
-                codeableConceptBuilder.setCodingDisplay(term);
                 codeableConceptBuilder.setText(term);
             }
         }
@@ -99,9 +95,6 @@ public class EncounterTransformer {
             String term = convertLocationTypeCode(locationTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_LOCATION_TYPE);
-                codeableConceptBuilder.addCoding(FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
-                codeableConceptBuilder.setCodingCode(locationTypeCode.getString(), locationTypeCode);
-                codeableConceptBuilder.setCodingDisplay(term);
                 codeableConceptBuilder.setText(term);
             }
         }
