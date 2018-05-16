@@ -96,7 +96,7 @@ public class SREventTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 encounterBuilder.setRecordedBy(staffReference, recordedBy);
@@ -129,25 +129,9 @@ public class SREventTransformer {
             if (tppConfigListOption != null) {
                 String contactType = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactType)) {
-
                     CodeableConceptBuilder codeableConceptbuilder
                             = new CodeableConceptBuilder(encounterBuilder, encounterBuilder.TAG_SOURCE);
-                    codeableConceptbuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                    codeableConceptbuilder.setCodingCode(contactTypeCell.getString());
-                    codeableConceptbuilder.setCodingDisplay(contactType);
                     codeableConceptbuilder.setText(contactType);
-                    // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
-                    if (!contactType.startsWith("Y")) {
-                        // translate to Snomed
-                        SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(contactType);
-                        if (snomedCode != null) {
-
-                            codeableConceptbuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                            codeableConceptbuilder.setCodingCode(snomedCode.getConceptCode());
-                            codeableConceptbuilder.setCodingDisplay(snomedCode.getTerm());
-                            codeableConceptbuilder.setText(snomedCode.getTerm());
-                        }
-                    }
                 }
             }
         }
