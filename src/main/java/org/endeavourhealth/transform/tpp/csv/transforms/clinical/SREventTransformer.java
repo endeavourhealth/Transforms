@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.terminology.SnomedCode;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -129,9 +132,22 @@ public class SREventTransformer {
 
                     CodeableConceptBuilder codeableConceptbuilder
                             = new CodeableConceptBuilder(encounterBuilder, encounterBuilder.TAG_SOURCE);
+                    codeableConceptbuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
                     codeableConceptbuilder.setCodingCode(contactTypeCell.getString());
                     codeableConceptbuilder.setCodingDisplay(contactType);
                     codeableConceptbuilder.setText(contactType);
+                    // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
+                    if (!contactType.startsWith("Y")) {
+                        // translate to Snomed
+                        SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(contactType);
+                        if (snomedCode != null) {
+
+                            codeableConceptbuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                            codeableConceptbuilder.setCodingCode(snomedCode.getConceptCode());
+                            codeableConceptbuilder.setCodingDisplay(snomedCode.getTerm());
+                            codeableConceptbuilder.setText(snomedCode.getTerm());
+                        }
+                    }
                 }
             }
         }
