@@ -53,17 +53,26 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
         this.allergyIntolerance.setOnsetElement(dateTimeType);
 
         auditValue("onset", sourceCells);
-
     }
 
     public void setSeverity(AllergyIntolerance.AllergyIntoleranceSeverity allergyIntoleranceSeverity, CsvCell... sourceCells) {
-        this.allergyIntolerance.addReaction().setSeverity(allergyIntoleranceSeverity);
+
+        if (this.allergyIntolerance.hasReaction()) {
+            this.allergyIntolerance.getReaction().get(0).setSeverity(allergyIntoleranceSeverity);
+        } else {
+            this.allergyIntolerance.addReaction().setSeverity(allergyIntoleranceSeverity);
+        }
 
         auditValue("severity", sourceCells);
     }
 
     public void setCertainty(AllergyIntolerance.AllergyIntoleranceCertainty allergyIntoleranceCertainty, CsvCell... sourceCells) {
-        this.allergyIntolerance.addReaction().setCertainty(allergyIntoleranceCertainty);
+
+        if (this.allergyIntolerance.hasReaction()) {
+            this.allergyIntolerance.getReaction().get(0).setCertainty(allergyIntoleranceCertainty);
+        } else {
+            this.allergyIntolerance.addReaction().setCertainty(allergyIntoleranceCertainty);
+        }
 
         auditValue("certainty", sourceCells);
     }
