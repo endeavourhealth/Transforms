@@ -124,7 +124,7 @@ public class SREventTransformer {
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
         CsvCell contactTypeCell = parser.getContactMethod();
-        if (!contactTypeCell.isEmpty()) {
+        if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell.getLong());
             if (tppConfigListOption != null) {
                 String contactType = tppConfigListOption.getListOptionName();
