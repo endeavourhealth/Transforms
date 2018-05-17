@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
@@ -20,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SRRepeatTemplateTransformer {
 
@@ -140,12 +143,20 @@ public class SRRepeatTemplateTransformer {
         CsvCell quantity = parser.getMedicationQuantity();
         if (!quantity.isEmpty()) {
 
-            String qty = quantity.getString().substring(0, quantity.getString().indexOf(" "));
-            String units = quantity.getString().substring(quantity.getString().indexOf(" ")+1);
+            Pattern pattern = Pattern.compile("\\d+");
+            Matcher match = pattern.matcher(quantity.getString());
+            if (match.find()) {
+                String qty = match.group();
+                String units = quantity.getString().substring(match.end(),quantity.getString().length()).trim();
+//                String qty = quantity.getString().substring(0, quantity.getString().indexOf(" "));
+//                String units = quantity.getString().substring(quantity.getString().indexOf(" ") + 1);
+                if (StringUtils.isNumeric(qty)) {
+                    medicationStatementBuilder.setQuantityValue(Double.valueOf(qty), quantity);
+                }
+                medicationStatementBuilder.setQuantityUnit(units, quantity);
+            }
 
-            medicationStatementBuilder.setQuantityValue(Double.valueOf(qty), quantity);
-            medicationStatementBuilder.setQuantityUnit(units, quantity);
-        }
+           }
 
         CsvCell dose = parser.getMedicationDosage();
         if (!dose.isEmpty()) {

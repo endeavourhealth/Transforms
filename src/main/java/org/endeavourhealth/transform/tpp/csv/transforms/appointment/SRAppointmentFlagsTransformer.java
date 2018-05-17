@@ -7,8 +7,10 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointmentFlags;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.StaffMemberProfilePojo;
 
 import java.util.Map;
 
@@ -36,22 +38,33 @@ public class SRAppointmentFlagsTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell appointmentId = parser.getIDAppointment();
+        if (appointmentId.isEmpty()) {
+            return;
+        }
 
-        if (!appointmentId.isEmpty()) {
-            AppointmentBuilder appointmentBuilder
-                    = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
-            if (!appointmentBuilder.getResource().isEmpty()) {
-                //flags could range from Interpreter Required to Transport Booked so add the detail to the appointment comments
-                CsvCell appointmentFlag = parser.getFlag();
-                if (!appointmentFlag.isEmpty() && appointmentFlag.getLong() > 0) {
+        AppointmentFlagsPojo apptFlagPojo = new AppointmentFlagsPojo();
+        apptFlagPojo.setIDAppointment(apptFlagPojo.getIDAppointment());
 
-                    TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentFlag.getLong());
-                    String flagMapping = tppMappingRef.getMappedTerm();
-                    if (!Strings.isNullOrEmpty(flagMapping)) {
-                        appointmentBuilder.setComments(flagMapping);
-                    }
-                }
-            }
+        CsvCell appointmentFlagsId = parser.getRowIdentifier();
+        apptFlagPojo.setRowIdentifier(appointmentFlagsId);
+
+        CsvCell orgId = parser.getIDOrganisationVisibleTo();
+        if (!orgId.isEmpty()) {
+            apptFlagPojo.setIDOrganisationVisibleTo(orgId);
+        }
+
+        CsvCell flag = parser.getFlag();
+        if (!flag.isEmpty()) {
+            apptFlagPojo.setFlag(flag);
+        }
+
+        CsvCell removed = parser.getRemovedData();
+        if (!removed.isEmpty()) {
+            apptFlagPojo.setRemovedData(removed);
+        }
+
+        AppointmentFlagCache.addAppointmentFlagPojo(apptFlagPojo);
+
         }
     }
-}
+

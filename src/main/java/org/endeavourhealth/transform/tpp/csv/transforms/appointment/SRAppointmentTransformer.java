@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public class SRAppointmentTransformer {
@@ -165,6 +167,23 @@ public class SRAppointmentTransformer {
             Appointment.AppointmentStatus status = convertAppointmentStatus (statusTerm);
             appointmentBuilder.setStatus(status, appointmentStatus);
         }
+
+        // Check for appointment flags
+
+        if (AppointmentFlagCache.containsAppointmentId(appointmentId.getLong())) {
+            List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getStaffMemberProfilePojo(appointmentId.getLong());
+
+            for (AppointmentFlagsPojo pojo : pojoList) {
+                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag().getLong());
+                String flagMapping = tppMappingRef.getMappedTerm();
+                if (!Strings.isNullOrEmpty(flagMapping)) {
+                    appointmentBuilder.setComments(flagMapping);
+                }
+
+            }
+
+        }
+
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
     }
