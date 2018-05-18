@@ -381,7 +381,8 @@ public class JournalTransformer {
         CsvCell enteredDate = parser.getEnteredDateTime();
         allergyIntoleranceBuilder.setRecordedDate(enteredDate.getDate(), enteredDate);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, null);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(allergyIntoleranceBuilder, null);
         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
         CsvCell snomedCode = parser.getSnomedCode();
@@ -463,16 +464,22 @@ public class JournalTransformer {
             return;
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder,  ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
         CsvCell snomedCode = parser.getSnomedCode();
-        if (!snomedCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-        }
         CsvCell term = parser.getRubric();
+
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+
+        if (!snomedCode.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             codeableConceptBuilder.setText(term.getString(), term);
         }
 
@@ -542,16 +549,22 @@ public class JournalTransformer {
         conditionBuilder.setCategory("complaint", observationID);
         conditionBuilder.setAsProblem(true);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
         CsvCell snomedCode = parser.getSnomedCode();
-        if (!snomedCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-        }
         CsvCell term = parser.getRubric();
+
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
+
+        if (!snomedCode.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             codeableConceptBuilder.setText(term.getString(), term);
         }
 
@@ -639,23 +652,23 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         observationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
 
-        // is there any coding in the row?
-        boolean coded = (!Strings.isNullOrEmpty(parser.getReadCode().getString()) ||
-                            !Strings.isNullOrEmpty(parser.getSnomedCode().getString()));
+        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell term = parser.getRubric();
 
-        if (coded) {
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
 
-            CsvCell snomedCode = parser.getSnomedCode();
-            if (!snomedCode.isEmpty()) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            }
-            CsvCell term = parser.getRubric();
+        if (!snomedCode.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
-                codeableConceptBuilder.setText(term.getString(), term);
             }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
+        if (!term.isEmpty()) {
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell clinicianID = parser.getClinicianUserID();
@@ -796,16 +809,21 @@ public class JournalTransformer {
         //so just use the generic family member term
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, null);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(familyMemberHistoryBuilder, null);
 
         CsvCell snomedCode = parser.getSnomedCode();
-        if (!snomedCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-        }
         CsvCell term = parser.getRubric();
+        if (!snomedCode.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             codeableConceptBuilder.setText(term.getString(), term);
         }
 
@@ -878,16 +896,21 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         immunizationBuilder.setPerformedDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, ImmunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(immunizationBuilder, ImmunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT);
 
         CsvCell snomedCode = parser.getSnomedCode();
-        if (!snomedCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-        }
         CsvCell term = parser.getRubric();
+        if (!snomedCode.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             codeableConceptBuilder.setText(term.getString(), term);
         }
 
