@@ -52,7 +52,7 @@ public class SRPatientRegistrationTransformer {
             return;
         }
         CsvCell removeDataCell = parser.getRemovedData();
-        if (removeDataCell.getIntAsBoolean()) {
+        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             org.hl7.fhir.instance.model.EpisodeOfCare episode
                     = (org.hl7.fhir.instance.model.EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(),
                     ResourceType.EpisodeOfCare,

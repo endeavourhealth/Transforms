@@ -44,7 +44,7 @@ public class SRRecordStatusTransformer {
         }
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if (removeDataCell.getIntAsBoolean()) {
+        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             return;
         }
 

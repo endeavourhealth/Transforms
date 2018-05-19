@@ -59,31 +59,33 @@ public class SRAppointmentTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-
-                // get previously filed resources for deletion
-                org.hl7.fhir.instance.model.Appointment appointment
-                        = (org.hl7.fhir.instance.model.Appointment) csvHelper.retrieveResource(appointmentId.getString(),
-                        ResourceType.Appointment,
-                        fhirResourceFiler);
-
-                org.hl7.fhir.instance.model.Slot slot
-                        = (org.hl7.fhir.instance.model.Slot) csvHelper.retrieveResource(appointmentId.getString(),
-                        ResourceType.Slot,
-                        fhirResourceFiler);
-
-                if (appointment != null && slot != null) {
-                    AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-                    SlotBuilder slotBuilder = new SlotBuilder(slot);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+            if (!deleteData.isEmpty()) {
+                if (!deleteData.getIntAsBoolean()) {
+                    TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                            parser.getRowIdentifier().getString(), parser.getFilePath());
                     return;
+                } else {
+
+                    // get previously filed resources for deletion
+                    org.hl7.fhir.instance.model.Appointment appointment
+                            = (org.hl7.fhir.instance.model.Appointment) csvHelper.retrieveResource(appointmentId.getString(),
+                            ResourceType.Appointment,
+                            fhirResourceFiler);
+
+                    org.hl7.fhir.instance.model.Slot slot
+                            = (org.hl7.fhir.instance.model.Slot) csvHelper.retrieveResource(appointmentId.getString(),
+                            ResourceType.Slot,
+                            fhirResourceFiler);
+
+                    if (appointment != null && slot != null) {
+                        AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+                        SlotBuilder slotBuilder = new SlotBuilder(slot);
+                        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
+                        return;
+                    }
                 }
+                return;
             }
-            return;
         }
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
