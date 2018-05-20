@@ -53,7 +53,7 @@ public class SRProblemTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
+            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
                 TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;

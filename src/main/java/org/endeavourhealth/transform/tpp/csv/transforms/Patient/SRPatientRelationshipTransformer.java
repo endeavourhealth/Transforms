@@ -56,7 +56,7 @@ public class SRPatientRelationshipTransformer {
         contactBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
+        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             List<Patient.ContactComponent> contacts =  patientBuilder.getPatientContactComponents();
             for (Patient.ContactComponent cc : contacts) {
               if (cc.getId().equals(rowIdCell.getString())) {

@@ -418,7 +418,7 @@ public class SRCodeTransformer {
                 TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
+            } else if ((deleteData != null) && !deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Observation observation

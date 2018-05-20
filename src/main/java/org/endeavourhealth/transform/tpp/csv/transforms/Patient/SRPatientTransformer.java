@@ -55,7 +55,7 @@ public class SRPatientTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
+        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             if (PatientResourceCache.patientInCache(rowIdCell)) {
                 PatientResourceCache.removePatientByRowId(rowIdCell, fhirResourceFiler,parser);
             }

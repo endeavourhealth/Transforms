@@ -52,7 +52,7 @@ public class SRPatientAddressHistoryTransformer {
         CsvCell IdPatientCell = parser.getIDPatient();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
+        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             List<Address> addresses = patientBuilder.getAddresses();
             for (Address address : addresses) {
                 if (address.getId().equals(rowIdCell.getString())) {

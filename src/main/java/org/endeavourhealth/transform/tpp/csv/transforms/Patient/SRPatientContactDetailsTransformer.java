@@ -53,7 +53,7 @@ public class SRPatientContactDetailsTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
+        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             List<ContactPoint> contacts =  patientBuilder.getContactPoint();
             for (ContactPoint contact : contacts) {
                 if (contact.getId().equals(rowIdCell.getString())) {

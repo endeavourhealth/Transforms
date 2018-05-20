@@ -132,26 +132,7 @@ public class StaffMemberProfilePojo {
         RemovedData = removedData;
     }
 
-    @Override
-    public String toString() {
 
-        return "StaffMemberProfilePojo{" +
-                "IDStaffMember=" + IDStaffMember +
-                ", RowIdentifier='" + RowIdentifier.getString() + '\'' +
-                ", DateProfileCreated=" + DateProfileCreated.getString() +
-                ", IdProfileCreatedBy='" + IdProfileCreatedBy.getString() + '\'' +
-                ", IDStaffMemberProfileRole='" + IDStaffMemberProfileRole.getString() + '\'' +
-                ", StaffRole='" + StaffRole.getString() + '\'' +
-                ", DateEmploymentStart=" + DateEmploymentStart.getString() +
-                ", DateEmploymentEnd=" + DateEmploymentEnd.getString() +
-                ", PPAID='" + PPAID.getString() + '\'' +
-                ", GPLocalCode='" + GPLocalCode.getString()
-                + '\'' +
-                ", IDOrganisation='" + IDOrganisation.getString() + '\'' +
-                ", GmpID='" + GmpID.getString() + '\'' +
-                ", RemovedData=" + RemovedData +
-                '}';
-    }
 
     @Override
     public boolean equals(Object o) {

@@ -59,7 +59,7 @@ public class SRAppointmentTransformer {
 
         if (patientId.isEmpty()) {
 
-            if (!deleteData.isEmpty()) {
+            if ((deleteData != null) && !deleteData.isEmpty()) {
                 if (!deleteData.getIntAsBoolean()) {
                     TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                             parser.getRowIdentifier().getString(), parser.getFilePath());

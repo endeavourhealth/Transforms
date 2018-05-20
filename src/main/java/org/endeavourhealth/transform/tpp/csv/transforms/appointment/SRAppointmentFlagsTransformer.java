@@ -59,7 +59,7 @@ public class SRAppointmentFlagsTransformer {
         }
 
         CsvCell removed = parser.getRemovedData();
-        if (!removed.isEmpty()) {
+        if ((removed != null) && !removed.isEmpty()) {
             apptFlagPojo.setRemovedData(removed);
         }
 
