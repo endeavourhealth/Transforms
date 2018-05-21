@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -368,16 +369,21 @@ public class CLEVETransformer extends BartsBasisTransformer {
         if (!low.isEmpty() || !high.isEmpty()) {
             //going by how lab results were defined in the pathology spec, if we have upper and lower bounds,
             //it's an inclusive range. If we only have one bound, then it's non-inclusive.
-            try {
-                if (!low.isEmpty() && !high.isEmpty()) {
-                    observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_OR_EQUAL, low);
-                    observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_OR_EQUAL, high);
 
-                } else if (!low.isEmpty()) {
-                    observationBuilder.setRecommendedRangeLow(low.getDouble(), unitsDesc, Quantity.QuantityComparator.GREATER_THAN, low);
+            //sometimes the brackets are passed down from the path system to Cerner so strip them off
+            String lowParsed = low.getString().replace("(","");
+            String highParsed = high.getString().replace(")","");
+
+            try {
+                if (!Strings.isNullOrEmpty(lowParsed) && !Strings.isNullOrEmpty(highParsed)) {
+                    observationBuilder.setRecommendedRangeLow(new Double(lowParsed), unitsDesc, Quantity.QuantityComparator.GREATER_OR_EQUAL, low);
+                    observationBuilder.setRecommendedRangeHigh(new Double(highParsed), unitsDesc, Quantity.QuantityComparator.LESS_OR_EQUAL, high);
+
+                } else if (!Strings.isNullOrEmpty(lowParsed)) {
+                    observationBuilder.setRecommendedRangeLow(new Double(lowParsed), unitsDesc, Quantity.QuantityComparator.GREATER_THAN, low);
 
                 } else {
-                    observationBuilder.setRecommendedRangeHigh(high.getDouble(), unitsDesc, Quantity.QuantityComparator.LESS_THAN, high);
+                    observationBuilder.setRecommendedRangeHigh(new Double(highParsed), unitsDesc, Quantity.QuantityComparator.LESS_THAN, high);
                 }
             }
             catch (NumberFormatException ex) {
