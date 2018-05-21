@@ -43,7 +43,7 @@ public class SRAppointmentFlagsTransformer {
         }
 
         AppointmentFlagsPojo apptFlagPojo = new AppointmentFlagsPojo();
-        apptFlagPojo.setIDAppointment(apptFlagPojo.getIDAppointment());
+        apptFlagPojo.setIDAppointment(appointmentId);
 
         CsvCell appointmentFlagsId = parser.getRowIdentifier();
         apptFlagPojo.setRowIdentifier(appointmentFlagsId);
