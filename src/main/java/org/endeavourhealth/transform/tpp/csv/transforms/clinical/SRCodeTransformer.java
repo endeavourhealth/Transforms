@@ -115,8 +115,10 @@ public class SRCodeTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell procedureDoneBy = parser.getIDDoneBy();
@@ -221,8 +223,10 @@ public class SRCodeTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            procedureBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                procedureBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell procedureDoneBy = parser.getIDDoneBy();
@@ -328,8 +332,10 @@ public class SRCodeTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            conditionBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                conditionBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell clinicianDoneBy = parser.getIDDoneBy();
@@ -572,8 +578,10 @@ public class SRCodeTransformer {
 
             String staffMemberId =
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-            familyMemberHistoryBuilder.setRecordedBy(staffReference, recordedBy);
+            if (!Strings.isNullOrEmpty(staffMemberId)) {
+                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                familyMemberHistoryBuilder.setRecordedBy(staffReference, recordedBy);
+            }
         }
 
         CsvCell observationDoneBy = parser.getIDDoneBy();
