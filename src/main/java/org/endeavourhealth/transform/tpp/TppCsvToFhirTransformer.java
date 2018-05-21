@@ -194,6 +194,18 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRSmsConsent");
             set.add("SRSpecialNotes");
             set.add("SRStaff");
+            //TODO  Remove staffMember and StaffMemberProfile
+            //TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+//TODO  Remove staffMember and StaffMemberProfile
+
+            set.add("SRStaffMember");
+            set.add("SRStaffMemberProfile");
             set.add("SRSystmOnline");
             set.add("SRTemplate");
 
@@ -319,8 +331,16 @@ public abstract class TppCsvToFhirTransformer {
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3Transformer.transform(parsers, fhirResourceFiler);
         // Staff
-        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        //TODO  Uncomment staffMember and StaffMemberProfile
+//TODO  Uncomment staffMember and StaffMemberProfile
+//TODO  Uncomment staffMember and StaffMemberProfile
+//TODO  Uncomment staffMember and StaffMemberProfile
+//TODO  Uncomment staffMember and StaffMemberProfile
+//TODO  Uncomment staffMember and StaffMemberProfile
+
+
+//        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         //PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
         // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -399,7 +419,7 @@ public abstract class TppCsvToFhirTransformer {
                     }
                 }
             } catch (Exception ex) {
-                LOG.error("Check for bulk file exception. " + ex.getMessage() );
+                LOG.error("Check for bulk file exception. " + ex.getMessage());
             }
         }
         return false;
