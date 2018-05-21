@@ -161,8 +161,8 @@ public class SRImmunisationTransformer {
                 codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
                 String readV3Term = ctv3Lookup.getCtv3Text();
                 //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
-                codeableConceptBuilder.setCodingDisplay(readV3Term, null);
-                codeableConceptBuilder.setText(readV3Term, null);
+                codeableConceptBuilder.setCodingDisplay(readV3Term, readV3Code);
+                codeableConceptBuilder.setText(readV3Term, readV3Code);
             }
 
             // translate to Snomed if code does not start with "Y" as they are local TPP codes
