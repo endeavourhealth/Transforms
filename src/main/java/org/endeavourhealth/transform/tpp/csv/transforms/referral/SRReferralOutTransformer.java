@@ -211,12 +211,14 @@ public class SRReferralOutTransformer {
         if (!referralRecipientType.isEmpty()) {
 
             CsvCell referralRecipientId = parser.getRecipientID();
-            if (recipientIsPerson(referralRecipientType.getLong(), csvHelper)) {
-                Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
-                referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
-            } else {
-                Reference orgReference = csvHelper.createOrganisationReference(referralRecipientId);
-                referralRequestBuilder.addRecipient(orgReference, referralRecipientId);
+            if (!referralRecipientId.isEmpty()) {
+                if (recipientIsPerson(referralRecipientType.getLong(), csvHelper)) {
+                    Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
+                    referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
+                } else {
+                    Reference orgReference = csvHelper.createOrganisationReference(referralRecipientId);
+                    referralRequestBuilder.addRecipient(orgReference, referralRecipientId);
+                }
             }
         }
 
