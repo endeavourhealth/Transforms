@@ -145,6 +145,11 @@ public abstract class VisionCsvToFhirTransformer {
             return;
         }
 
+        if (name.equalsIgnoreCase("Practice")  || name.equalsIgnoreCase("Staff")) {
+            LOG.trace("Failed to find CSV file for "+name+". Continuing with transform.");
+            return;
+        }
+
         throw new FileNotFoundException("Failed to find CSV file for " + name);
     }
 

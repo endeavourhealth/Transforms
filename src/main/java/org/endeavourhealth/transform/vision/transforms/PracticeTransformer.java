@@ -27,12 +27,16 @@ public class PracticeTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Practice.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((Practice)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        //if the Practice file has skipped a day then it might not be available
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((Practice) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
      }

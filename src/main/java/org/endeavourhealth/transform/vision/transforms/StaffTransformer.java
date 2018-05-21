@@ -21,12 +21,16 @@ public class StaffTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Staff.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((Staff)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        //if the Staff file has skipped a day then it might not be available
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((Staff) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
