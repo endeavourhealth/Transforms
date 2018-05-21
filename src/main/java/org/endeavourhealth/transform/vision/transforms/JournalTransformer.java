@@ -39,20 +39,23 @@ public class JournalTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Journal.class);
-        while (parser.nextRecord()) {
 
-            try {
-                //depending whether deleting or saving, we go through a different path to find what
-                //the target resource type should be
-                Journal journalParser = (Journal)parser;
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-                if (journalParser.getAction().getString().equalsIgnoreCase("D")) {
-                    deleteResource(journalParser, fhirResourceFiler, csvHelper, version);
-                } else {
-                    createResource(journalParser, fhirResourceFiler, csvHelper, version);
+                try {
+                    //depending whether deleting or saving, we go through a different path to find what
+                    //the target resource type should be
+                    Journal journalParser = (Journal) parser;
+
+                    if (journalParser.getAction().getString().equalsIgnoreCase("D")) {
+                        deleteResource(journalParser, fhirResourceFiler, csvHelper, version);
+                    } else {
+                        createResource(journalParser, fhirResourceFiler, csvHelper, version);
+                    }
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }

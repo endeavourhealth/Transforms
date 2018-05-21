@@ -22,12 +22,15 @@ public class JournalDrugPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(Journal.class);
-        while (parser.nextRecord()) {
 
-            try {
-                processLine((Journal)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                throw new TransformException(parser.getCurrentState().toString(), ex);
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    processLine((Journal) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                }
             }
         }
     }

@@ -34,12 +34,14 @@ public class EncounterPreTransformer {
         //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(org.endeavourhealth.transform.vision.schema.Encounter.class);
-            while (parser.nextRecord()) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                try {
-                    transform((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper, threadPool);
-                } catch (Exception ex) {
-                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                    try {
+                        transform((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper, threadPool);
+                    } catch (Exception ex) {
+                        throw new TransformException(parser.getCurrentState().toString(), ex);
+                    }
                 }
             }
 

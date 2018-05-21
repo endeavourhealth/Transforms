@@ -117,8 +117,12 @@ public abstract class VisionCsvToFhirTransformer {
 
         String name = parserCls.getSimpleName();
 
+        int fileCount = 0;
+
         for (String filePath: files) {
             String fName = FilenameUtils.getName(filePath);
+
+            fileCount++;
 
             //we're only interested in CSV files
             String extension = Files.getFileExtension(fName);
@@ -145,14 +149,25 @@ public abstract class VisionCsvToFhirTransformer {
             return;
         }
 
-        if (name.equalsIgnoreCase("Practice")  || name.equalsIgnoreCase("Staff")) {
-            LOG.trace("Failed to find CSV file for "+name+". Continuing with transform.");
-            return;
+        //if the file count is 4, manage the scenario below
+        if (fileCount == 4) {
+
+            //patient files exist (4) but no admin files.  Must have skipped a day
+            if (name.equalsIgnoreCase("Practice") || name.equalsIgnoreCase("Staff")) {
+                LOG.trace("Failed to find CSV file for " + name + ". Missing admin file...continuing with transform.");
+                return;
+            }
+
+            //admin files exist (4) but no patient files.  Admin batch only
+            if (name.equalsIgnoreCase("Patient") || name.equalsIgnoreCase("Encounter")
+                    || name.equalsIgnoreCase("Journal") || name.equalsIgnoreCase("Referral")) {
+                LOG.trace("Failed to find CSV file for " + name + ". Admin batch only...continuing with transform.");
+                return;
+            }
         }
 
         throw new FileNotFoundException("Failed to find CSV file for " + name);
     }
-
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,

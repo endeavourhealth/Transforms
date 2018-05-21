@@ -31,12 +31,15 @@ public class PatientTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Patient.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((Patient)parser, fhirResourceFiler, csvHelper, version);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((Patient) parser, fhirResourceFiler, csvHelper, version);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

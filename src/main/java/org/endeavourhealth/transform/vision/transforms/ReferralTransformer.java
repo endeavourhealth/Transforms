@@ -28,12 +28,15 @@ public class ReferralTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Referral.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((Referral)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((Referral) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

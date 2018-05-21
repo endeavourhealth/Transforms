@@ -24,12 +24,15 @@ public class EncounterTransformer {
                                  VisionCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(org.endeavourhealth.transform.vision.schema.Encounter.class);
-        while (parser.nextRecord()) {
 
-            try {
-                createResource((org.endeavourhealth.transform.vision.schema.Encounter)parser, fhirResourceFiler, csvHelper, version);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper, version);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }

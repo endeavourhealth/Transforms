@@ -33,13 +33,16 @@ public class JournalProblemPreTransformer {
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
         AbstractCsvParser parser = parsers.get(Journal.class);
-        while (parser.nextRecord()) {
 
-            try {
-                processLine((Journal) parser, fhirResourceFiler, csvHelper, version, threadPool);
-            } catch (Exception ex) {
-                List<ThreadPoolError> errors = threadPool.waitAndStop();
-                handleErrors(errors);
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    processLine((Journal) parser, fhirResourceFiler, csvHelper, version, threadPool);
+                } catch (Exception ex) {
+                    List<ThreadPoolError> errors = threadPool.waitAndStop();
+                    handleErrors(errors);
+                }
             }
         }
     }

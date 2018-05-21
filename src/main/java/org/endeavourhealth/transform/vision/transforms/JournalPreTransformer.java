@@ -28,12 +28,15 @@ public class JournalPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file is a critical error
         AbstractCsvParser parser = parsers.get(Journal.class);
-        while (parser.nextRecord()) {
 
-            try {
-                processLine((Journal)parser, csvHelper, fhirResourceFiler, version);
-            } catch (Exception ex) {
-                throw new TransformException(parser.getCurrentState().toString(), ex);
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    processLine((Journal) parser, csvHelper, fhirResourceFiler, version);
+                } catch (Exception ex) {
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                }
             }
         }
     }
