@@ -74,9 +74,12 @@ public class EncounterTransformer {
 
         CsvCell effectiveDate = parser.getEffectiveDate();
         CsvCell effectiveTime = parser.getEffectiveTime();
-        Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(effectiveDate, effectiveTime);
-        if (effectiveDateTime != null) {
+        if (!effectiveTime.getString().equalsIgnoreCase("9999")) {
+            Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(effectiveDate, effectiveTime);
             encounterBuilder.setPeriodStart(effectiveDateTime, effectiveDate, effectiveTime);
+        } else {
+            Date effectiveDateTime = effectiveDate.getDate();
+            encounterBuilder.setPeriodStart(effectiveDateTime, effectiveDate);
         }
 
         CsvCell organisationID = parser.getOrganisationID();
