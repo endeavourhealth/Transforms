@@ -12,10 +12,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ConditionResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRProblem;
-import org.hl7.fhir.instance.model.Condition;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,8 +123,8 @@ public class SRProblemTransformer {
         CsvCell endDate = parser.getDateEnd();
         if (endDate != null) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
-            conditionBuilder.setEndDateOrBoolean(dateTimeType, endDate);
+            DateType dateType = new DateType(effectiveDate.getDate());
+            conditionBuilder.setEndDateOrBoolean(dateType, endDate);
         }
 
         CsvCell severity = parser.getSeverity();
