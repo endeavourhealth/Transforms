@@ -168,6 +168,8 @@ public class SRAppointmentTransformer {
             String statusTerm = tppMappingRef.getMappedTerm();
             Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
             appointmentBuilder.setStatus(status, appointmentStatus);
+        } else {
+            appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
         }
 
         // Check for appointment flags
