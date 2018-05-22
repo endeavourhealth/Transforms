@@ -493,7 +493,7 @@ public class SRCodeTransformer {
             codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
 
             // translate to Snomed if code does not start with "Y" as they are local TPP codes
-            if (!readV3Code.getString().startsWith("Y")) {
+            if (!readV3Code.isEmpty() && !readV3Code.getString().startsWith("Y")) {
                 SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
                 if (snomedCode != null) {
 
@@ -621,9 +621,10 @@ public class SRCodeTransformer {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
             codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
             CsvCell readV3Term = parser.getCTV3Text();
-            codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
-            codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
-
+            if (!readV3Term.isEmpty() && !Strings.isNullOrEmpty(readV3Term.getString())) {
+                codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
+                codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
+            }
             // translate to Snomed if code does not start with "Y" as they are local TPP codes
             if (!readV3Code.getString().startsWith("Y")) {
                 SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
