@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import  com.google.common.base.Strings;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
@@ -105,7 +105,7 @@ public class SRAppointmentTransformer {
         slotBuilder.setId(appointmentId.getString(), appointmentId);
 
         Reference slotRef = csvHelper.createSlotReference(appointmentId);
-        appointmentBuilder.addSlot(slotRef,appointmentId);
+        appointmentBuilder.addSlot(slotRef, appointmentId);
 
 
         CsvCell rotaId = parser.getIDRota();
@@ -145,7 +145,7 @@ public class SRAppointmentTransformer {
         CsvCell appointmentStaffProfileId = parser.getIDProfileClinician();
         if (!appointmentStaffProfileId.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     appointmentStaffProfileId.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference practitionerReference
@@ -162,11 +162,11 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell appointmentStatus = parser.getAppointmentStatus();
-        if (!appointmentStatus.isEmpty() && appointmentStatus.getLong()>0) {
+        if (!appointmentStatus.isEmpty() && appointmentStatus.getLong() > 0) {
 
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong());
             String statusTerm = tppMappingRef.getMappedTerm();
-            Appointment.AppointmentStatus status = convertAppointmentStatus (statusTerm);
+            Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
             appointmentBuilder.setStatus(status, appointmentStatus);
         }
 
@@ -190,9 +190,9 @@ public class SRAppointmentTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
     }
 
-    private static Appointment.AppointmentStatus convertAppointmentStatus(String status) {
+    private static Appointment.AppointmentStatus convertAppointmentStatus(String status, SRAppointment parser) throws Exception {
 
-        if (status.equalsIgnoreCase("did not attend")) {
+        if (status.toLowerCase().startsWith("did not attend")) {
             return Appointment.AppointmentStatus.NOSHOW;
         } else if (status.toLowerCase().startsWith("cancelled")) {
             return Appointment.AppointmentStatus.CANCELLED;
@@ -206,8 +206,14 @@ public class SRAppointmentTransformer {
             return Appointment.AppointmentStatus.PENDING;
         } else if (status.toLowerCase().startsWith("booked")) {
             return Appointment.AppointmentStatus.BOOKED;
+        } else if (status.toLowerCase().startsWith("patient walked out")) {
+            return Appointment.AppointmentStatus.CANCELLED;
+        } else if (status.toLowerCase().startsWith("rejected")) {
+            return Appointment.AppointmentStatus.CANCELLED;
         } else {
-            return Appointment.AppointmentStatus.NULL;
+            TransformWarnings.log(LOG, parser, "Unrecognized appointment status {} line {} file {}",
+                    status, parser.getRowIdentifier().getString(), parser.getFilePath());
+            return Appointment.AppointmentStatus.PENDING;
         }
     }
 
