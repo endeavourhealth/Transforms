@@ -626,7 +626,7 @@ public class SRCodeTransformer {
                 codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
             }
             // translate to Snomed if code does not start with "Y" as they are local TPP codes
-            if (!readV3Code.getString().startsWith("Y")) {
+            if (!readV3Code.isEmpty() && !Strings.isNullOrEmpty(readV3Code.getString()) &&!readV3Code.getString().startsWith("Y")) {
                 SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
                 if (snomedCode != null) {
 
