@@ -186,7 +186,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
         if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
             if (this.referralRequest.hasReason()) {
-                throw new IllegalArgumentException("Trying to add reason to referral when it already has one");
+                throw new IllegalArgumentException("Trying to add reason to referral when it already has reason " + this.referralRequest.getReason().getText());
             }
 
             this.referralRequest.setReason(new CodeableConcept());
