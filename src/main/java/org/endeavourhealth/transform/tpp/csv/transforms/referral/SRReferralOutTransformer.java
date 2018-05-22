@@ -136,17 +136,17 @@ public class SRReferralOutTransformer {
             }
         }
 
-        CsvCell reason = parser.getReason();
-        if (!reason.isEmpty() && reason.getLong()>0) {
-
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong());
-            if (tppConfigListOption != null) {
-                String referralReason = tppConfigListOption.getListOptionName();
-                if (!Strings.isNullOrEmpty(referralReason)) {
-                    referralRequestBuilder.setReasonFreeText(referralReason, reason);
-                }
-            }
-        }
+//        CsvCell reason = parser.getReason();
+//        if (!reason.isEmpty() && reason.getLong()>0) {
+//
+//            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong());
+//            if (tppConfigListOption != null) {
+//                String referralReason = tppConfigListOption.getListOptionName();
+//                if (!Strings.isNullOrEmpty(referralReason)) {
+//                    referralRequestBuilder.setReasonFreeText(referralReason, reason);
+//                }
+//            }
+//        }
 
         CsvCell serviceOffered = parser.getServiceOffered();
         if (!serviceOffered.isEmpty() && serviceOffered.getLong()>0) {
