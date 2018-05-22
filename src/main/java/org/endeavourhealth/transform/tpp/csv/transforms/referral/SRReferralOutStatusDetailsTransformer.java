@@ -8,7 +8,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.TppCsvToFhirTransformer;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOutStatusDetails;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -17,7 +16,6 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 public class SRReferralOutStatusDetailsTransformer {
@@ -85,15 +83,14 @@ public class SRReferralOutStatusDetailsTransformer {
 
                 //Update the referral description with status details
                 CsvCell referralStatusDate = parser.getDateEvent();
-                DateTimeType dateType = new DateTimeType(referralStatusDate.getDate());
-                if (dateType != null) {
-                    SimpleDateFormat sdf = new SimpleDateFormat(TppCsvToFhirTransformer.DATE_FORMAT);
-                    String displayDate = sdf.format(dateType);
+                DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
+                if (dateTimeType != null) {
+                    String displayDateTime = dateTimeType.toHumanDisplay();
                     String currentDescription = referralRequestBuilder.getDescription();
                     if (!Strings.isNullOrEmpty(currentDescription)) {
-                        currentDescription = currentDescription.concat(". Status: "+displayDate+" - "+referralStatusDisplay);
+                        currentDescription = currentDescription.concat(". Status: "+displayDateTime+" - "+referralStatusDisplay);
                     } else {
-                        currentDescription = "Status: "+displayDate+" - "+referralStatusDisplay;
+                        currentDescription = "Status: "+displayDateTime+" - "+referralStatusDisplay;
                     }
 
                     referralRequestBuilder.setDescription(currentDescription, referralStatus);
