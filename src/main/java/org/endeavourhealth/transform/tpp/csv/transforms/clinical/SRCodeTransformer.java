@@ -512,19 +512,19 @@ public class SRCodeTransformer {
         }
 
         CsvCell numericValue = parser.getNumericValue();
-        if (!numericValue.isEmpty()) {
+        if (!numericValue.isEmpty() && parser.getIsNumeric().getBoolean()) {
 
             observationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
         }
 
         CsvCell numericUnits = parser.getNumericUnit();
-        if (!numericUnits.isEmpty()) {
+        if (!numericUnits.isEmpty() && parser.getIsNumeric().getBoolean()) {
 
             observationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
         }
 
         CsvCell numericComparator = parser.getNumericComparator();
-        if (!numericComparator.isEmpty()) {
+        if (!numericComparator.isEmpty() && parser.getIsNumeric().getBoolean()) {
 
             Quantity.QuantityComparator comparator = convertComparator(numericComparator.getString());
             if (comparator != null) {
@@ -659,7 +659,9 @@ public class SRCodeTransformer {
     }
 
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, SRCode parser) throws Exception {
-        if (!Strings.isNullOrEmpty(parser.getNumericValue().getString())) {
+        if (!Strings.isNullOrEmpty(parser.getNumericValue().getString())
+                && !parser.getIsNumeric().getBoolean()
+                && !parser.getNumericValue().getString().equalsIgnoreCase("0.0")) {
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
         }
     }

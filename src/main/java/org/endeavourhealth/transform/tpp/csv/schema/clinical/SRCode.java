@@ -179,6 +179,10 @@ public class SRCode extends AbstractCsvParser {
         return super.getCell("NumericValue");
     }
 
+    public CsvCell getIsNumeric () {
+        return super.getCell("IsNumeric");
+    }
+
     public CsvCell getNumericUnit() {
         return super.getCell("NumericUnit");
     }
