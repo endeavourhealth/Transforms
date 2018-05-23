@@ -8,7 +8,6 @@ import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
 
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -216,22 +215,23 @@ public class CsvCell {
             return null;
         }
         if (!Strings.isNullOrEmpty(precision)) {
-            throw new IllegalArgumentException("Unsupported precision [" + precision + "]");
-        }
 
-        switch (precision) {
-            case "U":
-                return null;
-            case "Y":
-                return new DateTimeType(date, TemporalPrecisionEnum.YEAR);
-            case "YM":
-                return new DateTimeType(date, TemporalPrecisionEnum.MONTH);
-            case "YMD":
-                return new DateTimeType(date, TemporalPrecisionEnum.DAY);
-            case "YMDT":
-                return new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
-            default:
-                throw new IllegalArgumentException("Unknown date precision [" + precision + "]");
+            switch (precision) {
+                case "U":
+                    return null;
+                case "Y":
+                    return new DateTimeType(date, TemporalPrecisionEnum.YEAR);
+                case "YM":
+                    return new DateTimeType(date, TemporalPrecisionEnum.MONTH);
+                case "YMD":
+                    return new DateTimeType(date, TemporalPrecisionEnum.DAY);
+                case "YMDT":
+                    return new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
+                default:
+                    throw new IllegalArgumentException("Unknown date precision [" + precision + "]");
+            }
+        } else {
+            return null;
         }
     }
 }
