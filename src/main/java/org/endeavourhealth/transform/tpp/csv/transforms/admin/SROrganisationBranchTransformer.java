@@ -26,7 +26,7 @@ public class SROrganisationBranchTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SROrganisationBranchTransformer.class);
+        AbstractCsvParser parser = parsers.get(SROrganisationBranch.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 
@@ -125,6 +125,5 @@ public class SROrganisationBranchTransformer {
             addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),locationBuilder);
-    }
+        }
 }

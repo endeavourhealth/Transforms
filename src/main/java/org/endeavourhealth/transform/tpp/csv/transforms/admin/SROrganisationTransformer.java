@@ -26,7 +26,7 @@ public class SROrganisationTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SROrganisationTransformer.class);
+        AbstractCsvParser parser = parsers.get(SROrganisation.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 

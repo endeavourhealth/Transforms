@@ -28,7 +28,7 @@ public class SRCcgTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRCcgTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRCcg.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 

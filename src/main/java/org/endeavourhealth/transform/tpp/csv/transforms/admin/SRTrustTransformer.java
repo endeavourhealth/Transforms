@@ -28,7 +28,7 @@ public class SRTrustTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRTrustTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRTrust.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 
