@@ -129,13 +129,18 @@ public class SRProblemTransformer {
 
         CsvCell severity = parser.getSeverity();
         if (severity != null) {
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity.getLong());
-            String mappedTerm = tppMappingRef.getMappedTerm();
-            if (!mappedTerm.isEmpty()) {
-                if (mappedTerm.equalsIgnoreCase("minor")) {
-                    conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
-                } else if (mappedTerm.equalsIgnoreCase("major")) {
-                    conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
+
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity.getLong(),parser);
+            if (tppMappingRef != null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                if (!mappedTerm.isEmpty()) {
+                    if (mappedTerm.equalsIgnoreCase("minor")) {
+                        conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
+                    } else if (mappedTerm.equalsIgnoreCase("major")) {
+                        conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
+                    }
+                } else {
+                    conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
                 }
             } else {
                 conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);

@@ -15,10 +15,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexT
 import org.endeavourhealth.core.database.dal.publisherTransform.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.Reference;
@@ -295,7 +292,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRMapping generated db
-    public TppMappingRef lookUpTppMappingRef(Long rowId) throws Exception {
+    public TppMappingRef lookUpTppMappingRef(Long rowId, AbstractCsvParser parser) throws Exception {
 
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
@@ -309,6 +306,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId, serviceId);
         if (tppMappingRefFromDB == null) {
+
+            TransformWarnings.log(LOG, parser, "TPP mapping reference not found for id: {},  in file: {}, line: {}",
+                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
             return null;
         }
 
@@ -319,7 +319,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRConfigureListOption generated db
-    public TppConfigListOption lookUpTppConfigListOption(Long rowId) throws Exception {
+    public TppConfigListOption lookUpTppConfigListOption(Long rowId, AbstractCsvParser parser) throws Exception {
 
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
@@ -333,6 +333,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppConfigListOption tppConfigListOptionFromDB = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
         if (tppConfigListOptionFromDB == null) {
+            TransformWarnings.log(LOG, parser, "TPP ConfigListOption not found for id: {},  in file: {}, line: {}",
+                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
+
             return null;
         }
 
@@ -343,7 +346,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRImmunisationContent generated db
-    public TppImmunisationContent lookUpTppImmunisationContent(Long rowId) throws Exception {
+    public TppImmunisationContent lookUpTppImmunisationContent(Long rowId, AbstractCsvParser parser) throws Exception {
 
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
@@ -357,6 +360,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppImmunisationContent tppImmunisationContentFromDB = tppImmunisationContentDalI.getContentFromRowId(rowId);
         if (tppImmunisationContentFromDB == null) {
+            TransformWarnings.log(LOG, parser, "TPP Immunisation content lookup failed for id: {},  in file: {}, line: {}",
+                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
+
             return null;
         }
 
@@ -367,7 +373,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRCtv3Transformer generated db
-    public TppCtv3Lookup lookUpTppCtv3Code(String ctv3Code) throws Exception {
+    public TppCtv3Lookup lookUpTppCtv3Code(String ctv3Code, AbstractCsvParser parser) throws Exception {
 
         String codeLookup = ctv3Code;
 
@@ -381,6 +387,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppCtv3Lookup tppCtv3LookupFromDB = tppCtv3LookupRefDal.getContentFromCtv3Code(ctv3Code);
         if (tppCtv3LookupFromDB == null) {
+            TransformWarnings.log(LOG, parser, "TPP Ctv3 lookup failed for code: {},  in file: {}, line: {}",
+                    ctv3Code, parser.getFilePath(), parser.getCurrentLineNumber());
+
             return null;
         }
 
@@ -391,7 +400,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup multi-lex read code map
-    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(Long multiLexProductId) throws Exception {
+    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(Long multiLexProductId, AbstractCsvParser parser) throws Exception {
 
         String codeLookup = multiLexProductId.toString();
 
@@ -405,6 +414,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppMultiLexToCtv3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId);
         if (multiLexToCTV3MapFromDB == null) {
+
+            TransformWarnings.log(LOG, parser, "TPP Multilex lookup failed for id: {},  in file: {}, line: {}",
+                    multiLexProductId, parser.getFilePath(), parser.getCurrentLineNumber());
             return null;
         }
 

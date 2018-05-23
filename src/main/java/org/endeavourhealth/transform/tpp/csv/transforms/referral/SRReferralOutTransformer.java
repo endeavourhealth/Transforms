@@ -125,8 +125,8 @@ public class SRReferralOutTransformer {
         CsvCell referralType = parser.getTypeOfReferral();
         if (!referralType.isEmpty() && referralType.getLong()>0) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(referralType.getLong());
-            if(!tppMappingRef.getMappedTerm().isEmpty()) {
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(referralType.getLong(), parser);
+            if(tppMappingRef != null) {
                 ReferralType type = convertReferralType(tppMappingRef.getMappedTerm());
                 if (type != null) {
                     referralRequestBuilder.setType(type, referralType);
@@ -139,7 +139,7 @@ public class SRReferralOutTransformer {
         CsvCell reason = parser.getReason();
         if (!reason.isEmpty() && reason.getLong()>0) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong());
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong(), parser);
             if (tppConfigListOption != null) {
                 String referralReason = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(referralReason)) {
@@ -151,7 +151,7 @@ public class SRReferralOutTransformer {
         CsvCell serviceOffered = parser.getServiceOffered();
         if (!serviceOffered.isEmpty() && serviceOffered.getLong()>0) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(serviceOffered.getLong());
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(serviceOffered.getLong(), parser);
             if (tppConfigListOption != null) {
                 String referralServiceOffered = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(referralServiceOffered)) {
@@ -163,7 +163,7 @@ public class SRReferralOutTransformer {
         CsvCell referralPriority = parser.getUrgency();
         if (!referralPriority.isEmpty()) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralType.getLong());
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralType.getLong(), parser);
             if (tppConfigListOption != null) {
                 ReferralPriority priority = convertPriority(tppConfigListOption.getListOptionName());
                 if (priority != null) {
@@ -182,7 +182,7 @@ public class SRReferralOutTransformer {
                     = new CodeableConceptBuilder(referralRequestBuilder, ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT);
 
             // add Ctv3 coding
-            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString());
+            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString(), parser);
 
             if (ctv3Lookup != null) {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -214,7 +214,7 @@ public class SRReferralOutTransformer {
 
             CsvCell referralRecipientId = parser.getRecipientID();
             if (!referralRecipientId.isEmpty()) {
-                if (recipientIsPerson(referralRecipientType.getLong(), csvHelper)) {
+                if (recipientIsPerson(referralRecipientType.getLong(), csvHelper, parser)) {
                     Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
                     referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
                 } else {
@@ -252,9 +252,13 @@ public class SRReferralOutTransformer {
         }
     }
 
-    private static Boolean recipientIsPerson (Long recipientTypeId, TppCsvHelper csvHelper) throws Exception {
+    private static Boolean recipientIsPerson (Long recipientTypeId, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
 
-        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeId);
+        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeId, parser);
+        if (tppMappingRef == null) {
+            return false;
+        }
+
         String term = tppMappingRef.getMappedTerm();
 
         if (term.toLowerCase().startsWith("organisation")) {

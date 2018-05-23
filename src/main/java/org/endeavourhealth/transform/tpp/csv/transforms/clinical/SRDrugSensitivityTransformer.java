@@ -134,7 +134,7 @@ public class SRDrugSensitivityTransformer {
         CsvCell drugCodeId = parser.getIDDrugCode();
         if (!drugCodeId.isEmpty()) {
 
-            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong());
+            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong(), parser);
             if (lookUpMultiLexToCTV3Map != null) {
                 // add Ctv3 coding
                 CodeableConceptBuilder codeableConceptBuilder

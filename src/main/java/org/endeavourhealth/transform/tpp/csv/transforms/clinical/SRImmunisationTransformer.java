@@ -130,16 +130,22 @@ public class SRImmunisationTransformer {
 
         CsvCell siteLocation = parser.getLocation();
         if (!siteLocation.isEmpty()) {
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation.getLong());
-            String mappedTerm = tppMappingRef.getMappedTerm();
-            immunizationBuilder.setSite(mappedTerm, siteLocation);
+
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation.getLong(), parser);
+            if (tppMappingRef !=null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                immunizationBuilder.setSite(mappedTerm, siteLocation);
+            }
         }
 
         CsvCell method = parser.getMethod();
         if (!method.isEmpty()) {
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method.getLong());
-            String mappedTerm = tppMappingRef.getMappedTerm();
-            immunizationBuilder.setRoute(mappedTerm, method);
+
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method.getLong(),parser);
+            if (tppMappingRef !=null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                immunizationBuilder.setRoute(mappedTerm, method);
+            }
         }
 
         CsvCell expiryDate = parser.getDateExpiry();
@@ -154,13 +160,12 @@ public class SRImmunisationTransformer {
                     = new CodeableConceptBuilder(immunizationBuilder, immunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT);
 
             // add Ctv3 coding
-            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(readV3Code.getString());
+            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(readV3Code.getString(), parser);
 
             if (ctv3Lookup != null) {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
                 codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
                 String readV3Term = ctv3Lookup.getCtv3Text();
-                //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
                 codeableConceptBuilder.setCodingDisplay(readV3Term, readV3Code);
                 codeableConceptBuilder.setText(readV3Term, readV3Code);
             }
@@ -184,17 +189,21 @@ public class SRImmunisationTransformer {
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
             addProtocol = true;
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart.getLong());
-            String mappedTerm = tppMappingRef.getMappedTerm();
-            protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart.getLong(), parser);
+            if (tppMappingRef != null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+            }
         }
 
         CsvCell immContent = parser.getIDImmunisationContent();
         if (!immContent.isEmpty()) {
             addProtocol = true;
-            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong());
-            String contentName = tppImmunisationContent.getName();
-            protocolComponent.setSeries(contentName);
+            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong(),parser);
+            if (tppImmunisationContent != null) {
+                String contentName = tppImmunisationContent.getName();
+                protocolComponent.setSeries(contentName);
+            }
         }
 
         if (addProtocol) {

@@ -1,12 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.core.terminology.SnomedCode;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -125,7 +122,7 @@ public class SREventTransformer {
 
         CsvCell contactTypeCell = parser.getContactMethod();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell.getLong());
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell.getLong(), parser);
             if (tppConfigListOption != null) {
                 String contactType = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactType)) {

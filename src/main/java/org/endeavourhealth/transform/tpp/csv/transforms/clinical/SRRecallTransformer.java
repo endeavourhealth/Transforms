@@ -11,14 +11,10 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRRecall;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.ProcedureRequest;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 public class SRRecallTransformer {
@@ -120,21 +116,22 @@ public class SRRecallTransformer {
         // these are locally configured statues not mapped
         if (!recallStatus.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus.getLong());
-            String mappedTerm = tppMappingRef.getMappedTerm();
-            if (!mappedTerm.isEmpty()) {
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus.getLong(), parser);
+            if (tppMappingRef != null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                if (!mappedTerm.isEmpty()) {
 
-                // use the term to derive the resource status
-                procedureRequestBuilder.setStatus(convertRecallStatus(mappedTerm));
+                    // use the term to derive the resource status
+                    procedureRequestBuilder.setStatus(convertRecallStatus(mappedTerm));
 
-                // add the status date and details to the notes
-                CsvCell statusDate = parser.getRecallStatusDate();
-                DateTimeType dateTimeType = new DateTimeType(statusDate.getDate());
-                if (dateTimeType != null) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                    String displayDate = sdf.format(dateTimeType);
-                    String statusNote = "Status: " + displayDate + " - " + mappedTerm;
-                    procedureRequestBuilder.addNotes(statusNote);
+                    // add the status date and details to the notes
+                    CsvCell statusDate = parser.getRecallStatusDate();
+                    DateType dateType = new DateType(statusDate.getDate());
+                    if (dateType != null) {
+                        String displayDate = dateType.toHumanDisplay();
+                        String statusNote = "Status: " + displayDate + " - " + mappedTerm;
+                        procedureRequestBuilder.addNotes(statusNote);
+                    }
                 }
             }
         }

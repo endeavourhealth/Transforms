@@ -75,31 +75,39 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell referralStatus = parser.getStatusOfReferralOut();
         if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralStatus.getLong());
-            String referralStatusDisplay = tppConfigListOption.getListOptionName();
-            if (!Strings.isNullOrEmpty(referralStatusDisplay)) {
-                ReferralRequest.ReferralStatus status = convertReferralStatus(referralStatusDisplay);
-                referralRequestBuilder.setStatus(status, referralStatus);
+            TppConfigListOption tppConfigListOption
+                    = csvHelper.lookUpTppConfigListOption(referralStatus.getLong(),parser);
+            if (tppConfigListOption != null) {
+                String referralStatusDisplay = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(referralStatusDisplay)) {
+                    ReferralRequest.ReferralStatus status = convertReferralStatus(referralStatusDisplay);
+                    referralRequestBuilder.setStatus(status, referralStatus);
 
-                //Update the referral description with status details
-                CsvCell referralStatusDate = parser.getDateEvent();
-                DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
-                if (dateTimeType != null) {
-                    String displayDateTime = dateTimeType.toHumanDisplay();
-                    String currentDescription = referralRequestBuilder.getDescription();
-                    if (!Strings.isNullOrEmpty(currentDescription)) {
-                        currentDescription = currentDescription.concat(". Status: "+displayDateTime+" - "+referralStatusDisplay);
-                    } else {
-                        currentDescription = "Status: "+displayDateTime+" - "+referralStatusDisplay;
+                    //Update the referral description with status details
+                    CsvCell referralStatusDate = parser.getDateEvent();
+                    DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
+                    if (dateTimeType != null) {
+                        String displayDateTime = dateTimeType.toHumanDisplay();
+                        String currentDescription = referralRequestBuilder.getDescription();
+                        if (!Strings.isNullOrEmpty(currentDescription)) {
+                            currentDescription = currentDescription.concat(". Status: " + displayDateTime + " - " + referralStatusDisplay);
+                        } else {
+                            currentDescription = "Status: " + displayDateTime + " - " + referralStatusDisplay;
+                        }
+
+                        referralRequestBuilder.setDescription(currentDescription, referralStatus);
                     }
+                } else {
 
-                    referralRequestBuilder.setDescription(currentDescription, referralStatus);
+                    referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
                 }
             } else {
-                referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.NULL, referralStatus);
+
+                referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
             }
         } else {
-            referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.NULL, referralStatus);
+
+            referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
         }
     }
 
@@ -108,6 +116,6 @@ public class SRReferralOutStatusDetailsTransformer {
         if (referralStatusDisplay.toLowerCase().contains("waiting")) {
             return ReferralRequest.ReferralStatus.ACTIVE;
         } else
-            return ReferralRequest.ReferralStatus.NULL;
+            return ReferralRequest.ReferralStatus.DRAFT;
     }
 }

@@ -164,10 +164,14 @@ public class SRAppointmentTransformer {
         CsvCell appointmentStatus = parser.getAppointmentStatus();
         if (!appointmentStatus.isEmpty() && appointmentStatus.getLong() > 0) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong());
-            String statusTerm = tppMappingRef.getMappedTerm();
-            Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
-            appointmentBuilder.setStatus(status, appointmentStatus);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong(), parser);
+            if (tppMappingRef != null) {
+                String statusTerm = tppMappingRef.getMappedTerm();
+                Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
+                appointmentBuilder.setStatus(status, appointmentStatus);
+            } else {
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+            }
         } else {
             appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
         }
@@ -178,16 +182,15 @@ public class SRAppointmentTransformer {
             List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getStaffMemberProfilePojo(appointmentId.getLong());
 
             for (AppointmentFlagsPojo pojo : pojoList) {
-                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag().getLong());
-                String flagMapping = tppMappingRef.getMappedTerm();
-                if (!Strings.isNullOrEmpty(flagMapping)) {
-                    appointmentBuilder.setComments(flagMapping);
+                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag().getLong(), parser);
+                if (tppMappingRef != null) {
+                    String flagMapping = tppMappingRef.getMappedTerm();
+                    if (!Strings.isNullOrEmpty(flagMapping)) {
+                        appointmentBuilder.setComments(flagMapping);
+                    }
                 }
-
             }
-
         }
-
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
     }
