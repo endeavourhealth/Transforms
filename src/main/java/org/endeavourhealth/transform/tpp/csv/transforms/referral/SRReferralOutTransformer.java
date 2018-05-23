@@ -177,7 +177,9 @@ public class SRReferralOutTransformer {
         //code is Ctv3 so translate to Snomed
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
         if (!referralPrimaryDiagnosisCode.isEmpty()) {
-
+            if (referralRequestBuilder.hasCodeableConcept(ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT)) {
+                referralRequestBuilder.removeCodeableConcept(ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT,null);
+            }
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(referralRequestBuilder, ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT);
 
