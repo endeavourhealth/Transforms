@@ -55,7 +55,6 @@ public class SRImmunisationContentTransformer {
         TppImmunisationContent mapping = new TppImmunisationContent(rowId.getLong(),
                 name.getString(),
                 content.getString(),
-                fhirResourceFiler.getServiceId().toString(),
                 dateDeleted.getDate(),
                 auditWrapper);
 
