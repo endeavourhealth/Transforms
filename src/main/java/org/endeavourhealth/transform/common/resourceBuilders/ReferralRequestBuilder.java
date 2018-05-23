@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
@@ -186,8 +185,8 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public CodeableConcept createNewCodeableConcept(String tag) {
 
         if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            if (!Strings.isNullOrEmpty(this.referralRequest.getReason().getText())) {
-                throw new IllegalArgumentException("Trying to add reason to referral when it already has reason " + this.referralRequest.getReason().getText());
+            if (this.referralRequest.hasReason()) {
+                throw new IllegalArgumentException("Trying to add reason to referral when it already has one");
             }
 
             this.referralRequest.setReason(new CodeableConcept());
