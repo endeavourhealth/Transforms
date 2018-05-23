@@ -162,7 +162,7 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell appointmentStatus = parser.getAppointmentStatus();
-        if (!appointmentStatus.isEmpty() && appointmentStatus.getLong() > 0) {
+        if (!appointmentStatus.isEmpty() ) {
 
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong(), parser);
             if (tppMappingRef != null) {

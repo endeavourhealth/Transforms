@@ -164,7 +164,7 @@ public class SRTrustTransformer {
 
         CsvCell deleted  = parser.getRemovedData();
 
-        if (!deleted.isEmpty() && deleted.getBoolean()) {
+        if (deleted != null &&!deleted.isEmpty() && deleted.getBoolean()) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
