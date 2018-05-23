@@ -11,7 +11,8 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientTransformer;
+import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
+import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
@@ -346,9 +347,15 @@ public abstract class TppCsvToFhirTransformer {
         SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
+        LocationResourceCache.fileLocationResources(fhirResourceFiler);
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientAddressHistoryTransformer.transform(parsers,fhirResourceFiler,csvHelper);
+        SRPatientContactDetailsTransformer.transform(parsers,fhirResourceFiler,csvHelper);
+        SRPatientRegistrationTransformer.transform(parsers,fhirResourceFiler,csvHelper);
+        SRPatientRelationshipTransformer.transform(parsers,fhirResourceFiler,csvHelper);
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         LOG.trace("Starting appointment transforms");

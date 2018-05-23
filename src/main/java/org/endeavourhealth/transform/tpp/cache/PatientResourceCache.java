@@ -55,10 +55,15 @@ public class PatientResourceCache {
     }
 
     public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
+        LOG.info("Patient cache count is " + PatientBuildersByRowId.size());
+        int count = 0;
         for (Long rowId: PatientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
             fhirResourceFiler.savePatientResource(null, patientBuilder);
+            count++;
+            if (count % 10000 == 0 ) {
+                LOG.info("Patient cache processed " + count + " records");
+            }
         }
 
         //clear down as everything has been saved
