@@ -168,8 +168,10 @@ public class SRReferralOutTransformer {
                 ReferralPriority priority = convertPriority(tppConfigListOption.getListOptionName());
                 if (priority != null) {
                     referralRequestBuilder.setPriority(priority, referralPriority);
+
                 } else {
                     referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
+                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}", referralPriority);
                 }
             }
         }
