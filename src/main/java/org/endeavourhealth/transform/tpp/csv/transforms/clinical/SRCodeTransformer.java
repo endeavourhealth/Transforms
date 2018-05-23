@@ -48,8 +48,8 @@ public class SRCodeTransformer {
     }
 
     public static void createResource(SRCode parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
         switch (resourceType) {
@@ -74,8 +74,8 @@ public class SRCodeTransformer {
     }
 
     public static void createAllergy(SRCode parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                     FhirResourceFiler fhirResourceFiler,
+                                     TppCsvHelper csvHelper) throws Exception {
 
 
         CsvCell rowId = parser.getRowIdentifier();
@@ -114,7 +114,7 @@ public class SRCodeTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
@@ -177,7 +177,7 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            allergyIntoleranceBuilder.setEncounter (eventReference, eventId);
+            allergyIntoleranceBuilder.setEncounter(eventReference, eventId);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
@@ -222,7 +222,7 @@ public class SRCodeTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 procedureBuilder.setRecordedBy(staffReference, recordedBy);
@@ -254,7 +254,7 @@ public class SRCodeTransformer {
         if (!readV3Code.isEmpty()) {
 
             CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(procedureBuilder,  ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+                    = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -281,7 +281,7 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            procedureBuilder.setEncounter (eventReference, eventId);
+            procedureBuilder.setEncounter(eventReference, eventId);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -331,7 +331,7 @@ public class SRCodeTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 conditionBuilder.setRecordedBy(staffReference, recordedBy);
@@ -367,7 +367,8 @@ public class SRCodeTransformer {
 
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
-
+            // In case we have cached data remove any potentially existing code.
+            conditionBuilder.removeCodeableConcept(ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE, null);
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
 
@@ -394,7 +395,7 @@ public class SRCodeTransformer {
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType.getLong(),parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType.getLong(), parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
@@ -408,7 +409,7 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            conditionBuilder.setEncounter (eventReference, eventId);
+            conditionBuilder.setEncounter(eventReference, eventId);
         }
 
     }
@@ -452,7 +453,7 @@ public class SRCodeTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 observationBuilder.setRecordedBy(staffReference, recordedBy);
@@ -534,7 +535,7 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            observationBuilder.setEncounter (eventReference, eventId);
+            observationBuilder.setEncounter(eventReference, eventId);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
@@ -580,7 +581,7 @@ public class SRCodeTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 familyMemberHistoryBuilder.setRecordedBy(staffReference, recordedBy);
@@ -629,7 +630,7 @@ public class SRCodeTransformer {
                 codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
             }
             // translate to Snomed if code does not start with "Y" as they are local TPP codes
-            if (!readV3Code.isEmpty() && !Strings.isNullOrEmpty(readV3Code.getString()) &&!readV3Code.getString().startsWith("Y")) {
+            if (!readV3Code.isEmpty() && !Strings.isNullOrEmpty(readV3Code.getString()) && !readV3Code.getString().startsWith("Y")) {
                 SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
                 if (snomedCode != null) {
 
@@ -646,7 +647,7 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            familyMemberHistoryBuilder.setEncounter (eventReference, eventId);
+            familyMemberHistoryBuilder.setEncounter(eventReference, eventId);
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
