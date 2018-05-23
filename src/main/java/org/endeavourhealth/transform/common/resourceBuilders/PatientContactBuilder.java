@@ -149,17 +149,26 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        CodeableConcept codeableConcept = contact.addRelationship();
-        return codeableConcept;
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
+            CodeableConcept codeableConcept = contact.addRelationship();
+            return codeableConcept;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        int index = contact.getRelationship().indexOf(codeableConcept);
-        return "relationship[" + index + "]";
-    }
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
+            int index = contact.getRelationship().indexOf(codeableConcept);
+            return "relationship[" + index + "]";
 
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
 
 
     @Override
@@ -168,8 +177,13 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.contact.getRelationship().clear();
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
+            this.contact.getRelationship().clear();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override

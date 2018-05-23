@@ -227,7 +227,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
 
         // EncounterTable type
-        HomertonCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_ADMISSION_TYPE, csvHelper);
+        HomertonCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
 
         /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
             CernerCodeValueRef ret = HomertonCsvHelper.lookUpCernerCodeFromCodeSet(

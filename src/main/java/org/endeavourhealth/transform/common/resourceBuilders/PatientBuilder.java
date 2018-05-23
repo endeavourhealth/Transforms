@@ -17,9 +17,7 @@ public class PatientBuilder extends ResourceBuilderBase
                                        HasContactPointI,
                                        HasCodeableConceptI {
 
-    public static final String TAG_CODEABLE_CONCEPT_LANGUAGE = "Language";
-    public static final String TAG_CODEABLE_CONCEPT_RELIGION = "Religion";
-    public static final String TAG_CODEABLE_CONCEPT_INTERPRETER_REQUIRED = "Interpreter required";
+
 
     private Patient patient = null;
 
@@ -289,17 +287,17 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
             Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(true);
-                        communicationComponent.setLanguage(new CodeableConcept());
+            communicationComponent.setLanguage(new CodeableConcept());
             return communicationComponent.getLanguage();
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             if (extension.hasValue()) {
                 ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
-                }
+            }
             CodeableConcept ret = new CodeableConcept();
             extension.setValue(ret);
             return ret;
@@ -310,16 +308,12 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
             return "communication[0].language";
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
-            int index = this.patient.getExtension().indexOf(extension);
-            return "extension[" + index + "].valueCodeableConcept";
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_INTERPRETER_REQUIRED)) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED);
             int index = this.patient.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
@@ -329,9 +323,9 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_CODEABLE_CONCEPT_LANGUAGE)) {
+        if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
             Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(false);
             if (communicationComponent != null) {
                 communicationComponent.setLanguage(null);
@@ -342,7 +336,7 @@ public class PatientBuilder extends ResourceBuilderBase
                 }
             }
 
-        } else if (tag.equals(TAG_CODEABLE_CONCEPT_RELIGION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
 
         } else {
@@ -412,5 +406,30 @@ public class PatientBuilder extends ResourceBuilderBase
         this.patient.getContact().remove(patientContact);
     }
 
+    public void setSpeaksEnglish(Boolean speaksEnglish, CsvCell... sourceCells) {
+
+        if (speaksEnglish != null) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_SPEAKS_ENGLISH, speaksEnglish.booleanValue());
+
+            auditBooleanExtension(extension, sourceCells);
+
+        } else {
+
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_SPEAKS_ENGLISH);
+        }
+    }
+
+    public void setInterpreterRequired(Boolean interpreterRequired, CsvCell... sourceCells) {
+
+        if (interpreterRequired != null) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED, interpreterRequired.booleanValue());
+
+            auditBooleanExtension(extension, sourceCells);
+
+        } else {
+
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED);
+        }
+    }
 
 }

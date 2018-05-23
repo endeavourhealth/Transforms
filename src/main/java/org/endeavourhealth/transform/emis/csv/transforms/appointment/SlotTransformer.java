@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -131,7 +132,7 @@ public class SlotTransformer {
         }
 
         CsvCell dnaReasonCode = parser.getDnaReasonCodeId();
-        EmisCodeHelper.createCodeableConcept(appointmentBuilder, false, dnaReasonCode, null, csvHelper);
+        EmisCodeHelper.createCodeableConcept(appointmentBuilder, false, dnaReasonCode, CodeableConceptBuilder.Tag.Appointment_Dna_Reason_Code, csvHelper);
 
         CsvCell sentInTime = parser.getSendInTime();
         if (!sentInTime.isEmpty()) {

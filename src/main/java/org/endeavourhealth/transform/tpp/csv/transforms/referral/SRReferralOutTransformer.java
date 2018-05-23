@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.tpp.csv.transforms.referral;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
-import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
@@ -25,6 +24,8 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class SRReferralOutTransformer {
@@ -122,48 +123,61 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setRequester(orgReference, requestedByOrg);
         }
 
-        CsvCell referralType = parser.getTypeOfReferral();
-        if (!referralType.isEmpty() && referralType.getLong()>0) {
-
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(referralType.getLong(), parser);
-            if(tppMappingRef != null) {
-                ReferralType type = convertReferralType(tppMappingRef.getMappedTerm());
-                if (type != null) {
-                    referralRequestBuilder.setType(type, referralType);
-                } else {
-                    referralRequestBuilder.setTypeFreeText(tppMappingRef.getMappedTerm(), referralType);
-                }
-            }
-        }
-
-        CsvCell reason = parser.getReason();
-        if (!reason.isEmpty() && reason.getLong()>0) {
-
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason.getLong(), parser);
-            if (tppConfigListOption != null) {
-                String referralReason = tppConfigListOption.getListOptionName();
-                if (!Strings.isNullOrEmpty(referralReason)) {
-                    referralRequestBuilder.setReasonFreeText(referralReason, reason);
-                }
-            }
-        }
+        //NOTE: the TPP TypeOfReferral and ServiceOffered essentially represent the same concept -
+        //a high-level descriptor of the type of the service being referred to (e.g. Hospital or Physiotherapy).
+        //Because they're VERY rarely used in SystmOne and represent similar concepts, both values, if present,
+        //will be stored in a new extension
+        List<String> recipientServiceTypes = new ArrayList<>();
 
         CsvCell serviceOffered = parser.getServiceOffered();
-        if (!serviceOffered.isEmpty() && serviceOffered.getLong()>0) {
+        if (!serviceOffered.isEmpty()) {
+            //the documentation states that service offered is a configured list option, but that's
+            //incorrect. In fact, this field refers to the SRMapping file (stored in the tpp_mapping_ref table).
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(serviceOffered.getLong(), parser);
-            if (tppConfigListOption != null) {
-                String referralServiceOffered = tppConfigListOption.getListOptionName();
-                if (!Strings.isNullOrEmpty(referralServiceOffered)) {
-                    referralRequestBuilder.setServiceRequestedFreeText(referralServiceOffered, serviceOffered);
+            //the vast majority of rows seem to refer to row ID which doesn't exist and is
+            //weirdly enough the group ID of all the configured list items (i.e. org type)
+            //so only look up if it's not this value, since we believe this value means that the field isn't set
+            if (serviceOffered.getLong().longValue() != 175137) {
+
+                TppMappingRef mapping = csvHelper.lookUpTppMappingRef(serviceOffered, parser);
+                if (mapping != null) {
+                    String term = mapping.getMappedTerm();
+                    recipientServiceTypes.add(term);
                 }
+            }
+        }
+
+        CsvCell referralType = parser.getTypeOfReferral();
+        if (!referralType.isEmpty()) {
+            //TPP type of referral is a high-level of the the service type being referred so
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(referralType, parser);
+            if (mapping != null) {
+                String term = mapping.getMappedTerm();
+                recipientServiceTypes.add(term);
+            }
+        }
+
+        //note do this even if empty, since we may be updating an existing referral resource and want to clear the field
+        String recipientServiceType = String.join(", ", recipientServiceTypes);
+        referralRequestBuilder.setRecipientServiceType(recipientServiceType, serviceOffered);
+
+        CsvCell reason = parser.getReason();
+        if (!reason.isEmpty()) {
+            //the TPP referral reason is really the objective of the referral
+            //e.g. Advice/Consultation or Advice and Support
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason, parser);
+            if (tppConfigListOption != null) {
+                //not going to attempt to map the term to the ReferralType values we have,
+                //since there are 1000+ possible options in TPP, so we really need the Information Model to support this properly
+                String term = tppConfigListOption.getListOptionName();
+                referralRequestBuilder.setTypeFreeText(term, reason);
             }
         }
 
         CsvCell referralPriority = parser.getUrgency();
         if (!referralPriority.isEmpty()) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority.getLong(), parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority, parser);
             if (tppConfigListOption != null) {
                 ReferralPriority priority = convertPriority(tppConfigListOption.getListOptionName());
                 if (priority != null) {
@@ -179,11 +193,12 @@ public class SRReferralOutTransformer {
         //code is Ctv3 so translate to Snomed
         CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
         if (!referralPrimaryDiagnosisCode.isEmpty()) {
-            if (referralRequestBuilder.hasCodeableConcept(ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT)) {
-                referralRequestBuilder.removeCodeableConcept(ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT,null);
+
+            //we may have retrieved the Resource from the DB, so clear out any existing codeable concept
+            if (referralRequestBuilder.hasCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service)) {
+                referralRequestBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service, null);
             }
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(referralRequestBuilder, ReferralRequestBuilder.TAG_REASON_CODEABLE_CONCEPT);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(referralRequestBuilder, CodeableConceptBuilder.Tag.Referral_Request_Service);
 
             // add Ctv3 coding
             TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString(), parser);
@@ -218,7 +233,7 @@ public class SRReferralOutTransformer {
 
             CsvCell referralRecipientId = parser.getRecipientID();
             if (!referralRecipientId.isEmpty()) {
-                if (recipientIsPerson(referralRecipientType.getLong(), csvHelper, parser)) {
+                if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
                     Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
                     referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
                 } else {
@@ -256,9 +271,9 @@ public class SRReferralOutTransformer {
         }
     }
 
-    private static Boolean recipientIsPerson (Long recipientTypeId, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
+    private static Boolean recipientIsPerson(CsvCell recipientTypeCell, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
 
-        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeId, parser);
+        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeCell, parser);
         if (tppMappingRef == null) {
             return false;
         }
@@ -272,50 +287,5 @@ public class SRReferralOutTransformer {
         return true;
     }
 
-    private static ReferralType convertReferralType(String type) {
-
-        if (type.equalsIgnoreCase("Unknown")) {
-            return ReferralType.UNKNOWN;
-
-        } else if (type.equalsIgnoreCase("Assessment")) {
-            return ReferralType.ASSESSMENT;
-
-        } else if (type.equalsIgnoreCase("Investigation")) {
-            return ReferralType.INVESTIGATION;
-
-        } else if (type.equalsIgnoreCase("Management advice")) {
-            return ReferralType.MANAGEMENT_ADVICE;
-
-        } else if (type.equalsIgnoreCase("Patient reassurance")) {
-            return ReferralType.PATIENT_REASSURANCE;
-
-        } else if (type.equalsIgnoreCase("Self referral")) {
-            return ReferralType.SELF_REFERRAL;
-
-        } else if (type.equalsIgnoreCase("Treatment")) {
-            return ReferralType.TREATMENT;
-
-        } else if (type.equalsIgnoreCase("Outpatient")) {
-            return ReferralType.OUTPATIENT;
-
-        } else if (type.equalsIgnoreCase("Community Care")) {
-            return ReferralType.COMMUNITY_CARE;
-
-        } else if (type.equalsIgnoreCase("Performance of a procedure / operation")) {
-            return ReferralType.PROCEDURE;
-
-        } else if (type.equalsIgnoreCase("Admission")) {
-            return ReferralType.ADMISSION;
-
-        } else if (type.equalsIgnoreCase("Day Care")) {
-            return ReferralType.DAY_CARE;
-
-        } else if (type.equalsIgnoreCase("Assessment & Education")) {
-            return ReferralType.ASSESSMENT_AND_EDUCATION;
-
-        } else {
-            return null;
-        }
-    }
 
 }

@@ -32,7 +32,7 @@ public class SRStaffMember extends AbstractCsvParser {
                     "IDSmartCard",
                     "Obsolete"
             };
-        }else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "StaffName",
@@ -89,11 +89,9 @@ public class SRStaffMember extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Staff Member Entry file ";
+        return "TPP staff member file";
     }
 
     @Override

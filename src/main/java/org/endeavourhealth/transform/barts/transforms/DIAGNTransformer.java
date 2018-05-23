@@ -134,7 +134,7 @@ public class DIAGNTransformer extends BartsBasisTransformer {
             String conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
             String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(conceptIdentifierCell);
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class MedicationOrderBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private MedicationOrder medicationOrder = null;
 
@@ -82,7 +82,7 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         MedicationOrder.MedicationOrderDosageInstructionComponent fhirDose = this.medicationOrder.addDosageInstruction();
         fhirDose.setText(dose);
 
-        int index = this.medicationOrder.getDosageInstruction().size()-1;
+        int index = this.medicationOrder.getDosageInstruction().size() - 1;
         auditValue("dosageInstruction[" + index + "].text", sourceCells);
     }
 
@@ -138,31 +138,47 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     }
 
 
-
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        try {
-            if (this.medicationOrder.hasMedicationCodeableConcept()) {
-                throw new IllegalArgumentException("Trying to add new medication to MedicationOrder when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Medication_Order_Drug_Code) {
+
+            try {
+                if (this.medicationOrder.hasMedicationCodeableConcept()) {
+                    throw new IllegalArgumentException("Trying to add new medication to MedicationOrder when it already has one");
+                }
+
+                CodeableConcept codeableConcept = new CodeableConcept();
+                this.medicationOrder.setMedication(codeableConcept);
+                return codeableConcept;
+
+            } catch (Exception ex) {
+                //we should never get this exception raised, but if we do, just wrap in a runtime exception and throw up
+                throw new RuntimeException(ex);
             }
 
-            CodeableConcept codeableConcept = new CodeableConcept();
-            this.medicationOrder.setMedication(codeableConcept);
-            return codeableConcept;
-
-        } catch (Exception ex) {
-            //we should never get this exception raised, but if we do, just wrap in a runtime exception and throw up
-            throw new RuntimeException(ex);
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "medicationCodeableConcept";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Medication_Order_Drug_Code) {
+            return "medicationCodeableConcept";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.medicationOrder.setMedication(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Medication_Order_Drug_Code) {
+            this.medicationOrder.setMedication(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

@@ -56,10 +56,10 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell positionCode = parser.getMilleniumPositionCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CernerCodeValueRef.PERSONNEL_POSITION, roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CernerCodeValueRef.PERSONNEL_POSITION, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, csvHelper);
 
         CsvCell specialityCode = parser.getMillenniumSpecialtyCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CernerCodeValueRef.PERSONNEL_SPECIALITY, roleBuilder, PractitionerRoleBuilder.TAG_SPECIALTY_CODEABLE_CONCEPT, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CernerCodeValueRef.PERSONNEL_SPECIALITY, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, csvHelper);
 
         CsvCell title = parser.getTitle();
         CsvCell givenName = parser.getFirstName();

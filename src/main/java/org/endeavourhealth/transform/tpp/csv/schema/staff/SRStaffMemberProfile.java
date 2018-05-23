@@ -121,11 +121,9 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
         return super.getCell("GmpID");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Staff Member Profile Entry file ";
+        return "TPP staff member profile file";
     }
 
     @Override

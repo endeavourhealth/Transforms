@@ -7,7 +7,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class SpecimenBuilder extends ResourceBuilderBase
-                            implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private Specimen specimen = null;
 
@@ -91,21 +91,37 @@ public class SpecimenBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.specimen.hasType()) {
-            throw new IllegalArgumentException("Trying to add new type to Specimen that already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Specimen_Main_Code) {
+            if (this.specimen.hasType()) {
+                throw new IllegalArgumentException("Trying to add new type to Specimen that already has one");
+            }
+            this.specimen.setType(new CodeableConcept());
+            return this.specimen.getType();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        this.specimen.setType(new CodeableConcept());
-        return this.specimen.getType();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "type";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Specimen_Main_Code) {
+            return "type";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.specimen.setType(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Specimen_Main_Code) {
+            this.specimen.setType(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

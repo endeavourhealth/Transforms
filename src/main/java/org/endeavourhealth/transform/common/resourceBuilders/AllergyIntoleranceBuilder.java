@@ -121,22 +121,37 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.allergyIntolerance.hasSubstance()) {
-            throw new IllegalArgumentException("Trying to add new code to AllergyIntolerance that already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code) {
+
+            if (this.allergyIntolerance.hasSubstance()) {
+                throw new IllegalArgumentException("Trying to add new code to AllergyIntolerance that already has one");
+            }
+            this.allergyIntolerance.setSubstance(new CodeableConcept());
+            return this.allergyIntolerance.getSubstance();
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
-        this.allergyIntolerance.setSubstance(new CodeableConcept());
-        return this.allergyIntolerance.getSubstance();
-
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "substance";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code) {
+            return "substance";
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.allergyIntolerance.setSubstance(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code) {
+            this.allergyIntolerance.setSubstance(null);
+
+        } else {
+            throw new IllegalArgumentException("Invalid tag [" + tag + "]");
+        }
     }
 }

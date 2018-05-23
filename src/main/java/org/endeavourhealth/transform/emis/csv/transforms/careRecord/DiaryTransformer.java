@@ -58,13 +58,13 @@ public class DiaryTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(procedureRequestBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(procedureRequestBuilder, false, codeId, CodeableConceptBuilder.Tag.Procedure_Request_Main_Code, csvHelper);
 
         //this MUST be done after doing the codeId as this will potentially overwrite the codeable concept text the above sets
         CsvCell termCell = parser.getOriginalTerm();
         if (!termCell.isEmpty()) {
             if (codeableConceptBuilder == null) {
-                codeableConceptBuilder = new CodeableConceptBuilder(procedureRequestBuilder, null);
+                codeableConceptBuilder = new CodeableConceptBuilder(procedureRequestBuilder, CodeableConceptBuilder.Tag.Procedure_Request_Main_Code);
             }
             codeableConceptBuilder.setText(termCell.getString(), termCell);
         }

@@ -13,10 +13,6 @@ import java.util.List;
 public class ObservationBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI, HasIdentifierI {
 
-    public static final String TAG_MAIN_CODEABLE_CONCEPT = "MainCode";
-    public static final String TAG_COMPONENT_CODEABLE_CONCEPT = "ComponentCode";
-    public static final String TAG_RANGE_MEANING_CODEABLE_CONCEPT = "RangeMeaning";
-
     private Observation observation = null;
 
     public ObservationBuilder() {
@@ -251,9 +247,9 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
         //depending on the tag, we may be setting the main codeable concept or the one in the last component added
-        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Observation_Main_Code) {
             if (this.observation.hasCode()) {
                 throw new IllegalArgumentException("Trying to add code to Observation when it already has one");
             }
@@ -261,7 +257,7 @@ public class ObservationBuilder extends ResourceBuilderBase
             this.observation.setCode(new CodeableConcept());
             return this.observation.getCode();
 
-        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Component_Code) {
             Observation.ObservationComponentComponent component = getLastComponent();
             if (component.hasCode()) {
                 throw new IllegalArgumentException("Trying to add code to Observation Component when it already has one");
@@ -269,7 +265,7 @@ public class ObservationBuilder extends ResourceBuilderBase
             component.setCode(new CodeableConcept());
             return component.getCode();
 
-        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Range_Meaning) {
             Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
             if (rangeComponent.hasMeaning()) {
                 throw new IllegalArgumentException("Trying to set meaning on Observation when already set");
@@ -284,14 +280,14 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Observation_Main_Code) {
             return "code";
 
-        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Component_Code) {
             return "component[" + getLastComponentIndex() + "].code";
 
-        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Range_Meaning) {
             return "referenceRange[0].meaning";
 
         } else {
@@ -300,16 +296,16 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_MAIN_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Observation_Main_Code) {
             this.observation.setCode(null);
 
-        } else if (tag.equals(TAG_COMPONENT_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Component_Code) {
             Observation.ObservationComponentComponent component = getLastComponent();
             component.setCode(null);
 
-        } else if (tag.equals(TAG_RANGE_MEANING_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Observation_Range_Meaning) {
             Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
             rangeComponent.setMeaning(null);
 

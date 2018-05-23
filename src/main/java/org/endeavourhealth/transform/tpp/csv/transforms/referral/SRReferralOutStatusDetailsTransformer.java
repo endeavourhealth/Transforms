@@ -75,8 +75,7 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell referralStatus = parser.getStatusOfReferralOut();
         if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {
 
-            TppConfigListOption tppConfigListOption
-                    = csvHelper.lookUpTppConfigListOption(referralStatus.getLong(),parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralStatus,parser);
             if (tppConfigListOption != null) {
                 String referralStatusDisplay = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(referralStatusDisplay)) {

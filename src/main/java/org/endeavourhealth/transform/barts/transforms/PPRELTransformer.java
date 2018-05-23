@@ -146,7 +146,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
             String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipToPatientDesc);
         }
 
@@ -159,7 +159,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
 
             String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipTypeDesc);
         }
     }

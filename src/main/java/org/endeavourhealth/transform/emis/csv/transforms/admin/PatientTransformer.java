@@ -211,7 +211,7 @@ public class PatientTransformer {
             if (!carerRelationship.isEmpty()) {
                 //FHIR spec states that we should map to their relationship types if possible, but if
                 //not possible, then send as a textual codeable concept
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
 
                 try {
                     ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(carerRelationship.getString());

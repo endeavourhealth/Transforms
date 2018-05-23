@@ -137,8 +137,7 @@ public class SRDrugSensitivityTransformer {
             TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong(), parser);
             if (lookUpMultiLexToCTV3Map != null) {
                 // add Ctv3 coding
-                CodeableConceptBuilder codeableConceptBuilder
-                        = new CodeableConceptBuilder(allergyIntoleranceBuilder,  null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
                 codeableConceptBuilder.setCodingCode(lookUpMultiLexToCTV3Map.getCtv3ReadCode());
                 codeableConceptBuilder.setCodingDisplay(lookUpMultiLexToCTV3Map.getCtv3ReadTerm());

@@ -151,8 +151,7 @@ public class SRCodeTransformer {
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(allergyIntoleranceBuilder, null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -255,8 +254,7 @@ public class SRCodeTransformer {
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -370,9 +368,8 @@ public class SRCodeTransformer {
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
             // In case we have cached data remove any potentially existing code.
-            conditionBuilder.removeCodeableConcept(ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE, null);
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
+            conditionBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -397,7 +394,7 @@ public class SRCodeTransformer {
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType.getLong(), parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
@@ -488,8 +485,7 @@ public class SRCodeTransformer {
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
@@ -620,8 +616,7 @@ public class SRCodeTransformer {
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(familyMemberHistoryBuilder, null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
 
             // add Ctv3 coding
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);

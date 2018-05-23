@@ -17,11 +17,6 @@ public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
                                         HasContainedListI, HasIdentifierI{
 
-    public static final String TAG_SPECIALTY = "CodeableConceptSpecialty";
-    public static final String TAG_TREATMENT_FUNCTION = "CodeableConceptTreatmentFunction";
-    public static final String TAG_SOURCE = "CodeableConceptSource";
-    public static final String TAG_ENCOUNTER_ADMISSION_TYPE = "CodeableConceptEncounterAdmissionType";
-    public static final String TAG_ENCOUNTER_LOCATION_TYPE = "CodeableConceptEncounterLocationType";
 
     private Encounter encounter = null;
 
@@ -352,32 +347,32 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (tag.equals(TAG_SOURCE)) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Source) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_SPECIALTY)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Specialty) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Treatment_Function) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Type) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_ENCOUNTER_LOCATION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Location_Type) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
@@ -389,28 +384,28 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_SOURCE)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Source) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag.equals(TAG_SPECIALTY)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Specialty) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Treatment_Function) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Type) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag.equals(TAG_ENCOUNTER_LOCATION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Location_Type) {
             Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
@@ -421,21 +416,21 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_SOURCE)) {
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Source) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
 
-        } else if (tag.equals(TAG_SPECIALTY)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Specialty) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
 
-        } else if (tag.equals(TAG_TREATMENT_FUNCTION)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Treatment_Function) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
 
-        } else if (tag.equals(TAG_ENCOUNTER_ADMISSION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Type) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_TYPE);
 
-        } else if (tag.equals(TAG_ENCOUNTER_LOCATION_TYPE)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Location_Type) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
 
         } else {

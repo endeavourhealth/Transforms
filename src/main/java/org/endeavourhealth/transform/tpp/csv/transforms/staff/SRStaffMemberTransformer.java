@@ -9,10 +9,8 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PractitionerResourceCache;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMember;
-import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Reference;
 
@@ -122,7 +120,7 @@ public class SRStaffMemberTransformer {
                 if (pojo.getStaffRole() != null) {
                     CsvCell roleName = pojo.getStaffRole();
                     if (!roleName.isEmpty()) {
-                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
                         codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
                         codeableConceptBuilder.setCodingDisplay(roleName.getString(), roleName);
                     }

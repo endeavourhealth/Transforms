@@ -15,21 +15,21 @@ public class BartsCodeableConceptHelper {
     public static final String AUDIT_ELEMENT_CODE_DISPLAY = "Display";
     public static final String AUDIT_ELEMENT_CODE_MEANING = "Meaning";
 
-    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DESC, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DISPLAY, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_MEANING, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
                                                               Long codeSet, HasCodeableConceptI resourceBuilder,
-                                                              String resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+                                                              CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         if (codeCell == null || codeCell.isEmpty() || codeCell.getLong() == 0) {
             return null;
         }
@@ -59,7 +59,6 @@ public class BartsCodeableConceptHelper {
 
         //create a CSV cell to audit where the term came from, using the Audit object on the code reference entity
         CsvCell termCsvCell = createCsvCell(cernerCodeValueRef, elementToApply, term);
-
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, resourceBuilderTag);
         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
         codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);

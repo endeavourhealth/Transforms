@@ -11,9 +11,6 @@ import java.util.Date;
 
 public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
-    public static final String TAG_ROLE_CODEABLE_CONCEPT = "Role";
-    public static final String TAG_SPECIALTY_CODEABLE_CONCEPT = "Specialty";
-
     private PractitionerBuilder parentBuilder = null;
     private Practitioner.PractitionerPractitionerRoleComponent role = null;
 
@@ -104,8 +101,8 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (tag.equals(TAG_ROLE_CODEABLE_CONCEPT)) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Practitioner_Role) {
             if (role.hasRole()) {
                 throw new IllegalArgumentException("Trying to set role on Practitioner Role when it already has one");
             }
@@ -113,7 +110,7 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
             role.setRole(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_SPECIALTY_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Practitioner_Specialty) {
             return role.addSpecialty();
 
         } else {
@@ -122,11 +119,11 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_ROLE_CODEABLE_CONCEPT)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Practitioner_Role) {
             return parentBuilder.getRoleJsonPrefix(role) + ".role";
 
-        } else if (tag.equals(TAG_SPECIALTY_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Practitioner_Specialty) {
             int index = role.getSpecialty().indexOf(codeableConcept);
             return parentBuilder.getRoleJsonPrefix(role) + ".specialty[" + index + "]";
 
@@ -141,12 +138,11 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-
-        if (tag.equals(TAG_ROLE_CODEABLE_CONCEPT)) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Practitioner_Role) {
             role.setRole(null);
 
-        } else if (tag.equals(TAG_SPECIALTY_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Practitioner_Specialty) {
             role.getSpecialty().clear();
 
         } else {

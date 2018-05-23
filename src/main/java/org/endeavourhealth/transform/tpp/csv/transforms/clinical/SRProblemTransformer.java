@@ -130,7 +130,7 @@ public class SRProblemTransformer {
         CsvCell severity = parser.getSeverity();
         if (severity != null) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity.getLong(),parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {

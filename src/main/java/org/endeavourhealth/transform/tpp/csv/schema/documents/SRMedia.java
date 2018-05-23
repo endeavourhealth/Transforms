@@ -215,11 +215,9 @@ public class SRMedia extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Patient record attachments Entry file ";
+        return "TPP file containing binary record attachments";
     }
 
     @Override

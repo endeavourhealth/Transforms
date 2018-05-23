@@ -12,10 +12,6 @@ import java.util.Date;
 public class ImmunizationBuilder extends ResourceBuilderBase
                                  implements HasCodeableConceptI {
 
-    public static final String TAG_VACCINE_CODEABLE_CONCEPT = "VaccineCode";
-    public static final String TAG_SITE_CODEABLE_CONCEPT = "SiteCode";
-    public static final String TAG_ROUTE_CODEABLE_CONCEPT = "RouteCode";
-
     private Immunization immunization = null;
 
     public ImmunizationBuilder() {
@@ -186,9 +182,9 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
 
-        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Immunization_Main_Code) {
             if (this.immunization.hasVaccineCode()) {
                 throw new IllegalArgumentException("Trying to add new Vaccine code to Immunization when it already has one");
             }
@@ -197,7 +193,7 @@ public class ImmunizationBuilder extends ResourceBuilderBase
             this.immunization.setVaccineCode(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Site) {
             if (this.immunization.hasSite()) {
                 throw new IllegalArgumentException("Trying to add a new Site code to Immunization when it already has one");
             }
@@ -206,7 +202,7 @@ public class ImmunizationBuilder extends ResourceBuilderBase
             this.immunization.setSite(codeableConcept);
             return codeableConcept;
 
-        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Route) {
             if (this.immunization.hasRoute()) {
                 throw new IllegalArgumentException("Trying to add a new Route code to Immunization when it already has one");
             }
@@ -220,15 +216,15 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Immunization_Main_Code) {
             return "vaccineCode";
 
-        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Site) {
             return "site";
 
-        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Route) {
             return "route";
 
         } else {
@@ -237,15 +233,15 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_VACCINE_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Immunization_Main_Code) {
             this.immunization.setVaccineCode(null);
 
-        } else if (tag.equals(TAG_SITE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Site) {
             this.immunization.setSite(null);
 
-        } else if (tag.equals(TAG_ROUTE_CODEABLE_CONCEPT)) {
+        } else if (tag == CodeableConceptBuilder.Tag.Immunization_Route) {
             this.immunization.setRoute(null);
 
         } else {

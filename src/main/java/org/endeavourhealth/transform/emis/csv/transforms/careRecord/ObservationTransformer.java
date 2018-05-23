@@ -474,7 +474,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(referralRequestBuilder, false, codeId, ReferralRequestBuilder.TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(referralRequestBuilder, false, codeId, CodeableConceptBuilder.Tag.Referral_Request_Service, csvHelper);
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
@@ -525,7 +525,7 @@ public class ObservationTransformer {
             referralRequestBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             referralRequestBuilder.setIsReview(true);
         }
 
@@ -676,7 +676,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticOrderBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticOrderBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -710,7 +710,7 @@ public class ObservationTransformer {
             diagnosticOrderBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             diagnosticOrderBuilder.setIsReview(true);
         }
 
@@ -818,7 +818,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(specimenBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(specimenBuilder, false, codeId, CodeableConceptBuilder.Tag.Specimen_Main_Code, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -857,7 +857,7 @@ public class ObservationTransformer {
             specimenBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             specimenBuilder.setIsReview(true);
         }
 
@@ -973,7 +973,7 @@ public class ObservationTransformer {
         allergyIntoleranceBuilder.setClinician(practitionerReference, clinicianGuid);
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(allergyIntoleranceBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(allergyIntoleranceBuilder, false, codeId, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         allergyIntoleranceBuilder.setNote(associatedText.getString(), associatedText);
@@ -990,7 +990,7 @@ public class ObservationTransformer {
             allergyIntoleranceBuilder.setEncounter(reference, consultationGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             allergyIntoleranceBuilder.setIsReview(true);
         }
 
@@ -1100,7 +1100,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -1142,7 +1142,7 @@ public class ObservationTransformer {
             diagnosticReportBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             diagnosticReportBuilder.setIsReview(true);
         }
 
@@ -1262,7 +1262,7 @@ public class ObservationTransformer {
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(procedureBuilder, false, codeId, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(procedureBuilder, false, codeId, CodeableConceptBuilder.Tag.Procedure_Main_Code, csvHelper);
 
         CsvCell effectiveDate = parser.getEffectiveDate();
         CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
@@ -1307,7 +1307,7 @@ public class ObservationTransformer {
             procedureBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             procedureBuilder.setIsReview(true);
         }
 
@@ -1442,7 +1442,7 @@ public class ObservationTransformer {
         conditionBuilder.setRecordedDate(enteredDateTime, enteredDate, enteredTime);
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(conditionBuilder, false, codeId, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(conditionBuilder, false, codeId, CodeableConceptBuilder.Tag.Condition_Main_Code, csvHelper);
 
         //we don't have enough information to set this accurately, so taking out
         //fhirCondition.setClinicalStatus("active"); //if we have a Problem record for this condition, this status may be changed
@@ -1479,7 +1479,7 @@ public class ObservationTransformer {
             conditionBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             conditionBuilder.setIsReview(true);
         }
 
@@ -1630,7 +1630,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(observationBuilder, false, codeId, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(observationBuilder, false, codeId, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
@@ -1700,7 +1700,7 @@ public class ObservationTransformer {
                 observationBuilder.setComponentValue(bpValue.getDouble(), bpValue);
                 observationBuilder.setComponentUnit(bpUnit.getString(), bpUnit);
 
-                EmisCodeHelper.createCodeableConcept(observationBuilder, false, bpCodeId, ObservationBuilder.TAG_COMPONENT_CODEABLE_CONCEPT, csvHelper);
+                EmisCodeHelper.createCodeableConcept(observationBuilder, false, bpCodeId, CodeableConceptBuilder.Tag.Observation_Component_Code, csvHelper);
             }
         }
 
@@ -1723,7 +1723,7 @@ public class ObservationTransformer {
             observationBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             observationBuilder.setIsReview(true);
         }
 
@@ -1866,7 +1866,7 @@ public class ObservationTransformer {
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(familyMemberHistoryBuilder, false, codeId, null, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(familyMemberHistoryBuilder, false, codeId, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -1904,7 +1904,7 @@ public class ObservationTransformer {
             familyMemberHistoryBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             familyMemberHistoryBuilder.setIsReview(true);
         }
 
@@ -2022,7 +2022,7 @@ public class ObservationTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(immunizationBuilder, false, codeId, ImmunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(immunizationBuilder, false, codeId, CodeableConceptBuilder.Tag.Immunization_Main_Code, csvHelper);
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
@@ -2061,7 +2061,7 @@ public class ObservationTransformer {
             immunizationBuilder.addDocumentIdentifier(fhirIdentifier, documentGuid);
         }
 
-        if (isReview(codeableConceptBuilder, null, parser, csvHelper, fhirResourceFiler)) {
+        if (isReview(codeableConceptBuilder, parser, csvHelper, fhirResourceFiler)) {
             immunizationBuilder.setIsReview(true);
         }
 
@@ -2290,7 +2290,7 @@ public class ObservationTransformer {
 
 
 
-    private static boolean isReview(CodeableConceptBuilder codeableConceptBuilder, String codeableConceptTag, Observation parser,
+    private static boolean isReview(CodeableConceptBuilder codeableConceptBuilder, Observation parser,
                                     EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
         CsvCell problemGuid = parser.getProblemGuid();
         if (problemGuid.isEmpty()) {

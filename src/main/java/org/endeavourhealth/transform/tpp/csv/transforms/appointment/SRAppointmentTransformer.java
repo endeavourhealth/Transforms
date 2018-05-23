@@ -164,7 +164,7 @@ public class SRAppointmentTransformer {
         CsvCell appointmentStatus = parser.getAppointmentStatus();
         if (!appointmentStatus.isEmpty() ) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus.getLong(), parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus, parser);
             if (tppMappingRef != null) {
                 String statusTerm = tppMappingRef.getMappedTerm();
                 Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
@@ -182,7 +182,7 @@ public class SRAppointmentTransformer {
             List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getStaffMemberProfilePojo(appointmentId.getLong());
 
             for (AppointmentFlagsPojo pojo : pojoList) {
-                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag().getLong(), parser);
+                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag(), parser);
                 if (tppMappingRef != null) {
                     String flagMapping = tppMappingRef.getMappedTerm();
                     if (!Strings.isNullOrEmpty(flagMapping)) {

@@ -69,11 +69,9 @@ public class SRImmunisationContent extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Immunisation Content Entry file ";
+        return "TPP file containing static content of each immunisation type";
     }
 
     @Override

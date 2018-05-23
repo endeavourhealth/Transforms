@@ -15,10 +15,6 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
     private Procedure procedure = null;
 
-    public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
-    //public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
-
-
     public ProcedureBuilder() {
         this(null);
     }
@@ -111,8 +107,8 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Main_Code) {
             if (this.procedure.hasCode()) {
                 throw new IllegalArgumentException("Trying to add code to Procedure that already has one");
             }
@@ -132,8 +128,8 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Main_Code) {
             return "code";
 
         /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
@@ -145,9 +141,9 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Main_Code) {
             this.procedure.setCode(null);
 
         /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {

@@ -122,12 +122,11 @@ public class SREventTransformer {
 
         CsvCell contactTypeCell = parser.getContactMethod();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell.getLong(), parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell, parser);
             if (tppConfigListOption != null) {
                 String contactType = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactType)) {
-                    CodeableConceptBuilder codeableConceptbuilder
-                            = new CodeableConceptBuilder(encounterBuilder, encounterBuilder.TAG_SOURCE);
+                    CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                     codeableConceptbuilder.setText(contactType);
                 }
             }

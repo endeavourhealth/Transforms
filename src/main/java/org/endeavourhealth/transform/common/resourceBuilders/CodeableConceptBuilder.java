@@ -11,23 +11,64 @@ public class CodeableConceptBuilder {
 
     private HasCodeableConceptI parentBuilder = null;
     private CodeableConcept codeableConcept = null;
-    private String codeableConceptTag = null;
+    private Tag tag = null;
 
-    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, String codeableConceptTag) {
-        this(parentBuilder, codeableConceptTag, null);
+    public enum Tag {
+        Practitioner_Role,
+        Practitioner_Specialty,
+        Condition_Main_Code,
+        Procedure_Main_Code,
+        Observation_Main_Code,
+        Observation_Component_Code,
+        Observation_Range_Meaning,
+        Referral_Request_Service,
+        Patient_Language,
+        Patient_Religion,
+        Encounter_Specialty,
+        Encounter_Treatment_Function,
+        Encounter_Source,
+        Encounter_Admission_Type,
+        Encounter_Location_Type,
+        Immunization_Main_Code,
+        Immunization_Site,
+        Immunization_Route,
+
+        Patient_Contact_Relationship,
+        Allergy_Intolerance_Main_Code,
+        Specimen_Main_Code,
+        Appointment_Dna_Reason_Code,
+        Family_Member_History_Main_Code,
+        Diagnostic_Order_Main_Code,
+        Diagnostic_Report_Main_Code,
+        Procedure_Request_Main_Code,
+        Medication_Order_Drug_Code,
+        Medication_Statement_Drug_Code;
     }
 
-    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, String codeableConceptTag, CodeableConcept codeableConcept) {
+
+    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, Tag tag) {
+        this(parentBuilder, tag, null);
+    }
+
+    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, Tag tag, CodeableConcept codeableConcept) {
+
+        if (parentBuilder == null) {
+            throw new IllegalArgumentException("Null parentBuilder in CodeableConceptBuilder constructor");
+        }
+        if (tag == null) {
+            throw new IllegalArgumentException("Null tag in CodeableConceptBuilder constructor");
+        }
+
         this.parentBuilder = parentBuilder;
         this.codeableConcept = codeableConcept;
-        this.codeableConceptTag = codeableConceptTag;
+        this.tag = tag;
 
         if (this.codeableConcept == null) {
-            this.codeableConcept = parentBuilder.createNewCodeableConcept(codeableConceptTag);
+            this.codeableConcept = parentBuilder.createNewCodeableConcept(tag);
         }
     }
 
-    public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, String tag, CodeableConcept codeableConcept) {
+    public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, Tag tag, CodeableConcept codeableConcept) {
 
         //remove any audits we've created for the CodeableConcept
         String identifierJsonPrefix = parentBuilder.getCodeableConceptJsonPath(tag, codeableConcept);
@@ -87,7 +128,7 @@ public class CodeableConceptBuilder {
     }
 
     private void addAudit(String jsonSuffix, CsvCell... sourceCells) {
-        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(codeableConceptTag, codeableConcept) + "." + jsonSuffix;
+        String jsonField = this.parentBuilder.getCodeableConceptJsonPath(tag, codeableConcept) + "." + jsonSuffix;
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
             if (csvCell != null) {

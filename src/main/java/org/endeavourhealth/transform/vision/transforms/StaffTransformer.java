@@ -58,7 +58,7 @@ public class StaffTransformer {
         Reference organisationReference = csvHelper.createOrganisationReference(orgID.getString());
         roleBuilder.setRoleManagingOrganisation(organisationReference, orgID);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
         codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
 
         CsvCell roleCode = parser.getJobCategoryCode();

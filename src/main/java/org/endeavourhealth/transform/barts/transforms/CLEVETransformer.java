@@ -166,7 +166,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                         codeCell.getRowAuditId(), codeCell.getColIndex());
                 //return;
             }
-            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, ObservationBuilder.TAG_MAIN_CODEABLE_CONCEPT, csvHelper);
+            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
 
             //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
             CsvCell termCell = parser.getEventTitleText();
@@ -209,7 +209,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
                         normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
                // return;
             }
-            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, ObservationBuilder.TAG_RANGE_MEANING_CODEABLE_CONCEPT, csvHelper);
+            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, CodeableConceptBuilder.Tag.Observation_Range_Meaning, csvHelper);
         }
 
         //TODO - set comments

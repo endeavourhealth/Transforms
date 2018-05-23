@@ -10,50 +10,68 @@ import java.util.UUID;
 
 public class SRAppointmentFlags extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentFlags.class); 
+    private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentFlags.class);
 
-  public SRAppointmentFlags(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-            super(serviceId, systemId, exchangeId, version, filePath,
-                    TppCsvToFhirTransformer.CSV_FORMAT,
-                    TppCsvToFhirTransformer.DATE_FORMAT,
-                    TppCsvToFhirTransformer.TIME_FORMAT);
+    public SRAppointmentFlags(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
+                TppCsvToFhirTransformer.CSV_FORMAT,
+                TppCsvToFhirTransformer.DATE_FORMAT,
+                TppCsvToFhirTransformer.TIME_FORMAT);
+    }
+
+
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_87) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "IDAppointment",
+                    "Flag",
+                    "OldRowIdentifier",
+                    "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "IDAppointment",
+                    "Flag",
+                    "OldRowIdentifier"
+            };
         }
+    }
+
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getIDAppointment() {
+        return super.getCell("IDAppointment");
+    }
+
+    public CsvCell getFlag() {
+        return super.getCell("Flag");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
-        @Override
-        protected String[] getCsvHeaders(String version) {
-            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK) ||
-                    version.equals(TppCsvToFhirTransformer.VERSION_87) ||
-                    version.equals(TppCsvToFhirTransformer.VERSION_89)) {
-                return new String[]{
-                        "RowIdentifier",
-                        "IDOrganisationVisibleTo",
-                        "IDAppointment",
-                        "Flag",
-                        "OldRowIdentifier",
-                        "RemovedData"
-                };
-            } else {
-                return new String[]{
-                        "RowIdentifier",
-                        "IDOrganisationVisibleTo",
-                        "IDAppointment",
-                        "Flag",
-                        "OldRowIdentifier"
-                };
-            }
-        }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
- public CsvCell getIDAppointment() { return super.getCell("IDAppointment");}
- public CsvCell getFlag() { return super.getCell("Flag");}
- public CsvCell getRemovedData() { return super.getCell("RemovedData");}
+    @Override
+    protected String getFileTypeDescription() {
+        return "TPP Appointment Flags file ";
+    }
 
-
- //TODO fix the string below to make it meaningful
-     @Override
-protected String getFileTypeDescription() {return "TPP Appointment Flags Entry file ";}
-
-     @Override
-protected boolean isFileAudited() {return true;}
-        }
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+}

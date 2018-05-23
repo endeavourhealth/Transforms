@@ -74,7 +74,7 @@ public class SRPatientRelationshipTransformer {
         CsvCell relationshipTypeCell = parser.getRelationshipType();
         if (!relationshipTypeCell.isEmpty()) {
             String rel = csvHelper.tppRelationtoFhir(relationshipTypeCell.getString());
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, "relationship");
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(rel);
 
         }

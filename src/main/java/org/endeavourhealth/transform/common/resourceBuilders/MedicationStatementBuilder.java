@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class MedicationStatementBuilder extends ResourceBuilderBase
-                                        implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private MedicationStatement medicationStatement = null;
 
@@ -61,7 +61,7 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
         MedicationStatement.MedicationStatementDosageComponent fhirDose = this.medicationStatement.addDosage();
         fhirDose.setText(dose);
 
-        int index = this.medicationStatement.getDosage().size()-1;
+        int index = this.medicationStatement.getDosage().size() - 1;
         auditValue("dosage[" + index + "].text", sourceCells);
     }
 
@@ -121,7 +121,7 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     private Quantity findOrAddQuantity(Extension extension) {
-        Quantity quantity = (Quantity)extension.getValue();
+        Quantity quantity = (Quantity) extension.getValue();
         if (quantity == null) {
             quantity = new Quantity();
             extension.setValue(quantity);
@@ -158,21 +158,40 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.medicationStatement.hasMedication()) {
-            throw new IllegalArgumentException("Trying to add new code to MedicationStatement when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code) {
+
+            if (this.medicationStatement.hasMedication()) {
+                throw new IllegalArgumentException("Trying to add new code to MedicationStatement when it already has one");
+            }
+            this.medicationStatement.setMedication(new CodeableConcept());
+            return (CodeableConcept) this.medicationStatement.getMedication();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        this.medicationStatement.setMedication(new CodeableConcept());
-        return (CodeableConcept)this.medicationStatement.getMedication();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "medicationCodeableConcept";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+
+        if (tag == CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code) {
+            return "medicationCodeableConcept";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.medicationStatement.setMedication(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+
+        if (tag == CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code) {
+            this.medicationStatement.setMedication(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

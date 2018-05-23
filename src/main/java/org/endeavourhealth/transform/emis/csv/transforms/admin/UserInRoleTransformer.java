@@ -81,7 +81,7 @@ public class UserInRoleTransformer {
         Reference organisationReference = csvHelper.createOrganisationReference(orgUuid);
         roleBuilder.setRoleManagingOrganisation(organisationReference, orgUuid);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, PractitionerRoleBuilder.TAG_ROLE_CODEABLE_CONCEPT);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
         codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
 
         CsvCell roleName = parser.getJobCategoryName();

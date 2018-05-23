@@ -76,7 +76,7 @@ public class ObservationReferralTransformer {
 
         CsvCell serviceType = parser.getReferralServiceType();
         if (!serviceType.isEmpty()) {
-            ReferralType type = convertTye(serviceType.getString());
+            ReferralType type = convertType(serviceType.getString());
             if (type != null) {
                 referralRequestBuilder.setType(type, serviceType);
 
@@ -139,7 +139,7 @@ public class ObservationReferralTransformer {
 
     }
 
-    private static ReferralType convertTye(String type) throws Exception {
+    private static ReferralType convertType(String type) throws Exception {
 
         if (type.equalsIgnoreCase("Unknown")) {
             return ReferralType.UNKNOWN;

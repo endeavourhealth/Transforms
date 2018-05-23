@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
@@ -79,7 +80,7 @@ public class IssueRecordTransformer {
         medicationOrderBuilder.setPrescriber(practitionerReference, clinicianGuid);
 
         CsvCell codeId = parser.getCodeId();
-        EmisCodeHelper.createCodeableConcept(medicationOrderBuilder, true, codeId, null, csvHelper);
+        EmisCodeHelper.createCodeableConcept(medicationOrderBuilder, true, codeId, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code, csvHelper);
 
         CsvCell dose = parser.getDosage();
         medicationOrderBuilder.setDose(dose.getString(), dose);

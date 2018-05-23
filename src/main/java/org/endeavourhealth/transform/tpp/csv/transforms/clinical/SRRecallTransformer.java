@@ -107,8 +107,7 @@ public class SRRecallTransformer {
         CsvCell recallType = parser.getRecallType();
         // this is free text only with no code
         if (!recallType.isEmpty()) {
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(procedureRequestBuilder,  null);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureRequestBuilder, CodeableConceptBuilder.Tag.Procedure_Request_Main_Code);
             codeableConceptBuilder.setText(recallType.getString());
         }
 
@@ -116,7 +115,7 @@ public class SRRecallTransformer {
         // these are locally configured statues not mapped
         if (!recallStatus.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus.getLong(), parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {

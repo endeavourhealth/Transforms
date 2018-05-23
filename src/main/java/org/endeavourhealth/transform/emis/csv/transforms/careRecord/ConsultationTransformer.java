@@ -110,13 +110,14 @@ public class ConsultationTransformer {
         encounterBuilder.setServiceProvider(organisationReference, organisationGuid);
 
         CsvCell codeId = parser.getConsultationSourceCodeId();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, EncounterBuilder.TAG_SOURCE, csvHelper);
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(encounterBuilder, false, codeId, CodeableConceptBuilder.Tag.Encounter_Source, csvHelper);
 
         CsvCell termCell = parser.getConsultationSourceTerm();
         if (!termCell.isEmpty()) {
-            String term = termCell.getString();
+
+            //the concept builder may be null if there was no code ID, so check and create if necessary
             if (codeableConceptBuilder == null) {
-                codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, null);
+                codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             }
             codeableConceptBuilder.setText(termCell.getString(), termCell);
         }

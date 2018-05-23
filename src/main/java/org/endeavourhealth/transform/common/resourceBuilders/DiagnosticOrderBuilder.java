@@ -7,7 +7,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class DiagnosticOrderBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private DiagnosticOrder diagnosticOrder = null;
 
@@ -113,23 +113,39 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
-        if (item.hasCode()) {
-            throw new IllegalArgumentException("Trying to add new code to DiagnosticOrder item when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code) {
+            DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
+            if (item.hasCode()) {
+                throw new IllegalArgumentException("Trying to add new code to DiagnosticOrder item when it already has one");
+            }
+            item.setCode(new CodeableConcept());
+            return item.getCode();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        item.setCode(new CodeableConcept());
-        return item.getCode();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "item[0].code";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code) {
+            return "item[0].code";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
-        item.setCode(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code) {
+            DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
+            item.setCode(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

@@ -478,7 +478,7 @@ public class BasisTransformer {
             identifierBuilder.setValue(cdsId);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, ProcedureBuilder.TAG_CODEABLE_CONCEPT_CODE);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
         codeableConceptBuilder.addCoding(procedureCodeSystem);
         codeableConceptBuilder.setCodingCode(procedureCode);
 

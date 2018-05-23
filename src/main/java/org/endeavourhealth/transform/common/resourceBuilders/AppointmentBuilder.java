@@ -9,7 +9,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class AppointmentBuilder extends ResourceBuilderBase
-                                implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private Appointment appointment = null;
 
@@ -35,7 +35,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
         fhirParticipant.setActor(reference);
         fhirParticipant.setStatus(status);
 
-        int index = this.appointment.getParticipant().size()-1;
+        int index = this.appointment.getParticipant().size() - 1;
         auditValue("participant[" + index + "].actor.reference", sourceCells);
     }
 
@@ -66,7 +66,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
     public void addSlot(Reference slotReference, CsvCell... sourceCells) {
         this.appointment.addSlot(slotReference);
 
-        int index = this.appointment.getSlot().size()-1;
+        int index = this.appointment.getSlot().size() - 1;
         auditValue("slot[" + index + "].reference", sourceCells);
     }
 
@@ -82,11 +82,11 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditDurationExtension(extension, sourceCells);
     }
 
-    public void setDnaReasonCode(CodeableConcept codeableConcept, CsvCell... sourceCells) {
+    /*public void setDnaReasonCode(CodeableConcept codeableConcept, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE, codeableConcept);
 
         auditCodeableConceptExtension(extension, sourceCells);
-    }
+    }*/
 
     public void setSentInDateTime(Date sentInDateTime, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_SENT_IN, sentInDateTime);
@@ -108,30 +108,50 @@ public class AppointmentBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        Extension extension = ExtensionConverter.findOrCreateExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
-        CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        if (codeableConcept != null) {
-            throw new IllegalArgumentException("Trying to add new DNA code to Appointment when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Appointment_Dna_Reason_Code) {
+
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
+            CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+            if (codeableConcept != null) {
+                throw new IllegalArgumentException("Trying to add new DNA code to Appointment when it already has one");
+            }
+            codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        codeableConcept = new CodeableConcept();
-        extension.setValue(codeableConcept);
-        return codeableConcept;
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        Extension extension = ExtensionConverter.findExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
-        if (extension == null) {
-            throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
-        }
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        int index = this.appointment.getExtension().indexOf(extension);
-        return "extension[" + index + "].valueCodeableConcept";
+        if (tag == CodeableConceptBuilder.Tag.Appointment_Dna_Reason_Code) {
+
+            Extension extension = ExtensionConverter.findExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
+            if (extension == null) {
+                throw new IllegalArgumentException("Can't call getCodeableConceptJsonPath() before calling getOrCreateCodeableConcept()");
+            }
+
+            int index = this.appointment.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        ExtensionConverter.removeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+
+        if (tag == CodeableConceptBuilder.Tag.Appointment_Dna_Reason_Code) {
+            ExtensionConverter.removeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

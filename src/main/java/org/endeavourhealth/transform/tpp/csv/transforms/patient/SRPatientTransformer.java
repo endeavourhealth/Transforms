@@ -3,15 +3,22 @@ package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Enumerations;
+import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +74,7 @@ public class SRPatientTransformer {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setValue(nhsNumber, nhsNumberCell);
-            } else {
+        } else {
             TransformWarnings.log(LOG, parser, "No NHS number found record id: {}, file: {}", parser.getRowIdentifier().getString(), parser.getFilePath());
         }
 
@@ -135,33 +142,27 @@ public class SRPatientTransformer {
             }
         }
 
-        // Speaks English
-        // In TPP we just have a "speaks english" column with these values so do what we can
-        //        "54771","Unknown"
-        //        "54770","Yes" - set language as English
-        //        "54772","No"  - set interpreter required to true
-
+        //Speaks English
+        //The SRPatient CSV record refers to the global mapping file, which supports only three values
         CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
         if (!speaksEnglishCell.isEmpty()) {
-            CodeableConcept englishSpoken = patientBuilder.createNewCodeableConcept(PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE);
 
-                switch (speaksEnglishCell.getString().toLowerCase()) {
-                    case "54770" :
-                        englishSpoken.setText("yes");
-                        break;
-                    case "54772" :
-                        englishSpoken.setText("no");
-                        break;
-                    case "54771":
-                        // removed below as unknown is TPP default but still a valid value
-                        // englishSpoken.setText("unknown");
-                        break;
-                    default:
-                        englishSpoken.setText("");
-                        TransformWarnings.log(LOG, parser, "Unrecognized EnglishSpoken value {} for Id: {} in file {}",
-                                speaksEnglishCell.getString(),parser.getRowIdentifier().getString(), parser.getFilePath());
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell, parser);
+            if (mapping != null) {
+                String term = mapping.getMappedTerm();
+                if (term.equals("Unknown")) {
+                    patientBuilder.setSpeaksEnglish(null, speaksEnglishCell);
+
+                } else if (term.equals("Yes")) {
+                    patientBuilder.setSpeaksEnglish(Boolean.TRUE, speaksEnglishCell);
+
+                } else if (term.equals("No")) {
+                    patientBuilder.setSpeaksEnglish(Boolean.FALSE, speaksEnglishCell);
+
+                } else {
+                    throw new TransformException("Unexpected english speaks value [" + term + "]");
+                }
             }
-
         }
     }
 

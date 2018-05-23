@@ -73,11 +73,9 @@ public class SRStaffMemberProfileRole extends AbstractCsvParser {
         return super.getCell("DateDeleted");
     }
 
-
-    //TODO fix the string below to make it meaningful
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Staff Member Profile Role Entry file ";
+        return "TPP staff member role reference file";
     }
 
     @Override

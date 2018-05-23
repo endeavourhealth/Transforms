@@ -10,7 +10,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class DiagnosticReportBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private DiagnosticReport diagnosticReport = null;
 
@@ -90,7 +90,7 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
 
     private boolean hasResult(Reference reference) {
         if (this.diagnosticReport.hasResult()) {
-            for (Reference resultReference: diagnosticReport.getResult()) {
+            for (Reference resultReference : diagnosticReport.getResult()) {
                 if (ReferenceHelper.equals(reference, resultReference)) {
                     return true;
                 }
@@ -106,7 +106,7 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
         }
         this.diagnosticReport.getResult().add(reference);
 
-        int index = this.diagnosticReport.getResult().size()-1;
+        int index = this.diagnosticReport.getResult().size() - 1;
         auditValue("result[" + index + "].reference", sourceCells);
         return true;
     }
@@ -117,21 +117,38 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.diagnosticReport.hasCode()) {
-            throw new IllegalArgumentException("Trying to add new code to DiagnosticReport when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code) {
+            if (this.diagnosticReport.hasCode()) {
+                throw new IllegalArgumentException("Trying to add new code to DiagnosticReport when it already has one");
+            }
+            this.diagnosticReport.setCode(new CodeableConcept());
+            return this.diagnosticReport.getCode();
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        this.diagnosticReport.setCode(new CodeableConcept());
-        return this.diagnosticReport.getCode();
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "code";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code) {
+            return "code";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.diagnosticReport.setCode(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+
+        if (tag == CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code) {
+            this.diagnosticReport.setCode(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

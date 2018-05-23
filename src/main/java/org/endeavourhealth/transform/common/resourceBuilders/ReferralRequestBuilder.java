@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
@@ -17,8 +18,6 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         implements HasCodeableConceptI, HasIdentifierI {
 
     private ReferralRequest referralRequest = null;
-    public static final String TAG_REASON_CODEABLE_CONCEPT = "Reason";
-    public static final String TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT = "Service";
 
     public ReferralRequestBuilder() {
         this(null);
@@ -134,7 +133,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("priority.text", sourceCells);
     }
 
-    public void setReason(CodeableConcept codeableConcept, CsvCell... sourceCells) {
+    /*public void setReason(CodeableConcept codeableConcept, CsvCell... sourceCells) {
         this.referralRequest.setReason(codeableConcept);
 
         auditValue("reason.coding[0]", sourceCells);
@@ -145,7 +144,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest.setReason(codeableConcept);
 
         auditValue("reason.text", sourceCells);
-    }
+    }*/
 
     public void setServiceRequestedFreeText(String freeText, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
@@ -183,31 +182,25 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
 
-        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            if (this.referralRequest.hasReason()) {
-                throw new IllegalArgumentException("Trying to add reason to referral when it already has one");
-            }
-            this.referralRequest.setReason(new CodeableConcept());
-            return this.referralRequest.getReason();
-        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+        if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             //although the FHIR resource supports multiple codeable concepts, we only want to use a single one
             if (this.referralRequest.hasServiceRequested()) {
                 throw new IllegalArgumentException("Trying to add service requested to ReferralRequest that already has one");
             }
             return this.referralRequest.addServiceRequested();
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            return "reason";
-        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             return "serviceRequested[0]";
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
@@ -216,21 +209,19 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            this.referralRequest.setReason(null);
-        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             this.referralRequest.getServiceRequested().clear();
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
     }
 
-    public boolean hasCodeableConcept(String tag) {
-        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            return this.referralRequest.hasReason();
-        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+    public boolean hasCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             return this.referralRequest.hasServiceRequested();
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
@@ -261,5 +252,15 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest.getIdentifier().remove(identifier);
     }
 
+    public void setRecipientServiceType(String recipientServiceType, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(recipientServiceType)) {
+            ExtensionConverter.removeExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_TYPE);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_TYPE, recipientServiceType);
+
+            super.auditStringExtension(extension, sourceCells);
+        }
+    }
 
 }

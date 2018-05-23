@@ -10,7 +10,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class ProcedureRequestBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private ProcedureRequest procedureRequest = null;
 
@@ -76,7 +76,7 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
         Annotation annotation = AnnotationHelper.createAnnotation(notes);
         this.procedureRequest.addNotes(annotation);
 
-        int index = this.procedureRequest.getNotes().size()-1;
+        int index = this.procedureRequest.getNotes().size() - 1;
         auditValue("notes[" + index + "].text", sourceCells);
     }
 
@@ -105,23 +105,39 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     }*/
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (this.procedureRequest.hasCode()) {
-            throw new IllegalArgumentException("Trying to add code to ProcedureRequest when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Request_Main_Code) {
+            if (this.procedureRequest.hasCode()) {
+                throw new IllegalArgumentException("Trying to add code to ProcedureRequest when it already has one");
+            } else {
+                CodeableConcept codeableConcept = new CodeableConcept();
+                this.procedureRequest.setCode(codeableConcept);
+                return codeableConcept;
+            }
+
         } else {
-            CodeableConcept codeableConcept = new CodeableConcept();
-            this.procedureRequest.setCode(codeableConcept);
-            return codeableConcept;
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "code";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Request_Main_Code) {
+            return "code";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.procedureRequest.setCode(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Procedure_Request_Main_Code) {
+            this.procedureRequest.setCode(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

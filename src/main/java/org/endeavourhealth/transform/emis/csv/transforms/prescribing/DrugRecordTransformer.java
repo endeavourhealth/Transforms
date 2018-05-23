@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
@@ -89,7 +90,7 @@ public class DrugRecordTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        EmisCodeHelper.createCodeableConcept(medicationStatementBuilder, true, codeId, null, csvHelper);
+        EmisCodeHelper.createCodeableConcept(medicationStatementBuilder, true, codeId, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code, csvHelper);
 
         CsvCell dose = parser.getDosage();
         if (!dose.isEmpty()) {

@@ -12,7 +12,9 @@ import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3Ma
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
-import org.endeavourhealth.core.database.dal.publisherTransform.*;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.*;
@@ -292,8 +294,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRMapping generated db
-    public TppMappingRef lookUpTppMappingRef(Long rowId, AbstractCsvParser parser) throws Exception {
+    public TppMappingRef lookUpTppMappingRef(CsvCell cell, AbstractCsvParser parser) throws Exception {
 
+        Long rowId = cell.getLong();
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
         //Find the code in the cache
@@ -319,8 +322,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRConfigureListOption generated db
-    public TppConfigListOption lookUpTppConfigListOption(Long rowId, AbstractCsvParser parser) throws Exception {
+    public TppConfigListOption lookUpTppConfigListOption(CsvCell cell, AbstractCsvParser parser) throws Exception {
 
+        Long rowId = cell.getLong();
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
         //Find the code in the cache

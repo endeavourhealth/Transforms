@@ -10,14 +10,14 @@ import java.util.UUID;
 
 public class SRAppointmentRoom extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentRoom.class); 
+    private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentRoom.class);
 
-  public SRAppointmentRoom(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-      super(serviceId, systemId, exchangeId, version, filePath,
-              TppCsvToFhirTransformer.CSV_FORMAT,
-              TppCsvToFhirTransformer.DATE_FORMAT,
-              TppCsvToFhirTransformer.TIME_FORMAT);
-  }
+    public SRAppointmentRoom(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
+                TppCsvToFhirTransformer.CSV_FORMAT,
+                TppCsvToFhirTransformer.DATE_FORMAT,
+                TppCsvToFhirTransformer.TIME_FORMAT);
+    }
 
     @Override
     protected String[] getCsvHeaders(String version) {
@@ -57,25 +57,66 @@ public class SRAppointmentRoom extends AbstractCsvParser {
         }
     }
 
-    public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
-    public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
-    public CsvCell getName() { return super.getCell("Name");}
-    public CsvCell getDateCreated() { return super.getCell("DateCreated");}
-    public CsvCell getIDCreatedBy() { return super.getCell("IDCreatedBy");}
-    public CsvCell getIDProfileCreatedBy() { return super.getCell("IDProfileCreatedBy");}
-    public CsvCell getDateDeleted() { return super.getCell("DateDeleted");}
-    public CsvCell getIDDeletedBy() { return super.getCell("IDDeletedBy");}
-    public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");}
-    public CsvCell getIdBranch() { return super.getCell("IdBranch");}
-    public CsvCell getIDOrganisationBranch() { return super.getCell("IDOrganisationBranch");}
-    public CsvCell getIDLocation() { return super.getCell("IDLocation");}
-    public CsvCell getRemovedData() { return super.getCell("RemovedData");}
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getName() {
+        return super.getCell("Name");
+    }
+
+    public CsvCell getDateCreated() {
+        return super.getCell("DateCreated");
+    }
+
+    public CsvCell getIDCreatedBy() {
+        return super.getCell("IDCreatedBy");
+    }
+
+    public CsvCell getIDProfileCreatedBy() {
+        return super.getCell("IDProfileCreatedBy");
+    }
+
+    public CsvCell getDateDeleted() {
+        return super.getCell("DateDeleted");
+    }
+
+    public CsvCell getIDDeletedBy() {
+        return super.getCell("IDDeletedBy");
+    }
+
+    public CsvCell getIDProfileDeletedBy() {
+        return super.getCell("IDProfileDeletedBy");
+    }
+
+    public CsvCell getIdBranch() {
+        return super.getCell("IdBranch");
+    }
+
+    public CsvCell getIDOrganisationBranch() {
+        return super.getCell("IDOrganisationBranch");
+    }
+
+    public CsvCell getIDLocation() {
+        return super.getCell("IDLocation");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
 
 
-    //TODO fix the string below to make it meaningful
     @Override
-    protected String getFileTypeDescription() {return "TPP Appointment Room Entry file ";}
+    protected String getFileTypeDescription() {
+        return "TPP Appointment Room file ";
+    }
 
     @Override
-    protected boolean isFileAudited() {return true;}
+    protected boolean isFileAudited() {
+        return true;
+    }
 }

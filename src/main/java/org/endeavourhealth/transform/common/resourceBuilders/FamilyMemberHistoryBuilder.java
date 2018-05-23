@@ -8,7 +8,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
-                                        implements HasCodeableConceptI {
+        implements HasCodeableConceptI {
 
     private FamilyMemberHistory familyMemberHistory = null;
 
@@ -106,24 +106,43 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
-        if (condition.hasCode()) {
-            throw new IllegalArgumentException("Trying to add new code to FamilyMemberHistory when it already has one");
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+
+        if (tag == CodeableConceptBuilder.Tag.Family_Member_History_Main_Code) {
+
+            FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+            if (condition.hasCode()) {
+                throw new IllegalArgumentException("Trying to add new code to FamilyMemberHistory when it already has one");
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            condition.setCode(codeableConcept);
+            return codeableConcept;
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-        CodeableConcept codeableConcept = new CodeableConcept();
-        condition.setCode(codeableConcept);
-        return codeableConcept;
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "condition[0].code";
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Family_Member_History_Main_Code) {
+
+            return "condition[0].code";
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
-        condition.setCode(null);
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Family_Member_History_Main_Code) {
+
+            FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+            condition.setCode(null);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
     }
 }

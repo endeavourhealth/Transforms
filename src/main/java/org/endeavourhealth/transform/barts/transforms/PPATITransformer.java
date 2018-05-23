@@ -196,14 +196,14 @@ public class PPATITransformer extends BartsBasisTransformer {
         //since we're working on an existing Patient resource we need to remove any existing language or religion codeable concepts
         //and since the Patient resource only supports one of each of these, we can get away with passing NULL in rather than needing
         //to find the CodeableConcept to remove
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, null);
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, null);
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_LANGUAGE, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
 
         CsvCell religionCell = parser.getReligionCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, PatientBuilder.TAG_CODEABLE_CONCEPT_RELIGION, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();

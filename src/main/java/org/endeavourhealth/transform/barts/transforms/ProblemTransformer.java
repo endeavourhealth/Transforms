@@ -116,7 +116,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
         conditionBuilder.setRecordedDate(updatedDate, updatedDateCell);
 
         // set code to coded problem
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, ConditionBuilder.TAG_CODEABLE_CONCEPT_CODE);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
         //set the raw term on the codeable concept text
         CsvCell problemTermCell = parser.getProblem();

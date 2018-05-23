@@ -91,7 +91,7 @@ public class EncounterTransformer {
         if (sessionTypeCode != null) {
             String term = convertSessionTypeCode(sessionTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_SOURCE);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                 codeableConceptBuilder.setText(term);
             }
         }
@@ -100,7 +100,7 @@ public class EncounterTransformer {
         if (!locationTypeCode.isEmpty()) {
             String term = convertLocationTypeCode(locationTypeCode.getString());
             if (!Strings.isNullOrEmpty(term)) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, EncounterBuilder.TAG_ENCOUNTER_LOCATION_TYPE);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Location_Type);
                 codeableConceptBuilder.setText(term);
             }
         }

@@ -19,9 +19,6 @@ public class ConditionBuilder extends ResourceBuilderBase
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
 
-    public static final String TAG_CODEABLE_CONCEPT_CODE = "Code";
-    //public static final String TAG_CODEABLE_CONCEPT_CATEGORY = "Category";
-
     private Condition condition = null;
 
     public ConditionBuilder() {
@@ -261,47 +258,34 @@ public class ConditionBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(String tag) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+        if (tag == CodeableConceptBuilder.Tag.Condition_Main_Code) {
             if (this.condition.hasCode()) {
                 throw new IllegalArgumentException("Trying to add new code to Condition that already has one");
             }
             this.condition.setCode(new CodeableConcept());
             return this.condition.getCode();
 
-        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            if (this.condition.hasCategory()) {
-                throw new IllegalArgumentException("Trying to add new category to Condition that already has one");
-            }
-            this.condition.setCategory(new CodeableConcept());
-            return this.condition.getCategory();*/
-
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
     }
 
     @Override
-    public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Condition_Main_Code) {
             return "code";
 
-        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            return "category";*/
-
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");
         }
     }
 
     @Override
-    public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
-        if (tag.equals(TAG_CODEABLE_CONCEPT_CODE)) {
+        if (tag == CodeableConceptBuilder.Tag.Condition_Main_Code) {
             this.condition.setCode(null);
-
-        /*} else if (tag.equals(TAG_CODEABLE_CONCEPT_CATEGORY)) {
-            this.condition.setCategory(null);*/
 
         } else {
             throw new IllegalArgumentException("Invalid tag [" + tag + "]");

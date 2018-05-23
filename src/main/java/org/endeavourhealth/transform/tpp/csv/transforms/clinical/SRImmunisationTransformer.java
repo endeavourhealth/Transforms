@@ -131,7 +131,7 @@ public class SRImmunisationTransformer {
         CsvCell siteLocation = parser.getLocation();
         if (!siteLocation.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation.getLong(), parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation, parser);
             if (tppMappingRef !=null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setSite(mappedTerm, siteLocation);
@@ -141,7 +141,7 @@ public class SRImmunisationTransformer {
         CsvCell method = parser.getMethod();
         if (!method.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method.getLong(),parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method,parser);
             if (tppMappingRef !=null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setRoute(mappedTerm, method);
@@ -156,8 +156,7 @@ public class SRImmunisationTransformer {
         CsvCell readV3Code = parser.getImmsReadCode();
         if (!readV3Code.isEmpty()) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(immunizationBuilder, immunizationBuilder.TAG_VACCINE_CODEABLE_CONCEPT);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
 
             // add Ctv3 coding
             TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(readV3Code.getString(), parser);
@@ -189,7 +188,7 @@ public class SRImmunisationTransformer {
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
             addProtocol = true;
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart.getLong(), parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
