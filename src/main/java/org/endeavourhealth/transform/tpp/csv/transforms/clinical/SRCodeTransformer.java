@@ -51,6 +51,8 @@ public class SRCodeTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
+        //TODO - if removedData = true, then we need to work out the target resource type differently, since we don't have the CTV3 code in the current CSV record
+
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
         switch (resourceType) {
             case Observation:
