@@ -203,8 +203,16 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
     @Override
     public String getCodeableConceptJsonPath(String tag, CodeableConcept codeableConcept) {
-        return "serviceRequested[0]";
+        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
+            return "reason";
+        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+            return "serviceRequested[0]";
+        } else {
+            throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
+        }
     }
+
+
 
     @Override
     public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
@@ -252,9 +260,5 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest.getIdentifier().remove(identifier);
     }
 
-    public void removeCode(CodeableConcept code, String tag) {
-        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
-            this.referralRequest.setReason(null);
-        }
-    }
+
 }
