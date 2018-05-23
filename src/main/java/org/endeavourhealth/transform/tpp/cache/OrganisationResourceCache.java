@@ -23,7 +23,7 @@ public class OrganisationResourceCache {
         if (organizationBuilder == null) {
 
             Organization organization
-                    = (Organization)csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
+                    = (Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
             if (organization == null) {
                 //if the Location doesn't exist yet, create a new one
                 organizationBuilder = new OrganizationBuilder();
@@ -36,13 +36,13 @@ public class OrganisationResourceCache {
         return organizationBuilder;
     }
 
-    public static boolean OrganizationInCache(CsvCell rowIdCell)  {
+    public static boolean OrganizationInCache(CsvCell rowIdCell) {
         return organizationBuildersByRowId.containsKey(rowIdCell.getLong());
     }
 
     public static void fileOrganizationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Long rowId: organizationBuildersByRowId.keySet()) {
+        LOG.info("Organization cache has " + organizationBuildersByRowId.size() + " records");
+        for (Long rowId : organizationBuildersByRowId.keySet()) {
             OrganizationBuilder organizationBuilder = organizationBuildersByRowId.get(rowId);
             fhirResourceFiler.saveAdminResource(null, organizationBuilder);
         }
