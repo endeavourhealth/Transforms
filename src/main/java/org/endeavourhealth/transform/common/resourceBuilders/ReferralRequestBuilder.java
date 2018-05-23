@@ -19,6 +19,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     private ReferralRequest referralRequest = null;
     public static final String TAG_REASON_CODEABLE_CONCEPT = "Reason";
     public static final String TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT = "Service";
+
     public ReferralRequestBuilder() {
         this(null);
     }
