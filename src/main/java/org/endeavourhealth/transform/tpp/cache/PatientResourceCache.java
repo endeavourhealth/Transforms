@@ -61,10 +61,11 @@ public class PatientResourceCache {
             PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
             fhirResourceFiler.savePatientResource(null, patientBuilder);
             count++;
-            if (count % 10000 == 0 ) {
-                LOG.info("Patient cache processed " + count + " records");
-            }
+           // if (count % 10000 == 0 ) {
+              //  LOG.info("Patient cache processed " + count + " records");
+            //}
         }
+        LOG.info("Patient cache processed " + count + " records.");
 
         //clear down as everything has been saved
         PatientBuildersByRowId.clear();
