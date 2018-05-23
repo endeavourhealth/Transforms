@@ -14,11 +14,11 @@ import java.util.Date;
 import java.util.List;
 
 public class ReferralRequestBuilder extends ResourceBuilderBase
-                                    implements HasCodeableConceptI, HasIdentifierI {
+        implements HasCodeableConceptI, HasIdentifierI {
 
     private ReferralRequest referralRequest = null;
     public static final String TAG_REASON_CODEABLE_CONCEPT = "Reason";
-
+    public static final String TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT = "Service";
     public ReferralRequestBuilder() {
         this(null);
     }
@@ -108,7 +108,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public void addRecipient(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
         this.referralRequest.addRecipient(practitionerOrOrganizationReference);
 
-        int index = this.referralRequest.getRecipient().size()-1;
+        int index = this.referralRequest.getRecipient().size() - 1;
         auditValue("recipient[" + index + "].reference", sourceCells);
     }
 
@@ -188,16 +188,17 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
             if (this.referralRequest.hasReason()) {
                 throw new IllegalArgumentException("Trying to add reason to referral when it already has one");
             }
-
             this.referralRequest.setReason(new CodeableConcept());
             return this.referralRequest.getReason();
+        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+            //although the FHIR resource supports multiple codeable concepts, we only want to use a single one
+            if (this.referralRequest.hasServiceRequested()) {
+                throw new IllegalArgumentException("Trying to add service requested to ReferralRequest that already has one");
+            }
+            return this.referralRequest.addServiceRequested();
+        } else {
+            throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
-
-        //although the FHIR resource supports multiple codeable concepts, we only want to use a single one
-        if (this.referralRequest.hasServiceRequested()) {
-            throw new IllegalArgumentException("Trying to add service requested to ReferralRequest that already has one");
-        }
-        return this.referralRequest.addServiceRequested();
     }
 
     @Override
@@ -207,7 +208,23 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
 
     @Override
     public void removeCodeableConcept(String tag, CodeableConcept codeableConcept) {
-        this.referralRequest.getServiceRequested().clear();
+        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
+            this.referralRequest.setReason(null);
+        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+            this.referralRequest.getServiceRequested().clear();
+        } else {
+            throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
+        }
+    }
+
+    public boolean hasCodeableConcept(String tag) {
+        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
+            return this.referralRequest.hasReason();
+        } else if (tag.equals(TAG_SERVICE_REQUESTED_CODEABLE_CONCEPT)) {
+            return this.referralRequest.hasServiceRequested();
+        } else {
+            throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
+        }
     }
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {
@@ -233,5 +250,11 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.referralRequest.getIdentifier().remove(identifier);
+    }
+
+    public void removeCode(CodeableConcept code, String tag) {
+        if (tag.equals(TAG_REASON_CODEABLE_CONCEPT)) {
+            this.referralRequest.setReason(null);
+        }
     }
 }
