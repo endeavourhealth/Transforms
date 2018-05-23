@@ -11,7 +11,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
@@ -23,14 +23,11 @@ import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
-import java.nio.file.Files;
 import java.util.*;
 
 public abstract class TppCsvToFhirTransformer {

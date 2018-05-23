@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
+package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-import static org.endeavourhealth.transform.tpp.csv.transforms.Patient.SRPatientRegistrationTransformer.convertMedicalRecordStatus;
+import static org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientRegistrationTransformer.convertMedicalRecordStatus;
 
 public class SRPatientRelationshipTransformer {
 

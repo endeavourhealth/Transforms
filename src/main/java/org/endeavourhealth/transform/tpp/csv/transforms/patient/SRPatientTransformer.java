@@ -1,7 +1,6 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.Patient;
+package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
