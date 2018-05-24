@@ -79,6 +79,9 @@ public class SROrganisationTransformer {
         CsvCell locationIdCell = parser.getID();
         locationBuilder.setId(locationIdCell.getString(), locationIdCell);
 
+        if (!locationBuilder.getAddresses().isEmpty()) {
+            locationBuilder.getAddresses().clear();
+        }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
