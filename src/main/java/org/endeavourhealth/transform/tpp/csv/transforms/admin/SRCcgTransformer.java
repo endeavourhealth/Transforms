@@ -90,6 +90,10 @@ public class SRCcgTransformer {
             }
         }
 
+        // If address exists overwrite
+        if (!locationBuilder.getAddresses().isEmpty()) {
+            locationBuilder.removeAddress(null);
+        }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
