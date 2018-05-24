@@ -158,8 +158,8 @@ public class SROrganisationTransformer {
         CsvCell obsoleteCell  = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
 
-        if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
-                (!deleted.isEmpty() && deleted.getIntAsBoolean())) {
+        if ((obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
+                (deleted != null && !deleted.isEmpty() && deleted.getIntAsBoolean())) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }

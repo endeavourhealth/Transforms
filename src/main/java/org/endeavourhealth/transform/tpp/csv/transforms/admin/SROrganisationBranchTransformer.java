@@ -56,7 +56,7 @@ public class SROrganisationBranchTransformer {
         CsvCell deleted = parser.getRemovedData();
 
         if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
-                (!deleted.isEmpty() && deleted.getBoolean())) {
+                (deleted != null && !deleted.isEmpty() && deleted.getBoolean())) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
