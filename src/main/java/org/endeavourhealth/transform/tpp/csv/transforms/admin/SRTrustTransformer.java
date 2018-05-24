@@ -68,7 +68,7 @@ public class SRTrustTransformer {
 
         CsvCell obsoleteCell  = parser.getRemovedData();
 
-        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
+        if (obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
