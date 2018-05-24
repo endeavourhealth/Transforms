@@ -80,7 +80,7 @@ public class SROrganisationTransformer {
         locationBuilder.setId(locationIdCell.getString(), locationIdCell);
 
         if (!locationBuilder.getAddresses().isEmpty()) {
-            locationBuilder.getAddresses().clear();
+            locationBuilder.removeAddress(null);
         }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);

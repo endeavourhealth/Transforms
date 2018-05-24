@@ -90,7 +90,7 @@ public class SRTrustTransformer {
         }
         // If address exists overwrite
         if (!locationBuilder.getAddresses().isEmpty()) {
-            locationBuilder.getAddresses().clear();
+            locationBuilder.removeAddress(null);
         }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
