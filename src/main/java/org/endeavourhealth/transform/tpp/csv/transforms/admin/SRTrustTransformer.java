@@ -88,7 +88,10 @@ public class SRTrustTransformer {
                 identifierBuilder.setValue(odsCell.getString(), odsCell);
             }
         }
-
+        // If address exists overwrite
+        if (!locationBuilder.getAddresses().isEmpty()) {
+            locationBuilder.getAddresses().clear();
+        }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
