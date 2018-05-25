@@ -21,6 +21,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
         this.appointment = appointment;
         if (this.appointment == null) {
             this.appointment = new Appointment();
+            this.appointment.setStatus(Appointment.AppointmentStatus.PENDING);
             this.appointment.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_APPOINTMENT));
         }
     }
