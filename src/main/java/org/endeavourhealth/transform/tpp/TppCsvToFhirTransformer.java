@@ -200,8 +200,8 @@ public abstract class TppCsvToFhirTransformer {
 //TODO  Remove staffMember and StaffMemberProfile
 //TODO  Remove staffMember and StaffMemberProfile
 //TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-
+//TODO  Remove staffMember and StaffMemberProfile and hierarchy
+            set.add("SRCtv3Hierarchy");
             set.add("SRStaffMember");
             set.add("SRStaffMemberProfile");
             set.add("SRSystmOnline");

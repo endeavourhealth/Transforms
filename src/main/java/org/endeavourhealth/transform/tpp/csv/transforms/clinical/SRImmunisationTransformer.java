@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
@@ -194,7 +195,11 @@ public class SRImmunisationTransformer {
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
-                protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+                if (StringUtils.isNumeric(mappedTerm)) {
+                    protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+                } else {
+                    protocolComponent.setDescription(mappedTerm);
+                }
             }
         }
 
