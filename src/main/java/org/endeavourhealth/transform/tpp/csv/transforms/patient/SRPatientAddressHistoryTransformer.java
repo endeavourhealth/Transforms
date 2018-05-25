@@ -26,7 +26,7 @@ public class SRPatientAddressHistoryTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRPatientAddressHistoryTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRPatientAddressHistory.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 
@@ -71,10 +71,9 @@ public class SRPatientAddressHistoryTransformer {
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell dateToCell = parser.getDateTo();
-         CsvCell addressTypeCell = parser.getAddressType();
+        CsvCell addressTypeCell = parser.getAddressType();
 
         Address.AddressUse addressUse;
-
 
         if (!addressTypeCell.isEmpty()) {
             addressUse = getAddressUse(addressTypeCell,dateToCell,parser, csvHelper);

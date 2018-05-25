@@ -28,7 +28,7 @@ public class SRPatientRelationshipTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRPatientRelationshipTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRPatientRelationship.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 

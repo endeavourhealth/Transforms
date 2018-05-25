@@ -28,7 +28,7 @@ public class SRPatientRegistrationTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRPatientRegistrationTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRPatientRegistration.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 
@@ -74,13 +74,13 @@ public class SRPatientRegistrationTransformer {
         }
 
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-        Reference organizationReference = null;
+
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
             organizationBuilder.setId(orgIdCell.getString());
-            organizationReference = csvHelper.createOrganisationReference(orgIdCell);
+            Reference organizationReference = csvHelper.createOrganisationReference(orgIdCell);
             patientBuilder.addCareProvider(organizationReference);
             episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
         }

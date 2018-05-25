@@ -34,7 +34,7 @@ public class SRPatientTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRPatientTransformer.class);
+        AbstractCsvParser parser = parsers.get(SRPatient.class);
         if (parser != null) {
             while (parser.nextRecord()) {
 
