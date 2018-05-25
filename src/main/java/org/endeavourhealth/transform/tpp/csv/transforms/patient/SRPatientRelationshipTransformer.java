@@ -175,7 +175,7 @@ public class SRPatientRelationshipTransformer {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
         }
         CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
-        if (!medicalRecordStatusCell.isEmpty()) {
+        if (medicalRecordStatusCell!= null && !medicalRecordStatusCell.isEmpty()) {
             String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
             episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
