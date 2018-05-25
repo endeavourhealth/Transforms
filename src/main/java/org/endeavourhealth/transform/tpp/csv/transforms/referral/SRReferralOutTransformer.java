@@ -162,7 +162,7 @@ public class SRReferralOutTransformer {
         referralRequestBuilder.setRecipientServiceType(recipientServiceType, serviceOffered);
 
         CsvCell reason = parser.getReason();
-        if (!reason.isEmpty()) {
+        if (!reason.isEmpty()&& reason.getInt() != -1) {
             //the TPP referral reason is really the objective of the referral
             //e.g. Advice/Consultation or Advice and Support
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason, parser);
