@@ -175,7 +175,7 @@ public class SRReferralOutTransformer {
         }
 
         CsvCell referralPriority = parser.getUrgency();
-        if (!referralPriority.isEmpty()) {
+        if (!referralPriority.isEmpty() && referralPriority.getInt() != -1) {
 
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority, parser);
             if (tppConfigListOption != null) {
