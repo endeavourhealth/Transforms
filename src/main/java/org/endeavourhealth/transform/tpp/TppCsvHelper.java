@@ -329,6 +329,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public TppConfigListOption lookUpTppConfigListOption(CsvCell cell, AbstractCsvParser parser) throws Exception {
 
         Long rowId = cell.getLong();
+        if (rowId < 0) { return null;}
         String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
         //Find the code in the cache
