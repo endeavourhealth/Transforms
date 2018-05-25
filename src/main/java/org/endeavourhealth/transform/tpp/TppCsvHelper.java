@@ -245,28 +245,28 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, CsvCell medicalRecordStatusCell) {
 
         // Create the unique Id
-        String uniquePatientId = createUniqueId(patientGuid, null);
+        //String uniquePatientId = createUniqueId(patientGuid, null);
 
         // Check if we already have a status for this patient
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientGuid);
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientGuid.getString());
 
         if (statusForPatient != null) {
             Date existingDate = statusForPatient.getKey();
             // Check if the new status has a data after the existing status
             if (newStatusDate.after(existingDate)) {
                 // Overwrite the existing status the the new status
-                medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
+                medicalRecordStatusMap.put(patientGuid.getString(), new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
             }
         } else {
-            medicalRecordStatusMap.put(uniquePatientId, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
+            medicalRecordStatusMap.put(patientGuid.getString(), new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
         }
     }
 
     public CsvCell getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
         // Create the unique Id
-        String uniquePatientId = createUniqueId(patientGuid, null);
+        //String uniquePatientId = createUniqueId(patientGuid, null);
         // Find and remove the status entry
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid);
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid.getString());
         // return the status
         return statusForPatient.getValue();
     }
