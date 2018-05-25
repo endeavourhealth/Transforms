@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -50,12 +50,8 @@ public class SRMappingTransformer {
         TppMappingRef mapping = new TppMappingRef(rowId.getLong(),
                                     groupId.getLong(),
                                     mappedTerm.getString(),
-                                    fhirResourceFiler.getServiceId().toString(),
                                     auditWrapper);
-
-
         //save to the DB
-        repository.save(mapping, fhirResourceFiler.getServiceId());
-
+        repository.save(mapping);
     }
 }

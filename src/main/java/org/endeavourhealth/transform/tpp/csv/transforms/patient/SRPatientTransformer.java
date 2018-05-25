@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;

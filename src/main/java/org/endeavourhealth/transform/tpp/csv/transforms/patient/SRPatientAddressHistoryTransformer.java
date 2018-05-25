@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;

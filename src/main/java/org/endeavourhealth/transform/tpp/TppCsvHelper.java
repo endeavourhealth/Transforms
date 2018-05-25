@@ -14,9 +14,9 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisat
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppMappingRefDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -297,7 +297,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public TppMappingRef lookUpTppMappingRef(CsvCell cell, AbstractCsvParser parser) throws Exception {
 
         Long rowId = cell.getLong();
-        String codeLookup = rowId.toString() + "|" + serviceId.toString();
+        String codeLookup = rowId.toString();
 
         //Find the code in the cache
         TppMappingRef tppMappingRefFromCache = tppMappingRefs.get(codeLookup);
@@ -307,7 +307,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return tppMappingRefFromCache;
         }
 
-        TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId, serviceId);
+        TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId);
         if (tppMappingRefFromDB == null) {
 
             TransformWarnings.log(LOG, parser, "TPP mapping reference not found for id: {},  in file: {}, line: {}",

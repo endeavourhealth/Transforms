@@ -1,16 +1,11 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
-import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointmentFlags;
-import org.endeavourhealth.transform.tpp.csv.transforms.staff.StaffMemberProfilePojo;
 
 import java.util.Map;
 

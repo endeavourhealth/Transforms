@@ -6,7 +6,7 @@ import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
