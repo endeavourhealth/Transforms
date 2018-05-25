@@ -17,6 +17,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisation;
+import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Immunization;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -96,7 +97,9 @@ public class SRImmunisationTransformer {
 
         CsvCell eventDate = parser.getDateEvent();
         if (!eventDate.isEmpty()) {
-            immunizationBuilder.setPerformedDate(eventDate.getDateTimeType(eventDate.getDate(), "YMDT"), eventDate);
+
+            DateTimeType dateTimeType = new DateTimeType(eventDate.getDate());
+            immunizationBuilder.setPerformedDate(dateTimeType, eventDate);
         }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
