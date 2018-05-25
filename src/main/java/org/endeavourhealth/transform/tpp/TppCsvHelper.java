@@ -268,7 +268,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         // Find and remove the status entry
         Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid.getString());
         // return the status
-        return statusForPatient.getValue();
+        if (statusForPatient != null) {
+            return statusForPatient.getValue();
+        } else {
+            return null;
+        }
     }
 
     public void cacheAllergyCode(String readCode, String readTerm) {
