@@ -24,6 +24,8 @@ import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,18 +194,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRSmsConsent");
             set.add("SRSpecialNotes");
             set.add("SRStaff");
-            //TODO  Remove staffMember and StaffMemberProfile
-            //TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile
-//TODO  Remove staffMember and StaffMemberProfile and hierarchy
-            set.add("SRCtv3Hierarchy");
-            set.add("SRStaffMember");
-            set.add("SRStaffMemberProfile");
+
             set.add("SRSystmOnline");
             set.add("SRTemplate");
 
@@ -329,17 +320,11 @@ public abstract class TppCsvToFhirTransformer {
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3Transformer.transform(parsers, fhirResourceFiler);
         // Staff
-        //TODO  Uncomment staffMember and StaffMemberProfile
-//TODO  Uncomment staffMember and StaffMemberProfile
-//TODO  Uncomment staffMember and StaffMemberProfile
-//TODO  Uncomment staffMember and StaffMemberProfile
-//TODO  Uncomment staffMember and StaffMemberProfile
-//TODO  Uncomment staffMember and StaffMemberProfile
 
 
-//        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        //PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
+        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
         // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Organisations
