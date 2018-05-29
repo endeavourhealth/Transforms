@@ -34,8 +34,7 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "MHSDSCode"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_88)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "ConfiguredList",
