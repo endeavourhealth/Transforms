@@ -50,6 +50,16 @@ public class SRPatientContactDetailsTransformer {
             return;
         }
         CsvCell IdPatientCell = parser.getIDPatient();
+
+        // TODO:// if the patientId is blank for patient contact details there is currently no way of obtaining
+        // the patient resource for editing.  This check is put in to allow transform progression passed initial
+        // spurious data files
+        if (IdPatientCell.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
+
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
 
         CsvCell removeDataCell = parser.getRemovedData();
@@ -62,13 +72,6 @@ public class SRPatientContactDetailsTransformer {
             }
             return;
         }
-
-        if (IdPatientCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
-        }
-
 
         ContactPoint.ContactPointUse use = null;
 
