@@ -40,7 +40,8 @@ public class SRTrust extends AbstractCsvParser {
                     "SecondaryTelephone",
                     "Fax"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "DateCreated",
