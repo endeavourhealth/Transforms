@@ -42,5 +42,9 @@ public class StaffMemberProfileCache {
     public static int size() {
         return StaffMemberProfileByStaffId.size();
     }
+
+    public static void clear() {
+        LOG.info("Staff member profile cache still has " + size() + " records. ");
+        StaffMemberProfileByStaffId.clear();}
 }
 

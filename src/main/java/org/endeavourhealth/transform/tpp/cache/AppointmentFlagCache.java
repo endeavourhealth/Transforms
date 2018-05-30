@@ -42,5 +42,9 @@ public class AppointmentFlagCache {
     public static int size() {
         return AppointmentFlagsByAppointmentId.size();
     }
+
+    public static void clear() {
+        LOG.info("Appointment flag cache will be cleared of " + size() + " records.");
+        AppointmentFlagsByAppointmentId.clear();}
 }
 

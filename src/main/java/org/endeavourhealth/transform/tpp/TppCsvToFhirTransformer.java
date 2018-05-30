@@ -325,6 +325,7 @@ public abstract class TppCsvToFhirTransformer {
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PractitionerResourceCache.filePractitionerResources(fhirResourceFiler);
+        StaffMemberProfileCache.clear();
         // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Organisations
@@ -347,6 +348,7 @@ public abstract class TppCsvToFhirTransformer {
         SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         AppointmentResourceCache.clearAppointmentResourceCache();
+        AppointmentFlagCache.clear();
 
         LOG.trace("Starting clinical transforms");
         SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
