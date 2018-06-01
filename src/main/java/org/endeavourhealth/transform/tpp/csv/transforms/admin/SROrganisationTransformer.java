@@ -231,15 +231,17 @@ public class SROrganisationTransformer {
         }
 
         CsvCell trustCell = parser.getIDTrust();
-        //set the trust as a parent organisation for the organisation
-        Reference trustReference = csvHelper.createOrganisationReference(trustCell);
-        organizationBuilder.setParentOrganisation(trustReference, trustCell);
-
+        if (!trustCell.isEmpty() && trustCell.getInt()>=0) {
+            //set the trust as a parent organisation for the organisation
+            Reference trustReference = csvHelper.createOrganisationReference(trustCell);
+            organizationBuilder.setParentOrganisation(trustReference, trustCell);
+        }
         CsvCell ccgCell = parser.getIDCcg();
-        //set the trust as a parent organisation for the organisation
-        Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
-        organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
-
+        if (!ccgCell.isEmpty()  && ccgCell.getInt()>=0) {
+            //set the trust as a parent organisation for the organisation
+            Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
+            organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
+        }
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
