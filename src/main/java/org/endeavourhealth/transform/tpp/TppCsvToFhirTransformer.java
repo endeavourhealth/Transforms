@@ -377,8 +377,8 @@ public abstract class TppCsvToFhirTransformer {
         SRImmunisationConsentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         // Media (documents - this is just a reference to documents that we are not getting so ignoring for now
-        SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
+        //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+    //TODO - commented out for now. Review
         // Child at risk
         SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
