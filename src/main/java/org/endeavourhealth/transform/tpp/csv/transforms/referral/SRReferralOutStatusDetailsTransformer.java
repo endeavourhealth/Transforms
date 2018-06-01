@@ -54,18 +54,18 @@ public class SRReferralOutStatusDetailsTransformer {
                         parser.getRowIdentifier().getString(), parser.getFilePath());
                 return;
             } else {
+//TODO  Figure out how to manage deletes
+//                // get previously filed resource for deletion
+//                org.hl7.fhir.instance.model.ReferralRequest referralRequest
+//                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
+//                        ResourceType.ReferralRequest,
+//                        fhirResourceFiler);
 
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.ReferralRequest referralRequest
-                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
-                        ResourceType.ReferralRequest,
-                        fhirResourceFiler);
-
-                if (referralRequest != null) {
-                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
-                    return;
-                }
+//                if (referralRequest != null) {
+//                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
+//                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
+//                    return;
+//                }
             }
         }
 
