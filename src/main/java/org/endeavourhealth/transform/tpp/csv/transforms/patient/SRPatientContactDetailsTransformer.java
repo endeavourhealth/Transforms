@@ -97,6 +97,7 @@ public class SRPatientContactDetailsTransformer {
                 contactPointBuilder.setUse(use, contactNumberCell);
             }
             contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
         }
     }
 }

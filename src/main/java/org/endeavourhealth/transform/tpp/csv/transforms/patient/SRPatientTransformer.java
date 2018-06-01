@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.Enumerations;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,11 @@ public class SRPatientTransformer {
 
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
+        IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
+        identifierBuilderTpp.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
+        identifierBuilderTpp.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilderTpp.setValue(rowIdCell.getString(), rowIdCell);
+
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             if (PatientResourceCache.patientInCache(rowIdCell)) {
@@ -73,6 +79,7 @@ public class SRPatientTransformer {
             String nhsNumber = nhsNumberCell.getString();
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(nhsNumber, nhsNumberCell);
         } else {
             TransformWarnings.log(LOG, parser, "No NHS number found record id: {}, file: {}", parser.getRowIdentifier().getString(), parser.getFilePath());

@@ -82,6 +82,7 @@ public class SRPatientRegistrationTransformer {
             organizationBuilder.setId(orgIdCell.getString());
             Reference organizationReference = csvHelper.createOrganisationReference(orgIdCell);
             patientBuilder.addCareProvider(organizationReference);
+            patientBuilder.setManagingOrganisation(organizationReference, orgIdCell);
             episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
         }
 
@@ -92,12 +93,20 @@ public class SRPatientRegistrationTransformer {
         CsvCell regEndDateCell = parser.getDateDeRegistration();
         if (!regEndDateCell.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
+            patientBuilder.setActive(false, regEndDateCell);
+        } else if (!regStartDateCell.isEmpty()) {
+            patientBuilder.setActive(true, regStartDateCell);
         }
 
         CsvCell regTypeCell = parser.getRegistrationStatus();
         if (!regTypeCell.isEmpty()) {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
+
         }
+
+        // If we have an end date
+
+
 
         CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
         if (medicalRecordStatusCell != null &&!medicalRecordStatusCell.isEmpty()) {
