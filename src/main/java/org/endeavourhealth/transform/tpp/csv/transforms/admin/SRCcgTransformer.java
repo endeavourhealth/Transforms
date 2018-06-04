@@ -11,10 +11,7 @@ import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRCcg;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,17 +156,25 @@ public class SRCcgTransformer {
                                                   TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
+        boolean mapIds;
 
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
             return;
         }
+        OrganizationBuilder organizationBuilder = null;
+        Organization organization
+                = (Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
+        if (organization == null) {
+            organizationBuilder = new OrganizationBuilder();
+            mapIds = true;
+        } else {
+            organizationBuilder = new OrganizationBuilder(organization);
+            mapIds = false;
+        }
+        CsvCell obsoleteCell = parser.getRemovedData();
 
-        OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
-
-        CsvCell obsoleteCell  = parser.getRemovedData();
-
-        if (obsoleteCell != null && obsoleteCell.getBoolean() ) {
+        if (obsoleteCell != null && obsoleteCell.getBoolean()) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -244,7 +249,8 @@ public class SRCcgTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
-    }
+        fhirResourceFiler.saveAdminResource(null, mapIds, organizationBuilder);
+        }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
 
