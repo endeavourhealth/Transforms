@@ -1,7 +1,11 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -16,10 +20,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Enumerations;
-import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,6 +170,24 @@ public class SRPatientTransformer {
                 } else {
                     throw new TransformException("Unexpected english speaks value [" + term + "]");
                 }
+            }
+        }
+
+        //see if there is a marital status for patient from pre-transformer
+        CodeableConcept fhirMartialStatus = csvHelper.findMaritalStatus(rowIdCell);
+        if (fhirMartialStatus != null) {
+            String maritalStatusCode = CodeableConceptHelper.getFirstCoding(fhirMartialStatus).getCode();
+            if (!Strings.isNullOrEmpty(maritalStatusCode)) {
+                patientBuilder.setMaritalStatus(MaritalStatus.fromCode(maritalStatusCode));
+            }
+        }
+
+        //see if there is a ethnicity for patient from pre-transformer
+        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(rowIdCell);
+        if (fhirEthnicity != null) {
+            String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
+            if (!Strings.isNullOrEmpty(ethnicityCode)) {
+                patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
         }
     }
