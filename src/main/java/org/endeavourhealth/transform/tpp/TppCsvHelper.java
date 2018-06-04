@@ -1,28 +1,25 @@
 package org.endeavourhealth.transform.tpp;
 
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3LookupDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppImmunisationContentDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3MapDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.*;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +64,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
+    private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
+    private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -165,6 +164,35 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
+    }
+
+    public class DateAndCode {
+        private DateTimeType date = null;
+        private CodeableConcept codeableConcept = null;
+
+        public DateAndCode(DateTimeType date, CodeableConcept codeableConcept) {
+            this.date = date;
+            this.codeableConcept = codeableConcept;
+        }
+
+        public DateTimeType getDate() {
+            return date;
+        }
+
+        public CodeableConcept getCodeableConcept() {
+            return codeableConcept;
+        }
+
+        public boolean isBefore(DateTimeType other) {
+            if (date == null) {
+                return true;
+            } else if (other == null) {
+                return false;
+            } else {
+                return date.before(other);
+            }
+
+        }
     }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
@@ -295,6 +323,40 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         // otherwise, it's not an allergy code
         return false;
+    }
+
+    public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
+        DateAndCode dc = ethnicityMap.get(patientGuid.getString());
+        if (dc == null
+                || dc.isBefore(fhirDate)) {
+            ethnicityMap.put(patientGuid.getString(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
+        }
+    }
+
+    public CodeableConcept findEthnicity(CsvCell patientGuid) {
+        DateAndCode dc = ethnicityMap.remove(patientGuid.getString());
+        if (dc != null) {
+            return dc.getCodeableConcept();
+        } else {
+            return null;
+        }
+    }
+
+    public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
+        DateAndCode dc = maritalStatusMap.get(patientGuid);
+        if (dc == null
+                || dc.isBefore(fhirDate)) {
+            maritalStatusMap.put(patientGuid.getString(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(maritalStatus)));
+        }
+    }
+
+    public CodeableConcept findMaritalStatus(CsvCell patientGuid) {
+        DateAndCode dc = maritalStatusMap.remove(patientGuid);
+        if (dc != null) {
+            return dc.getCodeableConcept();
+        } else {
+            return null;
+        }
     }
 
     // Lookup code reference from SRMapping generated db
