@@ -76,6 +76,7 @@ public class SRPatientRegistrationTransformer {
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
 
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
+        episodeBuilder.setId(rowIdCell.getString());
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
