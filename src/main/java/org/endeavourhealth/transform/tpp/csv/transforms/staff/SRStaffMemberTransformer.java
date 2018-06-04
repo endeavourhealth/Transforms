@@ -156,7 +156,7 @@ public class SRStaffMemberTransformer {
                 StaffMemberProfileCache.removeStaffPojo(pojo);
             }
         }
-
+        fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
     }
 
 
