@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.cache;
 
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
@@ -44,7 +45,14 @@ public class OrganisationResourceCache {
         LOG.info("Organization cache has " + organizationBuildersByRowId.size() + " records");
         for (Long rowId : organizationBuildersByRowId.keySet()) {
             OrganizationBuilder organizationBuilder = organizationBuildersByRowId.get(rowId);
-            fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+            Organization org = (Organization) organizationBuilder.getResource();
+            //Depending on which OrganizationBuilder constructor was called above we will only have profile set
+            // for ones already in the DB.
+            if (org.getMeta().hasProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION)) {
+                fhirResourceFiler.saveAdminResource(null, false, organizationBuilder);
+            } else {
+                fhirResourceFiler.saveAdminResource(null, true, organizationBuilder);
+            }
         }
 
         //clear down as everything has been saved
