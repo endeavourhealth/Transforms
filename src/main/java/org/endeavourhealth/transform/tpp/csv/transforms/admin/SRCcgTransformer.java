@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -20,6 +21,8 @@ import java.util.Map;
 
 public class SRCcgTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRCcgTransformer.class);
+
+    private static final String CCG_KEY_PREFIX  = "CCG-";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -92,7 +95,7 @@ public class SRCcgTransformer {
             locationBuilder.removeAddress(null);
         }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(CCG_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -147,7 +150,7 @@ public class SRCcgTransformer {
         }
 
         //set the managing organisation for the location, basically itself!
-        Reference organisationReference = csvHelper.createOrganisationReference(rowIdCell);
+        Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, CCG_KEY_PREFIX+rowIdCell.getString());
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
 
@@ -162,16 +165,8 @@ public class SRCcgTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
             return;
         }
-        OrganizationBuilder organizationBuilder = null;
-        Organization organization
-                = (Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
-        if (organization == null) {
-            organizationBuilder = new OrganizationBuilder();
-            mapIds = true;
-        } else {
-            organizationBuilder = new OrganizationBuilder(organization);
-            mapIds = false;
-        }
+        OrganizationBuilder organizationBuilder  = new OrganizationBuilder();
+        organizationBuilder.setId(CCG_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
         CsvCell obsoleteCell = parser.getRemovedData();
 
         if (obsoleteCell != null && obsoleteCell.getBoolean()) {
@@ -196,7 +191,7 @@ public class SRCcgTransformer {
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(CCG_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -249,7 +244,7 @@ public class SRCcgTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
-        fhirResourceFiler.saveAdminResource(null, mapIds, organizationBuilder);
+        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
         }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
@@ -257,7 +252,7 @@ public class SRCcgTransformer {
         ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.WORK;
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(parentBuilder);
-        contactPointBuilder.setId(rowIdCell.getString(), contactCell);
+        contactPointBuilder.setId(CCG_KEY_PREFIX + rowIdCell.getString(), contactCell);
         contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, contactCell);
         contactPointBuilder.setUse(use, contactCell);
 

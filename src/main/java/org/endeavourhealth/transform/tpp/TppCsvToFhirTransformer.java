@@ -332,7 +332,7 @@ public abstract class TppCsvToFhirTransformer {
         SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
+        //OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
 
         LOG.trace("Starting patient transforms");

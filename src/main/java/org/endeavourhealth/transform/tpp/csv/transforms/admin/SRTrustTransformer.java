@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -11,10 +12,7 @@ import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRTrust;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +21,8 @@ import java.util.Map;
 
 public class SRTrustTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRTrustTransformer.class);
+
+    private static final String TRUST_KEY_PREFIX  = "TRUST-";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -93,7 +93,7 @@ public class SRTrustTransformer {
             locationBuilder.removeAddress(null);
         }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -148,7 +148,8 @@ public class SRTrustTransformer {
         }
 
         //set the managing organisation for the location, basically itself!
-        Reference organisationReference = csvHelper.createOrganisationReference(rowIdCell);
+        Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, TRUST_KEY_PREFIX + rowIdCell.getString());
+                //csvHelper.createOrganisationReference(rowIdCell);
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
 
@@ -163,7 +164,8 @@ public class SRTrustTransformer {
             return;
         }
 
-        OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
+        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        organizationBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString());
 
         CsvCell deleted  = parser.getRemovedData();
 
@@ -189,7 +191,7 @@ public class SRTrustTransformer {
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -242,6 +244,7 @@ public class SRTrustTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
+        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {

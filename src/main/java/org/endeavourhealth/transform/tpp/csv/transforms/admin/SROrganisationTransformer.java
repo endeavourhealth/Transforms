@@ -156,7 +156,8 @@ public class SROrganisationTransformer {
             return;
         }
 
-        OrganizationBuilder organizationBuilder = OrganisationResourceCache.getOrganizationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
+        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        organizationBuilder.setId(rowIdCell.getString());
 
         CsvCell obsoleteCell  = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
@@ -242,6 +243,7 @@ public class SROrganisationTransformer {
             Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
         }
+        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
