@@ -101,18 +101,14 @@ public class SRPatientRegistrationTransformer {
         CsvCell regTypeCell = parser.getRegistrationStatus();
         if (!regTypeCell.isEmpty()) {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
-
         }
-
-        // If we have an end date
-
-
 
         CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
         if (medicalRecordStatusCell != null &&!medicalRecordStatusCell.isEmpty()) {
             String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
             episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
     }
 
     private static RegistrationType mapToFhirRegistrationType (CsvCell regTypeCell) {
