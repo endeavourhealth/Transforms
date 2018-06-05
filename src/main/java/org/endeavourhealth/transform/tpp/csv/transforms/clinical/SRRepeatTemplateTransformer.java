@@ -129,14 +129,20 @@ public class SRRepeatTemplateTransformer {
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+
         CsvCell dmdId = parser.getIDMultiLexDMD();
-        if (!dmdId.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
-        }
         CsvCell term = parser.getNameOfMedication();
+        if (!dmdId.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        // the item may not be coded, but has a rubric, so set as text
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         // quantity is both value and units
