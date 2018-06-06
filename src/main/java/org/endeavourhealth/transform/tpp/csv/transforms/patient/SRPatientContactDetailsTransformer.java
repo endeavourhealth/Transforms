@@ -60,7 +60,7 @@ public class SRPatientContactDetailsTransformer {
             return;
         }
 
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
+        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
 
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {

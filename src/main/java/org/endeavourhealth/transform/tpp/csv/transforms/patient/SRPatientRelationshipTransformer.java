@@ -50,7 +50,7 @@ public class SRPatientRelationshipTransformer {
             return;
         }
         CsvCell IdPatientCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
+        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
 
         PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
         contactBuilder.setId(rowIdCell.getString(), rowIdCell);

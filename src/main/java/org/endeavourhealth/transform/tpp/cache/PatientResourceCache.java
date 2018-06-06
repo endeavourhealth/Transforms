@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.tpp.cache;
 
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.BasisTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.Patient;
@@ -19,13 +17,13 @@ public class PatientResourceCache {
 
     private static Map<Long, PatientBuilder> PatientBuildersByRowId = new HashMap<>();
 
-    public static PatientBuilder getPatientBuilder(CsvCell rowIdCell, TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static PatientBuilder getOrCreatePatientBuilder(CsvCell rowIdCell, TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         PatientBuilder PatientBuilder = PatientBuildersByRowId.get(rowIdCell.getLong());
         if (PatientBuilder == null) {
 
             Patient Patient
-                    = (Patient)csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Patient, fhirResourceFiler);
+                    = (Patient) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Patient, fhirResourceFiler);
             if (Patient == null) {
                 //if the Patient doesn't exist yet, create a new one
                 PatientBuilder = new PatientBuilder();
@@ -39,6 +37,10 @@ public class PatientResourceCache {
         return PatientBuilder;
     }
 
+    public static void removePatientByPatientId(String patientId) {
+        PatientBuildersByRowId.remove(Long.getLong(patientId));
+    }
+
     public static void removePatientByRowId(CsvCell rowIdCell, FhirResourceFiler fhirResourceFiler, AbstractCsvParser csvParser) {
         PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowIdCell.getLong());
         try {
@@ -50,24 +52,57 @@ public class PatientResourceCache {
 
     }
 
-    public static boolean patientInCache(CsvCell rowIdCell)  {
+    public static boolean patientInCache(CsvCell rowIdCell) {
         return PatientBuildersByRowId.containsKey(rowIdCell.getLong());
     }
 
-    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void filePatientAndEpisodeOfCareResources(FhirResourceFiler fhirResourceFiler) throws Exception {
         LOG.info("Patient cache count is " + PatientBuildersByRowId.size());
-        int count = 0;
+
+        for (Long rowId : PatientBuildersByRowId.keySet()) {
+            PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
+            if (EpisodeOfCareResourceCache.episodeOfCareInCache(rowId)) {
+                EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareByRowId(rowId);
+                fhirResourceFiler.savePatientResource(null, patientBuilder, episodeOfCareBuilder);
+                PatientBuildersByRowId.remove(rowId);
+                EpisodeOfCareResourceCache.removeEpisodeOfCareByPatientId(rowId);
+            } else {
+                LOG.error("Episode of Care record not found for cached patient record Id: " + rowId);
+                //PatientBuildersByRowId.remove(rowId);
+                // If a patient doesn't have an EoC something has gone wrong. Leave record for now so we see
+                // how big the problem is. Also it's probably a code problem rather than data.
+            }
+        }
+        // Both caches should now be empty
+        //TODO - should we do some extra processing?
+        LOG.error("At end of filing patient cache count is " + PatientBuildersByRowId.size() + ". Episode of care cache" + EpisodeOfCareResourceCache.size());
+        LOG.info("Remaining entries in patient cache:" );
         for (Long rowId: PatientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
-            fhirResourceFiler.savePatientResource(null, patientBuilder);
-            count++;
-           // if (count % 10000 == 0 ) {
-              //  LOG.info("Patient cache processed " + count + " records");
-            //}
+            LOG.info(patientBuilder.toString());
         }
-        LOG.info("Patient cache processed " + count + " records.");
-
-        //clear down as everything has been saved
+        LOG.info("Remaining entries in episode of care cache:");
+        EpisodeOfCareResourceCache.listRemaining();
+        LOG.info("Clearing patient and episode of care caches ");
         PatientBuildersByRowId.clear();
+        EpisodeOfCareResourceCache.clear();
+
     }
+
+//    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+//        LOG.info("Patient cache count is " + PatientBuildersByRowId.size());
+//        int count = 0;
+//        for (Long rowId : PatientBuildersByRowId.keySet()) {
+//            PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
+//            fhirResourceFiler.savePatientResource(null, patientBuilder);
+//            count++;
+//            // if (count % 10000 == 0 ) {
+//            //  LOG.info("Patient cache processed " + count + " records");
+//            //}
+//        }
+//        LOG.info("Patient cache processed " + count + " records.");
+//
+//        //clear down as everything has been saved
+//        PatientBuildersByRowId.clear();
+//    }
 }

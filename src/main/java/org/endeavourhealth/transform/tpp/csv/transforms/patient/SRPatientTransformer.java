@@ -60,7 +60,7 @@ public class SRPatientTransformer {
             return;
         }
 
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
+        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
         IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
         identifierBuilderTpp.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);

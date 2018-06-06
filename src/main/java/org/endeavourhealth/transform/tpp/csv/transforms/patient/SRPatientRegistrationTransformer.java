@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
 import org.hl7.fhir.instance.model.Reference;
@@ -65,18 +66,21 @@ public class SRPatientRegistrationTransformer {
             return;
         }
 
-        CsvCell IdPatientCell = parser.getIDPatient();
+        CsvCell idPatient = parser.getIDPatient();
 
-        if (IdPatientCell.isEmpty()) {
+        if (idPatient.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
         }
 
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
+        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(idPatient, csvHelper, fhirResourceFiler);
 
-        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
-        episodeBuilder.setId(IdPatientCell.getString());  //use the patient GUID as the ID for the episode
+        EpisodeOfCareBuilder episodeBuilder = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(idPatient,
+                csvHelper, fhirResourceFiler);
+        episodeBuilder.setId(idPatient.getString());  //use the patient GUID as the ID for the episode
+        Reference patientReference = csvHelper.createPatientReference(idPatient);
+        episodeBuilder.setPatient(patientReference, idPatient);
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
@@ -104,15 +108,16 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
         }
 
-        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
-        if (medicalRecordStatusCell != null &&!medicalRecordStatusCell.isEmpty()) {
-            String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
+        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(idPatient);
+        if (medicalRecordStatusCell != null && !medicalRecordStatusCell.isEmpty()) {
+            String medicalRecordStatus = convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
             episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        // fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        // Moved to PatientResourceCache
     }
 
-    private static RegistrationType mapToFhirRegistrationType (CsvCell regTypeCell) {
+    private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) {
         // Fold to upper for easy comparison. Main concern is whether
         // patient is GMS, Private or temporary.
         String target = regTypeCell.getString().toUpperCase();
@@ -121,9 +126,9 @@ public class SRPatientRegistrationTransformer {
             return RegistrationType.REGULAR_GMS;
         } else if (target.contains("IMMEDIATELY NECESSARY")) {
             return RegistrationType.IMMEDIATELY_NECESSARY; // Historical
-        } else if(target.contains("PRIVATE")) {
+        } else if (target.contains("PRIVATE")) {
             return RegistrationType.PRIVATE;
-        } else if(target.contains("TEMPORARY")) {
+        } else if (target.contains("TEMPORARY")) {
             return RegistrationType.TEMPORARY;
         } else {
             return RegistrationType.OTHER;
