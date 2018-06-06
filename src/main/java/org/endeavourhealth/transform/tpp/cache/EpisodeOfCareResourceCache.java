@@ -31,10 +31,10 @@ public class EpisodeOfCareResourceCache {
                     = (EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare, fhirResourceFiler);
             if (EpisodeOfCare == null) {
                 //if the Patient doesn't exist yet, create a new one
-                EpisodeOfCareBuilder episodeOfCareBuilder1 = new EpisodeOfCareBuilder();
+                 episodeOfCareBuilder = new EpisodeOfCareBuilder();
                 episodeOfCareBuilder.setId(rowIdCell.getString(), rowIdCell);
             } else {
-                EpisodeOfCareBuilder episodeOfCareBuilder1 = new EpisodeOfCareBuilder(EpisodeOfCare);
+                episodeOfCareBuilder = new EpisodeOfCareBuilder(EpisodeOfCare);
             }
 
             EpisodeOfCareBuildersByPatientId.put(rowIdCell.getLong(), episodeOfCareBuilder);
