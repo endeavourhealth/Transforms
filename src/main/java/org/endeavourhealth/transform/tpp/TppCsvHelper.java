@@ -124,6 +124,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
 
+    public Reference createEpisodeReference(CsvCell patientGuid) {
+        //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
+        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid.getString());
+    }
+
     public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
         String resourceId = createUniqueId(patientGuid, sourceGuid);
         resourceBuilder.setId(resourceId, patientGuid, sourceGuid);
