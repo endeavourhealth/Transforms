@@ -61,7 +61,7 @@ public class SROrganisationTransformer {
 
         Reference organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
         locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder, locationBuilder);
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
     }
 
