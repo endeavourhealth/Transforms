@@ -13,12 +13,14 @@ import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMember;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
 public class SRStaffMemberTransformer {
-
+    private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberTransformer.class);
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
@@ -34,6 +36,10 @@ public class SRStaffMemberTransformer {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+        }
+        // Check cache
+        if (StaffMemberProfileCache.size() > 0) {
+            LOG.error("Staff cache should be empty but has : " + StaffMemberProfileCache.size());
         }
     }
 
