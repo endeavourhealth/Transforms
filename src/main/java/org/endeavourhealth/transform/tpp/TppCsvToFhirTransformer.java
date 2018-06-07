@@ -88,6 +88,8 @@ public abstract class TppCsvToFhirTransformer {
     public static String determineVersion(String[] files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
+        Map<String, List<String> > breadcrumbs = new HashMap<String, List<String>>() ;
+
         possibleVersions.add(VERSION_89);
         possibleVersions.add(VERSION_88);
         possibleVersions.add(VERSION_87);
@@ -101,6 +103,7 @@ public abstract class TppCsvToFhirTransformer {
 
                 //calling this will return the possible versions that apply to this parser
                 possibleVersions = parser.testForValidVersions(possibleVersions);
+                breadcrumbs.put(filePath,possibleVersions);
                 if (possibleVersions.isEmpty()) {
                     break;
                 }
@@ -120,7 +123,11 @@ public abstract class TppCsvToFhirTransformer {
         if (!possibleVersions.isEmpty()) {
             return possibleVersions.get(0);
         }
-
+        // We've run out of goes so print some breadcrumbs
+        LOG.info("Filename : possible versions");
+        for (String fn : breadcrumbs.keySet()) {
+            LOG.info(fn + ":" + breadcrumbs.get(fn).toString());
+        }
         throw new TransformException("Unable to determine version for TPP CSV");
     }
 
