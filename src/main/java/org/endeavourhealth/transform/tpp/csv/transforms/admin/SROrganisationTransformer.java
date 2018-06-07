@@ -41,35 +41,46 @@ public class SROrganisationTransformer {
     }
 
     public static void createResource(SROrganisation parser,
-                                              FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
         //first up, create the organisation resource
         OrganizationBuilder organizationBuilder = createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+        if (organizationBuilder == null) {
+            return;
+        }
 
         //then the location and link the two
         LocationBuilder locationBuilder = createLocationResource(parser, fhirResourceFiler, csvHelper);
+        if (locationBuilder == null) {
+            return;
+        }
 
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),organizationBuilder,locationBuilder);
+        //set the managing organisation for the location, basically itself!
+
+
+        Reference organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
+        locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder, locationBuilder);
 
     }
 
     public static LocationBuilder createLocationResource(SROrganisation parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                                         FhirResourceFiler fhirResourceFiler,
+                                                         TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
+        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
 
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
+        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
 
-        CsvCell obsoleteCell  = parser.getMadeObsolete();
+        CsvCell obsoleteCell = parser.getMadeObsolete();
 
-        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
+        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return null;
         }
@@ -91,7 +102,7 @@ public class SROrganisationTransformer {
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
-        CsvCell nameOfBuildingCell  = parser.getHouseName();
+        CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
@@ -110,20 +121,20 @@ public class SROrganisationTransformer {
         if (next.length() > 0) {
             addressBuilder.addLine(next.toString());
         }
-        CsvCell nameOfLocalityCell  = parser.getNameOfLocality();
+        CsvCell nameOfLocalityCell = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
-        CsvCell nameOfTownCell  = parser.getNameOfTown();
+        CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
             addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
         }
-        CsvCell nameOfCountyCell  = parser.getNameOfCounty();
+        CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
             addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
-        CsvCell fullPostCodeCell  = parser.getFullPostCode();
+        CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
             addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
         }
@@ -143,28 +154,25 @@ public class SROrganisationTransformer {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, locationBuilder);
         }
 
-        //set the managing organisation for the location, basically itself!
-        Reference organisationReference = csvHelper.createOrganisationReference(locationIdCell);
-        locationBuilder.setManagingOrganisation(organisationReference, locationIdCell);
 
         return locationBuilder;
     }
 
     public static OrganizationBuilder createOrganisationResource(SROrganisation parser,
-                                              FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+                                                                 FhirResourceFiler fhirResourceFiler,
+                                                                 TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
+        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
         organizationBuilder.setId(rowIdCell.getString());
 
-        CsvCell obsoleteCell  = parser.getMadeObsolete();
+        CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
 
         if ((obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
@@ -184,7 +192,7 @@ public class SROrganisationTransformer {
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
-        CsvCell nameOfBuildingCell  = parser.getHouseName();
+        CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
@@ -203,20 +211,20 @@ public class SROrganisationTransformer {
         if (next.length() > 0) {
             addressBuilder.addLine(next.toString());
         }
-        CsvCell nameOfLocalityCell  = parser.getNameOfLocality();
+        CsvCell nameOfLocalityCell = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
-        CsvCell nameOfTownCell  = parser.getNameOfTown();
+        CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
             addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
         }
-        CsvCell nameOfCountyCell  = parser.getNameOfCounty();
+        CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
             addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
-        CsvCell fullPostCodeCell  = parser.getFullPostCode();
+        CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
             addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
         }
@@ -237,20 +245,20 @@ public class SROrganisationTransformer {
         }
 
         CsvCell trustCell = parser.getIDTrust();
-        if (!trustCell.isEmpty() && trustCell.getInt()>=0) {
+        if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference trustReference = csvHelper.createOrganisationReference(trustCell);
             organizationBuilder.setParentOrganisation(trustReference, trustCell);
         }
         CsvCell ccgCell = parser.getIDCcg();
-        if (!ccgCell.isEmpty()  && ccgCell.getInt()>=0) {
+        if (!ccgCell.isEmpty() && ccgCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
         }
 
         return organizationBuilder;
-      //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+        //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) {
