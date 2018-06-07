@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.enterprise.outputModels.Organization;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
@@ -44,14 +45,16 @@ public class SROrganisationTransformer {
                                               TppCsvHelper csvHelper) throws Exception {
 
         //first up, create the organisation resource
-        createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+        OrganizationBuilder organizationBuilder = createOrganisationResource(parser, fhirResourceFiler, csvHelper);
 
         //then the location and link the two
-        createLocationResource(parser, fhirResourceFiler, csvHelper);
+        LocationBuilder locationBuilder = createLocationResource(parser, fhirResourceFiler, csvHelper);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),organizationBuilder,locationBuilder);
 
     }
 
-    public static void createLocationResource(SROrganisation parser,
+    public static LocationBuilder createLocationResource(SROrganisation parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
@@ -59,7 +62,7 @@ public class SROrganisationTransformer {
 
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
-            return;
+            return null;
         }
 
         LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
@@ -68,7 +71,7 @@ public class SROrganisationTransformer {
 
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
-            return;
+            return null;
         }
 
         CsvCell nameCell = parser.getName();
@@ -78,7 +81,7 @@ public class SROrganisationTransformer {
 
         CsvCell locationIdCell = parser.getID();
         if (locationIdCell.isEmpty()) {
-            return;
+            return null;
         }
         locationBuilder.setId(locationIdCell.getString(), locationIdCell);
 
@@ -143,9 +146,11 @@ public class SROrganisationTransformer {
         //set the managing organisation for the location, basically itself!
         Reference organisationReference = csvHelper.createOrganisationReference(locationIdCell);
         locationBuilder.setManagingOrganisation(organisationReference, locationIdCell);
+
+        return locationBuilder;
     }
 
-    public static void createOrganisationResource(SROrganisation parser,
+    public static OrganizationBuilder createOrganisationResource(SROrganisation parser,
                                               FhirResourceFiler fhirResourceFiler,
                                               TppCsvHelper csvHelper) throws Exception {
 
@@ -153,7 +158,7 @@ public class SROrganisationTransformer {
 
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
-            return;
+            return null;
         }
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
@@ -165,7 +170,7 @@ public class SROrganisationTransformer {
         if ((obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
                 (deleted != null && !deleted.isEmpty() && deleted.getIntAsBoolean())) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
-            return;
+            return null;
         }
 
         CsvCell nameCell = parser.getName();
@@ -243,10 +248,12 @@ public class SROrganisationTransformer {
             Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
         }
-        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+
+        return organizationBuilder;
+      //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 
-    private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {
+    private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) {
 
         ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.WORK;
 
