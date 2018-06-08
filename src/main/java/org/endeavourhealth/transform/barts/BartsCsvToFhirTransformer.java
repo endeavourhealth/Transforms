@@ -104,6 +104,8 @@ public abstract class BartsCsvToFhirTransformer {
         CLEVETransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
 
+        FamilyHistoryTransformer.transform(version, createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+
         if (TransformConfig.instance().isTransformCerner21Files()) {
             
             BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -539,6 +541,10 @@ public abstract class BartsCsvToFhirTransformer {
             return "CC";
         } else if (filenamePart1.equalsIgnoreCase("hdb")) {
             return "HDB";
+
+        } else if (filenamePart1.equalsIgnoreCase("fam")
+                || filenamePart1.equalsIgnoreCase("hist")) {
+            return "FAMILYHISTORY";
 
             // v2.2 files
         } else if (filenamePart1.equalsIgnoreCase("PPATI")
