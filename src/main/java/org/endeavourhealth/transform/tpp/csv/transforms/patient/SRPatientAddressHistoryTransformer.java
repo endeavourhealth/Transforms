@@ -12,6 +12,9 @@ import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +51,13 @@ public class SRPatientAddressHistoryTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return;
         }
-
+        //TODO - have to implement delete method
         CsvCell IdPatientCell = parser.getIDPatient();
+        if (IdPatientCell.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            return;
+        }
         PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
@@ -59,13 +67,17 @@ public class SRPatientAddressHistoryTransformer {
                     patientBuilder.removeAddress(address);
                 }
             }
+            Patient patient = (Patient) csvHelper.retrieveResource(IdPatientCell.getString(), ResourceType.Patient, fhirResourceFiler);
+            addresses = patient.getAddress();
+            for (Address address : addresses) {
+                if (address.getId().equals(rowIdCell.getString())) {
+                    patientBuilder.removeAddress(address);
+                }
+            }
+            fhirResourceFiler.savePatientResource(null, false, patientBuilder);
             return;
         }
-        if (IdPatientCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
-        }
+
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
