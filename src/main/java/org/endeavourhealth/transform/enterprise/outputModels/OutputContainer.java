@@ -50,6 +50,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
     }
 
 
@@ -205,5 +206,9 @@ public class OutputContainer {
 
     public AllergyIntolerance getAllergyIntolerances() {
         return findCsvWriter(AllergyIntolerance.class);
+    }
+
+    public LinkDistributor getLinkDistributors() {
+        return findCsvWriter(LinkDistributor.class);
     }
 }
