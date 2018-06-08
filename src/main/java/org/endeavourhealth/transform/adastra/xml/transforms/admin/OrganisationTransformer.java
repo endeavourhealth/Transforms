@@ -7,7 +7,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Organization;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.uniqueIdMapper;
 
 public class OrganisationTransformer {
 

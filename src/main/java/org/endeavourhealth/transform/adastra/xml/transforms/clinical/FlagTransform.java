@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.CodeableConcept;
@@ -23,7 +23,7 @@ public class FlagTransform {
 
         fhirFlag.setId(caseRef + ":" + specialNote.getText());
 
-        fhirFlag.setSubject(AdastraHelper.createPatientReference());
+        fhirFlag.setSubject(AdastraXmlHelper.createPatientReference());
 
         Date reviewDate = XmlDateHelper.convertDate(specialNote.getReviewDate());
         Period fhirPeriod = PeriodHelper.createPeriod(null, reviewDate);

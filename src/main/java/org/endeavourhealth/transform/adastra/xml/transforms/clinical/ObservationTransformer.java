@@ -6,14 +6,14 @@ import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Observation;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.observationIds;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.observationIds;
 
 public class ObservationTransformer {
 
@@ -30,13 +30,13 @@ public class ObservationTransformer {
 
         fhirObservation.setComments(presentingCondition.getComments());
 
-        fhirObservation.setEncounter(AdastraHelper.createEncounterReference("caseEncounter"));
+        fhirObservation.setEncounter(AdastraXmlHelper.createEncounterReference("caseEncounter"));
 
-        fhirObservation.setCode(AdastraHelper.createClinicalCode(presentingCondition.getSymptoms()));
+        fhirObservation.setCode(AdastraXmlHelper.createClinicalCode(presentingCondition.getSymptoms()));
 
         fhirObservation.setStatus(Observation.ObservationStatus.PRELIMINARY);
 
-        fhirObservation.setEffective(AdastraHelper.getDateTimeType(caseReport.getActiveDate()));
+        fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(caseReport.getActiveDate()));
 
         fhirResourceFiler.savePatientResource(null, fhirObservation);
     }
@@ -54,11 +54,11 @@ public class ObservationTransformer {
 
         fhirObservation.setComments(freeText);
 
-        fhirObservation.setEncounter(AdastraHelper.createEncounterReference(consultationID));
+        fhirObservation.setEncounter(AdastraXmlHelper.createEncounterReference(consultationID));
 
         fhirObservation.setStatus(Observation.ObservationStatus.FINAL);
 
-        fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
+        fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(consultationDate));
 
         fhirResourceFiler.savePatientResource(null, fhirObservation);
 
@@ -76,13 +76,13 @@ public class ObservationTransformer {
         fhirObservation.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, context));
 
         fhirObservation.setComments(codedItem.getDescription());
-        fhirObservation.setCode(AdastraHelper.createCodableConcept(codedItem));
+        fhirObservation.setCode(AdastraXmlHelper.createCodableConcept(codedItem));
 
-        fhirObservation.setEncounter(AdastraHelper.createEncounterReference(consultationID));
+        fhirObservation.setEncounter(AdastraXmlHelper.createEncounterReference(consultationID));
 
         fhirObservation.setStatus(Observation.ObservationStatus.FINAL);
 
-        fhirObservation.setEffective(AdastraHelper.getDateTimeType(consultationDate));
+        fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(consultationDate));
 
         fhirResourceFiler.savePatientResource(null, fhirObservation);
     }
@@ -91,7 +91,7 @@ public class ObservationTransformer {
         Observation fhirObservation = new Observation();
         fhirObservation.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_OBSERVATION));
 
-        fhirObservation.setSubject(AdastraHelper.createPatientReference());
+        fhirObservation.setSubject(AdastraXmlHelper.createPatientReference());
 
         return fhirObservation;
     }

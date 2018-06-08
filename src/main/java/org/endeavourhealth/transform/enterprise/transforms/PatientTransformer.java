@@ -2,7 +2,9 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
@@ -22,6 +24,8 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
+import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
@@ -42,6 +46,7 @@ public class PatientTransformer extends AbstractTransformer {
     private static final int BEST_ORG_SCORE = 10;
 
     private static Map<String, byte[]> saltCacheMap = new HashMap<>();
+    private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
     private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
     //private static byte[] saltBytes = null;
@@ -92,6 +97,8 @@ public class PatientTransformer extends AbstractTransformer {
         String wardCode = null;
         String localAuthorityCode = null;
         Long registeredPracticeId = null;
+        String targetSaltKeyName = null;
+        String targetSkid = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -166,6 +173,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.enterprise.outputModels.Patient patientWriter = (org.endeavourhealth.transform.enterprise.outputModels.Patient)csvWriter;
         org.endeavourhealth.transform.enterprise.outputModels.Person personWriter = params.getOutputContainer().getPersons();
+        org.endeavourhealth.transform.enterprise.outputModels.LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
         if (patientWriter.isPseduonymised()) {
 
@@ -175,7 +183,19 @@ public class PatientTransformer extends AbstractTransformer {
                 patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }
 
-            pseudoId = pseudonymise(fhirPatient, params);
+            pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
+
+            List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
+            if (linkDistributorConfigs != null) {
+                for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+                    targetSaltKeyName = ldConfig.getSaltKeyName();
+                    targetSkid = pseudonymiseUsingConfig(fhirPatient, ldConfig);
+
+                    linkDistributorWriter.writeUpsert(pseudoId,
+                            targetSaltKeyName,
+                            targetSkid);
+                }
+            }
 
             //only persist the pseudo ID if it's non-null
             if (!Strings.isNullOrEmpty(pseudoId)) {
@@ -438,7 +458,38 @@ public class PatientTransformer extends AbstractTransformer {
         return postcode.substring(0, len-3);
     }
 
-    private static String pseudonymise(Patient fhirPatient, EnterpriseTransformParams params) throws Exception {
+    private static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
+        TreeMap<String, String> keys = new TreeMap<>();
+
+        List<ConfigParameter> parameters = config.getParameters();
+
+        for (ConfigParameter param : parameters) {
+            String fieldValue = null;
+            if (param.getFieldName().equals("date_of_birth")) {
+                if (fhirPatient.hasBirthDate()) {
+                    Date d = fhirPatient.getBirthDate();
+                    fieldValue = new SimpleDateFormat("dd-MM-yyyy").format(d);
+                }
+            }
+
+            if (param.getFieldName().equals("nhs_number")) {
+                fieldValue = IdentifierHelper.findNhsNumber(fhirPatient);
+            }
+
+            if (Strings.isNullOrEmpty(fieldValue)) {
+                // we always need a non null string for the psuedo ID
+                return null;
+            }
+
+            keys.put(param.getFieldLabel(), fieldValue);
+        }
+
+        Crypto crypto = new Crypto();
+        crypto.SetEncryptedSalt(Base64.getDecoder().decode(config.getSalt()));
+        return crypto.GetDigest(keys);
+    }
+
+    private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
 
         String dob = null;
         if (fhirPatient.hasBirthDate()) {
@@ -476,10 +527,9 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(getEncryptedSalt(params.getEnterpriseConfigName()));
+        crypto.SetEncryptedSalt(encryptedSalt);
         return crypto.GetDigest(keys);
     }
-
 
     private static byte[] getEncryptedSalt(String configName) throws Exception {
 
@@ -503,6 +553,50 @@ public class PatientTransformer extends AbstractTransformer {
         }
         return ret;
     }
+
+    private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
+
+        List<LinkDistributorConfig> ret = linkDistributorCacheMap.get(configName);
+        if (ret == null) {
+            synchronized (linkDistributorCacheMap) {
+                ret = linkDistributorCacheMap.get(configName);
+                if (ret == null) {
+
+                    ret = new ArrayList<>();
+
+                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+                    JsonNode linkDistributorsNode = config.get("linkedDistributors");
+
+                    if (linkDistributorsNode == null) {
+                        return null;
+                    }
+                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
+                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+
+                    for (LinkDistributorConfig l : arr) {
+                        ret.add(l);
+                    }
+
+                    if (ret == null) {
+                        return null;
+                    }
+                    linkDistributorCacheMap.put(configName, ret);
+                }
+            }
+        }
+        return ret;
+    }
+
+    public static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Object json = mapper.readValue(jsonNode.toString(), Object.class);
+            return mapper.writeValueAsString(json);
+        } catch (Exception e) {
+            throw new Exception("Error parsing Link Distributor Config");
+        }
+    }
+
     /*private static byte[] getEncryptedSalt() throws Exception {
         if (saltBytes == null) {
             saltBytes = Resources.getResourceAsBytes(PSEUDO_SALT_RESOURCE);

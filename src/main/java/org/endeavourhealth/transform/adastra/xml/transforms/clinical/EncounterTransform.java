@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.Encounter;
@@ -14,8 +14,8 @@ import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.consultationIds;
-import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.consultationIds;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.uniqueIdMapper;
 
 public class EncounterTransform {
 
@@ -28,13 +28,13 @@ public class EncounterTransform {
             fhirEncounter.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT, caseReport.getCaseType().getDescription()));
 
         if (caseReport.getLatestAppointment() != null)
-            fhirEncounter.setAppointment(AdastraHelper.createAppointmentReference());
+            fhirEncounter.setAppointment(AdastraXmlHelper.createAppointmentReference());
 
         fhirEncounter.setId(caseReport.getAdastraCaseReference());
         uniqueIdMapper.put("caseEncounter", fhirEncounter.getId());
 
-        fhirEncounter.setPatient(AdastraHelper.createPatientReference());
-        fhirEncounter.addEpisodeOfCare(AdastraHelper.createEpisodeReference());
+        fhirEncounter.setPatient(AdastraXmlHelper.createPatientReference());
+        fhirEncounter.addEpisodeOfCare(AdastraXmlHelper.createEpisodeReference());
 
         Date caseStart = XmlDateHelper.convertDate(caseReport.getActiveDate());
         Period fhirPeriod = PeriodHelper.createPeriod(caseStart, null);
@@ -70,8 +70,8 @@ public class EncounterTransform {
         String consultationID = fhirEncounter.getId();
         checkForDuplicateConsultations(consultationID);
 
-        fhirEncounter.setPatient(AdastraHelper.createPatientReference());
-        fhirEncounter.addEpisodeOfCare(AdastraHelper.createEpisodeReference());
+        fhirEncounter.setPatient(AdastraXmlHelper.createPatientReference());
+        fhirEncounter.addEpisodeOfCare(AdastraXmlHelper.createEpisodeReference());
 
         Date consultationStart = XmlDateHelper.convertDate(consultation.getStartTime());
         Period fhirPeriod = PeriodHelper.createPeriod(consultationStart, null);
@@ -91,12 +91,12 @@ public class EncounterTransform {
 
         if (consultation.getLocation() != null) {
             Encounter.EncounterLocationComponent location = fhirEncounter.addLocation();
-            location.setLocation(AdastraHelper.createLocationReference(consultation.getLocation()));
+            location.setLocation(AdastraXmlHelper.createLocationReference(consultation.getLocation()));
         }
 
         Encounter.EncounterParticipantComponent fhirParticipant = fhirEncounter.addParticipant();
         fhirParticipant.addType(CodeableConceptHelper.createCodeableConcept(EncounterParticipantType.PRIMARY_PERFORMER));
-        fhirParticipant.setIndividual(AdastraHelper.createUserReference(consultation.getConsultationBy().getName()));
+        fhirParticipant.setIndividual(AdastraXmlHelper.createUserReference(consultation.getConsultationBy().getName()));
 
         fhirResourceFiler.savePatientResource(null, fhirEncounter);
 

@@ -2,17 +2,14 @@ package org.endeavourhealth.transform.adastra;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.adastra.xml.schema.*;
+import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.*;
 
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-public class AdastraHelper {
+public class AdastraXmlHelper {
     private static final String ID_DELIMITER = ":";
 
     public static HashMap<String, String> uniqueIdMapper = new HashMap<String, String>();
@@ -92,8 +89,4 @@ public class AdastraHelper {
         Date dateString = XmlDateHelper.convertDate(date);
         return new DateTimeType(dateString, TemporalPrecisionEnum.SECOND);
     }
-
-
-
-
 }
