@@ -37,7 +37,7 @@ public abstract class AdastraXmlToFhirTransformer {
         PatientTransformer.transform(caseReport, processor);
         EpisodeTransformer.transform(caseReport, processor);
         EncounterTransform.createMainCaseEncounter(caseReport, processor);
-        String mainEncounterId = AdastraHelper.uniqueIdMapper.get("caseEncounter");
+        String mainEncounterId = AdastraXmlHelper.uniqueIdMapper.get("caseEncounter");
 
         if (caseReport.getConsultation() != null) {
             EncounterTransform.createChildEncountersFromConsultations(caseReport, processor);

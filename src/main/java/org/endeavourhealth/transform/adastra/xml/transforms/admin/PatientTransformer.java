@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.adastra.xml.transforms.admin;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
@@ -12,7 +12,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.uniqueIdMapper;
 
 public class PatientTransformer {
 
@@ -81,7 +81,7 @@ public class PatientTransformer {
 
         AdastraCaseDataExport.Patient.GpRegistration registration = patient.getGpRegistration();
 
-        AdastraHelper.createOrganisationReference(registration.getSurgeryNationalCode());
+        AdastraXmlHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 
         fhirResourceFiler.savePatientResource(null, fhirPatient);
     }

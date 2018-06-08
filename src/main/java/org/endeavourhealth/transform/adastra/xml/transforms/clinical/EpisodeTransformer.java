@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
@@ -12,7 +12,7 @@ import org.hl7.fhir.instance.model.Period;
 
 import java.util.Date;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.uniqueIdMapper;
 
 public class EpisodeTransformer {
 
@@ -24,8 +24,8 @@ public class EpisodeTransformer {
         fhirEpisode.setId(caseReport.getPatient().getNationalNumber().getNumber() + ":" + caseReport.getAdastraCaseReference());
         uniqueIdMapper.put("episode", fhirEpisode.getId());
 
-        fhirEpisode.setPatient(AdastraHelper.createPatientReference());
-        fhirEpisode.setManagingOrganization(AdastraHelper.createOrganisationReference(caseReport.getPatient().getGpRegistration().getSurgeryNationalCode()));
+        fhirEpisode.setPatient(AdastraXmlHelper.createPatientReference());
+        fhirEpisode.setManagingOrganization(AdastraXmlHelper.createOrganisationReference(caseReport.getPatient().getGpRegistration().getSurgeryNationalCode()));
 
 
         Date caseStart = XmlDateHelper.convertDate(caseReport.getActiveDate());

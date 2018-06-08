@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.adastra.xml.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
-import org.endeavourhealth.transform.adastra.AdastraHelper;
 import org.endeavourhealth.transform.common.XmlDateHelper;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Meta;
@@ -10,7 +10,7 @@ import org.hl7.fhir.instance.model.Resource;
 
 import java.util.List;
 
-import static org.endeavourhealth.transform.adastra.AdastraHelper.uniqueIdMapper;
+import static org.endeavourhealth.transform.adastra.AdastraXmlHelper.uniqueIdMapper;
 
 public class AppointmentTransformer {
 
@@ -27,7 +27,7 @@ public class AppointmentTransformer {
         fhirAppointment.setStatus(getAppointmentStatus(appointment.getStatus()));
 
         Appointment.AppointmentParticipantComponent fhirParticipant = fhirAppointment.addParticipant();
-        fhirParticipant.setActor(AdastraHelper.createLocationReference(appointment.getLocation()));
+        fhirParticipant.setActor(AdastraXmlHelper.createLocationReference(appointment.getLocation()));
     }
 
     private static Appointment.AppointmentStatus getAppointmentStatus(String status) throws Exception {
