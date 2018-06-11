@@ -152,7 +152,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
 
-        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, systemId, resourceType, locallyUniqueId);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
 
         //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
         if (globallyUniqueId == null) {

@@ -69,51 +69,7 @@ public class PPAGP extends AbstractCsvParser {
     public CsvCell getPersonPersonnelRelationCode() {
         return super.getCell("PERSON_PRSNL_R_CD");
     }
-    
-    /*public String getMillenniumPersonPersonnelRelationId() {
-        return super.getString("#PERSON_PRSNL_RELTN_ID");
-    }
 
-    public Date getExtractDateTime() throws TransformException {
-        return super.getDate("EXTRACT_DT_TM");
-    }
-
-    public String getActiveIndicator() {
-        return super.getString("ACTIVE_IND");
-    }
-
-    public boolean isActive() {
-        int val = super.getInt("ACTIVE_IND");
-        if (val == 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public String getMillenniumPersonIdentifier() {
-        return super.getString("PERSON_ID");
-    }
-
-    public Date getBeginEffectiveDate() throws TransformException {
-        return super.getDate("BEG_EFFECTIVE_DT_TM");
-    }
-
-    public Date getEndEffectiveDater() throws TransformException {
-        return super.getDate("END_EFFECTIVE_DT_TM");
-    }
-
-    public String getRegisteredGPMillenniumPersonnelId() {
-        return super.getString("GP_PRSNL_ID");
-    }
-
-    public String getRegisteredGPPracticeMillenniumIdOrganisationCode() {
-        return super.getString("GP_PRAC_ORG_ID");
-    }
-
-    public String getPersonPersonnelRelationCode() {
-        return super.getString("PERSON_PRSNL_R_CD");
-    }*/
 
     @Override
     protected String getFileTypeDescription() {

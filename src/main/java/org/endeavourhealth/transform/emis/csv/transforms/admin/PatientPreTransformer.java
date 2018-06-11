@@ -96,7 +96,7 @@ public class PatientPreTransformer {
 
                 //just make the call into the ID helper, which will create and cache or just cache, so no creation is needed
                 //when we get to the point of creating and saving resources
-                IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), ResourceType.Patient, sourceEmisPatientGuid);
+                IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceEmisPatientGuid);
 
             } catch (Throwable t) {
                 LOG.error("", t);

@@ -20,6 +20,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.endeavourhealth.transform.common.BasisTransformer.getLocationResourceId;
@@ -36,6 +37,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
     private static Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
+    private static Date cachedEndOfTime = null;
 
     //non-static caches
     private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
@@ -50,6 +52,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private UUID exchangeId = null;
     private String primaryOrgHL7OrgOID = null;
     private String version = null;
+
+
 
     public BartsCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String primaryOrgHL7OrgOID, String version) {
         this.serviceId = serviceId;
@@ -415,5 +419,25 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
             fhirResourceFiler.savePatientResource(null, false, resourceBuilder);
         }
+    }
+
+    /**
+     * Cerner uses 31/12/2100 as a "end of time" date, so we check for this to avoid carrying is over into FHIR
+     */
+    public static boolean isEmptyOrIsEndOfTime(CsvCell dateCell) throws Exception {
+        if (dateCell.isEmpty()) {
+            return true;
+        }
+
+        if (cachedEndOfTime == null) {
+            cachedEndOfTime = new SimpleDateFormat("yyyy-MM-dd").parse("2100-12-31");
+        }
+
+        Date d = dateCell.getDate();
+        if (d.equals(cachedEndOfTime)) {
+            return true;
+        }
+
+        return false;
     }
 }

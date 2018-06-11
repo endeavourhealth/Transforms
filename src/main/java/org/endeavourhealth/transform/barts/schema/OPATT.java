@@ -49,11 +49,13 @@ public class OPATT extends AbstractCsvParser {
                 "EXPECTED_DUR_OF_APPT_NBR",
                 "ACTIVITY_LOC_TYPE_NHS_CD_ALIAS",
                 "ENCNTR_CREATE_PRSNL_ID",
-                "ENCNTR_UPDT_PRSNL_ID",
+                "ENCNTR_UPDT_PRSNL_ID"
         };
     }
 
-    public CsvCell getCDSBatchContentEventId() { return super.getCell("#CDS_BATCH_CONTENT_ID"); }
+    public CsvCell getCDSBatchContentEventId() {
+        return super.getCell("#CDS_BATCH_CONTENT_ID");
+    }
 
     public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
@@ -63,11 +65,13 @@ public class OPATT extends AbstractCsvParser {
         return super.getCell("ACTIVE_IND");
     }
 
-    public CsvCell getEncounterSliceID() {
+    public CsvCell getEncounterScheduleID() {
         return super.getCell("SCHEDULE_ID");
     }
 
-    public CsvCell getEncounterId() { return super.getCell("ENCNTR_ID"); }
+    public CsvCell getEncounterId() {
+        return super.getCell("ENCNTR_ID");
+    }
 
     public CsvCell getScheduleEventId() {
         return super.getCell("SCH_EVENT_ID");
@@ -81,49 +85,89 @@ public class OPATT extends AbstractCsvParser {
         return super.getCell("APPT_DT_TM");
     }
 
-    public CsvCell getFirstAttendanceCode() { return super.getCell("FIRST_ATT_NHS_CD_ALIAS"); }
+    public CsvCell getFirstAttendanceCode() {
+        return super.getCell("FIRST_ATT_NHS_CD_ALIAS");
+    }
 
     public CsvCell getLastDNAOrCancelCode() {
         return super.getCell("LAST_DNA_CNCL_DT_TM");
     }
 
-    public CsvCell getMedicalStaffTypeCode() { return super.getCell("MEDICAL_STAFF_TYPE_NHS_CD_ALIAS"); }
+    public CsvCell getMedicalStaffTypeCode() {
+        return super.getCell("MEDICAL_STAFF_TYPE_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getOperationStatusCode() { return super.getCell("OPERATION_STATUS_NHS_CD_ALIAS"); }
+    public CsvCell getOperationStatusCode() {
+        return super.getCell("OPERATION_STATUS_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getAttendanceOutcomeCode() { return super.getCell("OUTCOME_OF_ATT_NHS_CD_ALIAS"); }
+    public CsvCell getAttendanceOutcomeCode() {
+        return super.getCell("OUTCOME_OF_ATT_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getLocationClass() { return super.getCell("LOCATION_CLASS_NHS_CD_ALIAS"); }
+    public CsvCell getLocationClass() {
+        return super.getCell("LOCATION_CLASS_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getTreatmentSiteOrgCode () { return super.getCell("TREATMENT_SITE_NHS_ORG_ALIAS"); }
+    public CsvCell getTreatmentSiteOrgCode() {
+        return super.getCell("TREATMENT_SITE_NHS_ORG_ALIAS");
+    }
 
-    public CsvCell getPatientRefusedOfferedDates() { return super.getCell("PAT_REFUSED_DATE_IND"); }
+    public CsvCell getPatientRefusedOfferedDates() {
+        return super.getCell("PAT_REFUSED_DATE_IND");
+    }
 
-    public CsvCell getFirstDateOffered() { return super.getCell("FIRST_OFFERED_DT"); }
+    public CsvCell getFirstDateOffered() {
+        return super.getCell("FIRST_OFFERED_DT");
+    }
 
-    public CsvCell getSecondDateOffered() { return super.getCell("SECOND_OFFERED_DT"); }
+    public CsvCell getSecondDateOffered() {
+        return super.getCell("SECOND_OFFERED_DT");
+    }
 
-    public CsvCell getLocationCode() { return super.getCell("APPT_LOCATION_CD"); }
+    public CsvCell getLocationCode() {
+        return super.getCell("APPT_LOCATION_CD");
+    }
 
-    public CsvCell getReasonForVisitText() { return super.getCell("REASON_FOR_VISIT_TXT"); }
+    public CsvCell getReasonForVisitText() {
+        return super.getCell("REASON_FOR_VISIT_TXT");
+    }
 
-    public CsvCell getAppointmentTypeCode() { return super.getCell("APPT_TYPE_CD"); }
+    public CsvCell getAppointmentTypeCode() {
+        return super.getCell("APPT_TYPE_CD");
+    }
 
-    public CsvCell getPatientId() { return super.getCell("PERSON_ID"); }
+    public CsvCell getPatientId() {
+        return super.getCell("PERSON_ID");
+    }
 
-    public CsvCell getFINNo() { return super.getCell("FIN_NBR_ID"); }
+    public CsvCell getFINNo() {
+        return super.getCell("FIN_NBR_ID");
+    }
 
-    public CsvCell getAttendendOrDNAMilleniumCode() { return super.getCell("ATTENDED_DNA_CD"); }
+    public CsvCell getAttendendOrDNAMilleniumCode() {
+        return super.getCell("ATTENDED_DNA_CD");
+    }
 
-    public CsvCell getAttendendOrDNANHSCode() { return super.getCell("ATTENDED_DNA_NHS_CD_ALIAS"); }
+    public CsvCell getAttendendOrDNANHSCode() {
+        return super.getCell("ATTENDED_DNA_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getExpectedAppointmentDuration() { return super.getCell("EXPECTED_DUR_OF_APPT_NBR"); }
+    public CsvCell getExpectedAppointmentDuration() {
+        return super.getCell("EXPECTED_DUR_OF_APPT_NBR");
+    }
 
-    public CsvCell ActivityLocationType() { return super.getCell("ACTIVITY_LOC_TYPE_NHS_CD_ALIAS"); }
+    public CsvCell ActivityLocationType() {
+        return super.getCell("ACTIVITY_LOC_TYPE_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getEncounterCreatedByPersonnelId() { return super.getCell("ENCNTR_CREATE_PRSNL_ID"); }
+    public CsvCell getEncounterCreatedByPersonnelId() {
+        return super.getCell("ENCNTR_CREATE_PRSNL_ID");
+    }
 
-    public CsvCell getEncounterUpdatedByPersonnelId() { return super.getCell("ENCNTR_UPDT_PRSNL_ID"); }
+    public CsvCell getEncounterUpdatedByPersonnelId() {
+        return super.getCell("ENCNTR_UPDT_PRSNL_ID");
+    }
 
     @Override
     protected String getFileTypeDescription() {

@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -38,29 +37,12 @@ public class ProcedureTransformer extends BartsBasisTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((org.endeavourhealth.transform.barts.schema.Procedure)parser);
-                    if (valStr == null) {
-                        createProcedure((org.endeavourhealth.transform.barts.schema.Procedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                    } else {
-                        LOG.debug("Validation error:" + valStr);
-                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                    }
+                    createProcedure((org.endeavourhealth.transform.barts.schema.Procedure)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
-        }
-    }
-
-    /*
-     *
-     */
-    public static String validateEntry(org.endeavourhealth.transform.barts.schema.Procedure parser) {
-        if (parser.getLocalPatientId() == null || parser.getLocalPatientId().length() == 0) {
-            return "LocalPatientId not found";
-        } else {
-            return null;
         }
     }
 

@@ -99,14 +99,6 @@ public class OPATTTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Delete existing encounter ?
-        if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete Encounter (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
-        }
-
         // Organisation
         Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
         ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);

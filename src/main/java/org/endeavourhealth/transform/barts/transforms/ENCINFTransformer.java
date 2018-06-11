@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCINF;
@@ -31,26 +30,13 @@ public class ENCINFTransformer extends BartsBasisTransformer {
 
         while (parser.nextRecord()) {
             try {
-                String valStr = validateEntry((ENCINF)parser);
-                if (valStr == null) {
-                    createEncounter((ENCINF)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                } else {
-                    LOG.debug("Validation error:" + valStr);
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                }
+                createEncounter((ENCINF)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
     }
-
-    /*
-     *
-     */
-    public static String validateEntry(ENCINF parser) {
-        return null;
-    }
-
 
     /*
      *

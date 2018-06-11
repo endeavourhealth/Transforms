@@ -47,26 +47,14 @@ public class AEATTTransformer extends BartsBasisTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((AEATT) parser);
-                    if (valStr == null) {
-                        createAandEAttendance((AEATT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                    } else {
-                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
-                    }
+                    createAandEAttendance((AEATT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
         }
     }
-
-    /*
-     *
-     */
-    public static String validateEntry(AEATT parser) {
-        return null;
-    }
-
 
     /*
      *

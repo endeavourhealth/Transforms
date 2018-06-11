@@ -299,7 +299,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                     if (ret == null) {
 
                         //if not in our local lookup, then use the ID mapper layer to lookup and then add to our local cache
-                        String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, systemId, ResourceType.Patient, resourcePatientId);
+                        String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, ResourceType.Patient, resourcePatientId);
                         ret = UUID.fromString(edsPatientIdStr);
 
                         //apply any merged resource mapping

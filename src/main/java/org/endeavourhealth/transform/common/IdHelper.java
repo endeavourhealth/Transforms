@@ -40,23 +40,23 @@ public class IdHelper {
         }
     }
 
-    public static String getOrCreateEdsResourceIdString(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, systemId, resourceType, sourceId).toString();
+    public static String getOrCreateEdsResourceIdString(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId).toString();
     }
 
-    private static UUID getOrCreateEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, systemId, resourceType, sourceId, true);
+    private static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, true);
     }
 
-    public static String getEdsResourceIdAsString(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        return getEdsResourceId(serviceId, systemId, resourceType, sourceId).toString();
+    public static String getEdsResourceIdAsString(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+        return getEdsResourceId(serviceId, resourceType, sourceId).toString();
     }
 
-    public static UUID getEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, systemId, resourceType, sourceId, false);
+    public static UUID getEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, false);
     }
 
-    private static UUID getOrCreateEdsResourceId(UUID serviceId, UUID systemId, ResourceType resourceType, String sourceId, boolean createIfNotFound) throws Exception {
+    private static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId, boolean createIfNotFound) throws Exception {
         Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
         String sourceReferenceValue = sourceReference.getReference();
 
@@ -68,13 +68,13 @@ public class IdHelper {
             List<Reference> sourceReferences = new ArrayList<>();
             sourceReferences.add(sourceReference);
 
-            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, systemId, sourceReferences);
+            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, sourceReferences);
             Reference edsReference = map.get(sourceReference);
             if (edsReference == null) {
 
                 if (createIfNotFound) {
                     //if definitely no mapping on the DB, create and save a new ID
-                    edsId = repository.findOrCreateThreadSafe(serviceId, systemId, resourceType.toString(), sourceId);
+                    edsId = repository.findOrCreateThreadSafe(serviceId, resourceType.toString(), sourceId);
 
                 } else {
                     return null;
@@ -197,7 +197,7 @@ public class IdHelper {
         }
 
         //call to the cache and DB to find existing mappings
-        Map<Reference, Reference> referenceMappingsFromDb = repository.findEdsReferencesFromSourceReferences(serviceId, systemId, referencesToHitDb);
+        Map<Reference, Reference> referenceMappingsFromDb = repository.findEdsReferencesFromSourceReferences(serviceId, referencesToHitDb);
 
         //ensure we've got a mapping for every reference we started with and create where not
         for (Reference sourceReference: referencesToHitDb) {
@@ -219,7 +219,7 @@ public class IdHelper {
                 String resourceType = comps.getResourceType().toString();
                 String sourceId = comps.getId();
 
-                edsId = repository.findOrCreateThreadSafe(serviceId, systemId, resourceType, sourceId);
+                edsId = repository.findOrCreateThreadSafe(serviceId, resourceType, sourceId);
                 mappedReferenceValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
 
             } else {
@@ -269,10 +269,7 @@ public class IdHelper {
         String locallyUniqueId = components.getId();
         ResourceType resourceType = components.getResourceType();
 
-        String globallyUniqueId = getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                fhirResourceFiler.getSystemId(),
-                resourceType,
-                locallyUniqueId);
+        String globallyUniqueId = getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), resourceType, locallyUniqueId);
 
         return ReferenceHelper.createReference(resourceType, globallyUniqueId);
     }

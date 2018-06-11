@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -33,28 +32,12 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((Diagnosis)parser);
-                    if (valStr == null) {
-                        createDiagnosis((Diagnosis)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                    } else {
-                        LOG.debug("Validation error:" + valStr);
-                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                    }
+                    createDiagnosis((Diagnosis)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
-        }
-    }
-
-    /*
-     *
-     */
-    public static String validateEntry(Diagnosis parser) {
-        if (parser.getLocalPatientId() == null || parser.getLocalPatientId().length() == 0) {
-            return "LocalPatientId not found for diagnosisId " + parser.getDiagnosisId();
-        } else {
-            return null;
         }
     }
 

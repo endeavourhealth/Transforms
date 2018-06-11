@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -42,13 +41,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((Problem)parser);
-                    if (valStr == null) {
-                        createConditionProblem((Problem)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                    } else {
-                        LOG.debug("Validation error:" + valStr);
-                        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, valStr);
-                    }
+                    createConditionProblem((Problem)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -57,17 +50,6 @@ public class ProblemTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*
-     *
-     */
-    public static String validateEntry(Problem parser) {
-        CsvCell cell = parser.getLocalPatientId();
-        if (cell.isEmpty()) {
-            return "LocalPatientId not found for problemId " + parser.getProblemId();
-        } else {
-            return null;
-        }
-    }
 
     /*
     *

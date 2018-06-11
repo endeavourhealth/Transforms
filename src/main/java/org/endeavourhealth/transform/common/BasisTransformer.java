@@ -798,6 +798,24 @@ public class BasisTransformer {
         return resourceId;
     }
 
+    public static ResourceId getOrganisationResourceId(String scope, CsvCell orgIdCell) throws Exception {
+
+        String uniqueId = "Organisation=" + orgIdCell.getString();
+        ResourceId resourceId = getResourceId(scope, "Organization", uniqueId);
+
+        //if we failed to find a UUID for our personnelID, generate one and return it
+        if (resourceId == null) {
+            resourceId = new ResourceId();
+            resourceId.setScopeId(scope);
+            resourceId.setResourceType("Organization");
+            resourceId.setUniqueId(uniqueId);
+            resourceId.setResourceId(UUID.randomUUID());
+            saveResourceId(resourceId);
+        }
+        return resourceId;
+    }
+
+
     public static ResourceId getPractitionerResourceId(String scope, CsvCell personnelIdCell) throws Exception {
 
         String uniqueId = "PersonnelId=" + personnelIdCell.getString();

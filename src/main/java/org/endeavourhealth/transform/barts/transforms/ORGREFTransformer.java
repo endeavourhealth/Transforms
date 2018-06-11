@@ -1,37 +1,30 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressHelper;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
-import org.endeavourhealth.transform.barts.schema.LOREF;
 import org.endeavourhealth.transform.barts.schema.ORGREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirResourceFilerI;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 public class ORGREFTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ORGREFTransformer.class);
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     /*
      *
@@ -65,60 +58,89 @@ public class ORGREFTransformer extends BartsBasisTransformer {
                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
-        if (parser.getOrdId().isEmpty()) {
-            return;
-        }
-        CsvCell orgIdCell = parser.getOrdId();
-        organizationBuilder.setId(orgIdCell.getString());
-        if (!parser.getOrgNameText().isEmpty()) {
-            organizationBuilder.setName(parser.getOrgNameText().getString());
-        }
-        if (!parser.getNhsOrgAlias().isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setId(parser.getNhsOrgAlias().getString());
+
+        CsvCell orgIdCell = parser.getOrgId();
+        organizationBuilder.setId(orgIdCell.getString(), orgIdCell);
+
+        CsvCell orgNameCell = parser.getOrgNameText();
+        if (!orgNameCell.isEmpty()) {
+            organizationBuilder.setName(orgNameCell.getString(), orgNameCell);
         }
 
-        if (!parser.getParentNhsOrgAlias().isEmpty()) {
-            Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parser.getParentNhsOrgAlias().getString());
-            organizationBuilder.setParentOrganisation(reference);
+        CsvCell orgAliasCell = parser.getNhsOrgAlias();
+        if (!orgAliasCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setId(orgAliasCell.getString(), orgAliasCell);
+        }
+
+        CsvCell parentOrgAliasCell = parser.getParentNhsOrgAlias();
+        if (!parentOrgAliasCell.isEmpty()) {
+            //confusingly, the file links orgs to its parents using the ODS code, not the ID, so we need
+            //to look up the ID for our parent using the ODS code
+            String parentOdsCode = parentOrgAliasCell.getString();
+            String parentId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, parentOdsCode);
+            if (!Strings.isNullOrEmpty(parentId)) {
+                Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parentId);
+                organizationBuilder.setParentOrganisation(reference);
+            }
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        if (!parser.getAddrLine1Txt().isEmpty()) {
-            addressBuilder.addLine(parser.getAddrLine1Txt().getString());
-        }
-        if (!parser.getAddrLine2Txt().isEmpty()) {
-            addressBuilder.addLine(parser.getAddrLine2Txt().getString());
-        }
-        if (!parser.getAddrLine3Txt().isEmpty()) {
-            addressBuilder.addLine(parser.getAddrLine3Txt().getString());
-        }
-        if (!parser.getAddrLine4Txt().isEmpty()) {
-            addressBuilder.addLine(parser.getAddrLine4Txt().getString());
-        }
-        if (!parser.getPostCodeTxt().isEmpty()) {
-            addressBuilder.setPostcode(parser.getPostCodeTxt().getString());
-        }
-        if (!parser.getCityTxt().isEmpty()) {
-            addressBuilder.setTown(parser.getCityTxt().getString());
-        }
-        if (!parser.getPhoneNumberTxt().isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, parser.getPhoneNumberTxt());
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
-        }
-        if (!parser.getFaxNbrTxt().isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX, parser.getFaxNbrTxt());
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+
+        CsvCell addressLine1Cell = parser.getAddrLine1Txt();
+        if (!addressLine1Cell.isEmpty()) {
+            addressBuilder.addLine(addressLine1Cell.getString(), addressLine1Cell);
         }
 
-        if (!parser.getEmailTxt().isEmpty()) {
+        CsvCell addressLine2Cell = parser.getAddrLine2Txt();
+        if (!addressLine2Cell.isEmpty()) {
+            addressBuilder.addLine(addressLine2Cell.getString(), addressLine2Cell);
+        }
+
+        CsvCell addressLine3Cell = parser.getAddrLine3Txt();
+        if (!addressLine3Cell.isEmpty()) {
+            addressBuilder.addLine(addressLine3Cell.getString(), addressLine3Cell);
+        }
+
+        CsvCell addressLine4Cell = parser.getAddrLine4Txt();
+        if (!addressLine4Cell.isEmpty()) {
+            addressBuilder.addLine(addressLine4Cell.getString(), addressLine4Cell);
+        }
+
+        CsvCell postcodeCell = parser.getPostCodeTxt();
+        if (!postcodeCell.isEmpty()) {
+            addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+        }
+
+        CsvCell cityCell = parser.getCityTxt();
+        if (!cityCell.isEmpty()) {
+            addressBuilder.setTown(cityCell.getString(), cityCell);
+        }
+
+        CsvCell phoneNumberCell = parser.getPhoneNumberTxt();
+        if (!phoneNumberCell.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL, parser.getEmailTxt());
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+            contactPointBuilder.setValue(phoneNumberCell.getString(), phoneNumberCell);
+        }
+
+        CsvCell faxCell = parser.getFaxNbrTxt();
+        if (!faxCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+            contactPointBuilder.setValue(faxCell.getString(), faxCell);
+        }
+
+        CsvCell emailCell = parser.getEmailTxt();
+        if (!emailCell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+            contactPointBuilder.setValue(emailCell.getString(), emailCell);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);

@@ -359,7 +359,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
 
-        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, systemId, resourceType, locallyUniqueId);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
 
         //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
         if (globallyUniqueId == null) {
@@ -385,10 +385,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public List<Resource> retrieveAllResourcesForPatient(String patientGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(),
-                fhirResourceFiler.getSystemId(),
-                ResourceType.Patient,
-                patientGuid);
+        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, patientGuid);
         if (edsPatientId == null) {
             return null;
         }
@@ -773,7 +770,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             //the resource has already been through the ID mapping process, so we need to manually map the organisation GUID to discovery UUID
             String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
                     ResourceType.Organization,
                     organisationGuid);
 

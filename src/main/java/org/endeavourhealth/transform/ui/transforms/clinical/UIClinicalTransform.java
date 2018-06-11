@@ -39,7 +39,7 @@ public abstract class UIClinicalTransform<T extends Resource, U extends UIResour
                     && referenceId.endsWith("}")) {
                 ResourceType resourceType = comps.getResourceType();
                 try {
-                    referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, null, resourceType, referenceId);
+                    referenceId = IdHelper.getOrCreateEdsResourceIdString(serviceId, resourceType, referenceId);
                 } catch (Exception ex) {
                     throw new RuntimeException("Failed to look up ID for service " + serviceId + " system " + resourceType + " and ID " + referenceId, ex);
                 }

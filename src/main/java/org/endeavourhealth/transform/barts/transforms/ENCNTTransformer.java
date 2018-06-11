@@ -43,26 +43,14 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((ENCNT) parser);
-                    if (valStr == null) {
-                        createEncounter((ENCNT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-                    } else {
-                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
-                    }
+                    createEncounter((ENCNT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
         }
     }
-
-    /*
-     *
-     */
-    public static String validateEntry(ENCNT parser) {
-        return null;
-    }
-
 
     /*
      *
@@ -90,7 +78,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             return;
         }
 
-        // Check if encounter type shouild be excluded
+        // Check if encounter type should be excluded
         if (excludeEncounterType(encounterTypeCodeCell.getString())) {
             return;
         }

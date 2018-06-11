@@ -1,20 +1,23 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 
 public class PPAGPTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPAGPTransformer.class);
@@ -53,26 +56,53 @@ public class PPAGPTransformer extends BartsBasisTransformer {
             return;
         }
 
-        //if we don't have a person ID, there's nothing we can do with the row
-        CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
-        if (personnelId.isEmpty()) {
-            return;
+        //the relation code links to the standard code ref table, and defines the type of relationship
+        //all the data seen so far uses the same code, for "registered GP". This block confirms that this
+        //assertion is still true. If we have a record with a different type, then we need to consider where in
+        //FHIR this data should go (probably a contact point on the FHIR patient)
+        CsvCell relationshipType = parser.getPersonPersonnelRelationCode();
+        if (!relationshipType.isEmpty()) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICIAL_RELATIONSHIP_TYPE, relationshipType);
+            if (codeRef != null) {
+                String display = codeRef.getCodeDispTxt();
+                if (!display.equalsIgnoreCase("Registered GP")) {
+                    throw new TransformException("PPAGP record has unexpected relation code " + relationshipType.getLong());
+                }
+            }
         }
-        ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId);
-        Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
 
         //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell endDateCell = parser.getEndEffectiveDate();
-        if (!activeCell.getIntAsBoolean()
-                && !endDateCell.isEmpty()) {
+        boolean delete = !activeCell.getIntAsBoolean()
+                || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
 
-            //this only removes if the reference matches the record we're supposed to remove, in case we've already
-            //processed another row telling us to change it
-            patientBuilder.removeCareProvider(practitionerReference);
+        CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
+        if (!personnelId.isEmpty()) {
+            ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId);
+            Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
 
-        } else {
-            patientBuilder.addCareProvider(practitionerReference);
+            if (delete) {
+                patientBuilder.removeCareProvider(practitionerReference);
+
+            } else {
+                patientBuilder.addCareProvider(practitionerReference);
+            }
+        }
+
+        CsvCell orgId = parser.getRegisteredGPPracticeMillenniumIdOrganisationCode();
+        if (!orgId.isEmpty()) {
+
+            //the ORGREF file is mapped using the standard ID mapper, so we need to convert the ID to UUID using this approach
+            UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Organization, orgId.getString());
+            Reference orgReference = ReferenceHelper.createReference(ResourceType.Organization, globallyUniqueId.toString());
+
+            if (delete) {
+                patientBuilder.removeCareProvider(orgReference);
+
+            } else {
+                patientBuilder.addCareProvider(orgReference);
+            }
         }
     }
 

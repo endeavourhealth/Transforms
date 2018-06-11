@@ -50,7 +50,7 @@ public class SlotTransformer {
 
         //the EMIS data contains thousands of appointments that refer to patients we don't have, so I'm explicitly
         //handling this here, and ignoring any Slot record that is in this state
-        UUID patientEdsId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), ResourceType.Patient, patientGuid.getString());
+        UUID patientEdsId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, patientGuid.getString());
         if (patientEdsId == null) {
             return;
         }

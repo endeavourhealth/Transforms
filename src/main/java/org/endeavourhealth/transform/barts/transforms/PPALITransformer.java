@@ -113,8 +113,9 @@ public class PPALITransformer extends BartsBasisTransformer {
         }
 
         CsvCell endDateCell = parser.getEndEffectiveDate();
-        if (!endDateCell.isEmpty()) {
-            identifierBuilder.setEndDate(startDateCell.getDate(), startDateCell);
+        //use this function to test the endDate cell, since it will have the Cerner end of time content
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
+            identifierBuilder.setEndDate(startDateCell.getDate(), endDateCell);
         }
     }
 

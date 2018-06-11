@@ -87,7 +87,8 @@ public class PPADDTransformer extends BartsBasisTransformer {
         }
 
         CsvCell endDate = parser.getEndEffectiveDater();
-        if (!endDate.isEmpty()) {
+        //use this function to test the endDate cell, since it will have the Cerner end of time content
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
             addressBuilder.setEndDate(endDate.getDate(), endDate);
         }
     }

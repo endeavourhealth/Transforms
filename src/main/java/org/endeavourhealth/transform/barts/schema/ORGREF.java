@@ -47,23 +47,73 @@ public class ORGREF extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getOrdId() { return super.getCell("ORG_ID"); }
-    public CsvCell getExtractDateTime() { return super.getCell("EXTRACT_DT_TM"); }
-    public CsvCell getActiveInd() { return super.getCell("ACTIVE_IND"); }
-    public CsvCell getOrgNameText() { return super.getCell("ORG_NAME_TXT"); }
-    public CsvCell getNhsOrgAlias() { return super.getCell("NHS_ORG_ALIAS"); }
-    public CsvCell getParentNhsOrgAlias() { return super.getCell("PARENT_NHS_ORG_ALIAS"); }
-    public CsvCell getAddrLine1Txt() { return super.getCell("ADDR_LINE1_TXT"); }
-    public CsvCell getAddrLine2Txt() { return super.getCell("ADDR_LINE2_TXT"); }
-    public CsvCell getAddrLine3Txt() { return super.getCell("ADDR_LINE3_TXT"); }
-    public CsvCell getAddrLine4Txt() { return super.getCell("ADDR_LINE4_TXT"); }
-    public CsvCell getPostCodeTxt(){ return super.getCell("POSTCODE_TXT"); }
-    public CsvCell getCityTxt() { return super.getCell("CITY_TXT"); }
-    public CsvCell getCountyCode() { return super.getCell("COUNTY_CD"); }
-    public CsvCell getCountryCode() { return super.getCell("COUNTRY_CD"); }
-    public CsvCell getPhoneNumberTxt() { return super.getCell("PHONE_NBR_TXT"); }
-    public CsvCell getFaxNbrTxt() { return super.getCell("FAX_NBR_TXT"); }
-    public CsvCell getEmailTxt() { return super.getCell("EMAIL_TXT");}
+    public CsvCell getOrgId() {
+        return super.getCell("ORG_ID");
+    }
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveInd() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getOrgNameText() {
+        return super.getCell("ORG_NAME_TXT");
+    }
+
+    public CsvCell getNhsOrgAlias() {
+        return super.getCell("NHS_ORG_ALIAS");
+    }
+
+    public CsvCell getParentNhsOrgAlias() {
+        return super.getCell("PARENT_NHS_ORG_ALIAS");
+    }
+
+    public CsvCell getAddrLine1Txt() {
+        return super.getCell("ADDR_LINE1_TXT");
+    }
+
+    public CsvCell getAddrLine2Txt() {
+        return super.getCell("ADDR_LINE2_TXT");
+    }
+
+    public CsvCell getAddrLine3Txt() {
+        return super.getCell("ADDR_LINE3_TXT");
+    }
+
+    public CsvCell getAddrLine4Txt() {
+        return super.getCell("ADDR_LINE4_TXT");
+    }
+
+    public CsvCell getPostCodeTxt() {
+        return super.getCell("POSTCODE_TXT");
+    }
+
+    public CsvCell getCityTxt() {
+        return super.getCell("CITY_TXT");
+    }
+
+    public CsvCell getCountyCode() {
+        return super.getCell("COUNTY_CD");
+    }
+
+    public CsvCell getCountryCode() {
+        return super.getCell("COUNTRY_CD");
+    }
+
+    public CsvCell getPhoneNumberTxt() {
+        return super.getCell("PHONE_NBR_TXT");
+    }
+
+    public CsvCell getFaxNbrTxt() {
+        return super.getCell("FAX_NBR_TXT");
+    }
+
+    public CsvCell getEmailTxt() {
+        return super.getCell("EMAIL_TXT");
+    }
 
 
     @Override

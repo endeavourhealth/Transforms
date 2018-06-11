@@ -134,7 +134,8 @@ public class PPRELTransformer extends BartsBasisTransformer {
         }
 
         CsvCell endDate = parser.getEndEffectiveDateTime();
-        if (!endDate.isEmpty()) {
+        //use this function to test the endDate cell, since it will have the Cerner end of time content
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
             contactBuilder.setEndDate(endDate.getDate(), endDate);
         }
 

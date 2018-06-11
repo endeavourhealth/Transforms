@@ -97,7 +97,8 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         }
 
         CsvCell endDate = parser.getEndEffectiveDater();
-        if (!endDate.isEmpty()) {
+        //use this function to test the endDate cell, since it will have the Cerner end of time content
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
             nameBuilder.setEndDate(endDate.getDate(), endDate);
         }
     }

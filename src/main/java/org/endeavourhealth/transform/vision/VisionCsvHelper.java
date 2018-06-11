@@ -159,10 +159,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(),
-                fhirResourceFiler.getSystemId(),
-                resourceType,
-                locallyUniqueId);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, locallyUniqueId);
         if (globallyUniqueId == null) {
             return null;
         }
@@ -183,10 +180,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public List<Resource> retrieveAllResourcesForPatient(String patientGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(),
-                fhirResourceFiler.getSystemId(),
-                ResourceType.Patient,
-                patientGuid);
+        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, patientGuid);
         if (edsPatientId == null) {
             return null;
         }
