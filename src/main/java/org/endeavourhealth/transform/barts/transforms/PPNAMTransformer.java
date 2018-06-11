@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -68,9 +69,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
         if (!nameTypeCell.isEmpty() && nameTypeCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                                CernerCodeValueRef.NAME_USE,
-                                                                                nameTypeCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.NAME_USE, nameTypeCell);
 
             nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
         }

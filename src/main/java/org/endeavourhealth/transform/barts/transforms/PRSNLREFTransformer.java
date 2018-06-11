@@ -2,10 +2,10 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PRSNLREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -56,10 +56,10 @@ public class PRSNLREFTransformer extends BartsBasisTransformer {
         PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
         CsvCell positionCode = parser.getMilleniumPositionCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CernerCodeValueRef.PERSONNEL_POSITION, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CodeValueSet.PERSONNEL_POSITION, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, csvHelper);
 
         CsvCell specialityCode = parser.getMillenniumSpecialtyCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CernerCodeValueRef.PERSONNEL_SPECIALITY, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CodeValueSet.PERSONNEL_SPECIALITY, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, csvHelper);
 
         CsvCell title = parser.getTitle();
         CsvCell givenName = parser.getFirstName();

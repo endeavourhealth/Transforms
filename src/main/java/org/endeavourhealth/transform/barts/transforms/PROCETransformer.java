@@ -9,6 +9,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -59,7 +60,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-            Procedure existingProcedure = (Procedure)csvHelper.retrieveResource(ResourceType.Condition, procedureResourceId.getResourceId());
+            Procedure existingProcedure = (Procedure)csvHelper.retrieveResource(ResourceType.Procedure, procedureResourceId.getResourceId());
             if (existingProcedure != null) {
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
                 //LOG.debug("Delete Condition (" + conditionBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
@@ -170,9 +171,7 @@ public class PROCETransformer extends BartsBasisTransformer {
         // Procedure type (category) is a Cerner Millenium code so lookup
         CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
         if (!procedureTypeCodeCell.isEmpty() && procedureTypeCodeCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                                CernerCodeValueRef.PROCEDURE_TYPE,
-                                                                                procedureTypeCodeCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PROCEDURE_TYPE, procedureTypeCodeCell);
             if (cernerCodeValueRef == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for procedure type {} not found. Row {} Column {} ",
                         procedureTypeCodeCell.getLong(), parser.getProcedureTypeCode().getString(),

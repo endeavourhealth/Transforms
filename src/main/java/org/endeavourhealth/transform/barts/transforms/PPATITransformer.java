@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -98,9 +99,7 @@ public class PPATITransformer extends BartsBasisTransformer {
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
         if (!nhsNumberStatusCell.isEmpty() && nhsNumberStatusCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        CernerCodeValueRef.NHS_NUMBER_STATUS,
-                                                                        nhsNumberStatusCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found. Row {} Column {} ",
                         nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString(),
@@ -138,9 +137,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell genderCell = parser.getGenderCode();
         if (!genderCell.isEmpty() && genderCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                                CernerCodeValueRef.GENDER,
-                                                                                genderCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.GENDER, genderCell);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found. Row {} Column {} ",
                         genderCell.getLong(), parser.getGenderCode().getString(),
@@ -157,9 +154,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
         if (!maritalStatusCode.isEmpty() && maritalStatusCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        CernerCodeValueRef.MARITAL_STATUS,
-                                                                        maritalStatusCode.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.MARITAL_STATUS, maritalStatusCode);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found. Row {} Column {} ",
                         maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString(),
@@ -176,9 +171,7 @@ public class PPATITransformer extends BartsBasisTransformer {
 
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
         if (!ethnicityCode.isEmpty() && ethnicityCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                            CernerCodeValueRef.ETHNIC_GROUP,
-                                                                            ethnicityCode.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityCode);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found. Row {} Column {} ",
                         ethnicityCode.getLong(), parser.getEthnicGroupCode().getString(),
@@ -200,10 +193,10 @@ public class PPATITransformer extends BartsBasisTransformer {
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CernerCodeValueRef.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
 
         CsvCell religionCell = parser.getReligionCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CernerCodeValueRef.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();

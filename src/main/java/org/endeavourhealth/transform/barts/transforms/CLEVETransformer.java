@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -160,13 +161,13 @@ public class CLEVETransformer extends BartsBasisTransformer {
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
         if (codeCell != null && !codeCell.isEmpty()) {
-            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, codeCell.getString()) == null) {
+            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, codeCell) == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
                         codeCell.getLong(), parser.getEventCode().getString(),
                         codeCell.getRowAuditId(), codeCell.getColIndex());
                 //return;
             }
-            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CernerCodeValueRef.CLINICAL_CODE_TYPE, observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
+            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CodeValueSet.CLINICAL_CODE_TYPE, observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
 
             //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
             CsvCell termCell = parser.getEventTitleText();
@@ -203,13 +204,13 @@ public class CLEVETransformer extends BartsBasisTransformer {
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
         if (normalcyCodeCell != null && !normalcyCodeCell.isEmpty() && normalcyCodeCell.getLong() > 0) {
 
-            if (csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.CLINICAL_CODE_TYPE, normalcyCodeCell.getString()) == null) {
+            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, normalcyCodeCell) == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
                         normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
                         normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
                // return;
             }
-            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CernerCodeValueRef.CLINICAL_EVENT_NORMALCY, observationBuilder, CodeableConceptBuilder.Tag.Observation_Range_Meaning, csvHelper);
+            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CodeValueSet.CLINICAL_EVENT_NORMALCY, observationBuilder, CodeableConceptBuilder.Tag.Observation_Range_Meaning, csvHelper);
         }
 
         //TODO - set comments
@@ -347,9 +348,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         String unitsDesc = "";
         if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                    CernerCodeValueRef.CLINICAL_EVENT_UNITS,
-                    unitsCodeCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_UNITS, unitsCodeCell);
 
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",

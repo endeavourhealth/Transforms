@@ -260,6 +260,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{00A3BA25-21C6-42DE-82AA-55FF0D85A6C3}", "02/01/2018"); //NOT FIXED YET - MARKET STREET HEALTH GROUP (CDB 381);F84004
         map.put("{77B59D29-0FD9-4737-964F-5DBA49D94AB6}", "02/01/2018"); //NOT FIXED YET - Star Lane Medical Centre (CDB 40);F84017
         map.put("{91239362-A105-4DEA-8E8E-239C3BCEDFD2}", "11/01/2018"); //BEECHWOOD MEDICAL CENTRE (CDB 5661);F84038
+        map.put("{53A113F5-6E3B-410F-A473-53E38A79335B}", "01/06/2018"); //ELFT Community RWKGY CDB 25362
 
         String startDateStr = map.get(orgGuid);
         if (Strings.isNullOrEmpty(startDateStr)) {
