@@ -4,8 +4,9 @@ import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.OPATT;
@@ -54,45 +55,21 @@ public class OPATTTransformer extends BartsBasisTransformer {
                                        BartsCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
 
-        CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell personIdCell = parser.getPatientId();
-        CsvCell beginDateCell = parser.getAppointmentDateTime();
-        CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
+
         CsvCell finIdCell = parser.getFINNo();
-        CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
-        CsvCell currentLocationCell = parser.getLocationCode();
 
+        CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
-            // skip - inactive entries contains no useful data
+            //skip - inactive entries contains no useful data and the ENCOUNTER row will be inactive too
             return;
-        }
-
-        Date beginDate = null;
-        if (beginDateCell != null && !beginDateCell.isEmpty()) {
-            try {
-                beginDate = formatDaily.parse(beginDateCell.getString());
-            } catch (ParseException ex) {
-                beginDate = formatBulk.parse(beginDateCell.getString());
-            }
-        }
-        Date endDate = null;
-        if (beginDate != null) {
-            if (apptLengthCell != null && !apptLengthCell.isEmpty() && apptLengthCell.getInt() > 0) {
-                endDate = new Date(beginDate.getTime() + (apptLengthCell.getInt() * 60 * 1000));
-            } else {
-                endDate = beginDate;
-            }
         }
 
         // get the associated encounter
+        CsvCell encounterIdCell = parser.getEncounterId();
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
-        if (encounterBuilder == null && !activeCell.getIntAsBoolean()) {
-            // skip - encounter missing but set to delete so do nothing
-            return;
-        }
 
         // Patient
+        CsvCell personIdCell = parser.getPatientId();
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
         if (patientUuid == null) {
             TransformWarnings.log(LOG, parser, "Skipping encounter {} because no Person->MRN mapping {} could be found in file {}", encounterIdCell.getString(), personIdCell.getString(), parser.getFilePath());
@@ -105,10 +82,6 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
-        LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
-            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
-        }
 
         // Create new encounter
         if (encounterBuilder == null) {
@@ -117,55 +90,76 @@ public class OPATTTransformer extends BartsBasisTransformer {
             encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
         }
 
-
-        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
-
         encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
-        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        if (beginDate != null) {
-            // Start date
-            encounterBuilder.setPeriodStart(beginDate);
+        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
+        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-            }
 
-            // End date
-            if (endDate != null) {
-                encounterBuilder.setPeriodEnd(endDate);
+        Date beginDate = null;
+        CsvCell beginDateCell = parser.getAppointmentDateTime();
+        try {
+            beginDate = formatDaily.parse(beginDateCell.getString());
+        } catch (ParseException ex) {
+            beginDate = formatBulk.parse(beginDateCell.getString());
+        }
+        encounterBuilder.setPeriodStart(beginDate, beginDateCell);
 
-                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+        //there's no explicit end date, but we can work it out from the duration
+        Date endDate = null;
+        CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
+        if (!apptLengthCell.isEmpty()) {
+            endDate = new Date(beginDate.getTime() + (apptLengthCell.getInt() * 60 * 1000));
+        }
 
-                if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                    episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, apptLengthCell);
-                }
+        // End date
+        if (endDate != null) {
+            encounterBuilder.setPeriodEnd(endDate, beginDateCell, apptLengthCell);
+        }
 
-            } else if (beginDate.before(new Date())) {
-                encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, outcomeCell);
-            } else {
-                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, outcomeCell);
-            }
+        //work out the Encounter status
+        CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
+        if (!outcomeCell.isEmpty()) {
+            //if we have an outcome, we know the encounter has ended
+            encounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+
         } else {
-            encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+            //if we don't have an outcome, the Encounter is either in progress or in the future
+            if (beginDate.before(new Date())) {
+                encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, beginDateCell);
+
+            } else {
+                encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, beginDateCell);
             }
+        }
+
+        //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
+        if (episodeOfCareBuilder.getRegistrationStartDate() == null
+                || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+
+            episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
         }
 
         // Check whether to Finish EpisodeOfCare
-        // EoC Status (for some reason it can contain just spaces)
+        //outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
         // Outcome = 1 means discharged from care
-        if (outcomeCell != null && outcomeCell.getString().trim().length() > 0 && outcomeCell.getInt() == 1) {
-            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
+        if (!outcomeCell.isEmpty()) {
+            int outcomeCode = outcomeCell.getInt();
+            if (outcomeCode == 1) { //	Discharged from CONSULTANT's care (last attendance)
+
+                //make sure to set the status AFTER setting the end date, as setting the end date
+                //will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
+                episodeOfCareBuilder.setRegistrationEndDate(endDate, beginDateCell, apptLengthCell);
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
+            }
         }
 
         // Location
-        if (currentLocationCell != null && !currentLocationCell.isEmpty() && currentLocationCell.getLong() > 0) {
+        CsvCell currentLocationCell = parser.getLocationCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(currentLocationCell)) {
+
             UUID locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, currentLocationCell);
             if (locationResourceUUID != null) {
                 if (beginDate == null || endDate == null) {
@@ -182,9 +176,20 @@ public class OPATTTransformer extends BartsBasisTransformer {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        CsvCell reasonCell = parser.getReasonForVisitText();
+        if (!reasonCell.isEmpty()) {
+            String reason = reasonCell.getString();
+            encounterBuilder.addReason(reason, reasonCell);
+        }
+
+        CsvCell typeCell = parser.getAppointmentTypeCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
+
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.APPOINTMENT_TYPE, typeCell);
+            if (codeRef != null) {
+                String typeDesc = codeRef.getCodeDispTxt();
+                encounterBuilder.addType(typeDesc, typeCell);
+            }
         }
 
 

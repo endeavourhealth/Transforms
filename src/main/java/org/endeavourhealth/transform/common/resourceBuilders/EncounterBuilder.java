@@ -249,25 +249,50 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("identifier[" + index + "].value", sourceCells);
     }*/
 
-    public void addReason(CodeableConcept reason, CsvCell... sourceCells) {
-        this.encounter.addReason(reason);
+    public void addReason(String reason, CsvCell... sourceCells) {
 
-        int index = this.encounter.getReason().size()-1;
-        auditValue("reason[" + index + "].value", sourceCells);
-    }
+        //ensure we don't end up with the same reason twice
+        if (this.encounter.hasReason()) {
 
-    public void addReason(CodeableConcept reason, boolean removeIfExists, CsvCell... sourceCells) {
-        if (removeIfExists && this.encounter.hasReason()) {
             List<CodeableConcept> reasonList = this.encounter.getReason();
-
             for (Iterator<CodeableConcept> iterator = reasonList.iterator(); iterator.hasNext();) {
                 CodeableConcept cc = iterator.next();
-                if (cc.getText().compareToIgnoreCase(reason.getText()) == 0) {
-                    iterator.remove();
+                String text = cc.getText();
+                if (text.equalsIgnoreCase(reason)) {
+                    //already present
+                    return;
                 }
             }
         }
-        addReason(reason, sourceCells);
+
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(reason);
+        this.encounter.addReason(codeableConcept);
+
+        int index = this.encounter.getReason().size()-1;
+        auditValue("reason[" + index + "].text", sourceCells);
+    }
+
+    public void addType(String typeDesc, CsvCell... sourceCells) {
+
+        //ensure we don't end up with the same type twice
+        if (this.encounter.hasType()) {
+
+            List<CodeableConcept> types = this.encounter.getType();
+            for (Iterator<CodeableConcept> iterator = types.iterator(); iterator.hasNext();) {
+                CodeableConcept cc = iterator.next();
+                String text = cc.getText();
+                if (text.equalsIgnoreCase(typeDesc)) {
+                    //already present
+                    return;
+                }
+            }
+        }
+
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(typeDesc);
+        this.encounter.addType(codeableConcept);
+
+        int index = this.encounter.getType().size()-1;
+        auditValue("type[" + index + "].text", sourceCells);
     }
 
     public List<CodeableConcept> getReason() {

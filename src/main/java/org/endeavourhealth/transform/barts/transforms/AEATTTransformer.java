@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressHelper;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -260,9 +259,8 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         //Reason
-        if (reasonForVisit != null && !reasonForVisit.isEmpty()) {
-            CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-            encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
+        if (!reasonForVisit.isEmpty()) {
+            encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
         }
 
         // EoC reference
