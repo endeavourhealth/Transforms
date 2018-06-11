@@ -201,7 +201,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRSmsConsent");
             set.add("SRSpecialNotes");
             set.add("SRStaff");
-
+            set.add("SRStaffMemberProfileRole");
             set.add("SRSystmOnline");
             set.add("SRTemplate");
 
@@ -290,7 +290,6 @@ public abstract class TppCsvToFhirTransformer {
 
         } else if (fileName.equals("SRStaffMember")
                 || fileName.equals("SRStaffMemberProfile")
-                || fileName.equals("SRStaffMemberProfileRole")
                 || fileName.equals("SRStaffSkillSet")
                 || fileName.equals("SRStaffSpecialty")) {
             return "staff";
