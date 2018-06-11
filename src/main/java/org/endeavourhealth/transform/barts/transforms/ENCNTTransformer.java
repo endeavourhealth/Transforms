@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.AddressHelper;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
@@ -217,8 +216,9 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
-        CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-        encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
+        if (!reasonForVisit.isEmpty()) {
+            encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
+        }
 
         // EncounterTable type
         BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CodeValueSet.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);

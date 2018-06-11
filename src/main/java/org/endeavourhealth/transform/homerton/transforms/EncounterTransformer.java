@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -223,8 +222,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
-        CodeableConcept reasonForVisitText = CodeableConceptHelper.createCodeableConcept(reasonForVisit.getString());
-        encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
+        encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
 
         // EncounterTable type
         HomertonCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CodeValueSet.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
