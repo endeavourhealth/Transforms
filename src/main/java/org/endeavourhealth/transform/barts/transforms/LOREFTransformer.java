@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.LOREF;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -222,7 +223,7 @@ public class LOREFTransformer extends BartsBasisTransformer {
         for (CsvCell cell: sourceCells) {
             if ((cell != null) && (!cell.isEmpty()) && (cell.getLong() > 0)) {
 
-                CernerCodeValueRef cernerCodeDef = csvHelper.lookUpCernerCodeFromCodeSet(CernerCodeValueRef.LOCATION_NAME, cell.getString());
+                CernerCodeValueRef cernerCodeDef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, cell);
                 if (cernerCodeDef !=null && cernerCodeDef.getCodeDispTxt() != null) {
                     tokens.add(cernerCodeDef.getCodeDispTxt());
                 } else {

@@ -4,9 +4,9 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -227,10 +227,10 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         encounterBuilder.addReason(reasonForVisitText, true, reasonForVisit);
 
         // EncounterTable type
-        HomertonCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CernerCodeValueRef.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
+        HomertonCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CodeValueSet.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
 
         /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
-            CernerCodeValueRef ret = HomertonCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef ret = HomertonCsvHelper.lookupCodeRef(
                                                             CernerCodeValueRef.PERSONNEL_SPECIALITY,
                                                             encounterTypeCodeCell.getLong(),
                                                             fhirResourceFiler.getServiceId());
@@ -245,7 +245,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         // TODO
         /*if (!treatmentFunctionCodeCell.isEmpty() && treatmentFunctionCodeCell.getLong() > 0) {
-            CernerCodeValueRef ret = HomertonCsvHelper.lookUpCernerCodeFromCodeSet(
+            CernerCodeValueRef ret = HomertonCsvHelper.lookupCodeRef(
                                                             CernerCodeValueRef.TREATMENT_FUNCTION,
                                                             treatmentFunctionCodeCell.getLong(),
                                                             fhirResourceFiler.getServiceId());

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPALI;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -71,9 +72,7 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         //work out the system for the alias
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                CernerCodeValueRef.ALIAS_TYPE,
-                aliasTypeCodeCell.getString());
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
 
         String aliasDesc = cernerCodeValueRef.getCodeMeaningTxt();
         String aliasSystem = convertAliasCode(aliasDesc);

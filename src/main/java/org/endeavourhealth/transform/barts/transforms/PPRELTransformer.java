@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -140,9 +141,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!relationshipToPatientCell.isEmpty() && relationshipToPatientCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                    CernerCodeValueRef.RELATIONSHIP_TO_PATIENT,
-                                                                    relationshipToPatientCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
 
             String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
 
@@ -153,9 +152,7 @@ public class PPRELTransformer extends BartsBasisTransformer {
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
         if (!relationshipTypeCell.isEmpty() && relationshipTypeCell.getLong() > 0) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
-                                                                        CernerCodeValueRef.PERSON_RELATIONSHIP_TYPE,
-                                                                        relationshipTypeCell.getString());
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
 
             String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
 
