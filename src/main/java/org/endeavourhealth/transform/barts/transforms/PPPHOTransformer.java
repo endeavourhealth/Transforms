@@ -16,6 +16,7 @@ import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class PPPHOTransformer extends BartsBasisTransformer {
@@ -110,13 +111,15 @@ public class PPPHOTransformer extends BartsBasisTransformer {
 
         CsvCell startDate = parser.getBeginEffectiveDateTime();
         if (!startDate.isEmpty()) {
-            contactPointBuilder.setStartDate(startDate.getDate(), startDate);
+            Date d = BartsCsvHelper.parseDate(startDate);
+            contactPointBuilder.setStartDate(d, startDate);
         }
 
         CsvCell endDate = parser.getEndEffectiveDateTime();
         //use this function to test the endDate cell, since it will have the Cerner end of time content
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            contactPointBuilder.setEndDate(endDate.getDate(), endDate);
+            Date d = BartsCsvHelper.parseDate(endDate);
+            contactPointBuilder.setEndDate(d, endDate);
         }
     }
 

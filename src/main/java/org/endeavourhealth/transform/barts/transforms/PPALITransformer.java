@@ -16,6 +16,7 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class PPALITransformer extends BartsBasisTransformer {
@@ -109,13 +110,15 @@ public class PPALITransformer extends BartsBasisTransformer {
 
         CsvCell startDateCell = parser.getBeginEffectiveDate();
         if (!startDateCell.isEmpty()) {
-            identifierBuilder.setStartDate(startDateCell.getDate(), startDateCell);
+            Date d = BartsCsvHelper.parseDate(startDateCell);
+            identifierBuilder.setStartDate(d, startDateCell);
         }
 
         CsvCell endDateCell = parser.getEndEffectiveDate();
         //use this function to test the endDate cell, since it will have the Cerner end of time content
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
-            identifierBuilder.setEndDate(startDateCell.getDate(), endDateCell);
+            Date d = BartsCsvHelper.parseDate(endDateCell);
+            identifierBuilder.setEndDate(d, endDateCell);
         }
     }
 

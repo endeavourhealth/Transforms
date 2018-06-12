@@ -16,6 +16,7 @@ import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class PPNAMTransformer extends BartsBasisTransformer {
@@ -93,13 +94,15 @@ public class PPNAMTransformer extends BartsBasisTransformer {
 
         CsvCell startDate = parser.getBeginEffectiveDate();
         if (!startDate.isEmpty()) {
-            nameBuilder.setStartDate(startDate.getDate(), startDate);
+            Date d = BartsCsvHelper.parseDate(startDate);
+            nameBuilder.setStartDate(d, startDate);
         }
 
         CsvCell endDate = parser.getEndEffectiveDater();
         //use this function to test the endDate cell, since it will have the Cerner end of time content
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            nameBuilder.setEndDate(endDate.getDate(), endDate);
+            Date d = BartsCsvHelper.parseDate(endDate);
+            nameBuilder.setEndDate(d, endDate);
         }
     }
 

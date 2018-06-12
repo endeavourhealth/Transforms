@@ -44,8 +44,12 @@ public class IdHelper {
         return getOrCreateEdsResourceId(serviceId, resourceType, sourceId).toString();
     }
 
-    private static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, true);
+    public static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, true, null);
+    }
+
+    public static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId, UUID explicitIdToUse) throws Exception {
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, true, explicitIdToUse);
     }
 
     public static String getEdsResourceIdAsString(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
@@ -53,10 +57,10 @@ public class IdHelper {
     }
 
     public static UUID getEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
-        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, false);
+        return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, false, null);
     }
 
-    private static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId, boolean createIfNotFound) throws Exception {
+    private static UUID getOrCreateEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId, boolean createIfNotFound, UUID explicitIdToUse) throws Exception {
         Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
         String sourceReferenceValue = sourceReference.getReference();
 
@@ -74,7 +78,8 @@ public class IdHelper {
 
                 if (createIfNotFound) {
                     //if definitely no mapping on the DB, create and save a new ID
-                    edsId = repository.findOrCreate(serviceId, resourceType.toString(), sourceId);
+                    //passing in the explicit ID to use (if null, it'll just generate a new ID)
+                    edsId = repository.findOrCreate(serviceId, resourceType.toString(), sourceId, explicitIdToUse);
 
                 } else {
                     return null;

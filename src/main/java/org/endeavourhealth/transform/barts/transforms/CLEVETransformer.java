@@ -123,7 +123,8 @@ public class CLEVETransformer extends BartsBasisTransformer {
 
         CsvCell effectiveDate = parser.getEventPerformedDateTime();
         if (!effectiveDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            Date d = BartsCsvHelper.parseDate(effectiveDate);
+            DateTimeType dateTimeType = new DateTimeType(d);
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
         // createReference throws an exception if the is null

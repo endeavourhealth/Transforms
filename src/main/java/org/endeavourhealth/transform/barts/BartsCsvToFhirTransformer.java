@@ -70,7 +70,7 @@ public abstract class BartsCsvToFhirTransformer {
 
         //admin transformers
         CVREFTransformer.transform(version, createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ORGREFPreTransformer.transform(version, createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFTransformer.transform(version, createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         LOREFTransformer.transform(version, createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
@@ -100,7 +100,7 @@ public abstract class BartsCsvToFhirTransformer {
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
         //clinical transformers
-        DIAGNTransformer.transform(version, createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
         PROCETransformer.transform(version, createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
 
         CLEVEPreTransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
@@ -295,6 +295,7 @@ public abstract class BartsCsvToFhirTransformer {
             //we might want to ignore this file if it's before a known bulk
             if (ignoreDeltasProcssedOutOfOrder
                     && fileTypesBulked.contains(type)) {
+                LOG.info("Skipping " + file + " as it's a delta from before the bulks");
                 continue;
             }
 

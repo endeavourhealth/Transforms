@@ -22,6 +22,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -98,7 +99,8 @@ public class PROCETransformer extends BartsBasisTransformer {
 
         CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
         if (!procedureDateTimeCell.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(procedureDateTimeCell.getDate());
+            Date d = BartsCsvHelper.parseDate(procedureDateTimeCell);
+            DateTimeType dateTimeType = new DateTimeType(d);
             procedureBuilder.setPerformed(dateTimeType, procedureDateTimeCell);
         }
 

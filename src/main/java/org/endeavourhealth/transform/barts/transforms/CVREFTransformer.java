@@ -13,8 +13,6 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -27,10 +25,6 @@ public class CVREFTransformer {
     public static final String DISP_TXT = "DispTxt";
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
-    private final static String DECIMAL_POINT = ".";
-
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
     public static void transform(String version,
                                  List<ParserI> parsers,
@@ -74,7 +68,7 @@ public class CVREFTransformer {
         // Just to keep the log tidier from exceptions - if the date string has a period it's likely the bulk format
         Date formattedDate = null;
         if (!date.isEmpty()) {
-          formattedDate = formDate(date.getString());
+          formattedDate = BartsCsvHelper.parseDate(date);
         }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
@@ -104,22 +98,5 @@ public class CVREFTransformer {
 
 
     }
-    private static Date formDate(String dateString) throws Exception{
-        // try to avoid expected ParseExceptions by guessing the correct dateFormat
-        Date formattedDate = null;
-        if (dateString.contains(DECIMAL_POINT)) {
-            try {
-                formattedDate = formatBulk.parse(dateString);
-            } catch (ParseException ex) {
-                formattedDate = formatDaily.parse(dateString);
-            }
-        } else {
-            try {
-                formattedDate = formatDaily.parse(dateString);
-            } catch (ParseException ex) {
-                formattedDate = formatBulk.parse(dateString);
-            }
-        }
-        return formattedDate;
-    }
+
  }

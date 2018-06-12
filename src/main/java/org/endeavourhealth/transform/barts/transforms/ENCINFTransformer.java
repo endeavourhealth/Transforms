@@ -10,6 +10,8 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
+
 public class ENCINFTransformer extends BartsBasisTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ENCINFTransformer.class);
@@ -56,10 +58,12 @@ public class ENCINFTransformer extends BartsBasisTransformer {
 
             if (encounterBuilder != null && encounterBuilder.getPeriod() == null) {
                 if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
-                    encounterBuilder.setPeriodStart(beginEffectiveCell.getDate(), beginEffectiveCell);
+                    Date d = BartsCsvHelper.parseDate(beginEffectiveCell);
+                    encounterBuilder.setPeriodStart(d, beginEffectiveCell);
                 }
                 if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
-                    encounterBuilder.setPeriodEnd(endEffectiveCell.getDate(), endEffectiveCell);
+                    Date d = BartsCsvHelper.parseDate(endEffectiveCell);
+                    encounterBuilder.setPeriodEnd(d, endEffectiveCell);
                 }
             }
         }

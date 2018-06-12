@@ -22,6 +22,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,17 +30,14 @@ public class DIAGNTransformer extends BartsBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DIAGNTransformer.class);
 
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createCondition((DIAGN) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createCondition((DIAGN)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -47,10 +45,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         }
     }
 
-    public static void createCondition(DIAGN parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createCondition(DIAGN parser, FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper) throws Exception {
 
         // this Condition resource id
         CsvCell diagnosisId = parser.getDiagnosisID();
@@ -100,7 +96,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
         if (!diagnosisDateTimeCell.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(diagnosisDateTimeCell.getDate());
+            Date d = BartsCsvHelper.parseDate(diagnosisDateTimeCell);
+            DateTimeType dateTimeType = new DateTimeType(d);
             conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
         }
 

@@ -13,6 +13,7 @@ import org.hl7.fhir.instance.model.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class PPADDTransformer extends BartsBasisTransformer {
@@ -83,13 +84,15 @@ public class PPADDTransformer extends BartsBasisTransformer {
 
         CsvCell startDate = parser.getBeginEffectiveDate();
         if (!startDate.isEmpty()) {
-            addressBuilder.setStartDate(startDate.getDate(), startDate);
+            Date d = BartsCsvHelper.parseDate(startDate);
+            addressBuilder.setStartDate(d, startDate);
         }
 
         CsvCell endDate = parser.getEndEffectiveDater();
         //use this function to test the endDate cell, since it will have the Cerner end of time content
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            addressBuilder.setEndDate(endDate.getDate(), endDate);
+            Date d = BartsCsvHelper.parseDate(endDate);
+            addressBuilder.setEndDate(d, endDate);
         }
     }
 

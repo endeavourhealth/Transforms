@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
@@ -20,6 +21,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -32,7 +34,15 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
 
+    //the daily files have dates formatted different to the bulks, so we need to support both
+    private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+    private static Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
+    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
     private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
     private static Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
@@ -45,8 +55,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
 
-    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
-    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private UUID serviceId = null;
     private UUID systemId = null;
     private UUID exchangeId = null;
@@ -85,6 +93,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public String getVersion() {
         return version;
+    }
+
+    public String getHl7ReceiverScope() {
+        return BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE;
+    }
+
+    public String getHl7ReceiverGlobalScope() {
+        return "G";
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
@@ -433,7 +449,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             cachedEndOfTime = new SimpleDateFormat("yyyy-MM-dd").parse("2100-12-31");
         }
 
-        Date d = dateCell.getDate();
+        Date d = BartsCsvHelper.parseDate(dateCell);
         if (d.equals(cachedEndOfTime)) {
             return true;
         }
@@ -455,6 +471,70 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         return false;
+    }
+
+    /**
+     * function to generate UUID mappings from local IDs (e.g. Cerner Person ID) to Discovery UUID, but
+     * to carry over any existing mapping from the HL7 Receiver DB, so both ADT and Data Warehouse feeds
+     * map the same source concept to the same UUID
+     */
+    public UUID createResourceIdOrCopyFromHl7Receiver(ResourceType resourceType, String localUniqueId, String hl7ReceiverUniqueId, String hl7ReceiverScope) throws Exception{
+
+        //check our normal ID -> UUID mapping table
+        UUID existingResourceId = IdHelper.getEdsResourceId(serviceId, resourceType, localUniqueId);
+        if (existingResourceId != null) {
+            return existingResourceId;
+        }
+
+        //if no local mapping, check the HL7Receiver DB for the mapping
+        ResourceId existingHl7Mapping = hl7ReceiverDal.getResourceId(hl7ReceiverScope, resourceType.toString(), hl7ReceiverUniqueId);
+        if (existingHl7Mapping != null) {
+            //if the HL7Receiver has a mapped UUID, then store in our local mapping table
+            existingResourceId = existingHl7Mapping.getResourceId();
+            IdHelper.getOrCreateEdsResourceId(serviceId, resourceType, localUniqueId, existingResourceId);
+            return existingResourceId;
+        }
+
+        //if the HL7Receiver doesn't have a mapped UUID, then generate one locally and save to the HL7 Receiver DB too
+        existingResourceId = IdHelper.getOrCreateEdsResourceId(serviceId, resourceType, localUniqueId);
+
+        existingHl7Mapping = new ResourceId();
+        existingHl7Mapping.setScopeId(hl7ReceiverScope);
+        existingHl7Mapping.setResourceType(resourceType.toString());
+        existingHl7Mapping.setUniqueId(hl7ReceiverUniqueId);
+        existingHl7Mapping.setResourceId(existingResourceId);
+
+        hl7ReceiverDal.saveResourceId(existingHl7Mapping);
+
+        return existingResourceId;
+
+    }
+
+    /**
+     * bulks and deltas have different date formats, so use this to handle both
+     */
+    public static Date parseDate(CsvCell cell) throws ParseException {
+
+        if (cell.isEmpty()) {
+            return null;
+        }
+
+        String dateString = cell.getString();
+        // try to avoid expected ParseExceptions by guessing the correct dateFormat
+        if (dateString.contains(".")) {
+            try {
+                return DATE_FORMAT_BULK.parse(dateString);
+            } catch (ParseException ex) {
+                return DATE_FORMAT_DAILY.parse(dateString);
+            }
+
+        } else {
+            try {
+                return DATE_FORMAT_DAILY.parse(dateString);
+            } catch (ParseException ex) {
+                return DATE_FORMAT_BULK.parse(dateString);
+            }
+        }
     }
 
 }
