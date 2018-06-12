@@ -77,7 +77,7 @@ public class ProcedureTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(fhir.getCode());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getCode());
 
         //add original term too, for easy display of results
         originalTerm = fhir.getCode().getText();

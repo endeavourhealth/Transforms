@@ -80,7 +80,7 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(condition.getCode());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(condition.getCode());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(condition.getCode());
 
         //add original term too, for easy display of results
         originalTerm = condition.getCode().getText();

@@ -72,7 +72,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getVaccineCode());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(fhir.getVaccineCode());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getVaccineCode());
 
         //add original term too, for easy display of results
         originalTerm = fhir.getVaccineCode().getText();

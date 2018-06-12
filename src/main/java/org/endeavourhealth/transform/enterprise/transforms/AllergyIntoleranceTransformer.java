@@ -70,7 +70,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getSubstance());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(fhir.getSubstance());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getSubstance());
 
         //add original term too, for easy display of results
         originalTerm = fhir.getSubstance().getText();

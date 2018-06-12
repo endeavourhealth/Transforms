@@ -81,7 +81,7 @@ public class SpecimenTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getType());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(fhir.getType());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getType());
 
         //add original term too, for easy display of results
         originalTerm = fhir.getType().getText();
