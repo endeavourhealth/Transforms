@@ -225,8 +225,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             }
         }
 
-        //we should never get here, unless new types and methods are added to Cerner
-        throw new TransformException("Unsupported phone type [" + type + "] and method [" + method + "]");
+        return ContactPoint.ContactPointSystem.OTHER;
     }
 }
 
