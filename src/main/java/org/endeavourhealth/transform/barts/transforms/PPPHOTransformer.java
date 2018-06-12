@@ -162,6 +162,7 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             case "OS PAGER":
             case "OS BK OFFICE":
             case "OS FAX":
+            case "BUSINESS":
                 return ContactPoint.ContactPointUse.WORK;
 
             case "MOBILE":

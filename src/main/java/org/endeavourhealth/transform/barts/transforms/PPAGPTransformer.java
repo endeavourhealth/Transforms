@@ -95,6 +95,9 @@ public class PPAGPTransformer extends BartsBasisTransformer {
 
             //the ORGREF file is mapped using the standard ID mapper, so we need to convert the ID to UUID using this approach
             UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Organization, orgId.getString());
+            if (globallyUniqueId == null) {
+                LOG.error("FAILED TO get or create UUID for Organisation [" + orgId.getString() + "]");
+            }
             Reference orgReference = ReferenceHelper.createReference(ResourceType.Organization, globallyUniqueId.toString());
 
             if (delete) {
