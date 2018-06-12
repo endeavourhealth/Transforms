@@ -18,6 +18,7 @@ import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public abstract class BartsCsvToFhirTransformer {
@@ -54,8 +55,8 @@ public abstract class BartsCsvToFhirTransformer {
         LOG.info("Invoking Barts CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
-        LOG.trace("Transforming Barts CSV content in " + orgDirectory);
+        String exchangeDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        LOG.trace("Transforming Barts CSV content in " + exchangeDirectory);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
@@ -64,7 +65,7 @@ public abstract class BartsCsvToFhirTransformer {
         /*transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
         transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);*/
 
-        Map<String, List<String>> fileMap = hashFilesByType(files);
+        Map<String, List<String>> fileMap = hashFilesByType(files, exchangeDirectory);
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
         //admin transformers
@@ -229,6 +230,12 @@ public abstract class BartsCsvToFhirTransformer {
             return new IPEPI(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("IPWDS")) {
             return new IPWDS(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ORGREF")) {
+            return new ORGREF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("FAMILYHISTORY")) {
+            return new FamilyHistory(serviceId, systemId, exchangeId, version, file);
+
+
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
@@ -248,7 +255,34 @@ public abstract class BartsCsvToFhirTransformer {
         */
     }
 
-    private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
+    private static Map<String, List<String>> hashFilesByType(String[] files, String exchangeDirectory) throws Exception {
+
+        //the exchange directory name is the date of the batch, which we need to use
+        //to work out whether to ignore deltas of files we later received bulks for
+        String exchangeDirectoryName = FilenameUtils.getBaseName(exchangeDirectory);
+        Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
+        Date bulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2018-03-09"); //date the bulks were generated
+        Date bulkProcessingDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-03"); //exchange date the bulks were processed with
+        boolean ignoreDeltasProcssedOutOfOrder = exchangeDate.before(bulkDate)
+                                            && exchangeDate.after(bulkProcessingDate);
+
+        //NOTE: we've had bulks for other file types, but only need to ignore extracts where
+        //the bulk was processed out of order e.g. the DIAGN bulk
+        //file will be processed according to the date it was actually generated, but the below
+        //files will be processed as though they were received in 2017 even though they came from Mar 2018
+        HashSet<String> fileTypesBulked = new HashSet<>();
+        fileTypesBulked.add("ENCNT");
+        fileTypesBulked.add("ENCINF");
+        fileTypesBulked.add("OPATT");
+        fileTypesBulked.add("AEATT");
+        fileTypesBulked.add("IPEPI");
+        fileTypesBulked.add("IPWDS");
+        fileTypesBulked.add("PPNAM");
+        fileTypesBulked.add("PPPHO");
+        fileTypesBulked.add("PPALI");
+        fileTypesBulked.add("PPREL");
+        fileTypesBulked.add("PPATI");
+
         Map<String, List<String>> ret = new HashMap<>();
         
         for (String file: files) {
@@ -257,6 +291,12 @@ public abstract class BartsCsvToFhirTransformer {
 
             //always force into upper case, just in case
             type = type.toUpperCase();
+
+            //we might want to ignore this file if it's before a known bulk
+            if (ignoreDeltasProcssedOutOfOrder
+                    && fileTypesBulked.contains(type)) {
+                continue;
+            }
 
             List<String> list = ret.get(type);
             if (list == null) {

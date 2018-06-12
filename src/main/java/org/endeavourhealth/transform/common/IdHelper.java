@@ -74,7 +74,7 @@ public class IdHelper {
 
                 if (createIfNotFound) {
                     //if definitely no mapping on the DB, create and save a new ID
-                    edsId = repository.findOrCreateThreadSafe(serviceId, resourceType.toString(), sourceId);
+                    edsId = repository.findOrCreate(serviceId, resourceType.toString(), sourceId);
 
                 } else {
                     return null;
@@ -219,7 +219,7 @@ public class IdHelper {
                 String resourceType = comps.getResourceType().toString();
                 String sourceId = comps.getId();
 
-                edsId = repository.findOrCreateThreadSafe(serviceId, resourceType, sourceId);
+                edsId = repository.findOrCreate(serviceId, resourceType, sourceId);
                 mappedReferenceValue = ReferenceHelper.createResourceReference(resourceType, edsId.toString());
 
             } else {

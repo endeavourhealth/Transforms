@@ -48,7 +48,7 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("patient.reference", sourceCells);
     }
 
-    public void addEpisodeOfCare(Reference episodeReference, CsvCell... sourceCells) {
+    public void setEpisodeOfCare(Reference episodeReference, CsvCell... sourceCells) {
         if (this.encounter.hasEpisodeOfCare()) {
             this.encounter.getEpisodeOfCare().remove(0);
         }
@@ -57,10 +57,6 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getEpisodeOfCare().size()-1;
         auditValue("episodeOfCare[" + index + "].reference", sourceCells);
-    }
-
-    public List<Reference> getEpisodeOfCare() {
-        return this.encounter.getEpisodeOfCare();
     }
 
     public void setStatus(Encounter.EncounterState status, CsvCell... sourceCells) {

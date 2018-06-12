@@ -80,7 +80,7 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
         snomedConceptId = CodeableConceptHelper.findSnomedConceptId(item.getCode());
 
         //add the raw original code, to assist in data checking
-        originalCode = CodeableConceptHelper.findOriginalCode(item.getCode());
+        originalCode = ObservationTransformer.findAndFormatOriginalCode(item.getCode());
 
         //add original term too, for easy display of results
         originalTerm = item.getCode().getText();

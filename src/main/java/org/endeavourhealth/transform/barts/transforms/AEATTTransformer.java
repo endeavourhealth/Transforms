@@ -4,7 +4,6 @@ import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -136,17 +135,13 @@ public class AEATTTransformer extends BartsBasisTransformer {
 
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
-        LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
-            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
-        }
 
         episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
 
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, null);
 
-            encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), encounterIdCell);
+            encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), encounterIdCell);
         } else {
             // Delete existing encounter ?
             if (!activeCell.getIntAsBoolean()) {
@@ -264,21 +259,10 @@ public class AEATTTransformer extends BartsBasisTransformer {
         }
 
         // EoC reference
-        if (encounterBuilder.getEpisodeOfCare() != null && encounterBuilder.getEpisodeOfCare().size() > 0) {
-            encounterBuilder.getEpisodeOfCare().remove(0);
-        }
-        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()));
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-        }
+        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()));
 
     }// end createAandEAttendance()
-
-
-
-    }
+}
 
 
 

@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.common;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
@@ -21,27 +19,14 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.sql.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Properties;
 import java.util.UUID;
 
 public class BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BasisTransformer.class);
 
-    private static Connection hl7receiverConnection = null;
-    private static PreparedStatement resourceIdSelectStatement;
-    private static PreparedStatement resourceIdInsertStatement;
-    private static PreparedStatement mappingSelectStatement;
-    private static PreparedStatement getAllCodeSystemsSelectStatement;
-    //private static PreparedStatement getCodeSystemsSelectStatement;
     private static Hl7ResourceIdDalI hl7ResourceIdDal = DalProvider.factoryHL7ResourceDal();
-    private static boolean useHL7ResourceIdDal = true;
-    private static HashMap<Integer, String> codeSystemCache = new HashMap<Integer, String>();
-    private static int lastLookupCodeSystemId = 0;
-    private static String lastLookupCodeSystemIdentifier = "";
+
     private static ResourceMergeDalI mergeDAL = null;
 
     /*
@@ -55,168 +40,18 @@ public class BasisTransformer {
             return resourceId;
         }
 
-        if (useHL7ResourceIdDal) {
-            resourceId = hl7ResourceIdDal.getResourceId(scope, resourceType, uniqueId);
-        } else {
-            //otherwise, hit the DB
-            if (hl7receiverConnection == null) {
-                prepareJDBCConnection();
-            }
-
-            resourceIdSelectStatement.setString(1, scope);
-            resourceIdSelectStatement.setString(2, resourceType);
-            resourceIdSelectStatement.setString(3, uniqueId);
-
-            ResultSet rs = resourceIdSelectStatement.executeQuery();
-            if (rs.next()) {
-                resourceId = new ResourceId();
-                resourceId.setScopeId(scope);
-                resourceId.setResourceType(resourceType);
-                resourceId.setResourceId((UUID) rs.getObject(1));
-                resourceId.setUniqueId(uniqueId);
-
-                // Add to the cache
-                BartsCsvHelper.addResourceIdToCache(resourceId);
-            }
-            rs.close();
-        }
-
+        resourceId = hl7ResourceIdDal.getResourceId(scope, resourceType, uniqueId);
 
         return resourceId;
     }
 
 
     public static void saveResourceId(ResourceId resourceId) throws Exception {
-        if (useHL7ResourceIdDal) {
-            hl7ResourceIdDal.saveResourceId(resourceId);
-        } else {
-            if (hl7receiverConnection == null) {
-                prepareJDBCConnection();
-            }
-
-            resourceIdInsertStatement.setString(1, resourceId.getScopeId());
-            resourceIdInsertStatement.setString(2, resourceId.getResourceType());
-            resourceIdInsertStatement.setString(3, resourceId.getUniqueId());
-            resourceIdInsertStatement.setObject(4, resourceId.getResourceId());
-
-            if (resourceIdInsertStatement.executeUpdate() != 1) {
-                throw new SQLException("Could not create ResourceId:"
-                        + resourceId.getScopeId()
-                        + ":" + resourceId.getResourceType() + ":"
-                        + resourceId.getUniqueId()
-                        + ":" + resourceId.getResourceId().toString());
-            } else {
-                // Add to the cache
-                BartsCsvHelper.addResourceIdToCache(resourceId);
-            }
-        }
-    }
-
-    /*
-        set sourceCodeSystemId to -1 if no system is defined
-     */
-    public static CodeableConcept mapToCodeableConceptDONOTUSEFORNOW(String scope, String sourceContextName, String sourceCodeValue, int sourceSystemId, int targetSystemId, String displayText, boolean throwErrors) throws TransformException, SQLException, IOException, ClassNotFoundException {
-        String sourceCodeSystem = null;
-        String targetCodeSystem = null;
-        String searchKey = "scope=" + scope + ":sourceContextName=" + sourceContextName + ":sourceCodeValue=" + sourceCodeValue + ":sourceCodeSystemId=" + sourceSystemId + ":targetSystemId=" + targetSystemId;
-        LOG.trace("Looking for:" + searchKey);
-
-        if (hl7receiverConnection == null) {
-            prepareJDBCConnection();
-        }
-
-        CodeableConcept ret = null;
-
-        mappingSelectStatement.setString(1, scope);
-        mappingSelectStatement.setString(2, sourceContextName);
-        mappingSelectStatement.setString(3, sourceCodeValue);
-        mappingSelectStatement.setInt(4, sourceSystemId);
-        mappingSelectStatement.setInt(5, targetSystemId);
-
-        ResultSet rs = mappingSelectStatement.executeQuery();
-        if (rs.next()) {
-            sourceCodeSystem = getCodeSystemName(sourceSystemId);
-            targetCodeSystem = getCodeSystemName(targetSystemId);
-
-            ret = new CodeableConcept();
-            ret.addCoding().setCode(rs.getString(1)).setSystem(targetCodeSystem).setDisplay(rs.getString(3));
-            if (rs.getString(2).length() > 0) {
-                ret.addCoding().setCode(sourceCodeValue).setSystem(rs.getString(2)).setDisplay(rs.getString(2));
-            } else {
-                ret.addCoding().setCode(sourceCodeValue).setSystem(sourceCodeSystem).setDisplay(displayText);
-            }
-            if (rs.next()) {
-                if (throwErrors) {
-                    throw new TransformException("Mapping entry not unique:" + searchKey);
-                } else {
-                    LOG.error("Mapping entry not unique:" + searchKey);
-                }
-            }
-        } else {
-            // No entry found
-            if (throwErrors) {
-                throw new TransformException("Mapping entry not found:" + searchKey);
-            } else {
-                // Use original code
-                sourceCodeSystem = getCodeSystemName(sourceSystemId);
-                ret.addCoding().setCode(sourceCodeValue).setSystem(sourceCodeSystem).setDisplay(displayText);
-            }
-        }
-        rs.close();
-
-        return ret;
-    }
-
-    /*
-     *
-     */
-    public static String getCodeSystemName(int codeSystemId) throws SQLException {
-        LOG.trace("Looking for Code Systems:" + codeSystemId);
-        String ret = "UNKNOWN:" + codeSystemId;
-
-        if (codeSystemCache.containsKey(codeSystemId)) {
-            ret = codeSystemCache.get(codeSystemId);
-        } else {
-            LOG.trace("Code System not found:" + codeSystemId);
-            if (lastLookupCodeSystemId == codeSystemId) {
-                LOG.trace("Same as last time");
-                ret = lastLookupCodeSystemIdentifier;
-            }
-            ResultSet rs = getAllCodeSystemsSelectStatement.executeQuery();
-            while (rs.next()) {
-                if (!codeSystemCache.containsKey(codeSystemId)) {
-                    LOG.trace("Adding:" + rs.getInt(1) + "==>" + rs.getString(2));
-                    codeSystemCache.put(rs.getInt(1), rs.getString(2));
-                    if (codeSystemId == rs.getInt(1)) {
-                        LOG.trace("FOUND");
-                        lastLookupCodeSystemId = codeSystemId;
-                        lastLookupCodeSystemIdentifier = rs.getString(2);
-                        ret = rs.getString(2);
-                    }
-                }
-            }
-            rs.close();
-        }
-        return ret;
+        hl7ResourceIdDal.saveResourceId(resourceId);
     }
 
 
-    public static void prepareJDBCConnection() throws ClassNotFoundException, SQLException, IOException {
-        JsonNode json = ConfigManager.getConfigurationAsJson("hl7receiver_db");
 
-        Class.forName(json.get("drivername").asText());
-
-        Properties connectionProps = new Properties();
-        connectionProps.put("user", json.get("username").asText());
-        connectionProps.put("password", json.get("password").asText());
-        hl7receiverConnection = DriverManager.getConnection(json.get("url").asText(), connectionProps);
-
-        resourceIdSelectStatement = hl7receiverConnection.prepareStatement("SELECT resource_uuid FROM mapping.resource_uuid where scope_id=? and resource_type=? and unique_identifier=?");
-        resourceIdInsertStatement = hl7receiverConnection.prepareStatement("insert into mapping.resource_uuid (scope_id, resource_type, unique_identifier, resource_uuid) values (?, ?, ?, ?)");
-        mappingSelectStatement = hl7receiverConnection.prepareStatement("SELECT target_code, source_term, target_term FROM mapping.code a INNER JOIN  mapping.code_context d on a.source_code_context_id = d.code_context_id where scope_id=? and d.code_context_name=? and source_code=? and source_code_system_id=? and target_code_system_id=? and is_mapped=true");
-        getAllCodeSystemsSelectStatement = hl7receiverConnection.prepareStatement("SELECT code_system_id, code_system_identifier from mapping.code_system order by code_system_id asc");
-        //getCodeSystemsSelectStatement = hl7receiverConnection.prepareStatement("SELECT code_system_identifier from mapping.code_system where code_system_id=?");
-    }
 
     /*
     Encounter resources are not maintained by this feed. They are only created if missing. Encounter status etc. is maintained by the HL7 feed
@@ -523,68 +358,6 @@ public class BasisTransformer {
         return procedureBuilder;
     }
 
-    /*
-     *
-     */
-    /*public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[], String[] metaUri, Extension[] ex) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
-
-        // Turn key into Resource id
-        fhirProcedure.setId(procedureResourceId.getResourceId().toString());
-
-        // Extensions
-        if (ex != null) {
-            for (int i = 0; i < ex.length; i++) {
-                fhirProcedure.addExtension(ex[i]);
-            }
-        }
-
-        // Meta
-        if (metaUri != null) {
-            Meta meta = new Meta();
-            for (int i = 0; i < metaUri.length; i++) {
-                meta.addProfile(metaUri[i]);
-            }
-            fhirProcedure.setMeta(meta);
-        }
-
-        if (identifiers != null) {
-            for (int i = 0; i < identifiers.length; i++) {
-                fhirProcedure.addIdentifier(identifiers[i]);
-            }
-        }
-
-        // Encounter
-        if (encounterResourceId != null) {
-            fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
-        }
-
-        // set patient reference
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-
-        // status
-        fhirProcedure.setStatus(status);
-
-        // Code
-        if (procedureCode.getText() == null || procedureCode.getText().length() == 0) {
-            procedureCode.setText(procedureCode.getCoding().get(0).getDisplay());
-        }
-        fhirProcedure.setCode(procedureCode);
-
-        // Performed date/time
-        if (procedureDate != null) {
-            //Timing t = new Timing().addEvent(procedureDate);
-            DateTimeType dateDt = new DateTimeType(procedureDate);
-            fhirProcedure.setPerformed(dateDt);
-        }
-
-        // set notes
-        if (notes != null) {
-            fhirProcedure.addNotes(new Annotation().setText(notes));
-        }
-
-    }*/
 
     /*
      *
@@ -1014,21 +787,6 @@ public class BasisTransformer {
     }
 
 
-    public static Enumerations.AdministrativeGender convertSusGenderToFHIR(int gender) {
-        if (gender == 1) {
-            return Enumerations.AdministrativeGender.MALE;
-        } else {
-            if (gender == 2) {
-                return Enumerations.AdministrativeGender.FEMALE;
-            } else {
-                if (gender == 9) {
-                    return Enumerations.AdministrativeGender.NULL;
-                } else {
-                    return Enumerations.AdministrativeGender.UNKNOWN;
-                }
-            }
-        }
-    }
 
     public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
         fhirResourceFiler.deletePatientResource(parserState, false, resourceBuilders);

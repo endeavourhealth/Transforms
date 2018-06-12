@@ -266,7 +266,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return codeableConcept.getText();
     }
 
-    private String findOriginalReadCode(Encounter fhir) {
+    private String findOriginalReadCode(Encounter fhir) throws Exception {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -277,7 +277,8 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
-        return CodeableConceptHelper.findOriginalCode(codeableConcept);
+        return ObservationTransformer.findAndFormatOriginalCode(codeableConcept);
+        //return CodeableConceptHelper.findOriginalCode(codeableConcept);
     }
 
     private Long findSnomedSourceConceptId(Encounter fhir) {

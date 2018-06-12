@@ -103,16 +103,12 @@ public class ENCNTTransformer extends BartsBasisTransformer {
 
         // Retrieve or create EpisodeOfCare
         episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
-        LOG.debug("episodeOfCareBuilder:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-        if (encounterBuilder != null && episodeOfCareBuilder.getResourceId().compareToIgnoreCase(ReferenceHelper.getReferenceId(encounterBuilder.getEpisodeOfCare().get(0))) != 0) {
-            LOG.debug("episodeOfCare reference has changed from " + encounterBuilder.getEpisodeOfCare().get(0).getReference() + " to " + episodeOfCareBuilder.getResourceId());
-        }
 
         // Create new encounter
         if (encounterBuilder == null) {
             encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
 
-            encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
+            encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
         } else {
 
             // Has patient reference changed?
@@ -249,7 +245,7 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }*/
 
         // EpisodeOfCare
-        encounterBuilder.addEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
+        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer
         CsvCell referrerPersonnelIdentifier = parser.getReferrerMillenniumPersonnelIdentifier();

@@ -136,6 +136,20 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditCodingExtension(extension, sourceCells);
     }
 
+    public void setOutcome(String episodeOutcome, CsvCell... sourceCells) {
+        StringType stringType = new StringType(episodeOutcome);
+        Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_OUTCOME, stringType);
+
+        auditCodingExtension(extension, sourceCells);
+    }
+
+    public void setPriority(String episodePriority, CsvCell... sourceCells) {
+        StringType stringType = new StringType(episodePriority);
+        Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_PRIORITY, stringType);
+
+        auditCodingExtension(extension, sourceCells);
+    }
+
     @Override
     public Identifier addIdentifier() {
         return this.episodeOfCare.addIdentifier();

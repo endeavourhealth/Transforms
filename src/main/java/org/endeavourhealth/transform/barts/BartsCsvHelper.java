@@ -209,7 +209,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         String code = codeCell.getString();
         String codeLookup = code.toString() + "|" + serviceId.toString();
 
-        if (code.equals(0)) {
+        if (code.equals("0")) {
             codeLookup = codeSet + "|" + codeLookup;
         }
 
@@ -224,7 +224,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         CernerCodeValueRef cernerCodeFromDB = null;
 
         // get code from DB (special case for a code of 0 as that is duplicated)
-        if (code.equals(0)) {
+        if (code.equals("0")) {
             cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
                     codeSet, code, serviceId);
         } else {
@@ -456,4 +456,5 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         return false;
     }
+
 }

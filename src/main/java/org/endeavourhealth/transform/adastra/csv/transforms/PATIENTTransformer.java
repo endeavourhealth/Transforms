@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
+import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -16,6 +19,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.Map;
 
 public class PATIENTTransformer {
@@ -46,16 +50,16 @@ public class PATIENTTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
+        CsvCell patientId = parser.getPatientId();
+        CsvCell caseId = parser.getCaseId();
+
+        //get EpisodeofCare already populated from preceeding CASE transform
+        EpisodeOfCareBuilder episodeBuilder
+                = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
+
         //create Patient Resource builder
         PatientBuilder patientBuilder = new PatientBuilder();
-        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
-
-        CsvCell patientId = parser.getPatientId();
         VisionCsvHelper.setUniqueId(patientBuilder, patientId, null);
-        VisionCsvHelper.setUniqueId(episodeBuilder, patientId, null); //use the patient GUID as the ID for the episode
-
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        episodeBuilder.setPatient(patientReference, patientId);
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {
@@ -78,7 +82,9 @@ public class PATIENTTransformer {
         }
 
         CsvCell dob = parser.getDOB();
-        patientBuilder.setDateOfBirth(dob.getDate(), dob);
+        if (!dob.isEmpty()) {
+            patientBuilder.setDateOfBirth(dob.getDate(), dob);
+        }
 
         CsvCell gender = parser.getGender();
         if (!gender.isEmpty()) {
@@ -143,30 +149,48 @@ public class PATIENTTransformer {
             }
         }
 
-        //TODO: cache patient and Case (Episode) details
-        /*
         CsvCell ethnicity = parser.getEthnicity();
         if (!ethnicity.isEmpty()) {
-            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
+            patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()));
         }
 
-
-        CsvCell regDate = parser.getDateOfRegistration();
-        if (!regDate.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(regDate.getDate());
-        }
-
-        CsvCell dedDate = parser.getDateOfDeactivation();
-        if (!dedDate.isEmpty()) {
-            episodeBuilder.setRegistrationEndDate(dedDate.getDate());
-        }
-
-        boolean active = dedDate.isEmpty() || dedDate.getDate().after(new Date());
-        patientBuilder.setActive(active, dedDate);
-
-        */
+        boolean active = episodeBuilder.getRegistrationEndDate().after(new Date());
+        patientBuilder.setActive(active);
 
         //save both resources together, so the patient is saved before the episode
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+    }
+
+    //try Ethnicity matching using text input string
+    private static EthnicCategory mapEthnicity(String ethnicity) {
+        if (Strings.isNullOrEmpty(ethnicity)) {
+            return EthnicCategory.NOT_STATED;
+        }
+        if (ethnicity.contains("White")
+                && (ethnicity.contains("English") || ethnicity.contains("Scottish") || ethnicity.contains("Welsh"))) {
+            return EthnicCategory.WHITE_BRITISH;
+        } else if (ethnicity.contains("White") && ethnicity.contains("Irish")) {
+            return EthnicCategory.WHITE_IRISH;
+        } else if (ethnicity.equalsIgnoreCase("Chinese")) {
+            return EthnicCategory.CHINESE;
+        } else if (ethnicity.contains("Asian") && ethnicity.contains("Bangladeshi")) {
+            return EthnicCategory.ASIAN_BANGLADESHI;
+        } else if (ethnicity.contains("Asian") && ethnicity.contains("Pakistani")) {
+            return EthnicCategory.ASIAN_PAKISTANI;
+        } else if (ethnicity.contains("Asian") && ethnicity.contains("Indian")) {
+            return EthnicCategory.ASIAN_INDIAN;
+        } else if (ethnicity.contains("Mixed") && ethnicity.contains("Caribbean")) {
+            return EthnicCategory.MIXED_CARIBBEAN;
+        } else if (ethnicity.contains("Mixed") && ethnicity.contains("African")) {
+            return EthnicCategory.MIXED_AFRICAN;
+        } else if (ethnicity.contains("Mixed") && ethnicity.contains("Asian")) {
+            return EthnicCategory.MIXED_ASIAN;
+        } else if (ethnicity.contains("Black") && ethnicity.contains("Caribbean")) {
+            return EthnicCategory.BLACK_CARIBBEAN;
+        } else if (ethnicity.contains("Mixed") && ethnicity.contains("African")) {
+            return EthnicCategory.BLACK_AFRICAN;
+        } else {
+            return EthnicCategory.OTHER;
+        }
     }
 }

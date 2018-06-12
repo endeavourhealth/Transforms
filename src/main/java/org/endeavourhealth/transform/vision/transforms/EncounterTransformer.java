@@ -59,7 +59,7 @@ public class EncounterTransformer {
 
         //link the consultation to our episode of care
         Reference episodeReference = csvHelper.createEpisodeReference(patientID.getString());
-        encounterBuilder.addEpisodeOfCare(episodeReference);
+        encounterBuilder.setEpisodeOfCare(episodeReference);
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 

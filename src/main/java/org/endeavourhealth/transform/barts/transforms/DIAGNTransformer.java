@@ -56,10 +56,11 @@ public class DIAGNTransformer extends BartsBasisTransformer {
         CsvCell diagnosisId = parser.getDiagnosisID();
         ResourceId conditionResourceId = getOrCreateConditionResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, diagnosisId);
 
-        //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the encounter ID
-        //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
+
+            //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the encounter ID
+            //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
             Condition existingCondition = (Condition)csvHelper.retrieveResource(ResourceType.Condition, conditionResourceId.getResourceId());
             if (existingCondition != null) {
                 ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
@@ -172,7 +173,8 @@ public class DIAGNTransformer extends BartsBasisTransformer {
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
         CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
-        if (!diagnosisTypeCode.isEmpty() && diagnosisTypeCode.getLong() > 0) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(diagnosisTypeCode)) {
+
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.DIAGNOSIS_TYPE, diagnosisTypeCode);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for DiagnosisTypeCode {} not found. Row {} Column {} ",

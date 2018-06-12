@@ -19,12 +19,6 @@ public class ORGREFPreTransformer {
 
     private static InternalIdDalI idDal = DalProvider.factoryInternalIdDal();
 
-    /*
-     * pre-transformer to ensure mappings from org ODS code to cerner ID are stored, so we can
-     * look them up during the ORG transform proper. Needed because the file isn't in hierarchy
-     * order, and rows refer to their parents using ODS code, so we need to know the ID for each
-     * ODS code before we start creating resources
-     */
     public static void transform(String version,
                                  List<ParserI> parsers,
                                  FhirResourceFilerI fhirResourceFiler,
@@ -52,10 +46,16 @@ public class ORGREFPreTransformer {
             return;
         }
 
+        //save the ODS code to ID mapping, to ensure mappings from org ODS code to cerner ID are stored, so we can
+        //look them up during the ORG transform proper. Needed because the file isn't in hierarchy
+        //order, and rows refer to their parents using ODS code, so we need to know the ID for each
+        //ODS code before we start creating resources
         String id = orgIdCell.getString();
         String odsCode = odsCodeCell.getString();
 
         csvHelper.saveInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode, id);
+
+        //also ensure that if the HL7 Receiver has processed this ORG, we
     }
 
 

@@ -84,7 +84,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhirServiceRequested);
 
             //add the raw original code, to assist in data checking
-            originalCode = CodeableConceptHelper.findOriginalCode(fhirServiceRequested);
+            originalCode = ObservationTransformer.findAndFormatOriginalCode(fhirServiceRequested);
 
             //add original term too, for easy display of results
             originalTerm = fhirServiceRequested.getText();

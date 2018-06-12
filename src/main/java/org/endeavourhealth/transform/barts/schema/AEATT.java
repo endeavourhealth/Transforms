@@ -25,7 +25,7 @@ public class AEATT extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
-               "#CDS_BATCH_CONTENT_ID",
+                "#CDS_BATCH_CONTENT_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
                 "ENCNTR_ID",
@@ -82,58 +82,205 @@ public class AEATT extends AbstractCsvParser {
     public CsvCell getCdsBatchContentId() {
         return super.getCell("#CDS_BATCH_CONTENT_ID");
     }
-    public CsvCell getExtractDateTime() { return super.getCell("EXTRACT_DT_TM");}
-    public CsvCell getActiveIndicator() { return super.getCell( "ACTIVE_IND");}
-    public CsvCell getEncounterId() { return super.getCell( "ENCNTR_ID");}
-    public CsvCell getAttendanceNbrIdent() { return super.getCell( "ATTENDANCE_NBR_IDENT");}
-    public CsvCell getMillenniumPersonIdentifier() { return super.getCell( "PERSON_ID");}
-    public CsvCell getAdmissionDateTime() { return super.getCell( "ADMISSION_DT_TM");}
-    public CsvCell getArrivalDateTime() { return super.getCell( "ARRIVAL_DT_TM");}
-    public CsvCell getArrivalModeCode() { return super.getCell( "ARRIVAL_MODE_CD");}
-    public CsvCell getAttendanceCategoryCode() { return super.getCell( "ATTENDANCE_CATEGORY_CD");}
-    public CsvCell getPresentingCompTxt() { return super.getCell( "PRESENTING_COMP_TXT");}
-    public CsvCell getReceptionistPersonId() { return super.getCell( "RECEPTIONIST_PRSNL_ID");}
-    public CsvCell getSourceOfReferralCode() { return super.getCell( "SOURCE_OF_REFERRAL_CD");}
-    public CsvCell getStaffLocalId() { return super.getCell( "STAFF_LOCAL_IDENT");}
-    public CsvCell getAmbulanceId() { return super.getCell( "AMBULANCE_IDENT");}
-    public CsvCell getIncidentDateTime() { return super.getCell( "INCIDENT_DT_TM");}
-    public CsvCell getIncidentLocCode() { return super.getCell( "INCIDENT_LOC_CD");}
-    public CsvCell getRtaAddrTxt() { return super.getCell( "ROAD_TRAFFIC_ACC_ADDR_TXT");}
-    public CsvCell getRtaPoliceId() { return super.getCell( "ROAD_TRAFFIC_ACC_POLICE_IDENT");}
-    public CsvCell getCheckInDateTime() { return super.getCell( "CHECKIN_DT_TM");}
-    public CsvCell getCheckOutDateTime() { return super.getCell( "CHECKOUT_DT_TM");}
-    public CsvCell getPatientGrpNhsCdAlias() { return super.getCell( "PATIENT_GRP_NHS_CD_ALIAS");}
-    public CsvCell getTrackingGrpCode() { return super.getCell( "TRACKING_GRP_CD");}
-    public CsvCell getTriageStartDateTime() { return super.getCell( "TRIAGE_START_DT_TM");}
-    public CsvCell getTriageCompleteDateTime() { return super.getCell( "TRIAGE_COMPLETE_DT_TM");}
-    public CsvCell getTriagePersonId() { return super.getCell( "TRIAGE_PRSNL_ID");}
-    public CsvCell getHcpFirstAssignedPersonId() { return super.getCell( "HCP_FIRST_ASSIGNED_PRSNL_ID");}
-    public CsvCell getFirstAssessDateTime() { return super.getCell( "FIRST_ASSESSMENT_DT_TM");}
-    public CsvCell getFirstSpecReqDateTime() { return super.getCell( "FIRST_SPEC_REQ_DT_TM");}
-    public CsvCell getFirstSpecArriveDateTime() { return super.getCell( "FIRST_SPEC_ARR_DT_TM");}
-    public CsvCell getFirstSpecPersonId() { return super.getCell( "FIRST_SPECIALIST_PRSNL_ID");}
-    public CsvCell getFirstXrayInDateTime() { return super.getCell( "FIRST_XRAY_IN_DT_TM");}
-    public CsvCell getFirstXrayOutDateTime() { return super.getCell( "FIRST_XRAY_OUT_DT_TM");}
-    public CsvCell getSeenForTreatDateTime() { return super.getCell( "SEEN_FOR_TREAT_DT_TM");}
-    public CsvCell getDecisionToAdmitDateTime() { return super.getCell( "DECISION_TO_ADMIT_DT_TM");}
-    public CsvCell getConclusionDateTime() { return super.getCell( "CONCLUSION_DT_TM");}
-    public CsvCell getAttendanceDisposalCode() { return super.getCell( "ATTENDANCE_DISPOSAL_CD");}
-    public CsvCell getDepartureDateTime() { return super.getCell( "DEPARTURE_DT_TM");}
-    public CsvCell getDeptTypeNhsCodeAlias() { return super.getCell( "DEPARTMENT_TYPE_NHS_CD_ALIAS");}
-    public CsvCell getLastLocCode() { return super.getCell( "LAST_LOC_CD");}
-    public CsvCell getSchoolNurseryOrgId() { return super.getCell( "SCHOOL_NURSERY_ORG_ID");}
-    public CsvCell getRespHcpPersonId() { return super.getCell( "RESP_HCP_PRSNL_ID");}
-    public CsvCell getStreamCode() { return super.getCell( "STREAM_CD");}
-    public CsvCell getSiteTreatNhsOrgAlias() { return super.getCell( "SITE_TREAT_NHS_ORG_ALIAS");}
-    public CsvCell getReferralPersonId() { return super.getCell( "REFERRER_PRSNL_ID");}
-    public CsvCell getDischargeDispositionCode() { return super.getCell( "DISCHARGE_DISPOSITION_CD");}
-    public CsvCell getTriageCatNbr() { return super.getCell( "TRIAGE_CATEGORY_NBR");}
-    public CsvCell getAmbulaneIncidentId() { return super.getCell( "AMBULANCE_INCIDENT_IDENT");}
-    public CsvCell getEncounterUpdatePersonId() { return super.getCell( "ENCNTR_UPDT_PRSNL_ID");}
-    public CsvCell getEncounterCreatePersonId() { return super.getCell( "ENCNTR_CREATE_PRSNL_ID");}
+
+    public CsvCell getExtractDateTime() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getEncounterId() {
+        return super.getCell("ENCNTR_ID");
+    }
+
+    public CsvCell getAttendanceNbrIdent() {
+        return super.getCell("ATTENDANCE_NBR_IDENT");
+    }
+
+    public CsvCell getMillenniumPersonIdentifier() {
+        return super.getCell("PERSON_ID");
+    }
+
+    public CsvCell getAdmissionDateTime() {
+        return super.getCell("ADMISSION_DT_TM");
+    }
+
+    public CsvCell getArrivalDateTime() {
+        return super.getCell("ARRIVAL_DT_TM");
+    }
+
+    public CsvCell getArrivalModeCode() {
+        return super.getCell("ARRIVAL_MODE_CD");
+    }
+
+    public CsvCell getAttendanceCategoryCode() {
+        return super.getCell("ATTENDANCE_CATEGORY_CD");
+    }
+
+    public CsvCell getPresentingCompTxt() {
+        return super.getCell("PRESENTING_COMP_TXT");
+    }
+
+    public CsvCell getReceptionistPersonId() {
+        return super.getCell("RECEPTIONIST_PRSNL_ID");
+    }
+
+    public CsvCell getSourceOfReferralCode() {
+        return super.getCell("SOURCE_OF_REFERRAL_CD");
+    }
+
+    public CsvCell getStaffLocalId() {
+        return super.getCell("STAFF_LOCAL_IDENT");
+    }
+
+    public CsvCell getAmbulanceId() {
+        return super.getCell("AMBULANCE_IDENT");
+    }
+
+    public CsvCell getIncidentDateTime() {
+        return super.getCell("INCIDENT_DT_TM");
+    }
+
+    public CsvCell getIncidentLocCode() {
+        return super.getCell("INCIDENT_LOC_CD");
+    }
+
+    public CsvCell getRtaAddrTxt() {
+        return super.getCell("ROAD_TRAFFIC_ACC_ADDR_TXT");
+    }
+
+    public CsvCell getRtaPoliceId() {
+        return super.getCell("ROAD_TRAFFIC_ACC_POLICE_IDENT");
+    }
+
+    public CsvCell getCheckInDateTime() {
+        return super.getCell("CHECKIN_DT_TM");
+    }
+
+    public CsvCell getCheckOutDateTime() {
+        return super.getCell("CHECKOUT_DT_TM");
+    }
+
+    public CsvCell getPatientGrpNhsCdAlias() {
+        return super.getCell("PATIENT_GRP_NHS_CD_ALIAS");
+    }
+
+    public CsvCell getTrackingGrpCode() {
+        return super.getCell("TRACKING_GRP_CD");
+    }
+
+    public CsvCell getTriageStartDateTime() {
+        return super.getCell("TRIAGE_START_DT_TM");
+    }
+
+    public CsvCell getTriageCompleteDateTime() {
+        return super.getCell("TRIAGE_COMPLETE_DT_TM");
+    }
+
+    public CsvCell getTriagePersonId() {
+        return super.getCell("TRIAGE_PRSNL_ID");
+    }
+
+    public CsvCell getHcpFirstAssignedPersonId() {
+        return super.getCell("HCP_FIRST_ASSIGNED_PRSNL_ID");
+    }
+
+    public CsvCell getFirstAssessDateTime() {
+        return super.getCell("FIRST_ASSESSMENT_DT_TM");
+    }
+
+    public CsvCell getFirstSpecReqDateTime() {
+        return super.getCell("FIRST_SPEC_REQ_DT_TM");
+    }
+
+    public CsvCell getFirstSpecArriveDateTime() {
+        return super.getCell("FIRST_SPEC_ARR_DT_TM");
+    }
+
+    public CsvCell getFirstSpecPersonId() {
+        return super.getCell("FIRST_SPECIALIST_PRSNL_ID");
+    }
+
+    public CsvCell getFirstXrayInDateTime() {
+        return super.getCell("FIRST_XRAY_IN_DT_TM");
+    }
+
+    public CsvCell getFirstXrayOutDateTime() {
+        return super.getCell("FIRST_XRAY_OUT_DT_TM");
+    }
+
+    public CsvCell getSeenForTreatDateTime() {
+        return super.getCell("SEEN_FOR_TREAT_DT_TM");
+    }
+
+    public CsvCell getDecisionToAdmitDateTime() {
+        return super.getCell("DECISION_TO_ADMIT_DT_TM");
+    }
+
+    public CsvCell getConclusionDateTime() {
+        return super.getCell("CONCLUSION_DT_TM");
+    }
+
+    public CsvCell getAttendanceDisposalCode() {
+        return super.getCell("ATTENDANCE_DISPOSAL_CD");
+    }
+
+    public CsvCell getDepartureDateTime() {
+        return super.getCell("DEPARTURE_DT_TM");
+    }
+
+    public CsvCell getDeptTypeNhsCodeAlias() {
+        return super.getCell("DEPARTMENT_TYPE_NHS_CD_ALIAS");
+    }
+
+    public CsvCell getLastLocCode() {
+        return super.getCell("LAST_LOC_CD");
+    }
+
+    public CsvCell getSchoolNurseryOrgId() {
+        return super.getCell("SCHOOL_NURSERY_ORG_ID");
+    }
+
+    public CsvCell getRespHcpPersonId() {
+        return super.getCell("RESP_HCP_PRSNL_ID");
+    }
+
+    public CsvCell getStreamCode() {
+        return super.getCell("STREAM_CD");
+    }
+
+    public CsvCell getSiteTreatNhsOrgAlias() {
+        return super.getCell("SITE_TREAT_NHS_ORG_ALIAS");
+    }
+
+    public CsvCell getReferralPersonId() {
+        return super.getCell("REFERRER_PRSNL_ID");
+    }
+
+    public CsvCell getDischargeDispositionCode() {
+        return super.getCell("DISCHARGE_DISPOSITION_CD");
+    }
+
+    public CsvCell getTriageCatNbr() {
+        return super.getCell("TRIAGE_CATEGORY_NBR");
+    }
+
+    public CsvCell getAmbulaneIncidentId() {
+        return super.getCell("AMBULANCE_INCIDENT_IDENT");
+    }
+
+    public CsvCell getEncounterUpdatePersonId() {
+        return super.getCell("ENCNTR_UPDT_PRSNL_ID");
+    }
+
+    public CsvCell getEncounterCreatePersonId() {
+        return super.getCell("ENCNTR_CREATE_PRSNL_ID");
+    }
 
 
-        @Override
+    @Override
     protected String getFileTypeDescription() {
         return "Cerner A&E Attendance file";
     }
