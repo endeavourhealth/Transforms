@@ -5,7 +5,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.*;
+import org.endeavourhealth.transform.adastra.csv.transforms.*;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -137,14 +139,24 @@ public abstract class AdastraCsvToFhirTransformer {
                                          FhirResourceFiler fhirResourceFiler,
                                          TransformError previousErrors) throws Exception {
 
-        AdastraCsvHelper csvHelper = new AdastraCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+        AdastraCsvHelper csvHelper
+                = new AdastraCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
         //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
+        CASEPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        CLINICALCODESPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        PRESCRIPTIONSPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-        //run the transforms for non-patient resources
+        //then for the patient resources - note the order of these transforms is important
+        CASETransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        OUTCOMESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        PATIENTTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        EpisodeOfCareResourceCache.clear();
 
-        //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
-
+        NOTESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        CONSULTATIONTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        CLINICALCODESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        PRESCRIPTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
     }
 
 

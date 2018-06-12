@@ -15,7 +15,7 @@ public class CONSULTATION extends AbstractCsvParser {
                 "StartDateTime",
                 "EndDateTime",
                 "Location",
-                "CaseType",
+                "ConsultationCaseType",
                 "History",
                 "Examination",
                 "Diagnosis",
@@ -38,7 +38,7 @@ public class CONSULTATION extends AbstractCsvParser {
                 "StartDateTime",
                 "EndDateTime",
                 "Location",
-                "CaseType",
+                "ConsultationCaseType",
                 "History",
                 "Examination",
                 "Diagnosis",
@@ -66,7 +66,7 @@ public class CONSULTATION extends AbstractCsvParser {
     public CsvCell getStartDateTime() {return super.getCell("StartDateTime"); }
     public CsvCell getEndDateTime() {return super.getCell("StartEndTime"); }
     public CsvCell getLocation() { return super.getCell("Location"); }
-    public CsvCell getCaseType() { return super.getCell("CaseType"); }
+    public CsvCell getConsultationCaseType() { return super.getCell("ConsultationCaseType"); }
     public CsvCell getHistory() { return super.getCell("History"); }
     public CsvCell getExamination() { return super.getCell("Examination"); }
     public CsvCell getDiagnosis() { return super.getCell("Diagnosis"); }
