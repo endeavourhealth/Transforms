@@ -325,14 +325,7 @@ public abstract class TppCsvToFhirTransformer {
         SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3Transformer.transform(parsers, fhirResourceFiler);
-        // Staff
 
-
-        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        StaffMemberProfileCache.clear();
-        // Appointment sessions (Rotas)
-        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Organisations
         SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -340,6 +333,13 @@ public abstract class TppCsvToFhirTransformer {
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         //OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
+        // Staff
+        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        StaffMemberProfileCache.clear();
+        // Appointment sessions (Rotas)
+        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
