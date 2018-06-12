@@ -4,6 +4,7 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.zaxxer.hikari.HikariDataSource;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
@@ -22,18 +23,28 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDal
 import org.endeavourhealth.core.database.dal.subscriberTransform.HouseholdIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
+import org.endeavourhealth.transform.enterprise.json.LinkDistributorModel;
+import org.endeavourhealth.transform.enterprise.json.PatientPseudoDetails;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.hibernate.internal.SessionImpl;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.EntityManager;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PatientTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
@@ -47,6 +58,17 @@ public class PatientTransformer extends AbstractTransformer {
 
     private static Map<String, byte[]> saltCacheMap = new HashMap<>();
     private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
+    private static Map<String, HikariDataSource> connectionPools = new ConcurrentHashMap<>();
+    private static Map<String, String> escapeCharacters = new ConcurrentHashMap<>();
+    private static String insertSQL = "INSERT INTO link_distributor (source_skid, target_salt_key_name, target_skid ) " +
+            " VALUES (?, ?, ?)" +
+            " ON DUPLICATE KEY UPDATE " +
+            " target_skid = VALUES(target_skid);";
+
+    private static String updateSQL = "UPDATE link_distributor_populator  " +
+            " SET done = 1" +
+            " WHERE patient_id = ? ;";
+
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
     private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
     //private static byte[] saltBytes = null;
@@ -484,9 +506,7 @@ public class PatientTransformer extends AbstractTransformer {
             keys.put(param.getFieldLabel(), fieldValue);
         }
 
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(Base64.getDecoder().decode(config.getSalt()));
-        return crypto.GetDigest(keys);
+        return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
     private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
@@ -526,8 +546,12 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        return applySaltToKeys(keys, encryptedSalt);
+    }
+
+    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
         Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(encryptedSalt);
+        crypto.SetEncryptedSalt(salt);
         return crypto.GetDigest(keys);
     }
 
@@ -587,7 +611,7 @@ public class PatientTransformer extends AbstractTransformer {
         return ret;
     }
 
-    public static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
+    private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
         try {
             ObjectMapper mapper = new ObjectMapper();
             Object json = mapper.readValue(jsonNode.toString(), Object.class);
@@ -595,6 +619,260 @@ public class PatientTransformer extends AbstractTransformer {
         } catch (Exception e) {
             throw new Exception("Error parsing Link Distributor Config");
         }
+    }
+
+    private static void bulkProcessLinkDistributor(List<PatientPseudoDetails> patients, String configName) throws Exception {
+
+        List<LinkDistributorModel> processedPatients = new ArrayList<>();
+        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(configName);
+        if (linkDistributorConfigs != null) {
+            for (PatientPseudoDetails patient : patients) {
+                checkPatientHasBeenSentToSubscriber(configName, patient.getPatientId());
+                // obtain the source pseudo Id
+                String sourceSkid = pseudonymiseFromPatientDetails(patient, configName);
+                if (sourceSkid == null) {
+                    continue;
+                }
+
+                for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+                    LOG.info("Processing Salt");
+                    LinkDistributorModel model = new LinkDistributorModel();
+                    model.setSourceSkid(sourceSkid);
+                    model.setTargetSalkKeyName(ldConfig.getSaltKeyName());
+                    model.setTargetSkid(pseudonymiseUsingConfigFromPatientDetails(patient, ldConfig));
+
+                    processedPatients.add(model);
+                }
+            }
+        }
+
+        saveLinkDistributorData(processedPatients, configName);
+        updateDoneFlag(patients);
+    }
+
+    private static boolean checkPatientHasBeenSentToSubscriber(String configName, String patientId) throws Exception {
+        EnterpriseIdDalI dal = DalProvider.factoryEnterpriseIdDal(configName);
+        Long enterprisePatientId = dal.findEnterpriseId(ResourceType.Patient.toString(), patientId);
+        if (enterprisePatientId != null) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static String pseudonymiseFromPatientDetails(PatientPseudoDetails patient, String configName) throws Exception {
+        String dob = null;
+        if (patient.getDateOfBirth() != null) {
+            Date d = patient.getDateOfBirth();
+            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
+        }
+
+        if (Strings.isNullOrEmpty(dob)) {
+            //we always need DoB for the psuedo ID
+            return null;
+        }
+
+        TreeMap<String, String> keys = new TreeMap<>();
+        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
+
+        String nhsNumber = patient.getNhsNumber();
+        if (!Strings.isNullOrEmpty(nhsNumber)) {
+            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
+
+        } else {
+            return null;
+        }
+
+        return applySaltToKeys(keys, getEncryptedSalt(configName));
+    }
+
+    private static String pseudonymiseUsingConfigFromPatientDetails(PatientPseudoDetails patient, LinkDistributorConfig config) throws Exception {
+        TreeMap<String, String> keys = new TreeMap<>();
+
+        List<ConfigParameter> parameters = config.getParameters();
+
+        for (ConfigParameter param : parameters) {
+            String fieldValue = null;
+            if (param.getFieldName().equals("date_of_birth")) {
+                if (patient.getDateOfBirth() !=null) {
+                    Date d = patient.getDateOfBirth();
+                    fieldValue = new SimpleDateFormat("dd-MM-yyyy").format(d);
+                }
+            }
+
+            if (param.getFieldName().equals("nhs_number")) {
+                fieldValue = patient.getNhsNumber();
+            }
+
+            if (Strings.isNullOrEmpty(fieldValue)) {
+                // we always need a non null string for the psuedo ID
+                return null;
+            }
+
+            keys.put(param.getFieldLabel(), fieldValue);
+        }
+
+        return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
+    }
+
+    private static void saveLinkDistributorData(List<LinkDistributorModel> patients, String configName) throws Exception {
+        LOG.info("Saving Now");
+        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+        String url = config.get("enterprise_url").asText();
+        Connection connection = openConnection(url, config);
+        connection.setAutoCommit(true);
+
+        PreparedStatement insert = connection.prepareStatement(insertSQL);
+
+        for (LinkDistributorModel pat : patients) {
+            insert.setString(1, pat.getSourceSkid());
+            insert.setString(2, pat.getTargetSalkKeyName());
+            insert.setString(3, pat.getTargetSkid());
+
+            insert.addBatch();
+        }
+
+        try {
+            LOG.info("Filing");
+            insert.executeBatch();
+            insert.clearBatch();
+            LOG.info("Done Insert");
+        } catch (Exception ex) {
+            LOG.error(insert.toString());
+            throw ex;
+        } finally {
+            connection.close();
+        }
+
+    }
+
+    private static void updateDoneFlag(List<PatientPseudoDetails> patients) throws Exception {
+        EntityManager adminEntityManager = ConnectionManager.getAdminEntityManager();
+        SessionImpl adminSession = (SessionImpl) adminEntityManager.getDelegate();
+        Connection adminConnection = adminSession.connection();
+        adminConnection.setAutoCommit(true);
+
+        PreparedStatement update = adminConnection.prepareStatement(updateSQL);
+
+        for (PatientPseudoDetails pat : patients) {
+            update.setString(1, pat.getPatientId());
+            update.addBatch();
+        }
+
+        try {
+            LOG.info("Updating");
+            update.executeBatch();
+            update.clearBatch();
+            LOG.info("Done Update");
+        } catch (Exception ex) {
+            LOG.error(update.toString());
+            throw ex;
+        } finally {
+            adminEntityManager.close();
+        }
+    }
+
+    private static List<PatientPseudoDetails> getNextBatchOfPatientsToProcess(Integer batchSize) throws Exception {
+        EntityManager entityManager = ConnectionManager.getAdminEntityManager();
+        SessionImpl session = (SessionImpl) entityManager.getDelegate();
+        Connection connection = session.connection();
+        Statement statement = connection.createStatement();
+
+        List<PatientPseudoDetails> patients = new ArrayList<>();
+
+        String sql = String.format("SELECT patient_id, nhs_number, date_of_birth FROM link_distributor_populator WHERE done = 0 limit %d",
+                batchSize);
+
+        try {
+            ResultSet rs = statement.executeQuery(sql);
+            while (rs.next()) {
+                PatientPseudoDetails pat = new PatientPseudoDetails();
+                pat.setPatientId(rs.getString(1));
+                pat.setNhsNumber(rs.getString(2));
+                pat.setDateOfBirth(rs.getDate(3));
+                patients.add(pat);
+            }
+            rs.close();
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+        finally {
+            statement.close();
+            entityManager.close();
+        }
+
+        return patients;
+
+    }
+
+    public static void processPatientsInBatches(String configName, Integer batchSize) throws Exception {
+        LOG.info("Populating link distributor table from link_distributor_populator");
+
+        try {
+
+            boolean stopProcessing = false;
+
+            List<PatientPseudoDetails> patients = new ArrayList<>();
+
+            while (!stopProcessing) {
+                patients.clear();
+
+                LOG.info("Getting next batch of patients");
+                patients = getNextBatchOfPatientsToProcess(batchSize);
+
+                if (patients.size() < 1) {
+                    stopProcessing = true;
+                }
+
+                bulkProcessLinkDistributor(patients, configName);
+            }
+
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
+
+    private static String getKeywordEscapeChar(String url) {
+        return escapeCharacters.get(url);
+    }
+
+    private static Connection openConnection(String url, JsonNode config) throws Exception {
+
+        HikariDataSource pool = connectionPools.get(url);
+        if (pool == null) {
+            synchronized (connectionPools) {
+                pool = connectionPools.get(url);
+                if (pool == null) {
+
+                    String driverClass = config.get("driverClass").asText();
+                    String username = config.get("enterprise_username").asText();
+                    String password = config.get("enterprise_password").asText();
+
+                    //force the driver to be loaded
+                    Class.forName(driverClass);
+
+                    pool = new HikariDataSource();
+                    pool.setJdbcUrl(url);
+                    pool.setUsername(username);
+                    pool.setPassword(password);
+                    pool.setMaximumPoolSize(3);
+                    pool.setMinimumIdle(1);
+                    pool.setIdleTimeout(60000);
+                    pool.setPoolName("EnterpriseFilerConnectionPool" + url);
+                    pool.setAutoCommit(false);
+
+                    connectionPools.put(url, pool);
+
+                    //cache the escape string too, since getting the metadata each time is extra load
+                    Connection conn = pool.getConnection();
+                    String escapeStr = conn.getMetaData().getIdentifierQuoteString();
+                    escapeCharacters.put(url, escapeStr);
+                    conn.close();
+                }
+            }
+        }
+
+        return pool.getConnection();
     }
 
     /*private static byte[] getEncryptedSalt() throws Exception {
