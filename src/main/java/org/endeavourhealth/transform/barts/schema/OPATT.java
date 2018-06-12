@@ -171,7 +171,7 @@ public class OPATT extends AbstractCsvParser {
 
     @Override
     protected String getFileTypeDescription() {
-        return "Cerner Outpatient Event file";
+        return "Cerner Outpatient Attendance file";
     }
 
     @Override

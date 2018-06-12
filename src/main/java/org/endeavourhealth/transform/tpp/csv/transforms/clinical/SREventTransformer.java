@@ -81,7 +81,7 @@ public class SREventTransformer {
 
         //link the encounter to the episode of care
         Reference episodeReference = csvHelper.createEpisodeReference(patientId);
-        encounterBuilder.addEpisodeOfCare(episodeReference);
+        encounterBuilder.setEpisodeOfCare(episodeReference);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
