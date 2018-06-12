@@ -229,6 +229,12 @@ public abstract class BartsCsvToFhirTransformer {
             return new IPEPI(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("IPWDS")) {
             return new IPWDS(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ORGREF")) {
+            return new ORGREF(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("FAMILYHISTORY")) {
+            return new FamilyHistory(serviceId, systemId, exchangeId, version, file);
+
+
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
