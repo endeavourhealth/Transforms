@@ -96,27 +96,29 @@ public class OPATTTransformer extends BartsBasisTransformer {
         episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
         episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
-
         Date beginDate = null;
-        CsvCell beginDateCell = parser.getAppointmentDateTime();
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
-        }
-        encounterBuilder.setPeriodStart(beginDate, beginDateCell);
-
-        //there's no explicit end date, but we can work it out from the duration
         Date endDate = null;
+
+        CsvCell beginDateCell = parser.getAppointmentDateTime();
         CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
-        if (!apptLengthCell.isEmpty()) {
-            endDate = new Date(beginDate.getTime() + (apptLengthCell.getInt() * 60 * 1000));
+
+        if (!beginDateCell.isEmpty()) {
+            try {
+                beginDate = formatDaily.parse(beginDateCell.getString());
+            } catch (ParseException ex) {
+                beginDate = formatBulk.parse(beginDateCell.getString());
+            }
+
+            encounterBuilder.setPeriodStart(beginDate, beginDateCell);
+
+            //there's no explicit end date, but we can work it out from the duration
+            if (!apptLengthCell.isEmpty()) {
+                endDate = new Date(beginDate.getTime() + (apptLengthCell.getInt() * 60 * 1000));
+
+                encounterBuilder.setPeriodEnd(endDate, beginDateCell, apptLengthCell);
+            }
         }
 
-        // End date
-        if (endDate != null) {
-            encounterBuilder.setPeriodEnd(endDate, beginDateCell, apptLengthCell);
-        }
 
         //work out the Encounter status
         CsvCell outcomeCell = parser.getAttendanceOutcomeCode();
@@ -126,7 +128,9 @@ public class OPATTTransformer extends BartsBasisTransformer {
 
         } else {
             //if we don't have an outcome, the Encounter is either in progress or in the future
-            if (beginDate.before(new Date())) {
+            if (beginDate == null
+                || beginDate.before(new Date())) {
+
                 encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, beginDateCell);
 
             } else {
@@ -135,11 +139,13 @@ public class OPATTTransformer extends BartsBasisTransformer {
         }
 
         //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
-        if (episodeOfCareBuilder.getRegistrationStartDate() == null
-                || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+        if (beginDate != null) {
+            if (episodeOfCareBuilder.getRegistrationStartDate() == null
+                    || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
 
-            episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+            }
         }
 
         // Check whether to Finish EpisodeOfCare
