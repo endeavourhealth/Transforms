@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -57,16 +56,15 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         }
 
         //the relation code links to the standard code ref table, and defines the type of relationship
-        //all the data seen so far uses the same code, for "registered GP". This block confirms that this
-        //assertion is still true. If we have a record with a different type, then we need to consider where in
-        //FHIR this data should go (probably a contact point on the FHIR patient)
+        //we're only interested in who the patients registered GP is
         CsvCell relationshipType = parser.getPersonPersonnelRelationCode();
         if (!relationshipType.isEmpty()) {
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICIAL_RELATIONSHIP_TYPE, relationshipType);
             if (codeRef != null) {
                 String display = codeRef.getCodeDispTxt();
                 if (!display.equalsIgnoreCase("Registered GP")) {
-                    throw new TransformException("PPAGP record has unexpected relation code " + relationshipType.getLong());
+                    return;
+                    //throw new TransformException("PPAGP record has unexpected relation code " + relationshipType.getLong());
                 }
             }
         }
