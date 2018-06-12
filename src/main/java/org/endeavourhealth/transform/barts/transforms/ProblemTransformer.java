@@ -94,7 +94,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
 
         // Date recorded
         CsvCell updatedDateCell = parser.getUpdateDateTime();
-        Date updatedDate = BartsCsvHelper.parseDate(updatedDateCell);
+        Date updatedDate = updatedDateCell.getDate();
         conditionBuilder.setRecordedDate(updatedDate, updatedDateCell);
 
         // set code to coded problem
@@ -148,8 +148,7 @@ public class ProblemTransformer extends BartsBasisTransformer {
         conditionBuilder.setCategory("complaint");
 
         // set onset to field  to field 10 + 11
-        Date d = BartsCsvHelper.parseDate(onsetDateCell);
-        DateTimeType onsetDate = new DateTimeType(d);
+        DateTimeType onsetDate = new DateTimeType(onsetDateCell.getDate());
         conditionBuilder.setOnset(onsetDate, onsetDateCell);
 
         CsvCell statusCell = parser.getStatusLifecycle();
