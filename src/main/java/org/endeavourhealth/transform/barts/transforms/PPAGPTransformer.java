@@ -78,7 +78,7 @@ public class PPAGPTransformer extends BartsBasisTransformer {
                 || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
 
         CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
-        if (!personnelId.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
             ResourceId practitionerResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, personnelId);
             Reference practitionerReference = csvHelper.createPractitionerReference(practitionerResourceId.getResourceId().toString());
 
@@ -91,13 +91,10 @@ public class PPAGPTransformer extends BartsBasisTransformer {
         }
 
         CsvCell orgId = parser.getRegisteredGPPracticeMillenniumIdOrganisationCode();
-        if (!orgId.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(orgId)) {
 
             //the ORGREF file is mapped using the standard ID mapper, so we need to convert the ID to UUID using this approach
             UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Organization, orgId.getString());
-            if (globallyUniqueId == null) {
-                LOG.error("FAILED TO get or create UUID for Organisation [" + orgId.getString() + "]");
-            }
             Reference orgReference = ReferenceHelper.createReference(ResourceType.Organization, globallyUniqueId.toString());
 
             if (delete) {
