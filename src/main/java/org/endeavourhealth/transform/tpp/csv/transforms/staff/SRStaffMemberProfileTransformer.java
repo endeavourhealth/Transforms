@@ -43,7 +43,8 @@ public class SRStaffMemberProfileTransformer {
         }
 
         StaffMemberProfilePojo staffPojo = new StaffMemberProfilePojo();
-        staffPojo.setIDStaffMember(staffId.getLong());
+        staffPojo.setIDStaffMember(staffId.getLong()); // Save id as Long for use as key.
+        staffPojo.setIDStaffMemberCell(staffId);   // and as CsvCell for builders.
 
         CsvCell staffMemberProfileId = parser.getRowIdentifier();
         staffPojo.setRowIdentifier(staffMemberProfileId);

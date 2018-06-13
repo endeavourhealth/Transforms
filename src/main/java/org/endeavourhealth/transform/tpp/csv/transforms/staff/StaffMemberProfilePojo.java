@@ -12,7 +12,8 @@ public class StaffMemberProfilePojo {
 
 
     // Pojo to help cache StaffMemberProfile records.
-    private Long IDStaffMember;
+    private Long IDStaffMember;  // For use as a key
+    private CsvCell IDStaffMemberCell;
     private CsvCell RowIdentifier;
     private CsvCell DateProfileCreated;
     private CsvCell IdProfileCreatedBy;
@@ -27,9 +28,14 @@ public class StaffMemberProfilePojo {
     private CsvCell RemovedData;
     private CsvCell auditCsv;
 
+    public CsvCell getIDStaffMemberCell() { return IDStaffMemberCell;}
+
+    public void setIDStaffMemberCell(CsvCell idStaffMemberCell) { this.IDStaffMemberCell = idStaffMemberCell;}
+
     public CsvCell getDateProfileCreated() {
         return DateProfileCreated;
     }
+
 
     public void setDateProfileCreated(CsvCell dateProfileCreated) {
         DateProfileCreated = dateProfileCreated;
