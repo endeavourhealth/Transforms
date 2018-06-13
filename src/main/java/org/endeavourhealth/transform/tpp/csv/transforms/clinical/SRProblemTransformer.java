@@ -71,14 +71,16 @@ public class SRProblemTransformer {
             }
         }
 
+        //for problems, use the linked observationId as the ID to build up the resource to then add to in SRCode Transformer
+        CsvCell linkedObsCodeId = parser.getIDCode();
+
         ConditionBuilder conditionBuilder
-                = ConditionResourceCache.getConditionBuilder(problemId, patientId, csvHelper, fhirResourceFiler);
+                = ConditionResourceCache.getConditionBuilder(linkedObsCodeId, patientId, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
 
-        // the linked SRCode entry - cache the reference
-        CsvCell linkedObsCodeId = parser.getIDCode();
+        //the linked SRCode entry - cache the reference for the SRCode transformer to check that it is a problem
         CsvCell readV3Code = parser.getCTV3Code();
         if (!linkedObsCodeId.isEmpty() && ! readV3Code.isEmpty()) {
             csvHelper.cacheProblemObservationGuid(patientId, linkedObsCodeId, readV3Code.getString());

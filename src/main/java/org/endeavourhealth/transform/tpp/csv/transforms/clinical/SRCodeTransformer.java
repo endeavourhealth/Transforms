@@ -321,6 +321,7 @@ public class SRCodeTransformer {
             }
         }
 
+        //The condition resource will already exist as part of the Problem Transformer, set using the ID value of the code
         ConditionBuilder conditionBuilder
                 = ConditionResourceCache.getConditionBuilder(problemId, patientId, csvHelper, fhirResourceFiler);
 
@@ -361,9 +362,7 @@ public class SRCodeTransformer {
 
         //set the category on the condition, so we know it's a problem
         conditionBuilder.setCategory("complaint", problemId);
-
-        boolean isProblem = csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier());
-        conditionBuilder.setAsProblem(isProblem);
+        conditionBuilder.setAsProblem(true);
 
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {
@@ -410,7 +409,6 @@ public class SRCodeTransformer {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             conditionBuilder.setEncounter(eventReference, eventId);
         }
-
     }
 
     private static void createObservation(SRCode parser,
@@ -670,8 +668,7 @@ public class SRCodeTransformer {
                 && !isBPCode(readV3Code)
                 && (parser.getNumericValue().isEmpty())) {
             return ResourceType.Procedure;
-        } else if ((!Strings.isNullOrEmpty(readV3Code) && Read2.isDisorder(readV3Code)
-                || csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier()))) {
+        } else if (csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier())) {
             return ResourceType.Condition;
         } else if ((!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
