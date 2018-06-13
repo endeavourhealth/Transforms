@@ -27,7 +27,9 @@ public abstract class AdastraCsvToFhirTransformer {
 
     public static final String DATE_FORMAT = "yyyyMMdd";
     public static final String TIME_FORMAT = "hhmm";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Adastra files do not contain a header, so set on in each parsers constructor
+
+    //Adastra files do not contain a header, so set on in each parsers constructor.  Delimiter is |
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
