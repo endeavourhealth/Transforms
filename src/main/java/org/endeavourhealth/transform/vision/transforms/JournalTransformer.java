@@ -706,6 +706,8 @@ public class JournalTransformer {
             units2 = parser.getValue2NumericUnit().getString();
         }
 
+        String obsEntity = parser.getObservationEntity().getString();
+
         //BP is a special case - create systolic and diastolic coded components
         if (!parser.getReadCode().isEmpty() && isBPCode (parser.getReadCode().getString()) && value1 != null && value2 != null) {
 
@@ -737,6 +739,14 @@ public class JournalTransformer {
 
             if (!Strings.isNullOrEmpty(units1)) {
                 observationBuilder.setValueNumberUnits(units1, parser.getValue1NumericUnit());
+            } else if (value1 != null) {
+                //if value is set but no units, infer from entity type if possible
+                if (!obsEntity.isEmpty()) {
+                    String unitsMapped = getEntityTypeUnits(obsEntity);
+                    if (unitsMapped != null) {
+                        observationBuilder.setValueNumberUnits(unitsMapped);
+                    }
+                }
             }
 
             //the 2nd value only exists if another special case, so add appended to associated text
@@ -746,7 +756,6 @@ public class JournalTransformer {
             }
         }
 
-        String obsEntity = parser.getObservationEntity().getString();
         if (!obsEntity.isEmpty()) {
             if (obsEntity.equalsIgnoreCase("LETTERS") || obsEntity.equalsIgnoreCase("ATTACHMENT")) {
                 associatedTextAsStr = obsEntity.replace("S", "").concat(". " + associatedTextAsStr);
@@ -1103,6 +1112,29 @@ public class JournalTransformer {
             }
         }
         return null;
+    }
+
+    //dervice the implicit value units from the entity type
+    private static String getEntityTypeUnits(String entityType) {
+
+        switch (entityType) {
+            case "WEIGHT":
+                return "kg";
+            case "HEIGHT":
+                return "m";
+            case "PULSE":
+                return "bpm";
+            case "CIGARETTES":
+                return "per day";
+            case "ALCOHOL":
+                return "per week";
+            case "HEADS_CENTI":
+                return "cm";
+            case "WAIST":
+                return "cm";
+            default:
+                return null;
+        }
     }
 
     // map Snomed code to FHIR allergy severity
