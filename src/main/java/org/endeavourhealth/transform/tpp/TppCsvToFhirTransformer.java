@@ -326,20 +326,20 @@ public abstract class TppCsvToFhirTransformer {
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
         SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 
-        // Organisations
-        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        //OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
-        LocationResourceCache.fileLocationResources(fhirResourceFiler);
-        // Staff
-        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        StaffMemberProfileCache.fileRemainder(csvHelper,fhirResourceFiler);
-        StaffMemberProfileCache.clear();
-        // Appointment sessions (Rotas)
-        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        // Organisations
+//        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        //OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
+//        LocationResourceCache.fileLocationResources(fhirResourceFiler);
+//        // Staff
+//        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        StaffMemberProfileCache.fileRemainder(csvHelper,fhirResourceFiler);
+//        StaffMemberProfileCache.clear();
+//        // Appointment sessions (Rotas)
+//        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
 
         LOG.trace("Starting patient transforms");
@@ -406,7 +406,7 @@ public abstract class TppCsvToFhirTransformer {
                 for (CSVRecord csvRecord : csvFileParser) {
                     count++;
                     // Accessing Values by Column Index - 0 based.
-                    if (Integer.parseInt(csvRecord.get(0)) < lowValue) {
+                    if (Integer.parseInt(csvRecord.get(count)) < lowValue) {
                         probabilityBulk++;
                     }
                     if (count > max && probabilityBulk >= probabilityThreshold) {
