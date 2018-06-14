@@ -183,7 +183,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
                 String[] values = new String[headerMap.size()];
 
-                for (String header: headerMap.keySet()) {
+                for (String header : headerMap.keySet()) {
                     Integer colIndex = headerMap.get(header);
                     String value = csvRecord.get(colIndex);
                     values[colIndex.intValue()] = value;
@@ -225,7 +225,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         //we only start the array at 10k entries, so grow if necessary by 150% each time
         if (lineNumber >= cellAuditIds.length) {
 
-            int nextRowCount = (int)((double)cellAuditIds.length * 1.5d);
+            int nextRowCount = (int) ((double) cellAuditIds.length * 1.5d);
 
             long[] tmp = new long[nextRowCount];
             System.arraycopy(cellAuditIds, 0, tmp, 0, cellAuditIds.length);
@@ -356,7 +356,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation
         try {
 
-            for (String possibleVersion: possibleVersions) {
+            for (String possibleVersion : possibleVersions) {
                 String[] expectedHeaders = getCsvHeaders(possibleVersion);
                 try {
                     CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
@@ -398,6 +398,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     protected abstract String[] getCsvHeaders(String version);
 
     protected abstract String getFileTypeDescription();
+
     protected abstract boolean isFileAudited();
 
     public boolean nextRecord() throws Exception {
@@ -434,9 +435,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                     continue;
                 }
             }
-        }
-        catch (ArrayIndexOutOfBoundsException ex) {
-            LOG.trace("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber );
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            LOG.trace("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber);
             throw new TransformException("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber, ex);
         }
 
@@ -452,13 +452,12 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     /**
      * moves to the next row in the CSV file, returning false if there is no new row
-     *
      */
     private boolean advanceToNextRow() throws Exception {
 
         try {
             this.csvRecord = this.csvIterator.next();
-            this.csvRecordLineNumber = (int)this.csvReader.getCurrentLineNumber(); //safe cast as no CSV file is 2B rows
+            this.csvRecordLineNumber = (int) this.csvReader.getCurrentLineNumber(); //safe cast as no CSV file is 2B rows
             return true;
 
         } catch (NoSuchElementException nse) {
@@ -475,7 +474,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 throw t;
             }
 
-            IOException ioe = (IOException)t.getCause();
+            IOException ioe = (IOException) t.getCause();
             LOG.error("Had an IO Exception reading " + filePath);
             LOG.error("" + ioe.getClass().getName() + ": " + ioe.getMessage());
 
@@ -507,7 +506,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 return false;
             }
 
-            this.csvRecordLineNumber = (int)this.csvReader.getCurrentLineNumber();
+            this.csvRecordLineNumber = (int) this.csvReader.getCurrentLineNumber();
 
             if (csvRecordLineNumber == nextDesiredRecordNumber) {
                 LOG.info("Resuming on line " + csvRecordLineNumber);
@@ -540,7 +539,6 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
 
     public CsvCell getCell(String column) {
-
         String value = null;
         try {
             value = csvRecord.get(column);
@@ -551,7 +549,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         //to save messy handling of non-empty but "empty" strings, trim whitespace of any non-null value
         if (value != null) {
-            value = value.trim();
+            value = value.replace("\\u00a0", " ").trim(); // replace nbsp with normal space.
         }
 
         long rowAuditId = getSourceFileRecordIdForCurrentRow();
@@ -643,7 +641,6 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         return Boolean.parseBoolean(s);
     }*/
-
 
 
     class AuditRowTask implements Callable {
