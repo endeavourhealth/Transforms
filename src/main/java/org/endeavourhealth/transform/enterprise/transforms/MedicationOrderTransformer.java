@@ -103,13 +103,13 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             if (dispenseRequestComponent.getExpectedSupplyDuration() != null) {
                 Duration duration = dispenseRequestComponent.getExpectedSupplyDuration();
-                if (duration.getUnit() != null) {
+                if (duration != null) {
                     if (!duration.getUnit().equalsIgnoreCase("days")) {
                         throw new TransformException("Unsupported medication order duration type [" + duration.getUnit() + "] for " + fhir.getId());
                     }
+                    int days = duration.getValue().intValue();
+                    durationDays = Integer.valueOf(days);
                 }
-                int days = duration.getValue().intValue();
-                durationDays = Integer.valueOf(days);
             }
         }
 
