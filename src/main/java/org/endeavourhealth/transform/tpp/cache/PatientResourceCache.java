@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class PatientResourceCache {
@@ -59,8 +60,11 @@ public class PatientResourceCache {
     public static void filePatientAndEpisodeOfCareResources(FhirResourceFiler fhirResourceFiler) throws Exception {
         LOG.info("Patient cache count is " + PatientBuildersByRowId.size());
 
-        for (Long rowId : PatientBuildersByRowId.keySet()) {
-            PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
+        Iterator iterator = PatientBuildersByRowId.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry both = (Map.Entry)iterator.next();
+            Long rowId = (Long) both.getKey();
+            PatientBuilder patientBuilder = (PatientBuilder) both.getValue();
             if (EpisodeOfCareResourceCache.episodeOfCareInCache(rowId)) {
                 EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareByRowId(rowId);
                 fhirResourceFiler.savePatientResource(null, patientBuilder, episodeOfCareBuilder);
