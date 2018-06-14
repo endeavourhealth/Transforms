@@ -68,7 +68,8 @@ public class PatientResourceCache {
             if (EpisodeOfCareResourceCache.episodeOfCareInCache(rowId)) {
                 EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareByRowId(rowId);
                 fhirResourceFiler.savePatientResource(null, patientBuilder, episodeOfCareBuilder);
-                PatientBuildersByRowId.remove(rowId);
+                iterator.remove();
+                //PatientBuildersByRowId.remove(rowId);
                 EpisodeOfCareResourceCache.removeEpisodeOfCareByPatientId(rowId);
             } else {
                 LOG.error("Episode of Care record not found for cached patient record Id: " + rowId);
