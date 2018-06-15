@@ -34,9 +34,9 @@ public class AppointmentResourceCache {
                 //if the Appointment doesn't exist yet, create a new one
                 appointmentBuilder = new AppointmentBuilder();
                 appointmentBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
+                appointmentBuilder.setRetrieved(false);
             } else {
                 appointmentBuilder = new AppointmentBuilder(appointment);
-                appointmentBuilder.setRetrieved(false);
             }
 
             appointmentBuildersById.put(appointmentIdCell.getLong(), appointmentBuilder);
