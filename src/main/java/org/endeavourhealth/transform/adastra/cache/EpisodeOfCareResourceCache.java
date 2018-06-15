@@ -15,13 +15,13 @@ import java.util.Map;
 public class EpisodeOfCareResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareResourceCache.class);
 
-    private static Map<Long, EpisodeOfCareBuilder> EpisodeOfCareBuildersByCaseId = new HashMap<>();
+    private static Map<String, EpisodeOfCareBuilder> EpisodeOfCareBuildersByCaseId = new HashMap<>();
 
     public static EpisodeOfCareBuilder getOrCreateEpisodeOfCareBuilder(CsvCell caseIdCell,
                                                                        AdastraCsvHelper csvHelper,
                                                                        FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareBuildersByCaseId.get(caseIdCell.getLong());
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareBuildersByCaseId.get(caseIdCell.getString());
         if (episodeOfCareBuilder == null) {
 
             EpisodeOfCare episodeOfCare
@@ -34,7 +34,7 @@ public class EpisodeOfCareResourceCache {
                 episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
             }
 
-            EpisodeOfCareBuildersByCaseId.put(caseIdCell.getLong(), episodeOfCareBuilder);
+            EpisodeOfCareBuildersByCaseId.put(caseIdCell.getString(), episodeOfCareBuilder);
         }
         return episodeOfCareBuilder;
     }

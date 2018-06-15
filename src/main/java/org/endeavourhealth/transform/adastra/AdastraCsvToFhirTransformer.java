@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.adastra;
 
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -30,7 +29,7 @@ public abstract class AdastraCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hhmm";
 
     //Adastra files do not contain a header, so set on in each parsers constructor.  Delimiter is |
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|').withQuoteMode(QuoteMode.ALL);
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
