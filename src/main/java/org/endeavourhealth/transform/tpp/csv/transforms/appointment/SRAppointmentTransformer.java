@@ -191,8 +191,13 @@ public class SRAppointmentTransformer {
                 }
             }
         }
+        if (appointmentBuilder.isRetrieved()) { // Did we get it from the DB => already mapped?
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(),false, slotBuilder, appointmentBuilder);
+        } else {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), true, slotBuilder, appointmentBuilder);
+        }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+
     }
 
     private static Appointment.AppointmentStatus convertAppointmentStatus(String status, SRAppointment parser) throws Exception {

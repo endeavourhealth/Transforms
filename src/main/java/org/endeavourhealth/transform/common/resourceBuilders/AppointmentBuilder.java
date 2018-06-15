@@ -12,9 +12,11 @@ public class AppointmentBuilder extends ResourceBuilderBase
         implements HasCodeableConceptI {
 
     private Appointment appointment = null;
+    private boolean retrieved = true;
 
     public AppointmentBuilder() {
         this(null);
+        this.retrieved = false;
     }
 
     public AppointmentBuilder(Appointment appointment) {
@@ -155,4 +157,6 @@ public class AppointmentBuilder extends ResourceBuilderBase
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
     }
+
+    public boolean isRetrieved() { return this.retrieved;}
 }
