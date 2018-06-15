@@ -50,6 +50,6 @@ public class CASE extends AbstractCsvParser {
     public CsvCell getCaseId() { return super.getCell("CaseRef"); }
     public CsvCell getCaseNo() { return super.getCell("CaseNo"); }
     public CsvCell getStartDateTime() {return super.getCell("StartDateTime"); }
-    public CsvCell getEndDateTime() {return super.getCell("StartEndTime"); }
+    public CsvCell getEndDateTime() {return super.getCell("EndDateTime"); }
     public CsvCell getLocationName () { return super.getCell("LocationName"); }
 }

@@ -12,8 +12,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
-import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -88,9 +86,16 @@ public class PATIENTTransformer {
 
         CsvCell gender = parser.getGender();
         if (!gender.isEmpty()) {
-            VocSex sexEnum = VocSex.fromValue(gender.getString().substring(0).toUpperCase());
-            Enumerations.AdministrativeGender genderEnum = SexConverter.convertSexToFhir(sexEnum);
-            patientBuilder.setGender(genderEnum, gender);
+
+            if (gender.getString().startsWith("M")) {
+                patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, gender);
+            } else if (gender.getString().startsWith("F")) {
+                patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, gender);
+            } else {
+                patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN);
+            }
+        } else {
+            patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN);
         }
 
         CsvCell givenName = parser.getForename();
