@@ -514,6 +514,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             set.add(ResourceType.Encounter);
             set.add(ResourceType.EpisodeOfCare);
             set.add(ResourceType.FamilyMemberHistory);
+            set.add(ResourceType.Flag);
             set.add(ResourceType.Immunization);
             set.add(ResourceType.MedicationOrder);
             set.add(ResourceType.MedicationStatement);
