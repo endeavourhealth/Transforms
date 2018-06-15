@@ -56,6 +56,7 @@ public class SRAppointmentTransformer {
         CsvCell appointmentId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
+//        boolean mappingNeeded = false;
 
         if (patientId.isEmpty()) {
 
@@ -95,6 +96,10 @@ public class SRAppointmentTransformer {
                     parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
         }
+
+//        if (csvHelper.retrieveResource(patientId.getString(), ResourceType.Patient, fhirResourceFiler) == null) {
+//            mappingNeeded = true;
+//        }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder
@@ -191,11 +196,7 @@ public class SRAppointmentTransformer {
                 }
             }
         }
-        if (appointmentBuilder.isRetrieved()) { // Did we get it from the DB => already mapped?
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(),false, slotBuilder, appointmentBuilder);
-        } else {
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), true, slotBuilder, appointmentBuilder);
-        }
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
 
 
     }

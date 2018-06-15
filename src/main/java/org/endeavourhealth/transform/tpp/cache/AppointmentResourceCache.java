@@ -43,16 +43,16 @@ public class AppointmentResourceCache {
         return appointmentBuilder;
     }
 
-    public static void fileAppointmentResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Long appointmentId: appointmentBuildersById.keySet()) {
-            AppointmentBuilder appointmentBuilder = appointmentBuildersById.get(appointmentId);
-            fhirResourceFiler.savePatientResource(null, appointmentBuilder);
-        }
-
-        //clear down as everything has been saved
-        appointmentBuildersById.clear();
-    }
+//    public static void fileAppointmentResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+//
+//        for (Long appointmentId: appointmentBuildersById.keySet()) {
+//            AppointmentBuilder appointmentBuilder = appointmentBuildersById.get(appointmentId);
+//            fhirResourceFiler.savePatientResource(null, appointmentBuilder);
+//        }
+//
+//        //clear down as everything has been saved
+//        appointmentBuildersById.clear();
+//    }
 
     public static void clearAppointmentResourceCache() throws Exception {
         appointmentBuildersById.clear();
