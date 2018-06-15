@@ -103,7 +103,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             if (dispenseRequestComponent.getExpectedSupplyDuration() != null) {
                 Duration duration = dispenseRequestComponent.getExpectedSupplyDuration();
-                if (duration != null) {
+                if (duration != null && duration.getUnit() != null) {
                     if (!duration.getUnit().equalsIgnoreCase("days")) {
                         throw new TransformException("Unsupported medication order duration type [" + duration.getUnit() + "] for " + fhir.getId());
                     }
