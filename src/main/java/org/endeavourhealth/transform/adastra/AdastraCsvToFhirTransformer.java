@@ -25,8 +25,8 @@ public abstract class AdastraCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdastraCsvToFhirTransformer.class);
 
-    public static final String DATE_FORMAT = "yyyyMMdd";
-    public static final String TIME_FORMAT = "hhmm";
+    public static final String DATE_FORMAT = "yyyy-mm-dd";
+    public static final String TIME_FORMAT = "hh:mm:ss";
 
     //Adastra files do not contain a header, so set on in each parsers constructor.  Delimiter is |
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
