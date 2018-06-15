@@ -47,7 +47,12 @@ public class NOTESTransformer {
         CsvCell caseId = parser.getCaseId();
         CsvCell patientId = parser.getPatientId();
 
+        String flagId = "FLAG-"
+                +caseId.getString()
+                + ":" + patientId.getString();
+
         FlagBuilder flagBuilder = new FlagBuilder();
+        flagBuilder.setId(flagId, caseId, patientId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         flagBuilder.setSubject(patientReference, patientId);

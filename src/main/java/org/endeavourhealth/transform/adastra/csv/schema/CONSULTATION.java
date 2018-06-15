@@ -64,7 +64,7 @@ public class CONSULTATION extends AbstractCsvParser {
     public CsvCell getCaseId() { return super.getCell("CaseRef"); }
     public CsvCell getConsultationId() { return super.getCell("ConsultationRef"); }
     public CsvCell getStartDateTime() {return super.getCell("StartDateTime"); }
-    public CsvCell getEndDateTime() {return super.getCell("StartEndTime"); }
+    public CsvCell getEndDateTime() {return super.getCell("EndDateTime"); }
     public CsvCell getLocation() { return super.getCell("Location"); }
     public CsvCell getConsultationCaseType() { return super.getCell("ConsultationCaseType"); }
     public CsvCell getHistory() { return super.getCell("History"); }
