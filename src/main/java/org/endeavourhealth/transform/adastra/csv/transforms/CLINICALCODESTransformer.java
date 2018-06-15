@@ -70,9 +70,9 @@ public class CLINICALCODESTransformer {
         //status is mandatory, so set the only value we can
         observationBuilder.setStatus(Observation.ObservationStatus.UNKNOWN);
 
-        //find the consultation date to use with code
+        //find the consultation date to use with code, otherwise null
         CsvCell effectiveDate = csvHelper.findConsultationDateTime(consultationId.getString());
-        if (!effectiveDate.isEmpty()) {
+        if (effectiveDate != null) {
 
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);

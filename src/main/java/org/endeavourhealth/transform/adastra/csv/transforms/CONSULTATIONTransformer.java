@@ -78,7 +78,7 @@ public class CONSULTATIONTransformer {
             csvHelper.cacheConsultationDate(consultationId.getString(), startDateTime);
         }
 
-        CsvCell endDateTime = parser.getStartDateTime();
+        CsvCell endDateTime = parser.getEndDateTime();
         if (!endDateTime.isEmpty()) {
             encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
