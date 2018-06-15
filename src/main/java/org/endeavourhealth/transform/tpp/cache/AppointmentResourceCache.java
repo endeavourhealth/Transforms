@@ -28,6 +28,7 @@ public class AppointmentResourceCache {
             Resource apptResource = csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment, fhirResourceFiler);
             if (apptResource != null && apptResource instanceof Appointment) {
                 appointment = (Appointment) apptResource;
+                appointmentBuilder.setRetrieved(true);
             }
             if (appointment == null) {
                 //if the Appointment doesn't exist yet, create a new one
@@ -35,6 +36,7 @@ public class AppointmentResourceCache {
                 appointmentBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
             } else {
                 appointmentBuilder = new AppointmentBuilder(appointment);
+                appointmentBuilder.setRetrieved(false);
             }
 
             appointmentBuildersById.put(appointmentIdCell.getLong(), appointmentBuilder);

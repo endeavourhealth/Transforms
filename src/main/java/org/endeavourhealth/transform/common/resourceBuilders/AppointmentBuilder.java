@@ -159,4 +159,6 @@ public class AppointmentBuilder extends ResourceBuilderBase
     }
 
     public boolean isRetrieved() { return this.retrieved;}
+
+    public void setRetrieved(boolean retrieved) { this.retrieved = retrieved;}
 }
