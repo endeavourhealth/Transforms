@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
-import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisationBranch;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Reference;
@@ -68,11 +67,6 @@ public class SROrganisationBranchTransformer {
 
         CsvCell orgIdCell = parser.getIDOrganisation();
         if (!orgIdCell.isEmpty()) {
-            if (!OrganisationResourceCache.OrganizationInCache(orgIdCell)) {
-                TransformWarnings.log(LOG,parser, "Organisation id {} not found in cache. Row {} in file {}",
-                        orgIdCell.getString(),rowIdCell.getString(),parser.getFilePath());
-                return;
-            }
 
             Reference organisationReference = csvHelper.createOrganisationReference(orgIdCell);
             locationBuilder.setManagingOrganisation(organisationReference,orgIdCell);

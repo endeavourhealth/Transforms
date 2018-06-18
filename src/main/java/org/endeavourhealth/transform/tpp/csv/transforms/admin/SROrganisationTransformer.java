@@ -6,14 +6,10 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.enterprise.outputModels.Organization;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
-import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisation;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +57,7 @@ public class SROrganisationTransformer {
 
         Reference organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
         locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder, locationBuilder);
 
     }
 
@@ -76,7 +72,8 @@ public class SROrganisationTransformer {
             return null;
         }
 
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper, fhirResourceFiler);
+        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
+
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
 
@@ -170,6 +167,16 @@ public class SROrganisationTransformer {
         }
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        org.hl7.fhir.instance.model.Organization organization
+                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
+        if (organization == null) {
+            //if the Location doesn't exist yet, create a new one
+            organizationBuilder = new OrganizationBuilder();
+            organizationBuilder.setId(rowIdCell.getString(), rowIdCell);
+        } else {
+            organizationBuilder = new OrganizationBuilder(organization);
+        }
+
         organizationBuilder.setId(rowIdCell.getString());
 
         CsvCell obsoleteCell = parser.getMadeObsolete();

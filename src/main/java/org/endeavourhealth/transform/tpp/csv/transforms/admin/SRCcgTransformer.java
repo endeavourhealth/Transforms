@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
-import org.endeavourhealth.transform.tpp.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRCcg;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
