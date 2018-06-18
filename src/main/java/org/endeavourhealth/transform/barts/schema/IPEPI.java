@@ -40,7 +40,9 @@ public class IPEPI extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getCDSBatchContentEventId() { return super.getCell("#CDS_BATCH_CONTENT_ID"); }
+    public CsvCell getCDSBatchContentEventId() {
+        return super.getCell("#CDS_BATCH_CONTENT_ID");
+    }
 
     public CsvCell getActiveIndicator() {
         return super.getCell("ACTIVE_IND");
@@ -82,15 +84,25 @@ public class IPEPI extends AbstractCsvParser {
         return super.getCell("FIRST_REG_DAY_NIGHT_NHS_CD_ALIAS");
     }
 
-    public CsvCell getLastEpisodeInSpellIndicatorCode() { return super.getCell("LAST_EPISODE_NHS_CD_ALIAS"); }
+    public CsvCell getLastEpisodeInSpellIndicatorCode() {
+        return super.getCell("LAST_EPISODE_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getOperationStatusCode() { return super.getCell("OPERATION_STATUS_NHS_CD_ALIAS"); }
+    public CsvCell getOperationStatusCode() {
+        return super.getCell("OPERATION_STATUS_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getPsychiatricPatientStatusCode() { return super.getCell("PSYCH_PAT_STATUS_NHS_CD_ALIAS"); }
+    public CsvCell getPsychiatricPatientStatusCode() {
+        return super.getCell("PSYCH_PAT_STATUS_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getAmbulanceIncidentIdentifier() { return super.getCell("AMBULANCE_INCIDENT_IDENT"); }
+    public CsvCell getAmbulanceIncidentIdentifier() {
+        return super.getCell("AMBULANCE_INCIDENT_IDENT");
+    }
 
-    public CsvCell getEncounterSliceLastUpdatedByPersonnelIdentifier () { return super.getCell("ENCNTR_SLICE_UPDT_PRSNL_ID"); }
+    public CsvCell getEncounterSliceLastUpdatedByPersonnelIdentifier() {
+        return super.getCell("ENCNTR_SLICE_UPDT_PRSNL_ID");
+    }
 
 
     @Override

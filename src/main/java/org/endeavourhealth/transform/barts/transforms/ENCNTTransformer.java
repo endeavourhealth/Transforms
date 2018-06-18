@@ -244,7 +244,9 @@ public class ENCNTTransformer {
         // Retrieve or create EpisodeOfCare. We don't have any useful data to set on it, but that will be filled in
         //when we process the OPATT, AEATT etc. files
         EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(episodeIdentiferCell, encounterIdCell, personIdCell, activeCell, csvHelper);
-        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
+        if (episodeOfCareBuilder != null) {
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
+        }
 
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }
