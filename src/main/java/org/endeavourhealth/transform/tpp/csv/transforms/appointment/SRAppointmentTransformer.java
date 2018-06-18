@@ -167,7 +167,7 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell appointmentStatus = parser.getAppointmentStatus();
-        if (!appointmentStatus.isEmpty() ) {
+        if (!appointmentStatus.isEmpty()) {
 
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus, parser);
             if (tppMappingRef != null) {
@@ -195,8 +195,9 @@ public class SRAppointmentTransformer {
                     }
                 }
             }
+            AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
         }
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
 
 
     }

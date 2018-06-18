@@ -35,6 +35,10 @@ public class AppointmentFlagCache {
         AppointmentFlagsByAppointmentId.remove(pojo.getIDAppointment());
     }
 
+    public static void removeFlagsByAppointmentId(Long apptKey) {
+        AppointmentFlagsByAppointmentId.remove(apptKey);
+    }
+
     public static boolean containsAppointmentId(Long apptId) {
         return (AppointmentFlagsByAppointmentId.containsKey(apptId));
     }
