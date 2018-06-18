@@ -17,8 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class EpisodeOfCareCache {
-    private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareCache.class);
+public class EpisodeOfCareResourceCache {
+    private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareResourceCache.class);
 
     private static Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
 

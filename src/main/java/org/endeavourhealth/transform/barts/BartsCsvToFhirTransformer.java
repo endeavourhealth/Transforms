@@ -7,7 +7,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.*;
@@ -101,7 +101,7 @@ public abstract class BartsCsvToFhirTransformer {
         ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
-        EpisodeOfCareCache.fileResources(fhirResourceFiler);
+        EpisodeOfCareResourceCache.fileResources(fhirResourceFiler);
 
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);

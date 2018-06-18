@@ -5,7 +5,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.OPATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -57,7 +57,7 @@ public class OPATTTransformer {
         CsvCell finIdCell = parser.getFINNo();
 
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, csvHelper);
 
         csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 

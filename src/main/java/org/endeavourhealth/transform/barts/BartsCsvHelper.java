@@ -132,12 +132,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
-        List<Resource> ret = null;
+        List<Resource> ret = new ArrayList<>();
         List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, systemId, patientId);
         for (ResourceWrapper rw : resourceList) {
-            if (ret == null) {
-                ret = new ArrayList<>();
-            }
             String json = rw.getResourceData();
             ret.add(ParserPool.getInstance().parse(json));
         }

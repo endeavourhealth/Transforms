@@ -4,25 +4,21 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 
 public class ENCNTTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
@@ -68,6 +64,15 @@ public class ENCNTTransformer {
 
         CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
 
+        //we attempt to match episodeOfCare resources up with the HL7 feed, so check the HL7 DB for a episode UUID and carry it over
+        /*if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdentiferCell)) {
+
+            String localUniqueId = orgIdCell.getString();
+            String hl7ReceiverUniqueId = "PIdAssAuth=2.16.840.1.113883.3.2540.1-PatIdValue=10146648-EpIdTypeCode=VISITID-EpIdValue=13032388";
+            String hl7ReceiverScope = csvHelper.getHl7ReceiverGlobalScope();
+
+            csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Organization, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
+        }*/
 
         CsvCell finIdCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
@@ -76,42 +81,59 @@ public class ENCNTTransformer {
 
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, csvHelper);
 
         csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 
-        // Create new encounter
-        if (encounterBuilder != null) {
-//TODO - restore this
+        //if the Encounter previously existed, see if we've changed the patient UUID, in which
+        //case we'll need to update all other resources for the patient
+        if (encounterBuilder.isIdMapped()) {
 
-/*            // Has patient reference changed?
-            String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
-            if (currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
+            UUID oldPatientUuid = EncounterResourceCache.getOriginalPatientUuid(encounterIdCell);
+            if (oldPatientUuid != null) {
+
                 // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
                 // PatientTable reference on EncounterTable resources is handled below
                 // PatientTable reference on EpisodeOfCare resources is handled below
-                changeOfPatient = true;
-                LOG.debug("EncounterTable has changed patient from " + currentPatientUuid + " to " + patientUuid.toString());
+                String newPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
+                LOG.debug("EncounterTable has changed patient from " + oldPatientUuid + " to " + newPatientUuid);
 
-                List<Resource> resourceList = csvHelper.retrieveResourceByPatient(UUID.fromString(currentPatientUuid));
+                List<Resource> resourceList = csvHelper.retrieveResourceByPatient(oldPatientUuid);
                 for (Resource resource : resourceList) {
                     if (resource instanceof Condition) {
                         ConditionBuilder builder = new ConditionBuilder((Condition) resource);
-                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+
                     } else if (resource instanceof Procedure) {
                         ProcedureBuilder builder = new ProcedureBuilder((Procedure) resource);
-                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+
                     } else if (resource instanceof Observation) {
                         ObservationBuilder builder = new ObservationBuilder((Observation) resource);
-                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+
+                    } else if (resource instanceof FamilyMemberHistory) {
+                        FamilyMemberHistoryBuilder builder = new FamilyMemberHistoryBuilder((FamilyMemberHistory)resource);
+                        builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+
+                    } else if (resource instanceof Encounter) {
+                        //encounters will be updated with deltas to the ENCNT file
+
+                    } else if (resource instanceof EpisodeOfCare) {
+                        //episodes will be automatically updated by the EpisodeOfCareResourceCache
+
+                    } else if (resource instanceof Patient) {
+                        //leave the old patient resource alone
+
                     } else {
                         throw new TransformException("Unsupported resource type " + resource.getClass());
                     }
                 }
-            }*/
+            }
         }
 
         // Save visit-id to encounter-id link
@@ -150,7 +172,7 @@ public class ENCNTTransformer {
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
-//TODO - sort out the below
+//TODO - sort out the below - is it needed?
             String checkDest = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
             if (checkDest == null) {
                 csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());

@@ -70,9 +70,9 @@ public class LocationResourceCache {
         LOG.trace("Finishing saving " + placeholderLocationBuilders.size() + " placeholder Locations to the DB");
 
         //clear down as everything has been saved
-        locationBuilders = null;
-        placeholderLocationBuilders = null;
-        locationsCheckedOnDb = null;
+        locationBuilders.clear();
+        placeholderLocationBuilders.clear();
+        locationsCheckedOnDb.clear();
     }
 
 

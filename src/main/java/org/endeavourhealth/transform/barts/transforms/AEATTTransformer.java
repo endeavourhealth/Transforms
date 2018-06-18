@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.AEATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -90,7 +90,7 @@ public class AEATTTransformer {
         }
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, csvHelper);
 
         csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 

@@ -20,8 +20,7 @@ public class EncounterResourceCache {
 
     private static Map<Long, EncounterBuilder> encounterBuildersByEncounterId = new HashMap<>();
     private static Set<Long> encounterIdsJustDeleted = new HashSet<>();
-    //private static Map<UUID, EncounterBuilder> encounterBuildersByUuid = new HashMap<>();
-    //private static Map<UUID, EncounterBuilder> deletedEncounterBuildersByUuid = new HashMap<>();
+    private static Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
     /**
      * the ENCNT transformer deletes Encounters, and records that this has been done here,
@@ -66,9 +65,16 @@ public class EncounterResourceCache {
                 encounterBuildersByEncounterId.put(encounterId, encounterBuilder);
 
                 //always set the person ID fresh, in case the record has been moved to another patient, remembering to forward map to a UUID
-                UUID patientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
-                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-                encounterBuilder.setPatient(patientReference, personIdCell);
+                //but track the old patient UUID so we can use it to update dependent resources
+                UUID oldPatientUuid = UUID.fromString(encounter.getId());
+                UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+                if (!oldPatientUuid.equals(currentPatientUuid)) {
+
+                    encountersWithChangedPatientUuids.put(encounterId, oldPatientUuid);
+
+                    Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, currentPatientUuid.toString());
+                    encounterBuilder.setPatient(patientReference, personIdCell);
+                }
 
             } else {
 
@@ -92,6 +98,8 @@ public class EncounterResourceCache {
 
         return encounterBuilder;
     }
+
+
 
 
     /*public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell, CsvCell finIdCell) throws Exception {
@@ -135,7 +143,13 @@ public class EncounterResourceCache {
 
         //clear down as everything has been saved
         encounterBuildersByEncounterId.clear();
+        encountersWithChangedPatientUuids.clear();
+        encounterIdsJustDeleted.clear();
     }
 
 
+    public static UUID getOriginalPatientUuid(CsvCell encounterIdCell) {
+        Long encounterId = encounterIdCell.getLong();
+        return encountersWithChangedPatientUuids.get(encounterId);
+    }
 }
