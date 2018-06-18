@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
@@ -9,6 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +20,7 @@ public class EncounterBuilder extends ResourceBuilderBase
 
 
     private Encounter encounter = null;
+    private boolean isIdMapped = false;
 
     public EncounterBuilder() {
         this(null);
@@ -29,7 +31,14 @@ public class EncounterBuilder extends ResourceBuilderBase
         if (this.encounter == null) {
             this.encounter = new Encounter();
             this.encounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
+        } else {
+            //if creating from an existing Encounter, then ID mapping has already been done
+            this.isIdMapped = true;
         }
+    }
+
+    public boolean isIdMapped() {
+        return isIdMapped;
     }
 
     @Override
@@ -339,7 +348,7 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("location[" + index + "].location", sourceCells);
     }
 
-    public void addLocation(Encounter.EncounterLocationComponent location, boolean removeIfExists, CsvCell... sourceCells) {
+    /*public void addLocation(Encounter.EncounterLocationComponent location, boolean removeIfExists, CsvCell... sourceCells) {
         if (removeIfExists && this.encounter.hasLocation()) {
             List<Encounter.EncounterLocationComponent> locationList = this.encounter.getLocation();
 
@@ -357,7 +366,7 @@ public class EncounterBuilder extends ResourceBuilderBase
             }
         }
         addLocation(location, sourceCells);
-    }
+    }*/
 
     public Reference getPatient() {
         return this.encounter.getPatient();
@@ -479,5 +488,41 @@ public class EncounterBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.encounter.getIdentifier().remove(identifier);
+    }
+
+    public static boolean removeExistingLocation(EncounterBuilder encounterBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove location without ID");
+        }
+
+        List<Encounter.EncounterLocationComponent> matches = new ArrayList<>();
+
+        List<Encounter.EncounterLocationComponent> locations = encounterBuilder.getLocation();
+        for (Encounter.EncounterLocationComponent location: locations) {
+            //if we match on ID, then remove this name from the parent object
+            if (location.hasId()
+                    && location.getId().equals(idValue)) {
+
+                matches.add(location);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " names for ID " + idValue);
+
+        } else {
+            Encounter.EncounterLocationComponent match = matches.get(0);
+
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = "location[" + (locations.indexOf(match)-1) + "]";
+            encounterBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+            Encounter encounter = (Encounter)encounterBuilder.getResource();
+            encounter.getLocation().remove(match);
+            return true;
+        }
     }
 }

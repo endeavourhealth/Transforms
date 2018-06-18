@@ -1,14 +1,10 @@
 package org.endeavourhealth.transform.tpp.cache;
 
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +15,13 @@ import java.util.Map;
 public class EpisodeOfCareResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareResourceCache.class);
 
-    private static Map<Long, EpisodeOfCareBuilder> EpisodeOfCareBuildersByPatientId = new HashMap<>();
+    private static Map<Long, EpisodeOfCareBuilder> episodeOfCareBuildersByPatientId = new HashMap<>();
+
 
     public static EpisodeOfCareBuilder getOrCreateEpisodeOfCareBuilder(CsvCell rowIdCell, TppCsvHelper csvHelper,
                                                                FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareBuildersByPatientId.get(rowIdCell.getLong());
+        EpisodeOfCareBuilder episodeOfCareBuilder = episodeOfCareBuildersByPatientId.get(rowIdCell.getLong());
         if (episodeOfCareBuilder == null) {
 
             EpisodeOfCare EpisodeOfCare
@@ -37,35 +34,35 @@ public class EpisodeOfCareResourceCache {
                 episodeOfCareBuilder = new EpisodeOfCareBuilder(EpisodeOfCare);
             }
 
-            EpisodeOfCareBuildersByPatientId.put(rowIdCell.getLong(), episodeOfCareBuilder);
+            episodeOfCareBuildersByPatientId.put(rowIdCell.getLong(), episodeOfCareBuilder);
         }
         return episodeOfCareBuilder;
     }
 
     public static EpisodeOfCareBuilder getEpisodeOfCareByRowId(Long rowId) {
-        return EpisodeOfCareBuildersByPatientId.get(rowId);
+        return episodeOfCareBuildersByPatientId.get(rowId);
     }
 
     public static void removeEpisodeOfCareByPatientId(Long id) {
-        EpisodeOfCareBuildersByPatientId.remove(id);
+        episodeOfCareBuildersByPatientId.remove(id);
     }
 
     public static boolean episodeOfCareInCache(Long rowId) {
-        return EpisodeOfCareBuildersByPatientId.containsKey(rowId);
+        return episodeOfCareBuildersByPatientId.containsKey(rowId);
     }
 
     public static int size() {
-        return EpisodeOfCareBuildersByPatientId.size();
+        return episodeOfCareBuildersByPatientId.size();
     }
 
     public static void listRemaining() {
-        for (Long rowId : EpisodeOfCareBuildersByPatientId.keySet()) {
-            EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareBuildersByPatientId.get(rowId);
+        for (Long rowId : episodeOfCareBuildersByPatientId.keySet()) {
+            EpisodeOfCareBuilder episodeOfCareBuilder = episodeOfCareBuildersByPatientId.get(rowId);
             LOG.info(episodeOfCareBuilder.toString());
         }
     }
 
     public static void clear() {
-        EpisodeOfCareBuildersByPatientId.clear();
+        episodeOfCareBuildersByPatientId.clear();
     }
 }

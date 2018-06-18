@@ -1,48 +1,37 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.barts.schema.OPATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class OPATTTransformer extends BartsBasisTransformer {
+public class OPATTTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OPATTTransformer.class);
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
-
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createOutpatientAttendanceEvent((OPATT)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createOutpatientAttendanceEvent((OPATT)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -50,51 +39,29 @@ public class OPATTTransformer extends BartsBasisTransformer {
         }
     }
 
-    public static void createOutpatientAttendanceEvent(OPATT parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createOutpatientAttendanceEvent(OPATT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell personIdCell = parser.getPersonId();
+        CsvCell activeCell = parser.getActiveIndicator();
+
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        if (!activeCell.getIntAsBoolean()) {
+            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
+            return;
+        }
 
         CsvCell finIdCell = parser.getFINNo();
 
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            //skip - inactive entries contains no useful data and the ENCOUNTER row will be inactive too
-            return;
-        }
-
-        // get the associated encounter
-        CsvCell encounterIdCell = parser.getEncounterId();
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
-
-        // Patient
-        CsvCell personIdCell = parser.getPatientId();
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
-        if (patientUuid == null) {
-            TransformWarnings.log(LOG, parser, "Skipping encounter {} because no Person->MRN mapping {} could be found in file {}", encounterIdCell.getString(), personIdCell.getString(), parser.getFilePath());
-            return;
-        }
-
-        // Organisation
-        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
-
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, csvHelper);
 
-        // Create new encounter
-        if (encounterBuilder == null) {
-            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
+//TODO - this reference
+        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
 
-            encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
-        }
-
-        encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
-        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
 
         Date beginDate = null;
         Date endDate = null;
@@ -102,12 +69,8 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell beginDateCell = parser.getAppointmentDateTime();
         CsvCell apptLengthCell = parser.getExpectedAppointmentDuration();
 
-        if (!beginDateCell.isEmpty()) {
-            try {
-                beginDate = formatDaily.parse(beginDateCell.getString());
-            } catch (ParseException ex) {
-                beginDate = formatBulk.parse(beginDateCell.getString());
-            }
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(beginDateCell)) {
+            beginDate = BartsCsvHelper.parseDate(beginDateCell);
 
             encounterBuilder.setPeriodStart(beginDate, beginDateCell);
 
@@ -129,7 +92,7 @@ public class OPATTTransformer extends BartsBasisTransformer {
         } else {
             //if we don't have an outcome, the Encounter is either in progress or in the future
             if (beginDate == null
-                || beginDate.before(new Date())) {
+                || beginDate.after(new Date())) {
 
                 encounterBuilder.setStatus(Encounter.EncounterState.PLANNED, beginDateCell);
 
@@ -166,19 +129,19 @@ public class OPATTTransformer extends BartsBasisTransformer {
         CsvCell currentLocationCell = parser.getLocationCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(currentLocationCell)) {
 
-            UUID locationResourceUUID = LocationResourceCache.getOrCreateLocationUUID(csvHelper, currentLocationCell);
-            if (locationResourceUUID != null) {
-                if (beginDate == null || endDate == null) {
-                    encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, currentLocationCell);
-                } else {
-                    Period apptPeriod = PeriodHelper.createPeriod(beginDate, endDate);
-                    Encounter.EncounterLocationComponent elc = new Encounter.EncounterLocationComponent();
-                    elc.setPeriod(apptPeriod);
-                    elc.setLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()));
-                    encounterBuilder.addLocation(ReferenceHelper.createReference(ResourceType.Location, locationResourceUUID.toString()), true, currentLocationCell, beginDateCell, apptLengthCell);
-                }
+            Reference locationReference = csvHelper.createLocationReference(currentLocationCell);
+            if (encounterBuilder.isIdMapped()) {
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+            }
+
+            if (beginDate == null || endDate == null) {
+                encounterBuilder.addLocation(locationReference, true, currentLocationCell);
             } else {
-                TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in OPATT record {} in file {}", currentLocationCell.getString(), encounterIdCell.getString(), parser.getFilePath());
+                Period apptPeriod = PeriodHelper.createPeriod(beginDate, endDate);
+                Encounter.EncounterLocationComponent elc = new Encounter.EncounterLocationComponent();
+                elc.setPeriod(apptPeriod);
+                elc.setLocation(locationReference);
+                encounterBuilder.addLocation(locationReference, true, currentLocationCell, beginDateCell, apptLengthCell);
             }
         }
 

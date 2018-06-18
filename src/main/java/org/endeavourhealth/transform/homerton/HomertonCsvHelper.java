@@ -12,13 +12,14 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.BasisTransformer;
+import org.endeavourhealth.transform.barts.transformsOld.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +284,9 @@ public class HomertonCsvHelper {
 
             } else {
 
-                ResourceId resourceId = BasisTransformer.getPatientResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
+                //TODO - fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
+                throw new RuntimeException("Code needs fixing");
+                /*ResourceId resourceId = BasisTransformer.getPatientResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
                 if (resourceId == null) {
                     //if we've got the MRN mapping, but haven't actually assigned an ID for it, do so now
                     resourceId = BasisTransformer.createPatientResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
@@ -291,7 +294,7 @@ public class HomertonCsvHelper {
                 }
 
                 UUID patientId = resourceId.getResourceId();
-                personIdToPatientResourceMap.put(personId, patientId);
+                personIdToPatientResourceMap.put(personId, patientId);*/
                 //LOG.trace("Added patient ID " + resourceId.getResourceId() + " to cache " + personIdCell.getString());
             }
         }
@@ -307,10 +310,14 @@ public class HomertonCsvHelper {
             clinicalEventChildMap.put(parentEventId, list);
         }
 
-        //we need to map the child ID to a Discovery UUID
+        //TODO - fix this so ID mapping is either performed or not performed (whichever is right)
+        if (true) {
+            throw new RuntimeException("Fix code");
+        }
+        /*//we need to map the child ID to a Discovery UUID
         ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, childEventIdCell);
         Reference reference = ReferenceHelper.createReference(ResourceType.Observation, observationResourceId.getResourceId().toString());
-        list.add(reference, childEventIdCell);
+        list.add(reference, childEventIdCell);*/
 
     }
 
@@ -338,7 +345,11 @@ public class HomertonCsvHelper {
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //convert the parent event ID to a UUID
-        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null);
+        //TODO - apply ID mapping or not, but this needs thinking through
+        if (true) {
+            throw new RuntimeException("Fix code");
+        }
+        /*CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null);
         ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, dummyCell);
         Observation observation = (Observation)retrieveResource(ResourceType.Observation, observationResourceId.getResourceId());
         if (observation == null) {
@@ -362,7 +373,7 @@ public class HomertonCsvHelper {
         if (changed) {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
             fhirResourceFiler.savePatientResource(null, false, resourceBuilder);
-        }
+        }*/
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {

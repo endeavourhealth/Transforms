@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts.transforms;
+package org.endeavourhealth.transform.barts.transformsOld;
 
 import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
@@ -63,10 +63,16 @@ public class BulkProcedureTransformer extends BartsBasisTransformer {
         // Patient
         CsvCell localPatientIdCell = parser.getLocalPatientId();
         String localPatientId = localPatientIdCell.getString();
-        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, localPatientId);
+
+        //TODO - fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
+        if (true) {
+            throw new RuntimeException("Code needs fixing");
+        }
+        ResourceId patientResourceId = null;
+        /*ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, localPatientId);
         if (patientResourceId == null) {
             patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, localPatientId, null, null, null, null, null, organisationResourceId, null, null, null, null, null);
-        }
+        }*/
 
         // EpisodeOfCare - Procedure record cannot be linked to an EpisodeOfCare
 

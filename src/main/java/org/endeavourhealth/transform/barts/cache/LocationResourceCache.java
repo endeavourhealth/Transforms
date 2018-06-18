@@ -1,17 +1,8 @@
 package org.endeavourhealth.transform.barts.cache;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.common.BasisTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -19,117 +10,70 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-
-import static org.endeavourhealth.transform.common.BasisTransformer.createLocationResourceId;
-import static org.endeavourhealth.transform.common.BasisTransformer.getLocationResourceId;
 
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
 
-    private static Map<UUID, LocationBuilder> locationBuildersByUuid = new HashMap<>();
-    private static Map<String, UUID> locationIdToUuid = new HashMap<>();
+    private static Map<String, LocationBuilder> locationBuilders = new HashMap<>();
+    private static Map<String, LocationBuilder> placeholderLocationBuilders = new HashMap<>();
+    private static Map<String, Boolean> locationsCheckedOnDb = new HashMap<>();
 
-    public static LocationBuilder getLocationBuilder(BartsCsvHelper csvHelper, CsvCell locationIdCell) throws Exception {
+    public static void cacheLocationBuilder(LocationBuilder locationBuilder) {
 
-        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
+        String id = locationBuilder.getResourceId();
+        locationBuilders.put(id, locationBuilder);
 
-        if (locationResourceId == null) {
-            return null;
-        }
-
-        LocationBuilder locationBuilder = locationBuildersByUuid.get(locationResourceId.getResourceId());
-
-        if (locationBuilder == null) {
-
-            Location location = (Location)csvHelper.retrieveResource(ResourceType.Location, locationResourceId.getResourceId());
-            if (location != null) {
-                locationBuilder = new LocationBuilder(location);
-                locationBuildersByUuid.put(locationResourceId.getResourceId(), locationBuilder);
-                locationIdToUuid.put(locationIdCell.getString(), UUID.fromString(locationBuilder.getResourceId()));
-            }
-
-        }
-
-        return locationBuilder;
+        //if the placeholders map contains this ID, then discard it
+        placeholderLocationBuilders.remove(id);
     }
 
-    public static UUID getOrCreateLocationUUID(BartsCsvHelper csvHelper, CsvCell locationIdCell) throws Exception {
-        UUID uuid = getLocationUUID(csvHelper, locationIdCell);
+    public static void cachePlaceholderLocationBuilder(LocationBuilder locationBuilder, BartsCsvHelper csvHelper) throws Exception {
 
-        if (uuid == null) {
-            // Create place holder location
-            LocationBuilder locationBuilder = createLocationBuilder(locationIdCell);
+        String id = locationBuilder.getResourceId();
 
-            locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
-            locationBuilder.setMode(Location.LocationMode.INSTANCE);
-
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
-
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, locationIdCell);
-            if (cernerCodeValueRef != null) {
-                locationBuilder.setName(cernerCodeValueRef.getCodeDispTxt());
-            } else {
-                locationBuilder.setName("Unknown location");
-            }
-
-            uuid = UUID.fromString(locationBuilder.getResourceId());
-
-            locationBuildersByUuid.replace(uuid, locationBuilder);
+        //if the location builder already exists in the proper map, then discard this placeholder
+        if (locationBuilders.containsKey(id)) {
+            return;
         }
 
-        return uuid;
+        //check the DB to see if we have a location resource already, if so discard this placeholder
+        Boolean existsOnDb = locationsCheckedOnDb.get(id);
+        if (existsOnDb == null) {
+            Location existingResource = (Location)csvHelper.retrieveResourceForLocalId(ResourceType.Location, id);
+            existsOnDb = new Boolean(existingResource != null);
+            locationsCheckedOnDb.put(id, existsOnDb);
+        }
+        if (existsOnDb.booleanValue()) {
+            return;
+        }
+
+        placeholderLocationBuilders.put(id, locationBuilder);
     }
 
-    public static UUID getLocationUUID(BartsCsvHelper csvHelper, CsvCell locationIdCell) throws Exception {
-
-        UUID locationResourceUUID = locationIdToUuid.get(locationIdCell.getString());
-
-        if (locationResourceUUID != null) {
-            return locationResourceUUID;
-        }
-
-        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
-
-        if (locationResourceId == null) {
-            return null;
-        } else {
-            locationIdToUuid.put(locationIdCell.getString(), locationResourceId.getResourceId());
-            return locationResourceId.getResourceId();
-        }
-    }
-
-
-    public static LocationBuilder createLocationBuilder(CsvCell locationIdCell) throws Exception {
-
-        ResourceId locationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
-
-        if (locationResourceId == null) {
-            locationResourceId = createLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, locationIdCell.getString());
-        }
-
-        LocationBuilder locationBuilder = new LocationBuilder();
-        locationBuilder.setId(locationResourceId.getResourceId().toString(), locationIdCell);
-
-        locationBuildersByUuid.put(locationResourceId.getResourceId(), locationBuilder);
-        locationIdToUuid.put(locationIdCell.getString(), UUID.fromString(locationBuilder.getResourceId()));
-
-        return locationBuilder;
-    }
 
     public static void fileLocationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LOG.trace("Saving " + locationBuildersByUuid.size() + " Locations to the DB");
-        for (UUID LocationId: locationBuildersByUuid.keySet()) {
-            LocationBuilder LocationBuilder = locationBuildersByUuid.get(LocationId);
-            BasisTransformer.saveAdminResource(fhirResourceFiler, null, LocationBuilder);
+        //save the proper locations
+        LOG.trace("Saving " + locationBuilders.size() + " Locations to the DB");
+        for (String id: locationBuilders.keySet()) {
+            LocationBuilder locationBuilder = locationBuilders.get(id);
+            fhirResourceFiler.saveAdminResource(null, locationBuilder);
         }
-        LOG.trace("Finishing saving " + locationBuildersByUuid.size() + " Locations to the DB");
+        LOG.trace("Finishing saving " + locationBuilders.size() + " Locations to the DB");
+
+        //save the placeholder locations we've generated
+        LOG.trace("Saving " + placeholderLocationBuilders.size() + " placeholder Locations to the DB");
+        for (String id: placeholderLocationBuilders.keySet()) {
+            LocationBuilder locationBuilder = placeholderLocationBuilders.get(id);
+            fhirResourceFiler.saveAdminResource(null, locationBuilder);
+        }
+        LOG.trace("Finishing saving " + placeholderLocationBuilders.size() + " placeholder Locations to the DB");
 
         //clear down as everything has been saved
-        locationBuildersByUuid = new HashMap<>();
+        locationBuilders = null;
+        placeholderLocationBuilders = null;
+        locationsCheckedOnDb = null;
     }
+
+
 }

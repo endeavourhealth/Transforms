@@ -44,7 +44,9 @@ public class IPWDS extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getCDSWardStayId() { return super.getCell("#CDS_WARD_STAY_KEY"); }
+    public CsvCell getCDSWardStayId() {
+        return super.getCell("#CDS_WARD_STAY_KEY");
+    }
 
     public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
@@ -82,25 +84,45 @@ public class IPWDS extends AbstractCsvParser {
         return super.getCell("WARD_LOC_CD");
     }
 
-    public CsvCell getWardAgeGroupIntendedCode() { return super.getCell("WARD_AGE_GRP_INT_NHS_CD_ALIAS"); }
+    public CsvCell getWardAgeGroupIntendedCode() {
+        return super.getCell("WARD_AGE_GRP_INT_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getWardClinicalCareIntensityCode() { return super.getCell("WARD_CC_INTENSITY_NHS_CD_ALIAS"); }
+    public CsvCell getWardClinicalCareIntensityCode() {
+        return super.getCell("WARD_CC_INTENSITY_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getWardDayAvailablitlityCode() { return super.getCell("WARD_DAY_AVAIL_NHS_CD_ALIAS"); }
+    public CsvCell getWardDayAvailablitlityCode() {
+        return super.getCell("WARD_DAY_AVAIL_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getWardNightAvailablitlityCode() { return super.getCell("WARD_NIGHT_AVAIL_NHS_CD_ALIAS"); }
+    public CsvCell getWardNightAvailablitlityCode() {
+        return super.getCell("WARD_NIGHT_AVAIL_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getWardPatientSexCode () { return super.getCell("WARD_PAT_SEX_NHS_CD_ALIAS"); }
+    public CsvCell getWardPatientSexCode() {
+        return super.getCell("WARD_PAT_SEX_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getWardTreatmentSiteCode() { return super.getCell("WARD_TREAT_SITE_NHS_CD_ALIAS"); }
+    public CsvCell getWardTreatmentSiteCode() {
+        return super.getCell("WARD_TREAT_SITE_NHS_CD_ALIAS");
+    }
 
-    public CsvCell getEncounterSliceId() { return super.getCell("ENCNTR_SLICE_ID"); }
+    public CsvCell getEncounterSliceId() {
+        return super.getCell("ENCNTR_SLICE_ID");
+    }
 
-    public CsvCell getWardRoomCode() { return super.getCell("WARD_ROOM_CD"); }
+    public CsvCell getWardRoomCode() {
+        return super.getCell("WARD_ROOM_CD");
+    }
 
-    public CsvCell getWardBedCode() { return super.getCell("WARD_BED_CD"); }
+    public CsvCell getWardBedCode() {
+        return super.getCell("WARD_BED_CD");
+    }
 
-    public CsvCell getWardLocationTypeCode() { return super.getCell("WARD_LOC_TYPE_NHS_CD_ALIAS"); }
+    public CsvCell getWardLocationTypeCode() {
+        return super.getCell("WARD_LOC_TYPE_NHS_CD_ALIAS");
+    }
 
     @Override
     protected String getFileTypeDescription() {

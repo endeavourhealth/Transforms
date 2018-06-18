@@ -7,6 +7,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.*;
@@ -25,7 +26,7 @@ public abstract class BartsCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvToFhirTransformer.class);
 
-    public static final String VERSION_1_0 = "1.0"; //initial version
+    //public static final String VERSION_1_0 = "1.0"; //initial version
     public static final String DATE_FORMAT = "dd/MM/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
@@ -35,11 +36,11 @@ public abstract class BartsCsvToFhirTransformer {
                                                 .withQuote((Character)null)
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
 
-    public static final CSVFormat CSV_FORMAT_NO_HEADER = CSVFormat.DEFAULT
+    /*public static final CSVFormat CSV_FORMAT_NO_HEADER = CSVFormat.DEFAULT
             .withDelimiter('|')
             .withEscape((Character)null)
             .withQuote((Character)null)
-            .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
+            .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this*/
 
     public static final String PRIMARY_ORG_ODS_CODE = "R1H";
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
@@ -69,56 +70,63 @@ public abstract class BartsCsvToFhirTransformer {
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
         //admin transformers
-        CVREFTransformer.transform(version, createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
-        ORGREFTransformer.transform(version, createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        LOREFTransformer.transform(version, createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
+        LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
-        PRSNLREFTransformer.transform(version, createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
+        PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
 
         //patient transformers
-        PPATITransformer.transform(version, createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPADDTransformer.transform(version, createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPALITransformer.transform(version, createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        //PPINFTransformer.transform(version, createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPNAMTransformer.transform(version, createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPPHOTransformer.transform(version, createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPRELTransformer.transform(version, createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        PPAGPTransformer.transform(version, createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PPATIPreTransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
+        PPATITransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
+        PPADDTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
+        PPALITransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper);
+        //PPINFTransformer.transform(createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper);
+        PPNAMTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper);
+        PPPHOTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper);
+        PPRELTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper);
+        PPAGPTransformer.transform(createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper);
 
         //we're now good to save our patient resources
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
         // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
-        ENCNTTransformer.transform(version, createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        AEATTTransformer.transform(version, createParsers(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        OPATTTransformer.transform(version, createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        IPEPITransformer.transform(version, createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        IPWDSTransformer.transform(version, createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        //ENCINFTransformer.transform(version, createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
+        AEATTTransformer.transform(createParsers(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper);
+        OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper);
+        IPEPITransformer.transform(createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper);
+        IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper);
+        ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
+        EpisodeOfCareCache.fileResources(fhirResourceFiler);
 
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
-        PROCETransformer.transform(version, createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
 
-        CLEVEPreTransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        CLEVETransformer.transform(version, createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-        ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
+        CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
+        ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
 
-        FamilyHistoryTransformer.transform(version, createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+        //TODO - need to import NOMREF
+//        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
 
         if (TransformConfig.instance().isTransformCerner21Files()) {
-            
-            BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+            //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
+            //have fallen behind and need updating to do the same, then testing
+            if (true) {
+                throw new RuntimeException("Cerner 2.1 transforms need fixing to use proper ID mapping");
+            }
+            /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BULKDIAGNOSES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROCEDURES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAG", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROC", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SUSAEA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
             SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSIP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-            SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+            SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
         }
 
         //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now

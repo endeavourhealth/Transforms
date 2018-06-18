@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.barts.schema.PPPHO;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -19,21 +18,17 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class PPPHOTransformer extends BartsBasisTransformer {
+public class PPPHOTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPPHOTransformer.class);
 
-
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatientPhone((PPPHO) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientPhone((PPPHO) parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -43,24 +38,10 @@ public class PPPHOTransformer extends BartsBasisTransformer {
     }
 
 
-    public static void createPatientPhone(PPPHO parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          BartsCsvHelper csvHelper,
-                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createPatientPhone(PPPHO parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        //if no number, then nothing to process
-        CsvCell numberCell = parser.getPhoneNumber();
-        if (numberCell.isEmpty()) {
-            return;
-        }
-
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        if (patientBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Skipping PPPHO record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
-            return;
-        }
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         CsvCell phoneIdCell = parser.getMillenniumPhoneId();
@@ -73,6 +54,12 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             return;
         }
 
+        //if no number, then nothing to process
+        CsvCell numberCell = parser.getPhoneNumber();
+        if (numberCell.isEmpty()) {
+            return;
+        }
+
         String number = numberCell.getString();
 
         //just append the extension on to the number
@@ -81,33 +68,29 @@ public class PPPHOTransformer extends BartsBasisTransformer {
             number += " " + extensionCell.getString();
         }
 
-
-        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        String phoneTypeDesc = null;
-        if (!phoneTypeCell.isEmpty() && phoneTypeCell.getLong() > 0) {
-
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_TYPE, phoneTypeCell);
-            phoneTypeDesc = codeRef.getCodeMeaningTxt();
-
-        }
-
-        CsvCell phoneMethodCell = parser.getContactMethodCode();
-        String phoneMethodDesc = null;
-        if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
-
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_METHOD, phoneMethodCell);
-            phoneMethodDesc = codeRef.getCodeMeaningTxt();
-        }
-
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
         contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
         contactPointBuilder.setValue(number, numberCell, extensionCell);
 
-        ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
-        contactPointBuilder.setUse(use, phoneTypeCell);
+        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
+        String phoneTypeDesc = null;
+        if (!BartsCsvHelper.isEmptyOrIsZero(phoneTypeCell)) {
 
-        ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
-        contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell);
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_TYPE, phoneTypeCell);
+            phoneTypeDesc = codeRef.getCodeMeaningTxt();
+            ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
+            contactPointBuilder.setUse(use, phoneTypeCell);
+        }
+
+        CsvCell phoneMethodCell = parser.getContactMethodCode();
+        if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
+
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_METHOD, phoneMethodCell);
+            String phoneMethodDesc = codeRef.getCodeMeaningTxt();
+
+            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
+            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell);
+        }
 
         CsvCell startDate = parser.getBeginEffectiveDateTime();
         if (!startDate.isEmpty()) {

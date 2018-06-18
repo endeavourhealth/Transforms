@@ -10,36 +10,24 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class CLEVEPreTransformer extends BartsBasisTransformer {
+public class CLEVEPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVEPreTransformer.class);
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
-                try {
-                    processRecord((CLEVE) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
 
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //no try/catch here, since any failure here means we don't want to continue
+                processRecord((CLEVE)parser, fhirResourceFiler, csvHelper);
             }
         }
     }
 
 
-    public static void processRecord(CLEVE parser,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         BartsCsvHelper csvHelper,
-                                         String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         //observations have bi-directional child-parent links. We can create the child-to-parent link when processing
         //the CLEVE file normally, but need to pre-cache the links in order to create the parent-to-child ones
@@ -47,6 +35,5 @@ public class CLEVEPreTransformer extends BartsBasisTransformer {
         CsvCell parentEventIdCell = parser.getParentEventId();
         csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
     }
-
 
 }

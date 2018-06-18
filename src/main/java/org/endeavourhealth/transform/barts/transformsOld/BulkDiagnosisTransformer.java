@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts.transforms;
+package org.endeavourhealth.transform.barts.transformsOld;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.*;
@@ -55,10 +55,16 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
         CsvCell localPatientIdCell = parser.getLocalPatientId();
         String localPatientId = localPatientIdCell.getString();
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(localPatientId))};
-        ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, localPatientId);
+
+        //TODO - fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
+        if (true) {
+            throw new RuntimeException("Code needs fixing");
+        }
+        ResourceId patientResourceId = null;
+        /*ResourceId patientResourceId = getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, localPatientId);
         if (patientResourceId == null) {
             patientResourceId = resolvePatientResource(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, null, parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, localPatientId, null, null,null, null, null, organisationResourceId, null, patientIdentifier, null, null, null);
-        }
+        }*/
         // EpisodeOfCare - Diagnosis record cannot be linked to an EpisodeOfCare
 
         CsvCell diagnosisIdCell = parser.getDiagnosisId();

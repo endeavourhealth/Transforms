@@ -1,14 +1,10 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressHelper;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.LOREF;
@@ -16,38 +12,27 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirResourceFilerI;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Location;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class LOREFTransformer extends BartsBasisTransformer {
+public class LOREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LOREFTransformer.class);
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 List<ParserI> parsers,
-                                 FhirResourceFilerI fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+
+    public static void transform(List<ParserI> parsers, FhirResourceFilerI fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createLocation((LOREF) parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createLocation((LOREF)parser, (FhirResourceFiler)fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -56,178 +41,153 @@ public class LOREFTransformer extends BartsBasisTransformer {
         }
     }
 
-
-    /*
-     *
+    /**
+     * confusingly, this function can end up creating multiple resources. THe row in the LOREF file does
+     * represent a single location, but it also contains enough parent hierarchy info that we
+     * can create any missing parent organisations
      */
-    public static void createLocation(LOREF parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      BartsCsvHelper csvHelper,
-                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createLocation(LOREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        //LOG.debug("Line number " + parser.getCurrentLineNumber() + " locationId " +  parser.getLocationId().getString());
+        //the hierarchy list starts with the "current" location (i.e. the one actually represented by this CSV record)
+        //so we always want to create the Location resource for that, but we only want to do the others
+        //if we can't find them
+        List<IdCellAndPhysicalType> hierarchy = createHierarchy(parser);
+        boolean first = true;
 
-        ResourceId parentLocationResourceId = null;
-        // Extract locations
-        CsvCell facilityLoc = parser.getFacilityLocation();
-        CsvCell buildingLoc = parser.getBuildingLocation();
-        CsvCell surgeryLocationCode = parser.getSurgeryLocation();
-        CsvCell ambulatoryLoc = parser.getAmbulatoryLocation();
-        CsvCell nurseUnitLoc = parser.getNurseUnitLocation();
-        CsvCell roomLoc = parser.getRoomLocation();
-        CsvCell bedLoc = parser.getBedLcoation();
-        CsvCell beginDateCell = parser.getBeginEffectiveDateTime();
-        CsvCell locationIdCell = parser.getLocationId();
+        while (!hierarchy.isEmpty()) {
 
-        Date beginDate = null;
-        try {
-            beginDate = formatDaily.parse(beginDateCell.getString());
-        } catch (ParseException ex) {
-            beginDate = formatBulk.parse(beginDateCell.getString());
-        }
-        CsvCell endDateCell = parser.getEndEffectiveDateTime();
-        Date endDate = null;
-        try {
-            endDate = formatDaily.parse(endDateCell.getString());
-        } catch (ParseException ex) {
-            endDate = formatBulk.parse(endDateCell.getString());
-        }
-        //LOG.debug("Location active from " + beginDate.toString() + " until " + endDate.toString());
+            LocationBuilder locationBuilder = createLocationBuilder(hierarchy, csvHelper);
 
-        // Location resource id
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(csvHelper, locationIdCell);
-        if (locationBuilder == null) {
-            locationBuilder = LocationResourceCache.createLocationBuilder(locationIdCell);
-        }
+            if (first) {
+                //if the first record, we want to use the dates in the CSV record to work out the active state
 
-        createMissingReferencedLocations(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc, fhirResourceFiler, parser, csvHelper);
+                CsvCell endDateCell = parser.getEndEffectiveDateTime();
+                if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
 
-        // Get parent resource id
-        String parentId = getParentId(facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-        if (parentId != null) {
-            parentLocationResourceId = getLocationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, parentId);
-        }
+                    Date endDate = BartsCsvHelper.parseDate(endDateCell);
+                    if (endDate.before(new Date())) {
+                        locationBuilder.setStatus(Location.LocationStatus.INACTIVE, endDateCell);
 
-        // Organisation
-        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
+                    } else {
+                        locationBuilder.setStatus(Location.LocationStatus.ACTIVE, endDateCell);
+                    }
+                } else {
+                    //if no end date, it's active
+                    locationBuilder.setStatus(Location.LocationStatus.ACTIVE, endDateCell);
+                }
 
-        // Identifier
-        if (!locationIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_LOCATION_ID);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(locationIdCell.getString(), locationIdCell);
+                first = false;
+
+                LocationResourceCache.cacheLocationBuilder(locationBuilder);
+
+            } else {
+                //if not the first location in the hierarchy, this is really just a placehold for the proper record, if we find it
+                LocationResourceCache.cachePlaceholderLocationBuilder(locationBuilder, csvHelper);
             }
         }
+    }
 
-        // Status
-        Date now = new Date();
-        if (now.after(beginDate) && now.before(endDate)) {
-            //fhirLocation.setStatus(Location.LocationStatus.ACTIVE);
-            locationBuilder.setStatus(Location.LocationStatus.ACTIVE, beginDateCell, endDateCell);
-        } else {
-            //fhirLocation.setStatus(Location.LocationStatus.INACTIVE);
-            locationBuilder.setStatus(Location.LocationStatus.INACTIVE, beginDateCell, endDateCell);
+    private static LocationBuilder createLocationBuilder(List<IdCellAndPhysicalType> locationHierarchy, BartsCsvHelper csvHelper) throws Exception {
+
+        IdCellAndPhysicalType o = locationHierarchy.get(0);
+        CsvCell locationIdCell = o.getIdCell();
+        LocationPhysicalType physicalType = o.getPhysicalType();
+
+        LocationBuilder locationBuilder = new LocationBuilder();
+        locationBuilder.setId(locationIdCell.getString(), locationIdCell);
+
+        // Parent location
+        if (locationHierarchy.size() > 1) {
+            IdCellAndPhysicalType p = locationHierarchy.get(1);
+            CsvCell parentIdCell = p.getIdCell();
+            Reference parentLocationReference = ReferenceHelper.createReference(ResourceType.Location, parentIdCell.getString());
+            locationBuilder.setPartOf(parentLocationReference, parentIdCell);
         }
 
-        // Physical type
-        //fhirLocation.setPhysicalType(getPhysicalType(facilityLoc.getString(),buildingLoc.getString(),ambulatoryLoc.getString(),nurseUnitLoc.getString(),roomLoc .getString(),bedLoc.getString()));
-        CodeableConcept physicalType = new CodeableConcept();
-        if (!bedLoc.isEmpty() && bedLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.BED, bedLoc);
-        } else if (!roomLoc.isEmpty() && roomLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.ROOM, roomLoc);
-        } else if (!nurseUnitLoc.isEmpty() && nurseUnitLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.NURSEUNIT, nurseUnitLoc);
-        } else if (!ambulatoryLoc.isEmpty() && ambulatoryLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.AMBULATORY, ambulatoryLoc);
-        } else if (!buildingLoc.isEmpty() && buildingLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.BUILDING, buildingLoc);
-        } else if (!facilityLoc.isEmpty() && facilityLoc.getLong() > 0) {
-            locationBuilder.setPhysicalType(LocationPhysicalType.FACILITY, facilityLoc);
+        // managing org
+        String orgId = csvHelper.findOrgRefIdForBarts();
+        Reference orgReference = ReferenceHelper.createReference(ResourceType.Organization, orgId);
+        locationBuilder.setManagingOrganisation(orgReference);
+
+        // Name
+        String name = generateName(csvHelper, locationHierarchy);
+        locationBuilder.setName(name, locationIdCell);
+
+        locationBuilder.setPhysicalType(physicalType, locationIdCell);
+
+        //type
+        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, locationIdCell);
+        if (codeRef != null) {
+            String typeDesc = codeRef.getCodeMeaningTxt();
+            locationBuilder.setTypeFreeText(typeDesc, locationIdCell);
         }
 
         // Mode
         locationBuilder.setMode(Location.LocationMode.INSTANCE);
 
-        // Description
-        /*ArrayList<CsvCell> dependencyList = new ArrayList<CsvCell>();
-        String description = createDescription(fhirResourceFiler, facilityLoc,buildingLoc,ambulatoryLoc,nurseUnitLoc,roomLoc,bedLoc, dependencyList);
-        //fhirLocation.setDescription(description);
-        CsvCell[] dependencyArray = dependencyList.toArray(new CsvCell[dependencyList.size()]);
-        locationBuilder.setDescription(description, dependencyArray);*/
+        //remove the first entry because we've done this level of the hierarchy
+        locationHierarchy.remove(0);
 
-        // Name
-        String name = generateName(csvHelper, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-        locationBuilder.setName(name, facilityLoc, buildingLoc, surgeryLocationCode, ambulatoryLoc, nurseUnitLoc, roomLoc, bedLoc);
-
-        // managing org
-        locationBuilder.setManagingOrganisation(ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString()));
-
-        // Parent location
-        if (parentLocationResourceId != null) {
-            locationBuilder.setPartOf(ReferenceHelper.createReference(ResourceType.Location, parentLocationResourceId.getResourceId().toString()));
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Save Location (LocationId=" + parser.getLocationId().getString() + "):" + FhirSerializationHelper.serializeResource(locationBuilder.getResource()));
-        }
+        return locationBuilder;
     }
 
-    /*
-     *
-     */
-    private static void createMissingReferencedLocations(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode, FhirResourceFiler fhirResourceFiler, ParserI parser, BartsCsvHelper csvHelper) throws Exception {
-        ResourceId locationResourceId = null;
-        UUID uuid = null;
-        LocationBuilder subLocationBuilder;
+    private static List<IdCellAndPhysicalType> createHierarchy(LOREF parser) {
 
-        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, facilityCode);
+        List<IdCellAndPhysicalType> ret = new ArrayList<>();
+
+        CsvCell bedLoc = parser.getBedLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(bedLoc)) {
+            ret.add(new IdCellAndPhysicalType(bedLoc, LocationPhysicalType.BED));
         }
 
-        if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, buildingCode);
+        CsvCell roomLoc = parser.getRoomLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(roomLoc)) {
+            ret.add(new IdCellAndPhysicalType(roomLoc, LocationPhysicalType.ROOM));
         }
 
-        if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, surgeryLocationCode);
+        CsvCell nurseUnitLoc = parser.getNurseUnitLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(nurseUnitLoc)) {
+            ret.add(new IdCellAndPhysicalType(nurseUnitLoc, LocationPhysicalType.NURSEUNIT));
         }
 
-        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, ambulatoryCode);
+        CsvCell ambulatoryLoc = parser.getAmbulatoryLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(ambulatoryLoc)) {
+            ret.add(new IdCellAndPhysicalType(ambulatoryLoc, LocationPhysicalType.AMBULATORY));
         }
 
-        if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, nurseUnitCode);
+        CsvCell surgeryLocationCode = parser.getSurgeryLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(surgeryLocationCode)) {
+            ret.add(new IdCellAndPhysicalType(surgeryLocationCode, LocationPhysicalType.SURGICAL));
         }
 
-        if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, roomCode);
+        CsvCell buildingLoc = parser.getBuildingLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(buildingLoc)) {
+            ret.add(new IdCellAndPhysicalType(buildingLoc, LocationPhysicalType.BUILDING));
         }
 
-        if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            uuid = LocationResourceCache.getOrCreateLocationUUID(csvHelper, bedCode);
+        CsvCell facilityLoc = parser.getFacilityLocation();
+        if (!BartsCsvHelper.isEmptyOrIsZero(facilityLoc)) {
+            ret.add(new IdCellAndPhysicalType(facilityLoc, LocationPhysicalType.FACILITY));
         }
+
+        return ret;
     }
 
-    /*
-     *
+
+    /**
+     * generates a name for the Location resource, by combining the location name with all its parents
      */
-    private static String generateName(BartsCsvHelper csvHelper, CsvCell... sourceCells) throws Exception {
+    private static String generateName(BartsCsvHelper csvHelper, List<IdCellAndPhysicalType> locationHierarchy) throws Exception {
         List<String> tokens = new ArrayList<>();
 
-        for (CsvCell cell: sourceCells) {
-            if ((cell != null) && (!cell.isEmpty()) && (cell.getLong() > 0)) {
+        for (IdCellAndPhysicalType locationObj: locationHierarchy) {
+            CsvCell cell = locationObj.getIdCell();
 
-                CernerCodeValueRef cernerCodeDef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, cell);
-                if (cernerCodeDef !=null && cernerCodeDef.getCodeDispTxt() != null) {
-                    tokens.add(cernerCodeDef.getCodeDispTxt());
-                } else {
-                    tokens.add("Unknown Location (" + cell.getLong() + ")");
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, cell);
+            if (codeRef != null) {
+                String codeDesc = codeRef.getCodeDispTxt();
+                if (!Strings.isNullOrEmpty(codeDesc)) {
+                    tokens.add(codeDesc);
                 }
             }
         }
@@ -235,42 +195,22 @@ public class LOREFTransformer extends BartsBasisTransformer {
         return String.join(", ", tokens);
     }
 
-    private static String getParentId(CsvCell facilityCode, CsvCell buildingCode, CsvCell surgeryLocationCode, CsvCell ambulatoryCode, CsvCell nurseUnitCode, CsvCell roomCode, CsvCell bedCode) {
-        ArrayList<String> locationList = new ArrayList<String>();
 
-        if (!bedCode.isEmpty() && bedCode.getLong() > 0) {
-            locationList.add(bedCode.getString());
+    static class IdCellAndPhysicalType {
+        private CsvCell idCell = null;
+        private LocationPhysicalType physicalType = null;
+
+        public IdCellAndPhysicalType(CsvCell idCell, LocationPhysicalType physicalType) {
+            this.idCell = idCell;
+            this.physicalType = physicalType;
         }
 
-        if (!roomCode.isEmpty() && roomCode.getLong() > 0) {
-            locationList.add(roomCode.getString());
+        public CsvCell getIdCell() {
+            return idCell;
         }
 
-        if (!nurseUnitCode.isEmpty() && nurseUnitCode.getLong() > 0) {
-            locationList.add(nurseUnitCode.getString());
-        }
-
-        if (!ambulatoryCode.isEmpty() && ambulatoryCode.getLong() > 0) {
-            locationList.add(ambulatoryCode.getString());
-        }
-
-        if (!surgeryLocationCode.isEmpty() && surgeryLocationCode.getLong() > 0) {
-            locationList.add(surgeryLocationCode.getString());
-        }
-
-        if (!buildingCode.isEmpty() && buildingCode.getLong() > 0) {
-            locationList.add(buildingCode.getString());
-        }
-
-        if (!facilityCode.isEmpty() && facilityCode.getLong() > 0) {
-            locationList.add(facilityCode.getString());
-        }
-
-        if (locationList.size() > 1) {
-            return locationList.get(1);
-        } else {
-            return null;
+        public LocationPhysicalType getPhysicalType() {
+            return physicalType;
         }
     }
-
 }

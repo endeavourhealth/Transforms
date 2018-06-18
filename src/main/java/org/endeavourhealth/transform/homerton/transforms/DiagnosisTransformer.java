@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -62,7 +61,12 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         CsvCell diagnosisId = parser.getDiagnosisId();
         CsvCell personIdCell = parser.getPersonId();
 
-        ResourceId conditionResourceId = getOrCreateConditionResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, diagnosisId);
+        //TODO - fix to not use HL7 DB as a mapping store
+        if (true) {
+            throw new RuntimeException("FIX CODE");
+        }
+        ResourceId conditionResourceId = null;
+        //ResourceId conditionResourceId = getOrCreateConditionResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, diagnosisId);
 
         // PatientTable
         UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);

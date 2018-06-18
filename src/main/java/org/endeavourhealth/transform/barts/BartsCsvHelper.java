@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -13,9 +12,12 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientContactBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -24,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
-import static org.endeavourhealth.transform.common.BasisTransformer.getLocationResourceId;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
@@ -37,23 +37,26 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+    private static Date cachedEndOfTime = null;
+    private static Date cachedStartOfTime = null;
 
-    private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
-    private static Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
+    private CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+    private Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
-    private static HashMap<String, ResourceId> resourceIds = new HashMap<>();
-    private static Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
-    private static HashMap<String, String> internalIdMapCache = new HashMap<>();
-    private static Date cachedEndOfTime = null;
+    private HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
+    //private HashMap<String, ResourceId> resourceIds = new HashMap<>();
+    //private Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
+    private HashMap<String, String> internalIdMapCache = new HashMap<>();
+    private String cachedBartsOrgRefId = null;
 
-    //non-static caches
-    private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
+    private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>();
+    /*private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
-    private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
+    private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();*/
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
+    private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -143,7 +146,23 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ret;
     }
 
-    public Resource retrieveResource(ResourceType resourceType, UUID resourceId) throws Exception {
+    public Resource retrieveResourceForLocalId(ResourceType resourceType, CsvCell locallyUniqueIdCell) throws Exception {
+        return retrieveResourceForLocalId(resourceType, locallyUniqueIdCell.getString());
+    }
+
+    public Resource retrieveResourceForLocalId(ResourceType resourceType, String locallyUniqueId) throws Exception {
+
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
+
+        //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
+        if (globallyUniqueId == null) {
+            return null;
+        }
+
+        return retrieveResourceForUuid(resourceType, globallyUniqueId);
+    }
+
+    public Resource retrieveResourceForUuid(ResourceType resourceType, UUID resourceId) throws Exception {
 
         ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
 
@@ -154,16 +173,33 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         String json = resourceHistory.getResourceData();
-        return ParserPool.getInstance().parse(json);
+        try {
+            return FhirSerializationHelper.deserializeResource(json);
+        } catch (Throwable t) {
+            throw new Exception("Error deserialising " + resourceType + " " + resourceId, t);
+        }
     }
 
-    public Reference createPractitionerReference(String practitionerGuid) throws Exception {
+
+    /*public Reference createPractitionerReference(String practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
+    }*/
+
+    public Reference createPatientReference(CsvCell personIdCell) {
+        return ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
     }
 
-    /*public Reference createPractitionerReference(CsvCell practitionerIdCell) throws Exception {
+    public Reference createPractitionerReference(CsvCell practitionerIdCell) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerIdCell.getString());
-    }*/
+    }
+
+    public Reference createLocationReference(CsvCell locationIdCell) {
+        return ReferenceHelper.createReference(ResourceType.Location, locationIdCell.getString());
+    }
+
+    public Reference createOrganizationReference(CsvCell organisationIdCell) {
+        return ReferenceHelper.createReference(ResourceType.Organization, organisationIdCell.getString());
+    }
 
     public String getProcedureOrDiagnosisConceptCodeType(CsvCell cell) {
         if (cell.isEmpty()) {
@@ -199,7 +235,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public void saveLocationUUIDToCache(String locationId, UUID resourceUUID) throws Exception {
+    /*public void saveLocationUUIDToCache(String locationId, UUID resourceUUID) throws Exception {
         locationIdMap.put(locationId, resourceUUID);
     }
 
@@ -218,7 +254,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         return null;
-    }
+    }*/
 
     public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
 
@@ -249,6 +285,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
         if (cernerCodeFromDB == null) {
+            TransformWarnings.log(LOG, this, "Failed to find Cerner CVREF record for code {} and code set {}", codeCell.getString(), codeSet);
            // return new CernerCodeValueRef();
             return null;
         }
@@ -273,7 +310,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return cernerCodeFromDB;
     }
 
-    public static ResourceId getResourceIdFromCache(String resourceIdLookup) {
+    /*public static ResourceId getResourceIdFromCache(String resourceIdLookup) {
         return resourceIds.get(resourceIdLookup);
     }
 
@@ -282,22 +319,39 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
                 + "|" + resourceId.getResourceType()
                 + "|" + resourceId.getUniqueId() ;
         resourceIds.put(resourceIdLookup, resourceId);
-    }
+    }*/
 
-
-    public UUID findEncounterResourceIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
-        ensureEncounterIdsAreCached(encounterIdCell);
+    public void cacheEncounterIdToPersonId(CsvCell encounterIdCell, CsvCell personIdCell) {
         Long encounterId = encounterIdCell.getLong();
-        return encounterIdToEnconterResourceMap.get(encounterId);
+        String personId = personIdCell.getString();
+        encounterIdToPersonIdMap.put(encounterId, personId);
     }
 
-    public UUID findPatientIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
-        ensureEncounterIdsAreCached(encounterIdCell);
+    public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
         Long encounterId = encounterIdCell.getLong();
-        return encounterIdToPatientResourceMap.get(encounterId);
+        String ret = encounterIdToPersonIdMap.get(encounterId);
+        if (ret == null
+                && !encounterIdToPersonIdMap.containsKey(encounterId)) { //we add null values to the map, so check for the key being present too
+
+            Encounter encounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell);
+            if (encounter == null) {
+                //if no encounter, then add null to the map to save us hitting the DB repeatedly for the same encounter
+                encounterIdToPersonIdMap.put(encounterId, null);
+
+            } else {
+
+                //we then need to backwards convert the patient UUID to the person ID it came from
+                Reference patientUuidReference = encounter.getPatient();
+                Reference patientPersonIdReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(this, patientUuidReference);
+                ret = ReferenceHelper.getReferenceId(patientPersonIdReference);
+                encounterIdToPersonIdMap.put(encounterId, ret);
+            }
+        }
+
+        return ret;
     }
 
-    public void cacheEncounterIds(CsvCell encounterIdCell, Encounter encounter) {
+    /*public void cacheEncounterIds(CsvCell encounterIdCell, Encounter encounter) {
         Long encounterId = encounterIdCell.getLong();
 
         String id = encounter.getId();
@@ -327,7 +381,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        Encounter fhirEncounter = (Encounter)retrieveResource(ResourceType.Encounter, encounterResourceId.getResourceId());
+        Encounter fhirEncounter = (Encounter)retrieveResourceForUuid(ResourceType.Encounter, encounterResourceId.getResourceId());
         if (fhirEncounter == null) {
             //if encounter has been deleted, add nulls to the map so we don't keep hitting the DB
             encounterIdToEnconterResourceMap.put(encounterId, null);
@@ -336,10 +390,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         cacheEncounterIds(encounterIdCell, fhirEncounter);
-    }
+    }*/
 
 
-    public UUID findPatientIdFromPersonId(CsvCell personIdCell) throws Exception {
+    /*public UUID findPatientIdFromPersonId(CsvCell personIdCell) throws Exception {
 
         Long personId = personIdCell.getLong();
 
@@ -369,7 +423,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         return personIdToPatientResourceMap.get(personId);
-    }
+    }*/
 
     public void cacheParentChildClinicalEventLink(CsvCell childEventIdCell, CsvCell parentEventIdCell) throws Exception {
         Long parentEventId = parentEventIdCell.getLong();
@@ -380,10 +434,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         //we need to map the child ID to a Discovery UUID
-        ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, childEventIdCell);
-        Reference reference = ReferenceHelper.createReference(ResourceType.Observation, observationResourceId.getResourceId().toString());
+        Reference reference = ReferenceHelper.createReference(ResourceType.Observation, childEventIdCell.getString());
         list.add(reference, childEventIdCell);
-
     }
 
     public ReferenceList getAndRemoveClinicalEventParentRelationships(CsvCell parentEventIdCell) {
@@ -409,15 +461,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                             ReferenceList childResourceRelationships,
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        //convert the parent event ID to a UUID
-        CsvCell dummyCell = new CsvCell(-1, -1, "" + parentEventId, null);
-        ResourceId observationResourceId = BasisTransformer.getOrCreateObservationResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, dummyCell);
-        Observation observation = (Observation)retrieveResource(ResourceType.Observation, observationResourceId.getResourceId());
+        Observation observation = (Observation)retrieveResourceForLocalId(ResourceType.Observation, parentEventId.toString());
         if (observation == null) {
             return;
         }
 
-        ResourceBuilderBase resourceBuilder = new ObservationBuilder(observation);
+        ObservationBuilder observationBuilder = new ObservationBuilder(observation);
 
         boolean changed = false;
 
@@ -425,15 +474,17 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             Reference reference = childResourceRelationships.getReference(i);
             CsvCell[] sourceCells = childResourceRelationships.getSourceCells(i);
 
-            ObservationBuilder observationBuilder = (ObservationBuilder)resourceBuilder;
-            if (observationBuilder.addChildObservation(reference, sourceCells)) {
+            //the resource ID already ID mapped, so we need to forward map the reference to discovery UUIDs
+            Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+
+            if (observationBuilder.addChildObservation(globallyUniqueReference, sourceCells)) {
                 changed = true;
             }
         }
 
         if (changed) {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, resourceBuilder);
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
     }
 
@@ -451,6 +502,23 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         Date d = BartsCsvHelper.parseDate(dateCell);
         if (d.equals(cachedEndOfTime)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean isEmptyOrIsStartOfTime(CsvCell dateCell) throws Exception {
+        if (dateCell.isEmpty()) {
+            return true;
+        }
+
+        if (cachedStartOfTime == null) {
+            cachedStartOfTime = new SimpleDateFormat("yyyy-MM-dd").parse("1800-01-01");
+        }
+
+        Date d = BartsCsvHelper.parseDate(dateCell);
+        if (d.equals(cachedStartOfTime)) {
             return true;
         }
 
@@ -510,6 +578,32 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     }
 
+
+
+    /**
+     * looks up the UUID for the Organization resource that represents Barts itself
+     */
+    public UUID findOrganizationResourceIdForBarts() throws Exception {
+        String orgRefId = findOrgRefIdForBarts();
+        return IdHelper.getEdsResourceId(serviceId, ResourceType.Organization, orgRefId);
+    }
+
+    public String findOrgRefIdForBarts() throws Exception {
+
+        //if already cached
+        if (cachedBartsOrgRefId != null) {
+            return cachedBartsOrgRefId;
+        }
+
+        //if not cached, we need to look it up its ORGREF ID using its ODS code
+        cachedBartsOrgRefId = getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, BartsCsvToFhirTransformer.PRIMARY_ORG_ODS_CODE);
+        if (cachedBartsOrgRefId == null) {
+            throw new TransformException("Failed to find ORGREF ID for ODS code " + BartsCsvToFhirTransformer.PRIMARY_ORG_ODS_CODE);
+        }
+
+        return cachedBartsOrgRefId;
+    }
+
     /**
      * bulks and deltas have different date formats, so use this to handle both
      */
@@ -537,4 +631,36 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
+    public void cachePatientRelationshipType(CsvCell relationshipIdCell, String typeDesc) {
+        Long relationshipId = relationshipIdCell.getLong();
+        patientRelationshipTypeMap.put(relationshipId, typeDesc);
+    }
+
+    public String getPatientRelationshipType(CsvCell relationshipIdCell, CsvCell personIdCell) throws Exception {
+        //check the cache first, which will contain the new relationships from this Exchange
+        Long relationshipId = relationshipIdCell.getLong();
+        String ret = patientRelationshipTypeMap.get(relationshipId);
+        if (ret != null) {
+            return ret;
+        }
+
+        //if not in the cache, check the DB, which means retrieving the patient
+        Patient patient = (Patient)retrieveResourceForLocalId(ResourceType.Patient, personIdCell);
+        if (patient == null) {
+            return null;
+        }
+
+        PatientBuilder patientBuilder = new PatientBuilder(patient);
+        Patient.ContactComponent relationship = PatientContactBuilder.findExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+        if (relationship == null) {
+            return null;
+        }
+
+        if (!relationship.hasRelationship()) {
+            return null;
+        }
+
+        CodeableConcept codeableConcept = relationship.getRelationship().get(0);
+        return codeableConcept.getText();
+    }
 }

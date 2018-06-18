@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.common;
+package org.endeavourhealth.transform.barts.transformsOld;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
@@ -10,7 +10,9 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
@@ -33,7 +35,15 @@ public class BasisTransformer {
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);
      */
     public static ResourceId getResourceId(String scope, String resourceType, String uniqueId) throws Exception {
-        //Try to find the resourceId in the cache first
+
+        //all the Cerner 2.2 transforms have been rewritten to use standard ID mapping
+        //so all the 2.1 stuff no longer works. This needs fixing (to use standard mapping) and testing
+        if (true) {
+            throw new RuntimeException("This node needs fixing");
+        }
+        return null;
+
+        /*//Try to find the resourceId in the cache first
         String resourceIdLookup = scope + "|" + resourceType + "|" + uniqueId;
         ResourceId resourceId  = BartsCsvHelper.getResourceIdFromCache (resourceIdLookup);
         if (resourceId != null) {
@@ -42,7 +52,7 @@ public class BasisTransformer {
 
         resourceId = hl7ResourceIdDal.getResourceId(scope, resourceType, uniqueId);
 
-        return resourceId;
+        return resourceId;*/
     }
 
 
@@ -493,10 +503,10 @@ public class BasisTransformer {
         return getResourceId(scope, "Condition", uniqueId);
     }
 
-    public static ResourceId getObservationResourceId(String scope, String patientId, String observationDate, String observationCode) throws Exception {
+    /*public static ResourceId getObservationResourceId(String scope, String patientId, String observationDate, String observationCode) throws Exception {
         String uniqueId = "PatientId=" + patientId + "-ObservationDate=" + observationDate + "-ObservationCode=" + observationCode;
         return getObservationResourceId(scope, uniqueId);
-    }
+    }*/
 
     public static ResourceId getConditionResourceId(String scope, String uniqueId) throws Exception {
         ResourceId resourceId = getResourceId(scope, "Condition", uniqueId);
@@ -571,7 +581,8 @@ public class BasisTransformer {
         return resourceId;
     }
 
-    public static ResourceId getOrganisationResourceId(String scope, CsvCell orgIdCell) throws Exception {
+    //orgs use standard ID mapping now, not the HL7 Receiver DB
+    /*public static ResourceId getOrganisationResourceId(String scope, CsvCell orgIdCell) throws Exception {
 
         String uniqueId = "Organisation=" + orgIdCell.getString();
         ResourceId resourceId = getResourceId(scope, "Organization", uniqueId);
@@ -586,10 +597,10 @@ public class BasisTransformer {
             saveResourceId(resourceId);
         }
         return resourceId;
-    }
+    }*/
 
-
-    public static ResourceId getPractitionerResourceId(String scope, CsvCell personnelIdCell) throws Exception {
+    //practitioners use standard ID mapping now, not the HL7 Receiver DB
+    /*public static ResourceId getPractitionerResourceId(String scope, CsvCell personnelIdCell) throws Exception {
 
         String uniqueId = "PersonnelId=" + personnelIdCell.getString();
         ResourceId resourceId = getResourceId(scope, "Practitioner", uniqueId);
@@ -604,7 +615,7 @@ public class BasisTransformer {
             saveResourceId(resourceId);
         }
         return resourceId;
-    }
+    }*/
 
     public static ResourceId getOrCreateSpecialtyResourceId(String scope, String specialtyId) throws Exception {
         String uniqueId = "SpecialtyId=" + specialtyId;
@@ -624,26 +635,7 @@ public class BasisTransformer {
     }
 
 
-    /*public static ResourceId getPractitionerResourceId(String scope, String personnelId) throws Exception {
-        String uniqueId = "PersonnelId=" + personnelId;
-        //if we failed to find a UUID for our personnelID, generate one and return it
-        //return getResourceId(scope, "Practitioner", uniqueId);
-        ResourceId ret = getResourceId(scope, "Practitioner", uniqueId);
-        if (ret == null) {
-            ret = createPractitionerResourceId(scope, personnelId);
-        }
-    }
 
-    public static ResourceId createPractitionerResourceId(String scope, String personnelId) throws Exception {
-        String uniqueId = "PersonnelId=" + personnelId;
-        ResourceId resourceId = new ResourceId();
-        resourceId.setScopeId(scope);
-        resourceId.setResourceType("Practitioner");
-        resourceId.setUniqueId(uniqueId);
-        resourceId.setResourceId(UUID.randomUUID());
-        saveResourceId(resourceId);
-        return resourceId;
-    }*/
 
     public static ResourceId createPatientResourceId(String scope, String primaryOrgHL7OrgOID, String mrn) throws Exception {
         String uniqueId = null;
@@ -757,21 +749,21 @@ public class BasisTransformer {
         }
     }
 
-    public static ResourceId getOrCreateDiagnosticReportResourceId(String scope, CsvCell observationIdCell) throws Exception {
+    /*public static ResourceId getOrCreateDiagnosticReportResourceId(String scope, CsvCell observationIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.DiagnosticReport, observationIdCell);
-    }
+    }*/
 
-    public static ResourceId getOrCreateObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
+    /*public static ResourceId getOrCreateObservationResourceId(String scope, CsvCell observationIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Observation, observationIdCell);
-    }
+    }*/
 
-    public static ResourceId getOrCreateProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
+    /*public static ResourceId getOrCreateProcedureResourceId(String scope, CsvCell procedureIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Procedure, procedureIdCell);
-    }
+    }*/
 
-    public static ResourceId getOrCreateConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
+    /*public static ResourceId getOrCreateConditionResourceId(String scope, CsvCell conditionIdCell) throws Exception {
         return getOrCreateResourceId(scope, ResourceType.Condition, conditionIdCell);
-    }
+    }*/
 
     private static ResourceId getOrCreateResourceId(String scope, ResourceType resourceType, CsvCell uniqueIdCell) throws Exception {
         ResourceId resourceId = getResourceId(scope, resourceType.toString(), uniqueIdCell.getString());

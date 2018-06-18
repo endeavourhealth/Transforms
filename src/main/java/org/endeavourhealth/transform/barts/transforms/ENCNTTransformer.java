@@ -1,48 +1,40 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 
-public class ENCNTTransformer extends BartsBasisTransformer {
-
+public class ENCNTTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createEncounter((ENCNT) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createEncounter((ENCNT)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -51,67 +43,48 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         }
     }
 
-    /*
-     *
-     */
-    public static void createEncounter(ENCNT parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createEncounter(ENCNT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        boolean changeOfPatient = false;
-        EpisodeOfCareBuilder episodeOfCareBuilder = null;
-        CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell encounterIdCell = parser.getMillenniumEncounterIdentifier();
-        CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        // Check if encounter type should be excluded
         CsvCell encounterTypeCodeCell = parser.getEncounterTypeMillenniumCode();
+        if (excludeEncounterType(encounterTypeCodeCell.getString())) {
+            return;
+        }
+
+        CsvCell encounterIdCell = parser.getMillenniumEncounterIdentifier();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell activeCell = parser.getActiveIndicator();
+
+        //this will save a little bit of DB reading when we get to the PROCE and DIAGN transforms
+        csvHelper.cacheEncounterIdToPersonId(encounterIdCell, personIdCell);
+
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        //if inactive, we want to delete it
+        if (!activeCell.getIntAsBoolean()) {
+            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
+            return;
+        }
+
+        CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
+
+
         CsvCell finIdCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
         CsvCell currentMainSpecialtyMillenniumCodeCell = parser.getCurrentMainSpecialtyMillenniumCode();
 
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
-        if (encounterBuilder == null && !activeCell.getIntAsBoolean()) {
-            // skip - encounter missing but set to delete so do nothing
-            return;
-        }
-
-        // Check if encounter type should be excluded
-        if (excludeEncounterType(encounterTypeCodeCell.getString())) {
-            return;
-        }
-
-        // PatientTable
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
-        if (patientUuid == null) {
-            TransformWarnings.log(LOG, parser, "Skipping encounter {} because no Person->MRN mapping {} could be found in file {}", encounterIdCell.getString(), personIdCell.getString(), parser.getFilePath());
-            return;
-        }
-
-        // Delete existing encounter ?
-        if (encounterBuilder != null && !activeCell.getIntAsBoolean()) {
-            encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-            //LOG.debug("Delete EncounterTable (PatId=" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-            EncounterResourceCache.deleteEncounterBuilder(encounterBuilder);
-            return;
-        }
-
-        // Organisation
-        Address fhirOrgAddress = AddressHelper.createAddress(Address.AddressUse.WORK, "The Royal London Hospital", "Whitechapel", "London", "", "", "E1 1BB");
-        ResourceId organisationResourceId = resolveOrganisationResource(parser.getCurrentState(), primaryOrgOdsCode, fhirResourceFiler, "Barts Health NHS Trust", fhirOrgAddress);
 
         // Retrieve or create EpisodeOfCare
-        episodeOfCareBuilder = readOrCreateEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, patientUuid, csvHelper, parser);
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, csvHelper);
+
+        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
 
         // Create new encounter
-        if (encounterBuilder == null) {
-            encounterBuilder = EncounterResourceCache.createEncounterBuilder(encounterIdCell, finIdCell);
+        if (encounterBuilder != null) {
+//TODO - restore this
 
-            encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
-        } else {
-
-            // Has patient reference changed?
+/*            // Has patient reference changed?
             String currentPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
             if (currentPatientUuid.compareToIgnoreCase(patientUuid.toString()) != 0) {
                 // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
@@ -134,9 +107,11 @@ public class ENCNTTransformer extends BartsBasisTransformer {
                         ObservationBuilder builder = new ObservationBuilder((Observation) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                    } else {
+                        throw new TransformException("Unsupported resource type " + resource.getClass());
                     }
                 }
-            }
+            }*/
         }
 
         // Save visit-id to encounter-id link
@@ -192,15 +167,6 @@ public class ENCNTTransformer extends BartsBasisTransformer {
             }
         }
 
-        // PatientTable
-        encounterBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
-        episodeOfCareBuilder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString()), personIdCell);
-
-        // Organisation
-        episodeOfCareBuilder.setManagingOrganisation((ReferenceHelper.createReference(ResourceType.Organization, organisationResourceId.getResourceId().toString())));
-
-
         // class
         //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
         encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString(), encounterIdCell, parser), encounterTypeCodeCell);
@@ -219,87 +185,63 @@ public class ENCNTTransformer extends BartsBasisTransformer {
         // EncounterTable type
         BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CodeValueSet.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
 
-        /*if (!encounterTypeCodeCell.isEmpty() && encounterTypeCodeCell.getLong() > 0) {
-            CernerCodeValueRef ret = BartsCsvHelper.lookupCodeRef(
-                                                            CernerCodeValueRef.PERSONNEL_SPECIALITY,
-                                                            encounterTypeCodeCell.getLong(),
-                                                            fhirResourceFiler.getServiceId());
-
-            String encounterDispTxt = ret.getCodeDispTxt();
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_SPECIALTY, encounterDispTxt, encounterTypeCodeCell.getString());
-            encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_SPECIALTY, fhirCodeableConcept, encounterTypeCodeCell);
-        }*/
-
         // treatment function
         BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CodeValueSet.TREATMENT_FUNCTION, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Treatment_Function, csvHelper);
-
-        /*if (!treatmentFunctionCodeCell.isEmpty() && treatmentFunctionCodeCell.getLong() > 0) {
-            CernerCodeValueRef ret = BartsCsvHelper.lookupCodeRef(
-                                                            CernerCodeValueRef.TREATMENT_FUNCTION,
-                                                            treatmentFunctionCodeCell.getLong(),
-                                                            fhirResourceFiler.getServiceId());
-
-            String treatFuncDispTxt = ret.getCodeDispTxt();
-            CodeableConcept fhirCodeableConcept = CodeableConceptHelper.createCodeableConcept(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_TREATMENT_FUNCTION, treatFuncDispTxt, treatmentFunctionCodeCell.getString());
-            encounterBuilder.addExtension(FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION, fhirCodeableConcept);
-        }*/
 
         // EpisodeOfCare
         encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer
         CsvCell referrerPersonnelIdentifier = parser.getReferrerMillenniumPersonnelIdentifier();
-        if (!referrerPersonnelIdentifier.isEmpty()) {
-            ResourceId referrerPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, referrerPersonnelIdentifier);
-            if (referrerPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(referrerPersonResourceId.getResourceId().toString()), EncounterParticipantType.REFERRER, true, referrerPersonnelIdentifier);
-            } else {
-                TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Referrer-id {} in ENCNT record {} in file {}", parser.getReferrerMillenniumPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
+        if (!BartsCsvHelper.isEmptyOrIsZero(referrerPersonnelIdentifier)) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(referrerPersonnelIdentifier);
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
+
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.REFERRER, true, referrerPersonnelIdentifier);
         }
 
         // responsible person
         CsvCell responsibleHCPCell = parser.getResponsibleHealthCareprovidingPersonnelIdentifier();
-        if (!responsibleHCPCell.isEmpty()) {
-            ResourceId respPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, responsibleHCPCell);
-            if (respPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(respPersonResourceId.getResourceId().toString()), EncounterParticipantType.PRIMARY_PERFORMER, true, responsibleHCPCell);
-            } else {
-                TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Personnel-id {} in ENCNT record {} in file {}", parser.getResponsibleHealthCareprovidingPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
+        if (!BartsCsvHelper.isEmptyOrIsZero(responsibleHCPCell)) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(responsibleHCPCell);
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
+
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, true, responsibleHCPCell);
         }
 
         // registering person
         CsvCell registeringPersonnelIdentifierCell = parser.getRegisteringMillenniumPersonnelIdentifier();
-        if (!registeringPersonnelIdentifierCell.isEmpty()) {
-            ResourceId regPersonResourceId = getPractitionerResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, registeringPersonnelIdentifierCell);
-            if (regPersonResourceId != null) {
-                encounterBuilder.addParticipant(csvHelper.createPractitionerReference(regPersonResourceId.getResourceId().toString()), EncounterParticipantType.PARTICIPANT, true, registeringPersonnelIdentifierCell);
-            } else {
-                TransformWarnings.log(LOG, parser, "Practitioner Resource not found for Personnel-id {} in ENCNT record {} in file {}", parser.getRegisteringMillenniumPersonnelIdentifier(), parser.getMillenniumEncounterIdentifier(), parser.getFilePath());
+        if (!BartsCsvHelper.isEmptyOrIsZero(registeringPersonnelIdentifierCell)) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(registeringPersonnelIdentifierCell);
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
+
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PARTICIPANT, true, registeringPersonnelIdentifierCell);
         }
 
         // Location
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         if (currentMainSpecialtyMillenniumCodeCell != null && !currentMainSpecialtyMillenniumCodeCell.isEmpty()) {
-            ResourceId specialtyResourceid = getOrCreateSpecialtyResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentMainSpecialtyMillenniumCodeCell.getString());
+//TODO - restore this
+            /*ResourceId specialtyResourceid = getOrCreateSpecialtyResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentMainSpecialtyMillenniumCodeCell.getString());
             if (specialtyResourceid != null) {
                 encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, specialtyResourceid.getResourceId().toString()),currentMainSpecialtyMillenniumCodeCell);
-            }
+            }*/
         }
-
-        //cache our encounter details so subsequent transforms can use them
-        csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("episodeOfCare Complete:" + FhirSerializationHelper.serializeResource(episodeOfCareBuilder.getResource()));
-            LOG.debug("encounter complete:" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-        }
+
     }
 
     private static boolean excludeEncounterType(String millenniumCode) throws Exception {

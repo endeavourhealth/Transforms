@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.homerton.cache;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.BasisTransformer;
+import org.endeavourhealth.transform.barts.transformsOld.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.endeavourhealth.transform.common.BasisTransformer.*;
+import static org.endeavourhealth.transform.barts.transformsOld.BasisTransformer.*;
 
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);

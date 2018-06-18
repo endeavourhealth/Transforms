@@ -6,9 +6,10 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
-        implements HasCodeableConceptI {
+        implements HasCodeableConceptI, HasIdentifierI {
 
     private FamilyMemberHistory familyMemberHistory = null;
 
@@ -52,6 +53,13 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
         this.familyMemberHistory.setRelationship(codeableConcept);
 
         auditValue("relationship.coding[0]", sourceCells);
+    }
+
+    public void setRelationshipFreeText(String typeDesc, CsvCell... sourceCells) {
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(typeDesc);
+        this.familyMemberHistory.setRelationship(codeableConcept);
+
+        auditValue("relationship.coding[0].text", sourceCells);
     }
 
     public void setClinician(Reference practitionerReference, CsvCell... sourceCells) {
@@ -144,5 +152,54 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
+    }
+
+    public void setEndDate(DateTimeType dateTimeType, CsvCell... sourceCells) {
+
+        //confusingly, the START DATE isn't stored in the condition period, but stored in the date element.
+        //This is slightly wrong, since date is supposed to be RECORDED date, but the date is already like that
+        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
+        Period period = null;
+        if (condition.hasOnset()) {
+            Type type = condition.getOnset();
+            if (type instanceof Period) {
+                period = (Period)type;
+
+            } else {
+                throw new RuntimeException("Cannot set end date because onset object is already set to a " + type.getClass());
+            }
+        } else {
+            period = new Period();
+            condition.setOnset(period);
+        }
+
+        if (dateTimeType == null) {
+            period.setEndElement(null);
+        } else {
+            period.setEndElement(dateTimeType);
+        }
+
+        auditValue("condition[0].onsetPeriod.end", sourceCells);
+    }
+
+    @Override
+    public Identifier addIdentifier() {
+        return this.familyMemberHistory.addIdentifier();
+    }
+
+    @Override
+    public String getIdentifierJsonPrefix(Identifier identifier) {
+        int index = this.familyMemberHistory.getIdentifier().indexOf(identifier);
+        return "identifier[" + index + "]";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers() {
+        return this.familyMemberHistory.getIdentifier();
+    }
+
+    @Override
+    public void removeIdentifier(Identifier identifier) {
+        this.familyMemberHistory.getIdentifier().remove(identifier);
     }
 }

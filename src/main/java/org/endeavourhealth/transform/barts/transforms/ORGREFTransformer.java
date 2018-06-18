@@ -23,23 +23,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class ORGREFTransformer extends BartsBasisTransformer {
+public class ORGREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ORGREFTransformer.class);
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFilerI fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createLocation((ORGREF) parser, (FhirResourceFiler) fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createLocation((ORGREF)parser, (FhirResourceFiler)fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -49,13 +43,7 @@ public class ORGREFTransformer extends BartsBasisTransformer {
     }
 
 
-    /*
-     *
-     */
-    public static void createLocation(ORGREF parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      BartsCsvHelper csvHelper,
-                                      String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createLocation(ORGREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
 

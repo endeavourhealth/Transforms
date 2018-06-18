@@ -73,7 +73,7 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("ACTIVE_IND");
     }
 
-    public CsvCell getPatientId() {
+    public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
 

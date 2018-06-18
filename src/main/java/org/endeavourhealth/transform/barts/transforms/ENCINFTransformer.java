@@ -1,72 +1,60 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCINF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.util.List;
 
-public class ENCINFTransformer extends BartsBasisTransformer {
-
+public class ENCINFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCINFTransformer.class);
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 ParserI parser,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
-        if (parser == null) {
-            return;
-        }
-
-        while (parser.nextRecord()) {
-            try {
-                createEncounter((ENCINF)parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
-
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        for (ParserI parser: parsers) {
+            while (parser.nextRecord()) {
+                try {
+                    createEncounter((ENCINF)parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
     }
 
-    /*
-     *
-     */
-    public static void createEncounter(ENCINF parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BartsCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createEncounter(ENCINF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            return;
+        }
+
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell beginEffectiveCell = parser.getBeginEffectiveDateTime();
         CsvCell endEffectiveCell = parser.getEndEffectiveDateTime();
 
-        if (activeCell != null && activeCell.getBoolean() == true) {
-            EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(csvHelper, encounterIdCell.getString());
+        //TODO - look at the various code fields to work out what this record is telling us
 
-            if (encounterBuilder != null && encounterBuilder.getPeriod() == null) {
-                if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
-                    Date d = BartsCsvHelper.parseDate(beginEffectiveCell);
-                    encounterBuilder.setPeriodStart(d, beginEffectiveCell);
-                }
-                if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
-                    Date d = BartsCsvHelper.parseDate(endEffectiveCell);
-                    encounterBuilder.setPeriodEnd(d, endEffectiveCell);
-                }
+        /*EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, per csvHelper, encounterIdCell.getString());
+
+
+
+        if (encounterBuilder != null && encounterBuilder.getPeriod() == null) {
+            if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
+                Date d = BartsCsvHelper.parseDate(beginEffectiveCell);
+                encounterBuilder.setPeriodStart(d, beginEffectiveCell);
             }
-        }
+            if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
+                Date d = BartsCsvHelper.parseDate(endEffectiveCell);
+                encounterBuilder.setPeriodEnd(d, endEffectiveCell);
+            }
+        }*/
 
     }
 

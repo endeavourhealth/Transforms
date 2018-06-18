@@ -6,7 +6,6 @@ import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Address;
@@ -16,20 +15,17 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class PPADDTransformer extends BartsBasisTransformer {
+public class PPADDTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatientAddress((PPADD) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientAddress((PPADD) parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -39,19 +35,10 @@ public class PPADDTransformer extends BartsBasisTransformer {
     }
 
 
-    public static void createPatientAddress(PPADD parser,
-                                            FhirResourceFiler fhirResourceFiler,
-                                            BartsCsvHelper csvHelper,
-                                            String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
+    public static void createPatientAddress(PPADD parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        if (patientBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Skipping PPADD record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
-            return;
-        }
 
         //we always fully re-create the address, so remove it from the patient
         CsvCell addressIdCell = parser.getMillenniumAddressId();

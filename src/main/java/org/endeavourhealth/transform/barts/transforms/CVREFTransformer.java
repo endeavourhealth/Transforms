@@ -26,12 +26,9 @@ public class CVREFTransformer {
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure

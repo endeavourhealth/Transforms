@@ -384,6 +384,24 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     }
 
     /**
+     * called to block until everything currently queued is saved, but DOES NOT
+     * prevent anything further being added to the queues
+     */
+    public void waitUntilEverythingIsSaved() throws Exception {
+
+        //make sure the current job of ID mapping gets run
+        runNextMapIdTask();
+
+        //close down the ID mapper pool
+        List<ThreadPoolError> errors = threadPoolIdMapper.waitUntilEmpty();
+        handleErrors(errors);
+
+        //close down the filing pool
+        errors = threadPoolFiler.waitUntilEmpty();
+        handleErrors(errors);
+    }
+
+    /**
      * whenever anything it added to one of the thread pools, we may get one or more errors
      * returned for previously submitted tasks. This function handles those errors.
      * Note, this is synchronised because we add to thread pools from both the main transform

@@ -19,20 +19,17 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class PPALITransformer extends BartsBasisTransformer {
+public class PPALITransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPALITransformer.class);
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatientAlias((PPALI) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientAlias((PPALI)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -42,24 +39,10 @@ public class PPALITransformer extends BartsBasisTransformer {
     }
 
 
-    public static void createPatientAlias(PPALI parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          BartsCsvHelper csvHelper,
-                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createPatientAlias(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        //if the alias is empty, there's nothing to add
-        CsvCell aliasCell = parser.getAlias();
-        if (aliasCell.isEmpty()) {
-            return;
-        }
-
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        if (patientBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Skipping PPALI record for as no MRN->Person mapping found", milleniumPersonIdCell);
-            return;
-        }
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully re-create the Identifier on the patient so just remove any previous instance
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
@@ -68,6 +51,12 @@ public class PPALITransformer extends BartsBasisTransformer {
         //if this record is no longer active, just return out, since we've already removed the Identifier from the patient
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
+            return;
+        }
+
+        //if the alias is empty, there's nothing to add
+        CsvCell aliasCell = parser.getAlias();
+        if (aliasCell.isEmpty()) {
             return;
         }
 

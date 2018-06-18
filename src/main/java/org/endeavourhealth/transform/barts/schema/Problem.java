@@ -28,7 +28,7 @@ public class Problem extends AbstractFixedParser {
     public CsvCell getUpdateDateTime() {
         return super.getCell("Update_DT_TM");
     }
-    public CsvCell getLocalPatientId() {
+    public CsvCell getMrn() {
         return super.getCell("MRN");
     }
     public CsvCell getProblem() {
@@ -43,6 +43,10 @@ public class Problem extends AbstractFixedParser {
 
     public CsvCell getOnsetDate() {
         return super.getCell("OnsetDate");
+    }
+
+    public CsvCell getStatusDate() {
+        return super.getCell("StatusDate");
     }
 
     public CsvCell getStatusLifecycle() {
@@ -63,54 +67,7 @@ public class Problem extends AbstractFixedParser {
     public CsvCell getUpdatedBy() {
         return super.getCell("UpdatedBy");
     }
-    
-    /*public Long getProblemId() {
-        String ret = super.getString("ProblemId").split("\\.")[0];
-        return Long.parseLong(ret);
-    }
 
-    public Date getUpdateDateTime() throws TransformException {
-        return super.getDateTime("Update_DT_TM");
-    }
-
-    public String getLocalPatientId() {
-        return super.getString("MRN").trim();
-    }
-    public String getProblem() {
-        return super.getString("Problem").trim();
-    }
-    public String getAnnotatedDisp() {
-        return super.getString("AnnotatedDisp").trim();
-    }
-    public String getConfirmation() {
-        return super.getString("Confirmation");
-    }
-
-    public Date getOnsetDate() throws TransformException {
-        return super.getDate("OnsetDate");
-    }
-    public String getOnsetDateAsString() throws TransformException {
-        return super.getString("OnsetDate");
-    }
-
-    public String getStatusLifecycle() {
-        return super.getString("StatusLifecycle");
-    }
-    public String getSeverity() {
-        return super.getString("Severity").trim();
-    }
-    public String getProblemCode() {
-        return super.getString("ProblemCode").trim();
-    }
-    public String getVocabulary() {
-        return super.getString("Vocabulary").trim();
-    }
-    public String getDescription() {
-        return super.getString("Description").trim();
-    }
-    public String getUpdatedBy() {
-        return super.getString("UpdatedBy").trim();
-    }*/
 
     @Override
     protected String getFileTypeDescription() {
@@ -139,6 +96,7 @@ public class Problem extends AbstractFixedParser {
         ret.add(new FixedParserField("AnnotatedDisp",    294, 200));
         ret.add(new FixedParserField("Confirmation",    516, 20));
         ret.add(new FixedParserField("OnsetDate",    579, 11));
+        ret.add(new FixedParserField("StatusDate",    612, 11));
         ret.add(new FixedParserField("StatusLifecycle",    624, 20));
         ret.add(new FixedParserField("Severity",    690, 50));
         ret.add(new FixedParserField("ProblemCode",    1025, 20));

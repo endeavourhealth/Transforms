@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -15,7 +12,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
@@ -25,28 +21,22 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class CLEVETransformer extends BartsBasisTransformer {
+public class CLEVETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
-    private static final long RESULT_STATUS_AUTHORIZED = 25;
+
     private static final SimpleDateFormat resultDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
-    /*
-     *
-     */
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
+
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createObservation((CLEVE) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createObservation((CLEVE)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -54,7 +44,156 @@ public class CLEVETransformer extends BartsBasisTransformer {
         }
     }
 
-    public static void createObservation(CLEVE parser,
+    public static void createObservation(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell clinicalEventId = parser.getEventId();
+        CsvCell personId = parser.getPersonId();
+
+        // Order : first handle inactive records, so we need Patient
+        ObservationBuilder observationBuilder = new ObservationBuilder();
+        observationBuilder.setId(clinicalEventId.getString(), clinicalEventId);
+
+        Reference patientReference = csvHelper.createPatientReference(personId);
+        observationBuilder.setPatient(patientReference);
+
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            // if we have observation and patient we can delete an existing record else return
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+            return;
+        }
+
+        // check encounter data
+        CsvCell encounterIdCell = parser.getEncounterId();
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+        observationBuilder.setEncounter(encounterReference, encounterIdCell);
+
+        //there are lots of events that are still active but have a result text of DELETED
+        CsvCell resultTextCell = parser.getEventResultText();
+        if (!resultTextCell.isEmpty()
+                && resultTextCell.getString().equalsIgnoreCase("DELETED")) {
+
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+            return;
+        }
+
+
+        //TODO we need to filter out any records that are not final
+        observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
+
+        // Performer
+        CsvCell clinicianId = parser.getEventPerformedPersonnelId();
+        if (!clinicianId.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(clinicianId);
+            observationBuilder.setClinician(practitionerReference, clinicianId);
+        }
+
+        CsvCell effectiveDate = parser.getEventPerformedDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(effectiveDate)) {
+            Date d = BartsCsvHelper.parseDate(effectiveDate);
+            DateTimeType dateTimeType = new DateTimeType(d);
+            observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
+        }
+
+        //link to parent observation if we have a parent event
+        CsvCell parentEventId = parser.getParentEventId();
+        if (!BartsCsvHelper.isEmptyOrIsZero(parentEventId)) {
+            Reference parentObservationReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventId.getString());
+            observationBuilder.setParentResource(parentObservationReference, parentEventId);
+        }
+
+        //link to child observations if we have any
+        ReferenceList childReferences = csvHelper.getAndRemoveClinicalEventParentRelationships(clinicalEventId);
+        if (childReferences != null) {
+            for (int i=0; i<childReferences.size(); i++) {
+                Reference reference = childReferences.getReference(i);
+                CsvCell[] sourceCells = childReferences.getSourceCells(i);
+                observationBuilder.addChildObservation(reference, sourceCells);
+            }
+        }
+
+        //link to parent diagnostic report if we have an order (NOTE we don't transform the orders file as of yet, but we may as well carry over this reference)
+        CsvCell orderIdCell = parser.getOrderId();
+        if (!BartsCsvHelper.isEmptyOrIsZero(orderIdCell)) {
+            Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, orderIdCell.getString());
+            observationBuilder.setParentResource(parentDiagnosticReportReference, orderIdCell);
+        }
+
+        //TODO - establish code mapping for millenium / FHIR
+        CsvCell codeCell = parser.getEventCode();
+        if (codeCell != null && !codeCell.isEmpty()) {
+            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, codeCell) == null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
+                        codeCell.getLong(), parser.getEventCode().getString(),
+                        codeCell.getRowAuditId(), codeCell.getColIndex());
+                //return;
+            }
+            CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CodeValueSet.CLINICAL_CODE_TYPE, observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
+
+            //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
+            CsvCell termCell = parser.getEventTitleText();
+            if (codeableConceptBuilder != null && termCell != null && !termCell.isEmpty()) {
+                codeableConceptBuilder.setText(termCell.getString(), termCell);
+            }
+        }
+
+
+        //TODO need to check getEventResultClassCode()
+        CsvCell resultClassCode = parser.getEventResultClassCode();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(resultClassCode)) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, resultClassCode);
+            if (codeRef != null) {
+                String codeDesc = codeRef.getCodeDispTxt();
+                //all other class codes indicate it's not a final result yet
+                if (!codeDesc.equals("Auth (Verified)")) {
+                    return;
+                }
+            }
+        }
+
+        if (isNumericResult(parser)) {
+            transformResultNumericValue(parser, observationBuilder, csvHelper);
+
+        } else if (isDateResult(parser)) {
+            //TODO - restore when we want to process events with result dates
+            //transformResultDateValue(parser, observationBuilder, csvHelper);
+            return;
+
+        } else {
+            //TODO - remove this when we want to process more than numerics
+            //transformResultString(parser, observationBuilder, csvHelper);
+            return;
+        }
+
+
+        CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(normalcyCodeCell)) {
+
+            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, normalcyCodeCell) == null) {
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
+                        normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
+                        normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
+                // return;
+            }
+            BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CodeValueSet.CLINICAL_EVENT_NORMALCY, observationBuilder, CodeableConceptBuilder.Tag.Observation_Range_Meaning, csvHelper);
+        }
+
+        CsvCell eventTagCell = parser.getEventTag();
+        if (!eventTagCell.isEmpty()) {
+            String eventTagStr = eventTagCell.getString();
+            String resultTextStr = resultTextCell.getString();
+
+            //the event tag sometimes replicates what's in the result text, so only carry over if different
+            if (!eventTagStr.equals(resultTextStr)) {
+                observationBuilder.setNotes(eventTagStr, eventTagCell);
+            }
+        }
+
+        // save resource
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+    }
+
+    /*public static void createObservation(CLEVE parser,
                                          FhirResourceFiler fhirResourceFiler,
                                          BartsCsvHelper csvHelper,
                                          String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
@@ -74,9 +213,9 @@ public class CLEVETransformer extends BartsBasisTransformer {
                 deletePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
             }
             //removed warning - if we can't find a patient UUID from the person ID, then we'll simply have never encountered the patient before, in which case we won't have saved the resource before
-            /*else {
+            *//*else {
                 TransformWarnings.log(LOG, parser, "Unable to delete encounter record as no matching patient. Record id: {} and patient: {}", parser.getEventId().getString(), parser.getPatientId().getString() );
-            }*/
+            }*//*
             return;
         }
 
@@ -229,7 +368,7 @@ public class CLEVETransformer extends BartsBasisTransformer {
         // save resource
         //LOG.debug("Save Observation (PatId=" + observationBuilder.getResourceId() + "):" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
         savePatientResource(fhirResourceFiler, parser.getCurrentState(), observationBuilder);
-    }
+    }*/
 
     private static void transformResultString(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) {
         CsvCell resultTextCell = parser.getEventResultText();

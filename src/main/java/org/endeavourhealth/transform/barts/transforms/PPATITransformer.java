@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -24,29 +23,20 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.dsig.TransformException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class PPATITransformer extends BartsBasisTransformer {
-
+public class PPATITransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPATITransformer.class);
-    private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatient((PPATI) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatient((PPATI)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -55,35 +45,13 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
     }
 
+    public static void createPatient(PPATI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-    public static void createPatient(PPATI parser,
-                                     FhirResourceFiler fhirResourceFiler,
-                                     BartsCsvHelper csvHelper,
-                                     String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
-
-
+        //this transform always UPDATES resources when possible, so we use the patient cache to retrieve from the DB
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
+
         CsvCell mrnCell = parser.getLocalPatientId();
-
-        //store the MRN/PersonID mapping in BOTH directions
-        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, mrnCell.getString(), millenniumPersonIdCell.getString());
-
-        csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, millenniumPersonIdCell.getString(), mrnCell.getString());
-
-        CsvCell millenniumPersonId = parser.getMillenniumPersonId();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonId, csvHelper);
-
-        if (patientBuilder == null) {
-            throw new TransformException("Failed to find patient builder for Person ID " + millenniumPersonId.getString() + " and MRN " + mrnCell.getString());
-        }
-
-        //because we may be processing a delta record on an existing patient resource, make sure to remove all these identifiers,
-        //so they can be added back on without duplicating them
-
-        if (!millenniumPersonId.isEmpty()) {
-            addOrUpdateIdentifier(patientBuilder, millenniumPersonIdCell.getString(), millenniumPersonIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-        }
-
         if (!mrnCell.isEmpty()) {
             addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
         }
@@ -97,37 +65,32 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
-        if (!nhsNumberStatusCell.isEmpty() && nhsNumberStatusCell.getLong() > 0) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(nhsNumberStatusCell)) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
-            if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found. Row {} Column {} ",
-                        nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString(),
-                        nhsNumberStatusCell.getRowAuditId(), nhsNumberStatusCell.getColIndex());
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
+            if (codeRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found",
+                        nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString());
             } else {
 
-                String cernerDesc = cernerCodeValueRef.getCodeDescTxt();
+                String cernerDesc = codeRef.getCodeDescTxt();
                 NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);
-
                 patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
             }
+
         } else {
             //we may be updating a patient, so make sure to remove if not set
             patientBuilder.setNhsNumberVerificationStatus(null);
         }
 
+        //on other files, we treat active to mean delete, but for patients, just mark them as non-active
         CsvCell activeCell = parser.getActiveIndicator();
         patientBuilder.setActive(activeCell.getIntAsBoolean(), activeCell);
 
         CsvCell dateOfBirthCell = parser.getDateOfBirth();
-        if (!dateOfBirthCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(dateOfBirthCell)) {
             //we need to handle multiple formats, so attempt to apply both formats here
-            Date dob = null;
-            try {
-                dob = formatDaily.parse(dateOfBirthCell.getString());
-            } catch (ParseException ex) {
-                dob = formatBulk.parse(dateOfBirthCell.getString());
-            }
+            Date dob = BartsCsvHelper.parseDate(dateOfBirthCell);
             patientBuilder.setDateOfBirth(dob, dateOfBirthCell);
 
         } else {
@@ -136,15 +99,16 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell genderCell = parser.getGenderCode();
-        if (!genderCell.isEmpty() && genderCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.GENDER, genderCell);
-            if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found. Row {} Column {} ",
-                        genderCell.getLong(), parser.getGenderCode().getString(),
-                        genderCell.getRowAuditId(), genderCell.getColIndex());
-            } else {
+        if (!BartsCsvHelper.isEmptyOrIsZero(genderCell)) {
 
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(cernerCodeValueRef.getCodeMeaningTxt());
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.GENDER, genderCell);
+            if (codeRef== null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found",
+                        genderCell.getLong(), parser.getGenderCode().getString());
+
+            } else {
+                String genderDesc = codeRef.getCodeMeaningTxt();
+                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderDesc);
                 patientBuilder.setGender(gender, genderCell);
             }
         } else {
@@ -153,15 +117,16 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
-        if (!maritalStatusCode.isEmpty() && maritalStatusCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.MARITAL_STATUS, maritalStatusCode);
-            if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found. Row {} Column {} ",
-                        maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString(),
-                        maritalStatusCode.getRowAuditId(), maritalStatusCode.getColIndex());
-            } else {
+        if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
 
-                MaritalStatus maritalStatus = convertMaritalStatus(cernerCodeValueRef.getCodeMeaningTxt(), parser);
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.MARITAL_STATUS, maritalStatusCode);
+            if (codeRef == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found",
+                        maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString());
+
+            } else {
+                String codeDesc = codeRef.getCodeMeaningTxt();
+                MaritalStatus maritalStatus = convertMaritalStatus(codeDesc, parser);
                 patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
             }
         } else {
@@ -170,15 +135,16 @@ public class PPATITransformer extends BartsBasisTransformer {
         }
 
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
-        if (!ethnicityCode.isEmpty() && ethnicityCode.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityCode);
-            if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found. Row {} Column {} ",
-                        ethnicityCode.getLong(), parser.getEthnicGroupCode().getString(),
-                        ethnicityCode.getRowAuditId(), ethnicityCode.getColIndex());
-            } else {
+        if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
 
-                EthnicCategory ethnicCategory = convertEthnicCategory(cernerCodeValueRef.getAliasNhsCdAlias());
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityCode);
+            if (codeRef == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
+                        ethnicityCode.getLong(), parser.getEthnicGroupCode().getString());
+
+            } else {
+                String codeDesc = codeRef.getAliasNhsCdAlias();
+                EthnicCategory ethnicCategory = convertEthnicCategory(codeDesc);
                 patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
             }
         } else {
@@ -201,24 +167,19 @@ public class PPATITransformer extends BartsBasisTransformer {
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();
         CsvCell deceasedMethodCell = parser.getDeceasedMethodCode();
-        if (!deceasedDateTimeCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(deceasedDateTimeCell)) {
 
             //could be in one of two format
-            Date dod = null;
-            try {
-                dod = formatDaily.parse(deceasedDateTimeCell.getString());
-            } catch (ParseException ex) {
-                dod = formatBulk.parse(deceasedDateTimeCell.getString());
-            }
-
+            Date dod = BartsCsvHelper.parseDate(deceasedDateTimeCell);
             patientBuilder.setDateOfDeath(dod, deceasedDateTimeCell);
 
-        } else if (!deceasedMethodCell.isEmpty()) {
+        } else if (!BartsCsvHelper.isEmptyOrIsZero(deceasedMethodCell)) {
 
-            String code = deceasedMethodCell.getString();
-            if (!code.equals("0") &&
-                    !code.equals("684730")) {
-
+            //the deceased method points to a code containing various reasons for death
+            //or a simple status of "No" to indicate they're not deceased
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.DECEASED_STATUS, deceasedMethodCell);
+            String codeDesc = codeRef.getCodeDispTxt();
+            if (!codeDesc.equals("No")) {
                 patientBuilder.setDateOfDeathBoolean(true, deceasedMethodCell);
             }
 
@@ -226,6 +187,9 @@ public class PPATITransformer extends BartsBasisTransformer {
             //if updating a record, we may have REMOVED a date of death set incorrectly, so clear the fields on the patient
             patientBuilder.clearDateOfDeath();
         }
+
+        //we don't save the patient here; there are subsequent transforms that work on the patients so we
+        //save patients after all of them are done
     }
 
     /**
@@ -234,13 +198,22 @@ public class PPATITransformer extends BartsBasisTransformer {
      */
     private static void addOrUpdateIdentifier(PatientBuilder patientBuilder, String value, CsvCell sourceCell, Identifier.IdentifierUse use, String system) {
 
-        //match to an existing identifier for the same system. The PPALI transform sets the ID on the Identifiers
-        //that it creates, so only match to one that doesn't have an ID set. If the MRN (for example) has been changed
-        //there should also be an update to the PPALI file which will remove any unnecessary Identifier we create here
+        //match to an existing identifier for the same system
         Identifier existingIdentifier = null;
 
         List<Identifier> identifiersForSameSystem = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, system);
         for (Identifier identifier: identifiersForSameSystem) {
+
+            //we get updates to PPATI when another field has changed (e.g. religion), so if the PPALI has
+            //already replaced the identifier with one with an ID but our value is the same, then do nothing
+            String existingValue = identifier.getValue();
+            if (existingValue.equalsIgnoreCase(value)) {
+                return;
+            }
+
+            //The PPALI transform sets the ID on the Identifiers
+            //that it creates, so only match to one that doesn't have an ID set. If the MRN (for example) has been changed
+            //there should also be an update to the PPALI file which will remove any unnecessary Identifier we create here
             if (!identifier.hasId()) {
                 existingIdentifier = identifier;
                 break;

@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -9,7 +8,6 @@ import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.HumanName;
@@ -19,21 +17,18 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class PPNAMTransformer extends BartsBasisTransformer {
+public class PPNAMTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPNAMTransformer.class);
 
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatientName((PPNAM) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientName((PPNAM)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -43,20 +38,12 @@ public class PPNAMTransformer extends BartsBasisTransformer {
     }
 
 
-    public static void createPatientName(PPNAM parser,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         BartsCsvHelper csvHelper,
-                                         String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createPatientName(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        if (patientBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Skipping PPNAM record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
-            return;
-        }
-
+        //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         CsvCell nameIdCell = parser.getMillenniumPersonNameId();
         NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
 
@@ -69,10 +56,11 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         HumanName.NameUse nameUse = null;
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
-        if (!nameTypeCell.isEmpty() && nameTypeCell.getLong() > 0) {
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.NAME_USE, nameTypeCell);
+        if (!BartsCsvHelper.isEmptyOrIsZero(nameTypeCell)) {
 
-            nameUse = convertNameUse(cernerCodeValueRef.getCodeMeaningTxt());
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.NAME_USE, nameTypeCell);
+            String codeDesc = codeRef.getCodeMeaningTxt();
+            nameUse = convertNameUse(codeDesc);
         }
 
         CsvCell titleCell = parser.getTitle();
@@ -107,7 +95,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
     }
 
 
-    private static String parseTitleAndPrefix(String title, String prefix) throws Exception {
+    /*private static String parseTitleAndPrefix(String title, String prefix) throws Exception {
 
         if (Strings.isNullOrEmpty(title) && Strings.isNullOrEmpty(prefix)) {
             return "";
@@ -148,7 +136,7 @@ public class PPNAMTransformer extends BartsBasisTransformer {
         }
 
         return prefix + " " + title ;
-    }
+    }*/
 
     private static HumanName.NameUse convertNameUse(String statusCode) {
         switch (statusCode) {

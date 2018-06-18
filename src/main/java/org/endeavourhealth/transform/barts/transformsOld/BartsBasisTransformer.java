@@ -1,25 +1,7 @@
-package org.endeavourhealth.transform.barts.transforms;
+package org.endeavourhealth.transform.barts.transformsOld;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.common.BasisTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.UUID;
 
 public class BartsBasisTransformer extends BasisTransformer{
     private static final Logger LOG = LoggerFactory.getLogger(BartsBasisTransformer.class);
@@ -30,7 +12,7 @@ public class BartsBasisTransformer extends BasisTransformer{
     * Set unknown values to null
     * For non-AE encounters set 'aeArrivalDateTime' to null
      */
-    public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, UUID personUUID, BartsCsvHelper csvHelper, ParserI parser) throws Exception {
+    /*public static EpisodeOfCareBuilder readOrCreateEpisodeOfCareBuilder(CsvCell episodeIdentiferCell, CsvCell finIdCell, CsvCell encounterIdCell, CsvCell personIdCell, UUID personUUID, BartsCsvHelper csvHelper, ParserI parser) throws Exception {
         boolean newEoCCreated = false;
         String FINalternateEpisodeUUID = null;
         String encounterAlternateEpisodeUUID = null;
@@ -201,5 +183,5 @@ public class BartsBasisTransformer extends BasisTransformer{
 
         return episodeOfCareBuilder;
     }
-
+*/
 }

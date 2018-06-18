@@ -11,6 +11,7 @@ import java.util.List;
 public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI {
 
     private EpisodeOfCare episodeOfCare = null;
+    private boolean isIdMapped = false;
 
     public EpisodeOfCareBuilder() {
         this(null);
@@ -21,7 +22,14 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         if (this.episodeOfCare == null) {
             this.episodeOfCare = new EpisodeOfCare();
             this.episodeOfCare.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
+        } else {
+            //if creating from an existing Encounter, then ID mapping has already been done
+            this.isIdMapped = true;
         }
+    }
+
+    public boolean isIdMapped() {
+        return isIdMapped;
     }
 
     public void setPatient(Reference referenceValue, CsvCell... sourceCells) {
@@ -62,6 +70,9 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     }
 
     public Date getRegistrationStartDate() {
+        if (!this.episodeOfCare.hasPeriod()) {
+            return null;
+        }
         return this.episodeOfCare.getPeriod().getStart();
     }
 
@@ -90,6 +101,9 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     }
 
     public Date getRegistrationEndDate() {
+        if (!this.episodeOfCare.hasPeriod()) {
+            return null;
+        }
         return this.episodeOfCare.getPeriod().getEnd();
     }
 

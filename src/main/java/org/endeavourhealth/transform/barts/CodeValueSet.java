@@ -27,4 +27,6 @@ public class CodeValueSet {
     public static final Long PHONE_METHOD = 23056L;
     public static final Long CLINICIAL_RELATIONSHIP_TYPE = 331L;
     public static final Long APPOINTMENT_TYPE = 14230L;
+    public static final Long DECEASED_STATUS = 268L;
+    public static final Long CLINICAL_EVENT_CLASS = 8L;
 }

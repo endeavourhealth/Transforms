@@ -8,7 +8,6 @@ import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -19,21 +18,18 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class PPRELTransformer extends BartsBasisTransformer {
+public class PPRELTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPRELTransformer.class);
 
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper,
-                                 String primaryOrgOdsCode,
-                                 String primaryOrgHL7OrgOID) throws Exception {
+                                 BartsCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createPatientRelationship((PPREL) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
+                    createPatientRelationship((PPREL)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -43,18 +39,10 @@ public class PPRELTransformer extends BartsBasisTransformer {
     }
 
 
-    public static void createPatientRelationship(PPREL parser,
-                                                 FhirResourceFiler fhirResourceFiler,
-                                                 BartsCsvHelper csvHelper,
-                                                 String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+    public static void createPatientRelationship(PPREL parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        if (patientBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Skipping PPREL record for {} as no MRN->Person mapping found", milleniumPersonIdCell);
-            return;
-        }
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
         CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
@@ -143,22 +131,23 @@ public class PPRELTransformer extends BartsBasisTransformer {
         }
 
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
-        if (!relationshipToPatientCell.isEmpty() && relationshipToPatientCell.getLong() > 0) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
+            String relationshipToPatientDesc = codeRef.getCodeDescTxt();
 
-            String relationshipToPatientDesc = cernerCodeValueRef.getCodeDescTxt();
+            //cache the relationship type, as we'll need this later for the family history transform
+            csvHelper.cachePatientRelationshipType(relationshipIdCell, relationshipToPatientDesc);
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipToPatientDesc);
         }
 
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
-        if (!relationshipTypeCell.isEmpty() && relationshipTypeCell.getLong() > 0) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(relationshipTypeCell)) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
-
-            String relationshipTypeDesc = cernerCodeValueRef.getCodeDescTxt();
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
+            String relationshipTypeDesc = codeRef.getCodeDescTxt();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipTypeDesc);

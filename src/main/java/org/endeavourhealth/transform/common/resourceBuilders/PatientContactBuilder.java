@@ -27,9 +27,9 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
-    public static boolean removeExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
+    public static Patient.ContactComponent findExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
-            throw new IllegalArgumentException("Can't remove patient contact without ID");
+            throw new IllegalArgumentException("Can't look up patient contact without ID");
         }
 
         List<Patient.ContactComponent> matches = new ArrayList<>();
@@ -45,21 +45,26 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
 
         if (matches.isEmpty()) {
-            return false;
+            return null;
 
         } else if (matches.size() > 1) {
             throw new IllegalArgumentException("Found " + matches.size() + " patientContacts for ID " + idValue);
 
         } else {
-            Patient.ContactComponent patientContact = matches.get(0);
-
-            //remove any audits we've created for the Name
-            String identifierJsonPrefix = parentBuilder.getContactJsonPrefix(patientContact);
-            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
-
-            parentBuilder.removePatientContactComponent(patientContact);
-            return true;
+            return matches.get(0);
         }
+    }
+
+    public static boolean removeExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
+
+        Patient.ContactComponent patientContact = findExistingContactPoint(parentBuilder, idValue);
+
+        //remove any audits we've created for the Name
+        String identifierJsonPrefix = parentBuilder.getContactJsonPrefix(patientContact);
+        parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+        parentBuilder.removePatientContactComponent(patientContact);
+        return true;
     }
 
     public void setId(String idValue, CsvCell... sourceCells) {

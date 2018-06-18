@@ -57,7 +57,7 @@ public class LOREF extends AbstractCsvParser {
         return super.getCell("END_EFFECTIVE_DT_TM");
     }
 
-    public CsvCell getBedLcoation() {
+    public CsvCell getBedLocation() {
         return super.getCell("BED_LOC_CD");
     }
 
