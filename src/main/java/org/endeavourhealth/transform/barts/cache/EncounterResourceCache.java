@@ -62,18 +62,19 @@ public class EncounterResourceCache {
             Encounter encounter = (Encounter)csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
             if (encounter != null) {
                 encounterBuilder = new EncounterBuilder(encounter);
-                encounterBuildersByEncounterId.put(encounterId, encounterBuilder);
 
                 //always set the person ID fresh, in case the record has been moved to another patient, remembering to forward map to a UUID
                 //but track the old patient UUID so we can use it to update dependent resources
-                UUID oldPatientUuid = UUID.fromString(encounter.getId());
-                UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
-                if (!oldPatientUuid.equals(currentPatientUuid)) {
+                if (personIdCell != null) {
+                    UUID oldPatientUuid = UUID.fromString(encounter.getId());
+                    UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+                    if (!oldPatientUuid.equals(currentPatientUuid)) {
 
-                    encountersWithChangedPatientUuids.put(encounterId, oldPatientUuid);
+                        encountersWithChangedPatientUuids.put(encounterId, oldPatientUuid);
 
-                    Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, currentPatientUuid.toString());
-                    encounterBuilder.setPatient(patientReference, personIdCell);
+                        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, currentPatientUuid.toString());
+                        encounterBuilder.setPatient(patientReference, personIdCell);
+                    }
                 }
 
             } else {
@@ -88,12 +89,16 @@ public class EncounterResourceCache {
                 encounterBuilder.setId(encounterIdCell.getString(), encounterIdCell);
 
                 //set the patient reference
-                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
-                encounterBuilder.setPatient(patientReference, personIdCell);
-
-                encounterBuildersByEncounterId.put(encounterId, encounterBuilder);
+                if (personIdCell != null) {
+                    Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
+                    encounterBuilder.setPatient(patientReference, personIdCell);
+                } else {
+                    //if we've not been given a person ID we can't create the EncounterBuilder
+                    return null;
+                }
             }
 
+            encounterBuildersByEncounterId.put(encounterId, encounterBuilder);
         }
 
         return encounterBuilder;

@@ -232,6 +232,9 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     public Period getPeriod() {
+        if (!this.encounter.hasPeriod()) {
+            return null;
+        }
         return this.encounter.getPeriod();
     }
 

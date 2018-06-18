@@ -36,7 +36,9 @@ public class EpisodeOfCareResourceCache {
 
         //we want to create an EpisodeOfCare as early as possible, but don't always have an episode ID that
         //early. If we don't have an episode ID, then we don't create an episodeOfCare
-        if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdentiferCell)) {
+        if (episodeIdentiferCell != null
+            && !BartsCsvHelper.isEmptyOrIsZero(episodeIdentiferCell)) {
+
             String episodeId = episodeIdentiferCell.getString();
 
             //make sure a UUID exists for the EpisodeOfCare because the reference on Encounters will be set

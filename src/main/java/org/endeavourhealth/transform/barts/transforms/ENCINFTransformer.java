@@ -1,13 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCINF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.hl7.fhir.instance.model.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class ENCINFTransformer {
@@ -37,25 +41,29 @@ public class ENCINFTransformer {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell beginEffectiveCell = parser.getBeginEffectiveDateTime();
-        CsvCell endEffectiveCell = parser.getEndEffectiveDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(beginEffectiveCell)) {
 
-        //TODO - look at the various code fields to work out what this record is telling us
+            EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
+            if (encounterBuilder == null) {
+                return;
+            }
 
-        /*EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, per csvHelper, encounterIdCell.getString());
+            Date d = BartsCsvHelper.parseDate(beginEffectiveCell);
 
-
-
-        if (encounterBuilder != null && encounterBuilder.getPeriod() == null) {
-            if (beginEffectiveCell != null && beginEffectiveCell.getString().length() > 0) {
-                Date d = BartsCsvHelper.parseDate(beginEffectiveCell);
+            //if the encounter doesn't have any date set on it, use the ENCINF date to set something
+            Period period = encounterBuilder.getPeriod();
+            if (period == null
+                    || !period.hasStart()) {
+                //if the encounter doesn't have a start date, use our date
                 encounterBuilder.setPeriodStart(d, beginEffectiveCell);
+            } else {
+                //if the encounter has a start date but our ENCINF date is before it, then apply it
+                Date encounterStart = period.getStart();
+                if (d.before(encounterStart)) {
+                    encounterBuilder.setPeriodStart(d, beginEffectiveCell);
+                }
             }
-            if (endEffectiveCell != null && endEffectiveCell.getString().length() > 0) {
-                Date d = BartsCsvHelper.parseDate(endEffectiveCell);
-                encounterBuilder.setPeriodEnd(d, endEffectiveCell);
-            }
-        }*/
-
+        }
     }
 
 }
