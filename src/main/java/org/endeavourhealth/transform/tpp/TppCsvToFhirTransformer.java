@@ -88,7 +88,7 @@ public abstract class TppCsvToFhirTransformer {
     public static String determineVersion(String[] files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
-        Map<String, List<String> > breadcrumbs = new HashMap<String, List<String>>() ;
+        Map<String, List<String>> breadcrumbs = new HashMap<String, List<String>>();
 
         possibleVersions.add(VERSION_89);
         possibleVersions.add(VERSION_88);
@@ -103,7 +103,7 @@ public abstract class TppCsvToFhirTransformer {
 
                 //calling this will return the possible versions that apply to this parser
                 possibleVersions = parser.testForValidVersions(possibleVersions);
-                breadcrumbs.put(filePath,possibleVersions);
+                breadcrumbs.put(filePath, possibleVersions);
                 if (possibleVersions.isEmpty()) {
                     break;
                 }
@@ -329,10 +329,9 @@ public abstract class TppCsvToFhirTransformer {
 //        // Organisations
 //        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 //        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        //OrganisationResourceCache.fileOrganizationResources(fhirResourceFiler);
-//        //LocationResourceCache.fileLocationResources(fhirResourceFiler);
+        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        LocationResourceCache.fileLocationResources(fhirResourceFiler);
 //        // Staff
 //        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 //        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -344,10 +343,10 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRPatientAddressHistoryTransformer.transform(parsers,fhirResourceFiler,csvHelper);
-        SRPatientContactDetailsTransformer.transform(parsers,fhirResourceFiler,csvHelper);
-        SRPatientRegistrationTransformer.transform(parsers,fhirResourceFiler,csvHelper);
-        SRPatientRelationshipTransformer.transform(parsers,fhirResourceFiler,csvHelper);
+        SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PatientResourceCache.filePatientAndEpisodeOfCareResources(fhirResourceFiler);
 
         LOG.trace("Starting appointment transforms");
@@ -384,7 +383,7 @@ public abstract class TppCsvToFhirTransformer {
 
         // Media (documents - this is just a reference to documents that we are not getting so ignoring for now
         //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-    //TODO - commented out for now. Review
+        //TODO - commented out for now. Review
         // Child at risk
         SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
