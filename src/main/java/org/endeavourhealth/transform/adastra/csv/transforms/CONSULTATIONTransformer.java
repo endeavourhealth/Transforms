@@ -119,6 +119,7 @@ public class CONSULTATIONTransformer {
         //create a linked free text observation from the encounter free text
         ObservationBuilder observationBuilder = new ObservationBuilder();
         if (encounterTextBuilder.length() > 0) {
+
             //create a unique observation Id
             String observationId = caseId.getString()
                     + ":" + consultationId.getString();
@@ -127,7 +128,7 @@ public class CONSULTATIONTransformer {
             DateTimeType dateTimeType = new DateTimeType(startDateTime.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, startDateTime);
             observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
-            observationBuilder.setEncounter(csvHelper.createPatientReference(consultationId));
+            observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
             observationBuilder.setNotes(encounterTextBuilder.toString());
 
             csvHelper.cacheNewConsultationChildRelationship(consultationId,

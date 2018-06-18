@@ -12,7 +12,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +56,7 @@ public class PATIENTTransformer {
 
         //create Patient Resource builder
         PatientBuilder patientBuilder = new PatientBuilder();
-        VisionCsvHelper.setUniqueId(patientBuilder, patientId, null);
+        patientBuilder.setId(patientId.getString(), patientId);
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {

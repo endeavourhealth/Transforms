@@ -104,7 +104,7 @@ public class CLINICALCODESTransformer {
         // set consultation/encounter reference
         if (!consultationId.isEmpty()) {
 
-            Reference consultationReference = csvHelper.createEncounterReference(consultationId.getString(), patientId.getString());
+            Reference consultationReference = csvHelper.createEncounterReference(consultationId);
             observationBuilder.setEncounter(consultationReference, consultationId);
         }
 

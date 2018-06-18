@@ -98,7 +98,7 @@ public class PRESCRIPTIONSTransformer {
         // set consultation/encounter reference
         if (!consultationId.isEmpty()) {
 
-            Reference consultationReference = csvHelper.createEncounterReference(consultationId.getString(), patientId.getString());
+            Reference consultationReference = csvHelper.createEncounterReference(consultationId);
             medicationStatementBuilder.setEncounter (consultationReference, consultationId);
         }
 

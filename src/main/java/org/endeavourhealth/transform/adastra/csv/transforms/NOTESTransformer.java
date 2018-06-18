@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.FlagBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Flag;
 import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,9 +55,7 @@ public class NOTESTransformer {
 
         FlagBuilder flagBuilder = new FlagBuilder();
         flagBuilder.setId(flagId, caseId, patientId);
-
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        flagBuilder.setSubject(patientReference, patientId);
+        flagBuilder.setSubject(csvHelper.createPatientReference(patientId), patientId);
 
         if (!reviewDateTime.isEmpty()) {
             flagBuilder.setStartDate(reviewDateTime.getDate(), reviewDateTime);
