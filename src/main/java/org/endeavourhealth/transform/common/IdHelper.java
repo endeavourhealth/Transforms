@@ -269,7 +269,7 @@ public class IdHelper {
         return mapper;
     }
 
-    public static Reference convertLocallyUniqueReferenceToEdsReference(Reference localReference, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static Reference convertLocallyUniqueReferenceToEdsReference(Reference localReference, HasServiceSystemAndExchangeIdI fhirResourceFiler) throws Exception {
         ReferenceComponents components = ReferenceHelper.getReferenceComponents(localReference);
         String locallyUniqueId = components.getId();
         ResourceType resourceType = components.getResourceType();

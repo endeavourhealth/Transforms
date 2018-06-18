@@ -56,11 +56,6 @@ public class OPATTTransformer {
 
         CsvCell finIdCell = parser.getFINNo();
 
-        //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, finIdCell, encounterIdCell, personIdCell, csvHelper);
-
-        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
-
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
 
@@ -102,29 +97,6 @@ public class OPATTTransformer {
             }
         }
 
-        //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
-        if (beginDate != null) {
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null
-                    || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-
-                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-            }
-        }
-
-        // Check whether to Finish EpisodeOfCare
-        //outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
-        // Outcome = 1 means discharged from care
-        if (!outcomeCell.isEmpty()) {
-            int outcomeCode = outcomeCell.getInt();
-            if (outcomeCode == 1) { //	Discharged from CONSULTANT's care (last attendance)
-
-                //make sure to set the status AFTER setting the end date, as setting the end date
-                //will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
-                episodeOfCareBuilder.setRegistrationEndDate(endDate, beginDateCell, apptLengthCell);
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
-            }
-        }
 
         // Location
         CsvCell currentLocationCell = parser.getLocationCode();
@@ -161,6 +133,38 @@ public class OPATTTransformer {
                 encounterBuilder.addType(typeDesc, typeCell);
             }
         }
+
+        //EpisodOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+        if (episodeOfCareBuilder != null) {
+
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
+
+            //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
+            if (beginDate != null) {
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null
+                        || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+
+                    episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                }
+            }
+
+            // Check whether to Finish EpisodeOfCare
+            //outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
+            // Outcome = 1 means discharged from care
+            if (!outcomeCell.isEmpty()) {
+                int outcomeCode = outcomeCell.getInt();
+                if (outcomeCode == 1) { //	Discharged from CONSULTANT's care (last attendance)
+
+                    //make sure to set the status AFTER setting the end date, as setting the end date
+                    //will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
+                    episodeOfCareBuilder.setRegistrationEndDate(endDate, beginDateCell, apptLengthCell);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, outcomeCell);
+                }
+            }
+        }
+
 
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }

@@ -60,31 +60,17 @@ public class IPEPITransformer {
             return;
         }
 
-        //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, csvHelper);
-
-        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
-
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         if (beginDate != null) {
             // Start date
             encounterBuilder.setPeriodStart(beginDate);
 
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-            }
-
             // End date
             if (endDate != null) {
                 encounterBuilder.setPeriodEnd(endDate);
 
                 encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-
-                if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                    episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
-                }
 
             } else if (beginDate.before(new Date())) {
                 encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, beginDateCell);
@@ -93,8 +79,32 @@ public class IPEPITransformer {
             }
         } else {
             encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+        }
+
+        //EpisodOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        if (episodeOfCareBuilder != null) {
+
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
+
+            if (beginDate != null) {
+
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                    episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                }
+
+                // End date
+                if (endDate != null) {
+                    if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                        episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
+                    }
+                }
+            } else {
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+                }
             }
         }
 

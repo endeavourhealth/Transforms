@@ -89,11 +89,6 @@ public class AEATTTransformer {
             triageEndDate = BartsCsvHelper.parseDate(triageEndCell);
         }
 
-        // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, csvHelper);
-
-        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
-
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         // Using checkin/out date as they largely cover the whole period
@@ -101,20 +96,10 @@ public class AEATTTransformer {
             // Start date
             encounterBuilder.setPeriodStart(beginDate);
 
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-                episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-            }
-
             // End date
             if (endDate != null) {
                 encounterBuilder.setPeriodEnd(endDate);
-
                 encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-
-                if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                    episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, endDateCell);
-                }
 
             } else if (beginDate.before(new Date())) {
                 encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, beginDateCell);
@@ -123,15 +108,6 @@ public class AEATTTransformer {
             }
         } else {
             encounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
-            if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
-                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
-            }
-        }
-
-        // Check whether to Finish EpisodeOfCare
-        // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
-        if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (decisionToAdmitDateTimeCell == null || decisionToAdmitDateTimeCell.getString().trim().length() == 0)) {
-            episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, endDateCell);
         }
 
         // Triage person
@@ -205,6 +181,40 @@ public class AEATTTransformer {
         //Reason
         if (!reasonForVisit.isEmpty()) {
             encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
+        }
+
+        // Retrieve or create EpisodeOfCare
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+        if (episodeOfCareBuilder != null) {
+
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
+
+            // Using checkin/out date as they largely cover the whole period
+            if (beginDate != null) {
+
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null || beginDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                    episodeOfCareBuilder.setRegistrationStartDate(beginDate, beginDateCell);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                }
+
+                // End date
+                if (endDate != null) {
+
+                    if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                        episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, endDateCell);
+                    }
+                }
+            } else {
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+                }
+            }
+
+            // Check whether to Finish EpisodeOfCare
+            // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
+            if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (decisionToAdmitDateTimeCell == null || decisionToAdmitDateTimeCell.getString().trim().length() == 0)) {
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, endDateCell);
+            }
         }
 
         //no need to save anything, as the Encounter and Episode caches sort that out later

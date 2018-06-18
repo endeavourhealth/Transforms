@@ -79,12 +79,6 @@ public class ENCNTTransformer {
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
         CsvCell mainSpecialtyCodeCell = parser.getMainSpecialtyMillenniumCode();
 
-
-        // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, csvHelper);
-
-        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
-
         //if the Encounter previously existed, see if we've changed the patient UUID, in which
         //case we'll need to update all other resources for the patient
         if (encounterBuilder.isIdMapped()) {
@@ -171,17 +165,6 @@ public class ENCNTTransformer {
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
-
-//TODO - sort out the below - is it needed?
-            String checkDest = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
-            if (checkDest == null) {
-                csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
-            } else {
-                if (checkDest.compareToIgnoreCase(episodeOfCareBuilder.getResourceId()) != 0) {
-                    TransformWarnings.log(LOG, parser, "EncounterTable {} previously pointed to EoC {} but this has changed to {} in file {}", encounterIdCell.getString(), checkDest, episodeOfCareBuilder.getResourceId(), parser.getFilePath());
-                    csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
-                }
-            }
         }
 
         // class
@@ -206,9 +189,6 @@ public class ENCNTTransformer {
 
         // treatment function
         BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CodeValueSet.TREATMENT_FUNCTION, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Treatment_Function, csvHelper);
-
-        // EpisodeOfCare
-        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), episodeIdentiferCell);
 
         // Referrer
         CsvCell referrerPersonnelIdentifier = parser.getReferrerMillenniumPersonnelIdentifier();
@@ -260,6 +240,11 @@ public class ENCNTTransformer {
 
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
+
+        // Retrieve or create EpisodeOfCare. We don't have any useful data to set on it, but that will be filled in
+        //when we process the OPATT, AEATT etc. files
+        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(episodeIdentiferCell, encounterIdCell, personIdCell, activeCell, csvHelper);
+        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }
