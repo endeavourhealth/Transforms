@@ -1,15 +1,20 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CVREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,10 +39,10 @@ public class CVREFTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 try {
-                    transform((CVREF) parser, fhirResourceFiler);
+                    transform((CVREF)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -46,10 +51,10 @@ public class CVREFTransformer {
     }
 
 
-    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
         //For CVREF the first column should always resolve as a numeric code. We've seen some bad data appended to CVREF files
         if (!StringUtils.isNumeric(parser.getCodeValueCode().getString())) {
-                    return;
+            return;
         }
         CsvCell codeValueCode = parser.getCodeValueCode();
         CsvCell date = parser.getDate();
@@ -65,7 +70,7 @@ public class CVREFTransformer {
         // Just to keep the log tidier from exceptions - if the date string has a period it's likely the bulk format
         Date formattedDate = null;
         if (!date.isEmpty()) {
-          formattedDate = BartsCsvHelper.parseDate(date);
+            formattedDate = BartsCsvHelper.parseDate(date);
         }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
@@ -76,24 +81,40 @@ public class CVREFTransformer {
         auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
 
-        byte active = (byte)activeInd.getInt().intValue();
+        byte active = (byte) activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),
-                                    formattedDate,
-                                    active,
-                                    codeDescTxt.getString(),
-                                    codeDispTxt.getString(),
-                                    codeMeaningTxt.getString(),
-                                    codeSetNbr.getLong(),
-                                    codeSetDescTxt.getString(),
-                                    aliasNhsCdAlias.getString(),
-                                    fhirResourceFiler.getServiceId().toString(),
-                                    auditWrapper);
+                formattedDate,
+                active,
+                codeDescTxt.getString(),
+                codeDispTxt.getString(),
+                codeMeaningTxt.getString(),
+                codeSetNbr.getLong(),
+                codeSetDescTxt.getString(),
+                aliasNhsCdAlias.getString(),
+                fhirResourceFiler.getServiceId().toString(),
+                auditWrapper);
 
 
-                //save to the DB
-            repository.save(mapping, fhirResourceFiler.getServiceId());
+        //save to the DB
+        repository.save(mapping, fhirResourceFiler.getServiceId());
 
+        //if it's a specialty, store the record as an Organization so we can refer to it from the Encounter resource
+        if (codeSetNbr.getLong() == CodeValueSet.SPECIALITY) {
 
+            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+
+            Reference mainReference = csvHelper.createSpecialtyOrganisationReference(codeValueCode);
+            String orgId = ReferenceHelper.getReferenceId(mainReference);
+            organizationBuilder.setId(orgId, codeValueCode);
+
+            organizationBuilder.setName(codeDispTxt.getString(), codeDispTxt);
+
+            String parentId = csvHelper.findOrgRefIdForBarts();
+            Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parentId);
+            organizationBuilder.setParentOrganisation(reference);
+
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+        }
     }
 
- }
+}

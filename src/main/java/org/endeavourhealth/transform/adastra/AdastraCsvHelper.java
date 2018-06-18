@@ -81,8 +81,8 @@ public class AdastraCsvHelper {
         return serviceRepository.getById(id);
     }
 
-    public Reference createEncounterReference(String encounterGuid, String patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
+    public Reference createEncounterReference(CsvCell encounterGuid) {
+        return ReferenceHelper.createReference(ResourceType.Encounter, encounterGuid.getString());
     }
 
     public Reference createPatientReference(CsvCell patientGuid) {

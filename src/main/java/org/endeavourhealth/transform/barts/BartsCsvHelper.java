@@ -15,9 +15,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientContactBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -184,6 +182,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     /*public Reference createPractitionerReference(String practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }*/
+
+
 
     public Reference createPatientReference(CsvCell personIdCell) {
         return ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
@@ -662,5 +662,32 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         CodeableConcept codeableConcept = relationship.getRelationship().get(0);
         return codeableConcept.getText();
+    }
+
+    public void setEpisodeReferenceOnEncounter(EpisodeOfCareBuilder episodeOfCareBuilder, EncounterBuilder encounterBuilder, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        boolean episodeIdMapped = episodeOfCareBuilder.isIdMapped();
+        Reference episodeReference = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId());
+
+        boolean encounterIdMapped = encounterBuilder.isIdMapped();
+
+        if (encounterIdMapped == episodeIdMapped) {
+            //if both are ID mapped (or both aren't) then no translation is needed
+
+        } else if (encounterIdMapped) {
+            //if encounter is ID mapped and the episode isn't, then we need to translate
+            episodeReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, fhirResourceFiler);
+
+        } else {
+            //if encounter isn't ID mapped, but episode is, then we need to translate
+            episodeReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler, episodeReference);
+        }
+
+        encounterBuilder.setEpisodeOfCare(episodeReference);
+    }
+
+    public Reference createSpecialtyOrganisationReference(CsvCell mainSpecialtyCodeCell) {
+        String uniqueId = "Specialty:" + mainSpecialtyCodeCell.getString();
+        return ReferenceHelper.createReference(ResourceType.Organization, uniqueId);
     }
 }

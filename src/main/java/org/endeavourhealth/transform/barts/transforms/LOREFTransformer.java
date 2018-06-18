@@ -31,12 +31,9 @@ public class LOREFTransformer {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
-                try {
-                    createLocation((LOREF)parser, (FhirResourceFiler)fhirResourceFiler, csvHelper);
 
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //no try/catch, as records are dependant on other records being processed OK
+                createLocation((LOREF)parser, (FhirResourceFiler)fhirResourceFiler, csvHelper);
             }
         }
     }

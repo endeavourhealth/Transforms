@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.FlagBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Flag;
 import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +44,19 @@ public class NOTESTransformer {
                                       String version) throws Exception {
 
         CsvCell caseId = parser.getCaseId();
-        CsvCell patientId = parser.getPatientId();
+        //CsvCell patientId = parser.getPatientId();  //current bug in extract misses last char from PatientRef
+        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
+        CsvCell reviewDateTime = parser.getReviewDateTime();
 
-        String flagId = "FLAG-"
-                +caseId.getString()
+        //create a unique id for flag.
+        String flagId = reviewDateTime.getString()
+                + ":" + caseId.getString()
                 + ":" + patientId.getString();
 
         FlagBuilder flagBuilder = new FlagBuilder();
         flagBuilder.setId(flagId, caseId, patientId);
+        flagBuilder.setSubject(csvHelper.createPatientReference(patientId), patientId);
 
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        flagBuilder.setSubject(patientReference, patientId);
-
-        CsvCell reviewDateTime = parser.getReviewDateTime();
         if (!reviewDateTime.isEmpty()) {
             flagBuilder.setStartDate(reviewDateTime.getDate(), reviewDateTime);
         }

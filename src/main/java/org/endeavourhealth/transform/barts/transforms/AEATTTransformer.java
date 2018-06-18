@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -12,7 +11,10 @@ import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
+import org.hl7.fhir.instance.model.Period;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,16 +89,10 @@ public class AEATTTransformer {
             triageEndDate = BartsCsvHelper.parseDate(triageEndCell);
         }
 
-
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(null, null, encounterIdCell, personIdCell, csvHelper);
 
-//TODO - move these into the episode cache
-
-        // EoC reference
-        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), encounterIdCell);
-
-
+        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 

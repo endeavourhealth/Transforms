@@ -108,7 +108,7 @@ public class ENCNT extends AbstractCsvParser {
         return super.getCell("REASON_FOR_VISIT_TXT");
     }
 
-    public CsvCell getCurrentMainSpecialtyMillenniumCode() {
+    public CsvCell getMainSpecialtyMillenniumCode() {
         return super.getCell("MAIN_SPECIALTY_CD");
     }
 
