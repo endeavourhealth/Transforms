@@ -45,16 +45,16 @@ public class PRESCRIPTIONSTransformer {
 
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
-        CsvCell drugName = parser.getDrugName();
+
+        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
 
         String drugId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + drugName.getString();
+                + ":" + patientId.getString();
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
         medicationStatementBuilder.setId(drugId);
 
-        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
             medicationStatementBuilder.setPatient(csvHelper.createPatientReference(patientId));
         } else {
@@ -74,6 +74,7 @@ public class PRESCRIPTIONSTransformer {
                 = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
 
         // the drugs are not be coded, but has a name, so set as text
+        CsvCell drugName = parser.getDrugName();
         if (!drugName.isEmpty()) {
             codeableConceptBuilder.setText(drugName.getString(), drugName);
         }

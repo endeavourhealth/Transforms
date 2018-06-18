@@ -42,7 +42,6 @@ public class PRESCRIPTIONSPreTransformer {
 
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
-        CsvCell drugName = parser.getDrugName();
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (patientId.isEmpty()) {
@@ -54,7 +53,7 @@ public class PRESCRIPTIONSPreTransformer {
         //create a unique drug Id
         String drugId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + drugName.getString();
+                + ":" + patientId.getString();
 
         //linked consultation encounter record
         if (!consultationId.isEmpty()) {
