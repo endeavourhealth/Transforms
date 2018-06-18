@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,18 +119,32 @@ public class CONSULTATIONTransformer {
         //create a linked free text observation from the encounter free text
         ObservationBuilder observationBuilder = new ObservationBuilder();
         if (encounterTextBuilder.length() > 0) {
+            //create a unique observation Id
+            String observationId = caseId.getString()
+                    + ":" + consultationId.getString();
+            observationBuilder.setId(observationId);
+
             DateTimeType dateTimeType = new DateTimeType(startDateTime.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, startDateTime);
             observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
             observationBuilder.setEncounter(csvHelper.createPatientReference(consultationId));
             observationBuilder.setNotes(encounterTextBuilder.toString());
+
+            csvHelper.cacheNewConsultationChildRelationship(consultationId,
+                    patientId.getString(),
+                    observationId,
+                    ResourceType.Observation);
         }
 
-        //apply any linked items from this extract set-up in pre-transformer
+        //apply any linked items from this extract set-up in pre-transformer plus the new observation created above
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
         containedListBuilder.addReferences(newLinkedResources);
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, observationBuilder);
+        if (!observationBuilder.getResource().isEmpty()) {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, observationBuilder);
+        } else {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        }
     }
 }

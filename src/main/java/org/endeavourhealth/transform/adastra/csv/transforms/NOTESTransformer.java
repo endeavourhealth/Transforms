@@ -45,10 +45,13 @@ public class NOTESTransformer {
                                       String version) throws Exception {
 
         CsvCell caseId = parser.getCaseId();
-        CsvCell patientId = parser.getPatientId();
+        //CsvCell patientId = parser.getPatientId();  //current bug in extract misses last char from PatientRef
+        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
+        CsvCell reviewDateTime = parser.getReviewDateTime();
 
-        String flagId = "FLAG-"
-                +caseId.getString()
+        //create a unique id for flag.
+        String flagId = reviewDateTime.getString()
+                + ":" + caseId.getString()
                 + ":" + patientId.getString();
 
         FlagBuilder flagBuilder = new FlagBuilder();
@@ -57,7 +60,6 @@ public class NOTESTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         flagBuilder.setSubject(patientReference, patientId);
 
-        CsvCell reviewDateTime = parser.getReviewDateTime();
         if (!reviewDateTime.isEmpty()) {
             flagBuilder.setStartDate(reviewDateTime.getDate(), reviewDateTime);
         }
