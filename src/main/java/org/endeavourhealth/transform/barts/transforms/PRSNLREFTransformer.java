@@ -53,7 +53,7 @@ public class PRSNLREFTransformer {
         BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CodeValueSet.PERSONNEL_POSITION, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, csvHelper);
 
         CsvCell specialityCode = parser.getMillenniumSpecialtyCode();
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CodeValueSet.PERSONNEL_SPECIALITY, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, csvHelper);
+        BartsCodeableConceptHelper.applyCodeDisplayTxt(specialityCode, CodeValueSet.SPECIALITY, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, csvHelper);
 
         CsvCell title = parser.getTitle();
         CsvCell givenName = parser.getFirstName();

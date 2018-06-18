@@ -68,10 +68,18 @@ public class ORGREFTransformer {
             //confusingly, the file links orgs to its parents using the ODS code, not the ID, so we need
             //to look up the ID for our parent using the ODS code
             String parentOdsCode = parentOrgAliasCell.getString();
-            String parentId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, parentOdsCode);
-            if (!Strings.isNullOrEmpty(parentId)) {
-                Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parentId);
-                organizationBuilder.setParentOrganisation(reference);
+
+            //there are some records that have themselves as their parent, so
+            //check for this and ignore that
+            String odsCode = orgAliasCell.getString();
+            if (odsCode == null
+                || !parentOdsCode.equals(odsCode)) {
+
+                String parentId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, parentOdsCode);
+                if (!Strings.isNullOrEmpty(parentId)) {
+                    Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parentId);
+                    organizationBuilder.setParentOrganisation(reference);
+                }
             }
         }
 

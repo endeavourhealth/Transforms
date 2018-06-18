@@ -12,7 +12,7 @@ public class CodeValueSet {
     public static final Long MARITAL_STATUS = 38L;
     public static final Long NAME_USE = 213L;
     public static final Long PERSONNEL_POSITION = 88L;
-    public static final Long PERSONNEL_SPECIALITY = 3394L;
+    public static final Long SPECIALITY = 3394L;
     public static final Long DIAGNOSIS_TYPE = 17L;
     public static final Long PROCEDURE_TYPE = 401L;
     public static final Long RELATIONSHIP_TO_PATIENT = 40L;

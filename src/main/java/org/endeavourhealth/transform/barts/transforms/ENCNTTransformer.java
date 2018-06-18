@@ -72,13 +72,13 @@ public class ENCNTTransformer {
         CsvCell finIdCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
-        CsvCell currentMainSpecialtyMillenniumCodeCell = parser.getCurrentMainSpecialtyMillenniumCode();
+        CsvCell mainSpecialtyCodeCell = parser.getMainSpecialtyMillenniumCode();
 
 
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareCache.getEpisodeOfCareBuilder(episodeIdentiferCell, finIdCell, encounterIdCell, personIdCell, csvHelper);
 
-        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId()), finIdCell);
+        csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
 
         // Create new encounter
         if (encounterBuilder != null) {
@@ -125,10 +125,8 @@ public class ENCNTTransformer {
 
         // Identifiers
         if (!finIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
-            if (identifiers.size() > 0) {
-                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
-            }
+            IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.TEMP);
@@ -136,10 +134,8 @@ public class ENCNTTransformer {
         }
 
         if (!visitIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
-            if (identifiers.size() > 0) {
-                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
-            }
+            IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_VISIT_NO_EPISODE_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
@@ -147,15 +143,14 @@ public class ENCNTTransformer {
         }
 
         if (!encounterIdCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
-            if (identifiers.size() > 0) {
-                encounterBuilder.getIdentifiers().remove(identifiers.get(0));
-            }
+            IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
 
+//TODO - sort out the below
             String checkDest = csvHelper.getInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString());
             if (checkDest == null) {
                 csvHelper.saveInternalId(InternalIdMap.TYPE_ENCOUNTER_ID_TO_EPISODE_UUID, encounterIdCell.getString(), episodeOfCareBuilder.getResourceId());
@@ -169,12 +164,14 @@ public class ENCNTTransformer {
 
         // class
         //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
-        encounterBuilder.setClass(getEncounterClass(encounterTypeCodeCell.getString(), encounterIdCell, parser), encounterTypeCodeCell);
+        Encounter.EncounterClass cls = getEncounterClass(encounterTypeCodeCell.getString(), encounterIdCell, parser);
+        encounterBuilder.setClass(cls, encounterTypeCodeCell);
 
         // status
         //Date d = null;
-        CsvCell status = parser.getEncounterStatusMillenniumCode();
-        encounterBuilder.setStatus(getEncounterStatus(status.getString(), encounterIdCell, parser), status);
+        CsvCell statusCell = parser.getEncounterStatusMillenniumCode();
+        Encounter.EncounterState status = getEncounterStatus(statusCell.getString(), encounterIdCell, parser);
+        encounterBuilder.setStatus(status, statusCell);
 
         //Reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
@@ -230,18 +227,19 @@ public class ENCNTTransformer {
         // Location
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
-        if (currentMainSpecialtyMillenniumCodeCell != null && !currentMainSpecialtyMillenniumCodeCell.isEmpty()) {
-//TODO - restore this
-            /*ResourceId specialtyResourceid = getOrCreateSpecialtyResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, currentMainSpecialtyMillenniumCodeCell.getString());
-            if (specialtyResourceid != null) {
-                encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, specialtyResourceid.getResourceId().toString()),currentMainSpecialtyMillenniumCodeCell);
-            }*/
+        if (!BartsCsvHelper.isEmptyOrIsZero(mainSpecialtyCodeCell)) {
+
+            Reference organisationReference = csvHelper.createSpecialtyOrganisationReference(mainSpecialtyCodeCell);
+            if (encounterBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            encounterBuilder.setServiceProvider(organisationReference);
         }
 
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
-
+        //no need to save anything, as the Encounter and Episode caches sort that out later
     }
 
     private static boolean excludeEncounterType(String millenniumCode) throws Exception {

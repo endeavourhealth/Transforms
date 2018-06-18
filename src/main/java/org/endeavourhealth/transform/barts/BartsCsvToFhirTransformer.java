@@ -42,7 +42,8 @@ public abstract class BartsCsvToFhirTransformer {
             .withQuote((Character)null)
             .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this*/
 
-    public static final String PRIMARY_ORG_ODS_CODE = "R1H";
+    //public static final String PRIMARY_ORG_ODS_CODE = "R1H";
+    public static final String PRIMARY_ORG_ODS_CODE = "RNJ"; //internally in the data Barts use RNJ as their ODS code
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
 
@@ -70,9 +71,9 @@ public abstract class BartsCsvToFhirTransformer {
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
         //admin transformers
-        CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
+        CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
         LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
         PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);

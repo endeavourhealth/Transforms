@@ -64,6 +64,13 @@ public class IdentifierBuilder {
         }
     }
 
+    public static void removeExistingIdentifiersForSystem(HasIdentifierI parentBuilder, String identifierSystem) {
+        List<Identifier> matches = findExistingIdentifiersForSystem(parentBuilder, identifierSystem);
+        for (Identifier match: matches) {
+            parentBuilder.removeIdentifier(match);
+        }
+    }
+
     public static List<Identifier> findExistingIdentifiersForSystem(HasIdentifierI parentBuilder, String identifierSystem) {
         if (Strings.isNullOrEmpty(identifierSystem)) {
             throw new IllegalArgumentException("Can't match identifier without system");
