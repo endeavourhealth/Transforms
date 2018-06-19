@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
@@ -43,7 +44,7 @@ public class ENCNTTransformer {
 
         // Check if encounter type should be excluded
         CsvCell encounterTypeCodeCell = parser.getEncounterTypeMillenniumCode();
-        if (excludeEncounterType(encounterTypeCodeCell.getString())) {
+        if (excludeEncounterType(encounterTypeCodeCell, csvHelper)) {
             return;
         }
 
@@ -168,9 +169,10 @@ public class ENCNTTransformer {
         }
 
         // class
-        //fhirEncounter.setClass_(getEncounterClass(parser.getEncounterTypeMillenniumCode()));
-        Encounter.EncounterClass cls = getEncounterClass(encounterTypeCodeCell.getString(), encounterIdCell, parser);
-        encounterBuilder.setClass(cls, encounterTypeCodeCell);
+        Encounter.EncounterClass cls = getEncounterClass(encounterTypeCodeCell, encounterIdCell, csvHelper);
+        if (cls != null) {
+            encounterBuilder.setClass(cls, encounterTypeCodeCell);
+        }
 
         // status
         //Date d = null;
@@ -251,8 +253,27 @@ public class ENCNTTransformer {
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }
 
-    private static boolean excludeEncounterType(String millenniumCode) throws Exception {
-        if (millenniumCode.compareTo("309313") == 0) { return true; } // Inpatient Pre-Admission
+    private static boolean excludeEncounterType(CsvCell encounterTypeCodeCell, BartsCsvHelper csvHelper) throws Exception {
+
+        if (BartsCsvHelper.isEmptyOrIsZero(encounterTypeCodeCell)) {
+            return false;
+        }
+
+        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
+        if (codeRef == null) {
+            return false;
+        }
+
+        String desc = codeRef.getCodeDispTxt();
+
+        return desc.equals("Inpatient Pre-Admission")
+                || desc.equals("Inpatient Waiting List")
+                || desc.equals("Day Case Waiting List")
+                || desc.equals("Outpatient Referral")
+                || desc.equals("Outpatient Pre-Registration")
+                || desc.equals("Direct Referral");
+
+        /*if (millenniumCode.compareTo("309313") == 0) { return true; } // Inpatient Pre-Admission
         else if (millenniumCode.compareTo("3767801") == 0) { return true; } // Inpatient Waiting List
         else if (millenniumCode.compareTo("3767802") == 0) { return true; } // Day Case Waiting List
         else if (millenniumCode.compareTo("3767803") == 0) { return true; } // Outpatient Referral
@@ -260,14 +281,69 @@ public class ENCNTTransformer {
         else if (millenniumCode.compareTo("3768747") == 0) { return true; } // Outpatient Services
         else {
             return false;
-        }
+        }*/
     }
 
-    /*
-    *
-     */
-    private static Encounter.EncounterClass getEncounterClass(String millenniumCode, CsvCell encounterIdCell,  ParserI parser) throws Exception {
-        if (millenniumCode.compareTo("309308") == 0) { return Encounter.EncounterClass.INPATIENT; }
+    private static Encounter.EncounterClass getEncounterClass(CsvCell encounterTypeCodeCell, CsvCell encounterIdCell, BartsCsvHelper csvHelper) throws Exception {
+
+        if (BartsCsvHelper.isEmptyOrIsZero(encounterTypeCodeCell)) {
+            return null;
+        }
+
+        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
+        if (codeRef == null) {
+            return null;
+        }
+
+        String desc = codeRef.getCodeDispTxt();
+        if (desc.equals("Inpatient")
+                || desc.equals("Psychiatric Inpatient")
+                || desc.equals("Regular Day Admission")
+                || desc.equals("Regular Night Admission")
+                ) {
+
+            return Encounter.EncounterClass.INPATIENT;
+
+        } else if (desc.equals("Outpatient Message")
+                || desc.equals("Outpatient")
+                || desc.equals("Day Surgery")
+                || desc.equals("Day Case")
+                || desc.equals("Outpatient Referral")
+                || desc.equals("Day Care")) {
+
+            return Encounter.EncounterClass.OUTPATIENT;
+
+        } else if (desc.equals("Emergency")
+                || desc.equals("ER Temp")
+                || desc.equals("Emergency Department")) {
+
+            return Encounter.EncounterClass.EMERGENCY;
+
+        } else if (desc.equals("Research")
+                || desc.equals("Inpatient Pre-Admission")
+                || desc.equals("Results Only")
+                || desc.equals("Observation")
+                || desc.equals("Recurring")
+                || desc.equals("Inpatient Waiting List")
+                || desc.equals("Day Case Waiting List")
+                || desc.equals("Ward Attender")
+                || desc.equals("Outpatient Pre-Registration")
+                || desc.equals("Newborn")
+                || desc.equals("Direct Referral")
+                || desc.equals("Maternity")
+                || desc.equals("Mortuary")
+                || desc.equals("HLA QC")
+                || desc.equals("Community")
+                || desc.equals("Blood Donation")) {
+
+            return Encounter.EncounterClass.OTHER;
+
+        } else {
+            throw new TransformException("Unknown ENCNT type [" + desc + "]");
+        }
+
+
+        /*if (millenniumCode.compareTo("309308") == 0) { return Encounter.EncounterClass.INPATIENT; }
         else if (millenniumCode.compareTo("309309") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
         else if (millenniumCode.compareTo("309313") == 0) { return Encounter.EncounterClass.INPATIENT; }
         else if (millenniumCode.compareTo("3767801") == 0) { return Encounter.EncounterClass.INPATIENT; }
@@ -284,9 +360,9 @@ public class ENCNTTransformer {
         else if (millenniumCode.compareTo("3768747") == 0) { return Encounter.EncounterClass.OUTPATIENT; }
         else if (millenniumCode.compareTo("3768748") == 0) { return Encounter.EncounterClass.INPATIENT; }
         else {
-            TransformWarnings.log(LOG, parser, "Millennium encouter-type {} not found for Personnel-id {} in ENCNT record {} in file {}", millenniumCode, encounterIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "Millennium encounter-type {} not found for Personnel-id {} in ENCNT record {} in file {}", millenniumCode, encounterIdCell.getString(), parser.getFilePath());
             return Encounter.EncounterClass.OTHER;
-        }
+        }*/
     }
 
     /*

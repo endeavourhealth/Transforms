@@ -3,8 +3,6 @@ package org.endeavourhealth.transform.barts.cache;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -351,26 +349,6 @@ public class EpisodeOfCareResourceCache {
         LOG.trace("Saving " + episodeBuildersByEpisodeId.size() + " Episodes to the DB");
         for (String episodeId: episodeBuildersByEpisodeId.keySet()) {
             EpisodeOfCareBuilder episodeBuilder = episodeBuildersByEpisodeId.get(episodeId);
-
-            // Validation - to be removed later
-            boolean error = false;
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare) episodeBuilder.getResource();
-
-            if (!episodeOfCare.hasStatus()) {
-                LOG.error("Data error. Saving EoC without status.");
-                error = true;
-            }
-            if (!episodeOfCare.hasPeriod() || episodeOfCare.getPeriod().getStart() == null ) {
-                LOG.error("Data error. Saving EoC without dates.");
-                error = true;
-            }
-            if (episodeOfCare.getIdentifier() == null || episodeOfCare.getIdentifier().size() == 0) {
-                LOG.error("Data error. Saving EoC without Identifiers.");
-                error = true;
-            }
-            if (error) {
-                throw new TransformException("Data error:" + FhirSerializationHelper.serializeResource(episodeOfCare));
-            }
 
             boolean mapIds = !episodeBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, mapIds, episodeBuilder);

@@ -263,7 +263,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         //Find the code in the cache
-        CernerCodeValueRef cernerCodeFromCache =  cernerCodes.get(codeLookup);
+        CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(codeLookup);
 
         // return cached version if exists
         if (cernerCodeFromCache != null) {
