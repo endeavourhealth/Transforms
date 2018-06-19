@@ -506,8 +506,6 @@ public class PatientTransformer extends AbstractTransformer {
             keys.put(param.getFieldLabel(), fieldValue);
         }
 
-
-        LOG.info("pseudonymiseUsingConfig : " + config.getSalt());
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
@@ -572,7 +570,7 @@ public class PatientTransformer extends AbstractTransformer {
                         throw new Exception("No 'Salt' element found in Enterprise config " + configName);
                     }
                     String base64Salt = saltNode.asText();
-                    LOG.info("getEncryptedSalt : " + base64Salt);
+
                     ret = Base64.getDecoder().decode(base64Salt);
                     saltCacheMap.put(configName, ret);
                 }
@@ -626,6 +624,7 @@ public class PatientTransformer extends AbstractTransformer {
 
     private static void bulkProcessLinkDistributor(List<PatientPseudoDetails> patients, String configName) throws Exception {
 
+        LOG.info("Processing Batch of patients");
         List<LinkDistributorModel> processedPatients = new ArrayList<>();
         List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(configName);
         if (linkDistributorConfigs != null) {
@@ -638,7 +637,6 @@ public class PatientTransformer extends AbstractTransformer {
                 }
 
                 for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
-                    LOG.info("Processing Salt");
                     LinkDistributorModel model = new LinkDistributorModel();
                     model.setSourceSkid(sourceSkid);
                     model.setTargetSalkKeyName(ldConfig.getSaltKeyName());
@@ -715,7 +713,6 @@ public class PatientTransformer extends AbstractTransformer {
             keys.put(param.getFieldLabel(), fieldValue);
         }
 
-        LOG.info("pseudonymiseUsingConfigFromPatientDetails : " + config.getSalt());
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
