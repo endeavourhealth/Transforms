@@ -23,13 +23,16 @@ public class PatientResourceCache {
     public static PatientBuilder getPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         Long personId = personIdCell.getLong();
+        return getPatientBuilder(personId, csvHelper);
+    }
+    public static PatientBuilder getPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
 
         //check the cache first
         PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
         if (patientBuilder == null) {
 
             //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-            Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personIdCell);
+            Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
             if (patient == null) {
                 //if the patient doesn't exist yet, create a new one
                 patientBuilder = new PatientBuilder();
@@ -44,7 +47,7 @@ public class PatientResourceCache {
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
                 identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                identifierBuilder.setValue(personIdCell.getString(), personIdCell);
+                identifierBuilder.setValue(personId.toString());
             }
 
             patientBuildersByPersonId.put(personId, patientBuilder);
