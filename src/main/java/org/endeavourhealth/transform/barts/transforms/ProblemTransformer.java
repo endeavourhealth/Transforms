@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.Problem;
@@ -92,14 +93,28 @@ public class ProblemTransformer {
             String code = problemCodeCell.getString();
 
             if (vocab.equalsIgnoreCase("SNOMED CT")) {
-                String term = TerminologyService.lookupSnomedTerm(code);
+                //the code is a SNOMED description ID, not concept ID, so we need to look up the term differently
+                SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(code);
+                if (snomedCode == null) {
+                    TransformWarnings.log(LOG, parser, "Failed to lookup Snomed term for code {}", code);
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID, vocabCell);
+                    codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+
+                } else {
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
+                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode(), problemCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                }
+
+                /*String term = TerminologyService.lookupSnomedTerm(code);
                 if (Strings.isNullOrEmpty(term)) {
                     TransformWarnings.log(LOG, parser, "Failed to lookup Snomed term for code {}", code);
                 }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+                codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived*/
 
             } else if (vocab.equalsIgnoreCase("ICD-10")) {
                 String term = TerminologyService.lookupIcd10CodeDescription(code);

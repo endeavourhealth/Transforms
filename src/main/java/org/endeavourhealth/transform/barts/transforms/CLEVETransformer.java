@@ -149,7 +149,7 @@ public class CLEVETransformer {
 
         //TODO need to check getEventResultClassCode()
         CsvCell resultClassCode = parser.getEventResultClassCode();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(resultClassCode)) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, resultClassCode);
             if (codeRef != null) {
                 String codeDesc = codeRef.getCodeDispTxt();
