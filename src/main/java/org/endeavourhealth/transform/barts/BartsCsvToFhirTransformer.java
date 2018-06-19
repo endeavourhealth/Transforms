@@ -74,6 +74,7 @@ public abstract class BartsCsvToFhirTransformer {
         ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
+        NOMREFTransformer.transform(createParsers(fileMap, parserMap, "NOMREF", csvHelper), fhirResourceFiler, csvHelper);
         LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
         PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
@@ -243,7 +244,8 @@ public abstract class BartsCsvToFhirTransformer {
             return new ORGREF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("FAMILYHISTORY")) {
             return new FamilyHistory(serviceId, systemId, exchangeId, version, file);
-
+        } else if (type.equalsIgnoreCase("NOMREF")) {
+            return new NOMREF(serviceId, systemId, exchangeId, version, file);
 
         } else {
             throw new TransformException("Unknown file type [" + type + "]");

@@ -36,27 +36,39 @@ public class CVREF extends AbstractCsvParser {
     public CsvCell getCodeValueCode() {
         return super.getCell("#CODE_VALUE_CD");
     }
-    public CsvCell getDate() {return super.getCell("EXTRACT_DT_TM"); }
+
+    public CsvCell getDate() {
+        return super.getCell("EXTRACT_DT_TM");
+    }
+
     public CsvCell getActiveInd() {
         return super.getCell("ACTIVE_IND");
     }
-    public CsvCell getCodeDescTxt() {return super.getCell("CODE_DESC_TXT"); }
+
+    public CsvCell getCodeDescTxt() {
+        return super.getCell("CODE_DESC_TXT");
+    }
+
     public CsvCell getCodeDispTxt() {
         return super.getCell("CODE_DISP_TXT");
     }
+
     public CsvCell getCodeMeaningTxt() {
         return super.getCell("CODE_MEANING_TXT");
     }
+
     public CsvCell getCodeSetNbr() {
         return super.getCell("CODE_SET_NBR");
     }
+
     public CsvCell getCodeSetDescTxt() {
         return super.getCell("CODE_SET_DESC_TXT");
     }
+
     public CsvCell getAliasNhsCdAlias() {
         return super.getCell("ALIAS_NHS_CD_ALIAS");
     }
-    //TODO We're still not sure (AFAIK) about the 2 extra columns so ignore for now. 1 long, 1 datetime
+
     @Override
     protected String getFileTypeDescription() {
         return "Cerner Clinical code reference file";

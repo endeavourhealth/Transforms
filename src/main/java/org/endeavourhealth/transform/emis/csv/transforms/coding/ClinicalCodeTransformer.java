@@ -35,17 +35,16 @@ public abstract class ClinicalCodeTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //because we have to hit a third party web resource, we use a thread pool to support
-        //threading these calls to improve performance
+        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(ClinicalCode.class);
             while (parser.nextRecord()) {
 
+                //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
+                //to parse any record in this file it a critical error
                 try {
                     transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, threadPool, version);
                 } catch (Exception ex) {

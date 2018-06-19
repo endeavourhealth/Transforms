@@ -13,9 +13,6 @@ import org.endeavourhealth.transform.homerton.schema.CodeTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 public class CodeTransformer {
@@ -86,7 +83,7 @@ public class CodeTransformer {
                                     codeSetNbr.getLong(),
                                     "",
                                     "",
-                                    fhirResourceFiler.getServiceId().toString(),
+                                    fhirResourceFiler.getServiceId(),
                                     auditWrapper);
 
 

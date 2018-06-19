@@ -123,6 +123,7 @@ public class DIAGNTransformer {
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
+                //NOTE: this code IS a SNOMED concept ID, unlike the Problem file which has a description ID
                 String term = TerminologyService.lookupSnomedFromConceptId(conceptCode).getTerm();
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);

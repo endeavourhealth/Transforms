@@ -33,7 +33,9 @@ public class CLEVEPreTransformer {
         //the CLEVE file normally, but need to pre-cache the links in order to create the parent-to-child ones
         CsvCell eventIdCell = parser.getEventId();
         CsvCell parentEventIdCell = parser.getParentEventId();
-        csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
+        if (!BartsCsvHelper.isEmptyOrIsZero(parentEventIdCell)) {
+            csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
+        }
     }
 
 }
