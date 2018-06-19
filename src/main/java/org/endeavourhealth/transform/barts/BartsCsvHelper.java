@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -11,6 +10,7 @@ import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -38,15 +38,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static Date cachedEndOfTime = null;
     private static Date cachedStartOfTime = null;
 
-    private CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
+    private CernerCodeValueRefDalI cernerCodeValueRefDal = DalProvider.factoryCernerCodeValueRefDal();
     private Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    private HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
-    //private HashMap<String, ResourceId> resourceIds = new HashMap<>();
-    //private Map<String, UUID> locationIdMap = new HashMap<String, UUID>();
-    private HashMap<String, String> internalIdMapCache = new HashMap<>();
+    private Map<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
+    private Map<Long, CernerNomenclatureRef> nomenclatureCache = new HashMap<>();
+    private Map<String, String> internalIdMapCache = new HashMap<>();
     private String cachedBartsOrgRefId = null;
 
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>();
@@ -253,6 +252,25 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return null;
     }*/
 
+    public CernerNomenclatureRef lookupNomenclatureRef(Long nomenclatureId) throws Exception {
+
+        CernerNomenclatureRef ret = nomenclatureCache.get(nomenclatureId);
+        if (ret == null) {
+
+            ret = cernerCodeValueRefDal.getNomenclatureRefForId(serviceId, nomenclatureId);
+            if (ret == null) {
+                //don't want to allow failures to continue until I understand why
+                throw new TransformException("Failed to find Cerner NOMREF record for ID " + nomenclatureId);
+                //TransformWarnings.log(LOG, this, "Failed to find Cerner NOMREF record for ID {}", nomenclatureId);
+            } else {
+                nomenclatureCache.put(nomenclatureId, ret);
+            }
+        }
+
+        return ret;
+    }
+
+
     public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
 
         String code = codeCell.getString();
@@ -274,10 +292,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         // get code from DB (special case for a code of 0 as that is duplicated)
         if (code.equals("0")) {
-            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
+            cernerCodeFromDB = cernerCodeValueRefDal.getCodeFromCodeSet(
                     codeSet, code, serviceId);
         } else {
-            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeWithoutCodeSet(code, serviceId);
+            cernerCodeFromDB = cernerCodeValueRefDal.getCodeWithoutCodeSet(code, serviceId);
         }
 
         //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
@@ -288,7 +306,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         //seem to have whitespace around some of the fields. As a temporary fix, trim them here
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getAliasNhsCdAlias())) {
+        //not required now
+        /*if (!Strings.isNullOrEmpty(cernerCodeFromDB.getAliasNhsCdAlias())) {
             cernerCodeFromDB.setAliasNhsCdAlias(cernerCodeFromDB.getAliasNhsCdAlias().trim());
         }
         if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDescTxt())) {
@@ -299,7 +318,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeMeaningTxt())) {
             cernerCodeFromDB.setCodeMeaningTxt(cernerCodeFromDB.getCodeMeaningTxt().trim());
-        }
+        }*/
 
         // Add to the cache
         cernerCodes.put(codeLookup, cernerCodeFromDB);

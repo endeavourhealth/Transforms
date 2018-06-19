@@ -107,13 +107,10 @@ public abstract class BartsCsvToFhirTransformer {
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
         PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
-
         CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
-
-        //TODO - need to import NOMREF
-//        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
+        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
 
         if (TransformConfig.instance().isTransformCerner21Files()) {
             //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms

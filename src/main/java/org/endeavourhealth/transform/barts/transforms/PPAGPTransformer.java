@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Reference;
@@ -64,6 +65,9 @@ public class PPAGPTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
 
             Reference practitionerReference = csvHelper.createPractitionerReference(personIdCell);
+            if (patientBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
 
             if (delete) {
                 patientBuilder.removeCareProvider(practitionerReference);
@@ -77,6 +81,9 @@ public class PPAGPTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(orgIdCell)) {
 
             Reference orgReference = csvHelper.createOrganizationReference(orgIdCell);
+            if (patientBuilder.isIdMapped()) {
+                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, csvHelper);
+            }
 
             if (delete) {
                 patientBuilder.removeCareProvider(orgReference);
