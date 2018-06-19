@@ -47,6 +47,20 @@ public class CLEVETransformer {
     public static void createObservation(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell clinicalEventId = parser.getEventId();
+
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            //if non-active (i.e. deleted) then we don't get a personID, so need to retrieve the existing instance
+            //of the resource in order to delete it
+            Observation existingResource = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
+            if (existingResource != null) {
+                ObservationBuilder observationBuilder = new ObservationBuilder(existingResource);
+                //remember to pass in false to not map IDs, since the resource is already ID mapped
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
+            }
+            return;
+        }
+
         CsvCell personId = parser.getPersonId();
 
         // Order : first handle inactive records, so we need Patient
@@ -56,12 +70,7 @@ public class CLEVETransformer {
         Reference patientReference = csvHelper.createPatientReference(personId);
         observationBuilder.setPatient(patientReference);
 
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            // if we have observation and patient we can delete an existing record else return
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
-            return;
-        }
+
 
         // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
