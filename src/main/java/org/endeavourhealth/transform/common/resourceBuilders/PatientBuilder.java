@@ -20,7 +20,6 @@ public class PatientBuilder extends ResourceBuilderBase
 
 
     private Patient patient = null;
-    private boolean isIdMapped = false;
 
     public PatientBuilder() {
         this(null);
@@ -31,14 +30,7 @@ public class PatientBuilder extends ResourceBuilderBase
         if (this.patient == null) {
             this.patient = new Patient();
             this.patient.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PATIENT));
-        } else {
-            //if creating with an existing patient, it will be ID mapped
-            isIdMapped = true;
         }
-    }
-
-    public boolean isIdMapped() {
-        return isIdMapped;
     }
 
     @Override

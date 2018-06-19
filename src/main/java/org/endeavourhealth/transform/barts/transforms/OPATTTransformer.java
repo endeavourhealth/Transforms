@@ -44,20 +44,20 @@ public class OPATTTransformer {
     public static void createOutpatientAttendanceEvent(OPATT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell personIdCell = parser.getPersonId();
+
         CsvCell activeCell = parser.getActiveIndicator();
-
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
-
         if (!activeCell.getIntAsBoolean()) {
-            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
+            //if the record is non-active (i.e. deleted) then we don't get any other columns. But we can also expect that our linked
+            //ENCNT record will be deleted too, so we don't need to do anything extra here
             return;
         }
 
-        CsvCell finIdCell = parser.getFINNo();
+        CsvCell personIdCell = parser.getPersonId();
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        //CsvCell finIdCell = parser.getFINNo();
 
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
-
 
         Date beginDate = null;
         Date endDate = null;

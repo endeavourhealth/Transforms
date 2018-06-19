@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.ProblemTable;
-import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +89,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
 
         // set category to 'complaint'
         conditionBuilder.setAsProblem(true);
+        //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
         conditionBuilder.setCategory("complaint");
 
         // save resource
