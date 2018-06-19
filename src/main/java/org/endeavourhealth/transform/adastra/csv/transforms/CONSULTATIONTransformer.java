@@ -116,9 +116,11 @@ public class CONSULTATIONTransformer {
             encounterTextBuilder.append(treatmentPlanText);
         }
 
-        //create a linked free text observation from the encounter free text
-        ObservationBuilder observationBuilder = new ObservationBuilder();
+        ObservationBuilder observationBuilder = null;
         if (encounterTextBuilder.length() > 0) {
+
+            //create a linked free text observation from the encounter free text
+            observationBuilder = new ObservationBuilder();
 
             //create a unique observation Id
             String observationId = caseId.getString()
@@ -131,6 +133,7 @@ public class CONSULTATIONTransformer {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
             observationBuilder.setNotes(encounterTextBuilder.toString());
 
+            //cache the link to this new observation
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
                     patientId.getString(),
                     observationId,
@@ -142,7 +145,7 @@ public class CONSULTATIONTransformer {
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
         containedListBuilder.addReferences(newLinkedResources);
 
-        if (!observationBuilder.getResource().isEmpty()) {
+        if (observationBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, observationBuilder);
         } else {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
