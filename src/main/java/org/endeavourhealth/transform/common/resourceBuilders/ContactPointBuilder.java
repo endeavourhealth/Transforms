@@ -71,9 +71,10 @@ public class ContactPointBuilder {
             //remove any audits we've created for the ContactPoint
             String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
             parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
-
-            parentBuilder.removeContactPoint(contactPoint);
         }
+
+        //clear all contact points
+        parentBuilder.getContactPoint().clear();
     }
 
     public void setUse(ContactPoint.ContactPointUse use, CsvCell... sourceCells) {
