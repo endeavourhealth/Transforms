@@ -506,6 +506,8 @@ public class PatientTransformer extends AbstractTransformer {
             keys.put(param.getFieldLabel(), fieldValue);
         }
 
+
+        LOG.info("pseudonymiseUsingConfig : " + config.getSalt());
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
@@ -570,6 +572,7 @@ public class PatientTransformer extends AbstractTransformer {
                         throw new Exception("No 'Salt' element found in Enterprise config " + configName);
                     }
                     String base64Salt = saltNode.asText();
+                    LOG.info("getEncryptedSalt : " + base64Salt);
                     ret = Base64.getDecoder().decode(base64Salt);
                     saltCacheMap.put(configName, ret);
                 }
@@ -712,6 +715,7 @@ public class PatientTransformer extends AbstractTransformer {
             keys.put(param.getFieldLabel(), fieldValue);
         }
 
+        LOG.info("pseudonymiseUsingConfigFromPatientDetails : " + config.getSalt());
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
