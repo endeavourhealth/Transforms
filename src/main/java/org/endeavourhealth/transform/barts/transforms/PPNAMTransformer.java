@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -20,6 +21,7 @@ import java.util.List;
 public class PPNAMTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPNAMTransformer.class);
 
+    private static final String PPNAM_ID_TO_PERSON_ID = "PPNAM_ID_TO_PERSON_ID";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -40,18 +42,27 @@ public class PPNAMTransformer {
 
     public static void createPatientName(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell nameIdCell = parser.getMillenniumPersonNameId();
+
+        //if non-active (i.e. deleted) we should REMOVE the name, but we don't get any other fields, including the Person ID
+        //so we need to look it up via the internal ID mapping will have stored when we first created the name
+        CsvCell active = parser.getActiveIndicator();
+        if (!active.getIntAsBoolean()) {
+
+            String personIdStr = csvHelper.getInternalId(PPNAM_ID_TO_PERSON_ID, nameIdCell.getString());
+            if (!Strings.isNullOrEmpty(personIdStr)) {
+
+                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+            }
+            return;
+        }
+
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
-        CsvCell nameIdCell = parser.getMillenniumPersonNameId();
         NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
-
-        //if the name is no longer active, it's already been removed from the Patient so just return out
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            return;
-        }
 
         HumanName.NameUse nameUse = null;
 
@@ -92,6 +103,12 @@ public class PPNAMTransformer {
             Date d = BartsCsvHelper.parseDate(endDate);
             nameBuilder.setEndDate(d, endDate);
         }
+
+        //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
+        //we can find the person it belonged to, since the deleted records only give us the ID
+        csvHelper.saveInternalId(PPNAM_ID_TO_PERSON_ID, nameIdCell.getString(), personIdCell.getString());
+
+        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }
 
 

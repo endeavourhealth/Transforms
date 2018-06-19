@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -21,6 +22,7 @@ import java.util.List;
 public class PPRELTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPRELTransformer.class);
 
+    private static final String PPREL_ID_TO_PERSON_ID = "PPREL_ID_TO_PERSON_ID";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -41,18 +43,27 @@ public class PPRELTransformer {
 
     public static void createPatientRelationship(PPREL parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
+
+        //if non-active (i.e. deleted) we should REMOVE the contactPoint, but we don't get any other fields, including the Person ID
+        //so we need to look it up via the internal ID mapping will have stored when we first created the contactPoint
+        CsvCell active = parser.getActiveIndicator();
+        if (!active.getIntAsBoolean()) {
+
+            String personIdStr = csvHelper.getInternalId(PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
+            if (!Strings.isNullOrEmpty(personIdStr)) {
+
+                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+            }
+            return;
+        }
+
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
-        CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
         PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
-
-        //if the record is now inactive, we've already removed it from the patient so just return out
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            return;
-        }
 
         PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
         contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
@@ -152,6 +163,12 @@ public class PPRELTransformer {
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipTypeDesc);
         }
+
+        //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
+        //we can find the person it belonged to, since the deleted records only give us the ID
+        csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString(), personIdCell.getString());
+
+        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }
 
 

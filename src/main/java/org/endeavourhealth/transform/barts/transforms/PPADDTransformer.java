@@ -56,8 +56,8 @@ public class PPADDTransformer {
             return;
         }
 
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
+        CsvCell personIdCell = parser.getPersonId();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully re-create the address, so remove it from the patient
         AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
@@ -96,7 +96,7 @@ public class PPADDTransformer {
 
         //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
         //we can find the person it belonged to, since the deleted records only give us the ID
-        csvHelper.saveInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString(), milleniumPersonIdCell.getString());
+        csvHelper.saveInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString(), personIdCell.getString());
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }
