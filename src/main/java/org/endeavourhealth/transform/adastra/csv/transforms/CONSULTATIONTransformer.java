@@ -52,7 +52,7 @@ public class CONSULTATIONTransformer {
 
         //create Encounter Resource builder
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(consultationId.getString());
+        encounterBuilder.setId(consultationId.getString(),consultationId);
 
         //link the Episode of care resource
         CsvCell caseId = parser.getCaseId();
@@ -123,7 +123,7 @@ public class CONSULTATIONTransformer {
             //create a unique observation Id
             String observationId = caseId.getString()
                     + ":" + consultationId.getString();
-            observationBuilder.setId(observationId);
+            observationBuilder.setId(observationId, caseId, consultationId);
 
             DateTimeType dateTimeType = new DateTimeType(startDateTime.getDate());
             observationBuilder.setEffectiveDate(dateTimeType, startDateTime);

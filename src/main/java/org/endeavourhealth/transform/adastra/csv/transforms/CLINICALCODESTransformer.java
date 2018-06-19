@@ -56,7 +56,7 @@ public class CLINICALCODESTransformer {
                 + ":" + readCode.getString();
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
-        observationBuilder.setId(observationId);
+        observationBuilder.setId(observationId, caseId, consultationId, readCode);
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {

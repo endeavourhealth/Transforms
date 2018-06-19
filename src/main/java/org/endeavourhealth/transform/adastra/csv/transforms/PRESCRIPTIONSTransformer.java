@@ -53,7 +53,7 @@ public class PRESCRIPTIONSTransformer {
                 + ":" + patientId.getString();
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
-        medicationStatementBuilder.setId(drugId);
+        medicationStatementBuilder.setId(drugId, caseId, consultationId, patientId);
 
         if (!patientId.isEmpty()) {
             medicationStatementBuilder.setPatient(csvHelper.createPatientReference(patientId));
