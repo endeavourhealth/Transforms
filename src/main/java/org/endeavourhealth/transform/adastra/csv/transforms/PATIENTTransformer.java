@@ -61,6 +61,10 @@ public class PATIENTTransformer {
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {
+
+            //remove existing NHS number to prevent duplicate filing error
+            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
@@ -100,7 +104,13 @@ public class PATIENTTransformer {
 
         CsvCell givenName = parser.getForename();
         CsvCell surname = parser.getSurname();
+
+        //remove existing name if set
+        NameBuilder.removeExistingName(patientBuilder, patientId.getString());
+
+        //use patientId for name builder identifier so it can be removed and updated if needed (see above)
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setId(patientId.getString(), patientId);
         nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
         nameBuilder.addGiven(givenName.getString(), givenName);
         nameBuilder.addFamily(surname.getString(), surname);
@@ -111,13 +121,21 @@ public class PATIENTTransformer {
         CsvCell addressTown = parser.getHomeAddressTown();
         CsvCell addressPostcode = parser.getHomeAddressPostcode();
 
+        //remove existing address if set
+        AddressBuilder.removeExistingAddress(patientBuilder, patientId.getString());
+
+        //use patientId for address builder identifier so it can be removed and updated if needed (see above)
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+        addressBuilder.setId(patientId.getString(), patientId);
         addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(addressBuilding.getString(), addressBuilding);
         addressBuilder.addLine(addressNoAndStreet.getString(), addressNoAndStreet);
         addressBuilder.addLine(addressLocality.getString(), addressLocality);
         addressBuilder.setTown(addressTown.getString(), addressTown);
         addressBuilder.setPostcode(addressPostcode.getString(), addressPostcode);
+
+        //remove all existing contact points for this patient
+        ContactPointBuilder.removeExistingContactPoints(patientBuilder);
 
         CsvCell homePhone = parser.getHomePhone();
         if (!homePhone.isEmpty()) {

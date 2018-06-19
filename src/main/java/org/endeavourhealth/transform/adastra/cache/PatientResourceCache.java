@@ -46,4 +46,8 @@ public class PatientResourceCache {
     public static void clear() {
         PatientBuilderByPatientId.clear();
     }
+
+    public static boolean patientInCache(CsvCell patientIdCell) {
+        return PatientBuilderByPatientId.containsKey(patientIdCell.getString());
+    }
 }

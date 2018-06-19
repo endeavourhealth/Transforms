@@ -28,7 +28,7 @@ public class ContactPointBuilder {
         }
     }
 
-    public static boolean removeExistingAddress(HasContactPointI parentBuilder, String idValue) {
+    public static boolean removeExistingContactPoint(HasContactPointI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove patient contact without ID");
         }
@@ -54,12 +54,25 @@ public class ContactPointBuilder {
         } else {
             ContactPoint contactPoint = matches.get(0);
 
-            //remove any audits we've created for the CodeableConcept
-            String identifierJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
-            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+            //remove any audits we've created for the ContactPoint
+            String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
+            parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
 
             parentBuilder.removeContactPoint(contactPoint);
             return true;
+        }
+    }
+
+    public static void removeExistingContactPoints(HasContactPointI parentBuilder) {
+
+        List<ContactPoint> contactPoints = parentBuilder.getContactPoint();
+        for (ContactPoint contactPoint: contactPoints) {
+
+            //remove any audits we've created for the ContactPoint
+            String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
+            parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
+
+            parentBuilder.removeContactPoint(contactPoint);
         }
     }
 
