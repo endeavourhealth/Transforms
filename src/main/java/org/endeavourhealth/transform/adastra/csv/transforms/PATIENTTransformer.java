@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -54,9 +55,9 @@ public class PATIENTTransformer {
         EpisodeOfCareBuilder episodeBuilder
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
-        //create Patient Resource builder
-        PatientBuilder patientBuilder = new PatientBuilder();
-        patientBuilder.setId(patientId.getString(), patientId);
+        //get or create Patient Resource builder.  If two patients in same file, first already created, so retrieve from cache
+        PatientBuilder patientBuilder
+                = PatientResourceCache.getOrCreatePatientBuilder(patientId, csvHelper, fhirResourceFiler);
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {
