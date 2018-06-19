@@ -45,7 +45,7 @@ public class PPPHOTransformer {
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         CsvCell phoneIdCell = parser.getMillenniumPhoneId();
-        ContactPointBuilder.removeExistingAddress(patientBuilder, phoneIdCell.getString());
+        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
 
         //if the record is inactive, we've already removed the phone from the patient so just return out
         //and the patient builder will be saved at the end of the transform
