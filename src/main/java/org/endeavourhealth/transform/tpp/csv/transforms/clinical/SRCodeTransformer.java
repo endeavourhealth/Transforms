@@ -295,9 +295,10 @@ public class SRCodeTransformer {
                                         FhirResourceFiler fhirResourceFiler,
                                         TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell problemId = parser.getRowIdentifier();
+        CsvCell conditionId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
+        boolean isProblem;
 
         if (patientId.isEmpty()) {
 
@@ -309,7 +310,7 @@ public class SRCodeTransformer {
 
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Condition condition
-                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(problemId.getString(),
+                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(conditionId.getString(),
                         ResourceType.Condition,
                         fhirResourceFiler);
 
@@ -321,9 +322,16 @@ public class SRCodeTransformer {
             }
         }
 
-        //The condition resource will already exist as part of the Problem Transformer, set using the ID value of the code
+        // Does the condition already exist in the condition resource cache? If so, it's a problem.
+
+        if (ConditionResourceCache.isIdInCache(conditionId.getLong())) {
+            isProblem = true;
+        } else {
+            isProblem = false;
+        }
+         //The condition resource will already exist as part of the Problem Transformer or will create one, set using the ID value of the code
         ConditionBuilder conditionBuilder
-                = ConditionResourceCache.getConditionBuilder(problemId, patientId, csvHelper, fhirResourceFiler);
+                = ConditionResourceCache.getConditionBuilder(conditionId, patientId, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         conditionBuilder.setPatient(patientReference, patientId);
@@ -359,10 +367,11 @@ public class SRCodeTransformer {
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             conditionBuilder.setOnset(dateTimeType, effectiveDate);
         }
-
-        //set the category on the condition, so we know it's a problem
-        conditionBuilder.setCategory("complaint", problemId);
-        conditionBuilder.setAsProblem(true);
+        if (isProblem) {
+            //set the category on the condition, so we know it's a problem based on pre-existing data from cache
+            conditionBuilder.setCategory("complaint", conditionId);
+            conditionBuilder.setAsProblem(true);
+        }
 
         CsvCell readV3Code = parser.getCTV3Code();
         if (!readV3Code.isEmpty()) {

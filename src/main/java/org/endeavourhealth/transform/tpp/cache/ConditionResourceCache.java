@@ -44,6 +44,10 @@ public class ConditionResourceCache {
         return conditionBuilder;
     }
 
+    public static boolean isIdInCache(Long conditionId) {
+        return conditionBuildersById.containsKey(conditionId);
+    }
+
     public static void fileConditionResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         for (Long problemId: conditionBuildersById.keySet()) {
