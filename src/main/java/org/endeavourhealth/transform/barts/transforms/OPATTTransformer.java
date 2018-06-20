@@ -4,8 +4,6 @@ import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.OPATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -52,7 +50,7 @@ public class OPATTTransformer {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         //CsvCell finIdCell = parser.getFINNo();
 
@@ -134,7 +132,7 @@ public class OPATTTransformer {
         }
 
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {
 
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);

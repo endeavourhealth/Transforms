@@ -5,7 +5,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -53,14 +52,14 @@ public class PPPHOTransformer {
             String personIdStr = csvHelper.getInternalId(PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());

@@ -6,10 +6,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -76,7 +72,7 @@ public abstract class BartsCsvToFhirTransformer {
         CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
         NOMREFTransformer.transform(createParsers(fileMap, parserMap, "NOMREF", csvHelper), fhirResourceFiler, csvHelper);
         LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
-        LocationResourceCache.fileLocationResources(fhirResourceFiler);
+        csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
         PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
 
         //patient transformers
@@ -91,9 +87,10 @@ public abstract class BartsCsvToFhirTransformer {
         PPAGPTransformer.transform(createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper);
 
         //we're now good to save our patient resources
-        PatientResourceCache.filePatientResources(fhirResourceFiler);
+        csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
         // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
+        ENCNTPreTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
         ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
         AEATTTransformer.transform(createParsers(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper);
         OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper);
@@ -101,8 +98,8 @@ public abstract class BartsCsvToFhirTransformer {
         IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper);
         ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
-        EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
-        EpisodeOfCareResourceCache.fileResources(fhirResourceFiler);
+        csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
+        csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);
 
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);

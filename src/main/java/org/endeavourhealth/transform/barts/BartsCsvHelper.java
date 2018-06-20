@@ -14,6 +14,10 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNom
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -54,6 +58,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();*/
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
     private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
+    private Date extractDateTime = null;
+    private EncounterResourceCache encounterCache = new EncounterResourceCache();
+    private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
+    private LocationResourceCache locationCache = new LocationResourceCache();
+    private PatientResourceCache patientCache = new PatientResourceCache();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -705,5 +714,37 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createSpecialtyOrganisationReference(CsvCell mainSpecialtyCodeCell) {
         String uniqueId = "Specialty:" + mainSpecialtyCodeCell.getString();
         return ReferenceHelper.createReference(ResourceType.Organization, uniqueId);
+    }
+
+    /**
+     * we need to know the datetime of the extract as we use that when deleting HL7 Receiver encounters
+     */
+    public void cacheExtractDateTime(CsvCell extractDateTimeCell) throws Exception {
+        if (extractDateTime != null
+                || BartsCsvHelper.isEmptyOrIsEndOfTime(extractDateTimeCell)) {
+            return;
+        }
+
+        extractDateTime = BartsCsvHelper.parseDate(extractDateTimeCell);
+    }
+
+    public Date getExtractDateTime() {
+        return extractDateTime;
+    }
+
+    public PatientResourceCache getPatientCache() {
+        return patientCache;
+    }
+
+    public LocationResourceCache getLocationCache() {
+        return locationCache;
+    }
+
+    public EpisodeOfCareResourceCache getEpisodeOfCareCache() {
+        return episodeOfCareCache;
+    }
+
+    public EncounterResourceCache getEncounterCache() {
+        return encounterCache;
     }
 }

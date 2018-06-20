@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -53,14 +52,14 @@ public class PPRELTransformer {
             String personIdStr = csvHelper.getInternalId(PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
         PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());

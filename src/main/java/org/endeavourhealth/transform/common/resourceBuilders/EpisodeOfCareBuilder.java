@@ -30,6 +30,10 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditValue("patient.reference", sourceCells);
     }
 
+    public Reference getPatient() {
+        return this.episodeOfCare.getPatient();
+    }
+
     @Override
     public DomainResource getResource() {
         return episodeOfCare;

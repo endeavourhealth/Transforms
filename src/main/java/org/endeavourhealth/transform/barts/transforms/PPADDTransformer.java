@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -50,14 +49,14 @@ public class PPADDTransformer {
             String personIdStr = csvHelper.getInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
             }
             return;
         }
 
         CsvCell personIdCell = parser.getPersonId();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully re-create the address, so remove it from the patient
         AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());

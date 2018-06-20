@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -125,10 +126,7 @@ public class ProblemTransformer {
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
             } else {
-                //TODO - Drew to investigate why passing in a null system didn't work
-                TransformWarnings.log(LOG, parser, "Problem {} has unknown VOCAB value [{}] in file {}", parser.getProblemId(), vocab, parser.getFilePath());
-                codeableConceptBuilder.addCoding("unknown", vocabCell);
-                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+                throw new TransformException("Unexpected problem VOCAB [" + vocab + "]");
             }
         }
 

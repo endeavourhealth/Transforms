@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -52,14 +51,14 @@ public class PPNAMTransformer {
             String personIdStr = csvHelper.getInternalId(PPNAM_ID_TO_PERSON_ID, nameIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());

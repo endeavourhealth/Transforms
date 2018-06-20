@@ -31,6 +31,12 @@ public class PPATIPreTransformer {
 
     public static void createPatient(PPATI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        //in-active (i.e. deleted) rows don't have anything else but the ID, so we can't do anything with them
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            return;
+        }
+
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
         CsvCell mrnCell = parser.getLocalPatientId();
 

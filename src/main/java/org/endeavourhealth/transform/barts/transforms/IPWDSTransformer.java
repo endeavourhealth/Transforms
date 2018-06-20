@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.IPWDS;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -46,7 +45,7 @@ public class IPWDSTransformer {
         CsvCell personIdCell = parser.getPatientId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         CsvCell wardLocationIdCell = parser.getWardStayLocationCode();
         CsvCell roomLocationIdCell = parser.getWardRoomCode();

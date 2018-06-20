@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.IPEPI;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -48,7 +46,7 @@ public class IPEPITransformer {
         CsvCell personIdCell = parser.getPatientId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
@@ -85,7 +83,7 @@ public class IPEPITransformer {
         }
 
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
 
         if (episodeOfCareBuilder != null) {
 

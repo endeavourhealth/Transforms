@@ -52,7 +52,7 @@ public class ENCNT extends AbstractCsvParser {
     }
 
 
-    public CsvCell getMillenniumEncounterIdentifier() {
+    public CsvCell getEncounterId() {
         return super.getCell("#ENCNTR_ID");
     }
 
@@ -84,7 +84,7 @@ public class ENCNT extends AbstractCsvParser {
         return super.getCell("ENC_STATUS_CD");
     }
 
-    public CsvCell getMilleniumSourceIdentifierForVisit() {
+    public CsvCell getVisitId() {
         return super.getCell("VISIT_ID");
     }
 

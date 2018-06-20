@@ -153,9 +153,7 @@ public class DIAGNTransformer {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.DIAGNOSIS_TYPE, diagnosisTypeCode);
             if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for DiagnosisTypeCode {} not found. Row {} Column {} ",
-                        diagnosisTypeCode.getLong(), parser.getDiagnosisTypeCode().getString(),
-                        diagnosisTypeCode.getRowAuditId(), diagnosisTypeCode.getColIndex());
+                TransformWarnings.log(LOG, parser, "SEVERE: cerner code for DiagnosisTypeCode {} not found", diagnosisTypeCode);
 
             } else {
                 String category = cernerCodeValueRef.getCodeDispTxt();

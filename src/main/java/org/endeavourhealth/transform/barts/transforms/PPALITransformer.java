@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPALI;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -54,14 +53,14 @@ public class PPALITransformer {
             String personIdStr = csvHelper.getInternalId(PPALI_ID_TO_PERSON_ID, aliasIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully re-create the Identifier on the patient so just remove any previous instance
         IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());

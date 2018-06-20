@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPATI;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -49,7 +48,7 @@ public class PPATITransformer {
 
         //this transform always UPDATES resources when possible, so we use the patient cache to retrieve from the DB
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
 
         CsvCell mrnCell = parser.getLocalPatientId();
         if (!mrnCell.isEmpty()) {

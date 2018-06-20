@@ -20,14 +20,15 @@ import java.util.Map;
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+    private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
 
-    public static PatientBuilder getPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public PatientBuilder getPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         Long personId = personIdCell.getLong();
         return getPatientBuilder(personId, csvHelper);
     }
-    public static PatientBuilder getPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
+
+    public PatientBuilder getPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
 
         //check the cache first
         PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
@@ -63,7 +64,7 @@ public class PatientResourceCache {
         return patientBuilder;
     }
 
-    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+    public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 

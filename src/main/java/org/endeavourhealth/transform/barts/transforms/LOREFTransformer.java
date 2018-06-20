@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.schema.LOREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -75,11 +74,11 @@ public class LOREFTransformer {
 
                 first = false;
 
-                LocationResourceCache.cacheLocationBuilder(locationBuilder);
+                csvHelper.getLocationCache().cacheLocationBuilder(locationBuilder);
 
             } else {
                 //if not the first location in the hierarchy, this is really just a placehold for the proper record, if we find it
-                LocationResourceCache.cachePlaceholderLocationBuilder(locationBuilder, csvHelper);
+                csvHelper.getLocationCache().cachePlaceholderLocationBuilder(locationBuilder, csvHelper);
             }
         }
     }

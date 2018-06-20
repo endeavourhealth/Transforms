@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.fhirhl7v2;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
@@ -15,8 +18,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -443,7 +444,7 @@ public class FhirHl7v2Filer {
         //Do this by retrieving the existing resource and checking if the systemId matches our own
         for (Resource resource: adminResources) {
 
-            if (!isCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+            if (!isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
                 continue;
             }
 
@@ -452,7 +453,7 @@ public class FhirHl7v2Filer {
         }
     }
 
-    /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+    private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
                 .stream()
@@ -471,49 +472,50 @@ public class FhirHl7v2Filer {
                 //in which case don't apply any updates to it. This means that changes to the patient (e.g. new address)
                 //won't be applied to the resource until we get the next DW update through, but merging the changes into the
                 //resource without breaking it seems very difficult.
-                if (!isCurrentVersionSameSystem(resource, fhirResourceFiler)) {
-                    continue;
+                //NOTE: it could be possible to merge the new data into the existing FHIR patient, but
+                //there's a lot of weirdness in the HL7 data (e.g. email addresses showing as proper addresses)
+                //that would need to be investigated and coded for.
+                if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
                 }
 
             } else if (resource instanceof EpisodeOfCare) {
-                //EpisodeOfCare resources ARE NOT shared between Hl7 and DW feeds, and the DW feed will delete Episodes
-                //created by the HL7 feed since it can create better resources from the richer data. So only
-                //save our resource if it's brand new or hasn't been deleted by the DW feed
-                if (hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
-                    continue;
+                //EpisodeOfCare resources ARE shared between Hl7 and DW feeds where possible, and the DW feed will delete
+                //non-shared Episodes created by the HL7 feed since it can create better resources from the richer data.
+                //So only save our EpisodeOfCare resource if it's brand new or hasn't been deleted by the DW feed
+                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)
+                    && isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
                 }
 
             } else if (resource instanceof Encounter) {
-                //Encounter resources ARE NOT shared between Hl7 and DW feeds, and the DW feed will delete Encounter
-                //created by the HL7 feed since it can create better resources from the richer data. However, to keep
-                //an up-to-date record of patient activity, we them merge in future changes to the Encounter
-                //into the DW encounter. Note: we can't map the HL7 and DW encounte
+                //Encounter resources ARE shared between Hl7 and DW feeds where possible, and the DW feed will delete
+                //non-shared Encounters created by the HL7 feed since it can create better resources from the richer data.
+                //So we need to NOT re-create deleted Encounters, and to only update certain fields if the DW feed has taken over the Encounter
 
-//TODO - attempt to update the DW encounter too?????
-//TODO - IF existing HL7 encounter hasn't been deleted, then merge in changes as normal
-//TODO - IF existing HL7 encounter HAS been deleted, then map to DW encounter and merge in changes to THAT!
+                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
+                    Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
 
-                if (hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
-                    continue;
+                    if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                        //fully merge the new HL7 encounter into the existing HL7 one
+                        resource = updateHl7Encounter(oldEncounter, (Encounter)resource);
+
+                    } else {
+                        //do a limited merge of the HL7 encounter into the DW one
+                        resource = updateDwEncounter(oldEncounter, (Encounter)resource);
+                    }
+
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
                 }
-//TODO
-
-                //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
-                //sure that we don't lose any data in the old instance by just overwriting it
-                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
-                resource = updateEncounter(oldEncounter, (Encounter)resource);
-//TODO continue if null?
 
             } else {
                 throw new TransformException("Unsupported patient resource type in HL7 feed: " + resource.getResourceType());
             }
-
-            GenericBuilder builder = new GenericBuilder(resource);
-
-            //and save the resource
-            fhirResourceFiler.savePatientResource(null, false, builder);
         }
-    }*/
+    }
+
+
 
     private boolean hasBeenDeletedByDataWarehouseFeed(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
 
@@ -546,7 +548,7 @@ public class FhirHl7v2Filer {
         return true;
     }
 
-    private boolean isCurrentVersionSameSystem(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private boolean isNewOrCurrentVersionSameSystem(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
@@ -584,7 +586,7 @@ public class FhirHl7v2Filer {
 
         fhirResourceFiler.saveAdminResource(null, false, builders);
     }
-*/
+
     private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
@@ -619,9 +621,41 @@ public class FhirHl7v2Filer {
             //and save the resource
             fhirResourceFiler.savePatientResource(null, false, builder);
         }
+    }*/
+
+    private Resource updateDwEncounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
+
+        if (oldEncounter == null) {
+            return newEncounter;
+        }
+
+        //since the Encounter has been last updated by the DW feed, we only want to update fields
+        //that will tell us something new about the patient (e.g. they've been discharged)
+        //updateEncounterIdentifiers(oldEncounter, newEncounter);
+        updateEncounterStatus(oldEncounter, newEncounter);
+        updateEncounterStatusHistory(oldEncounter, newEncounter);
+        updateEncounterClass(oldEncounter, newEncounter);
+        updateEncounterType(oldEncounter, newEncounter);
+        updateEncounterPriority(oldEncounter, newEncounter);
+        updateEncounterPatient(oldEncounter, newEncounter);
+        //updateEncounterEpisode(oldEncounter, newEncounter);
+        updateEncounterIncomingReferral(oldEncounter, newEncounter);
+        updateEncounterParticipant(oldEncounter, newEncounter);
+        updateEncounterAppointment(oldEncounter, newEncounter);
+        updateEncounterPeriod(oldEncounter, newEncounter);
+        updateEncounterLength(oldEncounter, newEncounter);
+        updateEncounterReason(oldEncounter, newEncounter);
+        updateEncounterIndication(oldEncounter, newEncounter);
+        updateEncounterHospitalisation(oldEncounter, newEncounter);
+        updateEncounterLocation(oldEncounter, newEncounter);
+        //updateEncounterServiceProvider(oldEncounter, newEncounter);
+        updateEncounterPartOf(oldEncounter, newEncounter);
+        updateExtensions(oldEncounter, newEncounter);
+
+        return oldEncounter;
     }
 
-    public static Resource updateEncounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
+    public static Resource updateHl7Encounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
 
         if (oldEncounter == null) {
             return newEncounter;

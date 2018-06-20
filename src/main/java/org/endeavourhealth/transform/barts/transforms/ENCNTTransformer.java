@@ -9,8 +9,6 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -48,35 +46,27 @@ public class ENCNTTransformer {
             return;
         }
 
-        CsvCell encounterIdCell = parser.getMillenniumEncounterIdentifier();
+        CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
 
         //this will save a little bit of DB reading when we get to the PROCE and DIAGN transforms
         csvHelper.cacheEncounterIdToPersonId(encounterIdCell, personIdCell);
 
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        //cache our extract date for later
+        CsvCell extractDateTimeCell = parser.getExtractDateTime();
+        csvHelper.cacheExtractDateTime(extractDateTimeCell);
+
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
-            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
+            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
             return;
         }
 
-        CsvCell episodeIdentiferCell = parser.getEpisodeIdentifier();
-
-        //we attempt to match episodeOfCare resources up with the HL7 feed, so check the HL7 DB for a episode UUID and carry it over
-        /*if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdentiferCell)) {
-
-            String localUniqueId = orgIdCell.getString();
-            String hl7ReceiverUniqueId = "PIdAssAuth=2.16.840.1.113883.3.2540.1-PatIdValue=10146648-EpIdTypeCode=VISITID-EpIdValue=13032388";
-            String hl7ReceiverScope = csvHelper.getHl7ReceiverGlobalScope();
-
-            csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Organization, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
-        }*/
-
         CsvCell finIdCell = parser.getMillenniumFinancialNumberIdentifier();
-        CsvCell visitIdCell = parser.getMilleniumSourceIdentifierForVisit();
+        CsvCell visitIdCell = parser.getVisitId();
         CsvCell treatmentFunctionCodeCell = parser.getCurrentTreatmentFunctionMillenniumCode();
         CsvCell mainSpecialtyCodeCell = parser.getMainSpecialtyMillenniumCode();
 
@@ -84,7 +74,7 @@ public class ENCNTTransformer {
         //case we'll need to update all other resources for the patient
         if (encounterBuilder.isIdMapped()) {
 
-            UUID oldPatientUuid = EncounterResourceCache.getOriginalPatientUuid(encounterIdCell);
+            UUID oldPatientUuid = csvHelper.getEncounterCache().getOriginalPatientUuid(encounterIdCell);
             if (oldPatientUuid != null) {
 
                 // As of 2018-03-02 we dont appear to get any further ENCNT entries for teh minor encounter in A35 and hence the EoC reference on an encounter cannot change
@@ -245,7 +235,7 @@ public class ENCNTTransformer {
 
         // Retrieve or create EpisodeOfCare. We don't have any useful data to set on it, but that will be filled in
         //when we process the OPATT, AEATT etc. files
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(episodeIdentiferCell, encounterIdCell, personIdCell, activeCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
         }

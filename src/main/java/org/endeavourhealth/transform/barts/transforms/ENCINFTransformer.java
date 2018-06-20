@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.ENCINF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -43,7 +42,7 @@ public class ENCINFTransformer {
         CsvCell beginEffectiveCell = parser.getBeginEffectiveDateTime();
         if (!BartsCsvHelper.isEmptyOrIsStartOfTime(beginEffectiveCell)) {
 
-            EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
+            EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
             if (encounterBuilder == null) {
                 return;
             }

@@ -2,8 +2,6 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.schema.AEATT;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -53,7 +51,7 @@ public class AEATTTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         CsvCell decisionToAdmitDateTimeCell = parser.getDecisionToAdmitDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
@@ -186,7 +184,7 @@ public class AEATTTransformer {
         }
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareBuilder(null, encounterIdCell, personIdCell, activeCell, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {
 
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);

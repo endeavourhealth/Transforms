@@ -1,12 +1,17 @@
 package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -18,15 +23,15 @@ import java.util.*;
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
-    private static Map<Long, EncounterBuilder> encounterBuildersByEncounterId = new HashMap<>();
-    private static Set<Long> encounterIdsJustDeleted = new HashSet<>();
-    private static Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
+    private Map<Long, EncounterBuilder> encounterBuildersByEncounterId = new HashMap<>();
+    private Set<Long> encounterIdsJustDeleted = new HashSet<>();
+    private Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
     /**
      * the ENCNT transformer deletes Encounters, and records that this has been done here,
      * so that the later transforms can check, since the deleted Encounter may not have reached the DB yet
      */
-    public static void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
+    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
 
         //null may end up passed in, so just ignore
         if (encounterBuilder == null) {
@@ -47,7 +52,7 @@ public class EncounterResourceCache {
 
 
 
-    public static EncounterBuilder getEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell, BartsCsvHelper csvHelper) throws Exception {
+    public EncounterBuilder getEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell, BartsCsvHelper csvHelper) throws Exception {
 
         Long encounterId = encounterIdCell.getLong();
 
@@ -66,7 +71,8 @@ public class EncounterResourceCache {
                 //always set the person ID fresh, in case the record has been moved to another patient, remembering to forward map to a UUID
                 //but track the old patient UUID so we can use it to update dependent resources
                 if (personIdCell != null) {
-                    UUID oldPatientUuid = UUID.fromString(encounter.getId());
+                    Reference oldPatientReference = encounter.getPatient();
+                    UUID oldPatientUuid = UUID.fromString(ReferenceHelper.getReferenceId(oldPatientReference));
                     UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
                     if (!oldPatientUuid.equals(currentPatientUuid)) {
 
@@ -105,42 +111,24 @@ public class EncounterResourceCache {
     }
 
 
+    public void fileEncounterResources(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-
-    /*public static EncounterBuilder createEncounterBuilder(CsvCell encounterIdCell, CsvCell finIdCell) throws Exception {
-
-        ResourceId encounterResourceId = getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-
-        if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-        }
-
-        EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(encounterResourceId.getResourceId().toString(), encounterIdCell);
-
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
-        identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-        identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
-
-        if (finIdCell != null && !finIdCell.isEmpty()) {
-            identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
-            identifierBuilder.setValue(finIdCell.getString(), finIdCell);
-        }
-
-        encounterBuildersByUuid.put(encounterResourceId.getResourceId(), encounterBuilder);
-
-        return encounterBuilder;
-    }*/
-
-    public static void fileEncounterResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+        //before saving the new ones work out any patients that we've changed
+        Set<String> hsPatientUuidsChanged = new HashSet<>();
 
         LOG.trace("Saving " + encounterBuildersByEncounterId.size() + " encounters to the DB");
         for (Long encounterId: encounterBuildersByEncounterId.keySet()) {
             EncounterBuilder encounterBuilder = encounterBuildersByEncounterId.get(encounterId);
 
+            //find the patient UUID for the encounter, so we can tidy up HL7 encounters after doing all the saving
+            Reference patientReference = encounterBuilder.getPatient();
+            if (!encounterBuilder.isIdMapped()) {
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+            }
+            String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+            hsPatientUuidsChanged.add(patientUuid);
+
+            //and save the resource
             boolean mapIds = !encounterBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, mapIds, encounterBuilder);
         }
@@ -150,10 +138,48 @@ public class EncounterResourceCache {
         encounterBuildersByEncounterId.clear();
         encountersWithChangedPatientUuids.clear();
         encounterIdsJustDeleted.clear();
+
+        //now delete any older HL7 Encounters for patients we've updated
+        //but waiting until everything has been saved to the DB first
+        fhirResourceFiler.waitUntilEverythingIsSaved();
+
+        for (String patientUuid: hsPatientUuidsChanged) {
+            deleteHl7ReceiverEncounters(UUID.fromString(patientUuid), fhirResourceFiler, csvHelper);
+        }
     }
 
+    private void deleteHl7ReceiverEncounters(UUID patientUuid, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-    public static UUID getOriginalPatientUuid(CsvCell encounterIdCell) {
+        UUID serviceUuid = fhirResourceFiler.getServiceId();
+        UUID systemUuid = fhirResourceFiler.getSystemId();
+
+        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
+        Date extractDateTime = csvHelper.getExtractDateTime();
+        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, systemUuid, patientUuid, ResourceType.Encounter.toString());
+        for (ResourceWrapper wrapper: resourceWrappers) {
+
+            //if this episode is for our own system ID (i.e. DW feed), then leave it
+            UUID wrapperSystemId = wrapper.getSystemId();
+            if (wrapperSystemId.equals(systemUuid)) {
+                continue;
+            }
+
+            String json = wrapper.getResourceData();
+            Encounter existingEncounter = (Encounter)FhirSerializationHelper.deserializeResource(json);
+
+            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
+            if (!existingEncounter.hasPeriod()
+                    || !existingEncounter.getPeriod().hasStart()
+                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+                fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(existingEncounter));
+            }
+        }
+    }
+
+    public UUID getOriginalPatientUuid(CsvCell encounterIdCell) {
         Long encounterId = encounterIdCell.getLong();
         return encountersWithChangedPatientUuids.get(encounterId);
     }

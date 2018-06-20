@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPAGP;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -39,7 +38,7 @@ public class PPAGPTransformer {
     public static void createPatientGP(PPAGP parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
 
         //the relation code links to the standard code ref table, and defines the type of relationship
         //we're only interested in who the patients registered GP is
