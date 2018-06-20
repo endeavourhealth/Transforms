@@ -89,6 +89,18 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
         ExchangeBatch batch = getAdminBatch();
         ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
+        for (Resource resource : resources) {
+            if (mapIds && resource.getResourceType().equals(ResourceType.Organization)) {
+                try {
+                    UUID uuid = UUID.fromString(resource.getId());
+                    LOG.error("UUID mapping error." + resource.getResourceType() + " Resource:" + resource.toString()
+                            + "ParserState:" + parserState.toString());
+                } catch (IllegalArgumentException ex) {
+                    // ignore - it shouldn't be castable
+                }
+
+            }
+        }
         addResourceToQueue(parserState, false, mapIds, batch, false, resourceBuilders);
     }
 
@@ -107,6 +119,18 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
         ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resourceBuilders);
+        for (Resource resource : resources) {
+            if (mapIds && resource.getResourceType().equals(ResourceType.Patient)) {
+                try {
+                    UUID uuid = UUID.fromString(resource.getId());
+                    LOG.error("UUID mapping error." + resource.getResourceType() + " Resource:" + resource.toString()
+                            + "ParserState:" + parserState.toString());
+                } catch (IllegalArgumentException ex) {
+                    // ignore - it shouldn't be castable
+                }
+
+            }
+        }
         addResourceToQueue(parserState, true, mapIds, batch, false, resourceBuilders);
     }
 
