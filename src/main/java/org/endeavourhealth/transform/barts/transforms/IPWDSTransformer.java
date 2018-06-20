@@ -35,9 +35,19 @@ public class IPWDSTransformer {
 
     public static void createEpisodeEventWardStay(IPWDS parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            //if the record is non-active (i.e. deleted) then we don't get any other columns. But we can also expect that our linked
+            //ENCNT record will be deleted too, so we don't need to do anything extra here
+            return;
+        }
+
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPatientId();
-        CsvCell activeCell = parser.getActiveIndicator();
+
+        // get the associated encounter
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
         CsvCell wardLocationIdCell = parser.getWardStayLocationCode();
         CsvCell roomLocationIdCell = parser.getWardRoomCode();
         CsvCell bedLocationIdCell = parser.getWardBedCode();
@@ -56,19 +66,11 @@ public class IPWDSTransformer {
 
         Period wardStayPeriod = PeriodHelper.createPeriod(beginDate, endDate);
 
-        // get the associated encounter
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
-
         //unlike other files, there doesn't seem to be a unique key that we can use to prevent duplicates,
         //so simply find any existing location on the encounter with the same start date and remove it
         //this is because we get multiple rows in IPWDS that all seem to be exactly the same
         CsvCell wardStayIdCell = parser.getCDSWardStayId();
         EncounterBuilder.removeExistingLocation(encounterBuilder, wardStayIdCell.getString());
-
-        if (!activeCell.getIntAsBoolean()) {
-            //if inactive, we've already removed the location from the Encounter, so just return out
-            return;
-        }
 
         Encounter.EncounterLocationComponent elc = new Encounter.EncounterLocationComponent();
         elc.setId(wardStayIdCell.getString());

@@ -37,9 +37,22 @@ public class IPEPITransformer {
 
     public static void createEpisodeEvent(IPEPI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            //if the record is non-active (i.e. deleted) then we don't get any other columns. But we can also expect that our linked
+            //ENCNT record will be deleted too, so we don't need to do anything extra here
+            return;
+        }
+
+        CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPatientId();
+
+        // get the associated encounter
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+
         CsvCell beginDateCell = parser.getEpisodeStartDateTime();
         CsvCell endDateCell = parser.getEpisodeEndDateTime();
 
@@ -51,16 +64,6 @@ public class IPEPITransformer {
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
             endDate = BartsCsvHelper.parseDate(endDateCell);
         }
-
-        // get the associated encounter
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
-
-        if (!activeCell.getIntAsBoolean()) {
-            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
-            return;
-        }
-
-        encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         if (beginDate != null) {
             // Start date

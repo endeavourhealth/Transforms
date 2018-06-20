@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -8,6 +9,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,11 @@ public class PatientResourceCache {
             } else {
 
                 patientBuilder = new PatientBuilder(patient);
+
+                //always set the managing organisation to Barts
+                String bartsId = csvHelper.findOrgRefIdForBarts();
+                Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, bartsId);
+                patientBuilder.setManagingOrganisation(organisationReference);
 
                 //for new patients, put the Person ID as an identifier on the resource
                 //create the Identity builder, which will generate a new one if the existing variable is still null

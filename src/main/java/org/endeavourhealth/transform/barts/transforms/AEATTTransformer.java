@@ -43,9 +43,18 @@ public class AEATTTransformer {
 
     public static void createAandEAttendance(AEATT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            //if the record is non-active (i.e. deleted) then we don't get any other columns. But we can also expect that our linked
+            //ENCNT record will be deleted too, so we don't need to do anything extra here
+            return;
+        }
+
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        CsvCell activeCell = parser.getActiveIndicator();
+
+        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
         CsvCell decisionToAdmitDateTimeCell = parser.getDecisionToAdmitDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
         CsvCell endDateCell = parser.getCheckOutDateTime();
@@ -58,13 +67,6 @@ public class AEATTTransformer {
         CsvCell firstSpecPersonIdCell = parser.getFirstSpecPersonId();
         CsvCell respHcpPersonIdCell = parser.getRespHcpPersonId();
         CsvCell referralPersonIdCell = parser.getReferralPersonId();
-
-        EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
-
-        if (!activeCell.getIntAsBoolean()) {
-            EncounterResourceCache.deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
-            return;
-        }
 
 
         // Encounter start and end

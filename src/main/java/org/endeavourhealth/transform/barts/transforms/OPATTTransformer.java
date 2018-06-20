@@ -43,8 +43,6 @@ public class OPATTTransformer {
 
     public static void createOutpatientAttendanceEvent(OPATT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell encounterIdCell = parser.getEncounterId();
-
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
             //if the record is non-active (i.e. deleted) then we don't get any other columns. But we can also expect that our linked
@@ -52,6 +50,7 @@ public class OPATTTransformer {
             return;
         }
 
+        CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
         EncounterBuilder encounterBuilder = EncounterResourceCache.getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 

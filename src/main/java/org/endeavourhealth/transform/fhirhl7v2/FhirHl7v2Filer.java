@@ -1,11 +1,7 @@
 package org.endeavourhealth.transform.fhirhl7v2;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
@@ -115,7 +111,6 @@ public class FhirHl7v2Filer {
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
 
-        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
         List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
@@ -171,7 +166,6 @@ public class FhirHl7v2Filer {
 
         UUID batchId = findOrCreateBatchId(exchangeId, batchIds, patientId);
 
-        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
         List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
@@ -249,7 +243,6 @@ public class FhirHl7v2Filer {
         UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
         UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
 
-        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
         List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
@@ -445,14 +438,18 @@ public class FhirHl7v2Filer {
                 .filter(t -> t.getResourceType() != ResourceType.Parameters)
                 .collect(Collectors.toList());
 
-        GenericBuilder[] builders = new GenericBuilder[adminResources.size()];
-        for (int i=0; i<adminResources.size(); i++) {
-            Resource resource = adminResources.get(i);
-            GenericBuilder builder = new GenericBuilder(resource);
-            builders[i] = builder;
-        }
+        //some resources are shared between the HL7 feed and Data Warehouse feed (e.g. Organizations)
+        //so we want to avoid overwriting content from the DW feed, which is richer than the HL7 feed.
+        //Do this by retrieving the existing resource and checking if the systemId matches our own
+        for (Resource resource: adminResources) {
 
-        fhirResourceFiler.saveAdminResource(null, false, builders);
+            if (!isCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                continue;
+            }
+
+            GenericBuilder builder = new GenericBuilder(resource);
+            fhirResourceFiler.saveAdminResource(null, false, builder);
+        }
     }
 
     /*private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
@@ -463,15 +460,131 @@ public class FhirHl7v2Filer {
                 .filter(t -> FhirResourceFiler.isPatientResource(t))
                 .collect(Collectors.toList());
 
-        Patient patient = patientResources
-                .stream()
-                .filter(t -> t.getResourceType() == ResourceType.Patient)
-                .map(t -> (Patient)t)
-                .collect(StreamExtension.singleCollector());
+        //we get three types of patient resources from the HL7 feed. Only the Patient resource is shared between
+        //the HL7 feed and Data Warehouse feed, whereas EpisodeOfCare and Encounter are not. We need to handle
+        //each type differently so these two feeds can co-exist.
+        for (Resource resource: patientResources) {
 
-        fhirResourceFiler.savePatientResource(null, false, patient.getId(), patientResources.toArray(new Resource[0]));
+            if (resource instanceof Patient) {
+                //Patient resources ARE shared between HL7 and DW feeds, so check to see if the systemId of the
+                //current version matches that of the HL7 feed. If not, it means the DW feed has taken over the patient
+                //in which case don't apply any updates to it. This means that changes to the patient (e.g. new address)
+                //won't be applied to the resource until we get the next DW update through, but merging the changes into the
+                //resource without breaking it seems very difficult.
+                if (!isCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    continue;
+                }
+
+            } else if (resource instanceof EpisodeOfCare) {
+                //EpisodeOfCare resources ARE NOT shared between Hl7 and DW feeds, and the DW feed will delete Episodes
+                //created by the HL7 feed since it can create better resources from the richer data. So only
+                //save our resource if it's brand new or hasn't been deleted by the DW feed
+                if (hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
+                    continue;
+                }
+
+            } else if (resource instanceof Encounter) {
+                //Encounter resources ARE NOT shared between Hl7 and DW feeds, and the DW feed will delete Encounter
+                //created by the HL7 feed since it can create better resources from the richer data. However, to keep
+                //an up-to-date record of patient activity, we them merge in future changes to the Encounter
+                //into the DW encounter. Note: we can't map the HL7 and DW encounte
+
+//TODO - attempt to update the DW encounter too?????
+//TODO - IF existing HL7 encounter hasn't been deleted, then merge in changes as normal
+//TODO - IF existing HL7 encounter HAS been deleted, then map to DW encounter and merge in changes to THAT!
+
+                if (hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
+                    continue;
+                }
+//TODO
+
+                //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
+                //sure that we don't lose any data in the old instance by just overwriting it
+                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
+                resource = updateEncounter(oldEncounter, (Encounter)resource);
+//TODO continue if null?
+
+            } else {
+                throw new TransformException("Unsupported patient resource type in HL7 feed: " + resource.getResourceType());
+            }
+
+            GenericBuilder builder = new GenericBuilder(resource);
+
+            //and save the resource
+            fhirResourceFiler.savePatientResource(null, false, builder);
+        }
     }*/
 
+    private boolean hasBeenDeletedByDataWarehouseFeed(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        UUID systemId = fhirResourceFiler.getSystemId();
+
+        String resourceType = resource.getResourceType().toString();
+        UUID resourceId = UUID.fromString(resource.getId());
+        List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceType, resourceId);
+
+        //if we've never heard of this resource, it hasn't been deleted by the DW feed
+        if (history.isEmpty()) {
+            return false;
+        }
+
+        //most recent is first
+        ResourceWrapper latestHistory = history.get(0);
+
+        //if the latest history isn't deleted, then it wasn't deleted by the DW feed
+        if (!latestHistory.isDeleted()) {
+            return false;
+        }
+
+        //if the delete was by the HL7 feed, then it wasn't deleted by the DW feed
+        UUID latestSystemId = latestHistory.getSystemId();
+        if (latestSystemId.equals(systemId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isCurrentVersionSameSystem(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        UUID systemId = fhirResourceFiler.getSystemId();
+
+        String resourceType = resource.getResourceType().toString();
+        UUID resourceId = UUID.fromString(resource.getId());
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(serviceId, resourceType, resourceId);
+
+        if (wrapper != null) {
+            UUID currentSystemId = wrapper.getSystemId();
+            if (!currentSystemId.equals(systemId)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /*private void saveAdminResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+        List<Resource> adminResources = bundle
+                .getEntry()
+                .stream()
+                .map(t -> t.getResource())
+                .filter(t -> !FhirResourceFiler.isPatientResource(t))
+                .filter(t -> t.getResourceType() != ResourceType.MessageHeader)
+                .filter(t -> t.getResourceType() != ResourceType.Parameters)
+                .collect(Collectors.toList());
+
+        GenericBuilder[] builders = new GenericBuilder[adminResources.size()];
+        for (int i=0; i<adminResources.size(); i++) {
+            Resource resource = adminResources.get(i);
+            GenericBuilder builder = new GenericBuilder(resource);
+            builders[i] = builder;
+        }
+
+        fhirResourceFiler.saveAdminResource(null, false, builders);
+    }
+*/
     private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
@@ -479,14 +592,6 @@ public class FhirHl7v2Filer {
                 .map(t -> t.getResource())
                 .filter(t -> FhirResourceFiler.isPatientResource(t))
                 .collect(Collectors.toList());
-
-        /*//need to find the Patient resource so we can find it's ID
-        Patient patient = patientResources
-                .stream()
-                .filter(t -> t.getResourceType() == ResourceType.Patient)
-                .map(t -> (Patient)t)
-                .collect(StreamExtension.singleCollector());
-        String patientId = patient.getId();*/
 
         for (Resource resource: patientResources) {
 
