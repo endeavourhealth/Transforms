@@ -3,12 +3,14 @@ package org.endeavourhealth.transform.common.idmappers;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
 
 public class IdMapperPatient extends BaseIdMapper {
-
+    private static final Logger LOG = LoggerFactory.getLogger(IdMapperPatient.class);
 
     @Override
     public void getResourceReferences(Resource resource, Set<String> referenceValues) throws Exception {
@@ -59,6 +61,7 @@ public class IdMapperPatient extends BaseIdMapper {
             super.mapReferences(patient.getCareProvider(), mappings, failForMissingMappings);
         }
         if (patient.hasManagingOrganization()) {
+            LOG.info("Patient mapping: " + patient.getId() + "<>" + patient.getManagingOrganization().getId());
             super.mapReference(patient.getManagingOrganization(), mappings, failForMissingMappings);
         }
         if (patient.hasLink()) {
