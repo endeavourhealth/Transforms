@@ -743,6 +743,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                             parserStates = null;
                         } else {
                             parserStates.add(parserState);
+                            err += "/" + parserState.toString() + " ";
                         }
                     }
                 }
