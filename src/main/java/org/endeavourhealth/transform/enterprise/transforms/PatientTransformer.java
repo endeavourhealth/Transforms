@@ -26,8 +26,8 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
-import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
+import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorModel;
 import org.endeavourhealth.transform.enterprise.json.PatientPseudoDetails;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -92,7 +92,7 @@ public class PatientTransformer extends AbstractTransformer {
         //so we'll occasionally get null for some patients. If this happens, just do what would have
         //been done originally and assign an ID
         if (Strings.isNullOrEmpty(discoveryPersonId)) {
-            PatientLinkPair pair = patientLinkDal.updatePersonId(fhirPatient);
+            PatientLinkPair pair = patientLinkDal.updatePersonId(params.getServiceId(), fhirPatient);
             discoveryPersonId = pair.getNewPersonId();
         }
 
@@ -375,8 +375,8 @@ public class PatientTransformer extends AbstractTransformer {
         List<PatientSearch> patientSearchesInProtocol = new ArrayList<>();
         patientSearchesInProtocol.add(patientSearch);
 
-        List<String> allPatientIds = patientLinkDal.getPatientIds(discoveryPersonId);
-        for (String otherPatientId: allPatientIds) {
+        Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
+        for (String otherPatientId: allPatientIdMap.keySet()) {
 
             //skip the patient ID we've already retrieved
             if (otherPatientId.equals(patientId)) {
