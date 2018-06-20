@@ -731,9 +731,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
                 String err = "Exception mapping resources: ";
                 List<CsvCurrentState> parserStates = new ArrayList<>();
+                StringBuilder sb = new StringBuilder();
                 for (Resource resource: resources) {
                     err += resource.getResourceType() + "/" + resource.getId() + " ";
-
                     if (parserStates != null) {
                         MapIdJob job = hmJobsByResource.get(resource);
                         CsvCurrentState parserState = job.getParserState();
@@ -742,16 +742,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                             //so null the list so it gets treated as a fatal error
                             parserStates = null;
                         } else {
+                            sb.append(parserState.toString());
                             parserStates.add(parserState);
-                            err += "/" + parserState.toString() + " ";
                         }
                     }
                 }
-                StringBuilder sb = new StringBuilder();
-                for (CsvCurrentState state : parserStates) {
-                    if (state != null) {sb.append(state.toString());}
-                }
-
                 LOG.error("Parser states:" + sb.toString());
                 LOG.error(err, ex);
                 throw new FilingAndMappingException(err, parserStates, ex);
