@@ -58,7 +58,6 @@ public class PRESCRIPTIONSPreTransformer {
         //linked consultation encounter record
         if (!consultationId.isEmpty()) {
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
-                    patientId.getString(),
                     drugId,
                     ResourceType.MedicationStatement);
         }

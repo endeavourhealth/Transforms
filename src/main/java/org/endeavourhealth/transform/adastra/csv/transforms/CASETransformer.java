@@ -69,7 +69,7 @@ public class CASETransformer {
 
         CsvCell endDateTime = parser.getEndDateTime();
         if (!endDateTime.isEmpty()) {
-            episodeBuilder.setRegistrationEndDate(startDateTime.getDateTime(), endDateTime);
+            episodeBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
 
         //get the configured serviceId to retrieve an Organization resource if it exists (create if not)

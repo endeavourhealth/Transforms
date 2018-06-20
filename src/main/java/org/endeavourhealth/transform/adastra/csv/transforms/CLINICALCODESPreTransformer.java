@@ -59,7 +59,6 @@ public class CLINICALCODESPreTransformer {
         //cache the link between the observation and consultation
         if (!consultationId.isEmpty()) {
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
-                    patientId.getString(),
                     observationId,
                     ResourceType.Observation);
         }

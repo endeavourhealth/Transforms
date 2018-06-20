@@ -135,7 +135,6 @@ public class CONSULTATIONTransformer {
 
             //cache the link to this new observation
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
-                    patientId.getString(),
                     observationId,
                     ResourceType.Observation);
         }

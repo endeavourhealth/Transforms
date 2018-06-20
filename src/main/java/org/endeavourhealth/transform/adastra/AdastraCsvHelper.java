@@ -122,7 +122,6 @@ public class AdastraCsvHelper {
     }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationIDCell,
-                                                      String patientGuid,
                                                       String resourceGuid,
                                                       ResourceType resourceType) {
 
@@ -130,14 +129,16 @@ public class AdastraCsvHelper {
             return;
         }
 
-        String consultationLocalUniqueId = createUniqueId(patientGuid, consultationIDCell.getString());
+        //String consultationLocalUniqueId = createUniqueId(patientGuid, consultationIDCell.getString());
+        String consultationLocalUniqueId = consultationIDCell.getString();
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
             list = new ReferenceList();
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
-        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        //String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        String resourceLocalUniqueId = resourceGuid;
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
         list.add(resourceReference, consultationIDCell);
     }
