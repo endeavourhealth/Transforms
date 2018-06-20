@@ -51,6 +51,9 @@ public class PATIENTTransformer {
         CsvCell patientId = parser.getPatientId();
         CsvCell caseId = parser.getCaseId();
 
+        //has the patient already been created within this session?
+        boolean patientCreatedInSession = PatientResourceCache.patientInCache(patientId);
+
         //get EpisodeofCare already populated from preceeding CASE transform
         EpisodeOfCareBuilder episodeBuilder
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
@@ -157,7 +160,7 @@ public class PATIENTTransformer {
         CsvCell regType = parser.getRegistrationType();
         if (!regType.isEmpty()) {
 
-            if (regType.getString().equalsIgnoreCase("Registered")) {
+            if (regType.getString().trim().equalsIgnoreCase("Registered")) {
                 episodeBuilder.setRegistrationType(RegistrationType.REGULAR_GMS);
             } else {
                 episodeBuilder.setRegistrationType(RegistrationType.OTHER);
@@ -180,11 +183,13 @@ public class PATIENTTransformer {
         boolean active = episodeBuilder.getRegistrationEndDate().after(new Date());
         patientBuilder.setActive(active);
 
-        //save both resources together, so the patient is saved before the episode
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
-
-        //save both resources together, so the episode is saved before the patient
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder, patientBuilder);
+        if (!patientCreatedInSession) {
+            //save both resources together, so the new patient is saved before the episode
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        } else {
+            //patient already saved during session, so just file the new episode
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder);
+        }
     }
 
     //try Ethnicity matching using text input string

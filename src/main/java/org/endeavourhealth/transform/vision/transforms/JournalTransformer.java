@@ -1204,8 +1204,7 @@ public class JournalTransformer {
                 && !subset.equalsIgnoreCase("T")
                 && !subset.equalsIgnoreCase("I")) {
             return ResourceType.Procedure;
-        } else if ((!Strings.isNullOrEmpty(readCode) && Read2.isDisorder(readCode))
-                || subset.equalsIgnoreCase("P")) {
+        } else if (subset.equalsIgnoreCase("P")) {
             return ResourceType.Condition;
         } else if (subset.equalsIgnoreCase("I")) {
             return ResourceType.Immunization;

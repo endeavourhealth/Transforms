@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.*;
 import org.endeavourhealth.transform.adastra.csv.transforms.*;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -154,6 +155,7 @@ public abstract class AdastraCsvToFhirTransformer {
         OUTCOMESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         PATIENTTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodeOfCareResourceCache.clear();
+        PatientResourceCache.clear();
 
         NOTESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         CONSULTATIONTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
