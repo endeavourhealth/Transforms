@@ -98,22 +98,22 @@ public class CONSULTATIONTransformer {
 
         CsvCell historyText = parser.getHistory();
         if (!historyText.isEmpty()) {
-            encounterTextBuilder.append(historyText);
+            encounterTextBuilder.append(historyText.getString());
         }
 
         CsvCell examinationText = parser.getExamination();
         if (!examinationText.isEmpty()) {
-            encounterTextBuilder.append(examinationText);
+            encounterTextBuilder.append(examinationText.getString());
         }
 
         CsvCell diagnosisText = parser.getDiagnosis();
         if (!diagnosisText.isEmpty()) {
-            encounterTextBuilder.append(diagnosisText);
+            encounterTextBuilder.append(diagnosisText.getString());
         }
 
         CsvCell treatmentPlanText = parser.getTreatmentPlan();
         if (!treatmentPlanText.isEmpty()) {
-            encounterTextBuilder.append(treatmentPlanText);
+            encounterTextBuilder.append(treatmentPlanText.getString());
         }
 
         ObservationBuilder observationBuilder = null;
