@@ -1,16 +1,15 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.FamilyHistory;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.FamilyMemberHistoryBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.FamilyMemberHistory;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,83 +37,6 @@ public class FamilyHistoryTransformer {
 
     private static void createResource(FamilyHistory parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        /**
-            IGNORE getFhxActivityKey() {
-            IGNORE getHealthSystemId() {
-            IGNORE  getHealthSystemSourceId() {
-            DONE getFhxActivityId() {
-            IGNORE getFhxActivityGroupId() {
-            DONE getPersonId() {
-            DONE getRelatedPersonId() {
-            DONE getRelatedPersonReltnRef() {
-            IGNORE getFhxvalueFlag()
-            IGNORE getOnsetAge() {
-            IGNORE getOnsetAgrePrecRef() {
-            IGNORE getOnsetAgeUnitRef() {
-            IGNORE getActivityOrg() {
-            IGNORE getCourseRef() {
-            IGNORE getLifeCycleStatusRef() {
-            DONE getActivityNomen() {
-            IGNORE getSeverityRef() {
-            IGNORE getTypeMean() {
-            DONE getSrcBegEffectDtTm() {
-            IGNORE getSrcBegEffectTmVldFlg() {
-            IGNORE getSrcBegEffectTmZn() {
-            DONE getSrcEndEffectDtTm() {
-            IGNORE getSrcEndEffectTmVldFlg() {
-            IGNORE getSrcEndEffectTmZn() {
-            DONE getActiveInd() {
-            IGNORE getTranPrsnlHssId() {
-            DONE getCreatePrsnl() {
-            IGNORE getCreateTransPrsnl() {
-            DONE getCreateDtTm() {
-            IGNORE getCreateTmVldFlg() {
-            IGNORE getCreateTmZn() {
-            IGNORE getInactivatePrsnl() {
-             IGNORE getInactivateTranPrsl() {
-             IGNORE getInactivateDtTm() {
-             IGNORE getInactivateTmVldFlg() {
-            IGNORE getInactivateTmZn() {
-             IGNORE getFirstReviewPrsnl() {
-             IGNORE getFirstReviewTranPrsnl() {
-             IGNORE getFirstReviewDtTM() {
-             IGNORE getFirstReviewTmVldFlg() {
-            IGNORE getFirstReviewTmZn() {
-             IGNORE getLastReviewPrsnl() {
-             IGNORE getLastReviewTranPrsnl() {
-             IGNORE getLastReviewDtTM() {
-             IGNORE getLastReviewTmVldFlg() {
-            IGNORE getLastReviewTmZn() {
-            IGNORE getSecurityKey() {
-            IGNORE getSecurityProcessDtTm() {
-            IGNORE getDuplicateFlag() {
-            IGNORE getOrphanFlag() {
-            IGNORE getErrorInd() {
-             IGNORE getFirstProcessDtTm() {
-             IGNORE getLastProcessDtTm() {
-             IGNORE getTotalUpdates() {
-             IGNORE getUpdtDtTm() {
-             IGNORE getUpdtTask() {
-             IGNORE getUpdtUser() {
-            IGNORE getSourceFlag() {
-            IGNORE getExtractDtTm() {
-            IGNORE getPartitionDtTm() {
-            IGNORE getRecordUpdatedDt() {
-
-         want to set
-            DONE ID
-            DONE patient
-            DONE date
-            DONE status
-            DONE relationship
-         code //TODO - look up nomenclature
-            NO NOTES notes
-            CANT DO clinician
-            CANT DO encounter
-            DONE recorded by
-            DONE recorded date
-         */
-        
         FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder();
 
         CsvCell idCell = parser.getFhxActivityKey();
@@ -163,18 +85,21 @@ public class FamilyHistoryTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(createdByCell)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(createdByCell);
             familyMemberHistoryBuilder.setRecordedBy(practitionerReference, createdByCell);
-            //TODO - validate that this does link to PERSONREF
         }
 
         CsvCell nomenclatureId = parser.getActivityNomen();
         if (!BartsCsvHelper.isEmptyOrIsZero(nomenclatureId)) {
 
-            //TODO - I think we need a bulk of the NOMREF table and need to look up to it here
+            CernerNomenclatureRef nomenclatureRef = csvHelper.lookupNomenclatureRef(nomenclatureId.getLong());
+            String desc = nomenclatureRef.getDescriptionText();
+            //Cerner DOES NOT use the Snomed family history codes, instead representing "FH: asthma"
+            //by recording the asthma code in its family history table. If the SNOMED code is simply
+            //carried through, then all analytics and record views will be wrong. So bring through
+            //the term only and let the information-model map this later to a proper concept for FH.
+            desc = "Family history: " + desc;
 
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(familyMemberHistoryBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_NOMENCLATURE_ID);
-            identifierBuilder.setValue(nomenclatureId.getString(), nomenclatureId);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
+            codeableConceptBuilder.setText(desc);
         }
 
         //status is mandatory, so set the only possible status we can

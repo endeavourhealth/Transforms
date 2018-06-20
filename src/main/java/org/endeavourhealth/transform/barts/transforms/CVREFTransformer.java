@@ -35,17 +35,11 @@ public class CVREFTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
-
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
-                try {
-                    transform((CVREF)parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
+                //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
+                transform((CVREF)parser, fhirResourceFiler, csvHelper);
             }
         }
     }
@@ -91,7 +85,7 @@ public class CVREFTransformer {
                 codeSetNbr.getLong(),
                 codeSetDescTxt.getString(),
                 aliasNhsCdAlias.getString(),
-                fhirResourceFiler.getServiceId().toString(),
+                fhirResourceFiler.getServiceId(),
                 auditWrapper);
 
 

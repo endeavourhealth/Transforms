@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -119,6 +119,7 @@ public class SRProblemTransformer {
         }
 
         //set the category on the condition, so we know it's a problem
+        //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
         conditionBuilder.setCategory("complaint", problemId);
         conditionBuilder.setAsProblem(true);
 

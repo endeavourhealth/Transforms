@@ -57,7 +57,7 @@ public class PPADD extends AbstractCsvParser {
         return super.getCell("ACTIVE_IND");
     }
 
-    public CsvCell getMillenniumPersonIdentifier() {
+    public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
 

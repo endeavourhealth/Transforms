@@ -72,6 +72,7 @@ public class ProblemTransformer {
         }
 
         //set the category on the condition, so we know it's a problem
+        //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
         conditionBuilder.setCategory("complaint", observationGuid);
 
         CsvCell comments = parser.getComment();

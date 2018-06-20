@@ -181,7 +181,10 @@ public class PATIENTTransformer {
         patientBuilder.setActive(active);
 
         //save both resources together, so the patient is saved before the episode
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+
+        //save both resources together, so the episode is saved before the patient
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder, patientBuilder);
     }
 
     //try Ethnicity matching using text input string

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -10,6 +11,7 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 
 import java.util.Date;
+import java.util.UUID;
 
 public abstract class ResourceBuilderBase {
 
@@ -21,8 +23,28 @@ public abstract class ResourceBuilderBase {
 
     public ResourceBuilderBase(ResourceFieldMappingAudit auditWrapper) {
         this.auditWrapper = auditWrapper;
+
         if (this.auditWrapper == null) {
             this.auditWrapper = new ResourceFieldMappingAudit();
+        }
+    }
+
+    /**
+     * we often need to know if a resource has been through the ID mapping process,
+     * so we can work out if we should be setting source IDs or mapped UUIDs in references etc.
+     * so this function works that out from the resource ID
+     */
+    public boolean isIdMapped() {
+        String id = getResourceId();
+        if (Strings.isNullOrEmpty(id)) {
+            throw new RuntimeException("Resource has no ID");
+        }
+
+        try {
+            UUID.fromString(id);
+            return true;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
@@ -136,13 +158,12 @@ public abstract class ResourceBuilderBase {
 
     public abstract DomainResource getResource();
 
-
     public String getResourceId() {
         return getResource().getId();
     }
 
     public ResourceFieldMappingAudit getAuditWrapper() {
-        return auditWrapper;
+        return this.auditWrapper;
     }
 
     /**

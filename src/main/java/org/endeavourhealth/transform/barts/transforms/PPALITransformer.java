@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -22,6 +23,8 @@ import java.util.List;
 public class PPALITransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPALITransformer.class);
 
+    private static final String PPALI_ID_TO_PERSON_ID = "PPALI_ID_TO_PERSON_ID";
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -41,18 +44,27 @@ public class PPALITransformer {
 
     public static void createPatientAlias(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
+        CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
+
+        //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
+        //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
+        CsvCell active = parser.getActiveIndicator();
+        if (!active.getIntAsBoolean()) {
+
+            String personIdStr = csvHelper.getInternalId(PPALI_ID_TO_PERSON_ID, aliasIdCell.getString());
+            if (!Strings.isNullOrEmpty(personIdStr)) {
+
+                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
+            }
+            return;
+        }
+
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
 
         //we always fully re-create the Identifier on the patient so just remove any previous instance
-        CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
         IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
-
-        //if this record is no longer active, just return out, since we've already removed the Identifier from the patient
-        CsvCell activeCell = parser.getActiveIndicator();
-        if (!activeCell.getIntAsBoolean()) {
-            return;
-        }
 
         //if the alias is empty, there's nothing to add
         CsvCell aliasCell = parser.getAlias();
@@ -109,6 +121,12 @@ public class PPALITransformer {
             Date d = BartsCsvHelper.parseDate(endDateCell);
             identifierBuilder.setEndDate(d, endDateCell);
         }
+
+        //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
+        //we can find the person it belonged to, since the deleted records only give us the ID
+        csvHelper.saveInternalId(PPALI_ID_TO_PERSON_ID, aliasIdCell.getString(), personIdCell.getString());
+
+        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }
 
 

@@ -74,6 +74,7 @@ public abstract class BartsCsvToFhirTransformer {
         ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
         CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
+        NOMREFTransformer.transform(createParsers(fileMap, parserMap, "NOMREF", csvHelper), fhirResourceFiler, csvHelper);
         LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
         PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
@@ -106,13 +107,10 @@ public abstract class BartsCsvToFhirTransformer {
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
         PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
-
         CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
-
-        //TODO - need to import NOMREF
-//        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
+        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
 
         if (TransformConfig.instance().isTransformCerner21Files()) {
             //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
@@ -243,7 +241,8 @@ public abstract class BartsCsvToFhirTransformer {
             return new ORGREF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("FAMILYHISTORY")) {
             return new FamilyHistory(serviceId, systemId, exchangeId, version, file);
-
+        } else if (type.equalsIgnoreCase("NOMREF")) {
+            return new NOMREF(serviceId, systemId, exchangeId, version, file);
 
         } else {
             throw new TransformException("Unknown file type [" + type + "]");

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.PPADD;
@@ -17,6 +18,8 @@ import java.util.List;
 
 public class PPADDTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPADDTransformer.class);
+
+    private static final String PPADD_ID_TO_PERSON_ID = "PPADD_ID_TO_PERSON_ID";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -37,18 +40,27 @@ public class PPADDTransformer {
 
     public static void createPatientAddress(PPADD parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell milleniumPersonIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(milleniumPersonIdCell, csvHelper);
-
-        //we always fully re-create the address, so remove it from the patient
         CsvCell addressIdCell = parser.getMillenniumAddressId();
-        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
 
-        //if non-active, we should REMOVE the address, which we've already done, so just return out
+        //if non-active (i.e. deleted) we should REMOVE the address, but we don't get any other fields, including the Person ID
+        //so we need to look it up via the internal ID mapping will have stored when we first created the address
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
+
+            String personIdStr = csvHelper.getInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString());
+            if (!Strings.isNullOrEmpty(personIdStr)) {
+
+                PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+            }
             return;
         }
+
+        CsvCell personIdCell = parser.getPersonId();
+        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(personIdCell, csvHelper);
+
+        //we always fully re-create the address, so remove it from the patient
+        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
 
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
@@ -81,6 +93,12 @@ public class PPADDTransformer {
             Date d = BartsCsvHelper.parseDate(endDate);
             addressBuilder.setEndDate(d, endDate);
         }
+
+        //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
+        //we can find the person it belonged to, since the deleted records only give us the ID
+        csvHelper.saveInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString(), personIdCell.getString());
+
+        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }
 
 }

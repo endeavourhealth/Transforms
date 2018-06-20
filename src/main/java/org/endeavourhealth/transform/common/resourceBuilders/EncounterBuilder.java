@@ -20,7 +20,6 @@ public class EncounterBuilder extends ResourceBuilderBase
 
 
     private Encounter encounter = null;
-    private boolean isIdMapped = false;
 
     public EncounterBuilder() {
         this(null);
@@ -31,14 +30,7 @@ public class EncounterBuilder extends ResourceBuilderBase
         if (this.encounter == null) {
             this.encounter = new Encounter();
             this.encounter.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ENCOUNTER));
-        } else {
-            //if creating from an existing Encounter, then ID mapping has already been done
-            this.isIdMapped = true;
         }
-    }
-
-    public boolean isIdMapped() {
-        return isIdMapped;
     }
 
     @Override
