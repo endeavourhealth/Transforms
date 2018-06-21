@@ -70,7 +70,9 @@ public class EncounterResourceCache {
 
                 //always set the person ID fresh, in case the record has been moved to another patient, remembering to forward map to a UUID
                 //but track the old patient UUID so we can use it to update dependent resources
-                if (personIdCell != null) {
+                if (personIdCell != null
+                        && !BartsCsvHelper.isEmptyOrIsZero(personIdCell)) { //for deleted ENCNT records, we don't get a personID
+
                     Reference oldPatientReference = encounter.getPatient();
                     UUID oldPatientUuid = UUID.fromString(ReferenceHelper.getReferenceId(oldPatientReference));
                     UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
