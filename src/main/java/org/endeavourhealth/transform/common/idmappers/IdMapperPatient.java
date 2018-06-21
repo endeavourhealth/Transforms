@@ -31,6 +31,7 @@ public class IdMapperPatient extends BaseIdMapper {
             super.addReferences(patient.getCareProvider(), referenceValues);
         }
         if (patient.hasManagingOrganization()) {
+            LOG.info("Mapping patient org: patient:" + patient.getId() + "/" + "/Org:" + patient.getManagingOrganization());
             super.addReference(patient.getManagingOrganization(), referenceValues);
         }
         if (patient.hasLink()) {
