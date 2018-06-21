@@ -222,7 +222,9 @@ public class ENCNTTransformer {
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
         if (!BartsCsvHelper.isEmptyOrIsZero(mainSpecialtyCodeCell)) {
-
+            //the specialty code points to an entry in CVREF. The CVREF transformer creates Organization
+            //resources for specialty records, using a slightly different source ID to avoid conflicts with
+            //other numeric source IDs
             Reference organisationReference = csvHelper.createSpecialtyOrganisationReference(mainSpecialtyCodeCell);
             if (encounterBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
