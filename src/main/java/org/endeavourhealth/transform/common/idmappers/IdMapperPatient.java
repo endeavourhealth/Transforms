@@ -47,9 +47,6 @@ public class IdMapperPatient extends BaseIdMapper {
         Patient patient = (Patient)resource;
         super.mapCommonResourceFields(patient, mappings, failForMissingMappings);
 
-        //TODO - Drew to remove
-        new Exception().printStackTrace();
-
         if (patient.hasIdentifier()) {
             super.mapIdentifiers(patient.getIdentifier(), mappings, failForMissingMappings);
         }
