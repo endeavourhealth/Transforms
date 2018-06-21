@@ -105,7 +105,7 @@ public class EpisodeOfCareResourceCache {
     private void ensureUuidExistsForEpisode(CsvCell personIdCell, CsvCell episodeIdcell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         //if we have a VISIT ID, then we can potentially match to an EpisodeOfCare from the HL7 receiver, which uses the MRN and VISIT ID
-        if (!BartsCsvHelper.isEmptyOrIsZero(visitIdCell)) {
+        if (!visitIdCell.isEmpty()) {
 
             String personId = personIdCell.getString();
             String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
