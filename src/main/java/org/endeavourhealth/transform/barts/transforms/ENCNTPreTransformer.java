@@ -46,7 +46,7 @@ public class ENCNTPreTransformer {
 
         //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
         CsvCell visitIdCell = parser.getVisitId();
-        if (BartsCsvHelper.isEmptyOrIsZero(visitIdCell)) {
+        if (visitIdCell.isEmpty()) {
             return;
         }
 

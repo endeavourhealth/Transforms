@@ -177,7 +177,11 @@ public class ENCNTTransformer {
         }
 
         // EncounterTable type
-        BartsCodeableConceptHelper.applyCodeDisplayTxt(encounterTypeCodeCell, CodeValueSet.ENCOUNTER_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Type, csvHelper);
+        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
+        if (codeRef != null) {
+            String typeDesc = codeRef.getCodeDispTxt();
+            encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+        }
 
         // treatment function
         BartsCodeableConceptHelper.applyCodeDisplayTxt(treatmentFunctionCodeCell, CodeValueSet.TREATMENT_FUNCTION, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Treatment_Function, csvHelper);

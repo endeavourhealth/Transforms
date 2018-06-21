@@ -27,7 +27,7 @@ public class CodeableConceptBuilder {
         Encounter_Specialty,
         Encounter_Treatment_Function,
         Encounter_Source,
-        Encounter_Admission_Type,
+        //Encounter_Admission_Type,
         Encounter_Location_Type,
         Immunization_Main_Code,
         Immunization_Site,
