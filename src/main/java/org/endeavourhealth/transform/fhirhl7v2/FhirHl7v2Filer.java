@@ -445,9 +445,11 @@ public class FhirHl7v2Filer {
         for (Resource resource: adminResources) {
 
             if (!isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as been taken over by another system");
                 continue;
             }
 
+            LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
             GenericBuilder builder = new GenericBuilder(resource);
             fhirResourceFiler.saveAdminResource(null, false, builder);
         }
@@ -476,17 +478,29 @@ public class FhirHl7v2Filer {
                 //there's a lot of weirdness in the HL7 data (e.g. email addresses showing as proper addresses)
                 //that would need to be investigated and coded for.
                 if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
                     fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
+
+                } else {
+                    LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as been taken over by DW feed");
                 }
 
             } else if (resource instanceof EpisodeOfCare) {
                 //EpisodeOfCare resources ARE shared between Hl7 and DW feeds where possible, and the DW feed will delete
                 //non-shared Episodes created by the HL7 feed since it can create better resources from the richer data.
                 //So only save our EpisodeOfCare resource if it's brand new or hasn't been deleted by the DW feed
-                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)
-                    && isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
 
-                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
+                    if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                        LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
+                        fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
+
+                    } else {
+                        LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been taken over by DW feed");
+                    }
+
+                } else {
+                    LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been deleted by DW feed");
                 }
 
             } else if (resource instanceof Encounter) {
@@ -499,14 +513,19 @@ public class FhirHl7v2Filer {
 
                     if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
                         //fully merge the new HL7 encounter into the existing HL7 one
+                        LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into HL7 Encounter");
                         resource = updateHl7Encounter(oldEncounter, (Encounter)resource);
 
                     } else {
                         //do a limited merge of the HL7 encounter into the DW one
+                        LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into DW Encounter");
                         resource = updateDwEncounter(oldEncounter, (Encounter)resource);
                     }
 
                     fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
+
+                } else {
+                    LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been deleted by DW feed");
                 }
 
             } else {
