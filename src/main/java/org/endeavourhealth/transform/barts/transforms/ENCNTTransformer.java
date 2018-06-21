@@ -16,6 +16,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,10 +42,11 @@ public class ENCNTTransformer {
     public static void createEncounter(ENCNT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         // Check if encounter type should be excluded
-        CsvCell encounterTypeCodeCell = parser.getEncounterTypeMillenniumCode();
+        //not safe to skip encounters
+        /*CsvCell encounterTypeCodeCell = parser.getEncounterTypeMillenniumCode();
         if (excludeEncounterType(encounterTypeCodeCell, csvHelper)) {
             return;
-        }
+        }*/
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
@@ -159,6 +161,7 @@ public class ENCNTTransformer {
         }
 
         // class
+        CsvCell encounterTypeCodeCell = parser.getEncounterTypeMillenniumCode();
         Encounter.EncounterClass cls = getEncounterClass(encounterTypeCodeCell, encounterIdCell, csvHelper);
         if (cls != null) {
             encounterBuilder.setClass(cls, encounterTypeCodeCell);
@@ -236,6 +239,19 @@ public class ENCNTTransformer {
             encounterBuilder.setServiceProvider(organisationReference);
         }
 
+        CsvCell recordedDateCell = parser.getEncounterCreateDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(recordedDateCell)) {
+
+            Date d = BartsCsvHelper.parseDate(recordedDateCell);
+            encounterBuilder.setRecordedDate(d, recordedDateCell);
+
+            //if we've just created the Encounter, then set the creation date as the start date too, because
+            //not all encounters have records in OPATT, AEATT etc. (e.g. results-only encounters), so it's best we have some date on there
+            if (!encounterBuilder.isIdMapped()) {
+                encounterBuilder.setPeriodStart(d, recordedDateCell);
+            }
+        }
+
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
@@ -249,7 +265,11 @@ public class ENCNTTransformer {
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }
 
-    private static boolean excludeEncounterType(CsvCell encounterTypeCodeCell, BartsCsvHelper csvHelper) throws Exception {
+    /**
+     * cannot exclude encounters, no matter the type. e.g. by exluding "Outpatient Pre-Registration" we missed
+     * details on a lot of Outpatient Appts
+     */
+    /*private static boolean excludeEncounterType(CsvCell encounterTypeCodeCell, BartsCsvHelper csvHelper) throws Exception {
 
         if (BartsCsvHelper.isEmptyOrIsZero(encounterTypeCodeCell)) {
             return false;
@@ -269,7 +289,7 @@ public class ENCNTTransformer {
                 || desc.equals("Outpatient Pre-Registration")
                 || desc.equals("Direct Referral");
 
-        /*if (millenniumCode.compareTo("309313") == 0) { return true; } // Inpatient Pre-Admission
+        *//*if (millenniumCode.compareTo("309313") == 0) { return true; } // Inpatient Pre-Admission
         else if (millenniumCode.compareTo("3767801") == 0) { return true; } // Inpatient Waiting List
         else if (millenniumCode.compareTo("3767802") == 0) { return true; } // Day Case Waiting List
         else if (millenniumCode.compareTo("3767803") == 0) { return true; } // Outpatient Referral
@@ -277,8 +297,8 @@ public class ENCNTTransformer {
         else if (millenniumCode.compareTo("3768747") == 0) { return true; } // Outpatient Services
         else {
             return false;
-        }*/
-    }
+        }*//*
+    }*/
 
     private static Encounter.EncounterClass getEncounterClass(CsvCell encounterTypeCodeCell, CsvCell encounterIdCell, BartsCsvHelper csvHelper) throws Exception {
 
