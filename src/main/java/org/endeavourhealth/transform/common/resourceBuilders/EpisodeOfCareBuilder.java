@@ -85,7 +85,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditValue("period.end", sourceCells);
     }
 
-    public void setRegistrationEndDateNoStatusUpdate(Date date, CsvCell... sourceCells) {
+    /*public void setRegistrationEndDateNoStatusUpdate(Date date, CsvCell... sourceCells) {
         Period period = this.episodeOfCare.getPeriod();
         if (period == null) {
             period = new Period();
@@ -94,7 +94,7 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         period.setEnd(date);
 
         auditValue("period.end", sourceCells);
-    }
+    }*/
 
     public Date getRegistrationEndDate() {
         if (!this.episodeOfCare.hasPeriod()) {

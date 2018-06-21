@@ -41,10 +41,6 @@ public class PatientResourceCache {
                 patientBuilder = new PatientBuilder();
                 patientBuilder.setId(personId.toString());
 
-            } else {
-
-                patientBuilder = new PatientBuilder(patient);
-
                 //always set the managing organisation to Barts
                 String bartsId = csvHelper.findOrgRefIdForBarts();
                 Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, bartsId);
@@ -56,6 +52,10 @@ public class PatientResourceCache {
                 identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
                 identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
                 identifierBuilder.setValue(personId.toString());
+
+            } else {
+
+                patientBuilder = new PatientBuilder(patient);
             }
 
             patientBuildersByPersonId.put(personId, patientBuilder);

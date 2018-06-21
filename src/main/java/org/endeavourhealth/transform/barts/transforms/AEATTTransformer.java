@@ -201,7 +201,7 @@ public class AEATTTransformer {
                 if (endDate != null) {
 
                     if (episodeOfCareBuilder.getRegistrationEndDate() == null || endDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                        episodeOfCareBuilder.setRegistrationEndDateNoStatusUpdate(endDate, endDateCell);
+                        episodeOfCareBuilder.setRegistrationEndDate(endDate, endDateCell);
                     }
                 }
             } else {
