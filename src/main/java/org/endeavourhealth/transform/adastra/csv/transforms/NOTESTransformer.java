@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.adastra.csv.schema.NOTES;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.FlagBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Flag;
@@ -44,8 +45,16 @@ public class NOTESTransformer {
                                       String version) throws Exception {
 
         CsvCell caseId = parser.getCaseId();
-        //CsvCell patientId = parser.getPatientId();  //current bug in extract misses last char from PatientRef
-        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
+        CsvCell patientId = parser.getPatientId();  //current bug in extract misses last char from PatientRef
+
+        //does the patient have a Case record?
+        CsvCell casePatientId = csvHelper.findCasePatient(caseId.getString());
+        if (casePatientId.isEmpty() || !patientId.getString().equalsIgnoreCase(casePatientId.getString())) {
+            TransformWarnings.log(LOG, parser, "No Case record match found for patient: {}, case {},  file: {}",
+                    patientId.getString(), caseId.getString(), parser.getFilePath());
+            return;
+        }
+
         CsvCell reviewDateTime = parser.getReviewDateTime();
 
         //create a unique id for flag.

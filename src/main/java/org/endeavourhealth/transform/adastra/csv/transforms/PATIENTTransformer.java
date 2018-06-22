@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -50,6 +51,14 @@ public class PATIENTTransformer {
 
         CsvCell patientId = parser.getPatientId();
         CsvCell caseId = parser.getCaseId();
+
+        //does the patient have a Case record?
+        CsvCell casePatientId = csvHelper.findCasePatient(caseId.getString());
+        if (casePatientId.isEmpty() || !patientId.getString().equalsIgnoreCase(casePatientId.getString())) {
+            TransformWarnings.log(LOG, parser, "No Case record match found for patient: {}, case {},  file: {}",
+                    patientId.getString(), caseId.getString(), parser.getFilePath());
+            return;
+        }
 
         //has the patient already been created within this session?
         boolean patientCreatedInSession = PatientResourceCache.patientInCache(patientId);
@@ -180,8 +189,11 @@ public class PATIENTTransformer {
             patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()));
         }
 
-        boolean active = episodeBuilder.getRegistrationEndDate().after(new Date());
-        patientBuilder.setActive(active);
+        Date registrationEndDate = episodeBuilder.getRegistrationEndDate();
+        if (registrationEndDate != null) {
+            boolean active = registrationEndDate.after(new Date());
+            patientBuilder.setActive(active);
+        }
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
