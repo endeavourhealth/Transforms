@@ -44,6 +44,12 @@ public class NOTESTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
+        //not interested in obsolete records.  Adastra no longer sending but just in case.
+        CsvCell obsolete = parser.getObsolete();
+        if (obsolete.getBoolean()) {
+            return;
+        }
+
         CsvCell caseId = parser.getCaseId();
         CsvCell patientId = parser.getPatientId();  //current bug in extract misses last char from PatientRef
 
