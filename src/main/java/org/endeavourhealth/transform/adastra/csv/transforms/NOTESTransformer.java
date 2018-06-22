@@ -49,7 +49,7 @@ public class NOTESTransformer {
 
         //does the patient have a Case record?
         CsvCell casePatientId = csvHelper.findCasePatient(caseId.getString());
-        if (casePatientId.isEmpty() || !patientId.getString().equalsIgnoreCase(casePatientId.getString())) {
+        if (casePatientId == null || !patientId.getString().equalsIgnoreCase(casePatientId.getString())) {
             TransformWarnings.log(LOG, parser, "No Case record match found for patient: {}, case {},  file: {}",
                     patientId.getString(), caseId.getString(), parser.getFilePath());
             return;
