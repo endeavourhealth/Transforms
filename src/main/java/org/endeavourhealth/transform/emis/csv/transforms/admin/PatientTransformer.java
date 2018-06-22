@@ -716,7 +716,7 @@ public class PatientTransformer {
         }
 
         /**
-         * This is the FULL list of registration types from Emis Web, although only
+         * This is the FULL list of registration types from Emis Web
          *
          Immediately Necessary
          Private
@@ -725,6 +725,7 @@ public class PatientTransformer {
          Community Registered
          Dummy
          Other
+
          Contraceptive Services
          Maternity Services
          Child Health Services

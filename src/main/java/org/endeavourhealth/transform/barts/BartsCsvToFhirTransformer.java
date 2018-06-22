@@ -89,6 +89,9 @@ public abstract class BartsCsvToFhirTransformer {
         //we're now good to save our patient resources
         csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
+        //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
+        fhirResourceFiler.waitUntilEverythingIsSaved();
+
         // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
         ENCNTPreTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
         ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);

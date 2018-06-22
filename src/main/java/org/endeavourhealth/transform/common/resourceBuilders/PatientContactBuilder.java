@@ -4,12 +4,15 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactPointI, HasCodeableConceptI {
+    private static final Logger LOG = LoggerFactory.getLogger(PatientContactBuilder.class);
 
     private PatientBuilder patientBuilder = null;
     private Patient.ContactComponent contact = null;
@@ -35,8 +38,10 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         List<Patient.ContactComponent> matches = new ArrayList<>();
 
         List<Patient.ContactComponent> patientContacts = parentBuilder.getPatientContactComponents();
+        LOG.debug("Patient has " + patientContacts.size() + " relationships");
         for (Patient.ContactComponent patientContact: patientContacts) {
             //if we match on ID, then remove this patientContact from the parent object
+            LOG.debug("Relationship has ID " + patientContact.getId() + ", looking for " + idValue);
             if (patientContact.hasId()
                     && patientContact.getId().equals(idValue)) {
 
@@ -45,6 +50,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
 
         if (matches.isEmpty()) {
+            LOG.debug("No matches found");
             return null;
 
         } else if (matches.size() > 1) {

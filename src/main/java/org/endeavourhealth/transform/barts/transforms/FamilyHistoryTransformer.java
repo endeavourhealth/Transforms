@@ -55,9 +55,11 @@ public class FamilyHistoryTransformer {
         //related person links to the PPREL table, the contents of which end up
         //as PatientContact elements on the Patient resource
         CsvCell relatedPersonIdCell = parser.getRelatedPersonId();
+        LOG.debug("Doing family history " + idCell.getString() + " for personID " + personIdCell.getString() + " with related person ID " + relatedPersonIdCell.getString());
         if (!BartsCsvHelper.isEmptyOrIsZero(relatedPersonIdCell)) {
 
             String relationshipType = csvHelper.getPatientRelationshipType(relatedPersonIdCell, personIdCell);
+            LOG.debug("Setting relationship type = " + relationshipType);
             familyMemberHistoryBuilder.setRelationshipFreeText(relationshipType, relatedPersonIdCell);
         }
 

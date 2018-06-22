@@ -299,10 +299,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         CernerCodeValueRef cernerCodeFromDB = null;
 
-        // get code from DB (special case for a code of 0 as that is duplicated)
+        //the code is unique across all code sets, EXCEPT for code "0" where this can be repeated
+        //between sets. So if the code is "0", perform the lookup using the code set, otherwise just use the code
         if (code.equals("0")) {
-            cernerCodeFromDB = cernerCodeValueRefDal.getCodeFromCodeSet(
-                    codeSet, code, serviceId);
+            cernerCodeFromDB = cernerCodeValueRefDal.getCodeFromCodeSet(codeSet, code, serviceId);
+
         } else {
             cernerCodeFromDB = cernerCodeValueRefDal.getCodeWithoutCodeSet(code, serviceId);
         }
@@ -666,22 +667,26 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         Long relationshipId = relationshipIdCell.getLong();
         String ret = patientRelationshipTypeMap.get(relationshipId);
         if (ret != null) {
+            LOG.debug("Found relationship type in cache");
             return ret;
         }
 
         //if not in the cache, check the DB, which means retrieving the patient
         Patient patient = (Patient)retrieveResourceForLocalId(ResourceType.Patient, personIdCell);
         if (patient == null) {
+            LOG.debug("Failed to find patient for ID " + personIdCell.getString());
             return null;
         }
 
         PatientBuilder patientBuilder = new PatientBuilder(patient);
         Patient.ContactComponent relationship = PatientContactBuilder.findExistingContactPoint(patientBuilder, relationshipIdCell.getString());
         if (relationship == null) {
+            LOG.debug("Failed to find relationship with person " + relationshipIdCell.getString());
             return null;
         }
 
         if (!relationship.hasRelationship()) {
+            LOG.debug("Relationship doesn't have a type");
             return null;
         }
 
