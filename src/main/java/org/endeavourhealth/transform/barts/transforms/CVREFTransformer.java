@@ -92,11 +92,11 @@ public class CVREFTransformer {
         //save to the DB
         repository.save(mapping, fhirResourceFiler.getServiceId());
 
-LOG.debug("CVREF " + codeValueCode.getString() + " SET " + codeSetNbr.getString());
+        //LOG.debug("CVREF " + codeValueCode.getString() + " SET " + codeSetNbr.getString());
         //if it's a specialty, store the record as an Organization so we can refer to it from the Encounter resource
         if (codeSetNbr.getLong().equals(CodeValueSet.SPECIALITY)) {
 
-LOG.debug("Specialty code");
+            //LOG.debug("Specialty code");
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
 
             //use a special source ID so we don't mix up with any other Organization created from any other source
@@ -111,7 +111,7 @@ LOG.debug("Specialty code");
             organizationBuilder.setParentOrganisation(reference);
 
             fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
-LOG.debug("Saved organisation");
+            //LOG.debug("Saved organisation");
         }
     }
 

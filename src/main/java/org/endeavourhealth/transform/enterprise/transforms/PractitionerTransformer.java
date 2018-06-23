@@ -53,8 +53,10 @@ public class PractitionerTransformer extends AbstractTransformer {
                 }
             }
 
-            Reference organisationReference = role.getManagingOrganization();
-            practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
+            if (role.hasManagingOrganization()) {
+                Reference organisationReference = role.getManagingOrganization();
+                practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
+            }
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
 

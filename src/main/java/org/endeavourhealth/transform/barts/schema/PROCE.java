@@ -68,7 +68,7 @@ public class PROCE extends AbstractCsvParser {
         return super.getCell("PROCEDURE_DT_TM");
     }
 
-    public CsvCell getPersonnelID() {
+    public CsvCell getPersonnelId() {
         return super.getCell("PROCEDURE_HCP_PRSNL_ID");
     }
 

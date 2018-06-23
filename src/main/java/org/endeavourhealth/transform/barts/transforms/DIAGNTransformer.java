@@ -73,7 +73,7 @@ public class DIAGNTransformer {
         ConditionBuilder conditionBuilder = new ConditionBuilder();
         conditionBuilder.setAsProblem(false);
 
-        conditionBuilder.setId(diagnosisIdCell.toString(), diagnosisIdCell);
+        conditionBuilder.setId(diagnosisIdCell.getString(), diagnosisIdCell);
 
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId);
         conditionBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
@@ -100,7 +100,7 @@ public class DIAGNTransformer {
         }
 
         CsvCell personnelIdCell = parser.getPersonnelId();
-        if (!personnelIdCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
             conditionBuilder.setClinician(practitionerReference, personnelIdCell);
         }

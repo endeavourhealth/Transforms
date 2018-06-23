@@ -42,7 +42,9 @@ public class PPRELTransformer {
 
     public static void createPatientRelationship(PPREL parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
+        //related person is the ID we should be using
+        CsvCell relationshipIdCell = parser.getRelatedPersonMillenniumIdentifier();
+        //CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
 
         //if non-active (i.e. deleted) we should REMOVE the contactPoint, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the contactPoint

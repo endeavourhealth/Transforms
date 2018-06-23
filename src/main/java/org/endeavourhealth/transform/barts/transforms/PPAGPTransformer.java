@@ -63,7 +63,7 @@ public class PPAGPTransformer {
         CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(personIdCell);
+            Reference practitionerReference = csvHelper.createPractitionerReference(personnelId);
             if (patientBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
             }

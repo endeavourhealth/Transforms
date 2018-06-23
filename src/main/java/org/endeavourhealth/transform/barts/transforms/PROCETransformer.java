@@ -99,8 +99,8 @@ public class PROCETransformer {
             identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
 
-        CsvCell personnelIdCell = parser.getPersonnelID();
-        if (!personnelIdCell.isEmpty()) {
+        CsvCell personnelIdCell = parser.getPersonnelId();
+        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
         }

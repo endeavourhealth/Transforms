@@ -91,7 +91,7 @@ public class CLEVETransformer {
 
         // Performer
         CsvCell clinicianId = parser.getEventPerformedPersonnelId();
-        if (!clinicianId.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(clinicianId)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(clinicianId);
             observationBuilder.setClinician(practitionerReference, clinicianId);
         }

@@ -447,9 +447,9 @@ public class EncounterTransformer extends AbstractTransformer {
 
     }
 
-    public static String findEncounterTypeTerm(Encounter fhir) {
+    /*public static String findEncounterTypeTerm(Encounter fhir) {
         return findEncounterTypeTerm(fhir, null);
-    }
+    }*/
 
     private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
 
@@ -491,17 +491,20 @@ public class EncounterTransformer extends AbstractTransformer {
             //for older formats of the transformed resources, the HL7 message type can only be found from the raw original exchange body
             try {
                 String exchangeBody = params.getExchangeBody();
-                Bundle bundle = (Bundle)FhirResourceHelper.deserialiseResouce(exchangeBody);
-                for (Bundle.BundleEntryComponent entry: bundle.getEntry()) {
-                    if (entry.getResource() != null
-                            && entry.getResource() instanceof MessageHeader) {
+                //only try to treat as JSON if it starts with a brace
+                if (exchangeBody.trim().startsWith("{")) {
+                    Bundle bundle = (Bundle) FhirResourceHelper.deserialiseResouce(exchangeBody);
+                    for (Bundle.BundleEntryComponent entry : bundle.getEntry()) {
+                        if (entry.getResource() != null
+                                && entry.getResource() instanceof MessageHeader) {
 
-                        MessageHeader header = (MessageHeader)entry.getResource();
-                        if (header.hasEvent()) {
-                            Coding coding = header.getEvent();
-                            hl7MessageTypeText = coding.getDisplay();
+                            MessageHeader header = (MessageHeader) entry.getResource();
+                            if (header.hasEvent()) {
+                                Coding coding = header.getEvent();
+                                hl7MessageTypeText = coding.getDisplay();
 
-                            //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from exchange body");
+                                //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from exchange body");
+                            }
                         }
                     }
                 }
