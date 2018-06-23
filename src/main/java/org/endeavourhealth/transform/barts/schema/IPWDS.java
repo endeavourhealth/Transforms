@@ -40,7 +40,7 @@ public class IPWDS extends AbstractCsvParser {
                 "ENCNTR_SLICE_ID",
                 "WARD_ROOM_CD",
                 "WARD_BED_CD",
-                "WARD_LOC_TYPE_NHS_CD_ALIAS",
+                "WARD_LOC_TYPE_NHS_CD_ALIAS"
         };
     }
 

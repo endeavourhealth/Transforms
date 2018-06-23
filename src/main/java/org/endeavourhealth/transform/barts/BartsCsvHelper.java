@@ -57,6 +57,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();*/
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
+    private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
     private Date extractDateTime = null;
     private EncounterResourceCache encounterCache = new EncounterResourceCache();
@@ -752,4 +753,59 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public EncounterResourceCache getEncounterCache() {
         return encounterCache;
     }
+
+
+    public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
+                                                      CsvCell childIdCell,
+                                                      ResourceType childResourceType) throws Exception {
+
+        if (isEmptyOrIsZero(encounterIdCell)) {
+            return;
+        }
+
+        String encounterId = encounterIdCell.getString();
+        ReferenceList list = consultationNewChildMap.get(encounterId);
+        if (list == null) {
+            list = new ReferenceList();
+            consultationNewChildMap.put(encounterId, list);
+        }
+
+        //ensure a local ID -> Discovery UUID mapping exists, which will end up happening,
+        //but it seems sensible to force it to happen here
+        IdHelper.getOrCreateEdsResourceId(serviceId, childResourceType, childIdCell.getString());
+
+        Reference resourceReference = ReferenceHelper.createReference(childResourceType, childIdCell.getString());
+        list.add(resourceReference, encounterIdCell);
+    }
+
+    public ReferenceList getAndRemoveNewConsultationRelationships(CsvCell encounterIdCell) {
+        String encounterId = encounterIdCell.getString();
+        return consultationNewChildMap.remove(encounterId);
+    }
+
+    public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (String encounterId: consultationNewChildMap.keySet()) {
+            ReferenceList newLinkedItems = consultationNewChildMap.get(encounterId);
+
+            Encounter existingEncounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId);
+            if (existingEncounter == null) {
+                //if the problem has been deleted, just skip it
+                return;
+            }
+
+            EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+            for (int i=0; i<newLinkedItems.size(); i++) {
+                Reference reference = newLinkedItems.getReference(i);
+                CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
+
+                Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+            }
+
+            fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
+        }
+    }
+
 }

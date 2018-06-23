@@ -21,6 +21,7 @@ public class TransformConfig {
     private boolean emisAllowMissingCodes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
+    private int cernerEncounterCacheMaxSize;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
 
@@ -49,6 +50,7 @@ public class TransformConfig {
         this.emisAllowMissingCodes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
+        this.cernerEncounterCacheMaxSize = 100000;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
 
@@ -104,6 +106,11 @@ public class TransformConfig {
                 if (subNode != null) {
                     this.transformCerner21Files = subNode.asBoolean();
                 }
+
+                subNode = node.get("encounter_max_cache_size");
+                if (subNode != null) {
+                    this.cernerEncounterCacheMaxSize = subNode.asInt();
+                }
             }
 
             node = json.get("drain_queue_on_failure");
@@ -155,6 +162,10 @@ public class TransformConfig {
 
     public boolean isTransformCerner21Files() {
         return transformCerner21Files;
+    }
+
+    public int getCernerEncounterCacheMaxSize() {
+        return cernerEncounterCacheMaxSize;
     }
 
     public int getMaxTransformErrorsBeforeAbort() {

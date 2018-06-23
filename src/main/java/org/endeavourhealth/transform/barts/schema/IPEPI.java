@@ -36,7 +36,7 @@ public class IPEPI extends AbstractCsvParser {
                 "OPERATION_STATUS_NHS_CD_ALIAS",
                 "PSYCH_PAT_STATUS_NHS_CD_ALIAS",
                 "AMBULANCE_INCIDENT_IDENT",
-                "ENCNTR_SLICE_UPDT_PRSNL_ID",
+                "ENCNTR_SLICE_UPDT_PRSNL_ID"
         };
     }
 

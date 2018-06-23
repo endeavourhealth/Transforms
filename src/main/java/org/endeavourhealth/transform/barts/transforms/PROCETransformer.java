@@ -67,7 +67,7 @@ public class PROCETransformer {
         String personId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
 
         if (personId == null) {
-            TransformWarnings.log(LOG, parser, "Skipping Procedure {} due to missing encounter", procedureIdCell.getString());
+            //TransformWarnings.log(LOG, parser, "Skipping Procedure {} due to missing encounter", procedureIdCell.getString());
             return;
         }
 

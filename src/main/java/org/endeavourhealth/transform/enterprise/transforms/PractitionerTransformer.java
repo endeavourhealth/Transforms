@@ -53,6 +53,15 @@ public class PractitionerTransformer extends AbstractTransformer {
                 }
             }
 
+            //if not role value set option found, just get the free text of the role
+            if (Strings.isNullOrEmpty(roleDesc)) {
+                for (Coding coding : cc.getCoding()) {
+                    if (coding.hasDisplay()) {
+                        roleDesc = coding.getDisplay();
+                    }
+                }
+            }
+
             if (role.hasManagingOrganization()) {
                 Reference organisationReference = role.getManagingOrganization();
                 practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);

@@ -5,6 +5,7 @@ import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,10 @@ public class CLEVEPreTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(parentEventIdCell)) {
             csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
         }
+
+        //and cache our link to our parent encounter, so that can be picked up when we do the encounter transforms
+        CsvCell encounterIdCell = parser.getEncounterId();
+        csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, eventIdCell, ResourceType.Observation);
     }
 
 }

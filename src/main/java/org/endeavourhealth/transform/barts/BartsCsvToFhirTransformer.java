@@ -92,6 +92,11 @@ public abstract class BartsCsvToFhirTransformer {
         //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
         fhirResourceFiler.waitUntilEverythingIsSaved();
 
+        //pre-transformers, must be done before encounter ones
+        CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
+        DIAGNPreTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
+        PROCEPreTransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
+
         // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
         ENCNTPreTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
         ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
@@ -107,7 +112,6 @@ public abstract class BartsCsvToFhirTransformer {
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
         PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
-        CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
         ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
         FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
@@ -130,6 +134,7 @@ public abstract class BartsCsvToFhirTransformer {
 
         //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
         csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
+        csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
         LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
         fhirResourceFiler.waitToFinish();

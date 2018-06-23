@@ -66,7 +66,7 @@ public class DIAGNTransformer {
         String personId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
 
         if (personId == null) {
-            TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} due to missing encounter", diagnosisIdCell.getString());
+            //TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} due to missing encounter", diagnosisIdCell.getString());
             return;
         }
 
