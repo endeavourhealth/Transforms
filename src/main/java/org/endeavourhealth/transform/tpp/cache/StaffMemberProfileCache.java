@@ -130,10 +130,11 @@ public class StaffMemberProfileCache {
                 }
 
                 fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
-                StaffMemberProfileCache.removeStaffPojo(pojo);
+
 
             }
         }
+        StaffMemberProfileByStaffId.clear();
     }
 }
 
