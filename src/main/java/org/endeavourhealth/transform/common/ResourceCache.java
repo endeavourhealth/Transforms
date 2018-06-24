@@ -193,7 +193,7 @@ public class ResourceCache<T> {
                     lock.lock();
 
                     //have another null check now we're locked
-                    if (this.resource != null) {
+                    if (this.resource == null) {
                         String json = dal.getById(tempStorageUuid);
                         this.resource = FhirSerializationHelper.deserializeResource(json);
                         ret = this.resource;
