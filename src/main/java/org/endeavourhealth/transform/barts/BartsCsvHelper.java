@@ -589,7 +589,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         //check our normal ID -> UUID mapping table
         UUID existingResourceId = IdHelper.getEdsResourceId(serviceId, resourceType, localUniqueId);
         if (existingResourceId != null) {
-            LOG.debug("ID already exists for local ID " + localUniqueId);
+            //LOG.debug("ID already exists for local ID " + localUniqueId);
             return existingResourceId;
         }
 
@@ -613,7 +613,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         existingHl7Mapping.setResourceId(existingResourceId);
 
         hl7ReceiverDal.saveResourceId(existingHl7Mapping);
-        LOG.debug("Generated new UUID " + existingResourceId + " for resource and saved to HL7 receiver DB");
+        //LOG.debug("Generated new UUID " + existingResourceId + " for resource and saved to HL7 receiver DB");
 
         return existingResourceId;
 

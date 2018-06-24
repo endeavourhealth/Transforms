@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -96,6 +97,11 @@ public class CLEVETransformer {
         if (!resultTextCell.isEmpty()
                 && resultTextCell.getString().equalsIgnoreCase("DELETED")) {
 
+            if (logProgress) {
+                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+                LOG.debug("DELETING RESOURCE");
+            }
+
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
             return;
         }
@@ -177,11 +183,23 @@ public class CLEVETransformer {
         } else if (isDateResult(parser)) {
             //TODO - restore when we want to process events with result dates
             //transformResultDateValue(parser, observationBuilder, csvHelper);
+
+            if (logProgress) {
+                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+                LOG.debug("Cancelling saving resource as is now DATE resource");
+            }
+
             return;
 
         } else {
             //TODO - remove this when we want to process more than numerics
             //transformResultString(parser, observationBuilder, csvHelper);
+
+            if (logProgress) {
+                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+                LOG.debug("Cancelling saving resource as is now STRING resource");
+            }
+
             return;
         }
 
@@ -211,6 +229,12 @@ public class CLEVETransformer {
 
         // save resource
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+
+        if (logProgress) {
+            LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
+            LOG.debug("Added resource to queue to save");
+        }
+
     }
 
 
