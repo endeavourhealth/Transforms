@@ -56,12 +56,7 @@ public class CLEVETransformer {
         if (!activeCell.getIntAsBoolean()) {
             //if non-active (i.e. deleted) then we don't get a personID, so need to retrieve the existing instance
             //of the resource in order to delete it
-            Observation existingResource = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
-            if (existingResource != null) {
-                ObservationBuilder observationBuilder = new ObservationBuilder(existingResource);
-                //remember to pass in false to not map IDs, since the resource is already ID mapped
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
-            }
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
             return;
         }
 
@@ -186,9 +181,22 @@ public class CLEVETransformer {
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, resultClassCode);
             if (codeRef != null) {
                 String codeDesc = codeRef.getCodeDispTxt();
-                //all other class codes indicate it's not a final result yet
-                if (!codeDesc.equals("Auth (Verified)")) {
-                    return;
+                if (codeDesc.equals("Unauth")
+                        || codeDesc.equals("Superseded")
+                        || codeDesc.equals("REJECTED")
+                        || codeDesc.equals("Not Done")
+                        || codeDesc.equals("In Progress")
+                        || codeDesc.equals("Active")
+                        || codeDesc.equals("In Lab")
+                        || codeDesc.equals("In Error")
+                        || codeDesc.equals("Canceled") //NOTE the US spelling
+                        || codeDesc.equals("Anticipated")
+                        || codeDesc.equals("? Unknown")
+                        ) {
+
+                    //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it
+                    deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+
                 }
             }
         }
@@ -204,6 +212,10 @@ public class CLEVETransformer {
             //TODO - restore when we want to process events with result dates
             //transformResultDateValue(parser, observationBuilder, csvHelper);
 
+            //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
+            //until we want to handle these types of event
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+
             if (logProgress) {
                 LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
                 LOG.debug("Cancelling saving resource as is now DATE resource");
@@ -214,6 +226,10 @@ public class CLEVETransformer {
         } else {
             //TODO - remove this when we want to process more than numerics
             //transformResultString(parser, observationBuilder, csvHelper);
+
+            //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
+            //until we want to handle these types of event
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
 
             if (logProgress) {
                 LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
@@ -444,6 +460,15 @@ public class CLEVETransformer {
 
         } else {
             return null;
+        }
+    }
+
+    private static void deleteObservation(CsvCell clinicalEventId, CLEVE parser, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+        Observation existingResource = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
+        if (existingResource != null) {
+            ObservationBuilder observationBuilder = new ObservationBuilder(existingResource);
+            //remember to pass in false to not map IDs, since the resource is already ID mapped
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
         }
     }
 }
