@@ -185,6 +185,7 @@ public class PatientTransformer extends AbstractTransformer {
 
             Reference orgReference = findOrgReference(fhirPatient, params);
             if (orgReference != null) {
+                //added try/catch to track down a bug in Cerner->FHIR->Enterprise
                 try {
                     registeredPracticeId = super.findEnterpriseId(params, orgReference);
                 } catch (Throwable t) {

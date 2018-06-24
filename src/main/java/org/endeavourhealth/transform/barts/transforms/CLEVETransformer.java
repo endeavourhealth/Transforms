@@ -79,8 +79,16 @@ public class CLEVETransformer {
         observationBuilder.setEncounter(encounterReference, encounterIdCell);
 
         if (logProgress) {
+            Observation oldVersion = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
+            if (oldVersion == null) {
+                LOG.debug("Old version is NULL");
+            } else {
+                Reference oldEncounter = oldVersion.getEncounter();
+                LOG.debug("Encounter ID WAS " + oldEncounter.getReference());
+            }
+
             Reference mappedEncounterId = IdHelper.convertLocallyUniqueReferenceToEdsReference(encounterReference, fhirResourceFiler);
-            LOG.debug("Encounter ID now " + encounterIdCell + " -> " + mappedEncounterId);
+            LOG.debug("Encounter ID now " + mappedEncounterId.getReference());
         }
 
         //there are lots of events that are still active but have a result text of DELETED
