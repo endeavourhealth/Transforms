@@ -195,6 +195,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         if (TransformConfig.instance().isDisableSavingResources()) {
             LOG.info("NOT SAVING RESOURCES AS DISABLED IN TRANSFORM CONFIG");
+            return;
         }
 
         for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
