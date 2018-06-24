@@ -185,7 +185,12 @@ public class PatientTransformer extends AbstractTransformer {
 
             Reference orgReference = findOrgReference(fhirPatient, params);
             if (orgReference != null) {
-                registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                try {
+                    registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                } catch (Throwable t) {
+                    LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
+                    throw t;
+                }
             }
         }
 

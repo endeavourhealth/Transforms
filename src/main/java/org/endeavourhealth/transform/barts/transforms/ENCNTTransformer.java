@@ -59,7 +59,7 @@ public class ENCNTTransformer {
         CsvCell extractDateTimeCell = parser.getExtractDateTime();
         csvHelper.cacheExtractDateTime(extractDateTimeCell);
 
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
@@ -265,7 +265,8 @@ public class ENCNTTransformer {
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
         }
 
-        //no need to save anything, as the Encounter and Episode caches sort that out later
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 
 

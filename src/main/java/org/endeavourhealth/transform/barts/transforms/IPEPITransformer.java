@@ -46,7 +46,7 @@ public class IPEPITransformer {
         CsvCell personIdCell = parser.getPatientId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
@@ -109,6 +109,7 @@ public class IPEPITransformer {
             }
         }
 
-        //no need to save anything, as the Encounter and Episode caches sort that out later
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 }
