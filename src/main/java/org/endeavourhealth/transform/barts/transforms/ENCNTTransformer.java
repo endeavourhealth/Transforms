@@ -16,9 +16,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class ENCNTTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
@@ -182,8 +180,13 @@ public class ENCNTTransformer {
         // EncounterTable type
         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
         if (codeRef != null) {
+            //remove any previous type we had, so we don't just keep growing if the type changes
+            removePreviousEncounterType(encounterBuilder, csvHelper);
+
             String typeDesc = codeRef.getCodeDispTxt();
-            encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+            //add the type, but forcing in at index zero, so the main encounter type (e.g. outpatient) is always
+            //before anything more granular, added by OPATT transformer
+            encounterBuilder.addType(typeDesc, 0, encounterTypeCodeCell);
         }
 
         // treatment function
@@ -264,6 +267,8 @@ public class ENCNTTransformer {
 
         //no need to save anything, as the Encounter and Episode caches sort that out later
     }
+
+
 
     /**
      * cannot exclude encounters, no matter the type. e.g. by exluding "Outpatient Pre-Registration" we missed
@@ -401,4 +406,21 @@ public class ENCNTTransformer {
         }
     }
 
+    /**
+     * we add the encounter type to the "type" element of the Encounter, but the type changes over time,
+     * so we need to replace any previous type before adding the new one. However, the OPATT transform
+     * also uses the type field, so we need to ensure we're only removing a type that came from the code
+     * set we use. There is no overlap between the ENCNT type and OPATT type codes.
+     */
+    private static void removePreviousEncounterType(EncounterBuilder builder, BartsCsvHelper csvHelper) throws Exception {
+
+        Set<String> typeSet = new HashSet<>();
+        List<CernerCodeValueRef> types = csvHelper.getCernerCodesForSet(CodeValueSet.ENCOUNTER_TYPE);
+        for (CernerCodeValueRef type: types) {
+            String typeDesc = type.getCodeDispTxt(); //make sure this is the same field as we use when adding the type
+            typeSet.add(typeDesc);
+        }
+
+        builder.removeTypes(typeSet);
+    }
 }

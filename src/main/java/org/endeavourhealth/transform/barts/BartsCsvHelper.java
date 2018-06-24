@@ -48,6 +48,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     private Map<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
+    private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new HashMap<>();
     private Map<Long, CernerNomenclatureRef> nomenclatureCache = new HashMap<>();
     private Map<String, String> internalIdMapCache = new HashMap<>();
     private String cachedBartsOrgRefId = null;
@@ -284,14 +285,15 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
 
         String code = codeCell.getString();
-        String codeLookup = code.toString() + "|" + serviceId.toString();
 
+        String cacheKey = code;
         if (code.equals("0")) {
-            codeLookup = codeSet + "|" + codeLookup;
+            //if looking up code zero, this exists in multiple code sets, so add the codeset to the cache key
+            cacheKey = codeSet + "|" + cacheKey;
         }
 
         //Find the code in the cache
-        CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(codeLookup);
+        CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(cacheKey);
 
         // return cached version if exists
         if (cernerCodeFromCache != null) {
@@ -332,7 +334,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }*/
 
         // Add to the cache
-        cernerCodes.put(codeLookup, cernerCodeFromDB);
+        cernerCodes.put(cacheKey, cernerCodeFromDB);
 
         return cernerCodeFromDB;
     }
@@ -808,4 +810,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
+    public List<CernerCodeValueRef> getCernerCodesForSet(Long set) throws Exception {
+        List<CernerCodeValueRef> ret = cernerCodesBySet.get(set);
+        if (ret == null) {
+            ret = cernerCodeValueRefDal.getCodesForCodeSet(serviceId, set);
+            cernerCodesBySet.put(set, ret);
+        }
+        return ret;
+    }
 }

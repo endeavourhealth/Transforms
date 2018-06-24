@@ -9,10 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
@@ -273,6 +270,10 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     public void addType(String typeDesc, CsvCell... sourceCells) {
+        addType(typeDesc, Integer.MAX_VALUE, sourceCells);
+    }
+
+    public void addType(String typeDesc, int insertIndex, CsvCell... sourceCells) {
 
         //ensure we don't end up with the same type twice
         if (this.encounter.hasType()) {
@@ -289,10 +290,35 @@ public class EncounterBuilder extends ResourceBuilderBase
         }
 
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(typeDesc);
-        this.encounter.addType(codeableConcept);
 
-        int index = this.encounter.getType().size()-1;
+        //sometimes we want to enforce the ordering of types, so if specified, insert in the right place
+        if (insertIndex == Integer.MAX_VALUE
+                || !encounter.hasType()) {
+            this.encounter.addType(codeableConcept);
+
+        } else {
+            List<CodeableConcept> types = this.encounter.getType();
+            types.add(insertIndex, codeableConcept);
+        }
+
+        int index = this.encounter.getType().indexOf(codeableConcept)-1;
         auditValue("type[" + index + "].text", sourceCells);
+    }
+
+    public void removeTypes(Collection<String> typesToRemove) {
+        if (!this.encounter.hasType()) {
+            return;
+        }
+
+        List<CodeableConcept> types = this.encounter.getType();
+        for (Iterator<CodeableConcept> iterator = types.iterator(); iterator.hasNext();) {
+            CodeableConcept cc = iterator.next();
+            String text = cc.getText();
+            if (typesToRemove.contains(text)) {
+                //use the iterator to remove, as that CAN be done while looping
+                iterator.remove();
+            }
+        }
     }
 
     public List<CodeableConcept> getReason() {
