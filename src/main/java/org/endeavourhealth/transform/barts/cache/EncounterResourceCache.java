@@ -140,8 +140,10 @@ public class EncounterResourceCache {
             //apply any newly linked child resources (observations, procedures etc.)
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
             ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterIdCell);
-            LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
-            containedListBuilder.addReferences(newLinkedResources);
+            if (newLinkedResources != null) {
+                LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
+                containedListBuilder.addReferences(newLinkedResources);
+            }
         }
 
         return encounterBuilder;
