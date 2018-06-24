@@ -45,6 +45,7 @@ public class CLEVETransformer {
 
         CsvCell clinicalEventId = parser.getEventId();
 
+        LOG.debug("CLEVE ID " + clinicalEventId.getString() + " -> " + (clinicalEventId.getString().equals("1254858044")));
         boolean logProgress = clinicalEventId.getString().equals("1254858044");
         if (logProgress) {
             LOG.debug("On CLEVE record 1254858044");

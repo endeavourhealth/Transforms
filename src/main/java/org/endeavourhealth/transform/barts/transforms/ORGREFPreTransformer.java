@@ -56,6 +56,7 @@ public class ORGREFPreTransformer {
         String hl7ReceiverUniqueId = "OdsCode=" + odsCode;
         String hl7ReceiverScope = csvHelper.getHl7ReceiverGlobalScope();
 
+        LOG.debug("Going to seed ID mapping from HL7 Receiver DB using " + localUniqueId + "; " + hl7ReceiverUniqueId + "; " + hl7ReceiverScope);
         csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Organization, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
     }
 

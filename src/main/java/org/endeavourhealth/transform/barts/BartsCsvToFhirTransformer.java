@@ -109,6 +109,9 @@ public abstract class BartsCsvToFhirTransformer {
         csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
         csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);
 
+        //subsequent transforms may refer to Encounter resources, so ensure they're all on the DB before continuing
+        fhirResourceFiler.waitUntilEverythingIsSaved();
+
         //clinical transformers
         DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
         PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
