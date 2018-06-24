@@ -9,7 +9,6 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
@@ -487,7 +486,10 @@ public class EncounterTransformer extends AbstractTransformer {
             hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
             //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
 
-        } else if (params != null) {
+        }
+        //all these older ones are well in the past, so remove this now so we don't end up retrieving the Exchange
+        //for every Encounter resource
+        /*else if (params != null) {
             //for older formats of the transformed resources, the HL7 message type can only be found from the raw original exchange body
             try {
                 String exchangeBody = params.getExchangeBody();
@@ -511,13 +513,14 @@ public class EncounterTransformer extends AbstractTransformer {
             } catch (Exception ex) {
                 //if the exchange body isn't a FHIR bundle, then we'll get an error by treating as such, so just ignore them
             }
-        }
+        }*/
 
         //if we couldn't find an HL7 message type, then give up
-        if (Strings.isNullOrEmpty(hl7MessageTypeText)) {
+        //Barts Data Warehouse encounters don't have an HL7 message type, so removed this now
+        /*if (Strings.isNullOrEmpty(hl7MessageTypeText)) {
             //LOG.debug("Failed to find hl7 type");
             return null;
-        }
+        }*/
 
         String clsDesc = null;
 
@@ -547,7 +550,13 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         //seems a fairly solid pattern to combine these to create something meaningful
-        String term = typeDesc + " " + hl7MessageTypeText;
+        String term = typeDesc;
+
+        if (!Strings.isNullOrEmpty(hl7MessageTypeText)) {
+            term += " ";
+            term += hl7MessageTypeText;
+        }
+
         if (!clsDesc.equalsIgnoreCase(typeDesc)) {
             term += " (" + clsDesc + ")";
         }

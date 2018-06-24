@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.common.fhir.PeriodHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.OPATT;
@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Encounter;
@@ -124,11 +125,15 @@ public class OPATTTransformer {
         CsvCell typeCell = parser.getAppointmentTypeCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.APPOINTMENT_TYPE, typeCell);
+            //set the OPATT type at the consultation source. The content of this (e.g. Cardiology DeFib F/Up) is equivalent to the Emis consultation
+            //source (e.g. asthma review)
+            BartsCodeableConceptHelper.applyCodeDisplayTxt(typeCell, CodeValueSet.APPOINTMENT_TYPE, encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source, csvHelper);
+
+            /*CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.APPOINTMENT_TYPE, typeCell);
             if (codeRef != null) {
                 String typeDesc = codeRef.getCodeDispTxt();
                 encounterBuilder.addType(typeDesc, typeCell);
-            }
+            }*/
         }
 
         CsvCell createdByPersonnelIdCell = parser.getEncounterCreatedByPersonnelId();

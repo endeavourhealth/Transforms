@@ -16,7 +16,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 public class ENCNTTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
@@ -181,12 +183,10 @@ public class ENCNTTransformer {
         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
         if (codeRef != null) {
             //remove any previous type we had, so we don't just keep growing if the type changes
-            removePreviousEncounterType(encounterBuilder, csvHelper);
+            encounterBuilder.removeType();
 
             String typeDesc = codeRef.getCodeDispTxt();
-            //add the type, but forcing in at index zero, so the main encounter type (e.g. outpatient) is always
-            //before anything more granular, added by OPATT transformer
-            encounterBuilder.addType(typeDesc, 0, encounterTypeCodeCell);
+            encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
         }
 
         // treatment function
@@ -412,7 +412,7 @@ public class ENCNTTransformer {
      * also uses the type field, so we need to ensure we're only removing a type that came from the code
      * set we use. There is no overlap between the ENCNT type and OPATT type codes.
      */
-    private static void removePreviousEncounterType(EncounterBuilder builder, BartsCsvHelper csvHelper) throws Exception {
+    /*private static void removePreviousEncounterType(EncounterBuilder builder, BartsCsvHelper csvHelper) throws Exception {
 
         Set<String> typeSet = new HashSet<>();
         List<CernerCodeValueRef> types = csvHelper.getCernerCodesForSet(CodeValueSet.ENCOUNTER_TYPE);
@@ -422,5 +422,5 @@ public class ENCNTTransformer {
         }
 
         builder.removeTypes(typeSet);
-    }
+    }*/
 }
