@@ -24,6 +24,7 @@ public class TransformConfig {
     private int cernerEncounterCacheMaxSize;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
+    private boolean disableSavingResources = false;
 
     //singleton
     private static TransformConfig instance;
@@ -53,6 +54,7 @@ public class TransformConfig {
         this.cernerEncounterCacheMaxSize = 100000;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
+        this.disableSavingResources = false;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -61,6 +63,13 @@ public class TransformConfig {
             if (node != null) {
                 this.sharedStoragePath = node.asText();
             }
+
+            node = json.get("disable_saving_resources");
+            if (node != null) {
+                this.disableSavingResources = node.asBoolean();
+            }
+
+            this.disableSavingResources = false;
 
             node = json.get("attempts_permmitted_per_exchange");
             if (node != null) {
@@ -174,5 +183,9 @@ public class TransformConfig {
 
     public List<Pattern> getWarningsToFailOn() {
         return warningsToFailOn;
+    }
+
+    public boolean isDisableSavingResources() {
+        return disableSavingResources;
     }
 }

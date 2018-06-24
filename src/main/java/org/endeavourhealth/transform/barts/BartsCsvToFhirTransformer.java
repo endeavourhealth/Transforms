@@ -104,7 +104,7 @@ public abstract class BartsCsvToFhirTransformer {
         OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper);
         IPEPITransformer.transform(createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper);
         IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper);
-        ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
+        //ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
         csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
         csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);

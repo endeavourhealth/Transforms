@@ -131,6 +131,15 @@ public class OPATTTransformer {
             }
         }
 
+        CsvCell createdByPersonnelIdCell = parser.getEncounterCreatedByPersonnelId();
+        if (!BartsCsvHelper.isEmptyOrIsZero(createdByPersonnelIdCell)) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(createdByPersonnelIdCell);
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            }
+            encounterBuilder.setRecordedBy(practitionerReference);
+        }
+
         //EpisodOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {

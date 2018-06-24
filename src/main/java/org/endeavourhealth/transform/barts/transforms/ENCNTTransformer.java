@@ -138,7 +138,7 @@ public class ENCNTTransformer {
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_FIN_EPISODE_ID);
-            identifierBuilder.setUse(Identifier.IdentifierUse.TEMP);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setValue(finIdCell.getString(), finIdCell);
         }
 
@@ -156,7 +156,7 @@ public class ENCNTTransformer {
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_ENCOUNTER_ID);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setValue(encounterIdCell.getString(), encounterIdCell);
         }
 

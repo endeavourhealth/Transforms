@@ -7,10 +7,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
@@ -48,6 +45,11 @@ public class CLEVETransformer {
 
         CsvCell clinicalEventId = parser.getEventId();
 
+        boolean logProgress = clinicalEventId.getString().equals("1254858044");
+        if (logProgress) {
+            LOG.debug("On CLEVE record 1254858044");
+        }
+
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
             //if non-active (i.e. deleted) then we don't get a personID, so need to retrieve the existing instance
@@ -70,12 +72,15 @@ public class CLEVETransformer {
         Reference patientReference = csvHelper.createPatientReference(personId);
         observationBuilder.setPatient(patientReference);
 
-
-
         // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
         observationBuilder.setEncounter(encounterReference, encounterIdCell);
+
+        if (logProgress) {
+            Reference mappedEncounterId = IdHelper.convertLocallyUniqueReferenceToEdsReference(encounterReference, fhirResourceFiler);
+            LOG.debug("Encounter ID now " + encounterIdCell + " -> " + mappedEncounterId);
+        }
 
         //there are lots of events that are still active but have a result text of DELETED
         CsvCell resultTextCell = parser.getEventResultText();

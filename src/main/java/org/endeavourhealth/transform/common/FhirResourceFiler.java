@@ -193,6 +193,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                                     boolean isDelete,
                                     ResourceBuilderBase... resourceBuilders) throws Exception {
 
+        if (TransformConfig.instance().isDisableSavingResources()) {
+            LOG.info("NOT SAVING RESOURCES AS DISABLED IN TRANSFORM CONFIG");
+        }
+
         for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
 
             //validate we're treating the resource properly as admin / patient
