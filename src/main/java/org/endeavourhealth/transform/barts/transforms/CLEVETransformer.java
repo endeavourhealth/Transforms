@@ -106,6 +106,10 @@ public class CLEVETransformer {
             return;
         }
 
+        if (logProgress) {
+            LOG.debug("-------1");
+        }
+
         //TODO we need to filter out any records that are not final
         observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
 
@@ -114,6 +118,10 @@ public class CLEVETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(clinicianId)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(clinicianId);
             observationBuilder.setClinician(practitionerReference, clinicianId);
+        }
+
+        if (logProgress) {
+            LOG.debug("-------2");
         }
 
         CsvCell effectiveDate = parser.getEventPerformedDateTime();
@@ -128,6 +136,10 @@ public class CLEVETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(parentEventId)) {
             Reference parentObservationReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventId.getString());
             observationBuilder.setParentResource(parentObservationReference, parentEventId);
+        }
+
+        if (logProgress) {
+            LOG.debug("-------3");
         }
 
         //link to child observations if we have any
@@ -145,6 +157,10 @@ public class CLEVETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(orderIdCell)) {
             Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, orderIdCell.getString());
             observationBuilder.setParentResource(parentDiagnosticReportReference, orderIdCell);
+        }
+
+        if (logProgress) {
+            LOG.debug("-------4");
         }
 
         //TODO - establish code mapping for millenium / FHIR
@@ -177,6 +193,10 @@ public class CLEVETransformer {
             }
         }
 
+        if (logProgress) {
+            LOG.debug("-------5");
+        }
+
         if (isNumericResult(parser)) {
             transformResultNumericValue(parser, observationBuilder, csvHelper);
 
@@ -203,6 +223,10 @@ public class CLEVETransformer {
             return;
         }
 
+        if (logProgress) {
+            LOG.debug("-------6");
+        }
+
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(normalcyCodeCell)) {
@@ -225,6 +249,10 @@ public class CLEVETransformer {
             if (!eventTagStr.equals(resultTextStr)) {
                 observationBuilder.setNotes(eventTagStr, eventTagCell);
             }
+        }
+
+        if (logProgress) {
+            LOG.debug("-------7");
         }
 
         // save resource
