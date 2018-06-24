@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CVREF;
@@ -25,11 +26,6 @@ public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
 
     private static CernerCodeValueRefDalI repository = DalProvider.factoryCernerCodeValueRefDal();
-    public static final String CODE_VALUE = "Codeval";
-    public static final String CODE_SET_NBR = "CodeSetNr";
-    public static final String DISP_TXT = "DispTxt";
-    public static final String DESC_TXT = "DescTxt";
-    public static final String MEANING_TXT = "MeanTxt";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -69,11 +65,11 @@ public class CVREFTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), CODE_VALUE);
-        auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), CODE_SET_NBR);
-        auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
-        auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
-        auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
+        auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), BartsCodeableConceptHelper.CODE_VALUE);
+        auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), BartsCodeableConceptHelper.CODE_SET_NBR);
+        auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), BartsCodeableConceptHelper.DISP_TXT);
+        auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), BartsCodeableConceptHelper.DESC_TXT);
+        auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), BartsCodeableConceptHelper.MEANING_TXT);
 
         byte active = (byte) activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),

@@ -11,44 +11,53 @@ import java.util.Map;
 
 public class BartsCodeableConceptHelper {
 
-    public static final String AUDIT_ELEMENT_CODE_DESC = "Description";
-    public static final String AUDIT_ELEMENT_CODE_DISPLAY = "Display";
-    public static final String AUDIT_ELEMENT_CODE_MEANING = "Meaning";
+    public static final String CODE_VALUE = "Codeval";
+    public static final String CODE_SET_NBR = "CodeSetNr";
+    public static final String DISP_TXT = "DispTxt";
+    public static final String DESC_TXT = "DescTxt";
+    public static final String MEANING_TXT = "MeanTxt";
+
 
     public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DESC, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
+        return applyCodeMeaningTxt(DESC_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DISPLAY, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
+        return applyCodeMeaningTxt(DISP_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
-        return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_MEANING, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
+        return applyCodeMeaningTxt(MEANING_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
                                                               Long codeSet, HasCodeableConceptI resourceBuilder,
                                                               CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
-        if (codeCell == null || codeCell.isEmpty() || codeCell.getLong() == 0) {
+
+        if (codeCell == null
+            || BartsCsvHelper.isEmptyOrIsZero(codeCell)) {
             return null;
         }
+
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, resourceBuilderTag);
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
 
         CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(codeSet, codeCell);
-
         if (cernerCodeValueRef == null) {
-            return null;
+            //if we fail to find the reference lookup, still carry the ID into the resource but also make it clear in the resource
+            codeableConceptBuilder.setText("Failed to find in CVREF lookup");
+            return codeableConceptBuilder;
         }
 
-        //TODO - apply audit from code reference table
         String term = null;
-        if (elementToApply.equals(AUDIT_ELEMENT_CODE_DESC)) {
+        if (elementToApply.equals(DESC_TXT)) {
             term = cernerCodeValueRef.getCodeDescTxt();
 
-        } else if (elementToApply.equals(AUDIT_ELEMENT_CODE_DISPLAY)) {
+        } else if (elementToApply.equals(DISP_TXT)) {
             term = cernerCodeValueRef.getCodeDispTxt();
 
-        } else if (elementToApply.equals(AUDIT_ELEMENT_CODE_MEANING)) {
+        } else if (elementToApply.equals(MEANING_TXT)) {
             term = cernerCodeValueRef.getCodeMeaningTxt();
 
         } else {
@@ -57,10 +66,10 @@ public class BartsCodeableConceptHelper {
 
         //create a CSV cell to audit where the term came from, using the Audit object on the code reference entity
         CsvCell termCsvCell = createCsvCell(cernerCodeValueRef, elementToApply, term);
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, resourceBuilderTag);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-        codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
         codeableConceptBuilder.setCodingDisplay(term, termCsvCell);
+
+        //also set the term in the codeable concept text but with no audit, as we've already done it above
+        codeableConceptBuilder.setText(term);
 
         return codeableConceptBuilder;
     }
