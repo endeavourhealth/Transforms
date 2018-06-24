@@ -106,7 +106,7 @@ public class EncounterResourceCache {
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
             ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterIdCell);
             if (newLinkedResources != null) {
-                LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
+                //LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
                 for (int i=0; i<newLinkedResources.size(); i++) {
                     Reference reference = newLinkedResources.getReference(i);
                     CsvCell[] sourceCells = newLinkedResources.getSourceCells(i);
@@ -141,7 +141,7 @@ public class EncounterResourceCache {
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
             ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterIdCell);
             if (newLinkedResources != null) {
-                LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
+                //LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
                 containedListBuilder.addReferences(newLinkedResources);
             }
         }
