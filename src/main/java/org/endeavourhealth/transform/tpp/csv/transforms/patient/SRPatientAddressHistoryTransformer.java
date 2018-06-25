@@ -62,19 +62,20 @@ public class SRPatientAddressHistoryTransformer {
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             List<Address> addresses = patientBuilder.getAddresses();
-            for (Address address : addresses) {
+            for (Address address: addresses) {
                 if (address.getId().equals(rowIdCell.getString())) {
                     patientBuilder.removeAddress(address);
                 }
             }
             Patient patient = (Patient) csvHelper.retrieveResource(IdPatientCell.getString(), ResourceType.Patient, fhirResourceFiler);
             addresses = patient.getAddress();
-            for (Address address : addresses) {
+            for (Address address: addresses) {
                 if (address.getId().equals(rowIdCell.getString())) {
                     patientBuilder.removeAddress(address);
                 }
             }
-            fhirResourceFiler.savePatientResource(null, false, patientBuilder);
+            boolean mapIds = !patientBuilder.isIdMapped();
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
             return;
         }
 
@@ -88,9 +89,9 @@ public class SRPatientAddressHistoryTransformer {
         Address.AddressUse addressUse;
 
         if (!addressTypeCell.isEmpty()) {
-            addressUse = getAddressUse(addressTypeCell,dateToCell,parser, csvHelper);
+            addressUse = getAddressUse(addressTypeCell, dateToCell, parser, csvHelper);
             addressBuilder.setUse(addressUse);
-                }
+        }
 
         if (!dateToCell.isEmpty()) {
             addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
@@ -134,11 +135,13 @@ public class SRPatientAddressHistoryTransformer {
         if (!dateEventCell.isEmpty()) {
             addressBuilder.setStartDate(dateEventCell.getDate(), dateEventCell);
         }
-
+        boolean mapIds = !patientBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
 
     }
+
     private static Address.AddressUse getAddressUse(CsvCell addressTypeCell, CsvCell dateToCell,
-                                             SRPatientAddressHistory parser, TppCsvHelper csvHelper)  throws Exception {
+                                                    SRPatientAddressHistory parser, TppCsvHelper csvHelper) throws Exception {
         Address.AddressUse addressUse = null;
         try {
             TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell, parser);

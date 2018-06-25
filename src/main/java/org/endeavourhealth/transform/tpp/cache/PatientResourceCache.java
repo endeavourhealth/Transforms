@@ -85,14 +85,18 @@ public class PatientResourceCache {
         // Both caches should now be empty
         //TODO - should we do some extra processing?
         LOG.error("At end of filing patient cache count is " + PatientBuildersByRowId.size() + ". Episode of care cache" + EpisodeOfCareResourceCache.size());
-        LOG.info("Remaining entries in patient cache:" );
-        for (Long rowId: PatientBuildersByRowId.keySet()) {
-            PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
-            LOG.info(patientBuilder.toString());
+        if (PatientBuildersByRowId.size() > 0) {
+            LOG.info("Remaining entries in patient cache:");
+            for (Long rowId: PatientBuildersByRowId.keySet()) {
+                PatientBuilder patientBuilder = PatientBuildersByRowId.get(rowId);
+                LOG.info(patientBuilder.toString());
+            }
         }
-        LOG.info("Remaining entries in episode of care cache:");
-        EpisodeOfCareResourceCache.listRemaining();
-        LOG.info("Clearing patient and episode of care caches ");
+        if (EpisodeOfCareResourceCache.size() > 0) {
+            LOG.info("Remaining entries in episode of care cache:");
+            EpisodeOfCareResourceCache.listRemaining();
+        }
+        //LOG.info("Clearing patient and episode of care caches ");
         PatientBuildersByRowId.clear();
         EpisodeOfCareResourceCache.clear();
 

@@ -70,6 +70,8 @@ public class SRPatientContactDetailsTransformer {
                     patientBuilder.removeContactPoint(contact);
                 }
             }
+            boolean mapids = !patientBuilder.isIdMapped();
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
             return;
         }
 
@@ -99,5 +101,7 @@ public class SRPatientContactDetailsTransformer {
             contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
         }
+        boolean mapids = !patientBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
     }
 }
