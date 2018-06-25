@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASEQUESTIONS;
@@ -42,11 +43,32 @@ public class CASEQUESTIONSTransformer {
 
         CsvCell caseId = parser.getCaseId();
 
-        //get EpisodeofCare already populated from preceeding CASE transform
         EpisodeOfCareBuilder episodeBuilder
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
-        //TODO - where set Case questions?
+        CsvCell questionSetName = parser.getQuestionSetName();
 
+        //Outcomes are handles in the Outcomes transformer.  Capture non Outcomes text here, i.e. safe guarding
+        if (!questionSetName.getString().equalsIgnoreCase("Outcomes")) {
+
+            CsvCell answerOutcome = parser.getAnswer();
+            if (!answerOutcome.isEmpty()) {
+
+                //append the question set to the answer to give it some context
+                String answerOutcomeText = questionSetName.getString().concat(": ").concat(answerOutcome.getString());
+
+                //get existing outcome text to update
+                String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
+                if (!Strings.isNullOrEmpty(existingOutcomeText)) {
+
+                    answerOutcomeText = existingOutcomeText.concat(", ").concat(answerOutcomeText);
+                }
+
+                episodeBuilder.setOutcome(answerOutcomeText, answerOutcome);
+
+                //cache the new episode outcome
+                csvHelper.cacheCaseOutcome(caseId.getString(), answerOutcomeText);
+            }
+        }
     }
 }
