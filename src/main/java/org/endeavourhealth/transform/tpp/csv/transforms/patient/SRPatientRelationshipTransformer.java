@@ -152,31 +152,7 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
-//        Reference organizationReference = null;
-//        CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
-//        if (!orgIdCell.isEmpty()) {
-//            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
-//            organizationBuilder.setId(orgIdCell.getString());
-//            organizationReference = csvHelper.createOrganisationReference(orgIdCell);
-//            if (patientBuilder.isIdMapped()) {
-//                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
-//            }
-//            patientBuilder.addCareProvider(organizationReference);
-//
-//        }
-//        CsvCell regStartDateCell = parser.getDateEvent();
-//        if (!regStartDateCell.isEmpty()) {
-//            episodeBuilder.setRegistrationStartDate(regStartDateCell.getDate(), regStartDateCell);
-//        }
-//        CsvCell regEndDateCell = parser.getDateEnded();
-//        if (!regEndDateCell.isEmpty()) {
-//            episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
-//        }
-//        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(IdPatientCell);
-//        if (medicalRecordStatusCell!= null && !medicalRecordStatusCell.isEmpty()) {
-//            String medicalRecordStatus = convertMedicalRecordStatus (medicalRecordStatusCell.getInt());
-//            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
-//        }
-
+        boolean mapIds = !patientBuilder.isIdMapped();
+    fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,patientBuilder);
     }
 }

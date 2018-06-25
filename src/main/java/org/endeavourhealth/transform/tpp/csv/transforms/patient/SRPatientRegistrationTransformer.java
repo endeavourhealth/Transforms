@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
@@ -86,6 +83,9 @@ public class SRPatientRegistrationTransformer {
             OrganizationBuilder organizationBuilder = new OrganizationBuilder();
             organizationBuilder.setId(orgIdCell.getString());
             Reference organizationReference = csvHelper.createOrganisationReference(orgIdCell);
+            if (patientBuilder.isIdMapped()) {
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference,fhirResourceFiler);
+            }
             patientBuilder.addCareProvider(organizationReference);
             patientBuilder.setManagingOrganisation(organizationReference, orgIdCell);
             episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);

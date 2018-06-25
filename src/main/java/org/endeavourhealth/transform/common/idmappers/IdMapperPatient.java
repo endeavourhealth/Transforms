@@ -31,7 +31,6 @@ public class IdMapperPatient extends BaseIdMapper {
             super.addReferences(patient.getCareProvider(), referenceValues);
         }
         if (patient.hasManagingOrganization()) {
-            LOG.info("Mapping patient org: patient:" + patient.getId() + "/" + "/Org:" + patient.getManagingOrganization());
             super.addReference(patient.getManagingOrganization(), referenceValues);
         }
         if (patient.hasLink()) {
@@ -62,7 +61,6 @@ public class IdMapperPatient extends BaseIdMapper {
             super.mapReferences(patient.getCareProvider(), mappings, failForMissingMappings);
         }
         if (patient.hasManagingOrganization()) {
-            LOG.info("Patient mapping: " + patient.getId() + "<>" + patient.getManagingOrganization().getId());
             super.mapReference(patient.getManagingOrganization(), mappings, failForMissingMappings);
         }
         if (patient.hasLink()) {
