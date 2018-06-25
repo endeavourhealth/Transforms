@@ -50,13 +50,18 @@ public class PPADDTransformer {
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
-                AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+                if (patientBuilder != null) {
+                    AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+                }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getPersonId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
 
         //we always fully re-create the address, so remove it from the patient
         AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());

@@ -56,7 +56,7 @@ public class ProblemTransformer {
         CsvCell mrnCell = parser.getMrn();
         String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, mrnCell.getString());
         if (personId == null) {
-            TransformWarnings.log(LOG, parser, "Skipping problem ID {} because no Person ID could be found for MRN {}", problemIdCell.getString(), mrnCell.getString());
+            //TransformWarnings.log(LOG, parser, "Skipping problem ID {} because no Person ID could be found for MRN {}", problemIdCell.getString(), mrnCell.getString());
             return;
         }
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId);

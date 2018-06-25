@@ -42,7 +42,7 @@ public class ENCINFTransformer {
         CsvCell beginEffectiveCell = parser.getBeginEffectiveDateTime();
         if (!BartsCsvHelper.isEmptyOrIsStartOfTime(beginEffectiveCell)) {
 
-            EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
+            EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
             if (encounterBuilder == null) {
                 return;
             }
@@ -62,6 +62,9 @@ public class ENCINFTransformer {
                     encounterBuilder.setPeriodStart(d, beginEffectiveCell);
                 }
             }
+
+            //we don't save immediately, but return the Encounter builder to the cache
+            csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
         }
     }
 

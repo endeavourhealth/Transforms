@@ -33,6 +33,7 @@ public class AdastraCsvHelper {
     private Map<String, CsvCell> casePatientMap = new HashMap<>();
     private Map<String, CsvCell> consultationDateMap = new HashMap<>();
     private Map<String, CsvCell> caseCaseNoMap = new HashMap<>();
+    private Map<String, String> caseOutcomeMap = new HashMap<>();
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
@@ -95,6 +96,14 @@ public class AdastraCsvHelper {
 
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
+
+    public void cacheCaseOutcome(String caseId, String outcomeText)  {
+        caseOutcomeMap.put(caseId, outcomeText);
+    }
+
+    public String getCaseOutcome(String caseId)  {
+        return caseOutcomeMap.get(caseId);
     }
 
     public void cacheCasePatient(String caseId, CsvCell patientIdCell) {

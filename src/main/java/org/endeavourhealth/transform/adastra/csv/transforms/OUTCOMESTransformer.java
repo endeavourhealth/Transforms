@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.OUTCOMES;
@@ -46,10 +47,24 @@ public class OUTCOMESTransformer {
         EpisodeOfCareBuilder episodeBuilder
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
-        //simple free text outcomes selected from a list, i.e. Prescription Given, Advice given - added as outcome extension
+        //simple free text outcomes selected from a list, i.e. Prescription Given, Advice given - added and appended to an outcome extension
         CsvCell outcomeName = parser.getOutcomeName();
         if (!outcomeName.isEmpty()) {
-            episodeBuilder.setOutcome(outcomeName.getString(), outcomeName);
+
+            String outcomeText = outcomeName.getString();
+
+            // get existing outcome text to update, can have multiple outcome lines and
+            // may have also been set during the Questions transformer
+            String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
+            if (!Strings.isNullOrEmpty(existingOutcomeText)) {
+
+                outcomeText = existingOutcomeText.concat(", ").concat(outcomeText);
+            }
+
+            episodeBuilder.setOutcome("Outcome(s): "+outcomeText, outcomeName);
+
+            //cache the new episode outcome
+            csvHelper.cacheCaseOutcome(caseId.getString(), outcomeText);
         }
     }
 }

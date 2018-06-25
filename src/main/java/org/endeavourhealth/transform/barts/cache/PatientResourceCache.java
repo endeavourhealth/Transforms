@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
@@ -15,12 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
     private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+    private Set<Long> personIdsJustDeleted = new HashSet<>();
 
     public PatientBuilder getPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
 
@@ -29,6 +33,11 @@ public class PatientResourceCache {
     }
 
     public PatientBuilder getPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
+
+        //if we know we've deleted it, return null
+        if (personIdsJustDeleted.contains(personId)) {
+            return null;
+        }
 
         //check the cache first
         PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
@@ -81,54 +90,25 @@ public class PatientResourceCache {
         patientBuildersByPersonId.clear();
     }
 
-    /*public static PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public void deletePatient(PatientBuilder patientBuilder, CsvCell personIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
 
-        UUID patientId = csvHelper.findPatientIdFromPersonId(milleniumPersonIdCell);
-
-        //if we don't know the Person->MRN mapping, then the UUID returned will be null, in which case we can't proceed
-        if (patientId == null) {
-            //LOG.trace("Failed to find patient UUID for person ID " + milleniumPersonIdCell.getString());
-            return null;
-        }
-
-        PatientBuilder patientBuilder = patientBuildersByUuid.get(patientId);
+        //null may end up passed in, so just ignore
         if (patientBuilder == null) {
-
-            //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-            Patient patient = (Patient)csvHelper.retrieveResource(ResourceType.Patient, patientId);
-            if (patient == null) {
-                //if the patient doesn't exist yet, create a new one
-                patientBuilder = new PatientBuilder();
-                patientBuilder.setId(patientId.toString());
-
-            } else {
-
-                patientBuilder = new PatientBuilder(patient);
-
-                //due to a previous bug in the transform, we've saved a load of Patient resources without an ID, so fix this now
-                *//*if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
-                    patientBuilder.setId(patientId.toString());
-                    //throw new TransformRuntimeException("Retrieved patient " + patientResourceId.getResourceId() + " from DB and it has no ID");
-                }*//*
-            }
-
-            patientBuildersByUuid.put(patientId, patientBuilder);
+            return;
         }
-        return patientBuilder;
+
+        //record that we know it's deleted
+        Long personId = personIdCell.getLong();
+        personIdsJustDeleted.add(personId);
+
+        //remove from the cache
+        patientBuildersByPersonId.remove(personId);
+
+        boolean mapIds = !patientBuilder.isIdMapped();
+        fhirResourceFiler.deletePatientResource(parserState, mapIds, patientBuilder);
+
+
+        //TODO - cache we've deleted this, so ignore it for other PP... transforms
     }
 
-    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        LOG.trace("Saving " + patientBuildersByUuid.size() + " patients to the DB");
-
-        for (UUID patientId: patientBuildersByUuid.keySet()) {
-            PatientBuilder patientBuilder = patientBuildersByUuid.get(patientId);
-            BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
-        }
-
-        LOG.trace("Finishing saving " + patientBuildersByUuid.size() + " patients to the DB");
-
-        //clear down as everything has been saved
-        patientBuildersByUuid.clear();
-    }*/
 }

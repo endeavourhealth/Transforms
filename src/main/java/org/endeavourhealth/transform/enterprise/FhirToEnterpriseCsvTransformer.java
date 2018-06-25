@@ -121,7 +121,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //not contain enough info to work out which resource is our interesting one, so we need to
         //rely on there being a patient resource that tells us.
         ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-        ResourceWrapper resourceByService = resourceRepository.getFirstResourceByService(serviceId, systemId, ResourceType.Patient);
+        ResourceWrapper resourceByService = resourceRepository.getFirstResourceByService(serviceId, ResourceType.Patient);
         if (resourceByService == null) {
             //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
             //non-patient metadata, but no patient data. If this happens, then don't send anything to Enterprise, as

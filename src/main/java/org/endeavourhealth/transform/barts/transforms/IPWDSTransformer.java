@@ -45,7 +45,7 @@ public class IPWDSTransformer {
         CsvCell personIdCell = parser.getPatientId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         CsvCell wardLocationIdCell = parser.getWardStayLocationCode();
         CsvCell roomLocationIdCell = parser.getWardRoomCode();
@@ -106,6 +106,9 @@ public class IPWDSTransformer {
         } else {
             TransformWarnings.log(LOG, parser, "Location Resource not found for Location-id {} in IPWDS record {} in file {}", wardLocationIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
         }
+
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 
     private static Encounter.EncounterLocationStatus getLocationStatus(Period p) {

@@ -55,24 +55,62 @@ public class PPRELTransformer {
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
-                PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+                if (patientBuilder != null) {
+                    PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+                }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
         PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
 
-        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-        contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
+        //store the relationship type in the internal ID map table so the family history transformer can look it up
+        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
+        csvHelper.savePatientRelationshupType(personIdCell, relationshipIdCell, relationshipToPatientCell);
 
         CsvCell title = parser.getTitle();
         CsvCell firstName = parser.getFirstName();
         CsvCell middleName = parser.getMiddleName();
         CsvCell lastName = parser.getLastName();
+        CsvCell line1 = parser.getAddressLine1();
+        CsvCell line2 = parser.getAddressLine2();
+        CsvCell line3 = parser.getAddressLine3();
+        CsvCell line4 = parser.getAddressLine4();
+        CsvCell city = parser.getCity();
+        CsvCell postcode = parser.getPostcode();
+        CsvCell homePhone = parser.getHomePhoneNumber();
+        CsvCell mobilePhone = parser.getMobilePhoneNumber();
+        CsvCell workPhone = parser.getWorkPhoneNumber();
+        CsvCell emailAddress = parser.getEmailAddress();
+
+        //the PPREL file contains recorss for phone family members (with names, addresses etc.) but also empty
+        //records that are just used to record family history. Don't bother adding these empty relationships to the patient record
+        if (title.isEmpty()
+                && firstName.isEmpty()
+                && middleName.isEmpty()
+                && lastName.isEmpty()
+                && line1.isEmpty()
+                && line2.isEmpty()
+                && line3.isEmpty()
+                && line4.isEmpty()
+                && city.isEmpty()
+                && postcode.isEmpty()
+                && homePhone.isEmpty()
+                && mobilePhone.isEmpty()
+                && workPhone.isEmpty()
+                && emailAddress.isEmpty()) {
+            return;
+        }
+
+        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+        contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
 
         NameBuilder nameBuilder = new NameBuilder(contactBuilder);
         nameBuilder.setUse(HumanName.NameUse.USUAL);
@@ -80,13 +118,6 @@ public class PPRELTransformer {
         nameBuilder.addGiven(firstName.getString(), firstName);
         nameBuilder.addGiven(middleName.getString(), middleName);
         nameBuilder.addFamily(lastName.getString(), lastName);
-
-        CsvCell line1 = parser.getAddressLine1();
-        CsvCell line2 = parser.getAddressLine2();
-        CsvCell line3 = parser.getAddressLine3();
-        CsvCell line4 = parser.getAddressLine4();
-        CsvCell city = parser.getCity();
-        CsvCell postcode = parser.getPostcode();
 
         AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
         addressBuilder.setUse(Address.AddressUse.HOME);
@@ -97,7 +128,6 @@ public class PPRELTransformer {
         addressBuilder.setTown(city.getString(), city);
         addressBuilder.setPostcode(postcode.getString(), postcode);
 
-        CsvCell homePhone = parser.getHomePhoneNumber();
         if (!homePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
@@ -105,7 +135,6 @@ public class PPRELTransformer {
             contactPointBuilder.setValue(homePhone.getString(), homePhone);
         }
 
-        CsvCell mobilePhone = parser.getMobilePhoneNumber();
         if (!mobilePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
@@ -113,7 +142,6 @@ public class PPRELTransformer {
             contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
         }
 
-        CsvCell workPhone = parser.getWorkPhoneNumber();
         if (!workPhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
@@ -121,7 +149,6 @@ public class PPRELTransformer {
             contactPointBuilder.setValue(workPhone.getString(), workPhone);
         }
 
-        CsvCell emailAddress = parser.getEmailAddress();
         if (!emailAddress.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
@@ -142,14 +169,10 @@ public class PPRELTransformer {
             contactBuilder.setEndDate(d, endDate);
         }
 
-        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
 
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
             String relationshipToPatientDesc = codeRef.getCodeDescTxt();
-
-            //cache the relationship type, as we'll need this later for the family history transform
-            csvHelper.cachePatientRelationshipType(relationshipIdCell, relationshipToPatientDesc);
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipToPatientDesc);

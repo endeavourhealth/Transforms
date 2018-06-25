@@ -187,7 +187,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
-        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
+        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, edsPatientId);
 
         List<Resource> ret = new ArrayList<>();
 

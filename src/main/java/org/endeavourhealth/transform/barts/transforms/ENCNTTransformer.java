@@ -59,7 +59,7 @@ public class ENCNTTransformer {
         CsvCell extractDateTimeCell = parser.getExtractDateTime();
         csvHelper.cacheExtractDateTime(extractDateTimeCell);
 
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
@@ -180,13 +180,15 @@ public class ENCNTTransformer {
         }
 
         // EncounterTable type
-        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
-        if (codeRef != null) {
-            //remove any previous type we had, so we don't just keep growing if the type changes
-            encounterBuilder.removeType();
+        //remove any previous type we had, so we don't just keep growing if the type changes
+        encounterBuilder.removeType();
 
-            String typeDesc = codeRef.getCodeDispTxt();
-            encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+        if (!encounterTypeCodeCell.isEmpty()) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
+            if (codeRef != null) {
+                String typeDesc = codeRef.getCodeDispTxt();
+                encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+            }
         }
 
         // treatment function
@@ -265,7 +267,8 @@ public class ENCNTTransformer {
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);
         }
 
-        //no need to save anything, as the Encounter and Episode caches sort that out later
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 
 

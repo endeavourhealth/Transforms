@@ -185,7 +185,13 @@ public class PatientTransformer extends AbstractTransformer {
 
             Reference orgReference = findOrgReference(fhirPatient, params);
             if (orgReference != null) {
-                registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                //added try/catch to track down a bug in Cerner->FHIR->Enterprise
+                try {
+                    registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                } catch (Throwable t) {
+                    LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
+                    throw t;
+                }
             }
         }
 
@@ -337,7 +343,9 @@ public class PatientTransformer extends AbstractTransformer {
                         continue;
                     }
 
-                    return role.getManagingOrganization();
+                    if (role.hasManagingOrganization()) {
+                        return role.getManagingOrganization();
+                    }
                 }
             }
         }

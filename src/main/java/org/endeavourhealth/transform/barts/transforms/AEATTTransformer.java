@@ -51,7 +51,7 @@ public class AEATTTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         CsvCell decisionToAdmitDateTimeCell = parser.getDecisionToAdmitDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
@@ -212,12 +212,15 @@ public class AEATTTransformer {
 
             // Check whether to Finish EpisodeOfCare
             // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
-            if (endDateCell != null && endDateCell.getString().trim().length() > 0 && (decisionToAdmitDateTimeCell == null || decisionToAdmitDateTimeCell.getString().trim().length() == 0)) {
+            if (endDate != null
+                    && BartsCsvHelper.isEmptyOrIsEndOfTime(decisionToAdmitDateTimeCell)) {
+
                 episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED, endDateCell);
             }
         }
 
-        //no need to save anything, as the Encounter and Episode caches sort that out later
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 }
 

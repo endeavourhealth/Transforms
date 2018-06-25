@@ -51,7 +51,7 @@ public class OPATTTransformer {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         //CsvCell finIdCell = parser.getFINNo();
 
@@ -176,7 +176,7 @@ public class OPATTTransformer {
             }
         }
 
-
-        //no need to save anything, as the Encounter and Episode caches sort that out later
+        //we don't save immediately, but return the Encounter builder to the cache
+        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
     }
 }

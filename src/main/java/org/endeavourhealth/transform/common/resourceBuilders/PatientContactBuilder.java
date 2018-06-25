@@ -38,10 +38,10 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         List<Patient.ContactComponent> matches = new ArrayList<>();
 
         List<Patient.ContactComponent> patientContacts = parentBuilder.getPatientContactComponents();
-        LOG.debug("Patient has " + patientContacts.size() + " relationships");
+        //LOG.debug("Patient has " + patientContacts.size() + " relationships");
         for (Patient.ContactComponent patientContact: patientContacts) {
             //if we match on ID, then remove this patientContact from the parent object
-            LOG.debug("Relationship has ID " + patientContact.getId() + ", looking for " + idValue);
+            //LOG.debug("Relationship has ID " + patientContact.getId() + ", looking for " + idValue);
             if (patientContact.hasId()
                     && patientContact.getId().equals(idValue)) {
 
@@ -50,7 +50,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
 
         if (matches.isEmpty()) {
-            LOG.debug("No matches found");
+            //LOG.debug("No matches found");
             return null;
 
         } else if (matches.size() > 1) {

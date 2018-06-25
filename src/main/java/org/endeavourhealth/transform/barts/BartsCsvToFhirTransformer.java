@@ -66,81 +66,88 @@ public abstract class BartsCsvToFhirTransformer {
         Map<String, List<String>> fileMap = hashFilesByType(files, exchangeDirectory);
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
-        //admin transformers
-        ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
-        ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
-        CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
-        NOMREFTransformer.transform(createParsers(fileMap, parserMap, "NOMREF", csvHelper), fhirResourceFiler, csvHelper);
-        LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
-        csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
-        PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
+        try {
+            //admin transformers
+            ORGREFPreTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
+            ORGREFTransformer.transform(createParsers(fileMap, parserMap, "ORGREF", csvHelper), fhirResourceFiler, csvHelper);
+            CVREFTransformer.transform(createParsers(fileMap, parserMap, "CVREF", csvHelper), fhirResourceFiler, csvHelper);
+            NOMREFTransformer.transform(createParsers(fileMap, parserMap, "NOMREF", csvHelper), fhirResourceFiler, csvHelper);
+            LOREFTransformer.transform(createParsers(fileMap, parserMap, "LOREF", csvHelper), fhirResourceFiler, csvHelper);
+            csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
+            PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
 
-        //patient transformers
-        PPATIPreTransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
-        PPATITransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
-        PPADDTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
-        PPALITransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper);
-        //PPINFTransformer.transform(createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper);
-        PPNAMTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper);
-        PPPHOTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper);
-        PPRELTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper);
-        PPAGPTransformer.transform(createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper);
+            //patient transformers
+            PPATIPreTransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
+            PPATITransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
+            PPADDTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
+            PPALITransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper);
+            //PPINFTransformer.transform(createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper);
+            PPNAMTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper);
+            PPPHOTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper);
+            PPRELTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper);
+            PPAGPTransformer.transform(createParsers(fileMap, parserMap, "PPAGP", csvHelper), fhirResourceFiler, csvHelper);
 
-        //we're now good to save our patient resources
-        csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
+            //we're now good to save our patient resources
+            csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
-        //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+            //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
-        //pre-transformers, must be done before encounter ones
-        CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
-        DIAGNPreTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
-        PROCEPreTransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
+            //pre-transformers, must be done before encounter ones
+            CLEVEPreTransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
+            DIAGNPreTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
+            PROCEPreTransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
 
-        // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
-        ENCNTPreTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
-        ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
-        AEATTTransformer.transform(createParsers(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper);
-        OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper);
-        IPEPITransformer.transform(createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper);
-        IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper);
-        //ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
+            // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
+            ENCNTPreTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
+            ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper), fhirResourceFiler, csvHelper);
+            AEATTTransformer.transform(createParsers(fileMap, parserMap, "AEATT", csvHelper), fhirResourceFiler, csvHelper);
+            OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper), fhirResourceFiler, csvHelper);
+            IPEPITransformer.transform(createParsers(fileMap, parserMap, "IPEPI", csvHelper), fhirResourceFiler, csvHelper);
+            IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper), fhirResourceFiler, csvHelper);
+            //ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
-        csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
-        csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);
+            csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
+            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);
 
-        //subsequent transforms may refer to Encounter resources, so ensure they're all on the DB before continuing
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+            //subsequent transforms may refer to Encounter resources, so ensure they're all on the DB before continuing
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
-        //clinical transformers
-        DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
-        PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
-        CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
-        ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
-        FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
+            //clinical transformers
+            DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper), fhirResourceFiler, csvHelper);
+            PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper), fhirResourceFiler, csvHelper);
+            CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper), fhirResourceFiler, csvHelper);
+            ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper), fhirResourceFiler, csvHelper);
+            FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper), fhirResourceFiler, csvHelper);
 
-        if (TransformConfig.instance().isTransformCerner21Files()) {
-            //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
-            //have fallen behind and need updating to do the same, then testing
-            if (true) {
-                throw new RuntimeException("Cerner 2.1 transforms need fixing to use proper ID mapping");
+            if (TransformConfig.instance().isTransformCerner21Files()) {
+                //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
+                //have fallen behind and need updating to do the same, then testing
+                if (true) {
+                    throw new RuntimeException("Cerner 2.1 transforms need fixing to use proper ID mapping");
+                }
+                /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BULKDIAGNOSES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROCEDURES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAG", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROC", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SUSAEA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+                SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSIP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+                SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
             }
-            /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BULKDIAGNOSES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROCEDURES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAG", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROC", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SUSAEA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-            SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSIP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-            SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
+
+            //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
+            csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
+            csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
+
+            LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
+            fhirResourceFiler.waitToFinish();
+
+        } finally {
+            //if we had any exception that caused us to bomb out of the transform, we'll have
+            //potentially cached resources in the DB, so tidy them up now
+            csvHelper.getEncounterCache().cleanUpResourceCache();
         }
-
-        //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
-        csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
-        csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
-
-        LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
-        fhirResourceFiler.waitToFinish();
     }
 
     /**

@@ -84,7 +84,7 @@ public class HomertonCsvHelper {
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
         List<Resource> ret = null;
-        List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, systemId, patientId);
+        List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, patientId);
         for (ResourceWrapper rw : resourceList) {
             if (ret == null) {
                 ret = new ArrayList<>();

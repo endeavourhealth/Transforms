@@ -114,7 +114,7 @@ public class FhirHl7v2Filer {
 
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(minorPatientId));
 
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
@@ -169,7 +169,7 @@ public class FhirHl7v2Filer {
 
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
+        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(patientId));
 
         for (ResourceWrapper patientResource: patientResources) {
 
@@ -246,7 +246,7 @@ public class FhirHl7v2Filer {
 
         FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
 
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(minorPatientId));
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
         /*for (ResourceWrapper minorPatientResource: minorPatientResources) {

@@ -452,14 +452,16 @@ public class EncounterTransformer extends AbstractTransformer {
 
     private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
 
+        String source = null;
         if (fhir.hasExtension()) {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
             if (extension != null) {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-                String term = codeableConcept.getText();
+                source = codeableConcept.getText();
+                /*String term = codeableConcept.getText();
                 if (!Strings.isNullOrEmpty(term)) {
                     return term;
-                }
+                }*/
             }
         }
 
@@ -485,7 +487,6 @@ public class EncounterTransformer extends AbstractTransformer {
             }
             hl7MessageTypeText = hl7MessageTypeCoding.getDisplay();
             //LOG.debug("Got hl7 type " + hl7MessageTypeText + " from extension");
-
         }
         //all these older ones are well in the past, so remove this now so we don't end up retrieving the Exchange
         //for every Encounter resource
@@ -522,10 +523,11 @@ public class EncounterTransformer extends AbstractTransformer {
             return null;
         }*/
 
-        String clsDesc = null;
+        //get class
+        Encounter.EncounterClass cls = fhir.getClass_();
+        String clsDesc = cls.toCode();
 
         //if our class is "other" and there's an extension, then get the class out of there
-        Encounter.EncounterClass cls = fhir.getClass_();
         if (cls == Encounter.EncounterClass.OTHER
                 && fhir.hasClass_Element()
                 && fhir.getClass_Element().hasExtension()) {
@@ -538,19 +540,31 @@ public class EncounterTransformer extends AbstractTransformer {
             }
         }
 
-        //if it wasn't "other" or didn't have an extension
-        if (Strings.isNullOrEmpty(clsDesc)) {
-            clsDesc = cls.toCode();
-        }
-
+        //get type
         String typeDesc = null;
         for (CodeableConcept typeCodeableConcept: fhir.getType()) {
             //there should only be a single codeable concept, so just assign this
             typeDesc = typeCodeableConcept.getText();
         }
 
+        //parameters:
+        //source
+        //type
+        //cls
+        //HL7 message type
+
         //seems a fairly solid pattern to combine these to create something meaningful
-        String term = typeDesc;
+        String term = "";
+
+        if (!Strings.isNullOrEmpty(typeDesc)) {
+            term += " ";
+            term += typeDesc;
+        }
+
+        if (!Strings.isNullOrEmpty(source)) {
+            term += " ";
+            term += source;
+        }
 
         if (!Strings.isNullOrEmpty(hl7MessageTypeText)) {
             term += " ";
@@ -561,7 +575,7 @@ public class EncounterTransformer extends AbstractTransformer {
             term += " (" + clsDesc + ")";
         }
 
-        return term;
+        return term.trim();
     }
 
 

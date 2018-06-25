@@ -53,13 +53,18 @@ public class PPPHOTransformer {
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
-                ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+                if (patientBuilder != null) {
+                    ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+                }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());

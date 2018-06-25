@@ -52,13 +52,18 @@ public class PPNAMTransformer {
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
-                NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+                if (patientBuilder != null) {
+                    NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+                }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());

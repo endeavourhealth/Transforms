@@ -49,6 +49,19 @@ public class PPATITransformer {
         //this transform always UPDATES resources when possible, so we use the patient cache to retrieve from the DB
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //if the PPATI record is marked as non-active, it means we should delete the patient. When a merge is performed
+        //in Cerner, the outgoing PPATI record is marked as non-active and all dependent records (e.g. ENCNT etc.) are moved
+        //to point to the new Person ID. So we only need to delete the Patient resource and EpisodeOfCare (since we
+        //artificially create them)
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+            csvHelper.getPatientCache().deletePatient(patientBuilder, millenniumPersonIdCell, fhirResourceFiler, parser.getCurrentState());
+            return;
+        }
 
         CsvCell mrnCell = parser.getLocalPatientId();
         if (!mrnCell.isEmpty()) {
@@ -81,10 +94,6 @@ public class PPATITransformer {
             //we may be updating a patient, so make sure to remove if not set
             patientBuilder.setNhsNumberVerificationStatus(null);
         }
-
-        //on other files, we treat active to mean delete, but for patients, just mark them as non-active
-        CsvCell activeCell = parser.getActiveIndicator();
-        patientBuilder.setActive(activeCell.getIntAsBoolean(), activeCell);
 
         CsvCell dateOfBirthCell = parser.getDateOfBirth();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(dateOfBirthCell)) {
