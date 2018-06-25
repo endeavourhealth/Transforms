@@ -156,6 +156,8 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
 
+        //TODO - why are we doing ANYTHING with patient care provider or registration start and end here?
+        //This file is about patient relationships, so I don't think any of this should be here
         Reference organizationReference = null;
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();

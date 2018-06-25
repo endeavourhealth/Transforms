@@ -598,7 +598,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (existingHl7Mapping != null) {
             //if the HL7Receiver has a mapped UUID, then store in our local mapping table
             existingResourceId = existingHl7Mapping.getResourceId();
-            LOG.debug("HL7 Receiver already has resource ID " + existingResourceId + " for local ID " + localUniqueId);
+            //LOG.debug("HL7 Receiver already has resource ID " + existingResourceId + " for local ID " + localUniqueId);
             IdHelper.getOrCreateEdsResourceId(serviceId, resourceType, localUniqueId, existingResourceId);
             return existingResourceId;
         }

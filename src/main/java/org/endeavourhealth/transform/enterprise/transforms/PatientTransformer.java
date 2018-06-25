@@ -343,7 +343,9 @@ public class PatientTransformer extends AbstractTransformer {
                         continue;
                     }
 
-                    return role.getManagingOrganization();
+                    if (role.hasManagingOrganization()) {
+                        return role.getManagingOrganization();
+                    }
                 }
             }
         }
