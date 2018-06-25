@@ -179,6 +179,10 @@ public class PATIENTTransformer {
         CsvCell language = parser.getLanguage();
         if (!language.isEmpty()) {
 
+            CodeableConceptBuilder languageCodeableConceptBuilder
+                    = new CodeableConceptBuilder(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language);
+            languageCodeableConceptBuilder.setText(language.getString(), language);
+
             if (language.getString().equalsIgnoreCase("English")) {
                 patientBuilder.setSpeaksEnglish(Boolean.TRUE, language);
             }
