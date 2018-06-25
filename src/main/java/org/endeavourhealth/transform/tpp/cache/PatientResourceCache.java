@@ -70,7 +70,7 @@ public class PatientResourceCache {
             PatientBuilder patientBuilder = (PatientBuilder) both.getValue();
             if (EpisodeOfCareResourceCache.episodeOfCareInCache(rowId)) {
                 EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareByRowId(rowId);
-                boolean mapIds = !patientBuilder.isIdMapped();
+                boolean mapIds = !(patientBuilder.isIdMapped() && episodeOfCareBuilder.isIdMapped());
                 fhirResourceFiler.savePatientResource(null,mapIds ,patientBuilder, episodeOfCareBuilder);
                 iterator.remove();
                 //PatientBuildersByRowId.remove(rowId);
