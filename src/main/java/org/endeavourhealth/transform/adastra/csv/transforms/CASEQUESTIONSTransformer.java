@@ -49,7 +49,7 @@ public class CASEQUESTIONSTransformer {
         CsvCell questionSetName = parser.getQuestionSetName();
 
         //Outcomes are handles in the Outcomes transformer.  Capture non Outcomes text here, i.e. safe guarding
-        if (!questionSetName.getString().equalsIgnoreCase("Outcomes")) {
+        if (!questionSetName.getString().toLowerCase().contains("outcomes")) {
 
             CsvCell answerOutcome = parser.getAnswer();
             if (!answerOutcome.isEmpty()) {

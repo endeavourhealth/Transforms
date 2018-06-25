@@ -61,7 +61,7 @@ public class OUTCOMESTransformer {
                 outcomeText = existingOutcomeText.concat(", ").concat(outcomeText);
             }
 
-            episodeBuilder.setOutcome(outcomeText, outcomeName);
+            episodeBuilder.setOutcome("Outcome(s): "+outcomeText, outcomeName);
 
             //cache the new episode outcome
             csvHelper.cacheCaseOutcome(caseId.getString(), outcomeText);
