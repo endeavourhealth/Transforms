@@ -180,14 +180,11 @@ public class ENCNTTransformer {
         }
 
         // EncounterTable type
-        //remove any previous type we had, so we don't just keep growing if the type changes
-        encounterBuilder.removeType();
-
         if (!encounterTypeCodeCell.isEmpty()) {
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
             if (codeRef != null) {
                 String typeDesc = codeRef.getCodeDispTxt();
-                encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+                encounterBuilder.setType(typeDesc, encounterTypeCodeCell);
             }
         }
 

@@ -45,8 +45,10 @@ public class ENCNTPreTransformer {
         //NOTE the ENCNT transformer does ignore some records based on encounter type, but it doesn't hurt to still generate IDs for them
 
         //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
+        //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
         CsvCell visitIdCell = parser.getVisitId();
-        if (visitIdCell.isEmpty()) {
+        if (visitIdCell.isEmpty()
+                || visitIdCell.getString().startsWith("RES_")) {
             return;
         }
 

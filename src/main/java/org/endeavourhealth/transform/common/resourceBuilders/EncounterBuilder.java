@@ -272,19 +272,14 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("reason[" + index + "].text", sourceCells);
     }
 
-    public void addType(String typeDesc, CsvCell... sourceCells) {
+    public void setType(String typeDesc, CsvCell... sourceCells) {
 
-        //ensure we don't end up with the same type twice
+        //we only support having one type, so remove any existing one
         if (this.encounter.hasType()) {
-
             List<CodeableConcept> types = this.encounter.getType();
             for (Iterator<CodeableConcept> iterator = types.iterator(); iterator.hasNext();) {
                 CodeableConcept cc = iterator.next();
-                String text = cc.getText();
-                if (text.equalsIgnoreCase(typeDesc)) {
-                    //already present
-                    return;
-                }
+                iterator.remove(); //use the iterator to remove, as that CAN be done while looping
             }
         }
 
@@ -293,18 +288,6 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         int index = this.encounter.getType().indexOf(codeableConcept)-1;
         auditValue("type[" + index + "].text", sourceCells);
-    }
-
-    public void removeType() {
-        if (!this.encounter.hasType()) {
-            return;
-        }
-
-        List<CodeableConcept> types = this.encounter.getType();
-        for (Iterator<CodeableConcept> iterator = types.iterator(); iterator.hasNext();) {
-            CodeableConcept cc = iterator.next();
-            iterator.remove(); //use the iterator to remove, as that CAN be done while looping
-        }
     }
 
     /*public void removeTypes(Collection<String> typesToRemove) {
