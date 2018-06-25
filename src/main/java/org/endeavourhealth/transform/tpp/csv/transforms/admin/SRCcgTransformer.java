@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
@@ -150,6 +147,9 @@ public class SRCcgTransformer {
 
         //set the managing organisation for the location, basically itself!
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, CCG_KEY_PREFIX+rowIdCell.getString());
+        if (locationBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+        }
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
 

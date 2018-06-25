@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
@@ -56,6 +53,9 @@ public class SROrganisationTransformer {
 
 
         Reference organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
+        if (organizationBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+        }
         locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder, locationBuilder);
 
@@ -255,12 +255,18 @@ public class SROrganisationTransformer {
         if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference trustReference = csvHelper.createOrganisationReference(trustCell);
+            if (organizationBuilder.isIdMapped()) {
+                trustReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(trustReference,fhirResourceFiler);
+            }
             organizationBuilder.setParentOrganisation(trustReference, trustCell);
         }
         CsvCell ccgCell = parser.getIDCcg();
         if (!ccgCell.isEmpty() && ccgCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
+            if (organizationBuilder.isIdMapped()) {
+                ccgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(ccgReference,fhirResourceFiler);
+            }
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
         }
 
