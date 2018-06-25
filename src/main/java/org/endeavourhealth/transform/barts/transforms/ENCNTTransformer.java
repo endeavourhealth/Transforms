@@ -180,13 +180,15 @@ public class ENCNTTransformer {
         }
 
         // EncounterTable type
-        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
-        if (codeRef != null) {
-            //remove any previous type we had, so we don't just keep growing if the type changes
-            encounterBuilder.removeType();
+        //remove any previous type we had, so we don't just keep growing if the type changes
+        encounterBuilder.removeType();
 
-            String typeDesc = codeRef.getCodeDispTxt();
-            encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+        if (!encounterTypeCodeCell.isEmpty()) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
+            if (codeRef != null) {
+                String typeDesc = codeRef.getCodeDispTxt();
+                encounterBuilder.addType(typeDesc, encounterTypeCodeCell);
+            }
         }
 
         // treatment function

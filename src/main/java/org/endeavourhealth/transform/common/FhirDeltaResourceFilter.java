@@ -6,9 +6,9 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.*;
@@ -122,7 +122,7 @@ public class FhirDeltaResourceFilter {
             List<Resource> resourcesOfType = entry.getValue();
             //retrieve all the resources of this type for the service and hash the JSON by ID
             HashMap<String, String> hmExistingResources = new HashMap<>();
-            List<ResourceWrapper> existingResources = resourceRepository.getResourcesByService(serviceId, systemId, entry.getKey());
+            List<ResourceWrapper> existingResources = resourceRepository.getResourcesByService(serviceId, entry.getKey());
             for (ResourceWrapper existingResource: existingResources) {
                 String id = existingResource.getResourceId().toString();
                 String json = existingResource.getResourceData();
@@ -155,7 +155,7 @@ public class FhirDeltaResourceFilter {
 
         //retrieve all existing resources on the DB for the patient and hash the json by resource ID
         HashMap<String, String> hmExistingResources = new HashMap<>();
-        List<ResourceWrapper> existingResources = resourceRepository.getResourcesByPatient(serviceId, systemId, UUID.fromString(patientId));
+        List<ResourceWrapper> existingResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(patientId));
         for (ResourceWrapper existingResource: existingResources) {
             String id = existingResource.getResourceId().toString();
             String json = existingResource.getResourceData();

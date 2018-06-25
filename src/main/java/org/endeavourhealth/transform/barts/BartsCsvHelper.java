@@ -149,7 +149,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
         List<Resource> ret = new ArrayList<>();
-        List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, systemId, patientId);
+        List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, patientId);
         for (ResourceWrapper rw : resourceList) {
             String json = rw.getResourceData();
             ret.add(ParserPool.getInstance().parse(json));
@@ -389,79 +389,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ret;
     }
 
-    /*public void cacheEncounterIds(CsvCell encounterIdCell, Encounter encounter) {
-        Long encounterId = encounterIdCell.getLong();
-
-        String id = encounter.getId();
-        UUID encounterUuid = UUID.fromString(id);
-        encounterIdToEnconterResourceMap.put(encounterId, encounterUuid);
-
-        Reference patientReference = encounter.getPatient();
-        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
-        UUID patientUuid = UUID.fromString(comps.getId());
-        encounterIdToPatientResourceMap.put(encounterId, patientUuid);
-    }
-
-    private void ensureEncounterIdsAreCached(CsvCell encounterIdCell) throws Exception {
-
-        Long encounterId = encounterIdCell.getLong();
-
-        //if already cached, return
-        if (encounterIdToEnconterResourceMap.containsKey(encounterId)) {
-            return;
-        }
-
-        ResourceId encounterResourceId = BasisTransformer.getEncounterResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-        if (encounterResourceId == null) {
-            //add nulls to the map so we don't keep hitting the DB
-            encounterIdToEnconterResourceMap.put(encounterId, null);
-            encounterIdToPatientResourceMap.put(encounterId, null);
-            return;
-        }
-
-        Encounter fhirEncounter = (Encounter)retrieveResourceForUuid(ResourceType.Encounter, encounterResourceId.getResourceId());
-        if (fhirEncounter == null) {
-            //if encounter has been deleted, add nulls to the map so we don't keep hitting the DB
-            encounterIdToEnconterResourceMap.put(encounterId, null);
-            encounterIdToPatientResourceMap.put(encounterId, null);
-            return;
-        }
-
-        cacheEncounterIds(encounterIdCell, fhirEncounter);
-    }*/
-
-
-    /*public UUID findPatientIdFromPersonId(CsvCell personIdCell) throws Exception {
-
-        Long personId = personIdCell.getLong();
-
-        //if not in the cache, hit the DB
-        if (!personIdToPatientResourceMap.containsKey(personId)) {
-            //LOG.trace("Person ID not found in cache " + personIdCell.getString());
-
-            String mrn = internalIdDal.getDestinationId(serviceId, InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personIdCell.getString());
-            if (mrn == null) {
-                //if we've never received the patient, we won't have a map to its MRN but don't add to the map so if it is created, we'll start working
-                //LOG.trace("Failed to find MRN for person ID " + personIdCell.getString());
-                return null;
-
-            } else {
-
-                ResourceId resourceId = BasisTransformer.getPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
-                if (resourceId == null) {
-                    //if we've got the MRN mapping, but haven't actually assigned an ID for it, do so now
-                    resourceId = BasisTransformer.createPatientResourceId(BartsCsvToFhirTransformer.BARTS_RESOURCE_ID_SCOPE, primaryOrgHL7OrgOID, mrn);
-                    //LOG.trace("Created new resource ID " + resourceId.getResourceId() + " for person ID " + personIdCell.getString());
-                }
-
-                UUID patientId = resourceId.getResourceId();
-                personIdToPatientResourceMap.put(personId, patientId);
-                //LOG.trace("Added patient ID " + resourceId.getResourceId() + " to cache " + personIdCell.getString());
-            }
-        }
-
-        return personIdToPatientResourceMap.get(personId);
-    }*/
 
     public void cacheParentChildClinicalEventLink(CsvCell childEventIdCell, CsvCell parentEventIdCell) throws Exception {
         Long parentEventId = parentEventIdCell.getLong();

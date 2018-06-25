@@ -461,7 +461,7 @@ public class EpisodeOfCareResourceCache {
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, systemUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
+        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this episode is for our own system ID (i.e. DW feed), then leave it

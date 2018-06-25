@@ -185,7 +185,7 @@ public class FhirToVitruCareXmlTransformer extends FhirToXTransformerBase {
             payload.setGender(convertGender(gender));
         }
 
-        List<ResourceWrapper> resourceByPatients = resourceRepository.getResourcesByPatient(serviceId, systemId, edsPatientId);
+        List<ResourceWrapper> resourceByPatients = resourceRepository.getResourcesByPatient(serviceId, edsPatientId);
         populatePayloadClinicals(payload, resourceByPatients);
 
         return true;

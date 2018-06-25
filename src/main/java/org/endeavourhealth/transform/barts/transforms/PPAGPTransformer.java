@@ -39,6 +39,9 @@ public class PPAGPTransformer {
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
 
         //the relation code links to the standard code ref table, and defines the type of relationship
         //we're only interested in who the patients registered GP is

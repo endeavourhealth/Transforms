@@ -162,18 +162,13 @@ public class CLEVETransformer {
 
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
-        if (codeCell != null && !codeCell.isEmpty()) {
-            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, codeCell) == null) {
-                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Event code {} not found. Row {} Column {} ",
-                        codeCell.getLong(), parser.getEventCode().getString(),
-                        codeCell.getRowAuditId(), codeCell.getColIndex());
-                //return;
-            }
+        if (!codeCell.isEmpty()) {
+
             CodeableConceptBuilder codeableConceptBuilder = BartsCodeableConceptHelper.applyCodeDisplayTxt(codeCell, CodeValueSet.CLINICAL_CODE_TYPE, observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, csvHelper);
 
             //if we have an explicit term in the CLEVE record, then set this as the text on the codeable concept
             CsvCell termCell = parser.getEventTitleText();
-            if (codeableConceptBuilder != null && termCell != null && !termCell.isEmpty()) {
+            if (!termCell.isEmpty()) {
                 codeableConceptBuilder.setText(termCell.getString(), termCell);
             }
         }

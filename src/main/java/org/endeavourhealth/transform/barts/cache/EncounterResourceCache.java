@@ -198,7 +198,7 @@ public class EncounterResourceCache {
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, systemUuid, patientUuid, ResourceType.Encounter.toString());
+        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this episode is for our own system ID (i.e. DW feed), then leave it
