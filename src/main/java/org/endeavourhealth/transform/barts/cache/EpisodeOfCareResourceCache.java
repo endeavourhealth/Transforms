@@ -52,14 +52,14 @@ public class EpisodeOfCareResourceCache {
         saveEncounterIdToEpisodeAndFinMappings(encounterIdCell, episodeIdCell, finCell, csvHelper);
 
         //always prefer to use an Episode ID over a FIN, so check that first
-        if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdCell)) {
+        if (!episodeIdCell.isEmpty()) {
 
             //see if we've already got an EPISODE ID -> FIN mapping
             String episodeLocalRef = createEpisodeReferenceFromEpisodeId(episodeIdCell);
 
             //although we have an Episode ID now, we may have previously generated an Episode UUID
             //using the FIN, so check for that too and carry over if found
-            if (!BartsCsvHelper.isEmptyOrIsZero(finCell)) {
+            if (!finCell.isEmpty()) {
 
                 UUID existingUuidFromEpisodeId = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, episodeLocalRef);
                 if (existingUuidFromEpisodeId == null) {
@@ -79,7 +79,7 @@ public class EpisodeOfCareResourceCache {
             //retrieve our resource and return
             return retrieveAndCacheBuilder(episodeLocalRef, personIdCell, csvHelper, activeIndicatorCell);
 
-        } else if (!BartsCsvHelper.isEmptyOrIsZero(finCell)) {
+        } else if (!finCell.isEmpty()) {
 
             //if we've never previously created an Episode UUID for our Episode, generate it now
             ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, parser.getVisitId(), csvHelper);
@@ -98,7 +98,7 @@ public class EpisodeOfCareResourceCache {
 
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(AEATT parser, BartsCsvHelper csvHelper) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell personIdCell = parser.getPersonId();
         CsvCell activeIndicatorCell = parser.getActiveIndicator();
         return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell, csvHelper);
     }
@@ -112,7 +112,7 @@ public class EpisodeOfCareResourceCache {
 
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(IPEPI parser, BartsCsvHelper csvHelper) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell personIdCell = parser.getPatientId();
+        CsvCell personIdCell = parser.getPersonId();
         CsvCell activeIndicatorCell = parser.getActiveIndicator();
         return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell, csvHelper);
     }
@@ -161,7 +161,7 @@ public class EpisodeOfCareResourceCache {
         String encounterId = encounterIdCell.getString();
 
         //save a mapping of Encounter ID to episode ID so that we can later look up the episode ID just from Encounter ID
-        if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdcell)) {
+        if (!episodeIdcell.isEmpty()) {
             String episodeId = episodeIdcell.getString();
 
             if (csvHelper.getInternalId(MAP_ENCOUNTER_TO_EPISODE_ID, encounterId) == null) {
@@ -170,7 +170,7 @@ public class EpisodeOfCareResourceCache {
         }
 
         //save a mapping of Encounter ID to FIN so that we can later look up the FIN just from Encounter ID
-        if (!BartsCsvHelper.isEmptyOrIsZero(finCell)) {
+        if (!finCell.isEmpty()) {
             String fin = finCell.getString();
 
             if (csvHelper.getInternalId(MAP_ENCOUNTER_TO_FIN, encounterId) == null) {
@@ -182,11 +182,11 @@ public class EpisodeOfCareResourceCache {
     private void ensureUuidExistsForEpisode(CsvCell personIdCell, CsvCell episodeIdcell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         String localEpisodeRef = null;
-        if (!BartsCsvHelper.isEmptyOrIsZero(episodeIdcell)) {
+        if (!episodeIdcell.isEmpty()) {
             localEpisodeRef = createEpisodeReferenceFromEpisodeId(episodeIdcell);
         }
         String localFinRef = null;
-        if (!BartsCsvHelper.isEmptyOrIsZero(finCell)) {
+        if (!finCell.isEmpty()) {
             localFinRef = createEpisodeReferenceFromFin(finCell);
         }
 

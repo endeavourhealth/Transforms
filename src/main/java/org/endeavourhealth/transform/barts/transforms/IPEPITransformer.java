@@ -43,7 +43,7 @@ public class IPEPITransformer {
         }
 
         CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell personIdCell = parser.getPatientId();
+        CsvCell personIdCell = parser.getPersonId();
 
         // get the associated encounter
         EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);

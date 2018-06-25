@@ -14,17 +14,17 @@ import java.util.Map;
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
 
-    private Map<String, LocationBuilder> locationBuilders = new HashMap<>();
-    private Map<String, LocationBuilder> placeholderLocationBuilders = new HashMap<>();
+    private Map<String, LocationBuilder> locationBuildersById = new HashMap<>();
+    private Map<String, LocationBuilder> placeholderLocationBuildersById = new HashMap<>();
     private Map<String, Boolean> locationsCheckedOnDb = new HashMap<>();
 
     public void cacheLocationBuilder(LocationBuilder locationBuilder) {
 
         String id = locationBuilder.getResourceId();
-        locationBuilders.put(id, locationBuilder);
+        locationBuildersById.put(id, locationBuilder);
 
         //if the placeholders map contains this ID, then discard it
-        placeholderLocationBuilders.remove(id);
+        placeholderLocationBuildersById.remove(id);
     }
 
     public void cachePlaceholderLocationBuilder(LocationBuilder locationBuilder, BartsCsvHelper csvHelper) throws Exception {
@@ -32,7 +32,7 @@ public class LocationResourceCache {
         String id = locationBuilder.getResourceId();
 
         //if the location builder already exists in the proper map, then discard this placeholder
-        if (locationBuilders.containsKey(id)) {
+        if (locationBuildersById.containsKey(id)) {
             return;
         }
 
@@ -47,31 +47,31 @@ public class LocationResourceCache {
             return;
         }
 
-        placeholderLocationBuilders.put(id, locationBuilder);
+        placeholderLocationBuildersById.put(id, locationBuilder);
     }
 
 
     public void fileLocationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //save the proper locations
-        LOG.trace("Saving " + locationBuilders.size() + " Locations to the DB");
-        for (String id: locationBuilders.keySet()) {
-            LocationBuilder locationBuilder = locationBuilders.get(id);
+        LOG.trace("Saving " + locationBuildersById.size() + " Locations to the DB");
+        for (String id: locationBuildersById.keySet()) {
+            LocationBuilder locationBuilder = locationBuildersById.get(id);
             fhirResourceFiler.saveAdminResource(null, locationBuilder);
         }
-        LOG.trace("Finishing saving " + locationBuilders.size() + " Locations to the DB");
+        LOG.trace("Finishing saving " + locationBuildersById.size() + " Locations to the DB");
 
         //save the placeholder locations we've generated
-        LOG.trace("Saving " + placeholderLocationBuilders.size() + " placeholder Locations to the DB");
-        for (String id: placeholderLocationBuilders.keySet()) {
-            LocationBuilder locationBuilder = placeholderLocationBuilders.get(id);
+        LOG.trace("Saving " + placeholderLocationBuildersById.size() + " placeholder Locations to the DB");
+        for (String id: placeholderLocationBuildersById.keySet()) {
+            LocationBuilder locationBuilder = placeholderLocationBuildersById.get(id);
             fhirResourceFiler.saveAdminResource(null, locationBuilder);
         }
-        LOG.trace("Finishing saving " + placeholderLocationBuilders.size() + " placeholder Locations to the DB");
+        LOG.trace("Finishing saving " + placeholderLocationBuildersById.size() + " placeholder Locations to the DB");
 
         //clear down as everything has been saved
-        locationBuilders.clear();
-        placeholderLocationBuilders.clear();
+        locationBuildersById.clear();
+        placeholderLocationBuildersById.clear();
         locationsCheckedOnDb.clear();
     }
 

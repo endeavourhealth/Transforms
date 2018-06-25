@@ -99,7 +99,7 @@ public class AEATT extends AbstractCsvParser {
         return super.getCell("ATTENDANCE_NBR_IDENT");
     }
 
-    public CsvCell getMillenniumPersonIdentifier() {
+    public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
 

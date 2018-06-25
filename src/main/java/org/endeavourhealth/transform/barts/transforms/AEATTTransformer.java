@@ -49,7 +49,7 @@ public class AEATTTransformer {
         }
 
         CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell personIdCell = parser.getPersonId();
 
         EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 

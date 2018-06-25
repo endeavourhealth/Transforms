@@ -60,7 +60,7 @@ public class IPEPI extends AbstractCsvParser {
         return super.getCell("ENCNTR_ID");
     }
 
-    public CsvCell getPatientId() {
+    public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
 
