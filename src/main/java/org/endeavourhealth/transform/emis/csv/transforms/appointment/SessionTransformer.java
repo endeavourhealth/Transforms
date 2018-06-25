@@ -120,7 +120,7 @@ public class SessionTransformer {
         List<CsvCell> ret = new ArrayList<>();
 
         String sessionGuid = sessionGuidCell.getString();
-        Schedule fhirScheduleOld = (Schedule)csvHelper.retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
+        Schedule fhirScheduleOld = (Schedule)csvHelper.retrieveResource(sessionGuid, ResourceType.Schedule);
         if (fhirScheduleOld != null) {
 
             List<Reference> edsReferences = ScheduleHelper.getAllActors(fhirScheduleOld);

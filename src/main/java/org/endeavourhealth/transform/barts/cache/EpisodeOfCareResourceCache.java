@@ -34,7 +34,65 @@ public class EpisodeOfCareResourceCache {
 
     private Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
 
-    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
+    /**
+     * when processing the ENCNT file we set up the Episode ID -> UUID and FIN -> UUID mappings for the EpisodeOfCare
+     * but don't actually create the Episode itself.
+     * Let the transforms for IPEPI, OPATT and AEATT pick up the mappings and create the EpisodeOfCare resource
+     */
+    public void setUpEpisodeOfCareBuilderMappings(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell activeIndicatorCell = parser.getActiveIndicator();
+
+        //ENCNT has extra columns that allow us to create episodeOfCares
+        //For ENCNTs that result of a referral, we have an EPISODE_ID on each record
+        //that we can use as the unique ID of the EpisodeOFCare. For non-referral ENCNTs (i.e. ones from A&E and
+        //subsequent admissions) there is no EPISODE_ID, so we use the FIN as a proxy for an EPISODE ID
+        CsvCell episodeIdCell = parser.getEpisodeIdentifier();
+        CsvCell finCell = parser.getMillenniumFinancialNumberIdentifier();
+
+        //first, just store the mappings of Encounter ID -> Episode ID and FIN -> Episode ID, so
+        //we can always find them later from an Encounter ID (needed because some files only have Encounter ID)
+        saveEncounterIdToEpisodeAndFinMappings(encounterIdCell, episodeIdCell, finCell, csvHelper);
+
+        //always prefer to use an Episode ID over a FIN, so check that first
+        if (!episodeIdCell.isEmpty()) {
+
+            //see if we've already got an EPISODE ID -> FIN mapping
+            String episodeLocalRef = createEpisodeReferenceFromEpisodeId(episodeIdCell);
+
+            //although we have an Episode ID now, we may have previously generated an Episode UUID
+            //using the FIN, so check for that too and carry over if found
+            if (!finCell.isEmpty()) {
+
+                UUID existingUuidFromEpisodeId = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, episodeLocalRef);
+                if (existingUuidFromEpisodeId == null) {
+
+                    String finLocalRef = createEpisodeReferenceFromFin(finCell);
+                    UUID existingUuidFromFin = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, finLocalRef);
+                    if (existingUuidFromFin != null) {
+                        //store against our Episode ID to make the lookup work from both Episode ID and FIN in the future
+                        IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, episodeLocalRef, existingUuidFromFin);
+                    }
+                }
+            }
+
+            //if we've never previously created an Episode UUID for our Episode, generate it now
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, parser.getVisitId(), csvHelper);
+
+        } else if (!finCell.isEmpty()) {
+
+            //if we've never previously created an Episode UUID for our Episode, generate it now
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, parser.getVisitId(), csvHelper);
+
+        } else {
+
+            //if we have neither Episode ID or FIN, don't create an EpisodeOfCare. If either field
+            //is later set on an ENCNT record, the above code will be invoked and an episode created then
+        }
+    }
+    /*public EpisodeOfCareBuilder getEpisodeOfCareBuilder(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
@@ -94,7 +152,7 @@ public class EpisodeOfCareResourceCache {
             //is later set on an ENCNT record, the above code will be invoked and an episode created then
             return null;
         }
-    }
+    }*/
 
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(AEATT parser, BartsCsvHelper csvHelper) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();

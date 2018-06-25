@@ -172,7 +172,7 @@ public class SlotTransformer {
         List<CsvCell> ret = new ArrayList<>();
 
         String slotGuid = slotGuidCell.getString();
-        Appointment existingAppointment = (Appointment)csvHelper.retrieveResource(slotGuid, ResourceType.Appointment, fhirResourceFiler);
+        Appointment existingAppointment = (Appointment)csvHelper.retrieveResource(slotGuid, ResourceType.Appointment);
         if (existingAppointment != null
                 && existingAppointment.hasParticipant()) {
 

@@ -632,7 +632,7 @@ public class PatientTransformer {
         //if we don't have an ethnicity or marital status already cached, we may be performing a delta transform
         //so need to carry over any codeable concept already stored on the DB
         if (newEthnicity == null || newMaritalStatus == null) {
-            org.hl7.fhir.instance.model.Patient existingPatient = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(patientGuid.getString(), ResourceType.Patient, fhirResourceFiler);
+            org.hl7.fhir.instance.model.Patient existingPatient = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(patientGuid.getString(), ResourceType.Patient);
             if (existingPatient != null) {
 
                 if (newEthnicity == null) {
@@ -711,8 +711,9 @@ public class PatientTransformer {
         } else if (csvRegType.equalsIgnoreCase("Other")) {
             return RegistrationType.OTHER;
         } else {
-            TransformWarnings.log(LOG, parserI, "Unhandled Emis registration type {}", csvRegType);
-            return RegistrationType.OTHER;
+            throw new TransformException("Unsupported registration type " + csvRegType);
+            /*TransformWarnings.log(LOG, parserI, "Unhandled Emis registration type {}", csvRegType);
+            return RegistrationType.OTHER;*/
         }
 
         /**

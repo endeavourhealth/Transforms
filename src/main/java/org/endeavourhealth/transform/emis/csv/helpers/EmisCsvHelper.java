@@ -354,10 +354,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
+    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType) throws Exception {
 
         UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
 
@@ -423,11 +420,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //the parent "observation" may have been saved as an observation OR a diagnostic report, so try both
         ResourceBuilderBase resourceBuilder = null;
 
-        DiagnosticReport fhirDiagnosticReport = (DiagnosticReport)retrieveResource(locallyUniqueId, ResourceType.DiagnosticReport, fhirResourceFiler);
+        DiagnosticReport fhirDiagnosticReport = (DiagnosticReport)retrieveResource(locallyUniqueId, ResourceType.DiagnosticReport);
         if (fhirDiagnosticReport != null) {
             resourceBuilder = new DiagnosticReportBuilder(fhirDiagnosticReport);
         } else {
-            Observation fhirObservation = (Observation)retrieveResource(locallyUniqueId, ResourceType.Observation, fhirResourceFiler);
+            Observation fhirObservation = (Observation)retrieveResource(locallyUniqueId, ResourceType.Observation);
             if (fhirObservation != null) {
                 resourceBuilder = new ObservationBuilder(fhirObservation);
             } else {
@@ -498,7 +495,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         for (String locallyUniqueResourceProblemId: newProblemChildren.keySet()) {
             ReferenceList newLinkedItems = newProblemChildren.get(locallyUniqueResourceProblemId);
 
-            Condition existingCondition = (Condition)retrieveResource(locallyUniqueResourceProblemId, ResourceType.Condition, fhirResourceFiler);
+            Condition existingCondition = (Condition)retrieveResource(locallyUniqueResourceProblemId, ResourceType.Condition);
             if (existingCondition == null) {
                 //if the problem has been deleted, just skip it
                 return;
@@ -756,7 +753,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         for (Map.Entry<String, List<CsvCell>> entry : locationOrganisationMap.entrySet()) {
 
-            Location fhirLocation = (Location)retrieveResource(entry.getKey(), ResourceType.Location, fhirResourceFiler);
+            Location fhirLocation = (Location)retrieveResource(entry.getKey(), ResourceType.Location);
             if (fhirLocation == null) {
                 //if the location has been deleted, it doesn't matter, and the emis data integrity issues
                 //mean we may have references to unknown locations
@@ -821,7 +818,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             CodeAndDate newEthnicity = ethnicityMap.get(patientGuid);
             CodeAndDate newMaritalStatus = maritalStatusMap.get(patientGuid);
 
-            Patient fhirPatient = (Patient)retrieveResource(patientGuid, ResourceType.Patient, fhirResourceFiler);
+            Patient fhirPatient = (Patient)retrieveResource(patientGuid, ResourceType.Patient);
             if (fhirPatient == null) {
                 //if we try to update the ethnicity on a deleted patient, or one we've never received, we'll get this exception, which is fine to ignore
                 continue;
@@ -921,7 +918,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String locallyUniqueId = newConditionBuilder.getResourceId();
 
-        Condition existingResource = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition existingResource = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
         if (existingResource == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
@@ -994,7 +991,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     private void downgradeExistingProblemToCondition(String locallyUniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Condition existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
         if (existingProblem == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
@@ -1098,7 +1095,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         for (String locallyUniqueResourceEncounterId: consultationNewChildMap.keySet()) {
             ReferenceList newLinkedItems = consultationNewChildMap.get(locallyUniqueResourceEncounterId);
 
-            Encounter existingEncounter = (Encounter)retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter, fhirResourceFiler);
+            Encounter existingEncounter = (Encounter)retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
             if (existingEncounter == null) {
                 //if the problem has been deleted, just skip it
                 return;
@@ -1142,7 +1139,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
 
         //we've had cases of data referring to non-existent problems, so check for null
         if (fhirPproblem != null) {
@@ -1164,7 +1161,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //both maps (first and last issue dates) will have the same key set
         for (String medicationStatementLocalId: drugRecordLastIssueDateMap.keySet()) {
 
-            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement, fhirResourceFiler);
+            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
             if (fhirMedicationStatement == null) {
                 //if the medication statement doesn't exist or has been deleted, then just skip it
                 continue;

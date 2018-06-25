@@ -54,15 +54,15 @@ public abstract class EmisCsvToFhirTransformer {
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
         String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
-
         LOG.info("Invoking EMIS CSV transformer for " + files.length + " files and service " + serviceId);
-
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
         String version = determineVersion(files);
 
+        //TODO - call RegistrationStatusTransformer
+
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
         boolean processPatientData = shouldProcessPatientData(orgDirectory, files);
 
         //the processor is responsible for saving FHIR resources
@@ -71,10 +71,7 @@ public abstract class EmisCsvToFhirTransformer {
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
         try {
-            //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
             createParsers(serviceId, systemId, exchangeId, files, version, parsers);
-
-            LOG.trace("Transforming EMIS CSV content in " + orgDirectory);
             transformParsers(version, parsers, processor, previousErrors, processPatientData);
 
         } finally {

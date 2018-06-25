@@ -102,7 +102,7 @@ public class ConsultationPreTransformer {
         public Object call() throws Exception {
             try {
                 //carry over linked items from any previous instance of this problem
-                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter, fhirResourceFiler);
+                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter);
                 if (previousVersion == null) {
                     //if this is the first time, then we'll have a null resource
                     return null;
