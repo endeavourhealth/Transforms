@@ -165,6 +165,12 @@ public class SROrganisationTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
+        CsvCell organizationId = parser.getID();
+
+        if ((organizationId.isEmpty()) || (!StringUtils.isNumeric(organizationId.getString()))) {
+           // TransformWarnings.log(LOG, parser, "ERROR: missing or invalid Organization Id: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
+            return null;
+        }
 
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
         org.hl7.fhir.instance.model.Organization organization
@@ -177,7 +183,7 @@ public class SROrganisationTransformer {
             organizationBuilder = new OrganizationBuilder(organization);
         }
 
-        organizationBuilder.setId(rowIdCell.getString());
+        organizationBuilder.setId(organizationId.getString());
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
@@ -193,8 +199,6 @@ public class SROrganisationTransformer {
             organizationBuilder.setName(nameCell.getString());
         }
 
-        CsvCell organizationId = parser.getID();
-        organizationBuilder.setId(organizationId.getString(), organizationId);
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
