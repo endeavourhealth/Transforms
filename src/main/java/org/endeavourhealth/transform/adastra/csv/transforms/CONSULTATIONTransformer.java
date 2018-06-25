@@ -81,6 +81,8 @@ public class CONSULTATIONTransformer {
 
         CsvCell endDateTime = parser.getEndDateTime();
         if (!endDateTime.isEmpty()) {
+
+            encounterBuilder.setPeriodEnd(endDateTime.getDateTime(), endDateTime);
             encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
             encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
