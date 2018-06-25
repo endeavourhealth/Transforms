@@ -4,10 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -116,6 +113,9 @@ public class SRAppointmentTransformer {
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
+            if (slotBuilder.isIdMapped()) {
+                scheduleReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(scheduleReference,fhirResourceFiler);
+            }
             slotBuilder.setSchedule(scheduleReference, rotaId);
         }
 
@@ -155,6 +155,9 @@ public class SRAppointmentTransformer {
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference practitionerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+                if (appointmentBuilder.isIdMapped()) {
+                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+                }
                 appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
             }
         }
