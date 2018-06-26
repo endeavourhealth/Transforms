@@ -330,15 +330,8 @@ public class CLEVETransformer {
 
         CsvCell unitsCodeCell = parser.getEventResultUnitsCode();
         String unitsDesc = "";
-        if (!unitsCodeCell.isEmpty() && unitsCodeCell.getLong() > 0) {
-
+        if (!BartsCsvHelper.isEmptyOrIsZero(unitsCodeCell)) {
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_UNITS, unitsCodeCell);
-
-            if (cernerCodeValueRef== null) {
-                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for eventId {} not found. Row {} Column {} ",
-                        unitsCodeCell.getLong(), parser.getEventId().getString(),
-                        unitsCodeCell.getRowAuditId(), unitsCodeCell.getColIndex());
-            }
             if (cernerCodeValueRef != null) {
                 unitsDesc = cernerCodeValueRef.getCodeDispTxt();
                 observationBuilder.setValueNumberUnits(unitsDesc, unitsCodeCell);
