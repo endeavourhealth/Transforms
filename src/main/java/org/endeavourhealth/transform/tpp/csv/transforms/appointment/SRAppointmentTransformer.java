@@ -203,7 +203,7 @@ public class SRAppointmentTransformer {
             }
             AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
         }
-        boolean mapIds = !appointmentBuilder.isIdMapped();
+        boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, slotBuilder, appointmentBuilder);
 
 
