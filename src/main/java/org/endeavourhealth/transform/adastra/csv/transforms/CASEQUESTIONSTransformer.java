@@ -47,15 +47,24 @@ public class CASEQUESTIONSTransformer {
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
         CsvCell questionSetName = parser.getQuestionSetName();
+        CsvCell question = parser.getQuestion();
 
-        //Outcomes are handles in the Outcomes transformer.  Capture non Outcomes text here, i.e. safe guarding
-        if (!questionSetName.getString().toLowerCase().contains("outcomes")) {
+        // Outcomes are handled in the Outcomes transformer.
+        // Capture non Outcomes text here, i.e. safe guarding and additional comments
+        if (!questionSetName.getString().toLowerCase().contains("outcomes") ||
+                question.getString().toLowerCase().contains("additional")) {
 
             CsvCell answerOutcome = parser.getAnswer();
             if (!answerOutcome.isEmpty()) {
 
+                String answerOutcomeText = "";
                 //append the question set to the answer to give it some context
-                String answerOutcomeText = questionSetName.getString().concat(": ").concat(answerOutcome.getString());
+                if (!question.getString().toLowerCase().contains("additional")) {
+
+                    answerOutcomeText = questionSetName.getString().concat(": ").concat(answerOutcome.getString());
+                } else {
+                    answerOutcomeText = question.getString().concat(": ").concat(answerOutcome.getString());
+                }
 
                 //get existing outcome text to update
                 String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
