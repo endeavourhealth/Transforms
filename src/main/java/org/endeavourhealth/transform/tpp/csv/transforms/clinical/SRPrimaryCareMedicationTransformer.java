@@ -5,10 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
@@ -112,6 +109,9 @@ public class SRPrimaryCareMedicationTransformer {
         medicationStatementBuilder.setId(medicationId.getString(), medicationId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (medicationStatementBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         medicationStatementBuilder.setPatient(patientReference, patientId);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
@@ -134,6 +134,9 @@ public class SRPrimaryCareMedicationTransformer {
                     recordedById.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (medicationStatementBuilder.isIdMapped()) {
+                    staffReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 medicationStatementBuilder.setRecordedBy(staffReference, recordedById);
             }
         }
@@ -142,6 +145,9 @@ public class SRPrimaryCareMedicationTransformer {
         if (!doneByClinicianId.isEmpty()) {
 
             Reference staffReference = csvHelper.createPractitionerReference(doneByClinicianId);
+            if (medicationStatementBuilder.isIdMapped()) {
+                staffReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+            }
             medicationStatementBuilder.setInformationSource(staffReference, recordedById);
         }
 
@@ -202,10 +208,13 @@ public class SRPrimaryCareMedicationTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            if (medicationStatementBuilder.isIdMapped()) {
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+            }
             medicationStatementBuilder.setEncounter (eventReference, eventId);
         }
-
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+        boolean mapIds = !medicationStatementBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, medicationStatementBuilder);
     }
 
     private static void createOrDeleteMedicationOrder  (SRPrimaryCareMedication parser,
@@ -334,7 +343,7 @@ public class SRPrimaryCareMedicationTransformer {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             medicationOrderBuilder.setEncounter (eventReference, eventId);
         }
-
+        // No need to set boolean as this builder was created fresh from constructor so needs to be mapped
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);
     }
 }
