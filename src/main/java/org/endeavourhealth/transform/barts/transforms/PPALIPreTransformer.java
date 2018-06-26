@@ -88,7 +88,7 @@ public class PPALIPreTransformer {
 
         //work out if this is an active MRN record
         CsvCell endDateCell = parser.getEndEffectiveDate();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
+        if (BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
 
             CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
