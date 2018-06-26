@@ -206,8 +206,7 @@ public class CLEVETransformer {
             transformResultNumericValue(parser, observationBuilder, csvHelper);
 
         } else if (isDateResult(parser)) {
-            //TODO - restore when we want to process events with result dates
-            //transformResultDateValue(parser, observationBuilder, csvHelper);
+            transformResultDateValue(parser, observationBuilder, csvHelper);
 
             //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
             //until we want to handle these types of event
@@ -221,8 +220,7 @@ public class CLEVETransformer {
             return;
 
         } else {
-            //TODO - remove this when we want to process more than numerics
-            //transformResultString(parser, observationBuilder, csvHelper);
+            transformResultString(parser, observationBuilder, csvHelper);
 
             //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
             //until we want to handle these types of event

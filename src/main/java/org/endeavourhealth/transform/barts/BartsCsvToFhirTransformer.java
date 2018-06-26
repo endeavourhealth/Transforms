@@ -76,11 +76,17 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
             PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper), fhirResourceFiler, csvHelper);
 
+            //patient PRE transformers - to cache stuff fast
+            PPALIPreTransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper); //this must be FIRST
+            PPADDPreTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
+            PPNAMPreTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper);
+            PPPHOPreTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper);
+            PPRELPreTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper), fhirResourceFiler, csvHelper);
+
             //patient transformers
-            PPATIPreTransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
             PPATITransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper), fhirResourceFiler, csvHelper);
-            PPADDTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
             PPALITransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper);
+            PPADDTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
             //PPINFTransformer.transform(createParsers(fileMap, parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper);
             PPNAMTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper), fhirResourceFiler, csvHelper);
             PPPHOTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper), fhirResourceFiler, csvHelper);

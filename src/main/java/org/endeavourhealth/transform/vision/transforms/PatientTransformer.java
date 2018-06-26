@@ -278,7 +278,7 @@ public class PatientTransformer {
         }
 
         //and delete the patient and episode
-        fhirResourceFiler.deletePatientResource(currentState, fhirPatient, fhirEpisode);
+        fhirResourceFiler.deletePatientResource(currentState, patientBuilder, episodeBuilder);
     }
 
     private static RegistrationType convertRegistrationType(String csvRegTypeCode) {

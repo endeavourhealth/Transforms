@@ -20,7 +20,6 @@ import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
-import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -83,81 +82,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     }
 
 
-    public void saveAdminResource(CsvCurrentState parserState, Resource... resources) throws Exception {
-        saveAdminResource(parserState, true, resources);
-    }
-    public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        ExchangeBatch batch = getAdminBatch();
-        ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
-//        for (Resource resource : resources) {
-//            if (mapIds && resource.getResourceType().equals(ResourceType.Organization)) {
-//                try {
-//                    UUID uuid = UUID.fromString(resource.getId());
-//                    LOG.error("UUID mapping error." + resource.getResourceType() + " Resource:" + resource.toString()
-//                            + "ParserState:" + parserState.toString());
-//                } catch (IllegalArgumentException ex) {
-//                    // ignore - it shouldn't be castable
-//                }
-//
-//            }
-//        }
-        addResourceToQueue(parserState, false, mapIds, batch, false, resourceBuilders);
-    }
-
-    public void deleteAdminResource(CsvCurrentState parserState, Resource... resources) throws Exception {
-        deleteAdminResource(parserState, true, resources);
-    }
-    public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        ExchangeBatch batch = getAdminBatch();
-        ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
-        addResourceToQueue(parserState, false, mapIds, batch, true, resourceBuilders);
-    }
-
-    public void savePatientResource(CsvCurrentState parserState, Resource... resources) throws Exception {
-        savePatientResource(parserState, true, resources);
-    }
-    public void savePatientResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
-        ExchangeBatch batch = getPatientBatch(mapIds, resourceBuilders);
-//        for (Resource resource : resources) {
-//            if (mapIds && resource.getResourceType().equals(ResourceType.Patient)) {
-//                try {
-//                    UUID uuid = UUID.fromString(resource.getId());
-//                    LOG.error("UUID mapping error." + resource.getResourceType() + " Resource:" + resource.toString()
-//                            + "ParserState:" + parserState.toString());
-//                } catch (IllegalArgumentException ex) {
-//                    // ignore - it shouldn't be castable
-//                }
-//
-//            }
-//        }
-        addResourceToQueue(parserState, true, mapIds, batch, false, resourceBuilders);
-    }
-
-    public void deletePatientResource(CsvCurrentState parserState, Resource... resources) throws Exception {
-        deletePatientResource(parserState, true, resources);
-    }
-    public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, Resource... resources) throws Exception {
-        ResourceBuilderBase[] resourceBuilders = wrapResourcesInBuilders(resources);
-        ExchangeBatch batch = getPatientBatch(mapIds, resourceBuilders);
-        addResourceToQueue(parserState, true, mapIds, batch, true, resourceBuilders);
-    }
-
-
-    private static ResourceBuilderBase[] wrapResourcesInBuilders(Resource[] resources) {
-        List<ResourceBuilderBase> list = new ArrayList<>();
-        for (Resource resource: resources) {
-            GenericBuilder builder = new GenericBuilder(resource);
-            list.add(builder);
-        }
-        return list.toArray(new ResourceBuilderBase[list.size()]);
-    }
-
-
     public void saveAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         saveAdminResource(parserState, true, resources);
     }
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
+        validateResources(mapIds, false, resources);
         ExchangeBatch batch = getAdminBatch();
         addResourceToQueue(parserState, false, mapIds, batch, false, resources);
     }
@@ -166,6 +95,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         deleteAdminResource(parserState, true, resources);
     }
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
+        validateResources(mapIds, true, resources);
         ExchangeBatch batch = getAdminBatch();
         addResourceToQueue(parserState, false, mapIds, batch, true, resources);
     }
@@ -174,6 +104,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         savePatientResource(parserState, true, resources);
     }
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
+        validateResources(mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
         addResourceToQueue(parserState, true, mapIds, batch, false, resources);
     }
@@ -182,6 +113,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         deletePatientResource(parserState, true, resources);
     }
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
+        validateResources(mapIds, true, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
         addResourceToQueue(parserState, true, mapIds, batch, true, resources);
     }
@@ -880,6 +812,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     }*/
 
 
+    private static void validateResources(boolean mapIds, boolean deleting, ResourceBuilderBase... resourceBuilders) throws Exception {
 
+    }
 
 }

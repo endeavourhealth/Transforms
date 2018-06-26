@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Organization;
 
@@ -24,6 +25,6 @@ public class OrganisationTransformer {
         fhirOrganisation.setId(gpRegistration.getSurgeryNationalCode() + ":" + gpRegistration.getSurgeryPostcode());
         uniqueIdMapper.put(gpRegistration.getSurgeryNationalCode(), fhirOrganisation.getId());
 
-        fhirResourceFiler.saveAdminResource(null, fhirOrganisation);
+        fhirResourceFiler.saveAdminResource(null, new OrganizationBuilder(fhirOrganisation));
     }
 }

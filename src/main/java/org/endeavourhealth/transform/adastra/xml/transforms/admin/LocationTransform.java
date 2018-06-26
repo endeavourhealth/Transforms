@@ -2,9 +2,10 @@ package org.endeavourhealth.transform.adastra.xml.transforms.admin;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.hl7.fhir.instance.model.Meta;
 
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class LocationTransform {
         fhirLocation.setName(locationText);
         fhirLocation.setType(CodeableConceptHelper.createCodeableConcept(locationText));
 
-        fhirResourceFiler.saveAdminResource(null, fhirLocation);
+        fhirResourceFiler.saveAdminResource(null, new LocationBuilder(fhirLocation));
 
     }
 }

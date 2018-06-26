@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.Resource;
 
 import java.util.*;
@@ -53,17 +54,17 @@ public class FhirDeltaResourceFilter {
         FhirResourceFiler filer = new FhirResourceFiler(exchangeId, serviceId, systemId, currentErrors, batchIdsToPopulate);
 
         for (Resource resource: adminUpserts) {
-            filer.saveAdminResource(null, false, resource);
+            filer.saveAdminResource(null, false, new GenericBuilder(resource));
         }
 
         for (Resource resource: patientUpserts) {
             //String patientId = IdHelper.getPatientId(resource);
-            filer.savePatientResource(null, false, resource);
+            filer.savePatientResource(null, false, new GenericBuilder(resource));
         }
 
         for (Resource resource: patientDeletes) {
             //String patientId = IdHelper.getPatientId(resource);
-            filer.deletePatientResource(null, false, resource);
+            filer.deletePatientResource(null, false, new GenericBuilder(resource));
         }
 
         //must wait for everything to finish

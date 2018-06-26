@@ -63,10 +63,11 @@ public class PPATITransformer {
             return;
         }
 
-        CsvCell mrnCell = parser.getLocalPatientId();
+        //let the PPALI transform add the MRN identifier, since the MRN on PPATI can be duplicated (e.g. MRN 9571132)
+        /*CsvCell mrnCell = parser.getLocalPatientId();
         if (!mrnCell.isEmpty()) {
             addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
-        }
+        }*/
 
         CsvCell nhsNumberCell = parser.getNhsNumber();
         if (!nhsNumberCell.isEmpty()) {

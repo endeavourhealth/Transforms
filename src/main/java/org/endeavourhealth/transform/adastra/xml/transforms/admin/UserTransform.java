@@ -3,9 +3,10 @@ package org.endeavourhealth.transform.adastra.xml.transforms.admin;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
+import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Practitioner;
@@ -50,7 +51,7 @@ public class UserTransform {
 
         fhirPractitioner.addPractitionerRole(fhirRole);
 
-        fhirResourceFiler.saveAdminResource(null, fhirPractitioner);
+        fhirResourceFiler.saveAdminResource(null, new PractitionerBuilder(fhirPractitioner));
 
     }
 }

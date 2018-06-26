@@ -21,8 +21,6 @@ import java.util.List;
 public class PPRELTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPRELTransformer.class);
 
-    private static final String PPREL_ID_TO_PERSON_ID = "PPREL_ID_TO_PERSON_ID";
-
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -51,7 +49,7 @@ public class PPRELTransformer {
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
 
-            String personIdStr = csvHelper.getInternalId(PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
+            String personIdStr = csvHelper.getInternalId(PPRELPreTransformer.PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
@@ -187,10 +185,6 @@ public class PPRELTransformer {
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(relationshipTypeDesc);
         }
-
-        //and we need to store the PPADD ID -> PERSON ID mapping so that if the address is ever deleted,
-        //we can find the person it belonged to, since the deleted records only give us the ID
-        csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString(), personIdCell.getString());
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
     }

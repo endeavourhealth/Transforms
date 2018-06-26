@@ -13,10 +13,7 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +93,7 @@ public class BasisTransformer {
             fhirOrganization.addAddress(fhirAddress);
 
             LOG.trace("Save Organization:" + FhirSerializationHelper.serializeResource(fhirOrganization));
-            saveAdminResource(fhirResourceFiler, currentParserState, fhirOrganization);
+            saveAdminResource(fhirResourceFiler, currentParserState, new OrganizationBuilder(fhirOrganization));
         }
         return resourceId;
     }
@@ -164,7 +161,7 @@ public class BasisTransformer {
         fhirEpisodeOfCare.setPeriod(p);
 
         LOG.trace("Save fhirEpisodeOfCare:" + FhirSerializationHelper.serializeResource(fhirEpisodeOfCare));
-        savePatientResource(fhirResourceFiler, currentParserState, fhirEpisodeOfCare.getId().toString(), fhirEpisodeOfCare);
+        savePatientResource(fhirResourceFiler, currentParserState, new EpisodeOfCareBuilder(fhirEpisodeOfCare));
 
         return fhirEpisodeOfCare;
     }
@@ -224,7 +221,7 @@ public class BasisTransformer {
         }
 
         LOG.trace("Save Encounter:" + FhirSerializationHelper.serializeResource(fhirEncounter));
-        savePatientResource(fhirResourceFiler, currentParserState, fhirEncounter.getId().toString(), fhirEncounter);
+        savePatientResource(fhirResourceFiler, currentParserState, new EncounterBuilder(fhirEncounter));
 
         return fhirEncounter;
     }
@@ -456,7 +453,7 @@ public class BasisTransformer {
             }
 
             LOG.trace("Save Patient:" + FhirSerializationHelper.serializeResource(fhirPatient));
-            savePatientResource(fhirResourceFiler, currentParserState, patientResourceId.getResourceId().toString(), fhirPatient);
+            savePatientResource(fhirResourceFiler, currentParserState, new PatientBuilder(fhirPatient));
         } else {
             // Check merge history
             if (mergeDAL == null) {
@@ -806,7 +803,7 @@ public class BasisTransformer {
 
     //TO DELETE AFTER CHANGING TRANSFORMS TO USE BUILDERS
 
-    public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
+    /*public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, String groupId, Resource... resources) throws Exception {
         fhirResourceFiler.deletePatientResource(parserState, false, resources);
     }
 
@@ -829,6 +826,6 @@ public class BasisTransformer {
 
     public static void saveAdminResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, Resource... resources) throws Exception {
         fhirResourceFiler.saveAdminResource(parserState, true, resources);
-    }
+    }*/
 
 }

@@ -16,6 +16,7 @@ import org.endeavourhealth.transform.barts.schema.Tails;
 import org.endeavourhealth.transform.barts.schema.TailsRecord;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -236,10 +237,10 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
         // save resource
         if (parser.getCDSUpdateType() == 1) {
             LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            deletePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
         } else {
             LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + ")" + FhirSerializationHelper.serializeResource(fhirCondition));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
             if (currentMappings.contains(diagnosisResourceId.getResourceId())) {
                 // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
                 currentMappings.remove(diagnosisResourceId.getResourceId());
@@ -274,10 +275,10 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
             // save resource
             if (parser.getCDSUpdateType() == 1) {
                 LOG.debug("Delete primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
             } else {
                 LOG.debug("Save primary Condition resource(PatId=" + parser.getLocalPatientId() + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-                savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+                savePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
                 if (currentMappings.contains(diagnosisResourceId.getResourceId())) {
                     // Mapping already exists - leave as is (i.e. remove for current list to avoid deletion)
                     currentMappings.remove(diagnosisResourceId.getResourceId());
@@ -298,7 +299,7 @@ public class SusOutpatientTransformer extends BartsBasisTransformer {
                 fhirCondition = new Condition();
                 fhirCondition.setId(uuid.toString());
                 fhirCondition.setPatient(ReferenceHelper.createReference(ResourceType.Patient, patientResourceId.getResourceId().toString()));
-                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+                deletePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
             }
             //delete all multi-mappings
             LOG.debug("Remove all remaining sus_resource_map entries");

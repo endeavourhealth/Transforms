@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.*;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
@@ -83,7 +84,7 @@ public class PatientTransformer {
 
         AdastraXmlHelper.createOrganisationReference(registration.getSurgeryNationalCode());
 
-        fhirResourceFiler.savePatientResource(null, fhirPatient);
+        fhirResourceFiler.savePatientResource(null, new PatientBuilder(fhirPatient));
     }
 
     private static ContactPoint convertPhoneNumber(PatientPhoneNumberType phoneNumber) throws Exception {

@@ -15,6 +15,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
@@ -242,7 +245,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         if (changed) {
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, fhirObservation);
+            fhirResourceFiler.savePatientResource(null, false, new ObservationBuilder(fhirObservation));
         }
     }
 
@@ -369,7 +372,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             //String patientGuid = getPatientGuidFromUniqueId(locallyUniqueResourceId);
 
             //make sure to pass in the parameter to bypass ID mapping, since this resource has already been done
-            fhirResourceFiler.savePatientResource(null, false, fhirResource);
+            fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirResource));
         }
     }
 
@@ -616,7 +619,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
             if (changed) {
                 //String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
-                fhirResourceFiler.savePatientResource(null, false, fhirMedicationStatement);
+                fhirResourceFiler.savePatientResource(null, false, new MedicationStatementBuilder(fhirMedicationStatement));
             }
         }
     }

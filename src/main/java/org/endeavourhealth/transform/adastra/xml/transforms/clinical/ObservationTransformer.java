@@ -4,10 +4,11 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
-import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Observation;
 
@@ -38,7 +39,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(caseReport.getActiveDate()));
 
-        fhirResourceFiler.savePatientResource(null, fhirObservation);
+        fhirResourceFiler.savePatientResource(null, new ObservationBuilder(fhirObservation));
     }
 
     public static void observationFromFreeText(String freeText, String consultationID,
@@ -60,7 +61,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(consultationDate));
 
-        fhirResourceFiler.savePatientResource(null, fhirObservation);
+        fhirResourceFiler.savePatientResource(null, new ObservationBuilder(fhirObservation));
 
     }
 
@@ -84,7 +85,7 @@ public class ObservationTransformer {
 
         fhirObservation.setEffective(AdastraXmlHelper.getDateTimeType(consultationDate));
 
-        fhirResourceFiler.savePatientResource(null, fhirObservation);
+        fhirResourceFiler.savePatientResource(null, new ObservationBuilder(fhirObservation));
     }
 
     private static Observation createStandardObservation() {

@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.barts.schema.BulkDiagnosis;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +124,7 @@ public class BulkDiagnosisTransformer extends BartsBasisTransformer {
 
             // save resource
             LOG.debug("Save Condition(PatId=" + localPatientId + "):" + FhirSerializationHelper.serializeResource(fhirCondition));
-            savePatientResource(fhirResourceFiler, parser.getCurrentState(), patientResourceId.getResourceId().toString(), fhirCondition);
+            savePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
         }
 
     }

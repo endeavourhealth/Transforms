@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.adastra.AdastraXmlHelper;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.XmlDateHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Period;
@@ -44,6 +45,6 @@ public class EpisodeTransformer {
             fhirEpisode.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
         }
 
-        fhirResourceFiler.savePatientResource(null, fhirEpisode);
+        fhirResourceFiler.savePatientResource(null, new EpisodeOfCareBuilder(fhirEpisode));
     }
 }
