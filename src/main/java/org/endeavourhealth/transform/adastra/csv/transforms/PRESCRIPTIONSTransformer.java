@@ -66,7 +66,7 @@ public class PRESCRIPTIONSTransformer {
         CsvCell effectiveDate = csvHelper.findConsultationDateTime(consultationId.getString());
         if (effectiveDate != null) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 

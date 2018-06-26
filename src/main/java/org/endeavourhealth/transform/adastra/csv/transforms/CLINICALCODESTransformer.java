@@ -74,7 +74,7 @@ public class CLINICALCODESTransformer {
         CsvCell effectiveDate = csvHelper.findConsultationDateTime(consultationId.getString());
         if (effectiveDate != null) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
