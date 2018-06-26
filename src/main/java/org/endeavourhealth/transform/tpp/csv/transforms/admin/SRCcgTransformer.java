@@ -150,6 +150,7 @@ public class SRCcgTransformer {
         if (locationBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
         }
+
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
 
@@ -158,7 +159,7 @@ public class SRCcgTransformer {
                                                   TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
-        boolean mapIds;
+
 
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
@@ -243,7 +244,8 @@ public class SRCcgTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
-        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+        boolean mapIds  =  !organizationBuilder.isIdMapped();
+        fhirResourceFiler.saveAdminResource(null, mapIds, organizationBuilder);
         }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {

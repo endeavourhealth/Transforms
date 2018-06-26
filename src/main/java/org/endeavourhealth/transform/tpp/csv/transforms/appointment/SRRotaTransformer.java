@@ -44,7 +44,7 @@ public class SRRotaTransformer {
         scheduleBuilder.setId(sessionId.getString(), sessionId);
 
         CsvCell locationBranchId = parser.getIDBranch();
-        if (!locationBranchId.isEmpty()) {
+        if (!locationBranchId.isEmpty() && locationBranchId.getLong() > 0) {
             Reference fhirReference = csvHelper.createLocationReference(locationBranchId);
             if (scheduleBuilder.isIdMapped()) {
                 fhirReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(fhirReference,fhirResourceFiler);
@@ -67,7 +67,7 @@ public class SRRotaTransformer {
         scheduleBuilder.clearActors();
 
         CsvCell sessionActorStaffProfileId = parser.getIDProfileOwner();
-        if (!sessionActorStaffProfileId.isEmpty()) {
+        if (!sessionActorStaffProfileId.isEmpty() && sessionActorStaffProfileId.getString() != "-1") {
 
             String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     sessionActorStaffProfileId.getString());

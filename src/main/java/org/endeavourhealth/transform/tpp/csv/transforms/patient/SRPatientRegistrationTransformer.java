@@ -81,8 +81,8 @@ public class SRPatientRegistrationTransformer {
         episodeBuilder.setPatient(patientReference, idPatient);
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
-            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
-            organizationBuilder.setId(orgIdCell.getString());
+//            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+//            organizationBuilder.setId(orgIdCell.getString());
             Reference organizationReference = csvHelper.createOrganisationReference(orgIdCell);
             if (patientBuilder.isIdMapped()) {
                 organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference,fhirResourceFiler);

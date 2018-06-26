@@ -43,8 +43,9 @@ public class LocationResourceCache {
     public static void fileLocationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         for (Long rowId: LocationBuildersByRowId.keySet()) {
-            LocationBuilder LocationBuilder = LocationBuildersByRowId.get(rowId);
-            fhirResourceFiler.saveAdminResource(null, LocationBuilder);
+            LocationBuilder locationBuilder = LocationBuildersByRowId.get(rowId);
+            boolean mapIds = !locationBuilder.isIdMapped();
+            fhirResourceFiler.saveAdminResource(null, mapIds, locationBuilder);
         }
 
         //clear down as everything has been saved
