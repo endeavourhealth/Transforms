@@ -152,8 +152,8 @@ public abstract class AdastraCsvToFhirTransformer {
 
         //then for the patient resources - note the order of these transforms is important
         CASETransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        CASEQUESTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OUTCOMESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        CASEQUESTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         PATIENTTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodeOfCareResourceCache.clear();
         PatientResourceCache.clear();
