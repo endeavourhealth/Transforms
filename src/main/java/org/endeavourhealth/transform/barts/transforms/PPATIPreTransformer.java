@@ -175,24 +175,35 @@ public class PPATIPreTransformer {
                 String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
                 csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Patient, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
 
+                String currentMrn = mrnCell.getString();
+                String personId = personIdCell.getString();
+
                 //the Problem file only contains MRN, so we need to maintain the map of MRN -> PERSON ID, so it can find the patient UUID
                 //but we need to handle that there are some rare cases (about 16 in the first half of 2018) where two PPATI
                 //records can have the MRN moved from one record to another. For all other files (e.g. ENCNT, CLEVE) we
                 //get updates to them, moving them to the new Person ID, but problems must be done manually
-                String originalPersonIdForMrn = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, personIdCell.getString());
-                if (!Strings.isNullOrEmpty(originalPersonIdForMrn)) {
-                    if (!personIdCell.getString().equals(originalPersonIdForMrn)) {
+                String originalPersonIdForMrn = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, personId);
+                if (Strings.isNullOrEmpty(originalPersonIdForMrn)
+                        || !originalPersonIdForMrn.equals(personId)) {
+
+                    if (!Strings.isNullOrEmpty(originalPersonIdForMrn)
+                        && !personId.equals(originalPersonIdForMrn)) {
 
                         moveProblems(originalPersonIdForMrn, personIdCell, csvHelper, fhirResourceFiler);
                         moveEpisodes(originalPersonIdForMrn, personIdCell, csvHelper, fhirResourceFiler);
-
-                        //and update the mapping
-                        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, mrnCell.getString(), personIdCell.getString());
                     }
+
+                    //and update the mapping
+                    csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, currentMrn, personId);
                 }
 
                 //also store the person ID -> MRN mapping which we use to try to match to resources created by the ADT feed
-                csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personIdCell.getString(), mrnCell.getString());
+                String originalMrnForPersonId = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+                if (Strings.isNullOrEmpty(originalMrnForPersonId)
+                        || !originalMrnForPersonId.equals(currentMrn)) {
+
+                    csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId, currentMrn);
+                }
 
             } catch (Throwable t) {
                 LOG.error("", t);
