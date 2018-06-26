@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -9,6 +8,7 @@ import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -81,13 +81,14 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 throw new TransformException("Transform doesn't support referrals with multiple service codes " + fhir.getId());
             }
             CodeableConcept fhirServiceRequested = fhir.getServiceRequested().get(0);
-            snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhirServiceRequested);
 
-            //add the raw original code, to assist in data checking
-            originalCode = ObservationTransformer.findAndFormatOriginalCode(fhirServiceRequested);
-
-            //add original term too, for easy display of results
-            originalTerm = fhirServiceRequested.getText();
+            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhirServiceRequested);
+            if (codes == null) {
+                return;
+            }
+            snomedConceptId = codes.getSnomedConceptId();
+            originalCode = codes.getOriginalCode();
+            originalTerm = codes.getOriginalTerm();
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/

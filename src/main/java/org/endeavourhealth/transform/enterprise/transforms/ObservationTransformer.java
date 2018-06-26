@@ -1,7 +1,11 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -39,7 +43,7 @@ public class ObservationTransformer extends AbstractTransformer {
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
-        Long resultConcptId = null;
+        Long resultConceptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
@@ -72,7 +76,13 @@ public class ObservationTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (codes == null) {
+            return;
+        }
+        snomedConceptId = codes.getSnomedConceptId();
+        originalCode = codes.getOriginalCode();
+        originalTerm = codes.getOriginalTerm();
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -90,21 +100,15 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultString = stringType.getValue();
 
             } else if (value instanceof CodeableConcept) {
-                CodeableConcept codeableConcept = (CodeableConcept)value;
-                resultConcptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+                CodeableConcept resultCodeableConcept = (CodeableConcept)value;
+                resultConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
 
             } else {
                 throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
 
-        //add the raw original code, to assist in data checking
-        //prefix the original code with something to identify the scheme
-        originalCode = findAndFormatOriginalCode(fhir.getCode());
-        //originalCode = CodeableConceptHelper.findOriginalCode(fhir.getCode());
 
-        //add original term too, for easy display of results
-        originalTerm = fhir.getCode().getText();
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -134,7 +138,7 @@ public class ObservationTransformer extends AbstractTransformer {
             resultValueUnits,
             resultDate,
             resultString,
-            resultConcptId,
+            resultConceptId,
             originalCode,
             isProblem,
             originalTerm,
@@ -143,48 +147,7 @@ public class ObservationTransformer extends AbstractTransformer {
             parentObservationId);
     }
 
-    /**
-     * we have the original code column to tell us what the non-snomed code was in the source system,
-     * but need to unambiguously know what coding scheme that was, so we prefix the original code
-     * with a short string to say what it was
-     */
-    public static String findAndFormatOriginalCode(CodeableConcept codeableConcept) throws Exception {
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
-        if (originalCoding == null) {
-            return null;
-        }
-
-        String system = originalCoding.getSystem();
-        if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)
-                || system.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
-            //there's already a vast amount of Read2 and Emis data in the table, so it's too late
-            //to easily prefix this, so just use the raw code
-            return originalCoding.getCode();
-
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)
-                || system.equals(FhirCodeUri.CODE_SYSTEM_EMISSNOMED)) {
-
-            //a Snomed coding should never be picked up as an "original" term,
-            //so something has gone wrong
-            throw new TransformException("Original coding has system " + system);
-
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3)) {
-            return "CTV3_" + originalCoding.getCode();
-
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_ICD10)) {
-            return "ICD10_" + originalCoding.getCode();
-
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
-            return "OPCS4_" + originalCoding.getCode();
-
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
-            return "CERNER_" + originalCoding.getCode();
-
-        } else {
-            throw new TransformException("Unsupported original code system [" + system + "]");
-        }
-    }
 }
 
 

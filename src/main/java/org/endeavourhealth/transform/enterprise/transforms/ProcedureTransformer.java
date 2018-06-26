@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -74,13 +74,13 @@ public class ProcedureTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
-
-        //add the raw original code, to assist in data checking
-        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getCode());
-
-        //add original term too, for easy display of results
-        originalTerm = fhir.getCode().getText();
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (codes == null) {
+            return;
+        }
+        snomedConceptId = codes.getSnomedConceptId();
+        originalCode = codes.getOriginalCode();
+        originalTerm = codes.getOriginalTerm();
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {

@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -77,13 +77,14 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
             throw new TransformException("DiagnosticOrder with more than one item not supported");
         }
         DiagnosticOrder.DiagnosticOrderItemComponent item = fhir.getItem().get(0);
-        snomedConceptId = CodeableConceptHelper.findSnomedConceptId(item.getCode());
 
-        //add the raw original code, to assist in data checking
-        originalCode = ObservationTransformer.findAndFormatOriginalCode(item.getCode());
-
-        //add original term too, for easy display of results
-        originalTerm = item.getCode().getText();
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(item.getCode());
+        if (codes == null) {
+            return;
+        }
+        snomedConceptId = codes.getSnomedConceptId();
+        originalCode = codes.getOriginalCode();
+        originalTerm = codes.getOriginalTerm();
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {

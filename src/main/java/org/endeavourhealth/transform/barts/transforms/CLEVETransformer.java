@@ -18,6 +18,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.dsig.TransformException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -46,13 +47,11 @@ public class CLEVETransformer {
 
     public static void createObservation(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell clinicalEventId = parser.getEventId();
+        if (true) {
+            throw new TransformException("Stopping transform for now until mapping can be built in");
+        }
 
-        //LOG.debug("CLEVE ID " + clinicalEventId.getString() + " -> " + (clinicalEventId.getString().equals("1254858044")));
-        /*boolean logProgress = clinicalEventId.getString().equals("1254858044");
-        if (logProgress) {
-            LOG.debug("On CLEVE record 1254858044");
-        }*/
+        CsvCell clinicalEventId = parser.getEventId();
 
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
@@ -69,25 +68,12 @@ public class CLEVETransformer {
         observationBuilder.setId(clinicalEventId.getString(), clinicalEventId);
 
         Reference patientReference = csvHelper.createPatientReference(personId);
-        observationBuilder.setPatient(patientReference);
+        observationBuilder.setPatient(patientReference, personId);
 
         // check encounter data
         CsvCell encounterIdCell = parser.getEncounterId();
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
         observationBuilder.setEncounter(encounterReference, encounterIdCell);
-
-        /*if (logProgress) {
-            Observation oldVersion = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
-            if (oldVersion == null) {
-                LOG.debug("Old version is NULL");
-            } else {
-                Reference oldEncounter = oldVersion.getEncounter();
-                LOG.debug("Encounter ID WAS " + oldEncounter.getReference());
-            }
-
-            Reference mappedEncounterId = IdHelper.convertLocallyUniqueReferenceToEdsReference(encounterReference, fhirResourceFiler);
-            LOG.debug("Encounter ID now " + mappedEncounterId.getReference());
-        }*/
 
         //there are lots of events that are still active but have a result text of DELETED
         CsvCell resultTextCell = parser.getEventResultText();
@@ -117,10 +103,6 @@ public class CLEVETransformer {
             observationBuilder.setClinician(practitionerReference, clinicianId);
         }
 
-        /*if (logProgress) {
-            LOG.debug("-------2");
-        }*/
-
         CsvCell effectiveDate = parser.getEventPerformedDateTime();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(effectiveDate)) {
             Date d = BartsCsvHelper.parseDate(effectiveDate);
@@ -134,10 +116,6 @@ public class CLEVETransformer {
             Reference parentObservationReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventId.getString());
             observationBuilder.setParentResource(parentObservationReference, parentEventId);
         }
-
-        /*if (logProgress) {
-            LOG.debug("-------3");
-        }*/
 
         //link to child observations if we have any
         ReferenceList childReferences = csvHelper.getAndRemoveClinicalEventParentRelationships(clinicalEventId);
@@ -155,10 +133,6 @@ public class CLEVETransformer {
             Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, orderIdCell.getString());
             observationBuilder.setParentResource(parentDiagnosticReportReference, orderIdCell);
         }
-
-        /*if (logProgress) {
-            LOG.debug("-------4");
-        }*/
 
         //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
@@ -198,56 +172,28 @@ public class CLEVETransformer {
             }
         }
 
-        /*if (logProgress) {
-            LOG.debug("-------5");
-        }*/
-
         if (isNumericResult(parser)) {
             transformResultNumericValue(parser, observationBuilder, csvHelper);
 
         } else if (isDateResult(parser)) {
             transformResultDateValue(parser, observationBuilder, csvHelper);
 
-            //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
+            /*//we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
             //until we want to handle these types of event
             deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
-
-            /*if (logProgress) {
-                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-                LOG.debug("Cancelling saving resource as is now DATE resource");
-            }*/
-
-            return;
+            return;*/
 
         } else {
             transformResultString(parser, observationBuilder, csvHelper);
 
-            //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
+            /*//we can't just return out, because we may be UPDATING an Observation, in which case we should delete it now
             //until we want to handle these types of event
             deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
-
-            /*if (logProgress) {
-                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-                LOG.debug("Cancelling saving resource as is now STRING resource");
-            }*/
-
-            return;
+            return;*/
         }
-
-        /*if (logProgress) {
-            LOG.debug("-------6");
-        }*/
-
 
         CsvCell normalcyCodeCell = parser.getEventNormalcyCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(normalcyCodeCell)) {
-
-            if (csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, normalcyCodeCell) == null) {
-                TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for Normalcy code {} not found. Row {} Column {} ",
-                        normalcyCodeCell.getLong(), parser.getEventNormalcyCode().getString(),
-                        normalcyCodeCell.getRowAuditId(), normalcyCodeCell.getColIndex());
-                // return;
-            }
             BartsCodeableConceptHelper.applyCodeDescTxt(normalcyCodeCell, CodeValueSet.CLINICAL_EVENT_NORMALCY, observationBuilder, CodeableConceptBuilder.Tag.Observation_Range_Meaning, csvHelper);
         }
 
@@ -262,17 +208,8 @@ public class CLEVETransformer {
             }
         }
 
-        /*if (logProgress) {
-            LOG.debug("-------7");
-        }*/
-
         // save resource
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
-
-        /*if (logProgress) {
-            LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-            LOG.debug("Added resource to queue to save");
-        }*/
 
     }
 

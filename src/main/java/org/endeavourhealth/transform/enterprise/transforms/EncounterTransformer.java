@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
 import org.endeavourhealth.transform.enterprise.outputModels.EncounterRaw;
@@ -182,9 +183,19 @@ public class EncounterTransformer extends AbstractTransformer {
         String fhirClass = findClass(fhir);
         String fhirType = findType(fhir);
         String fhirStatus = findStatus(fhir);
-        Long fhirSnomedConceptId = findSnomedSourceConceptId(fhir);
-        String fhirOriginalCode = findOriginalReadCode(fhir);
-        String fhirOriginalTerm = findOriginalTerm(fhir);
+
+        Long fhirSnomedConceptId = null;
+        String fhirOriginalCode = null;
+        String fhirOriginalTerm = null;
+
+        CodeableConcept codeableConcept = findSourceCodeableConcept(fhir);
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
+        if (codes != null) {
+            //unlike Observations etc., we still DO want to send this record to our subscriber even if not coded
+            fhirSnomedConceptId = codes.getSnomedConceptId();
+            fhirOriginalCode = codes.getOriginalCode();
+            fhirOriginalTerm = codes.getOriginalTerm();
+        }
 
         OutputContainer outputContainer = params.getOutputContainer();
 
@@ -251,7 +262,22 @@ public class EncounterTransformer extends AbstractTransformer {
         return new Integer((int)minDur);
     }
 
-    private String findOriginalTerm(Encounter fhir) {
+
+    private CodeableConcept findSourceCodeableConcept(Encounter fhir) throws Exception {
+        if (!fhir.hasExtension()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+        if (extension == null) {
+            return null;
+        }
+
+        return (CodeableConcept)extension.getValue();
+    }
+
+
+    /*private String findOriginalTerm(Encounter fhir) {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -292,7 +318,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         CodeableConcept codeableConcept = (CodeableConcept)extension.getValue();
         return CodeableConceptHelper.findSnomedConceptId(codeableConcept);
-    }
+    }*/
 
     private String findStatus(Encounter fhir) {
         if (!fhir.hasStatus()) {

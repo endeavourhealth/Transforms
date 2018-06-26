@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.ProcedureRequest;
@@ -61,17 +61,17 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        snomedConceptId = CodeableConceptHelper.findSnomedConceptId(fhir.getCode());
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (codes == null) {
+            return;
+        }
+        snomedConceptId = codes.getSnomedConceptId();
+        originalCode = codes.getOriginalCode();
+        originalTerm = codes.getOriginalTerm();
 
         if (fhir.hasStatus()) {
             procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
         }
-
-        //add the raw original code, to assist in data checking
-        originalCode = ObservationTransformer.findAndFormatOriginalCode(fhir.getCode());
-
-        //add original term too, for easy display of results
-        originalTerm = fhir.getCode().getText();
 
         org.endeavourhealth.transform.enterprise.outputModels.ProcedureRequest model = (org.endeavourhealth.transform.enterprise.outputModels.ProcedureRequest)csvWriter;
         model.writeUpsert(id,
