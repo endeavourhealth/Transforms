@@ -4,10 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -118,6 +115,9 @@ public class SREventTransformer {
                     csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (encounterBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
             }
         }
@@ -139,6 +139,9 @@ public class SREventTransformer {
         CsvCell visitOrg = parser.getIDOrganisation();
         if (!visitOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(visitOrg);
+            if (encounterBuilder.isIdMapped()) {
+                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+            }
             encounterBuilder.setServiceProvider(orgReference, visitOrg);
         }
 
@@ -157,6 +160,7 @@ public class SREventTransformer {
         if (appLinkedResources != null) {
             encounterBuilder.setAppointment(appLinkedResources.getReference(0));
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        boolean mapIds = !encounterBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
     }
 }

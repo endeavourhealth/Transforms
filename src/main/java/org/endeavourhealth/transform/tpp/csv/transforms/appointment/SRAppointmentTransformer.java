@@ -94,19 +94,22 @@ public class SRAppointmentTransformer {
             return;
         }
 
-//        if (csvHelper.retrieveResource(patientId.getString(), ResourceType.Patient, fhirResourceFiler) == null) {
-//            mappingNeeded = true;
-//        }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
 
+        if (appointmentBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(appointmentId.getString(), appointmentId);
 
         Reference slotRef = csvHelper.createSlotReference(appointmentId);
+        if (appointmentBuilder.isIdMapped()) {
+            slotRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(slotRef,fhirResourceFiler);
+        }
         appointmentBuilder.addSlot(slotRef, appointmentId);
 
 
@@ -200,7 +203,8 @@ public class SRAppointmentTransformer {
             }
             AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+        boolean mapIds = !appointmentBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, slotBuilder, appointmentBuilder);
 
 
     }

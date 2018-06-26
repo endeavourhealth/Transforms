@@ -10,10 +10,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -85,10 +82,16 @@ public class SRImmunisationTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            if (immunizationBuilder.isIdMapped()) {
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+            }
             immunizationBuilder.setEncounter(eventReference, eventId);
         }
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (immunizationBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         immunizationBuilder.setPatient(patientReference, patientId);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
@@ -110,6 +113,9 @@ public class SRImmunisationTransformer {
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (immunizationBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 immunizationBuilder.setRecordedBy(staffReference, recordedBy);
             }
         }
@@ -118,12 +124,18 @@ public class SRImmunisationTransformer {
         if (!encounterDoneBy.isEmpty()) {
 
             Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
+            if (immunizationBuilder.isIdMapped()) {
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+            }
             immunizationBuilder.setPerformer(staffReference, encounterDoneBy);
         }
 
         CsvCell orgDoneAt = parser.getIDOrganisation();
         if (!orgDoneAt.isEmpty()) {
             Reference locReference = csvHelper.createLocationReference(orgDoneAt);
+            if (immunizationBuilder.isIdMapped()) {
+                locReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(locReference,fhirResourceFiler);
+            }
             immunizationBuilder.setLocation(locReference, orgDoneAt);
         }
 
@@ -225,6 +237,9 @@ public class SRImmunisationTransformer {
         CsvCell idEvent = parser.getIDEvent();
         if (!idEvent.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            if (immunizationBuilder.isIdMapped()) {
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+            }
             immunizationBuilder.setEncounter(eventReference, eventId);
         }
     }

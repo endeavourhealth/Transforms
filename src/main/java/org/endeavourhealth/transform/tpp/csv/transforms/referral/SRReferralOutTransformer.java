@@ -9,10 +9,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfig
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -89,6 +86,9 @@ public class SRReferralOutTransformer {
                 = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (referralRequestBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         referralRequestBuilder.setPatient(patientReference, patientId);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
@@ -109,6 +109,9 @@ public class SRReferralOutTransformer {
                                                              recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (referralRequestBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
             }
         }
@@ -117,9 +120,15 @@ public class SRReferralOutTransformer {
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
         if (!requestedByStaff.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(requestedByStaff);
+            if (referralRequestBuilder.isIdMapped()) {
+                practitionerReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
+            }
             referralRequestBuilder.setRequester(practitionerReference, requestedByStaff);
         } else if (!requestedByOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
+            if (referralRequestBuilder.isIdMapped()) {
+                orgReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+            }
             referralRequestBuilder.setRequester(orgReference, requestedByOrg);
         }
 
@@ -235,9 +244,15 @@ public class SRReferralOutTransformer {
             if (!referralRecipientId.isEmpty()) {
                 if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
                     Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
+                    if (referralRequestBuilder.isIdMapped()) {
+                        practitionerReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
+                    }
                     referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
                 } else {
                     Reference orgReference = csvHelper.createOrganisationReference(referralRecipientId);
+                    if (referralRequestBuilder.isIdMapped()) {
+                        orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+                    }
                     referralRequestBuilder.addRecipient(orgReference, referralRecipientId);
                 }
             }
@@ -248,8 +263,13 @@ public class SRReferralOutTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            if (referralRequestBuilder.isIdMapped()) {
+                eventReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
+            }
             referralRequestBuilder.setEncounter (eventReference, eventId);
         }
+        boolean mapIds = !referralRequestBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
     }
 
     private static ReferralPriority convertPriority(String priority) {

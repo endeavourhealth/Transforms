@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
@@ -45,6 +46,9 @@ public class SRRotaTransformer {
         CsvCell locationBranchId = parser.getIDBranch();
         if (!locationBranchId.isEmpty()) {
             Reference fhirReference = csvHelper.createLocationReference(locationBranchId);
+            if (scheduleBuilder.isIdMapped()) {
+                fhirReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(fhirReference,fhirResourceFiler);
+            }
             scheduleBuilder.setLocation(fhirReference, locationBranchId);
         }
 
@@ -70,10 +74,13 @@ public class SRRotaTransformer {
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference practitionerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
+                if (scheduleBuilder.isIdMapped()) {
+                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
+                }
                 scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
             }
         }
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);
+        boolean mapIds = !scheduleBuilder.isIdMapped();
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, scheduleBuilder);
     }
 }

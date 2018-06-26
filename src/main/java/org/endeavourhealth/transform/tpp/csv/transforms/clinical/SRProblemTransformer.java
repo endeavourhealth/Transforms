@@ -4,10 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ConditionResourceCache;
@@ -78,6 +75,9 @@ public class SRProblemTransformer {
                 = ConditionResourceCache.getConditionBuilder(linkedObsCodeId, patientId, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (conditionBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         conditionBuilder.setPatient(patientReference, patientId);
 
         //the linked SRCode entry - cache the reference for the SRCode transformer to check that it is a problem
@@ -93,6 +93,9 @@ public class SRProblemTransformer {
                     csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (conditionBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 conditionBuilder.setRecordedBy(staffReference, recordedBy);
             }
         }
@@ -101,6 +104,9 @@ public class SRProblemTransformer {
         if (!clinicianDoneBy.isEmpty()) {
 
             Reference staffReference = csvHelper.createPractitionerReference(clinicianDoneBy);
+            if (conditionBuilder.isIdMapped()) {
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+            }
             conditionBuilder.setClinician(staffReference, clinicianDoneBy);
         }
 
@@ -149,5 +155,7 @@ public class SRProblemTransformer {
                 conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
             }
         }
+        boolean mapIds = !conditionBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,conditionBuilder);
     }
 }
