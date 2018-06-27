@@ -199,31 +199,33 @@ public class PPALIPreTransformer {
                     String localUniqueId = personIdCell.getString();
                     String hl7ReceiverUniqueId = "PIdAssAuth=" + BartsCsvToFhirTransformer.PRIMARY_ORG_HL7_OID + "-PatIdValue=" + activeMrnCell.getString(); //this must match the HL7 Receiver
                     String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
-                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Patient, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
+                    UUID patientUuid = csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Patient, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
 
                     String currentMrn = activeMrnCell.getString();
                     String personId = personIdCell.getString();
 
-                    //the Problem file only contains MRN, so we need to maintain the map of MRN -> PERSON ID, so it can find the patient UUID
-                    //but we need to handle that there are some rare cases (about 16 in the first half of 2018) where two PPATI
-                    //records can have the MRN moved from one record to another. For all other files (e.g. ENCNT, CLEVE) we
-                    //get updates to them, moving them to the new Person ID, but problems must be done manually
                     String originalPersonIdForMrn = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, personId);
                     if (Strings.isNullOrEmpty(originalPersonIdForMrn)
                             || !originalPersonIdForMrn.equals(personId)) {
 
-                        //there are some PPATI records where they are clearly intended to be the same patient (due to same DoB)
-                        //but one is a "proper" record and the other
+                        //update the mapping
+                        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, currentMrn, personId);
 
+                        //and if we've detected that our MRN has moved from one patient to another, we need to update a few things
                         if (!Strings.isNullOrEmpty(originalPersonIdForMrn)
                                 && !personId.equals(originalPersonIdForMrn)) {
 
+                            //update the HL7 Receiver DB to give it the new patient UUID for the MRN so future ADT
+                            //messages for the MRN go against the right patient
+                            csvHelper.updateHl7ReceiverWithNewUuid(ResourceType.Patient, hl7ReceiverUniqueId, hl7ReceiverScope, patientUuid);
+
+                            //the Problem file only contains MRN, so we need to maintain the map of MRN -> PERSON ID, so it can find the patient UUID
+                            //but we need to handle that there are some rare cases (about 16 in the first half of 2018) where two PPATI
+                            //records can have the MRN moved from one record to another. For all other files (e.g. ENCNT, CLEVE) we
+                            //get updates to them, moving them to the new Person ID, but problems must be done manually
                             moveProblems(originalPersonIdForMrn, personIdCell, csvHelper, fhirResourceFiler);
                             moveEpisodes(originalPersonIdForMrn, personIdCell, csvHelper, fhirResourceFiler);
                         }
-
-                        //and update the mapping
-                        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, currentMrn, personId);
                     }
 
                     //also store the person ID -> MRN mapping which we use to try to match to resources created by the ADT feed

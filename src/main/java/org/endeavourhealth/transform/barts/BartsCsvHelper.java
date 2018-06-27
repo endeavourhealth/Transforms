@@ -548,7 +548,21 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         //LOG.debug("Generated new UUID " + existingResourceId + " for resource and saved to HL7 receiver DB");
 
         return existingResourceId;
+    }
 
+    public void updateHl7ReceiverWithNewUuid(ResourceType resourceType, String hl7ReceiverUniqueId, String hl7ReceiverScope, UUID resourceUuid) throws Exception {
+        ResourceId hl7Mapping = new ResourceId();
+        hl7Mapping.setScopeId(hl7ReceiverScope);
+        hl7Mapping.setResourceType(resourceType.toString());
+        hl7Mapping.setUniqueId(hl7ReceiverUniqueId);
+        hl7Mapping.setResourceId(resourceUuid);
+
+        try {
+            hl7ReceiverDal.updateResourceId(hl7Mapping);
+        } catch (Exception ex) {
+            LOG.error("Error updating HL7 resource_uuid, scope_id = " + hl7Mapping.getScopeId() + ", local_id = " + hl7Mapping.getUniqueId() + " resource_type = " + hl7Mapping.getResourceType() + ", resource_id = " + hl7Mapping.getResourceId());
+            throw ex;
+        }
     }
 
 
