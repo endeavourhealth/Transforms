@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 public class PATIENTTransformer {
 
@@ -197,6 +199,17 @@ public class PATIENTTransformer {
         if (registrationEndDate != null) {
             boolean active = registrationEndDate.after(new Date());
             patientBuilder.setActive(active);
+        }
+
+        //get the configured serviceId to retrieve an Organization resource if it exists (create if not)
+        UUID serviceId = parser.getServiceId();
+        OrganizationBuilder organizationBuilder
+                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
+        //the organization resource has been created or is already created so set the episode managing org reference
+        if (organizationBuilder != null) {
+
+            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            episodeBuilder.setManagingOrganisation(organisationReference);
         }
 
         if (!patientCreatedInSession) {
