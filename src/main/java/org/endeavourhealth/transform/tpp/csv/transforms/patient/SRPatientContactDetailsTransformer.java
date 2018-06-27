@@ -64,8 +64,8 @@ public class SRPatientContactDetailsTransformer {
 
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            List<ContactPoint> contacts =  patientBuilder.getContactPoint();
-            for (ContactPoint contact : contacts) {
+            List<ContactPoint> contacts = patientBuilder.getContactPoint();
+            for (ContactPoint contact: contacts) {
                 if (contact.getId().equals(rowIdCell.getString())) {
                     patientBuilder.removeContactPoint(contact);
                 }
@@ -102,6 +102,7 @@ public class SRPatientContactDetailsTransformer {
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
         }
         boolean mapids = !patientBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
+        // fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
+        // Filing done by cache
     }
 }

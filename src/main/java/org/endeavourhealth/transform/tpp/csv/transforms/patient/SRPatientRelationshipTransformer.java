@@ -24,6 +24,7 @@ import static org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatient
 public class SRPatientRelationshipTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRelationshipTransformer.class);
+
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
@@ -57,11 +58,11 @@ public class SRPatientRelationshipTransformer {
 
         CsvCell removeDataCell = parser.getRemovedData();
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            List<Patient.ContactComponent> contacts =  patientBuilder.getPatientContactComponents();
-            for (Patient.ContactComponent cc : contacts) {
-              if (cc.getId().equals(rowIdCell.getString())) {
-                patientBuilder.removePatientContactComponent(cc);
-              }
+            List<Patient.ContactComponent> contacts = patientBuilder.getPatientContactComponents();
+            for (Patient.ContactComponent cc: contacts) {
+                if (cc.getId().equals(rowIdCell.getString())) {
+                    patientBuilder.removePatientContactComponent(cc);
+                }
             }
             return;
         }
@@ -156,6 +157,7 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
         boolean mapIds = !patientBuilder.isIdMapped();
-    fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,patientBuilder);
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,patientBuilder);
+        // Filing done by cache
     }
 }
