@@ -151,7 +151,7 @@ public class CLEVEPreTransformer {
                     CernerClinicalEventMappingState mappingState = new CernerClinicalEventMappingState();
                     mappingState.setServiceId(csvHelper.getServiceId());
                     mappingState.setEventId(eventIdCell.getLong());
-                    if (!eventCdCell.isEmpty()) {
+                    if (!BartsCsvHelper.isEmptyOrIsZero(eventCdCell)) {
                         mappingState.setEventCd(eventCdCell.getString());
 
                         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, eventCdCell);
@@ -159,7 +159,7 @@ public class CLEVEPreTransformer {
                             mappingState.setEventCdTerm(codeRef.getCodeDispTxt());
                         }
                     }
-                    if (!eventClassCdCell.isEmpty()) {
+                    if (!BartsCsvHelper.isEmptyOrIsZero(eventClassCdCell)) {
                         mappingState.setEventClassCd(eventClassCdCell.getString());
 
                         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, eventClassCdCell);
@@ -167,7 +167,7 @@ public class CLEVEPreTransformer {
                             mappingState.setEventClassCdTerm(codeRef.getCodeDispTxt());
                         }
                     }
-                    if (!eventResultUnitsCdCell.isEmpty()) {
+                    if (!BartsCsvHelper.isEmptyOrIsZero(eventResultUnitsCdCell)) {
                         mappingState.setEventResultUnitsCd(eventResultUnitsCdCell.getString());
 
                         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_UNITS, eventResultUnitsCdCell);
