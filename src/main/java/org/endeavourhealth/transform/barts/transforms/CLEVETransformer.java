@@ -20,7 +20,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -28,8 +27,6 @@ public class CLEVETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
-
-    private static final SimpleDateFormat resultDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -238,8 +235,8 @@ public class CLEVETransformer {
 
         CsvCell resultDateCell = parser.getEventResultDateTime();
 
-        //note that the date format in the parser doesn't match the format used, so convert manually here
-        Date date = resultDateFormat.parse(resultDateCell.getString());
+        //note that the date format in the parser is different to that used elsewhere, although this function supports it
+        Date date = BartsCsvHelper.parseDate(resultDateCell);
 
         //events with a date result have the date in both the EVENT_RESULT_DT and EVENT_RESULT_TXT column
         //except the EVENT_RESULT_TXT has additional information on the precision, so we need to use both fields

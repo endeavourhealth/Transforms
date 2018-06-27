@@ -47,6 +47,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+    private static SimpleDateFormat DATE_FORMAT_CLEVE = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+
     private static Date cachedEndOfTime = null;
     private static Date cachedStartOfTime = null;
 
@@ -609,14 +611,23 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             try {
                 return DATE_FORMAT_BULK.parse(dateString);
             } catch (ParseException ex) {
-                return DATE_FORMAT_DAILY.parse(dateString);
+                try {
+                    return DATE_FORMAT_DAILY.parse(dateString);
+                } catch (ParseException ex2) {
+                    return DATE_FORMAT_CLEVE.parse(dateString);
+                }
             }
 
         } else {
             try {
                 return DATE_FORMAT_DAILY.parse(dateString);
             } catch (ParseException ex) {
-                return DATE_FORMAT_BULK.parse(dateString);
+                try {
+                    return DATE_FORMAT_BULK.parse(dateString);
+                } catch (ParseException ex2) {
+                    return DATE_FORMAT_CLEVE.parse(dateString);
+                }
+
             }
         }
     }
