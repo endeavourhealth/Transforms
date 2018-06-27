@@ -365,10 +365,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
         Long encounterId = encounterIdCell.getLong();
         String ret = encounterIdToPersonIdMap.get(encounterId);
-        if (ret == null) {
+        if (ret == null
+                && !encounterIdToPersonIdMap.containsKey(encounterId)) { //we add null values to the map, so check for the key being present too
 
             Encounter encounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell);
-            if (encounter != null) {
+            if (encounter == null) {
                 //if no encounter, then add null to the map to save us hitting the DB repeatedly for the same encounter
                 encounterIdToPersonIdMap.put(encounterId, null);
 
