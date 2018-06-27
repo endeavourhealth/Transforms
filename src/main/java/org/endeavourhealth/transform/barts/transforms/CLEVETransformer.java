@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -18,7 +20,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.dsig.TransformException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -46,10 +47,6 @@ public class CLEVETransformer {
     }
 
     public static void createObservation(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
-
-        if (true) {
-            throw new TransformException("Stopping transform for now until mapping can be built in");
-        }
 
         CsvCell clinicalEventId = parser.getEventId();
 
@@ -80,21 +77,38 @@ public class CLEVETransformer {
         if (!resultTextCell.isEmpty()
                 && resultTextCell.getString().equalsIgnoreCase("DELETED")) {
 
-            /*if (logProgress) {
-                LOG.debug("" + FhirSerializationHelper.serializeResource(observationBuilder.getResource()));
-                LOG.debug("DELETING RESOURCE");
-            }*/
-
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
             return;
         }
 
-        /*if (logProgress) {
-            LOG.debug("-------1");
-        }*/
+        CsvCell resultClassCode = parser.getEventResultStatusCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_STATUS, resultClassCode);
+            if (codeRef != null) {
+                String codeDesc = codeRef.getCodeDispTxt();
+                if (codeDesc.equals("Unauth")
+                        || codeDesc.equals("Superseded")
+                        || codeDesc.equals("REJECTED")
+                        || codeDesc.equals("Not Done")
+                        || codeDesc.equals("In Progress")
+                        || codeDesc.equals("Active")
+                        || codeDesc.equals("In Lab")
+                        || codeDesc.equals("In Error")
+                        || codeDesc.equals("Canceled") //NOTE the US spelling
+                        || codeDesc.equals("Anticipated")
+                        || codeDesc.equals("? Unknown")) {
+
+                    //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it
+                    deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+                    return;
+                }
+            }
+        }
+
 
         //TODO we need to filter out any records that are not final
         observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
+
 
         // Performer
         CsvCell clinicianId = parser.getEventPerformedPersonnelId();
@@ -134,7 +148,6 @@ public class CLEVETransformer {
             observationBuilder.setParentResource(parentDiagnosticReportReference, orderIdCell);
         }
 
-        //TODO - establish code mapping for millenium / FHIR
         CsvCell codeCell = parser.getEventCode();
         if (!codeCell.isEmpty()) {
 
@@ -145,34 +158,22 @@ public class CLEVETransformer {
             if (!termCell.isEmpty()) {
                 codeableConceptBuilder.setText(termCell.getString(), termCell);
             }
-        }
 
-        CsvCell resultClassCode = parser.getEventResultClassCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, resultClassCode);
-            if (codeRef != null) {
-                String codeDesc = codeRef.getCodeDispTxt();
-                if (codeDesc.equals("Unauth")
-                        || codeDesc.equals("Superseded")
-                        || codeDesc.equals("REJECTED")
-                        || codeDesc.equals("Not Done")
-                        || codeDesc.equals("In Progress")
-                        || codeDesc.equals("Active")
-                        || codeDesc.equals("In Lab")
-                        || codeDesc.equals("In Error")
-                        || codeDesc.equals("Canceled") //NOTE the US spelling
-                        || codeDesc.equals("Anticipated")
-                        || codeDesc.equals("? Unknown")
-                        ) {
+            //and if we have a snomed mapping, add that to the codeable concept
+            SnomedLookup mappedSnomedCode = csvHelper.getAndRemoveCleveSnomedConceptId(clinicalEventId);
+            if (mappedSnomedCode != null) {
+                String concept = mappedSnomedCode.getConceptId();
+                String term = mappedSnomedCode.getTerm();
 
-                    //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it
-                    deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
-
-                }
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(concept);
+                codeableConceptBuilder.setCodingDisplay(term);
             }
         }
 
-        if (isNumericResult(parser)) {
+
+
+        if (isNumericResult(parser, csvHelper)) {
             transformResultNumericValue(parser, observationBuilder, csvHelper);
 
         } else if (isDateResult(parser)) {
@@ -212,6 +213,7 @@ public class CLEVETransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
 
     }
+
 
 
     private static void transformResultString(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) {
@@ -264,19 +266,30 @@ public class CLEVETransformer {
         observationBuilder.setValueDate(dateTimeType, resultTextCell, resultDateCell);
     }
 
-    private static boolean isNumericResult(CLEVE parser) {
+    private static boolean isNumericResult(CLEVE parser, BartsCsvHelper csvHelper) throws Exception {
 
-        //confusingly, the numeric values are in BOTH the result value and result text cells, and the
-        //version in the result text cell has BETTER precision than the result value cell
-
+        CsvCell classCell = parser.getEventCodeClass();
         CsvCell resultValueCell = parser.getEventResultNumber();
-        if (resultValueCell.isEmpty()) {
+        CsvCell resultTextCell = parser.getEventResultText();
+
+        return isNumericResult(classCell, resultValueCell, resultTextCell, csvHelper);
+    }
+
+    public static boolean isNumericResult(CsvCell classCell, CsvCell resultValueCell, CsvCell resultTextCell, BartsCsvHelper csvHelper) throws Exception {
+        //if we don't have a number result, then we're not numeric
+        if (BartsCsvHelper.isEmptyOrIsZero(resultValueCell)) {
             return false;
         }
 
-        //despite the event class saying "numeric" we have lots of events where the result is "negative" (e.g. pregnancy tests)
+        //check that the class confirms our numeric status
+        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, classCell);
+        String classDesc = codeRef.getCodeDescTxt();
+        if (!classDesc.equalsIgnoreCase("Numeric")) {
+            return false;
+        }
+
+        //despite the event class saying "numeric" there are lots of events where the result is "negative" (e.g. pregnancy tests)
         //so we need to test the value itself
-        CsvCell resultTextCell = parser.getEventResultText();
         String resultText = resultTextCell.getString();
         try {
             new Double(resultText);

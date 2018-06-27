@@ -41,6 +41,10 @@ public class ObservationCodeHelper {
 
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {
 
+        if (codeableConcept == null) {
+            return null;
+        }
+
         ObservationCodeHelper ret = new ObservationCodeHelper();
 
         ret.setSnomedConceptId(CodeableConceptHelper.findSnomedConceptId(codeableConcept));

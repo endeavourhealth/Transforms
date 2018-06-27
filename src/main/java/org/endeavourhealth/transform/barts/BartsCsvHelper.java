@@ -13,6 +13,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
@@ -53,18 +55,19 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    private Map<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
-    private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new HashMap<>();
-    private Map<Long, CernerNomenclatureRef> nomenclatureCache = new HashMap<>();
-    private Map<String, String> internalIdMapCache = new HashMap<>();
+    private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
+    private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
+    private Map<Long, CernerNomenclatureRef> nomenclatureCache = new ConcurrentHashMap<>();
+    private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
+    private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
 
-    private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>();
+    private Map<Long, String> encounterIdToPersonIdMap = new ConcurrentHashMap<>();
     /*private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();*/
-    private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
-    private Map<Long, ReferenceList> consultationNewChildMap = new HashMap<>();
+    private Map<Long, ReferenceList> clinicalEventChildMap = new ConcurrentHashMap<>();
+    private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     //private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
     private Date extractDateTime = null;
     private EncounterResourceCache encounterCache = new EncounterResourceCache();
@@ -125,22 +128,21 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
 
-        if (internalIdMapCache.containsKey(cacheKey)) {
-            internalIdMapCache.replace(cacheKey, destinationId);
-        } else {
-            internalIdMapCache.put(cacheKey, destinationId);
-        }
+        //just replace in the cache
+        internalIdMapCache.put(cacheKey, destinationId);
     }
 
     public String getInternalId(String idType, String sourceId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
-        if (internalIdMapCache.containsKey(cacheKey)) {
-            return internalIdMapCache.get(cacheKey);
+        String cachedId = internalIdMapCache.get(cacheKey);
+        if (!Strings.isNullOrEmpty(cachedId)) {
+            return cachedId;
         }
 
         String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
 
-        if (ret != null) {
+        //if found, stick in our cache
+        if (!Strings.isNullOrEmpty(ret)) {
             internalIdMapCache.put(cacheKey, ret);
         }
 
@@ -303,8 +305,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //Find the code in the cache
         CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(cacheKey);
-
-        // return cached version if exists
         if (cernerCodeFromCache != null) {
             return cernerCodeFromCache;
         }
@@ -394,8 +394,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         Long parentEventId = parentEventIdCell.getLong();
         ReferenceList list = clinicalEventChildMap.get(parentEventId);
         if (list == null) {
-            list = new ReferenceList();
-            clinicalEventChildMap.put(parentEventId, list);
+            //this is called from multiple threads, so sync and check again before adding
+            synchronized (clinicalEventChildMap) {
+                list = clinicalEventChildMap.get(parentEventId);
+                if (list == null) {
+                    list = new ReferenceList();
+                    clinicalEventChildMap.put(parentEventId, list);
+                }
+            }
         }
 
         //we need to map the child ID to a Discovery UUID
@@ -758,8 +764,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         Long encounterId = encounterIdCell.getLong();
         ReferenceList list = consultationNewChildMap.get(encounterId);
         if (list == null) {
-            list = new ReferenceList();
-            consultationNewChildMap.put(encounterId, list);
+            //this is called from multiple threads, so sync and check again before adding
+            synchronized (consultationNewChildMap) {
+                list = consultationNewChildMap.get(encounterId);
+                if (list == null) {
+                    list = new ReferenceList();
+                    consultationNewChildMap.put(encounterId, list);
+                }
+            }
         }
 
         //ensure a local ID -> Discovery UUID mapping exists, which will end up happening,
@@ -807,5 +819,15 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             cernerCodesBySet.put(set, ret);
         }
         return ret;
+    }
+
+    public void cacheCleveSnomedConceptId(CsvCell eventIdCell, SnomedLookup snomedLookup) {
+        Long id = eventIdCell.getLong();
+        cleveSnomedConceptMappings.put(id, snomedLookup);
+    }
+
+    public SnomedLookup getAndRemoveCleveSnomedConceptId(CsvCell eventIdCell) {
+        Long id = eventIdCell.getLong();
+        return cleveSnomedConceptMappings.remove(id);
     }
 }

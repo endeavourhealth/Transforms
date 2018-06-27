@@ -9,7 +9,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 
 public class PPALIPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPALIPreTransformer.class);
@@ -52,23 +50,9 @@ public class PPALIPreTransformer {
             }
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            AbstractCsvCallable.handleErrors(errors);
         }
     }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        PPALIPreTransformCallable callable = (PPALIPreTransformCallable)first.getCallable();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
-    }
-
 
     public static void processRecord(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
 
@@ -100,7 +84,7 @@ public class PPALIPreTransformer {
 
         PPALIPreTransformCallable callable = new PPALIPreTransformCallable(parser.getCurrentState(), aliasIdCell, personIdCell, activeMrnCell, csvHelper, fhirResourceFiler);
         List<ThreadPoolError> errors = threadPool.submit(callable);
-        handleErrors(errors);
+        AbstractCsvCallable.handleErrors(errors);
     }
 
 
@@ -159,9 +143,8 @@ public class PPALIPreTransformer {
     }
 
 
-    static class PPALIPreTransformCallable implements Callable {
+    static class PPALIPreTransformCallable extends AbstractCsvCallable {
 
-        private CsvCurrentState parserState = null;
         private CsvCell aliasIdCell = null;
         private CsvCell personIdCell = null;
         private CsvCell activeMrnCell = null;
@@ -175,7 +158,7 @@ public class PPALIPreTransformer {
                                          BartsCsvHelper csvHelper,
                                          FhirResourceFiler fhirResourceFiler) {
 
-            this.parserState = parserState;
+            super(parserState);
             this.aliasIdCell = aliasIdCell;
             this.personIdCell = personIdCell;
             this.activeMrnCell = activeMrnCell;
@@ -243,10 +226,6 @@ public class PPALIPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

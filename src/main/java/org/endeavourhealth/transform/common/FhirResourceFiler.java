@@ -21,6 +21,7 @@ import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -38,6 +39,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private static final Logger LOG = LoggerFactory.getLogger(FhirResourceFiler.class);
 
     private static Set<ResourceType> patientResourceTypes = null;
+    private static Map<Class, ResourceValidatorBase> resourceValidators = new ConcurrentHashMap<>();
 
     private final long creationTime;
     private final UUID exchangeId;
@@ -58,6 +60,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private MapIdTask nextMapIdTask = new MapIdTask();
     private ThreadPool threadPoolIdMapper = null;
     private ThreadPool threadPoolFiler = null;
+
 
     //counts
     private Map<ExchangeBatch, AtomicInteger> countResourcesSaved = new ConcurrentHashMap<>();
@@ -86,7 +89,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         saveAdminResource(parserState, true, resources);
     }
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
-        validateResources(mapIds, false, resources);
+        validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getAdminBatch();
         addResourceToQueue(parserState, false, mapIds, batch, false, resources);
     }
@@ -95,7 +98,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         deleteAdminResource(parserState, true, resources);
     }
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
-        validateResources(mapIds, true, resources);
+        validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getAdminBatch();
         addResourceToQueue(parserState, false, mapIds, batch, true, resources);
     }
@@ -104,7 +107,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         savePatientResource(parserState, true, resources);
     }
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
-        validateResources(mapIds, false, resources);
+        validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
         addResourceToQueue(parserState, true, mapIds, batch, false, resources);
     }
@@ -113,7 +116,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         deletePatientResource(parserState, true, resources);
     }
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
-        validateResources(mapIds, true, resources);
+        validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
         addResourceToQueue(parserState, true, mapIds, batch, true, resources);
     }
@@ -812,8 +815,46 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     }*/
 
 
-    private static void validateResources(boolean mapIds, boolean deleting, ResourceBuilderBase... resourceBuilders) throws Exception {
+    private static void validateResources(UUID serviceId, boolean mapIds, boolean deleting, ResourceBuilderBase... resourceBuilders) throws Exception {
 
+        if (!TransformConfig.instance().isValidateResourcesOnSaving()) {
+            return;
+        }
+
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+            Resource resource = resourceBuilder.getResource();
+            Class resourceCls = resource.getClass();
+
+            ResourceValidatorBase validator = resourceValidators.get(resourceCls);
+            if (validator == null) {
+
+                String clsName = "org.endeavourhealth.transform.common.resourceValidators.ResourceValidator" + resource.getClass().getSimpleName();
+                try {
+                    Class cls = Class.forName(clsName);
+                    validator = (ResourceValidatorBase)cls.newInstance();
+                    resourceValidators.put(resourceCls, validator);
+
+                } catch (Exception ex) {
+                    //if no validator, then it doesn't matter for now
+                    throw new TransformException("Exception creating ResourceValidator for " + clsName, ex);
+                }
+            }
+
+            List<String> validationErrors = new ArrayList<>();
+            if (deleting) {
+                validator.validateResourceDelete(resource, serviceId, mapIds, validationErrors);
+
+            } else {
+                validator.validateResourceSave(resource, serviceId, mapIds, validationErrors);
+            }
+
+            if (!validationErrors.isEmpty()) {
+                String msg = "Validation errors saving " + resource.getResourceType() + " " + resource.getId();
+                msg += "\n";
+                msg += String.join("\n", validationErrors);
+                throw new TransformException(msg);
+            }
+        }
     }
 
 }

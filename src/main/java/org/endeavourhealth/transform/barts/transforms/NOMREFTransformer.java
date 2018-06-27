@@ -10,15 +10,11 @@ import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.NOMREF;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
 public class NOMREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
@@ -56,22 +52,10 @@ public class NOMREFTransformer {
 
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            AbstractCsvCallable.handleErrors(errors);
         }
     }
 
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        SaveNomenclatureCallable callable = (SaveNomenclatureCallable)first.getCallable();
-        Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
-    }
 
     public static void transform(NOMREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
         CsvCell idCell = parser.getNomenclatureId();
@@ -125,19 +109,17 @@ public class NOMREFTransformer {
 
         //spin the remainder of our work off to a small thread pool, so we can perform multiple snomed term lookups in parallel
         List<ThreadPoolError> errors = threadPool.submit(new SaveNomenclatureCallable(parser.getCurrentState(), obj));
-        handleErrors(errors);
+        AbstractCsvCallable.handleErrors(errors);
     }
 
 
-    static class SaveNomenclatureCallable implements Callable {
+    static class SaveNomenclatureCallable extends AbstractCsvCallable {
 
-        private CsvCurrentState parserState = null;
         private CernerNomenclatureRef obj = null;
 
         public SaveNomenclatureCallable(CsvCurrentState parserState,
                                         CernerNomenclatureRef obj) {
-
-            this.parserState = parserState;
+            super(parserState);
             this.obj = obj;
         }
 
@@ -153,10 +135,6 @@ public class NOMREFTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 

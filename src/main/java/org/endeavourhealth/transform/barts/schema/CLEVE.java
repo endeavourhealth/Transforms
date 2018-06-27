@@ -113,7 +113,7 @@ public class CLEVE extends AbstractCsvParser {
         return super.getCell("EVENT_CLASS_CD");
     }
 
-    public CsvCell getEventResultClassCode() {
+    public CsvCell getEventResultStatusCode() {
         return super.getCell("EVENT_RESULT_STATUS_CD");
     }
 

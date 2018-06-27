@@ -19,12 +19,14 @@ public class TransformConfig {
     private String killFileLocation;
     private List<Pattern> emisDisabledOragnisationsAllowed = new ArrayList<>();
     private boolean emisAllowMissingCodes;
+    private boolean emisAllowUnmappedRegistrationTypes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
     private int cernerEncounterCacheMaxSize;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
-    private boolean disableSavingResources = false;
+    private boolean disableSavingResources;
+    private boolean validateResourcesOnSaving;
 
     //singleton
     private static TransformConfig instance;
@@ -49,12 +51,14 @@ public class TransformConfig {
         //this.killFileLocation = null; //no default
         this.emisDisabledOragnisationsAllowed = new ArrayList<>();
         this.emisAllowMissingCodes = false;
+        this.emisAllowUnmappedRegistrationTypes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
         this.cernerEncounterCacheMaxSize = 100000;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
         this.disableSavingResources = false;
+        this.validateResourcesOnSaving = true;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -69,7 +73,10 @@ public class TransformConfig {
                 this.disableSavingResources = node.asBoolean();
             }
 
-            this.disableSavingResources = false;
+            node = json.get("validate_resources_on_save");
+            if (node != null) {
+                this.validateResourcesOnSaving = node.asBoolean();
+            }
 
             node = json.get("attempts_permmitted_per_exchange");
             if (node != null) {
@@ -106,6 +113,11 @@ public class TransformConfig {
                 subNode = node.get("allow_missing_codes");
                 if (subNode != null) {
                     this.emisAllowMissingCodes = subNode.asBoolean();
+                }
+
+                subNode = node.get("allow_unmapped_registration_types");
+                if (subNode != null) {
+                    this.emisAllowUnmappedRegistrationTypes = subNode.asBoolean();
                 }
             }
 
@@ -165,6 +177,10 @@ public class TransformConfig {
         return emisAllowMissingCodes;
     }
 
+    public boolean isEmisAllowUnmappedRegistrationTypes() {
+        return emisAllowUnmappedRegistrationTypes;
+    }
+
     public Set<String> getSoftwareFormatsToDrainQueueOnFailure() {
         return softwareFormatsToDrainQueueOnFailure;
     }
@@ -187,5 +203,9 @@ public class TransformConfig {
 
     public boolean isDisableSavingResources() {
         return disableSavingResources;
+    }
+
+    public boolean isValidateResourcesOnSaving() {
+        return validateResourcesOnSaving;
     }
 }

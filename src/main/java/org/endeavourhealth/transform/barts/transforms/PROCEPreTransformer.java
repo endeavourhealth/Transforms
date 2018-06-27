@@ -21,11 +21,9 @@ public class PROCEPreTransformer {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
-                try {
-                    processRecord((PROCE)parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+
+                //no try/catch here, since any failure here means we don't want to continue
+                processRecord((PROCE)parser, fhirResourceFiler, csvHelper);
             }
         }
     }
@@ -35,7 +33,6 @@ public class PROCEPreTransformer {
         CsvCell procedureIdCell = parser.getProcedureID();
         CsvCell encounterIdCell = parser.getEncounterId();
         csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, procedureIdCell, ResourceType.Procedure);
-
     }
 
 }

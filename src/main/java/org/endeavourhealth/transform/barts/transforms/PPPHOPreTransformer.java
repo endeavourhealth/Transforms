@@ -3,18 +3,13 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
 public class PPPHOPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPPHOPreTransformer.class);
@@ -39,21 +34,8 @@ public class PPPHOPreTransformer {
             }
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            AbstractCsvCallable.handleErrors(errors);
         }
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        PPPHOPreTransformCallable callable = (PPPHOPreTransformCallable)first.getCallable();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
     }
 
 
@@ -72,13 +54,12 @@ public class PPPHOPreTransformer {
 
         PPPHOPreTransformCallable callable = new PPPHOPreTransformCallable(parser.getCurrentState(), phoneIdCell, personIdCell, csvHelper);
         List<ThreadPoolError> errors = threadPool.submit(callable);
-        handleErrors(errors);
+        AbstractCsvCallable.handleErrors(errors);
     }
 
 
-    static class PPPHOPreTransformCallable implements Callable {
+    static class PPPHOPreTransformCallable extends AbstractCsvCallable {
 
-        private CsvCurrentState parserState = null;
         private CsvCell phoneIdCell = null;
         private CsvCell personIdCell = null;
         private BartsCsvHelper csvHelper = null;
@@ -88,7 +69,7 @@ public class PPPHOPreTransformer {
                                          CsvCell personIdCell,
                                          BartsCsvHelper csvHelper) {
 
-            this.parserState = parserState;
+            super(parserState);
             this.phoneIdCell = phoneIdCell;
             this.personIdCell = personIdCell;
             this.csvHelper = csvHelper;
@@ -109,10 +90,6 @@ public class PPPHOPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }
