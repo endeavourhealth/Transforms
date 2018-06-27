@@ -119,7 +119,9 @@ public class CLEVEPreTransformer {
                     //if non-deleted
 
                     //cache our parent-child link
-                    if (!BartsCsvHelper.isEmptyOrIsZero(parentEventIdCell)) {
+                    //group header CLEVE records have their own ID as their parent, so ignore those ones
+                    if (!BartsCsvHelper.isEmptyOrIsZero(parentEventIdCell)
+                            && !parentEventIdCell.equalsValue(eventIdCell)) {
                         csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
                     }
 
@@ -132,7 +134,9 @@ public class CLEVEPreTransformer {
                     //currently, mapping only works for numerics
                     if (CLEVETransformer.isNumericResult(eventClassCdCell, resultValueCell, eventResultTxtCell, csvHelper)) {
                         CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(eventCdCell.getLong());
-                        snomedConceptId = mapping.getSnomedConceptId();
+                        if (mapping != null) {
+                            snomedConceptId = mapping.getSnomedConceptId();
+                        }
                     }
 
                     if (!Strings.isNullOrEmpty(snomedConceptId)) {
