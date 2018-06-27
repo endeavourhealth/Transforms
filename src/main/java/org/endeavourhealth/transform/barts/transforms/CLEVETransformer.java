@@ -247,13 +247,13 @@ public class CLEVETransformer {
         DateTimeType dateTimeType = null;
 
         if (precisionCode.equals("0")) { //datetime
-            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE); //although the date format has seconds, it's always zero in the data, so Minute is right
+            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.SECOND); //although the date format has seconds, it's always zero in the data, so Minute is right
 
         } else if (precisionCode.equals("1")) { //date
             dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.DAY);
 
         } else if (precisionCode.equals("2")) { //time
-            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.MINUTE);
+            dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.SECOND);
 
         } else {
             //LOG.warn("Unknown precision code at start of result text [" + resultText + "]");
