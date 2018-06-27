@@ -274,9 +274,14 @@ public class CLEVETransformer {
 
     public static boolean isNumericResult(CsvCell classCell, CsvCell resultValueCell, CsvCell resultTextCell, BartsCsvHelper csvHelper) throws Exception {
         //if we don't have a number result, then we're not numeric
-        if (BartsCsvHelper.isEmptyOrIsZero(resultValueCell)) {
+        //isEmptyOrIsZero doesn't work if it has a fraction, so test like this
+        if (resultValueCell.isEmpty()
+                || resultValueCell.getDouble() == 0) {
             return false;
         }
+        /*if (BartsCsvHelper.isEmptyOrIsZero(resultValueCell)) {
+            return false;
+        }*/
 
         //check that the class confirms our numeric status
         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, classCell);
