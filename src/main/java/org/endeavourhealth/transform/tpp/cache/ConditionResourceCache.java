@@ -3,12 +3,15 @@ package org.endeavourhealth.transform.tpp.cache;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorCondition;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConditionResourceCache {
@@ -52,7 +55,15 @@ public class ConditionResourceCache {
 
         for (Long problemId: conditionBuildersById.keySet()) {
             ConditionBuilder conditionBuilder = conditionBuildersById.get(problemId);
-            fhirResourceFiler.savePatientResource(null, conditionBuilder);
+            boolean mapIds = !conditionBuilder.isIdMapped();
+            List<String> problems = new ArrayList<String>();
+            ResourceValidatorCondition validator = new ResourceValidatorCondition();
+            validator.validateResourceSave(conditionBuilder.getResource(),fhirResourceFiler.getServiceId(),mapIds, problems);
+            if (problems.isEmpty()) {
+                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
+            } else {
+                fhirResourceFiler.savePatientResource(null, !mapIds, conditionBuilder);
+            }
         }
 
         //clear down as everything has been saved
