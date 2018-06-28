@@ -28,8 +28,7 @@ public class EncounterResourceCache {
     private Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
     public EncounterResourceCache() {
-        int maxInMemory = TransformConfig.instance().getCernerEncounterCacheMaxSize();
-        this.encounterBuildersByEncounterId = new ResourceCache<>(maxInMemory);
+        this.encounterBuildersByEncounterId = new ResourceCache<>();
     }
 
     /**

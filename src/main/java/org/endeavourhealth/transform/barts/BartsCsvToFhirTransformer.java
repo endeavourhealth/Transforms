@@ -79,6 +79,7 @@ public abstract class BartsCsvToFhirTransformer {
             //patient PRE transformers - to cache stuff fast
 
             //don't re-run these pre-transforms for the PP... bulk files. They've all been run without error, so skip it to save time
+            //TODO - take this check out once the PP bulks have been processed OK
             String exchangeDirectoryName = FilenameUtils.getBaseName(exchangeDirectory);
             Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
             Date patientBulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-02");

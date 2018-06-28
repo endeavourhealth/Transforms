@@ -653,7 +653,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         return codeRef.getCodeDescTxt();
     }
 
-    public void savePatientRelationshupType(CsvCell personIdCell, CsvCell relationshipIdCell, CsvCell typeCode) throws Exception {
+    public void savePatientRelationshipType(CsvCell personIdCell, CsvCell relationshipIdCell, CsvCell typeCode) throws Exception {
         if (BartsCsvHelper.isEmptyOrIsZero(typeCode)) {
             return;
         }

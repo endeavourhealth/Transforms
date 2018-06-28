@@ -70,8 +70,9 @@ public class PPRELTransformer {
         PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
 
         //store the relationship type in the internal ID map table so the family history transformer can look it up
+        //TODO - move this to PPREL PRE transformer, but only after the PP... bulk files have been processed
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
-        csvHelper.savePatientRelationshupType(personIdCell, relationshipIdCell, relationshipToPatientCell);
+        csvHelper.savePatientRelationshipType(personIdCell, relationshipIdCell, relationshipToPatientCell);
 
         CsvCell title = parser.getTitle();
         CsvCell firstName = parser.getFirstName();

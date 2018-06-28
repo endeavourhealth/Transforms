@@ -22,11 +22,12 @@ public class TransformConfig {
     private boolean emisAllowUnmappedRegistrationTypes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
-    private int cernerEncounterCacheMaxSize;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
     private boolean disableSavingResources;
     private boolean validateResourcesOnSaving;
+    private int resourceCacheMaxSizeInMemory;
+    private String resourceCacheTempPath;
 
     //singleton
     private static TransformConfig instance;
@@ -54,11 +55,12 @@ public class TransformConfig {
         this.emisAllowUnmappedRegistrationTypes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
-        this.cernerEncounterCacheMaxSize = 100000;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
         this.disableSavingResources = false;
         this.validateResourcesOnSaving = true;
+        this.resourceCacheMaxSizeInMemory = 100000;
+        this.resourceCacheTempPath = null; //using null means we'll offload resources to the DB
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -98,6 +100,16 @@ public class TransformConfig {
                 this.maxTransformErrorsBeforeAbort = node.asInt();
             }
 
+            node = json.get("resource_cache_temp_dir");
+            if (node != null) {
+                this.resourceCacheTempPath = node.asText();
+            }
+
+            node = json.get("resource_cache_max_size_in_memory");
+            if (node != null) {
+                this.resourceCacheMaxSizeInMemory = node.asInt();
+            }
+
             node = json.get("emis");
             if (node != null) {
 
@@ -126,11 +138,6 @@ public class TransformConfig {
                 JsonNode subNode = node.get("transform_2_1_files");
                 if (subNode != null) {
                     this.transformCerner21Files = subNode.asBoolean();
-                }
-
-                subNode = node.get("encounter_max_cache_size");
-                if (subNode != null) {
-                    this.cernerEncounterCacheMaxSize = subNode.asInt();
                 }
             }
 
@@ -189,8 +196,8 @@ public class TransformConfig {
         return transformCerner21Files;
     }
 
-    public int getCernerEncounterCacheMaxSize() {
-        return cernerEncounterCacheMaxSize;
+    public int getResourceCacheMaxSizeInMemory() {
+        return resourceCacheMaxSizeInMemory;
     }
 
     public int getMaxTransformErrorsBeforeAbort() {
@@ -207,5 +214,9 @@ public class TransformConfig {
 
     public boolean isValidateResourcesOnSaving() {
         return validateResourcesOnSaving;
+    }
+
+    public String getResourceCacheTempPath() {
+        return resourceCacheTempPath;
     }
 }

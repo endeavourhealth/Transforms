@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.common;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.QueuedMessageDalI;
 import org.endeavourhealth.core.database.dal.audit.models.QueuedMessageType;
@@ -8,6 +10,7 @@ import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -21,15 +24,15 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ResourceCache<T> {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceCache.class);
 
-    private int maxSizeInMemory;
     private Map<T, CacheEntryProxy> cache = new ConcurrentHashMap<>();
     private int countInMemory = 0;
     private QueuedMessageDalI dal = DalProvider.factoryQueuedMessageDal();
     private ReentrantLock lock = new ReentrantLock();
 
-    public ResourceCache(int maxSizeInMemory) {
-        this.maxSizeInMemory = maxSizeInMemory;
-    }
+    /**
+     * if no offloadToDiskPath is specified, it'll offload to the queued_message DB table
+     */
+    public ResourceCache() {}
 
     public void addToCache(T key, Resource resource) throws Exception {
 
@@ -111,6 +114,7 @@ public class ResourceCache<T> {
      */
     private void offloadResourcesIfNecessary() throws Exception {
 
+        int maxSizeInMemory = TransformConfig.instance().getResourceCacheMaxSizeInMemory();
         if (countInMemory > maxSizeInMemory) {
             int toOffload = countInMemory - maxSizeInMemory;
 
@@ -156,14 +160,32 @@ public class ResourceCache<T> {
                 }
 
                 String json = FhirSerializationHelper.serializeResource(resource);
-                QueuedMessageDalI dal = DalProvider.factoryQueuedMessageDal();
-                dal.save(tempStorageUuid, json, QueuedMessageType.ResourceTempStore);
-                LOG.debug("Offloaded " + resource.getResourceType() + " " + resource.getId() + " to cache ID: " + this.tempStorageUuid);
+
+                String tempFileName = getTempFileName();
+                if (tempFileName == null) {
+                    dal.save(tempStorageUuid, json, QueuedMessageType.ResourceTempStore);
+                    LOG.debug("Offloaded " + resource.getResourceType() + " " + resource.getId() + " to DB cache ID: " + this.tempStorageUuid);
+
+                } else {
+                    FileUtils.writeStringToFile(new File(tempFileName), json, "UTF-8");
+                    LOG.debug("Offloaded " + resource.getResourceType() + " " + resource.getId() + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
+                }
+
                 this.resource = null;
                 countInMemory--;
 
             } finally {
                 lock.unlock();
+            }
+        }
+
+        private String getTempFileName() {
+
+            String offloadToDiskPath = TransformConfig.instance().getResourceCacheTempPath();
+            if (offloadToDiskPath == null) {
+                return null;
+            } else {
+                return FilenameUtils.concat(offloadToDiskPath, tempStorageUuid.toString() + ".tmp");
             }
         }
 
@@ -194,7 +216,16 @@ public class ResourceCache<T> {
 
                     //have another null check now we're locked
                     if (this.resource == null) {
-                        String json = dal.getById(tempStorageUuid);
+                        String json = null;
+
+                        String tempFileName = getTempFileName();
+                        if (tempFileName == null) {
+                            json = dal.getById(tempStorageUuid);
+
+                        } else {
+                            json = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
+                        }
+
                         this.resource = FhirSerializationHelper.deserializeResource(json);
                         ret = this.resource;
                         countInMemory++;
@@ -214,7 +245,15 @@ public class ResourceCache<T> {
 
         public void release() throws Exception {
             if (this.tempStorageUuid != null) {
-                dal.delete(tempStorageUuid);
+
+                String tempFileName = getTempFileName();
+                if (tempFileName == null) {
+                    dal.delete(tempStorageUuid);
+
+                } else {
+                    new File(tempFileName).delete();
+                }
+
                 this.tempStorageUuid = null;
             }
 
