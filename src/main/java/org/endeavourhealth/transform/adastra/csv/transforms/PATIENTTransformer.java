@@ -218,7 +218,7 @@ public class PATIENTTransformer {
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
             boolean mapPatientIds = !(csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapPatientIds, patientBuilder, episodeBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapPatientIds, patientBuilder);
 
             boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
