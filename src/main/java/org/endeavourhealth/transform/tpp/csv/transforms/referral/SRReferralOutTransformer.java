@@ -271,13 +271,20 @@ public class SRReferralOutTransformer {
         }
         boolean mapIds = !referralRequestBuilder.isIdMapped();
         ResourceValidatorReferralRequest resourceValidatorReferralRequest = new ResourceValidatorReferralRequest();
-        List<String> problems =  new ArrayList<String>();
-        resourceValidatorReferralRequest.validateResourceSave(referralRequestBuilder.getResource(),
-                fhirResourceFiler.getServiceId(), mapIds,problems);
+        List<String> problems = new ArrayList<String>();
+        try {
+            resourceValidatorReferralRequest.validateResourceSave(referralRequestBuilder.getResource(),
+                    fhirResourceFiler.getServiceId(), mapIds, problems);
+        } catch (Exception TransformException) {
+            LOG.info("Validation exception caught");
+           // NOP
+        }
         if (problems.isEmpty()) {
+            LOG.info("Validator passed");
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
         } else {
-            for (String s : problems) {
+            LOG.info("Validator failed");
+            for (String s: problems) {
                 LOG.info("ResourceSaveValidator problem:" + s);
             }
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), !mapIds, referralRequestBuilder);
