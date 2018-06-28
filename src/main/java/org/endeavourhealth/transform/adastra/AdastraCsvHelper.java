@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.hl7.fhir.instance.model.DomainResource;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -76,6 +77,12 @@ public class AdastraCsvHelper {
 
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
+    }
+
+    // if the resource is already filed and has been retrieved from the DB, the sourceId will differ from the
+    // saved (mapped) resource Id
+    public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
+        return resource.getId() != sourceId;
     }
 
     public Service getService (UUID id) throws Exception {

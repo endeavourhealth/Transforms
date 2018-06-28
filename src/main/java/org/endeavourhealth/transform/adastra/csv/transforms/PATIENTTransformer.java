@@ -207,7 +207,8 @@ public class PATIENTTransformer {
 
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
             // if patient already ID mapped, get the mapped ID for the org
-            if (patientBuilder.isIdMapped()) {
+            boolean isResourceMapped = csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource());
+            if (isResourceMapped) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
 
@@ -216,13 +217,16 @@ public class PATIENTTransformer {
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
-            boolean mapIds = !(patientBuilder.isIdMapped() && episodeBuilder.isIdMapped());
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder, episodeBuilder);
+            boolean mapPatientIds = !(csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapPatientIds, patientBuilder, episodeBuilder);
+
+            boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
         } else {
             //patient already saved during session, so just file the new episode
             //determine if episode already has mapped Id, i.e. retrieved from DB
-            boolean mapIds = !episodeBuilder.isIdMapped();
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
+            boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
         }
     }
 
@@ -259,3 +263,4 @@ public class PATIENTTransformer {
         }
     }
 }
+

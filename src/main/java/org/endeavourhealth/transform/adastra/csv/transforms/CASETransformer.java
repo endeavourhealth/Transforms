@@ -61,7 +61,8 @@ public class CASETransformer {
         identifierBuilder.setValue(caseNo.getString(), caseNo);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (episodeBuilder.isIdMapped()) {
+        boolean isResourceMapped = csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource());
+        if (isResourceMapped) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         episodeBuilder.setPatient(patientReference, patientId);
@@ -85,7 +86,7 @@ public class CASETransformer {
 
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
             // if episode already ID mapped, get the mapped ID for the org
-            if (episodeBuilder.isIdMapped()) {
+            if (isResourceMapped) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
             episodeBuilder.setManagingOrganisation(organisationReference);
