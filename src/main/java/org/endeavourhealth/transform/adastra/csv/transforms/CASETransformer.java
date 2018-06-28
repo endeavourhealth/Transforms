@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.adastra.csv.schema.CASE;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
@@ -60,6 +61,9 @@ public class CASETransformer {
         identifierBuilder.setValue(caseNo.getString(), caseNo);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (episodeBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        }
         episodeBuilder.setPatient(patientReference, patientId);
 
         CsvCell startDateTime = parser.getStartDateTime();
@@ -80,6 +84,10 @@ public class CASETransformer {
         if (organizationBuilder != null) {
 
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (episodeBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
             episodeBuilder.setManagingOrganisation(organisationReference);
         }
 
