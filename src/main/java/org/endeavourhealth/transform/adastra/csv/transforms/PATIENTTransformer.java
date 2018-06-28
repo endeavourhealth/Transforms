@@ -209,7 +209,7 @@ public class PATIENTTransformer {
         if (organizationBuilder != null) {
 
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-            episodeBuilder.setManagingOrganisation(organisationReference);
+            patientBuilder.setManagingOrganisation(organisationReference);
         }
 
         if (!patientCreatedInSession) {
