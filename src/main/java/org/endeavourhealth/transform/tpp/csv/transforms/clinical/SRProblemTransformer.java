@@ -156,6 +156,7 @@ public class SRProblemTransformer {
             }
         }
         boolean mapIds = !conditionBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,conditionBuilder);
+        // Conditions are filed by conditionResourceCache
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,conditionBuilder);
     }
 }
