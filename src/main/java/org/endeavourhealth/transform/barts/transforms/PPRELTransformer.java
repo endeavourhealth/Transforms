@@ -52,22 +52,17 @@ public class PPRELTransformer {
             String personIdStr = csvHelper.getInternalId(PPRELPreTransformer.PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
                     PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+
+                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
-        if (patientBuilder == null) {
-            return;
-        }
-
-        //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
-        PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
 
         //store the relationship type in the internal ID map table so the family history transformer can look it up
         //TODO - move this to PPREL PRE transformer, but only after the PP... bulk files have been processed
@@ -107,6 +102,15 @@ public class PPRELTransformer {
                 && emailAddress.isEmpty()) {
             return;
         }
+
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
+        PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+
 
         PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
         contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
@@ -188,6 +192,7 @@ public class PPRELTransformer {
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 

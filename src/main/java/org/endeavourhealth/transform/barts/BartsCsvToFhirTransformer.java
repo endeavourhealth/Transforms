@@ -162,6 +162,7 @@ public abstract class BartsCsvToFhirTransformer {
             //if we had any exception that caused us to bomb out of the transform, we'll have
             //potentially cached resources in the DB, so tidy them up now
             csvHelper.getEncounterCache().cleanUpResourceCache();
+            csvHelper.getPatientCache().cleanUpResourceCache();
         }
     }
 

@@ -37,12 +37,6 @@ public class PPAGPTransformer {
 
     public static void createPatientGP(PPAGP parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
-        if (patientBuilder == null) {
-            return;
-        }
-
         //the relation code links to the standard code ref table, and defines the type of relationship
         //we're only interested in who the patients registered GP is
         CsvCell relationshipType = parser.getPersonPersonnelRelationCode();
@@ -56,6 +50,13 @@ public class PPAGPTransformer {
                 }
             }
         }
+
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
 
         //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
         CsvCell activeCell = parser.getActiveIndicator();
@@ -94,6 +95,8 @@ public class PPAGPTransformer {
                 patientBuilder.addCareProvider(orgReference);
             }
         }
+
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 }

@@ -51,28 +51,30 @@ public class PPALITransformer {
             String personIdStr = csvHelper.getInternalId(PPALIPreTransformer.PPALI_ID_TO_PERSON_ID, aliasIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
                     IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
+
+                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
             }
             return;
         }
-
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
-        if (patientBuilder == null) {
-            return;
-        }
-
-        //we always fully re-create the Identifier on the patient so just remove any previous instance
-        IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
         //if the alias is empty, there's nothing to add
         CsvCell aliasCell = parser.getAlias();
         if (aliasCell.isEmpty()) {
             return;
         }
+
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //we always fully re-create the Identifier on the patient so just remove any previous instance
+        IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
         //work out the system for the alias
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
@@ -125,6 +127,7 @@ public class PPALITransformer {
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 

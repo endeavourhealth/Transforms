@@ -47,16 +47,18 @@ public class PPADDTransformer {
             String personIdStr = csvHelper.getInternalId(PPADDPreTransformer.PPADD_ID_TO_PERSON_ID, addressIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
                     AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+
+                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getPersonId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
@@ -97,6 +99,7 @@ public class PPADDTransformer {
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 }

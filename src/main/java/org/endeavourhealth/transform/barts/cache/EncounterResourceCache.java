@@ -23,13 +23,11 @@ import java.util.*;
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
-    private ResourceCache<Long> encounterBuildersByEncounterId = null;
+    private ResourceCache<Long> encounterBuildersByEncounterId = new ResourceCache<>();
     private Set<Long> encounterIdsJustDeleted = new HashSet<>();
     private Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
-    public EncounterResourceCache() {
-        this.encounterBuildersByEncounterId = new ResourceCache<>();
-    }
+    public EncounterResourceCache() {}
 
     /**
      * the ENCNT transformer deletes Encounters, and records that this has been done here,

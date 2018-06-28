@@ -49,16 +49,18 @@ public class PPNAMTransformer {
             String personIdStr = csvHelper.getInternalId(PPNAMPreTransformer.PPNAM_ID_TO_PERSON_ID, nameIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
                     NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+
+                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
             }
             return;
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
@@ -107,6 +109,7 @@ public class PPNAMTransformer {
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 

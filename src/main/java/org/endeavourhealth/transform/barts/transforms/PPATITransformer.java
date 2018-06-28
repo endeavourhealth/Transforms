@@ -48,7 +48,7 @@ public class PPATITransformer {
 
         //this transform always UPDATES resources when possible, so we use the patient cache to retrieve from the DB
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(millenniumPersonIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
@@ -199,6 +199,7 @@ public class PPATITransformer {
 
         //we don't save the patient here; there are subsequent transforms that work on the patients so we
         //save patients after all of them are done
+        csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
     }
 
     /**

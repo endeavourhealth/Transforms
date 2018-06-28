@@ -6,71 +6,85 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ResourceCache;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+    private ResourceCache<Long> patientBuildersByPersonId = new ResourceCache<>();
+    //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
     private Set<Long> personIdsJustDeleted = new HashSet<>();
 
-    public PatientBuilder getPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public PatientBuilder borrowPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         Long personId = personIdCell.getLong();
-        return getPatientBuilder(personId, csvHelper);
+        return borrowPatientBuilder(personId, csvHelper);
     }
 
-    public PatientBuilder getPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
+    public PatientBuilder borrowPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
 
         //if we know we've deleted it, return null
         if (personIdsJustDeleted.contains(personId)) {
             return null;
         }
 
-        //check the cache first
-        PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
-        if (patientBuilder == null) {
-
-            //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-            Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
-            if (patient == null) {
-                //if the patient doesn't exist yet, create a new one
-                patientBuilder = new PatientBuilder();
-                patientBuilder.setId(personId.toString());
-
-                //always set the managing organisation to Barts
-                String bartsId = csvHelper.findOrgRefIdForBarts();
-                Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, bartsId);
-                patientBuilder.setManagingOrganisation(organisationReference);
-
-                //for new patients, put the Person ID as an identifier on the resource
-                //create the Identity builder, which will generate a new one if the existing variable is still null
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                identifierBuilder.setValue(personId.toString());
-
-            } else {
-
-                patientBuilder = new PatientBuilder(patient);
-            }
-
-            patientBuildersByPersonId.put(personId, patientBuilder);
+        //check the cache
+        Resource cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        if (cachedResource != null) {
+            return new PatientBuilder((Patient)cachedResource);
         }
 
+        //check the cache first
+        /*PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
+        if (patientBuilder == null) {*/
+
+        PatientBuilder patientBuilder = null;
+
+        //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
+        Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
+        if (patient == null) {
+            //if the patient doesn't exist yet, create a new one
+            patientBuilder = new PatientBuilder();
+            patientBuilder.setId(personId.toString());
+
+            //always set the managing organisation to Barts
+            String bartsId = csvHelper.findOrgRefIdForBarts();
+            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, bartsId);
+            patientBuilder.setManagingOrganisation(organisationReference);
+
+            //for new patients, put the Person ID as an identifier on the resource
+            //create the Identity builder, which will generate a new one if the existing variable is still null
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+            identifierBuilder.setValue(personId.toString());
+
+        } else {
+
+            patientBuilder = new PatientBuilder(patient);
+        }
+
+        /*    patientBuildersByPersonId.put(personId, patientBuilder);
+        }*/
+
         return patientBuilder;
+    }
+
+    public void returnPatientBuilder(CsvCell personIdCell, PatientBuilder patientBuilder) throws Exception {
+        Long personId = personIdCell.getLong();
+        returnPatientBuilder(personId, patientBuilder);
+    }
+
+    public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
+        patientBuildersByPersonId.addToCache(personId, patientBuilder.getResource());
     }
 
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -78,7 +92,9 @@ public class PatientResourceCache {
         LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 
         for (Long personId: patientBuildersByPersonId.keySet()) {
-            PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
+            Patient patient = (Patient)patientBuildersByPersonId.getAndRemoveFromCache(personId);
+            PatientBuilder patientBuilder = new PatientBuilder(patient);
+            //PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
 
             boolean performIdMapping = !patientBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
@@ -102,13 +118,24 @@ public class PatientResourceCache {
         personIdsJustDeleted.add(personId);
 
         //remove from the cache
-        patientBuildersByPersonId.remove(personId);
+        patientBuildersByPersonId.removeFromCache(personId);
+        //patientBuildersByPersonId.remove(personId);
 
         boolean mapIds = !patientBuilder.isIdMapped();
         fhirResourceFiler.deletePatientResource(parserState, mapIds, patientBuilder);
+    }
 
 
-        //TODO - cache we've deleted this, so ignore it for other PP... transforms
+    /**
+     * if we have had an error that's caused us to drop out of the transform, we can call this to tidy up
+     * anything we've saved to the audit.queued_message table
+     */
+    public void cleanUpResourceCache() {
+        try {
+            patientBuildersByPersonId.clear();
+        } catch (Exception ex) {
+            LOG.error("Error cleaning up cache", ex);
+        }
     }
 
 }

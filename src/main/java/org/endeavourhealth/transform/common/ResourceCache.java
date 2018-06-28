@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.audit.QueuedMessageDalI;
 import org.endeavourhealth.core.database.dal.audit.models.QueuedMessageType;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,18 +137,25 @@ public class ResourceCache<T> {
      * proxy class to hold the reference to a Resource or the UUID used to store it in the DB
      */
     class CacheEntryProxy {
-        private Resource resource = null;
+        private String resourceJson = null;
+        private ResourceType resourceType = null;
+        private String resourceId = null;
+        //private Resource resource = null;
         private UUID tempStorageUuid = null;
 
-        public CacheEntryProxy(Resource encounterBuilder) {
-            this.resource = encounterBuilder;
+        public CacheEntryProxy(Resource resource) throws Exception {
+            this.resourceJson = FhirSerializationHelper.serializeResource(resource);
+            this.resourceType = resource.getResourceType();
+            this.resourceId = resource.getId();
+            //this.resource = encounterBuilder;
         }
 
         /**
          * offloads the Resource to the audit.queued_message table for safe keeping, to reduce memory load
          */
         public void offloadFromMemory() throws Exception {
-            if (resource == null) {
+            //if (resource == null) {
+            if (resourceJson == null) {
                 return;
             }
 
@@ -159,19 +167,18 @@ public class ResourceCache<T> {
                     tempStorageUuid = UUID.randomUUID();
                 }
 
-                String json = FhirSerializationHelper.serializeResource(resource);
-
                 String tempFileName = getTempFileName();
                 if (tempFileName == null) {
-                    dal.save(tempStorageUuid, json, QueuedMessageType.ResourceTempStore);
-                    LOG.debug("Offloaded " + resource.getResourceType() + " " + resource.getId() + " to DB cache ID: " + this.tempStorageUuid);
+                    dal.save(tempStorageUuid, resourceJson, QueuedMessageType.ResourceTempStore);
+                    LOG.debug("Offloaded " + resourceType + " " + resourceId + " to DB cache ID: " + this.tempStorageUuid);
 
                 } else {
-                    FileUtils.writeStringToFile(new File(tempFileName), json, "UTF-8");
-                    LOG.debug("Offloaded " + resource.getResourceType() + " " + resource.getId() + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
+                    FileUtils.writeStringToFile(new File(tempFileName), resourceJson, "UTF-8");
+                    LOG.debug("Offloaded " + resourceType + " " + resourceId + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
                 }
 
-                this.resource = null;
+                this.resourceJson = null;
+                //this.resource = null;
                 countInMemory--;
 
             } finally {
@@ -190,7 +197,8 @@ public class ResourceCache<T> {
         }
 
         public boolean isOffloaded() {
-            return this.resource == null && this.tempStorageUuid != null;
+            return this.resourceJson == null && this.tempStorageUuid != null;
+            //return this.resource == null && this.tempStorageUuid != null;
         }
 
         /**
@@ -198,12 +206,15 @@ public class ResourceCache<T> {
          */
         public Resource getResource() throws Exception {
 
-            if (this.resource == null && this.tempStorageUuid == null) {
+            //if (this.resource == null && this.tempStorageUuid == null) {
+            if (this.resourceJson == null && this.tempStorageUuid == null) {
                 throw new Exception("Cannot get Resource after removing or cleaning up");
             }
 
-            if (resource != null) {
-                return resource;
+            /*if (resource != null) {
+                return resource;*/
+            if (resourceJson != null) {
+                return FhirSerializationHelper.deserializeResource(resourceJson);
 
             } else {
 
@@ -215,21 +226,22 @@ public class ResourceCache<T> {
                     lock.lock();
 
                     //have another null check now we're locked
-                    if (this.resource == null) {
-                        String json = null;
+                    //if (this.resource == null) {
+                    if (this.resourceJson == null) {
 
                         String tempFileName = getTempFileName();
                         if (tempFileName == null) {
-                            json = dal.getById(tempStorageUuid);
+                            resourceJson = dal.getById(tempStorageUuid);
 
                         } else {
-                            json = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
+                            resourceJson = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
                         }
 
-                        this.resource = FhirSerializationHelper.deserializeResource(json);
-                        ret = this.resource;
+                        /*this.resource = FhirSerializationHelper.deserializeResource(json);
+                        ret = this.resource;*/
+                        ret = FhirSerializationHelper.deserializeResource(resourceJson);
                         countInMemory++;
-                        LOG.debug("Restored " + resource.getResourceType() + " " + resource.getId() + " from cache ID: " + this.tempStorageUuid);
+                        LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
                     }
 
                 } finally {
@@ -257,10 +269,14 @@ public class ResourceCache<T> {
                 this.tempStorageUuid = null;
             }
 
-            if (this.resource != null) {
+            if (this.resourceJson != null) {
+                countInMemory--;
+                this.resourceJson = null;
+            }
+            /*if (this.resource != null) {
                 countInMemory--;
                 this.resource = null;
-            }
+            }*/
         }
     }
 

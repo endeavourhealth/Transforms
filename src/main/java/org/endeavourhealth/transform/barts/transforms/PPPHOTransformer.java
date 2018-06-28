@@ -50,28 +50,30 @@ public class PPPHOTransformer {
             String personIdStr = csvHelper.getInternalId(PPPHOPreTransformer.PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
                     ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+
+                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
             }
             return;
         }
-
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personIdCell, csvHelper);
-        if (patientBuilder == null) {
-            return;
-        }
-
-        //we always fully recreate the phone record on the patient so just remove any matching one already there
-        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
 
         //if no number, then nothing to process
         CsvCell numberCell = parser.getPhoneNumber();
         if (numberCell.isEmpty()) {
             return;
         }
+
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //we always fully recreate the phone record on the patient so just remove any matching one already there
+        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
 
         String number = numberCell.getString();
 
@@ -119,6 +121,7 @@ public class PPPHOTransformer {
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 
