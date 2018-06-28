@@ -12,6 +12,7 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorReferralRequest;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
@@ -269,7 +270,18 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setEncounter (eventReference, eventId);
         }
         boolean mapIds = !referralRequestBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
+        ResourceValidatorReferralRequest resourceValidatorReferralRequest = new ResourceValidatorReferralRequest();
+        List<String> problems =  new ArrayList<String>();
+        resourceValidatorReferralRequest.validateResourceSave(referralRequestBuilder.getResource(),
+                fhirResourceFiler.getServiceId(), mapIds,problems);
+        if (problems.isEmpty()) {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
+        } else {
+            for (String s : problems) {
+                LOG.info("ResourceSaveValidator problem:" + s);
+            }
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !mapIds, referralRequestBuilder);
+        }
     }
 
     private static ReferralPriority convertPriority(String priority) {
