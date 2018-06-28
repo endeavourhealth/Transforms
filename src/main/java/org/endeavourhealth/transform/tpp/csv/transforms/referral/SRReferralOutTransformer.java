@@ -195,7 +195,7 @@ public class SRReferralOutTransformer {
 
                 } else {
                     referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
-                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}. Setting free text.", referralPriority);
+                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}. Setting free text.", referralPriority.getString());
                 }
             }
         }
@@ -306,6 +306,7 @@ public class SRReferralOutTransformer {
             return ReferralPriority.SOON;
 
         } else {
+            LOG.info("Unknown:" + priority + "<>not mapped.");
             return null;
         }
     }
