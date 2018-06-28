@@ -7,16 +7,20 @@ import org.endeavourhealth.core.database.dal.audit.QueuedMessageDalI;
 import org.endeavourhealth.core.database.dal.audit.models.QueuedMessageType;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * cache for FHIR Resources, that keeps as many in possible in memory
@@ -137,16 +141,20 @@ public class ResourceCache<T> {
      * proxy class to hold the reference to a Resource or the UUID used to store it in the DB
      */
     class CacheEntryProxy {
-        private String resourceJson = null;
+        private byte[] compressedBytes = null;
+        private int originalLen = -1;
+        /*private String resourceJson = null;
         private ResourceType resourceType = null;
-        private String resourceId = null;
+        private String resourceId = null;*/
         //private Resource resource = null;
         private UUID tempStorageUuid = null;
 
         public CacheEntryProxy(Resource resource) throws Exception {
-            this.resourceJson = FhirSerializationHelper.serializeResource(resource);
+            compressBytes(resource);
+
+            /*this.resourceJson = FhirSerializationHelper.serializeResource(resource);
             this.resourceType = resource.getResourceType();
-            this.resourceId = resource.getId();
+            this.resourceId = resource.getId();*/
             //this.resource = encounterBuilder;
         }
 
@@ -155,7 +163,8 @@ public class ResourceCache<T> {
          */
         public void offloadFromMemory() throws Exception {
             //if (resource == null) {
-            if (resourceJson == null) {
+            //if (resourceJson == null) {
+            if (compressedBytes == null) {
                 return;
             }
 
@@ -169,15 +178,19 @@ public class ResourceCache<T> {
 
                 String tempFileName = getTempFileName();
                 if (tempFileName == null) {
-                    dal.save(tempStorageUuid, resourceJson, QueuedMessageType.ResourceTempStore);
+                    String writeStr = Base64.getEncoder().encodeToString(compressedBytes);
+                    dal.save(tempStorageUuid, writeStr, QueuedMessageType.ResourceTempStore);
+                    //dal.save(tempStorageUuid, resourceJson, QueuedMessageType.ResourceTempStore);
                     //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to DB cache ID: " + this.tempStorageUuid);
 
                 } else {
-                    FileUtils.writeStringToFile(new File(tempFileName), resourceJson, "UTF-8");
+                    FileUtils.writeByteArrayToFile(new File(tempFileName), compressedBytes);
+                    //FileUtils.writeStringToFile(new File(tempFileName), resourceJson, "UTF-8");
                     //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
                 }
 
-                this.resourceJson = null;
+                this.compressedBytes = null;
+                //this.resourceJson = null;
                 //this.resource = null;
                 countInMemory--;
 
@@ -197,7 +210,8 @@ public class ResourceCache<T> {
         }
 
         public boolean isOffloaded() {
-            return this.resourceJson == null && this.tempStorageUuid != null;
+            return this.compressedBytes == null && this.tempStorageUuid != null;
+            //return this.resourceJson == null && this.tempStorageUuid != null;
             //return this.resource == null && this.tempStorageUuid != null;
         }
 
@@ -207,52 +221,93 @@ public class ResourceCache<T> {
         public Resource getResource() throws Exception {
 
             //if (this.resource == null && this.tempStorageUuid == null) {
-            if (this.resourceJson == null && this.tempStorageUuid == null) {
+            //if (this.resourceJson == null && this.tempStorageUuid == null) {
+            if (this.compressedBytes == null && this.tempStorageUuid == null) {
                 throw new Exception("Cannot get Resource after removing or cleaning up");
             }
 
             /*if (resource != null) {
                 return resource;*/
-            if (resourceJson != null) {
-                return FhirSerializationHelper.deserializeResource(resourceJson);
+            /*if (resourceJson != null) {
+                return FhirSerializationHelper.deserializeResource(resourceJson);*/
 
-            } else {
-
-                //have a separate local reference, in case we immediately get offloaded again
-                Resource ret = null;
-
-                //need to lock to avoid problems with offloading happening at the same time as this
-                try {
-                    lock.lock();
-
-                    //have another null check now we're locked
-                    //if (this.resource == null) {
-                    if (this.resourceJson == null) {
-
-                        String tempFileName = getTempFileName();
-                        if (tempFileName == null) {
-                            resourceJson = dal.getById(tempStorageUuid);
-
-                        } else {
-                            resourceJson = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
-                        }
-
-                        /*this.resource = FhirSerializationHelper.deserializeResource(json);
-                        ret = this.resource;*/
-                        ret = FhirSerializationHelper.deserializeResource(resourceJson);
-                        countInMemory++;
-                        //LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
-                    }
-
-                } finally {
-                    lock.unlock();
-                }
-
-                //if we've just retrieved one from memory, we probably will need to write another one to DB
-                offloadResourcesIfNecessary();
-
+            Resource ret = decompressBytes();
+            if (ret != null) {
                 return ret;
             }
+
+            //need to lock to avoid problems with offloading happening at the same time as this
+            try {
+                lock.lock();
+
+                //have another null check now we're locked
+                ret = decompressBytes();
+                if (ret != null) {
+                    return ret;
+                }
+
+                String tempFileName = getTempFileName();
+                if (tempFileName == null) {
+                    String readStr = dal.getById(tempStorageUuid);
+                    compressedBytes = Base64.getDecoder().decode(readStr);
+                    //resourceJson = dal.getById(tempStorageUuid);
+
+                } else {
+                    compressedBytes = FileUtils.readFileToByteArray(new File(tempFileName));
+                    //resourceJson = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
+                }
+
+                countInMemory++;
+                ret = decompressBytes();
+                //LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
+
+            } finally {
+                lock.unlock();
+            }
+
+            //if we've just retrieved one from memory, we probably will need to write another one to DB
+            offloadResourcesIfNecessary();
+
+            return ret;
+        }
+
+        private void compressBytes(Resource resource) throws Exception {
+            String json = FhirSerializationHelper.serializeResource(resource);
+            byte[] bytes = json.getBytes("UTF-8");
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            GZIPOutputStream gzip = new GZIPOutputStream(out);
+            gzip.write(bytes);
+            gzip.close();
+
+            this.originalLen = bytes.length;
+            this.compressedBytes = out.toByteArray();
+        }
+
+        private Resource decompressBytes() throws Exception {
+            //create local reference in case another thread nulls the class reference
+            byte[] bytes = this.compressedBytes;
+            if (bytes == null) {
+                return null;
+            }
+
+            byte[] bytesOut = new byte[this.originalLen];
+            ByteArrayInputStream in = new ByteArrayInputStream(compressedBytes);
+            GZIPInputStream gzipInputStream = new GZIPInputStream(in);
+
+            int pos = 0;
+            int remaining = bytesOut.length;
+            while (true) {
+                int read = gzipInputStream.read(bytesOut, pos, remaining);
+                pos += read;
+                remaining -= read;
+                if (remaining <= 0) {
+                    break;
+                }
+            }
+
+            String resourceJson = new String(bytesOut, "UTF-8");
+            return FhirSerializationHelper.deserializeResource(resourceJson);
         }
 
         public void release() throws Exception {
@@ -269,10 +324,14 @@ public class ResourceCache<T> {
                 this.tempStorageUuid = null;
             }
 
-            if (this.resourceJson != null) {
+            if (this.compressedBytes != null) {
+                countInMemory--;
+                this.compressedBytes = null;
+            }
+            /*if (this.resourceJson != null) {
                 countInMemory--;
                 this.resourceJson = null;
-            }
+            }*/
             /*if (this.resource != null) {
                 countInMemory--;
                 this.resource = null;
