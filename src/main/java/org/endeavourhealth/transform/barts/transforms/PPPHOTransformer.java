@@ -178,6 +178,7 @@ public class PPPHOTransformer {
                 return ContactPoint.ContactPointUse.OLD;
 
             case "FAX TEMP":
+            case "TEMPORARY":
                 return ContactPoint.ContactPointUse.TEMP;
 
             default:
