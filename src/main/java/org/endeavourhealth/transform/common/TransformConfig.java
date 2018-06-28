@@ -28,6 +28,7 @@ public class TransformConfig {
     private boolean validateResourcesOnSaving;
     private int resourceCacheMaxSizeInMemory;
     private String resourceCacheTempPath;
+    private boolean isLive;
 
     //singleton
     private static TransformConfig instance;
@@ -61,6 +62,7 @@ public class TransformConfig {
         this.validateResourcesOnSaving = true;
         this.resourceCacheMaxSizeInMemory = 100000;
         this.resourceCacheTempPath = null; //using null means we'll offload resources to the DB
+        this.isLive = false;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -108,6 +110,11 @@ public class TransformConfig {
             node = json.get("resource_cache_max_size_in_memory");
             if (node != null) {
                 this.resourceCacheMaxSizeInMemory = node.asInt();
+            }
+
+            node = json.get("is_live");
+            if (node != null) {
+                this.isLive = node.asBoolean();
             }
 
             node = json.get("emis");
@@ -218,5 +225,9 @@ public class TransformConfig {
 
     public String getResourceCacheTempPath() {
         return resourceCacheTempPath;
+    }
+
+    public boolean isLive() {
+        return isLive;
     }
 }

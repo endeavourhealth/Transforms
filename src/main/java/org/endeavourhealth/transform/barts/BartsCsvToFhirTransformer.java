@@ -83,7 +83,8 @@ public abstract class BartsCsvToFhirTransformer {
             String exchangeDirectoryName = FilenameUtils.getBaseName(exchangeDirectory);
             Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
             Date patientBulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-02");
-            if (exchangeDate.after(patientBulkDate)) {
+            if (TransformConfig.instance().isLive()
+                && exchangeDate.after(patientBulkDate)) {
 
                 PPALIPreTransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper), fhirResourceFiler, csvHelper); //this must be FIRST
                 PPADDPreTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper), fhirResourceFiler, csvHelper);
