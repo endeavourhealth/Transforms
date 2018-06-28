@@ -10,10 +10,7 @@ import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -69,9 +66,15 @@ public class PATIENTTransformer {
         EpisodeOfCareBuilder episodeBuilder
                 = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
+        //determine if episode already has mapped Id, i.e. retrieved from DB
+        boolean mapEpisodeIds = !episodeBuilder.isIdMapped();
+
         //get or create Patient Resource builder.  If two patients in same file, first already created, so retrieve from cache
         PatientBuilder patientBuilder
                 = PatientResourceCache.getOrCreatePatientBuilder(patientId, csvHelper, fhirResourceFiler);
+
+        //determine if patient already has mapped Ids, i.e. retrieved from DB
+        boolean mapPatientIds = !patientBuilder.isIdMapped();
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {
@@ -209,15 +212,21 @@ public class PATIENTTransformer {
         if (organizationBuilder != null) {
 
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            // if patient already ID mapped, get the mapped ID for the org
+            if (patientBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+
             patientBuilder.setManagingOrganisation(organisationReference);
         }
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapPatientIds, patientBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
         } else {
             //patient already saved during session, so just file the new episode
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
         }
     }
 
