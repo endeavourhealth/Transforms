@@ -170,11 +170,11 @@ public class ResourceCache<T> {
                 String tempFileName = getTempFileName();
                 if (tempFileName == null) {
                     dal.save(tempStorageUuid, resourceJson, QueuedMessageType.ResourceTempStore);
-                    LOG.debug("Offloaded " + resourceType + " " + resourceId + " to DB cache ID: " + this.tempStorageUuid);
+                    //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to DB cache ID: " + this.tempStorageUuid);
 
                 } else {
                     FileUtils.writeStringToFile(new File(tempFileName), resourceJson, "UTF-8");
-                    LOG.debug("Offloaded " + resourceType + " " + resourceId + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
+                    //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
                 }
 
                 this.resourceJson = null;
@@ -241,7 +241,7 @@ public class ResourceCache<T> {
                         ret = this.resource;*/
                         ret = FhirSerializationHelper.deserializeResource(resourceJson);
                         countInMemory++;
-                        LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
+                        //LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
                     }
 
                 } finally {
