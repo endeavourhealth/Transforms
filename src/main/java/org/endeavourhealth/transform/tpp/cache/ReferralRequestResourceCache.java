@@ -3,12 +3,15 @@ package org.endeavourhealth.transform.tpp.cache;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorReferralRequest;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ReferralRequestResourceCache {
@@ -44,7 +47,15 @@ public class ReferralRequestResourceCache {
 
         for (Long referralOutId: referralRequestBuildersById.keySet()) {
             ReferralRequestBuilder referralRequestBuilder = referralRequestBuildersById.get(referralOutId);
-            fhirResourceFiler.savePatientResource(null, referralRequestBuilder);
+            ResourceValidatorReferralRequest validator = new ResourceValidatorReferralRequest();
+            boolean mapIds = !referralRequestBuilder.isIdMapped();
+            List<String> problems = new ArrayList<String>();
+            validator.validateResourceSave(referralRequestBuilder.getResource(),fhirResourceFiler.getServiceId(),mapIds, problems);
+            if (problems.isEmpty()) {
+                fhirResourceFiler.savePatientResource(null, mapIds, referralRequestBuilder);
+            } else {
+                fhirResourceFiler.savePatientResource(null,!mapIds,referralRequestBuilder);
+            }
         }
 
         //clear down as everything has been saved

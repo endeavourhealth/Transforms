@@ -88,7 +88,7 @@ public class SRReferralOutTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         if (referralRequestBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         referralRequestBuilder.setPatient(patientReference, patientId);
 
@@ -106,12 +106,12 @@ public class SRReferralOutTransformer {
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                                                             recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                    recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 if (referralRequestBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
                 }
                 referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
             }
@@ -122,13 +122,13 @@ public class SRReferralOutTransformer {
         if (!requestedByStaff.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(requestedByStaff);
             if (referralRequestBuilder.isIdMapped()) {
-                practitionerReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
             referralRequestBuilder.setRequester(practitionerReference, requestedByStaff);
         } else if (!requestedByOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
             if (referralRequestBuilder.isIdMapped()) {
-                orgReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, fhirResourceFiler);
             }
             referralRequestBuilder.setRequester(orgReference, requestedByOrg);
         }
@@ -172,7 +172,7 @@ public class SRReferralOutTransformer {
         referralRequestBuilder.setRecipientServiceType(recipientServiceType, serviceOffered);
 
         CsvCell reason = parser.getReason();
-        if (!reason.isEmpty()&& reason.getInt() != -1) {
+        if (!reason.isEmpty() && reason.getInt() != -1) {
             //the TPP referral reason is really the objective of the referral
             //e.g. Advice/Consultation or Advice and Support
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason, parser);
@@ -246,13 +246,13 @@ public class SRReferralOutTransformer {
                 if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
                     Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
                     if (referralRequestBuilder.isIdMapped()) {
-                        practitionerReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
+                        practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
                     }
                     referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
                 } else {
                     Reference orgReference = csvHelper.createOrganisationReference(referralRecipientId);
                     if (referralRequestBuilder.isIdMapped()) {
-                        orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+                        orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, fhirResourceFiler);
                     }
                     referralRequestBuilder.addRecipient(orgReference, referralRecipientId);
                 }
@@ -265,30 +265,31 @@ public class SRReferralOutTransformer {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             if (referralRequestBuilder.isIdMapped()) {
-                eventReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
             }
-            referralRequestBuilder.setEncounter (eventReference, eventId);
+            referralRequestBuilder.setEncounter(eventReference, eventId);
         }
-        boolean mapIds = !referralRequestBuilder.isIdMapped();
-        ResourceValidatorReferralRequest resourceValidatorReferralRequest = new ResourceValidatorReferralRequest();
-        List<String> problems = new ArrayList<String>();
-        try {
-            resourceValidatorReferralRequest.validateResourceSave(referralRequestBuilder.getResource(),
-                    fhirResourceFiler.getServiceId(), mapIds, problems);
-        } catch (Exception TransformException) {
-            LOG.info("Validation exception caught");
-           // NOP
-        }
-        if (problems.isEmpty()) {
-            LOG.info("Validator passed");
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
-        } else {
-            LOG.info("Validator failed");
-            for (String s: problems) {
-                LOG.info("ResourceSaveValidator problem:" + s);
-            }
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !mapIds, referralRequestBuilder);
-        }
+//        boolean mapIds = !referralRequestBuilder.isIdMapped();
+//        ResourceValidatorReferralRequest resourceValidatorReferralRequest = new ResourceValidatorReferralRequest();
+//        List<String> problems = new ArrayList<String>();
+//        try {
+//            resourceValidatorReferralRequest.validateResourceSave(referralRequestBuilder.getResource(),
+//                    fhirResourceFiler.getServiceId(), mapIds, problems);
+//        } catch (Exception TransformException) {
+//            LOG.info("Validation exception caught");
+//            // NOP
+//        }
+//        if (problems.isEmpty()) {
+//            //LOG.info("Validator passed");
+//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
+//        } else {
+//            //LOG.info("Validator failed");
+//            for (String s: problems) {
+//                LOG.info("ResourceSaveValidator problem:" + s);
+//            }
+//            // filed in cache
+//            // fhirResourceFiler.savePatientResource(parser.getCurrentState(), !mapIds, referralRequestBuilder);
+//        }
     }
 
     private static ReferralPriority convertPriority(String priority) {
