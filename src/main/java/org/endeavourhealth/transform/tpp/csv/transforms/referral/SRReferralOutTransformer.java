@@ -195,7 +195,7 @@ public class SRReferralOutTransformer {
 
                 } else {
                     referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
-                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}", referralPriority);
+                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}.", referralPriority);
                 }
             }
         }
@@ -299,7 +299,7 @@ public class SRReferralOutTransformer {
         } else if (priority.equalsIgnoreCase("urgent")) {
             return ReferralPriority.URGENT;
 
-        } else if (priority.equalsIgnoreCase("2 week wait") || priority.equals("8865")) {
+        } else if (priority.equalsIgnoreCase("2 week wait") || priority.trim().equals("8865")) {
             return ReferralPriority.TWO_WEEK_WAIT;
 
         } else if (priority.equalsIgnoreCase("soon")) {
