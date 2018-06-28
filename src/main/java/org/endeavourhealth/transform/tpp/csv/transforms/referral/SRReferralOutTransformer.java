@@ -299,7 +299,7 @@ public class SRReferralOutTransformer {
         } else if (priority.equalsIgnoreCase("urgent")) {
             return ReferralPriority.URGENT;
 
-        } else if (priority.equalsIgnoreCase("2 week wait")) {
+        } else if (priority.equalsIgnoreCase("2 week wait") || priority.equals("8865")) {
             return ReferralPriority.TWO_WEEK_WAIT;
 
         } else if (priority.equalsIgnoreCase("soon")) {
