@@ -63,11 +63,11 @@ public class ConditionResourceCache {
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             } else {
-                mapIds = true;
+                mapIds = false;
                 for (String s: problems) {
                     LOG.info("TPPvalidator:" + s);
                     if (s.contains("(false)")) {
-                        mapIds = false;
+                        mapIds = true;
                     }
                 }
                 LOG.warn("TPPValidator: Autoset resource boolean to {}. Condition id: {}. Successfully filed {}. Problems:{}", mapIds, conditionBuilder.getResourceId(), count, problems.size());
