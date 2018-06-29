@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.FamilyHistory;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -27,6 +28,9 @@ public class FamilyHistoryTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     createResource((FamilyHistory)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());

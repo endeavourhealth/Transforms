@@ -28,6 +28,10 @@ public class PPNAMPreTransformer {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
 
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
+
                     //no try/catch as failures here meant we should abort
                     processRecord((PPNAM)parser, fhirResourceFiler, csvHelper, threadPool);
                 }

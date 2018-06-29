@@ -29,7 +29,9 @@ public class ENCNTPreTransformer {
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
-
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     //no try/catch here, because any error means it's not safe to continue
                     processRecord((ENCNT)parser, fhirResourceFiler, csvHelper, threadPool);
                 }

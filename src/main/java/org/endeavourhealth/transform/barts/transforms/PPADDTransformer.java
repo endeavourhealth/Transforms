@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PPADD;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -25,6 +26,10 @@ public class PPADDTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
+
                     createPatientAddress((PPADD) parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {

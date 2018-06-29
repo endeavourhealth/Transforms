@@ -1,10 +1,12 @@
 package org.endeavourhealth.transform.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +24,7 @@ public class TransformConfig {
     private boolean emisAllowUnmappedRegistrationTypes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private boolean transformCerner21Files;
+    private String cernerPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
     private boolean disableSavingResources;
@@ -56,6 +59,7 @@ public class TransformConfig {
         this.emisAllowUnmappedRegistrationTypes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.transformCerner21Files = false;
+        this.cernerPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
         this.disableSavingResources = false;
@@ -146,6 +150,11 @@ public class TransformConfig {
                 if (subNode != null) {
                     this.transformCerner21Files = subNode.asBoolean();
                 }
+
+                subNode = node.get("patient_id_file");
+                if (subNode != null) {
+                    this.cernerPatientIdFile = subNode.asText();
+                }
             }
 
             node = json.get("drain_queue_on_failure");
@@ -163,6 +172,12 @@ public class TransformConfig {
                     Pattern pattern = Pattern.compile(s);
                     this.warningsToFailOn.add(pattern);
                 }
+            }
+
+
+            //ensure the temp path dir exists if set
+            if (!Strings.isNullOrEmpty(resourceCacheTempPath)) {
+                new File(resourceCacheTempPath).mkdirs();
             }
 
         } catch (Exception var4) {
@@ -229,5 +244,9 @@ public class TransformConfig {
 
     public boolean isLive() {
         return isLive;
+    }
+
+    public String getCernerPatientIdFile() {
+        return cernerPatientIdFile;
     }
 }

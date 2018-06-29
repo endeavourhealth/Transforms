@@ -41,7 +41,9 @@ public class CLEVEPreTransformer {
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
-
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     //no try/catch here, since any failure here means we don't want to continue
                     processRecord((CLEVE)parser, fhirResourceFiler, csvHelper, threadPool);
                 }

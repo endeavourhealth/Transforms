@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -21,7 +22,9 @@ public class DIAGNPreTransformer {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 //no try/catch here, since any failure here means we don't want to continue
                 processRecord((DIAGN)parser, fhirResourceFiler, csvHelper);
             }

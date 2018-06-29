@@ -59,6 +59,11 @@ public class ProblemTransformer {
             //TransformWarnings.log(LOG, parser, "Skipping problem ID {} because no Person ID could be found for MRN {}", problemIdCell.getString(), mrnCell.getString());
             return;
         }
+
+        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            return;
+        }
+
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId);
         conditionBuilder.setPatient(patientReference);
 

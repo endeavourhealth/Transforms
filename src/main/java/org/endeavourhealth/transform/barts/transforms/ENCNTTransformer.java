@@ -30,6 +30,9 @@ public class ENCNTTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     createEncounter((ENCNT)parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {

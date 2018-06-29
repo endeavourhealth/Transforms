@@ -30,6 +30,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -80,6 +82,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private String primaryOrgHL7OrgOID = null;
     private String version = null;
 
+    private static Set<String> personIdsToFilterOn = null;
 
 
     public BartsCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String primaryOrgHL7OrgOID, String version) {
@@ -837,5 +840,56 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public SnomedLookup getAndRemoveCleveSnomedConceptId(CsvCell eventIdCell) {
         Long id = eventIdCell.getLong();
         return cleveSnomedConceptMappings.remove(id);
+    }
+
+    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) {
+        CsvCell personIdCell = parser.getCell("PERSON_ID");
+        if (personIdCell == null) {
+            personIdCell = parser.getCell("#PERSON_ID");
+
+            //if nothing that looks like a person ID, process the record
+            if (personIdCell == null) {
+                return true;
+            }
+        }
+
+        String personId = personIdCell.getString();
+        return processRecordFilteringOnPatientId(personId);
+    }
+    public boolean processRecordFilteringOnPatientId(String personId) {
+
+        if (personIdsToFilterOn == null) {
+            String filePath = TransformConfig.instance().getCernerPatientIdFile();
+            if (Strings.isNullOrEmpty(filePath)) {
+                LOG.debug("Not filtering on patients");
+                personIdsToFilterOn = new HashSet<>();
+
+            } else {
+                personIdsToFilterOn = new HashSet<>();
+                try {
+                    List<String> lines = Files.readAllLines(new File(filePath).toPath());
+                    for (String line : lines) {
+                        line = line.trim();
+
+                        //ignore comments
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        personIdsToFilterOn.add(line);
+                    }
+                    LOG.debug("Filtering on " + personIdsToFilterOn.size() + " patients from " + filePath);
+
+                } catch (Exception ex) {
+                    LOG.error("Error reading in person ID file " + filePath, ex);
+                }
+            }
+        }
+
+        //if no filtering IDs
+        if (personIdsToFilterOn.isEmpty()) {
+            return true;
+        }
+
+        return personIdsToFilterOn.contains(personId);
     }
 }
