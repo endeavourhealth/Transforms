@@ -9,7 +9,10 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ResourceCache;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +22,7 @@ import java.util.Set;
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private ResourceCache<Long> patientBuildersByPersonId = new ResourceCache<>();
+    private ResourceCache<Long, Patient> patientBuildersByPersonId = new ResourceCache<>();
     //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
     private Set<Long> personIdsJustDeleted = new HashSet<>();
 
@@ -37,9 +40,9 @@ public class PatientResourceCache {
         }
 
         //check the cache
-        Resource cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        Patient cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
         if (cachedResource != null) {
-            return new PatientBuilder((Patient)cachedResource);
+            return new PatientBuilder(cachedResource);
         }
 
         //check the cache first
@@ -84,7 +87,7 @@ public class PatientResourceCache {
     }
 
     public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
-        patientBuildersByPersonId.addToCache(personId, patientBuilder.getResource());
+        patientBuildersByPersonId.addToCache(personId, (Patient)patientBuilder.getResource());
     }
 
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {

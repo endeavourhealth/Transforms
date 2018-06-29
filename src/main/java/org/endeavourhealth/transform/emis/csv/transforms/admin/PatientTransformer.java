@@ -36,7 +36,7 @@ public class PatientTransformer {
         while (parser.nextRecord()) {
 
             try {
-                createResource((Patient)parser, fhirResourceFiler, csvHelper, version);
+                createResource((Patient) parser, fhirResourceFiler, csvHelper, version);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -575,7 +575,7 @@ public class PatientTransformer {
     }
 
     /*private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
-																									CsvCurrentState currentState, String patientGuid,
+                                                                                                    CsvCurrentState currentState, String patientGuid,
 																									org.hl7.fhir.instance.model.Patient fhirPatient, EpisodeOfCare fhirEpisode) throws Exception {
 
         UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirPatient.getResourceType(), fhirPatient.getId());
@@ -623,8 +623,8 @@ public class PatientTransformer {
 
     private static void transformEthnicityAndMaritalStatus(PatientBuilder patientBuilder,
                                                            CsvCell patientGuid,
-                                                        EmisCsvHelper csvHelper,
-                                                        FhirResourceFiler fhirResourceFiler) throws Exception {
+                                                           EmisCsvHelper csvHelper,
+                                                           FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CodeAndDate newEthnicity = csvHelper.findEthnicity(patientGuid);
         CodeAndDate newMaritalStatus = csvHelper.findMaritalStatus(patientGuid);
@@ -632,11 +632,11 @@ public class PatientTransformer {
         //if we don't have an ethnicity or marital status already cached, we may be performing a delta transform
         //so need to carry over any codeable concept already stored on the DB
         if (newEthnicity == null || newMaritalStatus == null) {
-            org.hl7.fhir.instance.model.Patient existingPatient = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(patientGuid.getString(), ResourceType.Patient);
+            org.hl7.fhir.instance.model.Patient existingPatient = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(patientGuid.getString(), ResourceType.Patient);
             if (existingPatient != null) {
 
                 if (newEthnicity == null) {
-                    CodeableConcept oldEthnicity = (CodeableConcept)ExtensionConverter.findExtensionValue(existingPatient, FhirExtensionUri.PATIENT_ETHNICITY);
+                    CodeableConcept oldEthnicity = (CodeableConcept) ExtensionConverter.findExtensionValue(existingPatient, FhirExtensionUri.PATIENT_ETHNICITY);
                     if (oldEthnicity != null) {
                         String oldEthnicityCode = CodeableConceptHelper.findCodingCode(oldEthnicity, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
                         if (!Strings.isNullOrEmpty(oldEthnicityCode)) {
@@ -696,7 +696,8 @@ public class PatientTransformer {
 
         if (dummyRecord || csvRegType.equalsIgnoreCase("Dummy")) {
             return RegistrationType.DUMMY;
-        } else if (csvRegType.equalsIgnoreCase("Emg")) {
+        } else if (csvRegType.equalsIgnoreCase("Emg")
+                || csvRegType.equalsIgnoreCase("Emergency")) {
             return RegistrationType.EMERGENCY;
         } else if (csvRegType.equalsIgnoreCase("Immediately necessary")) {
             return RegistrationType.IMMEDIATELY_NECESSARY;

@@ -23,7 +23,7 @@ import java.util.*;
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
-    private ResourceCache<Long> encounterBuildersByEncounterId = new ResourceCache<>();
+    private ResourceCache<Long, Encounter> encounterBuildersByEncounterId = new ResourceCache<>();
     private Set<Long> encounterIdsJustDeleted = new HashSet<>();
     private Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
@@ -53,7 +53,7 @@ public class EncounterResourceCache {
 
     public void returnEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
         Long encounterId = encounterIdCell.getLong();
-        encounterBuildersByEncounterId.addToCache(encounterId, encounterBuilder.getResource());
+        encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
     }
 
     /**
@@ -70,9 +70,9 @@ public class EncounterResourceCache {
         }
 
         //check the cache
-        Resource cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
+        Encounter cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
         if (cachedResource != null) {
-            return new EncounterBuilder((Encounter)cachedResource);
+            return new EncounterBuilder(cachedResource);
         }
 
         EncounterBuilder encounterBuilder = null;
