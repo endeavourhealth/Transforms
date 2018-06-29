@@ -82,7 +82,7 @@ public class AdastraCsvHelper {
     // if the resource is already filed and has been retrieved from the DB, the sourceId will differ from the
     // saved (mapped) resource Id
     public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
-        return resource.getId() != sourceId;
+        return !resource.getId().equals(sourceId);
     }
 
     public Service getService (UUID id) throws Exception {
