@@ -53,7 +53,7 @@ public class ConditionResourceCache {
     }
 
     public static void fileConditionResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
+        int count=0;
         for (Long problemId: conditionBuildersById.keySet()) {
             ConditionBuilder conditionBuilder = conditionBuildersById.get(problemId);
             boolean mapIds = !conditionBuilder.isIdMapped();
@@ -63,9 +63,10 @@ public class ConditionResourceCache {
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             } else {
-               LOG.warn("TPPValidator: Autoset resource boolean. Condition id: {}", conditionBuilder.getResourceId() );
+               LOG.warn("TPPValidator: Autoset resource boolean. Condition id: {}. Successfully filed {}", conditionBuilder.getResourceId(), count );
                 fhirResourceFiler.savePatientResource(null, !mapIds, conditionBuilder);
             }
+            count++;
         }
 
         //clear down as everything has been saved
