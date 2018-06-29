@@ -64,6 +64,9 @@ public class ConditionResourceCache {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             } else {
                LOG.warn("TPPValidator: Autoset resource boolean. Condition id: {}. Successfully filed {}", conditionBuilder.getResourceId(), count );
+               for (String s : problems) {
+                   LOG.info("TPPValidator problem:" + s);
+               }
                 fhirResourceFiler.savePatientResource(null, !mapIds, conditionBuilder);
             }
             count++;
