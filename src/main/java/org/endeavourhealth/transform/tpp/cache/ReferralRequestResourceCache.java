@@ -44,7 +44,7 @@ public class ReferralRequestResourceCache {
     }
 
     public static void fileReferralRequestResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
+        int count = 0;
         for (Long referralOutId: referralRequestBuildersById.keySet()) {
             ReferralRequestBuilder referralRequestBuilder = referralRequestBuildersById.get(referralOutId);
             ResourceValidatorReferralRequest validator = new ResourceValidatorReferralRequest();
@@ -54,10 +54,11 @@ public class ReferralRequestResourceCache {
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, referralRequestBuilder);
             } else {
-                LOG.warn("TPPValidator: Autoset resource boolean. Referal request id: {}", referralRequestBuilder.getResourceId() );
+                LOG.warn("TPPValidator: Autoset resource boolean. Referal request id: {}. Filed {}", referralRequestBuilder.getResourceId(), count );
 
                 fhirResourceFiler.savePatientResource(null,!mapIds,referralRequestBuilder);
             }
+            count++;
         }
 
         //clear down as everything has been saved
