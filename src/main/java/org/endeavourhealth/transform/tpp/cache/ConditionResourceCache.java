@@ -21,18 +21,18 @@ public class ConditionResourceCache {
     private static Map<Long, ConditionBuilder> conditionBuildersById = new HashMap<>();
 
     public static ConditionBuilder getConditionBuilder(CsvCell problemIdCell,
-                                                            CsvCell patientIdCell,
-                                                            TppCsvHelper csvHelper,
-                                                            FhirResourceFiler fhirResourceFiler) throws Exception {
+                                                       CsvCell patientIdCell,
+                                                       TppCsvHelper csvHelper,
+                                                       FhirResourceFiler fhirResourceFiler) throws Exception {
 
         ConditionBuilder conditionBuilder = conditionBuildersById.get(problemIdCell.getLong());
         if (conditionBuilder == null) {
 
             org.hl7.fhir.instance.model.Condition condition
-                    = (org.hl7.fhir.instance.model.Condition)csvHelper.retrieveResource(
-                            problemIdCell.getString(),
-                            ResourceType.Condition,
-                            fhirResourceFiler);
+                    = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(
+                    problemIdCell.getString(),
+                    ResourceType.Condition,
+                    fhirResourceFiler);
 
             if (condition == null) {
                 //if the Condition doesn't exist yet, create a new one
@@ -53,21 +53,25 @@ public class ConditionResourceCache {
     }
 
     public static void fileConditionResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-        int count=0;
+        int count = 0;
         for (Long problemId: conditionBuildersById.keySet()) {
             ConditionBuilder conditionBuilder = conditionBuildersById.get(problemId);
             boolean mapIds = !conditionBuilder.isIdMapped();
             List<String> problems = new ArrayList<String>();
             ResourceValidatorCondition validator = new ResourceValidatorCondition();
-            validator.validateResourceSave(conditionBuilder.getResource(),fhirResourceFiler.getServiceId(),mapIds, problems);
+            validator.validateResourceSave(conditionBuilder.getResource(), fhirResourceFiler.getServiceId(), mapIds, problems);
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             } else {
-               LOG.warn("TPPValidator: Autoset resource boolean. Condition id: {}. Successfully filed {}", conditionBuilder.getResourceId(), count );
-               for (String s : problems) {
-                   LOG.info("TPPValidator problem:" + s);
-               }
-                fhirResourceFiler.savePatientResource(null, !mapIds, conditionBuilder);
+                mapIds = true;
+                for (String s: problems) {
+                    if (s.contains("{false}")) {
+                        mapIds = false;
+                    }
+                }
+                LOG.warn("TPPValidator: Autoset resource boolean to {}. Condition id: {}. Successfully filed {}", mapIds, conditionBuilder.getResourceId(), count);
+
+                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             }
             count++;
         }
