@@ -54,6 +54,8 @@ public class ReferralRequestResourceCache {
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, referralRequestBuilder);
             } else {
+                LOG.warn("TPPValidator: Autoset resource boolean. Referal request id: {}", referralRequestBuilder.getResourceId() );
+
                 fhirResourceFiler.savePatientResource(null,!mapIds,referralRequestBuilder);
             }
         }

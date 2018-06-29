@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.cache;
 
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorCondition;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -62,6 +63,7 @@ public class ConditionResourceCache {
             if (problems.isEmpty()) {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             } else {
+               LOG.warn("TPPValidator: Autoset resource boolean. Condition id: {}", conditionBuilder.getResourceId() );
                 fhirResourceFiler.savePatientResource(null, !mapIds, conditionBuilder);
             }
         }
