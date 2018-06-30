@@ -519,7 +519,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
      * to carry over any existing mapping from the HL7 Receiver DB, so both ADT and Data Warehouse feeds
      * map the same source concept to the same UUID
      */
-    public UUID createResourceIdOrCopyFromHl7Receiver(ResourceType resourceType, String localUniqueId, String hl7ReceiverUniqueId, String hl7ReceiverScope) throws Exception{
+    public UUID createResourceIdOrCopyFromHl7Receiver(ResourceType resourceType, String localUniqueId, String hl7ReceiverUniqueId, String hl7ReceiverScope, boolean ignoreFailureToWriteToHl7Db) throws Exception{
 
         //check our normal ID -> UUID mapping table
         UUID existingResourceId = IdHelper.getEdsResourceId(serviceId, resourceType, localUniqueId);
@@ -550,8 +550,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         try {
             hl7ReceiverDal.saveResourceId(existingHl7Mapping);
         } catch (Exception ex) {
-            LOG.error("Error saving to HL7 resource_uuid, scope_id = " + existingHl7Mapping.getScopeId() + ", local_id = " + existingHl7Mapping.getUniqueId() + " resource_type = " + existingHl7Mapping.getResourceType() + ", resource_id = " + existingHl7Mapping.getResourceId());
-            throw ex;
+            if (!ignoreFailureToWriteToHl7Db) {
+                LOG.error("Error saving to HL7 resource_uuid, scope_id = " + existingHl7Mapping.getScopeId() + ", local_id = " + existingHl7Mapping.getUniqueId() + " resource_type = " + existingHl7Mapping.getResourceType() + ", resource_id = " + existingHl7Mapping.getResourceId());
+                throw ex;
+            }
         }
         //LOG.debug("Generated new UUID " + existingResourceId + " for resource and saved to HL7 receiver DB");
 

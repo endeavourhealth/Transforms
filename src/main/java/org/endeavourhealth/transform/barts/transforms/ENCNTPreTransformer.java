@@ -104,7 +104,7 @@ public class ENCNTPreTransformer {
                     String localUniqueId = encounterIdCell.getString();
                     String hl7ReceiverUniqueId = "PIdAssAuth=" + BartsCsvToFhirTransformer.PRIMARY_ORG_HL7_OID + "-PatIdValue=" + mrn + "-EpIdTypeCode=VISITID-EpIdValue=" + visitIdCell.getString(); //this must match the HL7 Receiver
                     String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
-                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Encounter, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
+                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Encounter, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, true);
                 }
 
             } catch (Throwable t) {

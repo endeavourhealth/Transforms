@@ -260,13 +260,13 @@ public class EpisodeOfCareResourceCache {
 
                 //if we have an episode ID, carry over the ID using that as the local source ID
                 if (!Strings.isNullOrEmpty(localEpisodeRef)) {
-                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.EpisodeOfCare, localEpisodeRef, hl7ReceiverUniqueId, hl7ReceiverScope);
+                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.EpisodeOfCare, localEpisodeRef, hl7ReceiverUniqueId, hl7ReceiverScope, false);
                 }
 
                 //and if we have a FIN, then call the same function but using the local FIN
                 //which will result in our ID->UUID table having the same UUID mapped to by the FIN as well
                 if (!Strings.isNullOrEmpty(localFinRef)) {
-                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.EpisodeOfCare, localFinRef, hl7ReceiverUniqueId, hl7ReceiverScope);
+                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.EpisodeOfCare, localFinRef, hl7ReceiverUniqueId, hl7ReceiverScope, false);
                 }
 
                 return;

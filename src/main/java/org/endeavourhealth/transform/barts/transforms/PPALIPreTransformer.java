@@ -186,7 +186,7 @@ public class PPALIPreTransformer {
                     String localUniqueId = personIdCell.getString();
                     String hl7ReceiverUniqueId = "PIdAssAuth=" + BartsCsvToFhirTransformer.PRIMARY_ORG_HL7_OID + "-PatIdValue=" + activeMrnCell.getString(); //this must match the HL7 Receiver
                     String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
-                    UUID patientUuid = csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Patient, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope);
+                    UUID patientUuid = csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Patient, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, false);
 
                     String currentMrn = activeMrnCell.getString();
                     String personId = personIdCell.getString();
