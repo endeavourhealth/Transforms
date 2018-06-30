@@ -709,6 +709,8 @@ public class PatientTransformer {
             return RegistrationType.TEMPORARY;
         } else if (csvRegType.equalsIgnoreCase("Community Registered")) {
             return RegistrationType.COMMUNITY;
+        } else if (csvRegType.equalsIgnoreCase("Walk-In Patient")) {
+            return RegistrationType.WALK_IN;
         } else if (csvRegType.equalsIgnoreCase("Other")) {
             return RegistrationType.OTHER;
         } else {
@@ -734,11 +736,11 @@ public class PatientTransformer {
          Community Registered
          Dummy
          Other
+         Walk-In Patient
 
          Contraceptive Services
          Maternity Services
          Child Health Services
-         Walk-In Patient
          Minor Surgery
          Sexual Health
          Pre Registration
