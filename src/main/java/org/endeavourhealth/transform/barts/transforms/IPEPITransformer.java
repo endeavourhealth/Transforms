@@ -1,15 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.schema.IPEPI;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,15 @@ public class IPEPITransformer {
 
         // get the associated encounter
         EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+
+        //in Cerner a when a patient visits A&E and is admitted, that's the SAME encounter record that gets updated.
+        //To allow us to keep separate Emergency and Inpatient FHIR Encounters, we need to detect and Emergency Encounter
+        //that is about to change to being an Inpatient one. Check this using the class, which will either have been
+        //set in a previous Exchange or by the AEATT transformer that just
+        //if the Encounter already has a class of "Emergency", then it means it was an A&E attendance that resulted in an inpatient admission
+        if (((Encounter)encounterBuilder.getResource()).getClass_() == Encounter.EncounterClass.EMERGENCY) {
+            createEmegencyEncounterResourceCopy(encounterBuilder, encounterIdCell, csvHelper);
+        }
 
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
@@ -115,5 +126,38 @@ public class IPEPITransformer {
 
         //we don't save immediately, but return the Encounter builder to the cache
         csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
+    }
+
+    /**
+     * creates a duplicate of the Encounter so that when we update it to be an Inpatient encounter, there
+     * exists a FHIR Encounter recording the A&E attendance
+     */
+    private static void createEmegencyEncounterResourceCopy(EncounterBuilder oldEncounterBuilder, CsvCell encounterIdCell, BartsCsvHelper csvHelper) throws Exception {
+        Encounter oldEncounter = (Encounter)oldEncounterBuilder.getResource();
+        String json = FhirSerializationHelper.serializeResource(oldEncounter);
+        Encounter newEncounter = (Encounter)FhirSerializationHelper.deserializeResource(json);
+        EncounterBuilder newEncounterBuilder = new EncounterBuilder(newEncounter);
+
+        //need to generate a new ID for this encounter using a special suffix
+        String id = encounterIdCell.getString() + EncounterResourceCache.DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
+
+        //if ID Mapped already we need to forward map this new ID to a Discovery UUID
+        if (newEncounterBuilder.isIdMapped()) {
+            Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, id);
+            encounterReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(encounterReference, csvHelper);
+            id = ReferenceHelper.getReferenceId(encounterReference);
+        }
+
+        newEncounterBuilder.setId(id);
+
+        //and add to the Encounter cache for later saving
+        csvHelper.getEncounterCache().returnDuplicateEmergencyEncounterBuilder(encounterIdCell, newEncounterBuilder);
+
+        //clear down any location, status or period data from the original Encounter, since that related to the A&E attendance portion
+        //of the ENCNT and has been carried over onto the copy of the resource
+        oldEncounter.getLocation().clear();
+        oldEncounter.setStatus(null);
+        oldEncounter.getStatusHistory().clear();
+        oldEncounter.setPeriod(null);
     }
 }

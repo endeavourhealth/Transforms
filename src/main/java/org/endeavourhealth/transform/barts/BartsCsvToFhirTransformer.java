@@ -119,9 +119,9 @@ public abstract class BartsCsvToFhirTransformer {
             // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
             ENCNTTransformer.transform(createParsers(fileMap, parserMap, "ENCNT", csvHelper, true), fhirResourceFiler, csvHelper);
             AEATTTransformer.transform(createParsers(fileMap, parserMap, "AEATT", csvHelper, true), fhirResourceFiler, csvHelper);
-            OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper, true), fhirResourceFiler, csvHelper);
             IPEPITransformer.transform(createParsers(fileMap, parserMap, "IPEPI", csvHelper, true), fhirResourceFiler, csvHelper);
             IPWDSTransformer.transform(createParsers(fileMap, parserMap, "IPWDS", csvHelper, true), fhirResourceFiler, csvHelper);
+            OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper, true), fhirResourceFiler, csvHelper);
             //ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
             csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);

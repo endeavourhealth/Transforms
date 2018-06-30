@@ -4,7 +4,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -66,7 +65,7 @@ public class ENCNTTransformer {
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
-            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, fhirResourceFiler, parser.getCurrentState());
+            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, personIdCell, csvHelper, fhirResourceFiler, parser.getCurrentState());
             return;
         }
 
@@ -127,13 +126,10 @@ public class ENCNTTransformer {
         }
 
         // Save visit-id to encounter-id link
-        if (visitIdCell != null && !visitIdCell.isEmpty()) {
+        //removed as we never look up this mapping
+        /*if (!visitIdCell.isEmpty()) {
             csvHelper.saveInternalId(InternalIdMap.TYPE_VISIT_ID_TO_ENCOUNTER_ID, visitIdCell.getString(), encounterIdCell.getString());
-        }
-
-        //if (changeOfPatient) {
-            // Re-establish EpisodeOfCare
-        //}
+        }*/
 
         // Identifiers
         if (!finIdCell.isEmpty()) {
@@ -327,16 +323,17 @@ public class ENCNTTransformer {
                 || desc.equals("Psychiatric Inpatient")
                 || desc.equals("Regular Day Admission")
                 || desc.equals("Regular Night Admission")
+                || desc.equals("Day Surgery")
+                || desc.equals("Day Case")
+                || desc.equals("Day Care")
                 ) {
 
             return Encounter.EncounterClass.INPATIENT;
 
         } else if (desc.equals("Outpatient Message")
                 || desc.equals("Outpatient")
-                || desc.equals("Day Surgery")
-                || desc.equals("Day Case")
                 || desc.equals("Outpatient Referral")
-                || desc.equals("Day Care")) {
+                ) {
 
             return Encounter.EncounterClass.OUTPATIENT;
 

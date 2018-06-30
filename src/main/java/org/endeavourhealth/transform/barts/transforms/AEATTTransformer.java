@@ -51,7 +51,17 @@ public class AEATTTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
 
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        //first we need to check if our encounter has been duplicated, so as to preserve separate FHIR
+        //encounters for A&E and Inpatient admission
+        boolean isDuplicateEmergencyEncounter;
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell, csvHelper);
+        if (encounterBuilder != null) {
+            isDuplicateEmergencyEncounter = true;
+        } else {
+            encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+            isDuplicateEmergencyEncounter = false;
+        }
+
 
         CsvCell decisionToAdmitDateTimeCell = parser.getDecisionToAdmitDateTime();
         CsvCell beginDateCell = parser.getCheckInDateTime();
@@ -89,6 +99,7 @@ public class AEATTTransformer {
             triageEndDate = BartsCsvHelper.parseDate(triageEndCell);
         }
 
+        //if it's an A&E attenance, then it's emergency
         encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         // Using checkin/out date as they largely cover the whole period
@@ -178,7 +189,7 @@ public class AEATTTransformer {
             encounterBuilder.addLocation(locationReference, true, currentLocationCell);
         }
 
-        //Reason
+        //Reason - this is duplicated from ENCNT, but calling addReason(..) ignores duplicates anyway
         if (!reasonForVisit.isEmpty()) {
             encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
         }
@@ -220,7 +231,12 @@ public class AEATTTransformer {
         }
 
         //we don't save immediately, but return the Encounter builder to the cache
-        csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
+        if (isDuplicateEmergencyEncounter) {
+            csvHelper.getEncounterCache().returnDuplicateEmergencyEncounterBuilder(encounterIdCell, encounterBuilder);
+
+        } else {
+            csvHelper.getEncounterCache().returnEncounterBuilder(encounterIdCell, encounterBuilder);
+        }
     }
 }
 

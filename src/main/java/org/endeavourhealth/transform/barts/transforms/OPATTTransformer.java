@@ -51,9 +51,8 @@ public class OPATTTransformer {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
-        //CsvCell finIdCell = parser.getFINNo();
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
 
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 

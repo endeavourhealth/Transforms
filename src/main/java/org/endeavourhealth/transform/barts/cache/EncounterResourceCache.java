@@ -23,9 +23,11 @@ import java.util.*;
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
-    private ResourceCache<Long, Encounter> encounterBuildersByEncounterId = new ResourceCache<>();
-    private Set<Long> encounterIdsJustDeleted = new HashSet<>();
-    private Map<Long, UUID> encountersWithChangedPatientUuids = new HashMap<>();
+    public static final String DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX = ":EmergencyDuplicate";
+
+    private ResourceCache<String, Encounter> encounterBuildersByEncounterId = new ResourceCache<>();
+    private Set<String> encounterIdsJustDeleted = new HashSet<>();
+    private Map<String, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
     public EncounterResourceCache() {}
 
@@ -33,7 +35,7 @@ public class EncounterResourceCache {
      * the ENCNT transformer deletes Encounters, and records that this has been done here,
      * so that the later transforms can check, since the deleted Encounter may not have reached the DB yet
      */
-    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
+    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
 
         //null may end up passed in, so just ignore
         if (encounterBuilder == null) {
@@ -41,18 +43,35 @@ public class EncounterResourceCache {
         }
 
         //record that we know it's deleted
-        Long encounterId = encounterIdCell.getLong();
+        String encounterId = encounterIdCell.getString();
         encounterIdsJustDeleted.add(encounterId);
 
         //remove from the cache
-        encounterBuildersByEncounterId.removeFromCache(encounterId);
+        //not necessary, since the builder is passed in, it means it will already have been removed
+        //encounterBuildersByEncounterId.removeFromCache(encounterId);
 
         boolean mapIds = !encounterBuilder.isIdMapped();
         fhirResourceFiler.deletePatientResource(parserState, mapIds, encounterBuilder);
+
+        //we create two FHIR Encounters for Cerner ENCNT records where an A&E attendance turns into
+        //an admission, so we need to make sure that we delete BOTH
+        EncounterBuilder duplicateEmergencyEncounterBuilder = borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell, csvHelper);
+        if (duplicateEmergencyEncounterBuilder != null) {
+            String duplicateEncounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
+            encounterIdsJustDeleted.add(duplicateEncounterId);
+
+            boolean mapDuplicateEncounterIds = !duplicateEmergencyEncounterBuilder.isIdMapped();
+            fhirResourceFiler.deletePatientResource(parserState, mapDuplicateEncounterIds, duplicateEmergencyEncounterBuilder);
+        }
     }
 
     public void returnEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
-        Long encounterId = encounterIdCell.getLong();
+        String encounterId = encounterIdCell.getString();
+        encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
+    }
+
+    public void returnDuplicateEmergencyEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
+        String encounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
         encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
     }
 
@@ -61,8 +80,7 @@ public class EncounterResourceCache {
      * otherwise it won't be saved
      */
     public EncounterBuilder borrowEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell, BartsCsvHelper csvHelper) throws Exception {
-
-        Long encounterId = encounterIdCell.getLong();
+        String encounterId = encounterIdCell.getString();
 
         //if we know we've deleted it, return null
         if (encounterIdsJustDeleted.contains(encounterId)) {
@@ -78,7 +96,7 @@ public class EncounterResourceCache {
         EncounterBuilder encounterBuilder = null;
 
         //if not in the cache, check the DB
-        Encounter encounter = (Encounter)csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
+        Encounter encounter = (Encounter)csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, encounterId);
         if (encounter != null) {
             encounterBuilder = new EncounterBuilder(encounter);
 
@@ -146,6 +164,53 @@ public class EncounterResourceCache {
         return encounterBuilder;
     }
 
+    /**
+     * looks for an Encounter resource mapped to from the Cerner Encounter ID with the special suffix used
+     * when we duplicate an encounter to keep a record of A&E attendances. Unlike the other "borrow..." fn,
+     * this one DOES NOT create new encounters
+     */
+    public EncounterBuilder borrowDuplicateEmergencyEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
+        String encounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
+
+        //if we know we've deleted it, return null
+        if (encounterIdsJustDeleted.contains(encounterId)) {
+            return null;
+        }
+
+        //check the cache
+        Encounter cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
+        if (cachedResource != null) {
+            return new EncounterBuilder(cachedResource);
+        }
+
+        //if not in the cache, check the DB
+        Encounter encounter = (Encounter)csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, encounterId);
+        if (encounter == null) {
+            return null;
+        }
+
+        EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
+
+        //always set the person ID fresh, in case the record has been moved to another patient, remembering to forward map to a UUID
+        //but track the old patient UUID so we can use it to update dependent resources
+        if (personIdCell != null
+                && !BartsCsvHelper.isEmptyOrIsZero(personIdCell)) { //for deleted ENCNT records, we don't get a personID
+
+            Reference oldPatientReference = encounter.getPatient();
+            UUID oldPatientUuid = UUID.fromString(ReferenceHelper.getReferenceId(oldPatientReference));
+            UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+            if (!oldPatientUuid.equals(currentPatientUuid)) {
+
+                encountersWithChangedPatientUuids.put(encounterId, oldPatientUuid);
+
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, currentPatientUuid.toString());
+                encounterBuilder.setPatient(patientReference, personIdCell);
+            }
+        }
+
+        return encounterBuilder;
+    }
+
 
     public void fileEncounterResources(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
@@ -153,7 +218,7 @@ public class EncounterResourceCache {
         Set<String> hsPatientUuidsChanged = new HashSet<>();
 
         LOG.trace("Saving " + encounterBuildersByEncounterId.size() + " encounters to the DB");
-        for (Long encounterId: encounterBuildersByEncounterId.keySet()) {
+        for (String encounterId: encounterBuildersByEncounterId.keySet()) {
             Resource resource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
             EncounterBuilder encounterBuilder = new EncounterBuilder((Encounter)resource);
 
@@ -217,7 +282,7 @@ public class EncounterResourceCache {
     }
 
     public UUID getOriginalPatientUuid(CsvCell encounterIdCell) {
-        Long encounterId = encounterIdCell.getLong();
+        String encounterId = encounterIdCell.getString();
         return encountersWithChangedPatientUuids.get(encounterId);
     }
 
