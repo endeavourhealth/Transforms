@@ -43,7 +43,6 @@ public class EpisodeOfCareResourceCache {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        CsvCell activeIndicatorCell = parser.getActiveIndicator();
 
         //ENCNT has extra columns that allow us to create episodeOfCares
         //For ENCNTs that result of a referral, we have an EPISODE_ID on each record
@@ -51,6 +50,13 @@ public class EpisodeOfCareResourceCache {
         //subsequent admissions) there is no EPISODE_ID, so we use the FIN as a proxy for an EPISODE ID
         CsvCell episodeIdCell = parser.getEpisodeIdentifier();
         CsvCell finCell = parser.getMillenniumFinancialNumberIdentifier();
+
+        CsvCell visitIdCell = parser.getVisitId();
+
+        setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+    }
+
+    public void setUpEpisodeOfCareBuilderMappings(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         //first, just store the mappings of Encounter ID -> Episode ID and FIN -> Episode ID, so
         //we can always find them later from an Encounter ID (needed because some files only have Encounter ID)
@@ -79,12 +85,12 @@ public class EpisodeOfCareResourceCache {
             }
 
             //if we've never previously created an Episode UUID for our Episode, generate it now
-            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, parser.getVisitId(), csvHelper);
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
 
         } else if (!finCell.isEmpty()) {
 
             //if we've never previously created an Episode UUID for our Episode, generate it now
-            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, parser.getVisitId(), csvHelper);
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
 
         } else {
 

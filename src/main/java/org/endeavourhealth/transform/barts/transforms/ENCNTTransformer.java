@@ -179,7 +179,7 @@ public class ENCNTTransformer {
         }
 
         // EncounterTable type
-        if (!encounterTypeCodeCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(encounterTypeCodeCell)) {
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ENCOUNTER_TYPE, encounterTypeCodeCell);
             if (codeRef != null) {
                 String typeDesc = codeRef.getCodeDispTxt();

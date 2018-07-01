@@ -60,7 +60,8 @@ public class ORGREFTransformer {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-            identifierBuilder.setId(orgAliasCell.getString(), orgAliasCell);
+            identifierBuilder.setValue(orgAliasCell.getString(), orgAliasCell);
+            //identifierBuilder.setId(orgAliasCell.getString(), orgAliasCell);
         }
 
         CsvCell parentOrgAliasCell = parser.getParentNhsOrgAlias();
