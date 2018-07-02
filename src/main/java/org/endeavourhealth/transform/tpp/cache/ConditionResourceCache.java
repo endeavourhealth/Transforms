@@ -53,28 +53,28 @@ public class ConditionResourceCache {
     }
 
     public static void fileConditionResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-        int count = 0;
+//        int count = 0;
         for (Long problemId: conditionBuildersById.keySet()) {
             ConditionBuilder conditionBuilder = conditionBuildersById.get(problemId);
             boolean mapIds = !conditionBuilder.isIdMapped();
-            List<String> problems = new ArrayList<String>();
-            ResourceValidatorCondition validator = new ResourceValidatorCondition();
-            validator.validateResourceSave(conditionBuilder.getResource(), fhirResourceFiler.getServiceId(), mapIds, problems);
-            if (problems.isEmpty()) {
-                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
-            } else {
-                mapIds = false;
-                for (String s: problems) {
-                    LOG.info("TPPvalidator:" + s);
-                    if (s.contains("(false)")) {
-                        mapIds = true;
-                    }
-                }
-                LOG.warn("TPPValidator: Autoset resource boolean to {}. Condition id: {}. Successfully filed {}. Problems:{}", mapIds, conditionBuilder.getResourceId(), count, problems.size());
-
-                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
-            }
-            count++;
+//            List<String> problems = new ArrayList<>();
+//            ResourceValidatorCondition validator = new ResourceValidatorCondition();
+//            validator.validateResourceSave(conditionBuilder.getResource(), fhirResourceFiler.getServiceId(), mapIds, problems);
+//            if (problems.isEmpty()) {
+//                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
+//            } else {
+//                mapIds = false;
+//                for (String s: problems) {
+//                    LOG.info("TPPvalidator:" + s);
+//                    if (s.contains("(false)")) {
+//                        mapIds = true;
+//                    }
+//                }
+//                LOG.warn("TPPValidator: Autoset resource boolean to {}. Condition id: {}. Successfully filed {}. Problems:{}", mapIds, conditionBuilder.getResourceId(), count, problems.size());
+//
+//                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
+//            }
+//            count++;
         }
 
         //clear down as everything has been saved
