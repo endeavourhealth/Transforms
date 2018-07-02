@@ -212,7 +212,11 @@ public class PATIENTTransformer {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
 
+            // set the managing organization
             patientBuilder.setManagingOrganisation(organisationReference);
+
+            //set the patient's care provider, which for this instance, is the OOH service
+            patientBuilder.addCareProvider(organisationReference);
         }
 
         if (!patientCreatedInSession) {

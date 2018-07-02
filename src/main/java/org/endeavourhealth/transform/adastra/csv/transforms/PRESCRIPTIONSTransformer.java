@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.PRESCRIPTIONS;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -94,6 +95,9 @@ public class PRESCRIPTIONSTransformer {
         if (!dose.isEmpty()) {
             medicationStatementBuilder.setDose(dose.getString(), dose);
         }
+
+        // set this as acute as we have no other medication types
+        medicationStatementBuilder.setAuthorisationType(MedicationAuthorisationType.ACUTE);
 
         // set consultation/encounter reference
         if (!consultationId.isEmpty()) {
