@@ -97,7 +97,6 @@ public class CLINICALCODESTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
                 codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
                 codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                codeableConceptBuilder.setText(snomedCode.getTerm());
              }
         }
 
