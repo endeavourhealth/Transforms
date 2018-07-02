@@ -46,9 +46,9 @@ public class CASEPreTransformer {
         CsvCell caseNo = parser.getCaseNo();
         CsvCell patientId = parser.getPatientId();
 
-
         // first up, create the OOH organisation
         UUID serviceId = parser.getServiceId();
+        LOG.trace("Case Pre-Transformer started for ServiceId: {}", serviceId.toString());
         OrganizationBuilder organizationBuilder
                 = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
