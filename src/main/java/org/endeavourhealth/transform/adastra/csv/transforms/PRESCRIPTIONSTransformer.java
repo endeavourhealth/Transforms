@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.MedicationStatement;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,6 +99,9 @@ public class PRESCRIPTIONSTransformer {
 
         // set this as acute as we have no other medication types
         medicationStatementBuilder.setAuthorisationType(MedicationAuthorisationType.ACUTE);
+
+        // set drug status to intended as no way of determining if active or completed
+        medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.INTENDED);
 
         // set consultation/encounter reference
         if (!consultationId.isEmpty()) {
