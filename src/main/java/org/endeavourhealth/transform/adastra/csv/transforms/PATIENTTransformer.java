@@ -204,6 +204,7 @@ public class PATIENTTransformer {
         // if patient already ID mapped, get the mapped ID for the org
         boolean isResourceMapped = csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource());
         if (isResourceMapped) {
+            LOG.trace("PatientRef: {} already mapped so converting reference", patientId.getString());
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
 
@@ -211,7 +212,7 @@ public class PATIENTTransformer {
         patientBuilder.setManagingOrganisation(organisationReference);
 
         //set the patient's care provider, which for this instance, is the OOH service
-        patientBuilder.addCareProvider(organisationReference);
+        //TODO:  edited out the test mapping error - //patientBuilder.addCareProvider(organisationReference);
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
