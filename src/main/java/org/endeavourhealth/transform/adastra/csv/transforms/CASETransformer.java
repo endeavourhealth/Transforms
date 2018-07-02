@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.adastra.csv.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASE;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -11,7 +10,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
@@ -77,20 +75,15 @@ public class CASETransformer {
             episodeBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
 
-        //get the configured serviceId to retrieve an Organization resource if it exists (create if not)
+        //get the organization resource has been created already in CASEPreTransformer set the episode managing org reference
         UUID serviceId = parser.getServiceId();
-        OrganizationBuilder organizationBuilder
-                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
-        //the organization resource has been created or is already created so set the episode managing org reference
-        if (organizationBuilder != null) {
+        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
 
-            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-            // if episode already ID mapped, get the mapped ID for the org
-            if (isResourceMapped) {
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
-            }
-            episodeBuilder.setManagingOrganisation(organisationReference);
+        // if episode already ID mapped, get the mapped ID for the org
+        if (isResourceMapped) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
+        episodeBuilder.setManagingOrganisation(organisationReference);
 
         //simple priority text set as an extension
         CsvCell priority = parser.getPriorityName();

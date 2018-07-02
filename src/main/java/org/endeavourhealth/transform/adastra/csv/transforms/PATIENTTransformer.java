@@ -7,7 +7,6 @@ import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.*;
@@ -198,26 +197,21 @@ public class PATIENTTransformer {
             patientBuilder.setActive(active);
         }
 
-        //get the configured serviceId to retrieve an Organization resource if it exists (create if not)
+        //the organization resource has been created already in CASEPreTransformer set the episode managing org reference
         UUID serviceId = parser.getServiceId();
-        OrganizationBuilder organizationBuilder
-                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
-        //the organization resource has been created or is already created so set the episode managing org reference
-        if (organizationBuilder != null) {
+        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
 
-            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-            // if patient already ID mapped, get the mapped ID for the org
-            boolean isResourceMapped = csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource());
-            if (isResourceMapped) {
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
-            }
-
-            // set the managing organization
-            patientBuilder.setManagingOrganisation(organisationReference);
-
-            //set the patient's care provider, which for this instance, is the OOH service
-            patientBuilder.addCareProvider(organisationReference);
+        // if patient already ID mapped, get the mapped ID for the org
+        boolean isResourceMapped = csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource());
+        if (isResourceMapped) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
+
+        // set the managing organization
+        patientBuilder.setManagingOrganisation(organisationReference);
+
+        //set the patient's care provider, which for this instance, is the OOH service
+        patientBuilder.addCareProvider(organisationReference);
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
