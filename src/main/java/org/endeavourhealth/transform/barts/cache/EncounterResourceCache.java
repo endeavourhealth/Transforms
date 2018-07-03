@@ -234,7 +234,7 @@ public class EncounterResourceCache {
             boolean mapIds = !encounterBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, mapIds, encounterBuilder);
         }
-        LOG.trace("Finishing saving " + encounterBuildersByEncounterId.size() + " encounters to the DB");
+        LOG.trace("Finishing saving encounters to the DB");
 
         //clear down as everything has been saved
         encounterBuildersByEncounterId.clear();

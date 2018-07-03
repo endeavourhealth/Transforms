@@ -103,7 +103,7 @@ public class PatientResourceCache {
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
         }
 
-        LOG.trace("Finishing saving " + patientBuildersByPersonId.size() + " patients to the DB");
+        LOG.trace("Finishing saving patients to the DB");
 
         //clear down as everything has been saved
         patientBuildersByPersonId.clear();

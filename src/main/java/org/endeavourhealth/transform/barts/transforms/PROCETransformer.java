@@ -143,7 +143,7 @@ public class PROCETransformer {
             }
 
         } else {
-            TransformWarnings.log(LOG, parser, "Empty CONCEPT_CKI_IDENT cell for Procedure {}", parser.getProcedureID());
+            //if there's no code, there's nothing to save
         }
 
         // Procedure type (category) is a Cerner Millenium code so lookup

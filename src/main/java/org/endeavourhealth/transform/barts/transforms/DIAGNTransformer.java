@@ -143,7 +143,7 @@ public class DIAGNTransformer {
             }
 
         } else {
-            TransformWarnings.log(LOG, parser, "Unable to create CodeableConcept for Condition ID {}", diagnosisIdCell);
+            //if there's no code, there's nothing to save
             return;
         }
 

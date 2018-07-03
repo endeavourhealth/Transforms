@@ -606,7 +606,7 @@ public class EpisodeOfCareResourceCache {
             boolean mapIds = !episodeBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, mapIds, episodeBuilder);
         }
-        LOG.trace("Finishing saving " + episodeBuildersByUuid.size() + " Episodes to the DB");
+        LOG.trace("Finishing saving Episodes to the DB");
 
         //clear down as everything has been saved
         episodeBuildersByUuid.clear();

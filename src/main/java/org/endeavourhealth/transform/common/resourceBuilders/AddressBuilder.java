@@ -117,6 +117,10 @@ public class AddressBuilder {
         if (Strings.isNullOrEmpty(postcode)) {
             return;
         }
+
+        //for consistency across the estate, and to ensure that SQL joins work, postcodes are always saved without spaces
+        postcode = postcode.replaceAll(" ", "");
+
         address.setPostalCode(postcode);
 
         auditNameValue("postalCode", sourceCells);
