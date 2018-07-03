@@ -713,6 +713,11 @@ public class PatientTransformer {
             return RegistrationType.WALK_IN;
         } else if (csvRegType.equalsIgnoreCase("Other")) {
             return RegistrationType.OTHER;
+        } else if (csvRegType.equalsIgnoreCase("Minor Surgery")) {
+            return RegistrationType.MINOR_SURGERY;
+        } else if (csvRegType.equalsIgnoreCase("Child Health Services")) {
+            return RegistrationType.CHILD_HEALTH_SURVEILLANCE;
+
         } else {
             if (TransformConfig.instance().isEmisAllowUnmappedRegistrationTypes()) {
                 TransformWarnings.log(LOG, parserI, "Unhandled Emis registration type {}", csvRegType);
@@ -737,11 +742,12 @@ public class PatientTransformer {
          Dummy
          Other
          Walk-In Patient
+         Minor Surgery
+         Child Health Services
+
 
          Contraceptive Services
          Maternity Services
-         Child Health Services
-         Minor Surgery
          Sexual Health
          Pre Registration
          Yellow Fever
