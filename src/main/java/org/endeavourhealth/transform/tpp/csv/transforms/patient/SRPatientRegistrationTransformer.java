@@ -83,13 +83,19 @@ public class SRPatientRegistrationTransformer {
         if (!orgIdCell.isEmpty()) {
 //            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
 //            organizationBuilder.setId(orgIdCell.getString());
-            Reference organizationReference = csvHelper.createOrganisationReference(orgIdCell);
+
+            // Separate references needed for mutable objects in multithreaded code. Is this overkill?
+            Reference organizationReferenceCp = csvHelper.createOrganisationReference(orgIdCell);
+            Reference organizationReferenceMo = csvHelper.createOrganisationReference(orgIdCell);
+            Reference organizationReferenceEMo = csvHelper.createOrganisationReference(orgIdCell);
             if (patientBuilder.isIdMapped()) {
-                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference,fhirResourceFiler);
+                organizationReferenceCp = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceCp,fhirResourceFiler);
+                organizationReferenceMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceMo,fhirResourceFiler);
+                organizationReferenceEMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceEMo,fhirResourceFiler);
             }
-            patientBuilder.addCareProvider(organizationReference);
-            patientBuilder.setManagingOrganisation(organizationReference, orgIdCell);
-            episodeBuilder.setManagingOrganisation(organizationReference, orgIdCell);
+            patientBuilder.addCareProvider(organizationReferenceCp);
+            patientBuilder.setManagingOrganisation(organizationReferenceMo, orgIdCell);
+            episodeBuilder.setManagingOrganisation(organizationReferenceEMo, orgIdCell);
         }
 
         CsvCell regStartDateCell = parser.getDateRegistration();
