@@ -75,6 +75,7 @@ public class ConditionResourceCache {
 //                fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
 //            }
 //            count++;
+            fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
         }
 
         //clear down as everything has been saved

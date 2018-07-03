@@ -51,13 +51,13 @@ public class SROrganisationTransformer {
 
         //set the managing organisation for the location, basically itself!
 
-
+        boolean mapIds = !organizationBuilder.isIdMapped();
         Reference organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
         if (organizationBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
         }
         locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder, locationBuilder);
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, organizationBuilder, locationBuilder);
 
     }
 
@@ -190,7 +190,7 @@ public class SROrganisationTransformer {
 
         if ((obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
                 (deleted != null && !deleted.isEmpty() && deleted.getIntAsBoolean())) {
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(),!organizationBuilder.isIdMapped(), organizationBuilder);
             return null;
         }
 
