@@ -180,10 +180,13 @@ public class SROrganisationTransformer {
             organizationBuilder = new OrganizationBuilder();
             organizationBuilder.setId(rowIdCell.getString(), rowIdCell);
         } else {
+
             organizationBuilder = new OrganizationBuilder(organization);
+
+            organizationBuilder.setId(organization.getId());
         }
 
-        organizationBuilder.setId(organizationId.getString());
+        //organizationBuilder.setId(organizationId.getString());
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
