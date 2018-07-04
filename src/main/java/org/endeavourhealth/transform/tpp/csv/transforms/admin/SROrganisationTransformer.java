@@ -55,6 +55,8 @@ public class SROrganisationTransformer {
         // Id possibly remapped to GUID if retrieved from DB
         Reference organisationReference;
         if (mapIds) {
+            organizationBuilder.setId(parser.getID().getString());
+            locationBuilder.setId(parser.getID().getString());
             organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
         } else {
             organisationReference = csvHelper.createOrganisationReference(organizationBuilder.getResourceId());
