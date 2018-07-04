@@ -77,8 +77,14 @@ public class SROrganisationTransformer {
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
 
+        boolean mapIds = true;
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
+
+            if (locationBuilder.isIdMapped()) {
+                locationBuilder.setId(locationBuilder.getResource().getId());
+                mapIds = false;
+            }
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), mapIds, locationBuilder);
             return null;
         }
 
