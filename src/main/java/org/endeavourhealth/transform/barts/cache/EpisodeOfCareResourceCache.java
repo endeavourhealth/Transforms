@@ -10,7 +10,6 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.AEATT;
-import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.barts.schema.IPEPI;
 import org.endeavourhealth.transform.barts.schema.OPATT;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -34,12 +33,8 @@ public class EpisodeOfCareResourceCache {
 
     private Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
 
-    /**
-     * when processing the ENCNT file we set up the Episode ID -> UUID and FIN -> UUID mappings for the EpisodeOfCare
-     * but don't actually create the Episode itself.
-     * Let the transforms for IPEPI, OPATT and AEATT pick up the mappings and create the EpisodeOfCare resource
-     */
-    public void setUpEpisodeOfCareBuilderMappings(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
+
+    /*public void setUpEpisodeOfCareBuilderMappings(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
@@ -54,8 +49,13 @@ public class EpisodeOfCareResourceCache {
         CsvCell visitIdCell = parser.getVisitId();
 
         setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
-    }
+    }*/
 
+    /**
+     * when processing the ENCNT file we set up the Episode ID -> UUID and FIN -> UUID mappings for the EpisodeOfCare
+     * but don't actually create the Episode itself.
+     * Let the transforms for IPEPI, OPATT and AEATT pick up the mappings and create the EpisodeOfCare resource
+     */
     public void setUpEpisodeOfCareBuilderMappings(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         //first, just store the mappings of Encounter ID -> Episode ID and FIN -> Episode ID, so

@@ -55,20 +55,13 @@ public class ENCNTPreTransformer {
             return;
         }
 
-        //NOTE the ENCNT transformer does ignore some records based on encounter type, but it doesn't hurt to still generate IDs for them
-
-        //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
-        //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
-        CsvCell visitIdCell = parser.getVisitId();
-        if (visitIdCell.isEmpty()
-                || visitIdCell.getString().startsWith("RES_")) {
-            return;
-        }
-
-        CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell episodeIdCell = parser.getEpisodeIdentifier();
+        CsvCell finCell = parser.getMillenniumFinancialNumberIdentifier();
+        CsvCell visitIdCell = parser.getVisitId();
 
-        PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, visitIdCell, csvHelper);
+        PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
 
         List<ThreadPoolError> errors = threadPool.submit(callable);
         AbstractCsvCallable.handleErrors(errors);
@@ -79,13 +72,17 @@ public class ENCNTPreTransformer {
 
         private CsvCell personIdCell;
         private CsvCell encounterIdCell;
+        private CsvCell episodeIdCell;
+        private CsvCell finCell;
         private CsvCell visitIdCell;
         private BartsCsvHelper csvHelper;
 
-        public PreTransformCallable(CsvCurrentState parserState, CsvCell personIdCell, CsvCell encounterIdCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) {
+        public PreTransformCallable(CsvCurrentState parserState, CsvCell personIdCell, CsvCell encounterIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) {
             super(parserState);
             this.personIdCell = personIdCell;
             this.encounterIdCell = encounterIdCell;
+            this.episodeIdCell = episodeIdCell;
+            this.finCell = finCell;
             this.visitIdCell = visitIdCell;
             this.csvHelper = csvHelper;
         }
@@ -95,17 +92,29 @@ public class ENCNTPreTransformer {
 
             try {
 
-                //the HL7 Receiver uses the MRN as part of the Encounter ID, so we need to look that up
-                String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personIdCell.getString());
-                if (!Strings.isNullOrEmpty(mrn)) {
+                //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
+                //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
+                if (!visitIdCell.isEmpty()
+                        && !visitIdCell.getString().startsWith("RES_")) {
 
-                    //the Data Warehouse files all use PersonID as the unique local identifier for patients, but the
-                    //ADT feed uses the MRN, so we need to ensure that the Discovery UUID is the same as used by the ADT feed
-                    String localUniqueId = encounterIdCell.getString();
-                    String hl7ReceiverUniqueId = "PIdAssAuth=" + BartsCsvToFhirTransformer.PRIMARY_ORG_HL7_OID + "-PatIdValue=" + mrn + "-EpIdTypeCode=VISITID-EpIdValue=" + visitIdCell.getString(); //this must match the HL7 Receiver
-                    String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
-                    csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Encounter, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, true);
+                    //the HL7 Receiver uses the MRN as part of the Encounter ID, so we need to look that up
+                    String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personIdCell.getString());
+                    if (!Strings.isNullOrEmpty(mrn)) {
+
+                        //the Data Warehouse files all use PersonID as the unique local identifier for patients, but the
+                        //ADT feed uses the MRN, so we need to ensure that the Discovery UUID is the same as used by the ADT feed
+                        String localUniqueId = encounterIdCell.getString();
+                        String hl7ReceiverUniqueId = "PIdAssAuth=" + BartsCsvToFhirTransformer.PRIMARY_ORG_HL7_OID + "-PatIdValue=" + mrn + "-EpIdTypeCode=VISITID-EpIdValue=" + visitIdCell.getString(); //this must match the HL7 Receiver
+                        String hl7ReceiverScope = csvHelper.getHl7ReceiverScope();
+                        csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Encounter, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, true);
+                    }
                 }
+
+                //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT. Just
+                //call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
+                //we do process the OPATT, AEATT and IPEPI files
+                csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+
 
             } catch (Throwable t) {
                 LOG.error("", t);

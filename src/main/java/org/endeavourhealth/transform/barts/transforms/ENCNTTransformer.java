@@ -256,11 +256,6 @@ public class ENCNTTransformer {
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 
-        //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT. Just
-        //call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
-        //we do process the OPATT, AEATT and IPEPI files
-        csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(parser, csvHelper);
-
         /*EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);

@@ -622,19 +622,27 @@ public abstract class BartsCsvToFhirTransformer {
             return "SUSOPA";
         } else if (filenamePart1.equalsIgnoreCase("susaea")) {
             return "SUSAEA";
+        } else if (filenamePart1.equalsIgnoreCase("ip")) {
+            return "SUSIP";
+        } else if (filenamePart1.equalsIgnoreCase("tailip")) {
+            return "TAILIP";
         } else if (filenamePart1.equalsIgnoreCase("tailopa")) {
-            return filenamePart1.toUpperCase();
+            return "TAILOPA";
         } else if (filenamePart1.equalsIgnoreCase("tailaea")) {
-            return filenamePart1.toUpperCase();
+            return "TAILAEA";
         } else if (filenamePart1.equalsIgnoreCase("spfit")) {
             return "SPFIT";
         } else if (filenamePart1.equalsIgnoreCase("cc")) {
             return "CC";
         } else if (filenamePart1.equalsIgnoreCase("hdb")) {
             return "HDB";
+        } else if (filenamePart1.equalsIgnoreCase("susecd")) {
+            return "EMERGENCY_CARE";
+        } else if (filenamePart1.equalsIgnoreCase("tailecd")) {
+            return "EMERGENCY_CARE_TAILS";
 
         } else if (filenamePart1.equalsIgnoreCase("fam")
-                || filenamePart1.equalsIgnoreCase("hist")) {
+                && filenamePart1.equalsIgnoreCase("hist")) {
             return "FAMILYHISTORY";
 
             // v2.2 files
@@ -697,25 +705,20 @@ public abstract class BartsCsvToFhirTransformer {
             || filenamePart1.equalsIgnoreCase("PPGPORG")) {
 
             return filenamePart1.toUpperCase();
-        } else {
-            String filenamePart3 = parts[2];
 
-            if (filenamePart1.equalsIgnoreCase("tailip")) {
-                return filenamePart1.toUpperCase();
+        } else {
+
+            String filenamePart3 = parts[2];
+            if (filenamePart1.equalsIgnoreCase("rnj")) {
+                return filenamePart3.toUpperCase();
+
+            } else if (filenamePart1.equalsIgnoreCase("GETL")) {
+                return filenamePart3.toUpperCase();
+
             } else {
-                if (filenamePart1.equalsIgnoreCase("ip")) {
-                    return "SUSIP";
-                } else if (filenamePart1.equalsIgnoreCase("rnj")) {
-                    return filenamePart3.toUpperCase();
-                } else {
-                    if (filenamePart1.equalsIgnoreCase("GETL")) {
-                        return filenamePart3.toUpperCase();
-                    } else {
-                        //if we have an unknown file this should be raised as an error
-                        throw new TransformException("Unknown file type for " + filename);
-                        //return "UNKNOWN";
-                    }
-                }
+                //if we have an unknown file this should be raised as an error
+                throw new TransformException("Unknown file type for " + filename);
+                //return "UNKNOWN";
             }
         }
     }
