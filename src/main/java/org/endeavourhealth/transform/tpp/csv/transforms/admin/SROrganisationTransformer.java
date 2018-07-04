@@ -50,13 +50,18 @@ public class SROrganisationTransformer {
         }
 
         //set the managing organisation for the location, basically itself!
-
-        boolean mapIds = !organizationBuilder.isIdMapped();
+        // If either needs to be mapped then all references need to be local unmapped refs
+        boolean mapIds = !organizationBuilder.isIdMapped() || !locationBuilder.isIdMapped();
         // Id possibly remapped to GUID if retrieved from DB
-        Reference organisationReference = csvHelper.createOrganisationReference(organizationBuilder.getResourceId());
-        if (organizationBuilder.isIdMapped()) {
-            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+        Reference organisationReference;
+        if (mapIds) {
+            organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
+        } else {
+            organisationReference = csvHelper.createOrganisationReference(organizationBuilder.getResourceId());
         }
+//        if (organizationBuilder.isIdMapped()) {
+//            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+//        }
         locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, organizationBuilder, locationBuilder);
 
@@ -69,7 +74,7 @@ public class SROrganisationTransformer {
         CsvCell rowIdCell = parser.getRowIdentifier();
 
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
 
