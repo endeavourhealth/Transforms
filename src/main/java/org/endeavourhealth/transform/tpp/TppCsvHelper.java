@@ -87,6 +87,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createOrganisationReference(CsvCell organizationGuid) {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
+    public Reference createOrganisationReference(String organizationGuid) {
+        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
 
     public Reference createLocationReference(CsvCell locationGuid) {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid.getString());

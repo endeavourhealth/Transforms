@@ -62,7 +62,7 @@ public abstract class ResourceValidatorBase {
             String id = resource.getId();
             boolean isIdMapped = isMappedUuid(resource.getResourceType(), id, serviceId);
             if (isIdMapped == mapIds) {
-                validationErrors.add("Resource ID mapped state doesn't match mapIds intention (" + mapIds + ")");
+                validationErrors.add("Resource " + resource.getResourceType() + " ID " + id + " mapped state doesn't match mapIds intention (" + mapIds + ")");
             }
 
             //to get all the references in the resource, just use the ID mapper for that resource type
