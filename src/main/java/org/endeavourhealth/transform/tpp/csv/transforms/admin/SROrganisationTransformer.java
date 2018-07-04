@@ -73,17 +73,18 @@ public class SROrganisationTransformer {
         }
 
         LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
-
+        boolean mapIds = true;
+        if (locationBuilder.isIdMapped()) {
+            locationBuilder.setId(locationBuilder.getResource().getId());
+            mapIds = false;
+        }
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
 
-        boolean mapIds = true;
+
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
 
-            if (locationBuilder.isIdMapped()) {
-                locationBuilder.setId(locationBuilder.getResource().getId());
-                mapIds = false;
-            }
+
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), mapIds, locationBuilder);
             return null;
         }
