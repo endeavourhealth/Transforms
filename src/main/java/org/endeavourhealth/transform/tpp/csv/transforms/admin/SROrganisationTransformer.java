@@ -51,7 +51,7 @@ public class SROrganisationTransformer {
 
         //set the managing organisation for the location, basically itself!
         // If either needs to be mapped then all references need to be local unmapped refs
-        boolean mapIds = !organizationBuilder.isIdMapped() || !locationBuilder.isIdMapped();
+        boolean mapIds = !(organizationBuilder.isIdMapped() && locationBuilder.isIdMapped());
         // Id possibly remapped to GUID if retrieved from DB
         Reference organisationReference;
         if (mapIds) {
