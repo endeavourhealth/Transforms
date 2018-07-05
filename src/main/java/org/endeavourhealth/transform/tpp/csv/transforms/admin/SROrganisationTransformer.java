@@ -53,6 +53,7 @@ public class SROrganisationTransformer {
         // If either needs to be mapped then all references need to be local unmapped refs
         boolean mapIds = !(organizationBuilder.isIdMapped() && locationBuilder.isIdMapped());
         // Id possibly remapped to GUID if retrieved from DB
+        organizationBuilder = setOrgReferences(organizationBuilder,mapIds,parser,fhirResourceFiler,csvHelper);
         Reference organisationReference;
         if (mapIds) {
             organizationBuilder.setId(parser.getID().getString());
@@ -273,11 +274,19 @@ public class SROrganisationTransformer {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
 
+
+        return organizationBuilder;
+        //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+    }
+
+    private static OrganizationBuilder setOrgReferences(OrganizationBuilder organizationBuilder, boolean mapIds,
+                                                        SROrganisation parser, FhirResourceFiler fhirResourceFiler,
+                                                        TppCsvHelper csvHelper) throws Exception {
         CsvCell trustCell = parser.getIDTrust();
         if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference trustReference = csvHelper.createOrganisationReference(trustCell);
-            if (organizationBuilder.isIdMapped()) {
+            if (!mapIds) {
                 trustReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(trustReference,fhirResourceFiler);
             }
             organizationBuilder.setParentOrganisation(trustReference, trustCell);
@@ -286,14 +295,13 @@ public class SROrganisationTransformer {
         if (!ccgCell.isEmpty() && ccgCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
             Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
-            if (organizationBuilder.isIdMapped()) {
+            if (!mapIds) {
                 ccgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(ccgReference,fhirResourceFiler);
             }
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
         }
 
         return organizationBuilder;
-        //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) {
