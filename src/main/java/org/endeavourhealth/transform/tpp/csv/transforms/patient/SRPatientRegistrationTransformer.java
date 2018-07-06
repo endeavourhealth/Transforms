@@ -78,6 +78,9 @@ public class SRPatientRegistrationTransformer {
 
 
         Reference patientReference = csvHelper.createPatientReference(idPatient);
+        if (patientBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+        }
         episodeBuilder.setPatient(patientReference, idPatient);
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
         if (!orgIdCell.isEmpty()) {
