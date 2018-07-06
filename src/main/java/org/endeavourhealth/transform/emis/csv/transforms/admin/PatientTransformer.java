@@ -717,6 +717,8 @@ public class PatientTransformer {
             return RegistrationType.MINOR_SURGERY;
         } else if (csvRegType.equalsIgnoreCase("Child Health Services")) {
             return RegistrationType.CHILD_HEALTH_SURVEILLANCE;
+        } else if (csvRegType.equalsIgnoreCase("Contraceptive Services")) {
+            return RegistrationType.CONTRACEPTIVE_SERVICES;
 
         } else {
             if (TransformConfig.instance().isEmisAllowUnmappedRegistrationTypes()) {
@@ -744,9 +746,10 @@ public class PatientTransformer {
          Walk-In Patient
          Minor Surgery
          Child Health Services
-
-
          Contraceptive Services
+
+
+
          Maternity Services
          Sexual Health
          Pre Registration
