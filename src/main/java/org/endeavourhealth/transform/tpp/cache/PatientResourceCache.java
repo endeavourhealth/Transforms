@@ -70,12 +70,15 @@ public class PatientResourceCache {
             PatientBuilder patientBuilder = (PatientBuilder) both.getValue();
             if (EpisodeOfCareResourceCache.episodeOfCareInCache(rowId)) {
                 EpisodeOfCareBuilder episodeOfCareBuilder = EpisodeOfCareResourceCache.getEpisodeOfCareByRowId(rowId);
+                LOG.info("Patient: idMapped:" + patientBuilder.isIdMapped() + "<>" + patientBuilder.getResourceId());
+                LOG.info("Episode: idMapped:" + episodeOfCareBuilder.isIdMapped() + "<>" + episodeOfCareBuilder.getResourceId()) ;
                 boolean mapIds = !(patientBuilder.isIdMapped() && episodeOfCareBuilder.isIdMapped());
                 if (mapIds) {
                     String idString = Long.toString(rowId);
                     if (patientBuilder.isIdMapped()) {
                         patientBuilder.setId(idString);
-                    } else if (episodeOfCareBuilder.isIdMapped()) {
+                    }
+                    if (episodeOfCareBuilder.isIdMapped()) {
                         episodeOfCareBuilder.setId(idString);
                     }
                 }
