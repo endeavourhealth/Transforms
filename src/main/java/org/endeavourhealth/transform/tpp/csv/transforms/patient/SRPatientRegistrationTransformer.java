@@ -76,7 +76,7 @@ public class SRPatientRegistrationTransformer {
         EpisodeOfCareBuilder episodeBuilder = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(idPatient,
                 csvHelper, fhirResourceFiler);
 
-        //episodeBuilder.setId(idPatient.getString());  //use the patient GUID as the ID for the episode
+
         Reference patientReference = csvHelper.createPatientReference(idPatient);
         episodeBuilder.setPatient(patientReference, idPatient);
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
@@ -92,6 +92,8 @@ public class SRPatientRegistrationTransformer {
                 organizationReferenceCp = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceCp,fhirResourceFiler);
                 organizationReferenceMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceMo,fhirResourceFiler);
                 organizationReferenceEMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceEMo,fhirResourceFiler);
+            } else {
+                episodeBuilder.setId(idPatient.getString());  //use the patient ID as the ID for the episode to allow mapId to be set consistently
             }
             patientBuilder.addCareProvider(organizationReferenceCp);
             patientBuilder.setManagingOrganisation(organizationReferenceMo, orgIdCell);
