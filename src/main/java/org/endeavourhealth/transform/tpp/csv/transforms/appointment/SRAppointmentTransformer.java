@@ -25,6 +25,9 @@ import java.util.Map;
 
 public class SRAppointmentTransformer {
 
+    // FHIR filing note: we create a new slot from constructor, therefore we have to do a
+    // mapId on slot, therefore we need to use local ids for appointment as well.
+
     private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
 
     public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
@@ -99,26 +102,26 @@ public class SRAppointmentTransformer {
         AppointmentBuilder appointmentBuilder
                 = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
 
-        if (appointmentBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
-        }
+//        if (appointmentBuilder.isIdMapped()) {
+//            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+//        }
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(appointmentId.getString(), appointmentId);
 
         Reference slotRef = csvHelper.createSlotReference(appointmentId);
-        if (appointmentBuilder.isIdMapped()) {
-            slotRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(slotRef,fhirResourceFiler);
-        }
+//        if (appointmentBuilder.isIdMapped()) {
+//            slotRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(slotRef,fhirResourceFiler);
+//        }
         appointmentBuilder.addSlot(slotRef, appointmentId);
 
 
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
-            if (slotBuilder.isIdMapped()) {
-                scheduleReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(scheduleReference,fhirResourceFiler);
-            }
+//            if (slotBuilder.isIdMapped()) {
+//                scheduleReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(scheduleReference,fhirResourceFiler);
+//            }
             slotBuilder.setSchedule(scheduleReference, rotaId);
         }
 
@@ -158,9 +161,9 @@ public class SRAppointmentTransformer {
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference practitionerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-                if (appointmentBuilder.isIdMapped()) {
-                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
-                }
+//                if (appointmentBuilder.isIdMapped()) {
+//                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+//                }
                 appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
             }
         }
@@ -204,7 +207,9 @@ public class SRAppointmentTransformer {
             AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
         }
         boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, slotBuilder, appointmentBuilder);
+        // slotBuilder is new so can't be idMapped. Set appointmentBuilderId to local
+        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() );
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
 
 
     }
