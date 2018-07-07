@@ -27,14 +27,12 @@ public class IPEPITransformer {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
-                try {
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                        continue;
-                    }
-                    createEpisodeEvent((IPEPI) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+
+                //no try/catch as records in this file aren't independent and can't be re-processed on their own
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
                 }
+                createEpisodeEvent((IPEPI) parser, fhirResourceFiler, csvHelper);
             }
         }
     }

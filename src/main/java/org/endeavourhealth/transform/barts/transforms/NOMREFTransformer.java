@@ -7,7 +7,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.NOMREF;
 import org.endeavourhealth.transform.common.*;
@@ -42,11 +41,7 @@ public class NOMREFTransformer {
 
                     //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                     //to parse any record in this file it a critical error
-                    try {
-                        transform((NOMREF) parser, fhirResourceFiler, csvHelper, threadPool);
-                    } catch (Exception ex) {
-                        throw new TransformException(parser.getCurrentState().toString(), ex);
-                    }
+                    transform((NOMREF) parser, fhirResourceFiler, csvHelper, threadPool);
                 }
             }
 
