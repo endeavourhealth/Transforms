@@ -319,12 +319,12 @@ public abstract class BartsCsvToFhirTransformer {
         //file will be processed according to the date it was actually generated, but the below
         //files will be processed as though they were received in 2017 even though they came from Mar 2018
         HashSet<String> fileTypesBulked = new HashSet<>();
-        fileTypesBulked.add("ENCNT");
+        /*fileTypesBulked.add("ENCNT");
         fileTypesBulked.add("ENCINF");
         fileTypesBulked.add("OPATT");
         fileTypesBulked.add("AEATT");
         fileTypesBulked.add("IPEPI");
-        fileTypesBulked.add("IPWDS");
+        fileTypesBulked.add("IPWDS");*/
         fileTypesBulked.add("PPNAM");
         fileTypesBulked.add("PPPHO");
         fileTypesBulked.add("PPALI");
