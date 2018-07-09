@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
@@ -213,8 +214,10 @@ public class SRAppointmentTransformer {
 
         IdMapperAppointment mapper = new IdMapperAppointment();
         boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
+        String referenceId = comps.getId();
         LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() +
-                "SlotRef:" + slotRef.getId() + "patientRef:" + patientReference.toString());
+                "SlotRef:" + slotRef.getId() + "patientRef:" + referenceId);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
 
 
