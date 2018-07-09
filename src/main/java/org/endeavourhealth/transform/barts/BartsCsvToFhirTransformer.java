@@ -303,7 +303,7 @@ public abstract class BartsCsvToFhirTransformer {
         Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
         Date bulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2018-03-09"); //date the bulks were generated
         Date bulkProcessingDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-03"); //exchange date the bulks were processed with
-        boolean ignoreDeltasProcssedOutOfOrder = exchangeDate.before(bulkDate)
+        boolean ignoreDeltasProcessedOutOfOrder = exchangeDate.before(bulkDate)
                                             && exchangeDate.after(bulkProcessingDate);
 
         //NOTE: we've had bulks for other file types, but only need to ignore extracts where
@@ -333,7 +333,7 @@ public abstract class BartsCsvToFhirTransformer {
             type = type.toUpperCase();
 
             //we might want to ignore this file if it's before a known bulk
-            if (ignoreDeltasProcssedOutOfOrder
+            if (ignoreDeltasProcessedOutOfOrder
                     && fileTypesBulked.contains(type)) {
                 LOG.info("Skipping " + file + " as it's a delta from before the bulks");
                 continue;
