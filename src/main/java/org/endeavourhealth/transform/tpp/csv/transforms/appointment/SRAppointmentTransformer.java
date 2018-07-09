@@ -208,6 +208,7 @@ public class SRAppointmentTransformer {
         }
         boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
         // slotBuilder is new so can't be idMapped. Set appointmentBuilderId to local
+        appointmentBuilder.setId(appointmentId.getString(),appointmentId);
         LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() );
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
 
