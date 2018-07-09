@@ -66,9 +66,9 @@ public class PPRELTransformer {
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //store the relationship type in the internal ID map table so the family history transformer can look it up
-        //TODO - move this to PPREL PRE transformer, but only after the PP... bulk files have been processed
-        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
-        csvHelper.savePatientRelationshipType(personIdCell, relationshipIdCell, relationshipToPatientCell);
+        //moved this to PPREL PRE transformer, but only after the PP... bulk files have been processed
+        /*CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
+        csvHelper.savePatientRelationshipType(personIdCell, relationshipIdCell, relationshipToPatientCell);*/
 
         CsvCell title = parser.getTitle();
         CsvCell firstName = parser.getFirstName();
@@ -173,6 +173,7 @@ public class PPRELTransformer {
             contactBuilder.setEndDate(d, endDate);
         }
 
+        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
 
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);

@@ -55,8 +55,9 @@ public class PPRELPreTransformer {
         //we need to store a mapping of alias ID to person ID
         CsvCell relatedPersonIdCell = parser.getRelatedPersonMillenniumIdentifier();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell relationshipToPatientCodeCell = parser.getRelationshipToPatientCode();
 
-        PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, csvHelper);
+        PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, relationshipToPatientCodeCell, csvHelper);
         List<ThreadPoolError> errors = threadPool.submit(callable);
         AbstractCsvCallable.handleErrors(errors);
     }
@@ -66,16 +67,19 @@ public class PPRELPreTransformer {
 
         private CsvCell relatedPersonIdCell = null;
         private CsvCell personIdCell = null;
+        private CsvCell relationshipToPatientCodeCell = null;
         private BartsCsvHelper csvHelper = null;
 
         public PPRELPreTransformCallable(CsvCurrentState parserState,
                                          CsvCell relatedPersonIdCell,
                                          CsvCell personIdCell,
+                                         CsvCell relationshipToPatientCodeCell,
                                          BartsCsvHelper csvHelper) {
 
             super(parserState);
             this.relatedPersonIdCell = relatedPersonIdCell;
             this.personIdCell = personIdCell;
+            this.relationshipToPatientCodeCell = relationshipToPatientCodeCell;
             this.csvHelper = csvHelper;
         }
 
@@ -87,6 +91,9 @@ public class PPRELPreTransformer {
                 //we need to store the PPREL ID -> PERSON ID mapping so that if the address is ever deleted,
                 //we can find the person it belonged to, since the deleted records only give us the ID
                 csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonIdCell.getString(), personIdCell.getString());
+
+                //store the relationship type in the internal ID map table so the family history transformer can look it up
+                csvHelper.savePatientRelationshipType(personIdCell, relatedPersonIdCell, relationshipToPatientCodeCell);
 
             } catch (Throwable t) {
                 LOG.error("", t);

@@ -46,9 +46,10 @@ public class RegistrationStatusTransformer {
         EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(patientGuid, ResourceType.EpisodeOfCare);
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
 
-        CsvCell registrationTypeIdCell = parser.getRegistrationTypeId();
+        //don't carry over the registration type from this file, since we get this in the normal daily extract, which is more up to date
+        /*CsvCell registrationTypeIdCell = parser.getRegistrationTypeId();
         RegistrationType registrationType = convertRegistrationType(registrationTypeIdCell.getInt());
-        episodeBuilder.setRegistrationType(registrationType, registrationTypeIdCell);
+        episodeBuilder.setRegistrationType(registrationType, registrationTypeIdCell);*/
 
         CsvCell registrationStatusIdCell = parser.getRegistrationStatusId();
         String registrationStatus = convertRegistrationStatus(registrationStatusIdCell.getInt());

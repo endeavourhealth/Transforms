@@ -47,6 +47,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private Integer fileAuditId = null;
     private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
+    private Map<String, Integer> cachedHeaderMap = null;
 
     public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
                              String version, String filePath, CSVFormat csvFormat,
@@ -169,7 +170,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         //now audit the individual rows in the file, using a thread pool to audit rows in parallel
-        Map<String, Integer> headerMap = csvReader.getHeaderMap();
+        Map<String, Integer> headerMap = getCsvReaderHeaderMap();
 
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 5000);
@@ -378,7 +379,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         if (ret.isEmpty()) {
             LOG.error("Ruled out all possible versions because of file " + filePath);
-            LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
+            LOG.error("Headers in file are " + String.join(", ", getCsvReaderHeaderMap().keySet()));
         }
 
         return ret;
@@ -554,10 +555,20 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         long rowAuditId = getSourceFileRecordIdForCurrentRow();
 
-        Integer colIndexObj = csvReader.getHeaderMap().get(column);
+        Integer colIndexObj = getCsvReaderHeaderMap().get(column);
         int colIndex = colIndexObj.intValue();
 
         return new CsvCell(rowAuditId, colIndex, value, this);
+    }
+
+    public Map<String, Integer> getCsvReaderHeaderMap() {
+
+        //calling getHeaderMap() on the reader will create and return a copy of the map, which
+        //is pretty expensive for the number of times that function is called. So we cache a copy and use that.
+        if (cachedHeaderMap == null) {
+            cachedHeaderMap = csvReader.getHeaderMap();
+        }
+        return cachedHeaderMap;
     }
 
     public long getSourceFileRecordIdForCurrentRow() {

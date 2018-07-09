@@ -79,19 +79,11 @@ public abstract class BartsCsvToFhirTransformer {
             //patient PRE transformers - to cache stuff fast
 
             //don't re-run these pre-transforms for the PP... bulk files. They've all been run without error, so skip it to save time
-            //TODO - take this check out once the PP bulks have been processed OK
-            String exchangeDirectoryName = FilenameUtils.getBaseName(exchangeDirectory);
-            Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
-            Date patientBulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-02");
-            if (TransformConfig.instance().isLive()
-                && exchangeDate.after(patientBulkDate)) {
-
-                PPALIPreTransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper, false), fhirResourceFiler, csvHelper); //this must be FIRST
-                PPADDPreTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper, false), fhirResourceFiler, csvHelper);
-                PPNAMPreTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper, false), fhirResourceFiler, csvHelper);
-                PPPHOPreTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper, false), fhirResourceFiler, csvHelper);
-                PPRELPreTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper, false), fhirResourceFiler, csvHelper);
-            }
+            PPALIPreTransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper, false), fhirResourceFiler, csvHelper); //this must be FIRST
+            PPADDPreTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper, false), fhirResourceFiler, csvHelper);
+            PPNAMPreTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper, false), fhirResourceFiler, csvHelper);
+            PPPHOPreTransformer.transform(createParsers(fileMap, parserMap, "PPPHO", csvHelper, false), fhirResourceFiler, csvHelper);
+            PPRELPreTransformer.transform(createParsers(fileMap, parserMap, "PPREL", csvHelper, false), fhirResourceFiler, csvHelper);
 
             //patient transformers
             PPATITransformer.transform(createParsers(fileMap, parserMap, "PPATI", csvHelper, true), fhirResourceFiler, csvHelper);
@@ -319,12 +311,12 @@ public abstract class BartsCsvToFhirTransformer {
         //file will be processed according to the date it was actually generated, but the below
         //files will be processed as though they were received in 2017 even though they came from Mar 2018
         HashSet<String> fileTypesBulked = new HashSet<>();
-        /*fileTypesBulked.add("ENCNT");
+        fileTypesBulked.add("ENCNT");
         fileTypesBulked.add("ENCINF");
         fileTypesBulked.add("OPATT");
         fileTypesBulked.add("AEATT");
         fileTypesBulked.add("IPEPI");
-        fileTypesBulked.add("IPWDS");*/
+        fileTypesBulked.add("IPWDS");
         fileTypesBulked.add("PPNAM");
         fileTypesBulked.add("PPPHO");
         fileTypesBulked.add("PPALI");
