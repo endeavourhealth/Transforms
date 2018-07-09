@@ -107,6 +107,8 @@ public class SRAppointmentTransformer {
         AppointmentBuilder appointmentBuilder =  new AppointmentBuilder();
          //       = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
 
+        appointmentBuilder.setId(appointmentId.getString());
+
       appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(appointmentId.getString(), appointmentId);
