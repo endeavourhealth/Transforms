@@ -327,11 +327,11 @@ public abstract class TppCsvToFhirTransformer {
 //        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 //
 //        // Organisations
-//        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        LocationResourceCache.fileLocationResources(fhirResourceFiler);
+        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        LocationResourceCache.fileLocationResources(fhirResourceFiler);
 //        // Staff
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);

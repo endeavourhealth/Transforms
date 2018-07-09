@@ -162,7 +162,13 @@ public class SRStaffMemberTransformer {
                 StaffMemberProfileCache.removeStaffPojo(pojo);
             }
         }
-        fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
+        boolean mapIds;
+        if (practitionerBuilder.isIdMapped()) {
+            mapIds = false;
+        } else {
+            mapIds = true;
+        }
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, practitionerBuilder);
     }
 
 

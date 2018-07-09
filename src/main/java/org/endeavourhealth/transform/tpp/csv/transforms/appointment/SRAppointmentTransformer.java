@@ -204,10 +204,10 @@ public class SRAppointmentTransformer {
 
         IdMapperAppointment mapper = new IdMapperAppointment();
         boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
-        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
-        String referenceId = comps.getId();
-        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() +
-                "SlotRef:" + slotRef.getId() + "patientRef:" + referenceId);
+//        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
+//        String referenceId = comps.getId();
+//        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() +
+//                "SlotRef:" + slotRef.getId() + "patientRef:" + referenceId);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
 
 
