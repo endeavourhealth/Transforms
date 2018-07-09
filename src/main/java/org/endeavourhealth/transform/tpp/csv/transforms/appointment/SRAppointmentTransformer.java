@@ -5,8 +5,11 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.idmappers.IdMapperAppointment;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorAppointment;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
@@ -19,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -206,10 +210,11 @@ public class SRAppointmentTransformer {
             }
             AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
         }
+
+        IdMapperAppointment mapper = new IdMapperAppointment();
         boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
-        // slotBuilder is new so can't be idMapped. Set appointmentBuilderId to local
-        appointmentBuilder.setId(appointmentId.getString(),appointmentId);
-        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() );
+        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() +
+                "SlotRef:" + slotRef.getId() + "patientRef:" + patientReference.toString());
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
 
 
