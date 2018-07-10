@@ -107,7 +107,7 @@ public class EncounterResourceCache {
 
                 Reference oldPatientReference = encounter.getPatient();
                 UUID oldPatientUuid = UUID.fromString(ReferenceHelper.getReferenceId(oldPatientReference));
-                UUID currentPatientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+                UUID currentPatientUuid = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
                 if (!oldPatientUuid.equals(currentPatientUuid)) {
 
                     encountersWithChangedPatientUuids.put(encounterId, oldPatientUuid);
