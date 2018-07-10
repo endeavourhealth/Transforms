@@ -320,11 +320,11 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.trace("Starting admin transforms");
         // Code lookups
-//        SRMappingTransformer.transform(parsers, fhirResourceFiler);
-//        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-//        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
-//        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
-//        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
+        SRMappingTransformer.transform(parsers, fhirResourceFiler);
+        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
+        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
+        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 //
 //        // Organisations
         SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
