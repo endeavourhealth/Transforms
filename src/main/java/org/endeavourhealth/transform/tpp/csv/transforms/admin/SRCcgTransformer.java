@@ -147,9 +147,6 @@ public class SRCcgTransformer {
 
         //set the managing organisation for the location, basically itself!
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, CCG_KEY_PREFIX+rowIdCell.getString());
-        if (locationBuilder.isIdMapped()) {
-            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-        }
 
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
     }
