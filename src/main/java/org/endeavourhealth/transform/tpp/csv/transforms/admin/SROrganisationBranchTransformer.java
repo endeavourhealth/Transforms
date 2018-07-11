@@ -66,9 +66,6 @@ public class SROrganisationBranchTransformer {
         if (!orgIdCell.isEmpty()) {
 
             Reference organisationReference = csvHelper.createOrganisationReference(orgIdCell);
-            if (locationBuilder.isIdMapped()) {
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-            }
             locationBuilder.setManagingOrganisation(organisationReference,orgIdCell);
         } else {
             TransformWarnings.log(LOG,parser,"Missing Organization for row Id {} in {}",
