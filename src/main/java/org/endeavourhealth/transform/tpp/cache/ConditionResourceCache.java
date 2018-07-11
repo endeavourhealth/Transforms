@@ -38,7 +38,7 @@ public class ConditionResourceCache {
                 //if the Condition doesn't exist yet, create a new one
                 conditionBuilder = new ConditionBuilder();
                 conditionBuilder.setId(problemIdCell.getString(), problemIdCell);
-
+                conditionBuilder.setPatient(csvHelper.createPatientReference(patientIdCell));
             } else {
                 conditionBuilder = new ConditionBuilder(condition);
             }
