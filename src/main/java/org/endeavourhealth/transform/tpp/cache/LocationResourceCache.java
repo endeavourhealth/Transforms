@@ -31,7 +31,7 @@ public class LocationResourceCache {
     }
 
     public static void setServiceId(UUID serviceId) {
-        serviceId = serviceId;
+        LocationResourceCache.serviceId = serviceId;
     }
 
     public static LocationBuilder getLocationBuilder(CsvCell rowIdCell, TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
