@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransf
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.common.idmappers.BaseIdMapper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -83,6 +84,20 @@ public abstract class ResourceValidatorBase {
             }
         }
     }
+
+    public static boolean isBuilderIdMapped(ResourceBuilderBase builder, UUID serviceId) throws Exception {
+                Resource resource = builder.getResource();
+        String id = resource.getId();
+        boolean isIdMapped = isMappedUuid(resource.getResourceType(), id, serviceId);
+        return true;
+    }
+    public static boolean isReferenceIdMapped(Reference reference, UUID serviceId) throws Exception{
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+        String referenceId = comps.getId();
+        ResourceType referenceType = comps.getResourceType();
+        return  isMappedUuid(referenceType, referenceId, serviceId);
+    }
+
 
     private static boolean isMappedUuid(ResourceType resourceType, String id, UUID serviceId) throws Exception {
         try {
