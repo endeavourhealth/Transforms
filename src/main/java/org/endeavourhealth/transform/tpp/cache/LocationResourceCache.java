@@ -64,30 +64,35 @@ public class LocationResourceCache {
             boolean mapIds = !locationBuilder.isIdMapped();
             ResourceValidatorLocation validator = new ResourceValidatorLocation();
             List<String> errors = new ArrayList<>();
-            validator.validateResourceSave(locationBuilder.getResource(),serviceId, mapIds,errors);
-            if (!errors.isEmpty()) {
-                LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
-                for (String s : errors) {
-                    LOG.info(s);
-                }
-            }
-            if (mapIds) {  //If we want to map Ids then all ids in builder and references should go in unmapped
-                Resource resource = locationBuilder.getResource();
-                BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
-                Set<String> referenceValues = new HashSet<>();
-                idMapper.getResourceReferences(resource, referenceValues);
-                for (String referenceValue: referenceValues) {
-                    Reference reference = ReferenceHelper.createReference(referenceValue);
-                    ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
-                    String referenceId = comps.getId();
-                    boolean isRefMapped = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
-                    if (!isRefMapped) {
-                        LOG.info("Mapping ref id for Location " + referenceId);
-                        reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+            Location loc = (Location) locationBuilder.getResource();
+            if (loc != null) {
+                validator.validateResourceSave(locationBuilder.getResource(), serviceId, mapIds, errors);
+                if (!errors.isEmpty()) {
+                    LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
+                    for (String s: errors) {
+                        LOG.info(s);
                     }
                 }
+                if (mapIds) {  //If we want to map Ids then all ids in builder and references should go in unmapped
+                    Resource resource = locationBuilder.getResource();
+                    BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
+                    Set<String> referenceValues = new HashSet<>();
+                    idMapper.getResourceReferences(resource, referenceValues);
+                    for (String referenceValue: referenceValues) {
+                        Reference reference = ReferenceHelper.createReference(referenceValue);
+                        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+                        String referenceId = comps.getId();
+                        boolean isRefMapped = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
+                        if (!isRefMapped) {
+                            LOG.info("Mapping ref id for Location " + referenceId);
+                            reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+                        }
+                    }
+                }
+                fhirResourceFiler.saveAdminResource(null, mapIds, locationBuilder);
+            } else {
+                LOG.info("No Location resource found for LocationBuilder" + rowId) ;
             }
-            fhirResourceFiler.saveAdminResource(null, mapIds, locationBuilder);
         }
 
         //clear down as everything has been saved
