@@ -72,8 +72,6 @@ public class LocationResourceCache {
                     for (String s: errors) {
                         LOG.info(s);
                     }
-                }
-                if (mapIds) {  //If we want to map Ids then all ids in builder and references should go in unmapped
                     Resource resource = locationBuilder.getResource();
                     BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
                     Set<String> referenceValues = new HashSet<>();
@@ -83,15 +81,19 @@ public class LocationResourceCache {
                         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
                         String referenceId = comps.getId();
                         boolean isRefMapped = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
-                        if (!isRefMapped) {
+                        if (isRefMapped != mapIds) {
                             LOG.info("Mapping ref id for Location " + referenceId);
-                            reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+                            if (isRefMapped) {
+                                reference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler,reference);
+                            } else {
+                                reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+                            }
                         }
                     }
                 }
                 fhirResourceFiler.saveAdminResource(null, mapIds, locationBuilder);
             } else {
-                LOG.info("No Location resource found for LocationBuilder" + rowId) ;
+                LOG.info("No Location resource found for LocationBuilder" + rowId);
             }
         }
 
