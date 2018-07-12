@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.common.idmappers.BaseIdMapper;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorAppointment;
 import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorLocation;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.Reference;
@@ -57,10 +58,19 @@ public class LocationResourceCache {
     }
 
     public static void fileLocationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-
+        LOG.info("Filing location resources. Count : " + LocationBuildersByRowId.size());
         for (Long rowId: LocationBuildersByRowId.keySet()) {
             LocationBuilder locationBuilder = LocationBuildersByRowId.get(rowId);
             boolean mapIds = !locationBuilder.isIdMapped();
+            ResourceValidatorLocation validator = new ResourceValidatorLocation();
+            List<String> errors = new ArrayList<>();
+            validator.validateResourceSave(locationBuilder.getResource(),serviceId, mapIds,errors);
+            if (!errors.isEmpty()) {
+                LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
+                for (String s : errors) {
+                    LOG.info(s);
+                }
+            }
             if (mapIds) {  //If we want to map Ids then all ids in builder and references should go in unmapped
                 Resource resource = locationBuilder.getResource();
                 BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
@@ -72,7 +82,8 @@ public class LocationResourceCache {
                     String referenceId = comps.getId();
                     boolean isRefMapped = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
                     if (!isRefMapped) {
-                        reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference,fhirResourceFiler);
+                        LOG.info("Mapping ref id for Location " + referenceId);
+                        reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
                     }
                 }
             }
