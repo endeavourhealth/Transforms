@@ -329,6 +329,7 @@ public abstract class TppCsvToFhirTransformer {
 //        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 //
 //        // Organisations
+        LocationResourceCache.setServiceId(fhirResourceFiler.getServiceId());
         SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
