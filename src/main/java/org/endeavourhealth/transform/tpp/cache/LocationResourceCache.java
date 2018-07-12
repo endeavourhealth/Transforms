@@ -68,6 +68,7 @@ public class LocationResourceCache {
             if (loc != null) {
                 validator.validateResourceSave(locationBuilder.getResource(), serviceId, mapIds, errors);
                 if (!errors.isEmpty()) {
+                    //TODO remove debugging LOGs
                     LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
                     for (String s: errors) {
                         LOG.info(s);
