@@ -11,8 +11,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
-import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
-import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
@@ -22,6 +20,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmen
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
@@ -29,7 +28,10 @@ import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTrans
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -52,7 +54,7 @@ public abstract class TppCsvToFhirTransformer {
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
 
-        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
+        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking TPP CSV transformer for " + files.length + " files and service " + serviceId);
 
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);

@@ -37,7 +37,7 @@ public abstract class AdastraCsvToFhirTransformer {
                                  String version) throws Exception {
 
         //the exchange body will be a list of files received
-        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
+        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking Adastra CSV transformer for " + files.length + " files using service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

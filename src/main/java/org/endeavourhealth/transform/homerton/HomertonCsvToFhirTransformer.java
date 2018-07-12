@@ -10,26 +10,12 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
-import org.endeavourhealth.transform.homerton.schema.CodeTable;
-import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
-import org.endeavourhealth.transform.homerton.schema.EncounterTable;
-import org.endeavourhealth.transform.homerton.schema.PatientTable;
-import org.endeavourhealth.transform.homerton.schema.ProblemTable;
-import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
-import org.endeavourhealth.transform.homerton.transforms.CodeTransformer;
-import org.endeavourhealth.transform.homerton.transforms.DiagnosisTransformer;
-import org.endeavourhealth.transform.homerton.transforms.EncounterTransformer;
-import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
-import org.endeavourhealth.transform.homerton.transforms.ProblemTransformer;
-import org.endeavourhealth.transform.homerton.transforms.ProcedureTransformer;
+import org.endeavourhealth.transform.homerton.schema.*;
+import org.endeavourhealth.transform.homerton.transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public abstract class HomertonCsvToFhirTransformer {
 
@@ -58,7 +44,7 @@ public abstract class HomertonCsvToFhirTransformer {
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
                                  String version) throws Exception {
 
-        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
+        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

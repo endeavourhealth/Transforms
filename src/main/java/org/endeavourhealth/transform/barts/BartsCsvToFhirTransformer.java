@@ -49,7 +49,7 @@ public abstract class BartsCsvToFhirTransformer {
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
                                  String version) throws Exception {
 
-        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
+        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking Barts CSV transformer for " + files.length + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

@@ -82,7 +82,7 @@ public class ENCNTTransformer {
                 // PatientTable reference on EncounterTable resources is handled below
                 // PatientTable reference on EpisodeOfCare resources is handled below
                 String newPatientUuid = ReferenceHelper.getReferenceId(encounterBuilder.getPatient());
-                LOG.debug("EncounterTable has changed patient from " + oldPatientUuid + " to " + newPatientUuid);
+                LOG.debug("ENCNT has changed patient from " + oldPatientUuid + " to " + newPatientUuid);
 
                 List<Resource> resourceList = csvHelper.retrieveResourceByPatient(oldPatientUuid);
                 for (Resource resource : resourceList) {

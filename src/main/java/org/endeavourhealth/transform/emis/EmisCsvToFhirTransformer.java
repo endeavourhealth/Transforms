@@ -53,7 +53,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = ExchangeHelper.parseExchangeBodyIntoFileList(exchangeBody);
+        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking EMIS CSV transformer for " + files.length + " files and service " + serviceId);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
