@@ -3,16 +3,12 @@ package org.endeavourhealth.transform.emis;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.AuditWriter;
-import org.endeavourhealth.transform.common.ExchangeHelper;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
@@ -53,8 +49,8 @@ public abstract class EmisCsvToFhirTransformer {
 
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
-        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking EMIS CSV transformer for " + files.length + " files and service " + serviceId);
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + serviceId);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
@@ -62,7 +58,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         //TODO - call RegistrationStatusTransformer
 
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        String orgDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         boolean processPatientData = shouldProcessPatientData(orgDirectory, files);
 
         //the processor is responsible for saving FHIR resources
@@ -86,10 +82,11 @@ public abstract class EmisCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    private static boolean shouldProcessPatientData(String orgDirectory, String[] csvFiles) throws Exception {
+    private static boolean shouldProcessPatientData(String orgDirectory, List<ExchangePayloadFile> csvFiles) throws Exception {
 
         //find the extract date from one of the CSV file names
-        Date extractDate = findExtractDate(csvFiles[0]);
+        ExchangePayloadFile firstFileObj = csvFiles.get(0);
+        Date extractDate = findExtractDate(firstFileObj.getPath());
 
         //our org GUID is the same as the directory name
         String orgGuid = new File(orgDirectory).getName();
@@ -283,7 +280,7 @@ public abstract class EmisCsvToFhirTransformer {
      * the Emis schema changes without notice, so rather than define the version in the SFTP reader,
      * we simply look at the files to work out what version it really is
      */
-    public static String determineVersion(String[] files) throws Exception {
+    public static String determineVersion(List<ExchangePayloadFile> files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
         possibleVersions.add(VERSION_5_4);
@@ -291,10 +288,10 @@ public abstract class EmisCsvToFhirTransformer {
         possibleVersions.add(VERSION_5_1);
         possibleVersions.add(VERSION_5_0);
 
-        for (String filePath: files) {
+        for (ExchangePayloadFile fileObj: files) {
 
             //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
-            AbstractCsvParser parser = createParserForFile(null, null, null, null, filePath);
+            AbstractCsvParser parser = createParserForFile(null, null, null, null, fileObj);
 
             //calling this will return the possible versions that apply to this parser
             possibleVersions = parser.testForValidVersions(possibleVersions);
@@ -370,22 +367,25 @@ public abstract class EmisCsvToFhirTransformer {
     }*/
 
 
-    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, List<ExchangePayloadFile> files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        for (String filePath: files) {
+        for (ExchangePayloadFile fileObj: files) {
 
-            AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
+            AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, fileObj);
             Class cls = parser.getClass();
             parsers.put(cls, parser);
         }
     }
 
-    private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        String fName = FilenameUtils.getName(filePath);
-        String[] toks = fName.split("_");
+    private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, ExchangePayloadFile fileObj) throws Exception {
 
-        String domain = toks[1];
-        String name = toks[2];
+        String fileType = fileObj.getType();
+        String filePath = fileObj.getPath();
+
+        String[] toks = fileType.split("_");
+
+        String domain = toks[0];
+        String name = toks[1];
 
         //need to camel case the domain
         String first = domain.substring(0, 1);
@@ -399,7 +399,6 @@ public abstract class EmisCsvToFhirTransformer {
         Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
         return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
     }
-
 
     public static String findDataSharingAgreementGuid(Map<Class, AbstractCsvParser> parsers) throws Exception {
 

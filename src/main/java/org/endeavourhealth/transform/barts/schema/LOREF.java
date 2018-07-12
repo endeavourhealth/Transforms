@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -16,9 +15,9 @@ public class LOREF extends AbstractCsvParser {
     //public static final String TIME_FORMAT = "hh:mm:ss";
     //public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
 
-    public LOREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, CSVFormat format) throws Exception {
+    public LOREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                format,
+                BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,
                 BartsCsvToFhirTransformer.TIME_FORMAT);
     }

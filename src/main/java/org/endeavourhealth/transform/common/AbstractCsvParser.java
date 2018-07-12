@@ -379,7 +379,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         if (ret.isEmpty()) {
             LOG.error("Ruled out all possible versions because of file " + filePath);
-            LOG.error("Headers in file are " + String.join(", ", getCsvReaderHeaderMap().keySet()));
+            LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
         }
 
         return ret;

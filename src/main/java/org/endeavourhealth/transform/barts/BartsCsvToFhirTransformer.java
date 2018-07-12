@@ -3,18 +3,14 @@ package org.endeavourhealth.transform.barts;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.barts.transforms.*;
-import org.endeavourhealth.transform.common.ExchangeHelper;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -49,11 +45,11 @@ public abstract class BartsCsvToFhirTransformer {
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
                                  String version) throws Exception {
 
-        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking Barts CSV transformer for " + files.length + " files using and service " + serviceId);
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        String exchangeDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         LOG.trace("Transforming Barts CSV content in " + exchangeDirectory);
 
         //the processor is responsible for saving FHIR resources
@@ -204,7 +200,28 @@ public abstract class BartsCsvToFhirTransformer {
         return ret;
     }
 
-    private static ParserI createParser(String file, String type, BartsCsvHelper csvHelper) throws Exception {
+    private static ParserI createParser(String filePath, String type, BartsCsvHelper csvHelper) throws Exception {
+
+        UUID serviceId = csvHelper.getServiceId();
+        UUID systemId = csvHelper.getSystemId();
+        UUID exchangeId = csvHelper.getExchangeId();
+        String version = csvHelper.getVersion();
+
+        try {
+
+            String clsName = "org.endeavourhealth.transform.barts.schema." + type;
+            Class cls = Class.forName(clsName);
+
+            //now construct an instance of the parser for the file we've found
+            Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+            return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
+
+        } catch (ClassNotFoundException cnfe) {
+            throw new TransformException("No parser for file type [" + type + "]");
+        }
+    }
+
+    /*private static ParserI createParser(String file, String type, BartsCsvHelper csvHelper) throws Exception {
 
         UUID serviceId = csvHelper.getServiceId();
         UUID systemId = csvHelper.getSystemId();
@@ -212,7 +229,7 @@ public abstract class BartsCsvToFhirTransformer {
         String version = csvHelper.getVersion();
 
         if (type.equalsIgnoreCase("LOREF")) {
-            return new LOREF(serviceId, systemId, exchangeId, version, file, getFormatType(file));
+            return new LOREF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PRSNLREF")) {
             return new PRSNLREF(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PPATI")) {
@@ -279,23 +296,10 @@ public abstract class BartsCsvToFhirTransformer {
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
-    }
+    }*/
 
-    private static CSVFormat getFormatType(String file) throws Exception {
-        return BartsCsvToFhirTransformer.CSV_FORMAT;
-        /*
-        String firstChar = FileHelper.readFirstCharactersFromSharedStorage(file, 1);
-        if (firstChar.compareTo("#") == 0) {
-            LOG.info("Parser format standard(" + firstChar + ")");
-            return BartsCsvToFhirTransformer.CSV_FORMAT;
-        } else {
-            LOG.info("Parser format no-header(" + firstChar + ")");
-            return BartsCsvToFhirTransformer.CSV_FORMAT_NO_HEADER;
-        }
-        */
-    }
 
-    private static Map<String, List<String>> hashFilesByType(String[] files, String exchangeDirectory) throws Exception {
+    private static Map<String, List<String>> hashFilesByType(List<ExchangePayloadFile> files, String exchangeDirectory) throws Exception {
 
         //the exchange directory name is the date of the batch, which we need to use
         //to work out whether to ignore deltas of files we later received bulks for
@@ -325,12 +329,16 @@ public abstract class BartsCsvToFhirTransformer {
 
         Map<String, List<String>> ret = new HashMap<>();
         
-        for (String file: files) {
-            String fileName = FilenameUtils.getBaseName(file);
+        for (ExchangePayloadFile fileObj: files) {
+
+            String file = fileObj.getPath();
+            String type = fileObj.getType();
+
+            /*String fileName = FilenameUtils.getBaseName(file);
             String type = identifyFileType(fileName);
 
             //always force into upper case, just in case
-            type = type.toUpperCase();
+            type = type.toUpperCase();*/
 
             //we might want to ignore this file if it's before a known bulk
             if (ignoreDeltasProcessedOutOfOrder
