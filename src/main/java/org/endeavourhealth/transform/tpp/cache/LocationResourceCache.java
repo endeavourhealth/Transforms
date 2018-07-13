@@ -81,7 +81,7 @@ public class LocationResourceCache {
                         Reference reference = ReferenceHelper.createReference(referenceValue);
                         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
                         String referenceId = comps.getId();
-                        boolean mapRefIds = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
+                        boolean mapRefIds = !ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
                         if (mapRefIds != mapIds) {
                             LOG.info("Mapping ref id for Location " + referenceId);
                             if (!mapRefIds) {
