@@ -89,6 +89,8 @@ public class LocationResourceCache {
                             } else {
                                 reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
                             }
+                        } else {
+                            LOG.info("referenceId " + referenceId + " isRefMapped" +isRefMapped );
                         }
                     }
                 }
