@@ -343,6 +343,9 @@ public class SRCodeTransformer {
                     csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
+                if (conditionBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                }
                 conditionBuilder.setRecordedBy(staffReference, recordedBy);
             }
         }
@@ -419,6 +422,9 @@ public class SRCodeTransformer {
         if (!eventId.isEmpty()) {
 
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            if (conditionBuilder.isIdMapped()) {
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+            }
             conditionBuilder.setEncounter(eventReference, eventId);
         }
     }
