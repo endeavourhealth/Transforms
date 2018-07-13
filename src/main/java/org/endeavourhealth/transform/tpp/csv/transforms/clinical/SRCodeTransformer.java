@@ -351,6 +351,9 @@ public class SRCodeTransformer {
         if (!clinicianDoneBy.isEmpty()) {
 
             Reference staffReference = csvHelper.createPractitionerReference(clinicianDoneBy);
+            if (conditionBuilder.isIdMapped()) {
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+            }
             conditionBuilder.setClinician(staffReference, clinicianDoneBy);
         }
 
