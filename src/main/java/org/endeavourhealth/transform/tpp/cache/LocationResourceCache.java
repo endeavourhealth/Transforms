@@ -81,16 +81,16 @@ public class LocationResourceCache {
                         Reference reference = ReferenceHelper.createReference(referenceValue);
                         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
                         String referenceId = comps.getId();
-                        boolean isRefMapped = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
-                        if (isRefMapped != mapIds) {
+                        boolean mapRefIds = ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
+                        if (mapRefIds != mapIds) {
                             LOG.info("Mapping ref id for Location " + referenceId);
-                            if (isRefMapped) {
+                            if (!mapRefIds) {
                                 reference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler,reference);
                             } else {
                                 reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
                             }
                         } else {
-                            LOG.info("referenceId " + referenceId + " isRefMapped" +isRefMapped );
+                            LOG.info("referenceId " + referenceId + " isRefMapped" +mapRefIds );
                         }
                     }
                 }
