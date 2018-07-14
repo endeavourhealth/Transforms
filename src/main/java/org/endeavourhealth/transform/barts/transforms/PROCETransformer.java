@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -116,6 +117,9 @@ public class PROCETransformer {
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 //NOTE: this code IS a SNOMED concept ID, unlike the Problem file which has a description ID
                 String term = TerminologyService.lookupSnomedTerm(conceptCode);
+                if (Strings.isNullOrEmpty(term)) {
+                    TransformWarnings.log(LOG, csvHelper, "Failed to find Snomed term for {}", conceptIdentifierCell);
+                }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
@@ -124,6 +128,9 @@ public class PROCETransformer {
 
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+                if (Strings.isNullOrEmpty(term)) {
+                    TransformWarnings.log(LOG, csvHelper, "Failed to find ICD-10 term for {}", conceptIdentifierCell);
+                }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
@@ -132,6 +139,9 @@ public class PROCETransformer {
 
             } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+                if (Strings.isNullOrEmpty(term)) {
+                    TransformWarnings.log(LOG, csvHelper, "Failed to find OPCS-4 term for {}", conceptIdentifierCell);
+                }
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
                 codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
