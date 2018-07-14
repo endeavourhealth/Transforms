@@ -719,6 +719,10 @@ public class PatientTransformer {
             return RegistrationType.CHILD_HEALTH_SURVEILLANCE;
         } else if (csvRegType.equalsIgnoreCase("Contraceptive Services")) {
             return RegistrationType.CONTRACEPTIVE_SERVICES;
+        } else if (csvRegType.equalsIgnoreCase("Maternity Services")) {
+            return RegistrationType.MATERNITY_SERVICES;
+        } else if (csvRegType.equalsIgnoreCase("Yellow Fever")) {
+            return RegistrationType.YELLOW_FEVER;
 
         } else {
             if (TransformConfig.instance().isEmisAllowUnmappedRegistrationTypes()) {
@@ -747,13 +751,13 @@ public class PatientTransformer {
          Minor Surgery
          Child Health Services
          Contraceptive Services
-
-
-
          Maternity Services
+         Yellow Fever
+
+
+
          Sexual Health
          Pre Registration
-         Yellow Fever
          Dermatology
          Diabetic
          Rheumatology

@@ -122,8 +122,8 @@ public abstract class BartsCsvToFhirTransformer {
             DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper, true), fhirResourceFiler, csvHelper);
             PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper, true), fhirResourceFiler, csvHelper);
             CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper, true), fhirResourceFiler, csvHelper);
-            ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROB", csvHelper, true), fhirResourceFiler, csvHelper);
-            FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FAMILYHISTORY", csvHelper, true), fhirResourceFiler, csvHelper);
+            ProblemTransformer.transform(createParsers(fileMap, parserMap, "Problem", csvHelper, true), fhirResourceFiler, csvHelper);
+            FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FamilyHistory", csvHelper, true), fhirResourceFiler, csvHelper);
 
             if (TransformConfig.instance().isTransformCerner21Files()) {
                 //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
@@ -131,14 +131,14 @@ public abstract class BartsCsvToFhirTransformer {
                 if (true) {
                     throw new RuntimeException("Cerner 2.1 transforms need fixing to use proper ID mapping");
                 }
-                /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROBLEMS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BULKDIAGNOSES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BULKPROCEDURES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAG", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROC", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SUSAEA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-                SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSIP", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-                SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SUSOPA", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
+                /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BulkProblem", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BulkDiagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BulkProcedure", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "Procedure", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SusEmergency", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+                SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SusInpatient", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
+                SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SusOutpatient", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
             }
 
             //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
@@ -155,6 +155,7 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.getPatientCache().cleanUpResourceCache();
         }
     }
+
 
     /**
      * most files should only exist once, so use this fn to create the parser
@@ -601,6 +602,7 @@ public abstract class BartsCsvToFhirTransformer {
     }
 
     public static String identifyFileType(String filename) throws TransformException {
+
         String[] parts = filename.split("_");
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
@@ -608,42 +610,82 @@ public abstract class BartsCsvToFhirTransformer {
         if (filenamePart1.equalsIgnoreCase("PC")) {
             // Bulk
             if (filenamePart2.equalsIgnoreCase("PROBLEMS")) {
-                return "BULKPROBLEMS";
+                return "BulkProblem";
             } else if (filenamePart2.equalsIgnoreCase("DIAGNOSES")) {
-                return "BULKDIAGNOSES";
+                return "BulkDiagnosis";
             } else if (filenamePart2.equalsIgnoreCase("PROCEDURES")) {
-                return "BULKPROCEDURES";
+                return "BulkProcedure";
             } else {
                 //if we have an unknown file this should be raised as an error
                 throw new TransformException("Unknown file type for " + filename);
                 //return "UNKNOWN";
             }
+        } else if (filenamePart1.equalsIgnoreCase("rnj")) {
+            // Bulk
+            if (filenamePart2.equalsIgnoreCase("prob")) {
+                return "Problem";
+            } else if (filenamePart2.equalsIgnoreCase("proc")) {
+                return "Procedure";
+            } else if (filenamePart2.equalsIgnoreCase("diag")) {
+                return "Diagnosis";
+            } else {
+                //if we have an unknown file this should be raised as an error
+                throw new TransformException("Unknown file type for " + filename);
+                //return "UNKNOWN";
+            }
+
         } else if (filenamePart1.equalsIgnoreCase("susopa")) {
-            return "SUSOPA";
+            return "SusOutpatient";
         } else if (filenamePart1.equalsIgnoreCase("susaea")) {
-            return "SUSAEA";
+            return "SusEmergency";
         } else if (filenamePart1.equalsIgnoreCase("ip")) {
-            return "SUSIP";
+            return "SusInpatient";
         } else if (filenamePart1.equalsIgnoreCase("tailip")) {
-            return "TAILIP";
+            return "SusOutpatientTail";
         } else if (filenamePart1.equalsIgnoreCase("tailopa")) {
-            return "TAILOPA";
+            return "SusEmergencyTail";
         } else if (filenamePart1.equalsIgnoreCase("tailaea")) {
-            return "TAILAEA";
+            return "SusInpatientTail";
         } else if (filenamePart1.equalsIgnoreCase("spfit")) {
             return "SPFIT";
         } else if (filenamePart1.equalsIgnoreCase("cc")) {
-            return "CC";
+            return "CriticalCare";
         } else if (filenamePart1.equalsIgnoreCase("hdb")) {
-            return "HDB";
+            return "HomeDeliveryAndBirth";
         } else if (filenamePart1.equalsIgnoreCase("susecd")) {
-            return "EMERGENCY_CARE";
+            return "SusEmergencyCareDataSet";
         } else if (filenamePart1.equalsIgnoreCase("tailecd")) {
-            return "EMERGENCY_CARE_TAILS";
+            return "SusEmergencyCareDataSetTail";
 
         } else if (filenamePart1.equalsIgnoreCase("fam")
-                && filenamePart1.equalsIgnoreCase("hist")) {
-            return "FAMILYHISTORY";
+                && filenamePart2.equalsIgnoreCase("hist")) {
+            return "FamilyHistory";
+
+        } else if (filenamePart1.equalsIgnoreCase("GETL")) {
+            if (parts.length == 6) {
+                String tok3 = parts[2];
+                if (tok3.equalsIgnoreCase("PREG")) {
+                    return "Pregnancy";
+
+                } else if (tok3.equalsIgnoreCase("BIRTH")) {
+                    return "Birth";
+
+                } else {
+                    throw new TransformException("Unexpected third element " + tok3 + " after GETL in filename [" + filename + "]");
+                }
+
+            } else if (parts.length == 7) {
+                String tok2 = parts[1];
+                if (tok2.equals("APPSL2")) {
+                    return "APPSL2";
+
+                } else {
+                    throw new TransformException("Unexpected second element " + tok2 + " after GETL in filename [" + filename + "]");
+                }
+
+            } else {
+                throw new TransformException("Unexpected number of elements after GETL in filename [" + filename + "]");
+            }
 
             // v2.2 files
         } else if (filenamePart1.equalsIgnoreCase("PPATI")
@@ -707,21 +749,7 @@ public abstract class BartsCsvToFhirTransformer {
             return filenamePart1.toUpperCase();
 
         } else {
-
-            String filenamePart3 = parts[2];
-            if (filenamePart1.equalsIgnoreCase("rnj")) {
-                return filenamePart3.toUpperCase();
-
-            } else if (filenamePart1.equalsIgnoreCase("GETL")) {
-                return filenamePart3.toUpperCase();
-
-            } else {
-                //if we have an unknown file this should be raised as an error
-                throw new TransformException("Unknown file type for " + filename);
-                //return "UNKNOWN";
-            }
+            throw new TransformException("Unknown file type for " + filename);
         }
     }
-
-
 }
