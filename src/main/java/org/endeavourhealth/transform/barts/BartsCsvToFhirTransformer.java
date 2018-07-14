@@ -622,11 +622,12 @@ public abstract class BartsCsvToFhirTransformer {
             }
         } else if (filenamePart1.equalsIgnoreCase("rnj")) {
             // Bulk
-            if (filenamePart2.equalsIgnoreCase("prob")) {
+            String filenamePart3 = parts[2];
+            if (filenamePart3.equalsIgnoreCase("prob")) {
                 return "Problem";
-            } else if (filenamePart2.equalsIgnoreCase("proc")) {
+            } else if (filenamePart3.equalsIgnoreCase("proc")) {
                 return "Procedure";
-            } else if (filenamePart2.equalsIgnoreCase("diag")) {
+            } else if (filenamePart3.equalsIgnoreCase("diag")) {
                 return "Diagnosis";
             } else {
                 //if we have an unknown file this should be raised as an error
