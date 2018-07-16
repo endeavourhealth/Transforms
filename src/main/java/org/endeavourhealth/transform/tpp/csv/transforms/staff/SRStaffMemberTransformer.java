@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
@@ -105,6 +106,9 @@ public class SRStaffMemberTransformer {
                     CsvCell orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+                        if (practitionerBuilder.isIdMapped()) {
+                            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+                        }
                         roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
                     }
                 }

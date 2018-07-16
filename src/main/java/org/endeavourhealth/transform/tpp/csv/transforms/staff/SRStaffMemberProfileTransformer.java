@@ -99,6 +99,7 @@ public class SRStaffMemberProfileTransformer {
             staffPojo.setIDStaffMemberProfileRole(IDStaffMemberProfileRole);
         }
 
+        staffPojo.setParserState(parser.getCurrentState());
 
         //We have the pojo so write it out
         StaffMemberProfileCache.addStaffPojo(staffPojo);

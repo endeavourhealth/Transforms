@@ -27,7 +27,13 @@ public class StaffMemberProfilePojo {
     private CsvCell GmpID;
     private CsvCell RemovedData;
     private CsvCell auditCsv;
+    private CsvCurrentState parserState;
 
+    public CsvCurrentState getParserState() {
+        return parserState;
+    }
+
+    public void setParserState(CsvCurrentState parserState) { this.parserState = parserState;}
     public CsvCell getIDStaffMemberCell() { return IDStaffMemberCell;}
 
     public void setIDStaffMemberCell(CsvCell idStaffMemberCell) { this.IDStaffMemberCell = idStaffMemberCell;}
