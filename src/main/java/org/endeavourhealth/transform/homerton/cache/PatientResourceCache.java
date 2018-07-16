@@ -12,56 +12,56 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private static Map<UUID, PatientBuilder> patientBuildersByUuid = new HashMap<>();
+    private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
 
 
     public static PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, HomertonCsvHelper csvHelper) throws Exception {
 
-        UUID patientId = csvHelper.findPatientIdFromPersonId(milleniumPersonIdCell);
+//        UUID patientId = csvHelper.findPatientIdFromPersonId(milleniumPersonIdCell);
+//
+//        //if we don't know the Person->MRN mapping, then the UUID returned will be null, in which case we can't proceed
+//        if (patientId == null) {
+//            //LOG.trace("Failed to find patient UUID for person ID " + milleniumPersonIdCell.getString());
+//            return null;
+//        }
 
-        //if we don't know the Person->MRN mapping, then the UUID returned will be null, in which case we can't proceed
-        if (patientId == null) {
-            //LOG.trace("Failed to find patient UUID for person ID " + milleniumPersonIdCell.getString());
-            return null;
-        }
-
-        PatientBuilder patientBuilder = patientBuildersByUuid.get(patientId);
+        Long personId = milleniumPersonIdCell.getLong();
+        PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
         if (patientBuilder == null) {
 
             //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-            Patient patient = (Patient)csvHelper.retrieveResource(ResourceType.Patient, patientId);
+            Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
             if (patient == null) {
                 //if the patient doesn't exist yet, create a new one
                 patientBuilder = new PatientBuilder();
-                patientBuilder.setId(patientId.toString());
+                patientBuilder.setId(personId.toString());
 
             } else {
 
                 patientBuilder = new PatientBuilder(patient);
             }
 
-            patientBuildersByUuid.put(patientId, patientBuilder);
+            patientBuildersByPersonId.put(personId, patientBuilder);
         }
         return patientBuilder;
     }
 
     public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LOG.trace("Saving " + patientBuildersByUuid.size() + " patients to the DB");
+        LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 
-        for (UUID patientId: patientBuildersByUuid.keySet()) {
-            PatientBuilder patientBuilder = patientBuildersByUuid.get(patientId);
+        for (Long personId: patientBuildersByPersonId.keySet()) {
+            PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
             BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
         }
 
-        LOG.trace("Finishing saving " + patientBuildersByUuid.size() + " patients to the DB, clearing cache...");
+        LOG.trace("Finishing saving " + patientBuildersByPersonId.size() + " patients to the DB, clearing cache...");
 
         //clear down as everything has been saved
-        patientBuildersByUuid.clear();
+        patientBuildersByPersonId.clear();
     }
 }

@@ -5,6 +5,8 @@ import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -15,11 +17,9 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.barts.transformsOld.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,7 @@ public class HomertonCsvHelper {
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
     private UUID serviceId = null;
     private UUID systemId = null;
     private UUID exchangeId = null;
@@ -82,6 +83,24 @@ public class HomertonCsvHelper {
     }
 
 
+    public Service getService (UUID id) throws Exception {
+        return serviceRepository.getById(id);
+    }
+
+    // if the resource is already filed and has been retrieved from the DB, the sourceId will differ from the
+    // saved (mapped) resource Id
+    public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
+        return !resource.getId().equals(sourceId);
+    }
+
+    public Reference createOrganisationReference(String organizationGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
+
+    public Reference createPractitionerReference(String practitionerGuid) {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
+    }
+
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
         List<Resource> ret = null;
         List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, patientId);
@@ -93,6 +112,18 @@ public class HomertonCsvHelper {
             ret.add(ParserPool.getInstance().parse(json));
         }
         return ret;
+    }
+
+    public Resource retrieveResourceForLocalId(ResourceType resourceType, String locallyUniqueId) throws Exception {
+
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
+
+        //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
+        if (globallyUniqueId == null) {
+            return null;
+        }
+
+        return retrieveResource(resourceType, globallyUniqueId);
     }
 
     public Resource retrieveResource(ResourceType resourceType, UUID resourceId) throws Exception {
@@ -108,14 +139,6 @@ public class HomertonCsvHelper {
         String json = resourceHistory.getResourceData();
         return ParserPool.getInstance().parse(json);
     }
-
-    public Reference createPractitionerReference(String practitionerGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
-    }
-
-    /*public Reference createPractitionerReference(CsvCell practitionerIdCell) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerIdCell.getString());
-    }*/
 
     public String getProcedureOrDiagnosisConceptCodeType(CsvCell cell) {
         if (cell.isEmpty()) {
@@ -419,4 +442,6 @@ public class HomertonCsvHelper {
 
         return false;
     }
+
+
 }

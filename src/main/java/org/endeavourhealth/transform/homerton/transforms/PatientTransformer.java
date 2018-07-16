@@ -2,21 +2,15 @@ package org.endeavourhealth.transform.homerton.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCodeableConceptHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
+import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.endeavourhealth.transform.homerton.schema.PatientTable;
 import org.hl7.fhir.instance.model.*;
@@ -24,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 
 public class PatientTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
@@ -51,21 +46,40 @@ public class PatientTransformer extends HomertonBasisTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonCsvHelper csvHelper) throws Exception {
 
+        // first up, create the Homerton organisation
+        UUID serviceId = parser.getServiceId();
+        OrganizationBuilder organizationBuilder
+                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
+                    serviceId.toString());
+            return;
+        }
+
         CsvCell millenniumPersonIdCell = parser.getPersonId();
-        CsvCell cnnCell = parser.getCNN();
-
-        //store the MRN/PersonID mapping in BOTH directions
-        csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, cnnCell.getString(), millenniumPersonIdCell.getString());
-        csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, millenniumPersonIdCell.getString(), cnnCell.getString());
-
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
 
+        CsvCell cnnCell = parser.getCNN();
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
         identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
         identifierBuilder.setValue(cnnCell.getString(), cnnCell);
 
+        IdentifierBuilder identifierBuilder2 = new IdentifierBuilder(patientBuilder);
+        identifierBuilder2.setUse(Identifier.IdentifierUse.SECONDARY);
+        identifierBuilder2.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID);
+        identifierBuilder2.setValue(millenniumPersonIdCell.toString(), millenniumPersonIdCell);
+
         patientBuilder.setActive(true);
+
+        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+
+        // if patient already ID mapped, get the mapped ID for the org
+        boolean isResourceMapped = csvHelper.isResourceIdMapped(millenniumPersonIdCell.getString(), patientBuilder.getResource());
+        if (isResourceMapped) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+        }
+        patientBuilder.setManagingOrganisation(organisationReference);
 
         CsvCell firstNameCell = parser.getFirstname();
         CsvCell lastNameCell = parser.getSurname();
@@ -144,27 +158,16 @@ public class PatientTransformer extends HomertonBasisTransformer {
             patientBuilder.setDateOfDeath(dodCell.getDateTime(), dobCell);
         }
 
-        // GP
-        CsvCell gpCell = parser.getGPID();
-        if (!gpCell.isEmpty() && gpCell.getString().length() > 0) {
-            ResourceId resourceId = getGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
-            if (resourceId == null) {
-                resourceId = createGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
-            }
-            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString());
-            patientBuilder.addCareProvider(practitionerReference, gpCell);
-        }
-
-        // GP Practice
-        CsvCell practiceCell = parser.getPracticeID();
-        if (!practiceCell.isEmpty() && practiceCell.getString().length() > 0) {
-            ResourceId resourceId = getGlobalOrgResourceId(practiceCell.getString());
-            if (resourceId == null) {
-                resourceId = createGlobalOrgResourceId(practiceCell.getString());
-            }
-            Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, resourceId.getResourceId().toString());
-            patientBuilder.addCareProvider(organisationReference, practiceCell);
-        }
+        // GP - TODO: Need Personnel data and transform
+//        CsvCell gpCell = parser.getGPID();
+//        if (!gpCell.isEmpty() && gpCell.getString().length() > 0) {
+//            ResourceId resourceId = getGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
+//            if (resourceId == null) {
+//                resourceId = createGPResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, gpCell.getString());
+//            }
+//            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, resourceId.getResourceId().toString());
+//            patientBuilder.addCareProvider(practitionerReference, gpCell);
+//        }
 
         // Address
         CsvCell line1Cell = parser.getAddressLine1();
