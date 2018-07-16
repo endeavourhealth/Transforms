@@ -85,7 +85,7 @@ public class SRStaffMemberProfileTransformer {
         }
 
         CsvCell idProfileCreatedBy = parser.getIdProfileCreatedBy();
-        if (!idProfileCreatedBy.isEmpty()) {
+        if (!idProfileCreatedBy.isEmpty() && idProfileCreatedBy.getLong() > 0) {
             staffPojo.setIdProfileCreatedBy(idProfileCreatedBy);
         }
 

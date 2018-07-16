@@ -76,9 +76,6 @@ public class StaffMemberProfileCache {
                     CsvCell orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                        if (practitionerBuilder.isIdMapped()) {
-                            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-                        }
                         roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
                     }
                 }
@@ -132,8 +129,8 @@ public class StaffMemberProfileCache {
                         identifierBuilder.setValue(gmpCode.getString(), gmpCode);
                     }
                 }
-
-                fhirResourceFiler.saveAdminResource(pojo.getParserState(), practitionerBuilder);
+                // We know we need to map Ids as we just built this from local values
+                fhirResourceFiler.saveAdminResource(pojo.getParserState(),true, practitionerBuilder);
 
 
             }
