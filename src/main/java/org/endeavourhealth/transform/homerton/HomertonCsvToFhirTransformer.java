@@ -8,10 +8,10 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.endeavourhealth.transform.homerton.schema.*;
-import org.endeavourhealth.transform.homerton.transforms.*;
+import org.endeavourhealth.transform.homerton.transforms.CodeTransformer;
+import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +64,15 @@ public abstract class HomertonCsvToFhirTransformer {
 
         CodeTransformer.transform(version, createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
 
+        // process the bulk patient file first if it exists in the batch, usually in the baseline folder
+        PatientTransformer.transform(version, createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+        PatientResourceCache.filePatientResources(fhirResourceFiler);
+
+        // process incremental/delta patients
         PatientTransformer.transform(version, createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
         PatientResourceCache.filePatientResources(fhirResourceFiler);
 
+        /*
         EncounterTransformer.transform(version, createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
@@ -75,6 +81,7 @@ public abstract class HomertonCsvToFhirTransformer {
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROBLEM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
 
         ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+        */
 
         LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
         fhirResourceFiler.waitToFinish();
@@ -138,6 +145,8 @@ public abstract class HomertonCsvToFhirTransformer {
         } else if (type.equalsIgnoreCase("ENCOUNTER")) {
             return new EncounterTable(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PATIENT")) {
+            return new PatientTable(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("PATIENTSFULL")) {
             return new PatientTable(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PROBLEM")) {
             return new ProblemTable(serviceId, systemId, exchangeId, version, file);

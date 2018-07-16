@@ -43,12 +43,6 @@ public class PatientResourceCache {
             } else {
 
                 patientBuilder = new PatientBuilder(patient);
-
-                //due to a previous bug in the transform, we've saved a load of PatientTable resources without an ID, so fix this now
-                /*if (Strings.isNullOrEmpty(patientBuilder.getResourceId())) {
-                    patientBuilder.setId(patientId.toString());
-                    //throw new TransformRuntimeException("Retrieved patient " + patientResourceId.getResourceId() + " from DB and it has no ID");
-                }*/
             }
 
             patientBuildersByUuid.put(patientId, patientBuilder);
@@ -65,7 +59,7 @@ public class PatientResourceCache {
             BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
         }
 
-        LOG.trace("Finishing saving " + patientBuildersByUuid.size() + " patients to the DB");
+        LOG.trace("Finishing saving " + patientBuildersByUuid.size() + " patients to the DB, clearing cache...");
 
         //clear down as everything has been saved
         patientBuildersByUuid.clear();

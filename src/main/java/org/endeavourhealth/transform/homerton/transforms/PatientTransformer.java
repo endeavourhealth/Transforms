@@ -1,14 +1,20 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.homerton.HomertonCodeableConceptHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
@@ -29,11 +35,13 @@ public class PatientTransformer extends HomertonBasisTransformer {
                                  String primaryOrgOdsCode) throws Exception {
 
         for (ParserI parser: parsers) {
-            while (parser.nextRecord()) {
-                try {
-                    transform((PatientTable) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            if (parser != null) {
+                while (parser.nextRecord()) {
+                    try {
+                        transform((PatientTable) parser, fhirResourceFiler, csvHelper);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
                 }
             }
         }
@@ -48,7 +56,6 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         //store the MRN/PersonID mapping in BOTH directions
         csvHelper.saveInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, cnnCell.getString(), millenniumPersonIdCell.getString());
-
         csvHelper.saveInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, millenniumPersonIdCell.getString(), cnnCell.getString());
 
         PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
@@ -102,12 +109,29 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         // Ethnic group
         CsvCell ethnicityIdCell = parser.getEthnicGroupID();
-        CsvCell ethnicityTermCell = parser.getEthnicGroupName();
-        /*if (!ethnicityIdCell.isEmpty() || !ethnicityTermCell.isEmpty()) {
-            //TODO - need to convert from Homerton ethnicity term or ID to FHIR ethnicity
-            EthnicCategory fhirEthnicity = null;
-            patientBuilder.setEthnicity(fhirEthnicity, cell??);
-        }*/
+        if (!csvHelper.isEmptyOrIsZero(ethnicityIdCell)) {
+
+            CernerCodeValueRef codeRef = csvHelper.lookUpCernerCodeFromCodeSet(CodeValueSet.ETHNIC_GROUP, ethnicityIdCell.getString());
+            if (codeRef == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
+                        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
+
+            } else {
+                String codeDesc = codeRef.getAliasNhsCdAlias();
+                if (!Strings.isNullOrEmpty(codeDesc)) {
+                    EthnicCategory ethnicCategory = convertEthnicCategory(codeDesc);
+                    patientBuilder.setEthnicity(ethnicCategory, ethnicityIdCell);
+                } else {
+                    TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} cannot be mapped with blank NHS Alias Code",
+                            ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
+                    patientBuilder.setEthnicity(null);
+                }
+            }
+        } else {
+            //if this field is empty we should clear the value from the patient
+            patientBuilder.setEthnicity(null);
+        }
+
 
         // Date of birth
         CsvCell dobCell = parser.getDOB();
@@ -159,90 +183,20 @@ public class PatientTransformer extends HomertonBasisTransformer {
         addressBuilder.setDistrict(countyCell.getString(), countyCell);
         addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
 
-        //fhirPatient set context
-        //TODO fhirPatient.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding"));
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
+        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
+
+        CsvCell languageCell = parser.getLanguageID();
+        HomertonCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
+
+        CsvCell religionCell = parser.getReligionID();
+        HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
+
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
         }
-        //savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), patientBuilder);
     }
-
-    /*
-     *
-     */
-    /*public static void patientCreateOrUpdate(PatientTable parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       HomertonCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode) throws Exception {
-
-        org.hl7.fhir.instance.model.PatientTable fhirPatient = new org.hl7.fhir.instance.model.PatientTable();
-
-        fhirPatient.setId(parser.getCNN());
-
-        fhirPatient.addIdentifier(new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(parser.getCNN())));
-
-        fhirPatient.setActive(true);
-
-        HumanName name = org.endeavourhealth.common.fhir.NameConverter.createHumanName(HumanName.NameUse.OFFICIAL, null, parser.getFirstname(), "", parser.getSurname());
-        fhirPatient.addName(name);
-
-        // Telecom
-        if (parser.getMobileTel() != null && parser.getMobileTel().length() > 0) {
-            ContactPoint contactPoint = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.MOBILE, parser.getMobileTel());
-            fhirPatient.addTelecom(contactPoint);
-        }
-
-        if (parser.getHomeTel() != null && parser.getHomeTel().length() > 0) {
-            ContactPoint contactPoint = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.HOME, parser.getHomeTel());
-            fhirPatient.addTelecom(contactPoint);
-        }
-
-        if (parser.getWorkTel() != null && parser.getWorkTel().length() > 0) {
-            ContactPoint contactPoint = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, parser.getWorkTel());
-            fhirPatient.addTelecom(contactPoint);
-        }
-
-        // Gender
-        fhirPatient.setGender(convertGenderToFHIR(parser.getGenderID()));
-
-        // Ethnic group
-        CodeableConcept ethnicGroup = ethnicGroup = new CodeableConcept();
-        ethnicGroup.addCoding().setCode(parser.getEthnicGroupID()).setSystem(FhirExtensionUri.PATIENT_ETHNICITY).setDisplay(parser.getEthnicGroupName());
-        Extension ex = new Extension();
-        ex.setUrl(FhirExtensionUri.PATIENT_ETHNICITY);
-        ex.setValue(ethnicGroup);
-        fhirPatient.addExtension(ex);
-
-        // Date of birth
-        if (parser.getDOB() != null) {
-            fhirPatient.setBirthDate(parser.getDOB());
-        }
-
-        if (parser.getDOD() != null) {
-            fhirPatient.setDeceased(new DateTimeType(parser.getDOD()));
-        }
-
-        // GP
-        if (parser.getGPID() != null && parser.getGPID().length() > 0) {
-            fhirPatient.addCareProvider(ReferenceHelper.createReference(ResourceType.Practitioner, parser.getGPID()));
-        }
-
-        // GP Practice
-        if (parser.getPracticeID() != null && parser.getPracticeID().length() > 0) {
-            fhirPatient.addCareProvider(ReferenceHelper.createReference(ResourceType.Organization, parser.getPracticeID()));
-        }
-
-        // Address
-        Address fhirAddress = AddressHelper.createAddress(Address.AddressUse.HOME, parser.getAddressLine1(), parser.getAddressLine2(), parser.getAddressLine3(), parser.getCity(), parser.getCounty(), parser.getPostcode());
-        fhirPatient.addAddress(fhirAddress);
-
-        //fhirPatient set context
-        //TODO fhirPatient.addExtension(ExtensionConverter.createStringExtension(FhirExtensionUri.RESOURCE_CONTEXT , "clinical coding"));
-
-        LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(fhirPatient));
-        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirPatient.getId(), fhirPatient);
-    }*/
 
     /*
      *
@@ -263,5 +217,15 @@ public class PatientTransformer extends HomertonBasisTransformer {
         }
     }
 
+    private static EthnicCategory convertEthnicCategory(String aliasNhsCdAlias) {
 
+        //the alias field on the Cerner code ref table matches the NHS Data Dictionary ethnicity values
+        //except for 99, whcih means "not stated"
+        if (aliasNhsCdAlias.equalsIgnoreCase("99")) {
+            return EthnicCategory.NOT_STATED;
+
+        } else {
+            return EthnicCategory.fromCode(aliasNhsCdAlias);
+        }
+    }
 }

@@ -402,4 +402,21 @@ public class HomertonCsvHelper {
 
         return ret;
     }
+
+
+    /**
+     * cerner uses zero in place of nulls in a lot of fields, so this method tests for that
+     */
+    public static boolean isEmptyOrIsZero(CsvCell longCell) {
+        if (longCell.isEmpty()) {
+            return true;
+        }
+
+        long val = longCell.getLong();
+        if (val == 0) {
+            return true;
+        }
+
+        return false;
+    }
 }

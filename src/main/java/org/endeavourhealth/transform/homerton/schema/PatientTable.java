@@ -115,6 +115,13 @@ public class PatientTable extends AbstractCsvParser {
         return super.getCell("EthnicGroupName");
     }
 
+    public CsvCell getLanguageID()  {
+        return super.getCell("LanguageID");
+    }
+    public CsvCell getReligionID()  {
+        return super.getCell("ReligionID");
+    }
+
     public CsvCell getGPID() {
         return super.getCell("GPID");
     }

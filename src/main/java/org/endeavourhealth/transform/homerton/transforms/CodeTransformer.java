@@ -59,25 +59,24 @@ public class CodeTransformer {
         CsvCell codeValueCode = parser.getCodeValueCode();
         CsvCell date = parser.getDate();
         CsvCell activeInd = parser.getActiveInd();
-        //CsvCell codeDescTxt = parser.getCodeDescTxt();
+        CsvCell codeDescTxt = parser.getCodeDescTxt();
         CsvCell codeDispTxt = parser.getCodeDispTxt();
         CsvCell codeMeaningTxt = parser.getCodeMeaningTxt();
         CsvCell codeSetNbr = parser.getCodeSetNbr();
-        //CsvCell codeSetDescTxt = parser.getCodeSetDescTxt();
-        //CsvCell aliasNhsCdAlias = parser.getAliasNhsCdAlias();
+        //CsvCell aliasNhsCdAlias = parser.getAliasNhsCdAlias();   //TODO:// requested from Homerton
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
         auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), CODE_VALUE);
         auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), CODE_SET_NBR);
         auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
-        //auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
+        auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
 
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),
                                     date.getDate(),
                                     active,
-                                    "",
+                                    codeDescTxt.getString(),
                                     codeDispTxt.getString(),
                                     codeMeaningTxt.getString(),
                                     codeSetNbr.getLong(),

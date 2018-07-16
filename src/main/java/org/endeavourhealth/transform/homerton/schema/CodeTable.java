@@ -69,9 +69,11 @@ public class CodeTable extends AbstractCsvParser {
     public CsvCell getCodeDispTxt() {
         return super.getCell("DISPLAY");
     }
-    public CsvCell getCodeSetNbr() {
-        return super.getCell("CODE_SET");
+    public CsvCell getCodeDescTxt() {
+        return super.getCell("DESCRIPTION");
     }
+    public CsvCell getCodeSetNbr() { return super.getCell("CODE_SET"); }
+    //public CsvCell getAliasNhsCdAlias() { return super.getCell("ALIAS_NHS_CD_ALIAS"); }   //TODO: requested from Homerton
 
     @Override
     protected String getFileTypeDescription() {
