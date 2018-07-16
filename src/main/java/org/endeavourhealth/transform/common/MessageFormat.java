@@ -20,4 +20,5 @@ public class MessageFormat {
     public static final String HOMERTON_CSV = "HOMERTONCSV";
     public static final String VISION_CSV = "VISIONCSV";
     public static final String ADASTRA_CSV = "ADASTRACSV";
+    public static final String JSON_API = "JSON_API";
 }
