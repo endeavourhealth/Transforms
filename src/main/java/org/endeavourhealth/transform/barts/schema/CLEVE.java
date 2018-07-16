@@ -28,17 +28,17 @@ public class CLEVE extends AbstractCsvParser {
                 "ENCNTR_ID",
                 "ORDER_ID",
                 "PARENT_EVENT_ID",
-                "EVENT_CD",             //OK
+                "EVENT_CD",
                 "ACCESSION_NBR_IDENT",
                 "EVENT_START_DT_TM",
                 "EVENT_END_DT_TM",
                 "CLIN_SIGNIFICANCE_DT_TM",
-                "EVENT_CLASS_CD",           //
+                "EVENT_CLASS_CD",
                 "EVENT_RESULT_STATUS_CD",
-                "EVENT_RESULT_TXT",         //
-                "EVENT_RESULT_NBR",         //
-                "EVENT_RESULT_UNITS_CD",    //
-                "EVENT_RESULT_DT",          //
+                "EVENT_RESULT_TXT",
+                "EVENT_RESULT_NBR",
+                "EVENT_RESULT_UNITS_CD",
+                "EVENT_RESULT_DT",
                 "NORMALCY_CD",
                 "NORMAL_VALUE_LOW_TXT",
                 "NORMAL_VALUE_HIGH_TXT",
@@ -52,8 +52,8 @@ public class CLEVE extends AbstractCsvParser {
                 "CRITICAL_LOW_TXT",
                 "ENTRY_MODE_CD",
                 "EVENT_RELTN_CD",
-                "EVENT_TAG_TXT",        //I THINK
-                "EVENT_TITLE_TXT",      //OK
+                "EVENT_TAG_TXT",
+                "EVENT_TITLE_TXT",
                 "RECORD_STATUS_CD",
                 "REFERENCE_NBR",
                 "VALID_FROM_DT_TM",

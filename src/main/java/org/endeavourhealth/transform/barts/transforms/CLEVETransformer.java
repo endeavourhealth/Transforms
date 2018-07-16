@@ -275,11 +275,10 @@ public class CLEVETransformer {
     public static boolean isNumericResult(CsvCell classCell, CsvCell resultValueCell, CsvCell resultTextCell, BartsCsvHelper csvHelper) throws Exception {
         //if we don't have a number result, then we're not numeric
         //isEmptyOrIsZero doesn't work if it has a fraction, so test like this
-        if (resultValueCell.isEmpty()
+        //removed this check, since we've had at least one example of a numeric result where the text value was ">20"
+        //but the result value cell was zero, so we can't trust the result value
+        /*if (resultValueCell.isEmpty()
                 || resultValueCell.getDouble() == 0) {
-            return false;
-        }
-        /*if (BartsCsvHelper.isEmptyOrIsZero(resultValueCell)) {
             return false;
         }*/
 
@@ -290,16 +289,40 @@ public class CLEVETransformer {
             return false;
         }
 
+        if (resultTextCell.isEmpty()) {
+            return false;
+        }
+
         //despite the event class saying "numeric" there are lots of events where the result is "negative" (e.g. pregnancy tests)
-        //so we need to test the value itself
+        //so we need to test the value itself can be turned into a number
         String resultText = resultTextCell.getString();
         try {
             new Double(resultText);
             return true;
 
         } catch (NumberFormatException nfe) {
-            return false;
+            //if it's not a number, try checking for comparators at the start
+            //return false;
         }
+
+        for (String comparator : comparators) {
+            if (resultText.startsWith(comparator)) {
+
+                //remove the comparator from the String, and tidy up any whitespace
+                String test = resultText.substring(comparator.length());
+                test = test.trim();
+
+                try {
+                    new Double(test);
+                    return true;
+
+                } catch (NumberFormatException nfe) {
+                    continue;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void transformResultNumericValue(CLEVE parser, ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
