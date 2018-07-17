@@ -78,8 +78,9 @@ public class SROrganisationTransformer {
                                                          TppCsvHelper csvHelper) throws Exception {
 
         CsvCell IdCell = parser.getID();
-        if ((IdCell.isEmpty()) || (!StringUtils.isNumeric(IdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", IdCell.getString(), parser.getFilePath());
+        CsvCell rowIdCell = parser.getRowIdentifier();
+        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
 
@@ -176,7 +177,7 @@ public class SROrganisationTransformer {
         CsvCell IdCell = parser.getID();
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(IdCell.getString()))) {
+        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
