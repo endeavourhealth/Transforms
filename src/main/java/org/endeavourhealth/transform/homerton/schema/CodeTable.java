@@ -61,7 +61,7 @@ public class CodeTable extends AbstractCsvParser {
         return super.getCell("ACTIVE_IND");
     }
     public CsvCell getDate() {
-        return super.getCell("ACTIVE_DT_TM");
+        return super.getCell("UPDT_DT_TM");
     }
     public CsvCell getCodeMeaningTxt() {
         return super.getCell("CDF_MEANING");
