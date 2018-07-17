@@ -129,6 +129,7 @@ public class StaffMemberProfileCache {
                         identifierBuilder.setValue(gmpCode.getString(), gmpCode);
                     }
                 }
+
                 // We know we need to map Ids as we just built this from local values
                 fhirResourceFiler.saveAdminResource(pojo.getParserState(),true, practitionerBuilder);
 

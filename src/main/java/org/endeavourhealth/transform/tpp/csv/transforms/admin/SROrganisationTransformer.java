@@ -75,7 +75,6 @@ public class SROrganisationTransformer {
                                                          TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
-
         if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
@@ -89,11 +88,7 @@ public class SROrganisationTransformer {
         }
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
-
-
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
-
-
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), mapIds, locationBuilder);
             return null;
         }
@@ -188,21 +183,17 @@ public class SROrganisationTransformer {
             return null;
         }
 
-        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        OrganizationBuilder organizationBuilder;
         org.hl7.fhir.instance.model.Organization organization
                 = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
         if (organization == null) {
-            //if the Location doesn't exist yet, create a new one
+            //if the Organization doesn't exist yet, create a new one
             organizationBuilder = new OrganizationBuilder();
             organizationBuilder.setId(rowIdCell.getString(), rowIdCell);
         } else {
-
             organizationBuilder = new OrganizationBuilder(organization);
-
             organizationBuilder.setId(organization.getId());
         }
-
-        //organizationBuilder.setId(organizationId.getString());
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
@@ -217,7 +208,6 @@ public class SROrganisationTransformer {
         if (!nameCell.getString().isEmpty()) {
             organizationBuilder.setName(nameCell.getString());
         }
-
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);

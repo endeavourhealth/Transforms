@@ -66,34 +66,34 @@ public class LocationResourceCache {
             List<String> errors = new ArrayList<>();
             Location loc = (Location) locationBuilder.getResource();
             if (loc != null) {
-                validator.validateResourceSave(locationBuilder.getResource(), serviceId, mapIds, errors);
-                if (!errors.isEmpty()) {
-                    //TODO remove debugging LOGs
-                    LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
-                    for (String s: errors) {
-                        LOG.info(s);
-                    }
-                    Resource resource = locationBuilder.getResource();
-                    BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
-                    Set<String> referenceValues = new HashSet<>();
-                    idMapper.getResourceReferences(resource, referenceValues);
-                    for (String referenceValue: referenceValues) {
-                        Reference reference = ReferenceHelper.createReference(referenceValue);
-                        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
-                        String referenceId = comps.getId();
-                        boolean mapRefIds = !ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
-                        if (mapRefIds != mapIds) {
-                            LOG.info("Mapping ref id for Location " + referenceId);
-                            if (!mapRefIds) {
-                                reference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler,reference);
-                            } else {
-                                reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-                            }
-                        } else {
-                            LOG.info("referenceId " + referenceId + " isRefMapped" +mapRefIds );
-                        }
-                    }
-                }
+//                validator.validateResourceSave(locationBuilder.getResource(), serviceId, mapIds, errors);
+//                if (!errors.isEmpty()) {
+//                    //TODO remove debugging LOGs
+//                    LOG.info("Validation errors for Location:" + locationBuilder.getResourceId());
+//                    for (String s: errors) {
+//                        LOG.info(s);
+//                    }
+//                    Resource resource = locationBuilder.getResource();
+//                    BaseIdMapper idMapper = IdHelper.getIdMapper(resource);
+//                    Set<String> referenceValues = new HashSet<>();
+//                    idMapper.getResourceReferences(resource, referenceValues);
+//                    for (String referenceValue: referenceValues) {
+//                        Reference reference = ReferenceHelper.createReference(referenceValue);
+//                        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+//                        String referenceId = comps.getId();
+//                        boolean mapRefIds = !ResourceValidatorBase.isReferenceIdMapped(reference, serviceId);
+//                        if (mapRefIds != mapIds) {
+//                            LOG.info("Mapping ref id for Location " + referenceId);
+//                            if (!mapRefIds) {
+//                                reference = IdHelper.convertEdsReferenceToLocallyUniqueReference(fhirResourceFiler,reference);
+//                            } else {
+//                                reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+//                            }
+//                        } else {
+//                            LOG.info("referenceId " + referenceId + " isRefMapped" +mapRefIds );
+//                        }
+//                    }
+//                }
                 fhirResourceFiler.saveAdminResource(null, mapIds, locationBuilder);
             } else {
                 LOG.info("No Location resource found for LocationBuilder" + rowId);
