@@ -62,7 +62,8 @@ public class LocationResourceCache {
         for (Long rowId: LocationBuildersByRowId.keySet()) {
             LocationBuilder locationBuilder = LocationBuildersByRowId.get(rowId);
             boolean mapIds = !locationBuilder.isIdMapped();
-            ResourceValidatorLocation validator = new ResourceValidatorLocation();
+            LOG.info("Filing location:" + rowId + " with mapIds:" + mapIds);
+            //ResourceValidatorLocation validator = new ResourceValidatorLocation();
             List<String> errors = new ArrayList<>();
             Location loc = (Location) locationBuilder.getResource();
             if (loc != null) {
