@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -15,6 +16,8 @@ import java.util.Map;
 public class SROrganisationTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SROrganisationTransformer.class);
+    private static final String TRUST_PREFIX_STRING="TRUST-";
+    private static final String CCG_PREFIX_STRING="CCG-";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -275,7 +278,9 @@ public class SROrganisationTransformer {
         CsvCell trustCell = parser.getIDTrust();
         if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
-            Reference trustReference = csvHelper.createOrganisationReference(trustCell);
+            //Reference trustReference = csvHelper.createOrganisationReference(trustCell);
+            String trustString =  TRUST_PREFIX_STRING + trustCell.getString();
+            Reference trustReference = ReferenceHelper.createReference(ResourceType.Organization,trustString);
             if (!mapIds) {
                 trustReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(trustReference,fhirResourceFiler);
             }
@@ -284,7 +289,8 @@ public class SROrganisationTransformer {
         CsvCell ccgCell = parser.getIDCcg();
         if (!ccgCell.isEmpty() && ccgCell.getInt() >= 0) {
             //set the trust as a parent organisation for the organisation
-            Reference ccgReference = csvHelper.createOrganisationReference(ccgCell);
+            String ccgString = CCG_PREFIX_STRING + ccgCell.getString();
+            Reference ccgReference = ReferenceHelper.createReference(ResourceType.Organization,ccgString);
             if (!mapIds) {
                 ccgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(ccgReference,fhirResourceFiler);
             }
