@@ -77,13 +77,13 @@ public class SROrganisationTransformer {
                                                          FhirResourceFiler fhirResourceFiler,
                                                          TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
+        CsvCell IdCell = parser.getID();
+        if ((IdCell.isEmpty()) || (!StringUtils.isNumeric(IdCell.getString()))) {
+            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", IdCell.getString(), parser.getFilePath());
             return null;
         }
 
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
+        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(IdCell, csvHelper,fhirResourceFiler);
         boolean mapIds = true;
         if (locationBuilder.isIdMapped()) {
             locationBuilder.setId(locationBuilder.getResource().getId());
@@ -111,7 +111,7 @@ public class SROrganisationTransformer {
             locationBuilder.removeAddress(null);
         }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(IdCell.getString(), IdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -152,17 +152,17 @@ public class SROrganisationTransformer {
 
         CsvCell contactNumberCell = parser.getTelephone();
         if (!contactNumberCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, rowIdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, IdCell, locationBuilder);
         }
 
         CsvCell secondaryContactCell = parser.getSecondaryTelephone();
         if (!secondaryContactCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, rowIdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, IdCell, locationBuilder);
         }
 
         CsvCell faxCell = parser.getFax();
         if (!faxCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, IdCell, locationBuilder);
         }
 
 
@@ -173,9 +173,10 @@ public class SROrganisationTransformer {
                                                                  FhirResourceFiler fhirResourceFiler,
                                                                  TppCsvHelper csvHelper) throws Exception {
 
+        CsvCell IdCell = parser.getID();
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
+        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(IdCell.getString()))) {
             TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
             return null;
         }
@@ -188,11 +189,11 @@ public class SROrganisationTransformer {
 
         OrganizationBuilder organizationBuilder;
         org.hl7.fhir.instance.model.Organization organization
-                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Organization, fhirResourceFiler);
+                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Organization, fhirResourceFiler);
         if (organization == null) {
             //if the Organization doesn't exist yet, create a new one
             organizationBuilder = new OrganizationBuilder();
-            organizationBuilder.setId(rowIdCell.getString(), rowIdCell);
+            organizationBuilder.setId(IdCell.getString(), IdCell);
         } else {
             organizationBuilder = new OrganizationBuilder(organization);
             organizationBuilder.setId(organization.getId());
@@ -213,7 +214,7 @@ public class SROrganisationTransformer {
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(IdCell.getString(), IdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
         CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -254,17 +255,17 @@ public class SROrganisationTransformer {
 
         CsvCell contactNumberCell = parser.getTelephone();
         if (!contactNumberCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, rowIdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, IdCell, organizationBuilder);
         }
 
         CsvCell secondaryContactCell = parser.getSecondaryTelephone();
         if (!secondaryContactCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, rowIdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, IdCell, organizationBuilder);
         }
 
         CsvCell faxCell = parser.getFax();
         if (!faxCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, IdCell, organizationBuilder);
         }
 
 

@@ -1,19 +1,10 @@
 package org.endeavourhealth.transform.tpp.cache;
 
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.idmappers.BaseIdMapper;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorAppointment;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorLocation;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.Location;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +14,7 @@ import java.util.*;
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
 
-    private static Map<Long, LocationBuilder> LocationBuildersByRowId = new HashMap<>();
+    private static Map<Long, LocationBuilder> LocationBuildersById = new HashMap<>();
     private static UUID serviceId = null;
 
     public static UUID getServiceId() {
@@ -34,33 +25,33 @@ public class LocationResourceCache {
         LocationResourceCache.serviceId = serviceId;
     }
 
-    public static LocationBuilder getLocationBuilder(CsvCell rowIdCell, TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static LocationBuilder getLocationBuilder(CsvCell IdCell, TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LocationBuilder LocationBuilder = LocationBuildersByRowId.get(rowIdCell.getLong());
+        LocationBuilder LocationBuilder = LocationBuildersById.get(IdCell.getLong());
         if (LocationBuilder == null) {
 
             Location Location
-                    = (Location) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Location, fhirResourceFiler);
+                    = (Location) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Location, fhirResourceFiler);
             if (Location == null) {
                 //if the Location doesn't exist yet, create a new one
                 LocationBuilder = new LocationBuilder();
-                LocationBuilder.setId(rowIdCell.getString(), rowIdCell);
+                LocationBuilder.setId(IdCell.getString(), IdCell);
             } else {
                 LocationBuilder = new LocationBuilder(Location);
             }
-            LocationBuildersByRowId.put(rowIdCell.getLong(), LocationBuilder);
+            LocationBuildersById.put(IdCell.getLong(), LocationBuilder);
         }
         return LocationBuilder;
     }
 
     public static boolean LocationInCache(CsvCell rowIdCell) {
-        return LocationBuildersByRowId.containsKey(rowIdCell.getLong());
+        return LocationBuildersById.containsKey(rowIdCell.getLong());
     }
 
     public static void fileLocationResources(FhirResourceFiler fhirResourceFiler) throws Exception {
-        LOG.info("Filing location resources. Count : " + LocationBuildersByRowId.size());
-        for (Long rowId: LocationBuildersByRowId.keySet()) {
-            LocationBuilder locationBuilder = LocationBuildersByRowId.get(rowId);
+        LOG.info("Filing location resources. Count : " + LocationBuildersById.size());
+        for (Long rowId: LocationBuildersById.keySet()) {
+            LocationBuilder locationBuilder = LocationBuildersById.get(rowId);
             boolean mapIds = !locationBuilder.isIdMapped();
             LOG.info("Filing location:" + rowId + ". Location:" + locationBuilder.getResourceId() + " with mapIds:" + mapIds);
             //ResourceValidatorLocation validator = new ResourceValidatorLocation();
@@ -102,6 +93,6 @@ public class LocationResourceCache {
         }
 
         //clear down as everything has been saved
-        LocationBuildersByRowId.clear();
+        LocationBuildersById.clear();
     }
 }
