@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -45,7 +44,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonCsvHelper csvHelper) throws Exception {
 
-        // first up, create the Homerton organisation
+        // first up, get or create the Homerton organisation
         UUID serviceId = parser.getServiceId();
         OrganizationBuilder organizationBuilder
                 = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
@@ -128,17 +127,17 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
             CernerCodeValueRef codeRef = csvHelper.lookUpCernerCodeFromCodeSet(CodeValueSet.ETHNIC_GROUP, ethnicityIdCell.getString());
             if (codeRef == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
-                        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
+                //TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
+                //        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
 
             } else {
-                String codeDesc = codeRef.getAliasNhsCdAlias();
+                String codeDesc = codeRef.getAliasNhsCdAlias();   //TODO - requested this from Homerton, commented out logging for now
                 if (!Strings.isNullOrEmpty(codeDesc)) {
                     EthnicCategory ethnicCategory = convertEthnicCategory(codeDesc);
                     patientBuilder.setEthnicity(ethnicCategory, ethnicityIdCell);
                 } else {
-                    TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} cannot be mapped with blank NHS Alias Code",
-                            ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
+                    //TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} cannot be mapped with blank NHS Alias Code",
+                    //        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
                     patientBuilder.setEthnicity(null);
                 }
             }
@@ -199,9 +198,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //no need to save the resource now, as all patient resources are saved at the end of the Patient
         csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
 
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
-        }
+        //if (LOG.isTraceEnabled()) {
+        //    LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
+       // }
     }
 
     /*

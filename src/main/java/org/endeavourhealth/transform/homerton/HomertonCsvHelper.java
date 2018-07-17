@@ -14,12 +14,12 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.barts.transformsOld.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
+import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -277,7 +277,7 @@ public class HomertonCsvHelper {
             return;
         }
 
-        ResourceId encounterResourceId = BasisTransformer.getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+        ResourceId encounterResourceId = HomertonBasisTransformer.getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.getString());
         if (encounterResourceId == null) {
             //add nulls to the map so we don't keep hitting the DB
             encounterIdToEnconterResourceMap.put(encounterId, null);
