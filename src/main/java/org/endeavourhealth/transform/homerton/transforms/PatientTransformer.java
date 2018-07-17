@@ -11,7 +11,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCodeableConceptHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
-import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.endeavourhealth.transform.homerton.schema.PatientTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -56,8 +55,10 @@ public class PatientTransformer extends HomertonBasisTransformer {
             return;
         }
 
+        //NOTE: Homerton patients are never deleted
+
         CsvCell millenniumPersonIdCell = parser.getPersonId();
-        PatientBuilder patientBuilder = PatientResourceCache.getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
 
         CsvCell cnnCell = parser.getCNN();
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
@@ -195,6 +196,8 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell religionCell = parser.getReligionID();
         HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
+        //no need to save the resource now, as all patient resources are saved at the end of the Patient
+        csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));

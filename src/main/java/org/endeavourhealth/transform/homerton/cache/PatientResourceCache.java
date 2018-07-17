@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.homerton.cache;
 
-import org.endeavourhealth.transform.barts.transformsOld.BasisTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ResourceCache;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.hl7.fhir.instance.model.Patient;
@@ -10,58 +10,77 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+    //private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+
+    private ResourceCache<Long, Patient> patientBuildersByPersonId = new ResourceCache<>();
 
 
-    public static PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, HomertonCsvHelper csvHelper) throws Exception {
-
-//        UUID patientId = csvHelper.findPatientIdFromPersonId(milleniumPersonIdCell);
-//
-//        //if we don't know the Person->MRN mapping, then the UUID returned will be null, in which case we can't proceed
-//        if (patientId == null) {
-//            //LOG.trace("Failed to find patient UUID for person ID " + milleniumPersonIdCell.getString());
-//            return null;
-//        }
+    public PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, HomertonCsvHelper csvHelper) throws Exception {
 
         Long personId = milleniumPersonIdCell.getLong();
-        PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
-        if (patientBuilder == null) {
 
-            //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-            Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
-            if (patient == null) {
-                //if the patient doesn't exist yet, create a new one
-                patientBuilder = new PatientBuilder();
-                patientBuilder.setId(personId.toString());
-
-            } else {
-
-                patientBuilder = new PatientBuilder(patient);
-            }
-
-            patientBuildersByPersonId.put(personId, patientBuilder);
+        //check the cache
+        Patient cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        if (cachedResource != null) {
+            return new PatientBuilder(cachedResource);
         }
+
+        PatientBuilder patientBuilder = null;
+
+        //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
+        Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
+        if (patient == null) {
+            //if the patient doesn't exist yet, create a new one
+            patientBuilder = new PatientBuilder();
+            patientBuilder.setId(personId.toString());
+
+        } else {
+
+            patientBuilder = new PatientBuilder(patient);
+        }
+
         return patientBuilder;
     }
 
-    public static void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+    public void returnPatientBuilder(CsvCell personIdCell, PatientBuilder patientBuilder) throws Exception {
+        Long personId = personIdCell.getLong();
+        returnPatientBuilder(personId, patientBuilder);
+    }
+
+    public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
+        patientBuildersByPersonId.addToCache(personId, (Patient)patientBuilder.getResource());
+    }
+
+    public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 
         for (Long personId: patientBuildersByPersonId.keySet()) {
-            PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
-            BasisTransformer.savePatientResource(fhirResourceFiler, null, patientBuilder);
+            Patient patient = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+            PatientBuilder patientBuilder = new PatientBuilder(patient);
+
+            boolean performIdMapping = !patientBuilder.isIdMapped();
+            fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
         }
 
         LOG.trace("Finishing saving " + patientBuildersByPersonId.size() + " patients to the DB, clearing cache...");
 
         //clear down as everything has been saved
         patientBuildersByPersonId.clear();
+    }
+
+    /**
+     * if we have had an error that's caused us to drop out of the transform, we can call this to tidy up
+     * anything we've saved to the audit.queued_message table
+     */
+    public void cleanUpResourceCache() {
+        try {
+            patientBuildersByPersonId.clear();
+        } catch (Exception ex) {
+            LOG.error("Error cleaning up cache", ex);
+        }
     }
 }

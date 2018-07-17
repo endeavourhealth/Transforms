@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class HomertonCsvHelper {
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
+
+    private PatientResourceCache patientCache = new PatientResourceCache();
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -82,6 +85,9 @@ public class HomertonCsvHelper {
         return version;
     }
 
+    public PatientResourceCache getPatientCache() {
+        return patientCache;
+    }
 
     public Service getService (UUID id) throws Exception {
         return serviceRepository.getById(id);
