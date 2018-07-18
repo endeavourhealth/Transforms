@@ -38,13 +38,13 @@ public abstract class VisionCsvToFhirTransformer {
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
 
-        //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
-
         if (files.length == 0) {
-            LOG.warn("Failed to find any CSV files in {} - skipping", orgDirectory);
+            LOG.warn("Exchange {} file list is empty for service {} - skipping", exchangeId.toString(), serviceId.toString());
             return;
         }
+
+        //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
+        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
 

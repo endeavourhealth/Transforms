@@ -21,23 +21,11 @@ public abstract class HomertonCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
-    //public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "hh:mm:ss.SSSSSSS";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
     public static final String PRIMARY_ORG_ODS_CODE = "RQX";
     public static final String HOMERTON_RESOURCE_ID_SCOPE = "H";
-    /*public static final int CODE_SYSTEM_SNOMED = 1000;
-    public static final int CODE_SYSTEM_ICD_10 = 1001;
-    public static final int CODE_SYSTEM_OPCS_4 = 1002;
-    public static final String CODE_SYSTEM_CDS_UNIQUE_ID = "http://cerner.com/fhir/cds-unique-id";
-    public static final String CODE_SYSTEM_DIAGNOSIS_ID = "http://cerner.com/fhir/diagnosis-id";
-    public static final String CODE_SYSTEM_PROBLEM_ID = "http://cerner.com/fhir/problem-id";
-    public static final String CODE_SYSTEM_FIN_NO = "http://cerner.com/fhir/fin-no";
-    public static final String CODE_SYSTEM_EPISODE_ID = "http://cerner.com/fhir/episodeid";
-    public static final String CODE_SYSTEM_ENCOUNTER_ID = "http://cerner.com/fhir/encounterid";
-    public static final String CODE_SYSTEM_CONDITION_CATEGORY = "http://hl7.org/fhir/condition-category";
-    public static final String CODE_SYSTEM_NHS_NO = "http://fhir.nhs.net/Id/nhs-number";*/
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds, TransformError previousErrors,

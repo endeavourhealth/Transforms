@@ -59,16 +59,28 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell millenniumPersonIdCell = parser.getPersonId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
 
-        CsvCell cnnCell = parser.getCNN();
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
-        identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder.setValue(cnnCell.getString(), cnnCell);
+        CsvCell nhsNumber = parser.getNHSNo();
+        if (!nhsNumber.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
+        }
 
-        IdentifierBuilder identifierBuilder2 = new IdentifierBuilder(patientBuilder);
-        identifierBuilder2.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilder2.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID);
-        identifierBuilder2.setValue(millenniumPersonIdCell.toString(), millenniumPersonIdCell);
+        CsvCell cnnCell = parser.getCNN();
+        if (!cnnCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setValue(cnnCell.getString(), cnnCell);
+        }
+
+        if (!millenniumPersonIdCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID);
+            identifierBuilder.setValue(millenniumPersonIdCell.getString(), millenniumPersonIdCell);
+        }
 
         patientBuilder.setActive(true);
 
@@ -89,9 +101,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
         nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
 
-        // Telecom
         CsvCell mobileCell = parser.getMobileTel();
         if (!mobileCell.isEmpty()) {
+
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
@@ -100,6 +112,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         CsvCell homeCell = parser.getHomeTel();
         if (!homeCell.isEmpty()) {
+
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
@@ -108,6 +121,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         CsvCell workCell = parser.getWorkTel();
         if (!workCell.isEmpty()) {
+
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
@@ -117,6 +131,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         // Gender
         CsvCell genderCell = parser.getGenderID();
         if (!genderCell.isEmpty()) {
+
             Enumerations.AdministrativeGender fhirGender = convertGenderToFHIR(genderCell.getInt().intValue());
             patientBuilder.setGender(fhirGender, genderCell);
         }

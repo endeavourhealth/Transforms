@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.homerton;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -29,9 +28,8 @@ import java.util.*;
 public class HomertonCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvHelper.class);
 
-    public static final String CODE_TYPE_SNOMED = "SNOMED";
-    public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
-    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
+    public static final String CODE_TYPE_SNOMED = "SNOMED CT";
+    public static final String CODE_TYPE_ICD_10 = "ICD-10";
 
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
@@ -155,8 +153,7 @@ public class HomertonCsvHelper {
         if (index > -1) {
             String ret = conceptCodeIdentifier.substring(0,index);
             if (ret.equals(CODE_TYPE_SNOMED)
-                    || ret.equals(CODE_TYPE_ICD_10)
-                    || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)) {
+                    || ret.equals(CODE_TYPE_ICD_10)) {
                 return ret;
             } else {
                 throw new IllegalArgumentException("Unexpected code type [" + ret + "]");
@@ -180,53 +177,40 @@ public class HomertonCsvHelper {
         }
     }
 
-    public CernerCodeValueRef lookUpCernerCodeFromCodeSet(Long codeSet, String code) throws Exception {
+    public CernerCodeValueRef lookupCodeRef(String code) throws Exception {
+        return lookupCodeRef(0L, code);
+    }
 
-        String codeLookup = code.toString() + "|" + serviceId.toString();
+    public CernerCodeValueRef lookupCodeRef(Long codeSet, String code) throws Exception {
 
-        if (code.equals(0)) {
-            codeLookup = codeSet + "|" + codeLookup;
+        String cacheKey = code;
+        if (code.equals("0")) {
+            //if looking up code zero, this exists in multiple code sets, so add the codeset to the cache key
+            cacheKey = codeSet + "|" + cacheKey;
         }
 
         //Find the code in the cache
-        CernerCodeValueRef cernerCodeFromCache =  cernerCodes.get(codeLookup);
-
-        // return cached version if exists
+        CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(cacheKey);
         if (cernerCodeFromCache != null) {
             return cernerCodeFromCache;
         }
 
         CernerCodeValueRef cernerCodeFromDB = null;
 
-        // get code from DB (special case for a code of 0 as that is duplicated)
-        if (code.equals(0)) {
-            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(
-                    codeSet, code, serviceId);
+        //the code is unique across all code sets, EXCEPT for code "0" where this can be repeated
+        //between sets. So if the code is "0", perform the lookup using the code set, otherwise just use the code
+        if (code.equals("0")) {
+            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(codeSet, code, serviceId);
+
         } else {
             cernerCodeFromDB = cernerCodeValueRefDalI.getCodeWithoutCodeSet(code, serviceId);
         }
 
-        //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
-        if (cernerCodeFromDB == null) {
-            return new CernerCodeValueRef();
-        }
-
-        //seem to have whitespace around some of the fields. As a temporary fix, trim them here
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getAliasNhsCdAlias())) {
-            cernerCodeFromDB.setAliasNhsCdAlias(cernerCodeFromDB.getAliasNhsCdAlias().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDescTxt())) {
-            cernerCodeFromDB.setCodeDescTxt(cernerCodeFromDB.getCodeDescTxt().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDispTxt())) {
-            cernerCodeFromDB.setCodeDispTxt(cernerCodeFromDB.getCodeDispTxt().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeMeaningTxt())) {
-            cernerCodeFromDB.setCodeMeaningTxt(cernerCodeFromDB.getCodeMeaningTxt().trim());
-        }
+        if (cernerCodeFromDB == null)
+            return null;
 
         // Add to the cache
-        cernerCodes.put(codeLookup, cernerCodeFromDB);
+        cernerCodes.put(cacheKey, cernerCodeFromDB);
 
         return cernerCodeFromDB;
     }

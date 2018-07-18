@@ -105,6 +105,37 @@ public class DiagnosisTable extends AbstractCsvParser {
         return super.getCell("ENCNTR_ID");
     }
 
+    public CsvCell getDiagnosisDateTime() {
+        return super.getCell("DIAG_DT_TM");
+    }
+
+    public CsvCell getEncounterSliceID() {
+        return super.getCell("ENCNTR_SLICE_ID");
+    }
+
+    public CsvCell getPersonnelId() {
+        return super.getCell("DIAG_PRSNL_ID");
+    }
+
+    public CsvCell getConceptCode() {
+        return super.getCell("source_identifier");
+    }
+
+    public CsvCell getConceptCodeType() {
+        return super.getCell("source_vocabulary");
+    }
+
+    public CsvCell getDiagnosisDisplay() {
+        return super.getCell("DIAGNOSIS_DISPLAY");
+    }
+
+    public CsvCell getDiagnosisType() {
+        return super.getCell("principle_type");
+    }
+
+    public CsvCell getDiagnosisTypeCode() {
+        return super.getCell("principle_type_cd");
+    }
 
     @Override
     protected String getFileTypeDescription() {

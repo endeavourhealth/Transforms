@@ -1,22 +1,27 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.schema.DiagnosisTable;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 public class DiagnosisTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
@@ -30,12 +35,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((DiagnosisTable) parser);
-                    if (valStr == null) {
-                        createDiagnosis((DiagnosisTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-                    } else {
-                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
-                    }
+                    createDiagnosis((DiagnosisTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -43,70 +43,109 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         }
     }
 
-    /*
-     *
-     */
-    public static String validateEntry(DiagnosisTable parser) {
-        return null;
-    }
-
-    /*
-     *
-     */
     public static void createDiagnosis(DiagnosisTable parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode) throws Exception {
 
-        CsvCell diagnosisId = parser.getDiagnosisId();
+        CsvCell diagnosisIdCell = parser.getDiagnosisId();
+        ConditionBuilder conditionBuilder = new ConditionBuilder();
+        conditionBuilder.setAsProblem(false);
+        conditionBuilder.setId(diagnosisIdCell.getString(), diagnosisIdCell);
+
         CsvCell personIdCell = parser.getPersonId();
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.toString());
+        conditionBuilder.setPatient(patientReference, personIdCell);
 
-        //TODO - fix to not use HL7 DB as a mapping store
-        if (true) {
-            throw new RuntimeException("FIX CODE");
-        }
-        ResourceId conditionResourceId = null;
-        //ResourceId conditionResourceId = getOrCreateConditionResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, diagnosisId);
+        // delete the diagnosis if no longer active.  We have the patientId so this is straight forward
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
 
-        // PatientTable
-        UUID patientUuid = csvHelper.findPatientIdFromPersonId(personIdCell);
-        if (patientUuid == null) {
-            TransformWarnings.log(LOG, parser, "Skipping DiagnosisTable {} because no Person->MRN mapping ({}) could be found in file {}", diagnosisId.getString(), personIdCell.getString(), parser.getFilePath());
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
             return;
         }
 
-        // create the FHIR Condition
-        ConditionBuilder conditionBuilder = new ConditionBuilder();
-        conditionBuilder.setAsProblem(false);
+        conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        conditionBuilder.setId(conditionResourceId.getResourceId().toString());
+        CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
+        if (!diagnosisDateTimeCell.isEmpty()) {
 
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientUuid.toString());
-        conditionBuilder.setPatient(patientReference, personIdCell);
+            Date d = diagnosisDateTimeCell.getDateTime();
+            DateTimeType dateTimeType = new DateTimeType(d);
+            conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
+        }
 
-        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
+        CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
+        if (!HomertonCsvHelper.isEmptyOrIsZero(encounterSliceIdCell)) {
 
-        // EpisodeOfCare - DiagnosisTable record cannot be linked to an EpisodeOfCare
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
+        }
 
-        // fhirCondition.setEncounter()
+        //TODO - need the Personnel data extract
+//        CsvCell personnelIdCell = parser.getPersonnelId();
+//        if (!HomertonCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
+//            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell.getString());
+//            conditionBuilder.setClinician(practitionerReference, personnelIdCell);
+//        }
 
-        // this DiagnosisTable resource id
-        //ResourceId diagnosisResourceId = getDiagnosisResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, parser.getCNN(), parser.getDiagnosisDateAsString(), parser.getDiagnosisCode());
+        // Condition(Diagnosis) is coded either as Snomed or ICD10
+        CsvCell conceptCodeCell = parser.getConceptCode();
+        if (!conceptCodeCell.isEmpty()) {
 
-        //CodeableConcept diagnosisCode = new CodeableConcept();
-        //diagnosisCode.addCoding().setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getDiagnosis()).setCode(parser.getDiagnosisCode());
-        //CodeableConcept diagnosisCode = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, parser.getDiagnosis(), parser.getDiagnosisCode());
+            String conceptCode = conceptCodeCell.getString();
+            CsvCell conceptCodeTypeCell = parser.getConceptCodeType();
 
-        //Identifiers
-        //Identifier identifiers[] = {new Identifier().setSystem(HomertonCsvToFhirTransformer.CODE_SYSTEM_DIAGNOSIS_ID).setValue(parser.getDiagnosisId().toString()), new Identifier().setSystem(HomertonCsvToFhirTransformer.CODE_SYSTEM_FIN_NO).setValue(parser.getFINNbr())};
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
-        //createDiagnosisResource(fhirCondition, diagnosisResourceId, encounterResourceId, patientResourceId, parser.getUpdateDateTime(), new DateTimeType(parser.getDiagnosisDate()), diagnosisCode, parser.getSecondaryDescription(), identifiers, cvs);
+            if (!HomertonCsvHelper.isEmptyOrIsZero(conceptCodeTypeCell)) {
 
-        // save resource
-        LOG.debug("Save Diagnosis (PatId=" + patientUuid + ")(PersonId:" + personIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(conditionBuilder.getResource()));
+                String conceptCodeType = conceptCodeTypeCell.getString();
+                if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
+
+                    String term = TerminologyService.lookupSnomedTerm(conceptCode);
+                    if (Strings.isNullOrEmpty(term)) {
+                        TransformWarnings.log(LOG, parser, "Failed to find Snomed term for {}", conceptCodeCell);
+                    }
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeCell);
+                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
+
+                } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+                    String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
+                    if (Strings.isNullOrEmpty(term)) {
+                        TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell);
+                    }
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeCell);
+                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
+
+                } else {
+                    throw new TransformException("Unknown DIAGN code type [" + conceptCodeType + "]");
+                }
+            }
+        } else {
+            //if there's no code, create a non coded code so we retain the text
+            CsvCell term = parser.getDiagnosisDisplay();
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+            codeableConceptBuilder.setText(term.getString());
+        }
+
+        CsvCell diagnosisType = parser.getDiagnosisType();
+        if (!HomertonCsvHelper.isEmptyOrIsZero(diagnosisType)) {
+
+            conditionBuilder.setCategory(diagnosisType.getString(), diagnosisType);
+        }
+
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
-
     }
-
-
 }
