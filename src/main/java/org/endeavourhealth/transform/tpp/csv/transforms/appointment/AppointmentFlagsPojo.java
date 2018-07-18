@@ -5,11 +5,11 @@ import org.endeavourhealth.transform.common.CsvCell;
 public class AppointmentFlagsPojo {
 
    private CsvCell RowIdentifier;
-            private CsvCell IDOrganisationVisibleTo;
-            private CsvCell IDAppointment;
-            private CsvCell Flag;
-            private CsvCell OldRowIdentifier;
-            private CsvCell RemovedData;
+            private CsvCell idOrganisationVisibleTo;
+            private CsvCell idAppointment;
+            private CsvCell flag;
+            private CsvCell oldRowIdentifier;
+            private CsvCell removedData;
 
     public AppointmentFlagsPojo() {
     }
@@ -22,43 +22,43 @@ public class AppointmentFlagsPojo {
         RowIdentifier = rowIdentifier;
     }
 
-    public CsvCell getIDOrganisationVisibleTo() {
-        return IDOrganisationVisibleTo;
+    public CsvCell getIdOrganisationVisibleTo() {
+        return idOrganisationVisibleTo;
     }
 
-    public void setIDOrganisationVisibleTo(CsvCell IDOrganisationVisibleTo) {
-        this.IDOrganisationVisibleTo = IDOrganisationVisibleTo;
+    public void setIdOrganisationVisibleTo(CsvCell idOrganisationVisibleTo) {
+        this.idOrganisationVisibleTo = idOrganisationVisibleTo;
     }
 
-    public CsvCell getIDAppointment() {
-        return IDAppointment;
+    public CsvCell getIdAppointment() {
+        return idAppointment;
     }
 
-    public void setIDAppointment(CsvCell IDAppointment) {
-        this.IDAppointment = IDAppointment;
+    public void setIdAppointment(CsvCell idAppointment) {
+        this.idAppointment = idAppointment;
     }
 
     public CsvCell getFlag() {
-        return Flag;
+        return flag;
     }
 
     public void setFlag(CsvCell flag) {
-        Flag = flag;
+        this.flag = flag;
     }
 
     public CsvCell getOldRowIdentifier() {
-        return OldRowIdentifier;
+        return oldRowIdentifier;
     }
 
     public void setOldRowIdentifier(CsvCell oldRowIdentifier) {
-        OldRowIdentifier = oldRowIdentifier;
+        this.oldRowIdentifier = oldRowIdentifier;
     }
 
     public CsvCell getRemovedData() {
-        return RemovedData;
+        return removedData;
     }
 
     public void setRemovedData(CsvCell removedData) {
-        RemovedData = removedData;
+        this.removedData = removedData;
     }
 }

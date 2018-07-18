@@ -21,11 +21,12 @@ import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -400,7 +401,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             synchronized (clinicalEventChildMap) {
                 list = clinicalEventChildMap.get(parentEventId);
                 if (list == null) {
-                    list = new ReferenceList();
+                    //we know there will only be a single cell, so use this reference list class to save memory
+                    list = new ReferenceListSingleCsvCells();
+                    //list = new ReferenceList();
                     clinicalEventChildMap.put(parentEventId, list);
                 }
             }
@@ -781,7 +784,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             synchronized (consultationNewChildMap) {
                 list = consultationNewChildMap.get(encounterId);
                 if (list == null) {
-                    list = new ReferenceList();
+                    //we know there will only be a single cell, so use this reference list class to save memory
+                    list = new ReferenceListSingleCsvCells();
+                    //list = new ReferenceList();
                     consultationNewChildMap.put(encounterId, list);
                 }
             }

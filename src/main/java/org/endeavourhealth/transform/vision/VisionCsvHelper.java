@@ -15,11 +15,13 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -255,7 +257,9 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ReferenceList obj = new ReferenceList();
+        //we know there will no CsvCells, so use this reference list class to save memory
+        ReferenceList obj = new ReferenceListNoCsvCells();
+        //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
         problemPreviousLinkedResources.put(problemSourceId, obj);
@@ -282,7 +286,9 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         String problemLocalUniqueId = createUniqueId(patientGuid, problemObservationGuid);
         ReferenceList referenceList = newProblemChildren.get(problemLocalUniqueId);
         if (referenceList == null) {
-            referenceList = new ReferenceList();
+            //we know there will only one CsvCells, so use this reference list class to save memory
+            referenceList = new ReferenceListSingleCsvCells();
+            //referenceList = new ReferenceList();
             newProblemChildren.put(problemLocalUniqueId, referenceList);
         }
 
@@ -476,7 +482,9 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ReferenceList obj = new ReferenceList();
+        //we know there will be no CsvCells, so use this reference list class to save memory
+        ReferenceList obj = new ReferenceListNoCsvCells();
+        //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
         consultationExistingChildMap.put(encounterSourceId, obj);
@@ -499,7 +507,9 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will a single CsvCell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 

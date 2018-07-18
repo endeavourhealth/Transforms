@@ -1,19 +1,18 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.idmappers.IdMapperAppointment;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorAppointment;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
-import org.endeavourhealth.transform.tpp.cache.AppointmentResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -188,7 +186,7 @@ public class SRAppointmentTransformer {
         // Check for appointment flags
 
         if (AppointmentFlagCache.containsAppointmentId(appointmentId.getLong())) {
-            List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getStaffMemberProfilePojo(appointmentId.getLong());
+            List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getFlagsForAppointmentId(appointmentId.getLong());
 
             for (AppointmentFlagsPojo pojo : pojoList) {
                 TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag(), parser);

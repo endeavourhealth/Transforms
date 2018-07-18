@@ -10,7 +10,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.hl7.fhir.instance.model.DomainResource;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -149,7 +150,9 @@ public class AdastraCsvHelper {
         String consultationLocalUniqueId = consultationIDCell.getString();
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will be only one CsvCells, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 

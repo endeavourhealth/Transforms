@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.hl7.fhir.instance.model.DomainResource;
 import org.hl7.fhir.instance.model.List_;
 import org.hl7.fhir.instance.model.Reference;

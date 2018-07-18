@@ -19,11 +19,9 @@ public class SRAppointmentFlagsTransformer {
         if (parser != null) {
             while (parser.nextRecord()) {
 
-                try {
-                    createResource((SRAppointmentFlags) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //no try/catch here because record level exceptions in this transform
+                //will affect subsequent files, so exceptions must be allowed to be throw up
+                createResource((SRAppointmentFlags) parser, fhirResourceFiler, csvHelper);
             }
         }
     }
@@ -38,14 +36,14 @@ public class SRAppointmentFlagsTransformer {
         }
 
         AppointmentFlagsPojo apptFlagPojo = new AppointmentFlagsPojo();
-        apptFlagPojo.setIDAppointment(appointmentId);
+        apptFlagPojo.setIdAppointment(appointmentId);
 
         CsvCell appointmentFlagsId = parser.getRowIdentifier();
         apptFlagPojo.setRowIdentifier(appointmentFlagsId);
 
         CsvCell orgId = parser.getIDOrganisationVisibleTo();
         if (!orgId.isEmpty()) {
-            apptFlagPojo.setIDOrganisationVisibleTo(orgId);
+            apptFlagPojo.setIdOrganisationVisibleTo(orgId);
         }
 
         CsvCell flag = parser.getFlag();
@@ -60,6 +58,6 @@ public class SRAppointmentFlagsTransformer {
 
         AppointmentFlagCache.addAppointmentFlagPojo(apptFlagPojo);
 
-        }
     }
+}
 

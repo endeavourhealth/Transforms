@@ -16,7 +16,8 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
 import org.hl7.fhir.instance.model.*;
@@ -319,7 +320,9 @@ public class HomertonCsvHelper {
         Long parentEventId = parentEventIdCell.getLong();
         ReferenceList list = clinicalEventChildMap.get(parentEventId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will a single CsvCell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             clinicalEventChildMap.put(parentEventId, list);
         }
 

@@ -13,6 +13,9 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
@@ -344,7 +347,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String parentObservationUniqueId = createUniqueId(patientGuid, parentObservationGuid);
         ReferenceList list = observationChildMap.get(parentObservationUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will only be a single cell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             observationChildMap.put(parentObservationUniqueId, list);
         }
 
@@ -478,7 +483,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String problemLocalUniqueId = createUniqueId(patientGuid, problemObservationGuid);
         ReferenceList referenceList = newProblemChildren.get(problemLocalUniqueId);
         if (referenceList == null) {
-            referenceList = new ReferenceList();
+            //we know there will only be a single cell, so use this reference list class to save memory
+            referenceList = new ReferenceListSingleCsvCells();
+            //referenceList = new ReferenceList();
             newProblemChildren.put(problemLocalUniqueId, referenceList);
         }
 
@@ -1078,7 +1085,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will only be a single cell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
@@ -1202,7 +1211,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ReferenceList obj = new ReferenceList();
+        //we know there will be no CsvCells, so use this reference list class to save memory
+        ReferenceList obj = new ReferenceListNoCsvCells();
+        //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
         consultationExistingChildMap.put(encounterSourceId, obj);
@@ -1219,7 +1230,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ReferenceList obj = new ReferenceList();
+        //we know there will be no CsvCells, so use this reference list class to save memory
+        ReferenceList obj = new ReferenceListNoCsvCells();
+        //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
         problemPreviousLinkedResources.put(problemSourceId, obj);

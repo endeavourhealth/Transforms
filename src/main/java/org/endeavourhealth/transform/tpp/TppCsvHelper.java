@@ -17,8 +17,10 @@ import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
-import org.endeavourhealth.transform.emis.csv.helpers.ReferenceList;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -215,7 +217,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will only be a single CsvCell so use this implementation to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
@@ -240,7 +244,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, encounterId);
         ReferenceList list = encounterAppointmentOrVisitMap.get(consultationLocalUniqueId);
         if (list == null) {
-            list = new ReferenceList();
+            //we know there will only be a single CsvCell so use this implementation to save memory
+            list = new ReferenceListSingleCsvCells();
+            //list = new ReferenceList();
             encounterAppointmentOrVisitMap.put(consultationLocalUniqueId, list);
         }
 
@@ -260,7 +266,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ReferenceList obj = new ReferenceList();
+        //we know there will be no CsvCells so use this implementation to save memory
+        ReferenceList obj = new ReferenceListNoCsvCells();
+        //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
         consultationExistingChildMap.put(encounterSourceId, obj);
