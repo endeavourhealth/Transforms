@@ -140,7 +140,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell ethnicityIdCell = parser.getEthnicGroupID();
         if (!csvHelper.isEmptyOrIsZero(ethnicityIdCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookUpCernerCodeFromCodeSet(CodeValueSet.ETHNIC_GROUP, ethnicityIdCell.getString());
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityIdCell.getString());
             if (codeRef == null) {
                 //TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
                 //        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());

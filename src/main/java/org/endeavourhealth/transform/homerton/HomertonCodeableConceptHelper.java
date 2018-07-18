@@ -34,7 +34,7 @@ public class HomertonCodeableConceptHelper {
             return null;
         }
 
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookUpCernerCodeFromCodeSet(
+        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(
                 codeSet,
                 codeCell.getString());
 
