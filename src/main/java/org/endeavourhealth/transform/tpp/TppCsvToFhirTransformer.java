@@ -322,19 +322,19 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.trace("Starting admin transforms");
         // Code lookups
-        SRMappingTransformer.transform(parsers, fhirResourceFiler);
-        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
-        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
-        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
+//        SRMappingTransformer.transform(parsers, fhirResourceFiler);
+//        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+//        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
+//        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
+//        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 
 //        // Organisations
-        LocationResourceCache.setServiceId(fhirResourceFiler.getServiceId());
-        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        LocationResourceCache.fileLocationResources(fhirResourceFiler);
+//        LocationResourceCache.setServiceId(fhirResourceFiler.getServiceId());
+//        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+//        LocationResourceCache.fileLocationResources(fhirResourceFiler);
 //        // Staff
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
