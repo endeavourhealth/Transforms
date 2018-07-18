@@ -37,10 +37,16 @@ public abstract class VisionCsvToFhirTransformer {
 
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+
+        if (files.length == 0) {
+            LOG.warn("Failed to find any CSV files in {} - skipping", orgDirectory);
+            return;
+        }
+
+        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);

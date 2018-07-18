@@ -31,7 +31,7 @@ public class OrganisationResourceCache {
         if (organizationBuilder == null) {
 
             Organization organization
-                    = (Organization) csvHelper.retrieveResource(ResourceType.Organization, serviceId);
+                    = (Organization) csvHelper.retrieveResourceForLocalId(ResourceType.Organization, serviceId.toString());
             if (organization == null) {
 
                 //if the Organization resource doesn't exist yet, create a new one using the ServiceId
