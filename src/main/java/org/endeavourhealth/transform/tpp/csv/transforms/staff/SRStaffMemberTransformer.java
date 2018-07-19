@@ -43,6 +43,9 @@ public class SRStaffMemberTransformer {
         if (StaffMemberProfileCache.size() > 0) {
             LOG.error("Staff cache should be empty but has : " + StaffMemberProfileCache.size());
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void createResource(SRStaffMember parser,

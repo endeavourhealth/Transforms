@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 
 
@@ -29,6 +30,9 @@ public class SRStaffMemberProfileTransformer {
                 }
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void createResource(SRStaffMemberProfile parser,

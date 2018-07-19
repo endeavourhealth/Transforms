@@ -12,14 +12,11 @@ import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRelationshi
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientRegistrationTransformer.convertMedicalRecordStatus;
 
 public class SRPatientRelationshipTransformer {
 
@@ -40,6 +37,9 @@ public class SRPatientRelationshipTransformer {
                 }
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void createResource(SRPatientRelationship parser,

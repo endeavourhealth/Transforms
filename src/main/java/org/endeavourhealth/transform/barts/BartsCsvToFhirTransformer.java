@@ -42,8 +42,7 @@ public abstract class BartsCsvToFhirTransformer {
     //public static final int VERSION_2_2_FILE_COUNT = 14;
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String version) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + serviceId);

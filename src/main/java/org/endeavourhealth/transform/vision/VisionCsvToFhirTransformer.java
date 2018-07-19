@@ -4,7 +4,6 @@ import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -32,7 +31,7 @@ public abstract class VisionCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
+                                 TransformError transformError, List<UUID> batchIds,
                                  String version) throws Exception {
 
         //the exchange body will be a list of files received
@@ -58,7 +57,7 @@ public abstract class VisionCsvToFhirTransformer {
             validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
-            transformParsers(version, allParsers, processor, previousErrors);
+            transformParsers(version, allParsers, processor);
 
         } finally {
 
@@ -177,8 +176,7 @@ public abstract class VisionCsvToFhirTransformer {
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler) throws Exception {
 
         VisionCsvHelper csvHelper = new VisionCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
@@ -232,24 +230,5 @@ public abstract class VisionCsvToFhirTransformer {
     }
 
 
-    public static boolean findRecordsToProcess(Map<Class, AbstractCsvParser> allParsers, TransformError previousErrors) throws Exception {
 
-        boolean processingSpecificRecords = false;
-
-        for (AbstractCsvParser parser: allParsers.values()) {
-
-            String filePath = parser.getFilePath();
-            String fileName = FilenameUtils.getName(filePath);
-
-            Set<Long> recordNumbers = TransformErrorUtility.findRecordNumbersToProcess(fileName, previousErrors);
-            parser.setRecordNumbersToProcess(recordNumbers);
-
-            //if we have a non-null set, then we're processing specific records in some file
-            if (recordNumbers != null) {
-                processingSpecificRecords = true;
-            }
-        }
-
-        return processingSpecificRecords;
-    }
 }

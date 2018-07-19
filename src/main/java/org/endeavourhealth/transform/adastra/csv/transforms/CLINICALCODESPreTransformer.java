@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.CLINICALCODES;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -29,7 +30,7 @@ public class CLINICALCODESPreTransformer {
                 try {
                     createResource((CLINICALCODES) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
         }

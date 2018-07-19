@@ -28,8 +28,7 @@ public abstract class HomertonCsvToFhirTransformer {
     public static final String HOMERTON_RESOURCE_ID_SCOPE = "H";
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String version) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
 
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + serviceId);

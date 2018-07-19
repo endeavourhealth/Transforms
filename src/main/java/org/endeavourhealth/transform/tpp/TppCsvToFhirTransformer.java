@@ -11,15 +11,10 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRTrustTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
@@ -52,7 +47,7 @@ public abstract class TppCsvToFhirTransformer {
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds) throws Exception {
 
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking TPP CSV transformer for " + files.length + " files and service " + serviceId);

@@ -34,6 +34,9 @@ public class SessionTransformer {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void createResource(Session parser,

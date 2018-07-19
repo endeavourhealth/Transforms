@@ -35,6 +35,9 @@ public class EncounterTransformer {
                 }
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void createResource(org.endeavourhealth.transform.vision.schema.Encounter parser,

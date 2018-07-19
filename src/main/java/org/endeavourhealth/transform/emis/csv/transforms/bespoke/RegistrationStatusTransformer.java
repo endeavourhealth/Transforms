@@ -30,6 +30,9 @@ public class RegistrationStatusTransformer {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void processRecord(RegistrationStatus parser,

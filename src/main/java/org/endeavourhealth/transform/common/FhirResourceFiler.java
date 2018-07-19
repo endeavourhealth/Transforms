@@ -61,11 +61,12 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private ThreadPool threadPoolIdMapper = null;
     private ThreadPool threadPoolFiler = null;
 
-
     //counts
     private Map<ExchangeBatch, AtomicInteger> countResourcesSaved = new ConcurrentHashMap<>();
     private Map<ExchangeBatch, AtomicInteger> countResourcesDeleted = new ConcurrentHashMap<>();
 
+    //error handling
+    private Throwable lastExceptionRecorded;
 
     public FhirResourceFiler(UUID exchangeId, UUID serviceId, UUID systemId, TransformError transformError,
                              List<UUID> batchIdsCreated) throws Exception {
@@ -540,6 +541,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
      */
     public void logTransformRecordError(Throwable ex, CsvCurrentState state) throws Exception {
 
+        this.lastExceptionRecorded = ex;
+
         //if we've had more than X errors, abort the transform
         int abortLimit = TransformConfig.instance().getMaxTransformErrorsBeforeAbort();
         if (transformError.getError().size() >= abortLimit) {
@@ -557,6 +560,16 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         args.put(TransformErrorUtility.ARG_EMIS_CSV_RECORD_NUMBER, "" + state.getRecordNumber());
 
         TransformErrorUtility.addTransformError(transformError, ex, args);
+    }
+
+    /**
+     * called to check if we've logged any errors, and throws an exception if so, to abortt the transform
+     */
+    public void failIfAnyErrors() throws Exception {
+
+        if (this.lastExceptionRecorded != null) {
+            throw new TransformException("Had at least one errors during the last file so aborting the transform", lastExceptionRecorded);
+        }
     }
 
     class MapIdJob {

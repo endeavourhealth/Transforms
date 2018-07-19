@@ -41,7 +41,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private Iterator<CSVRecord> csvIterator = null;
     private CSVRecord csvRecord = null;
     private int csvRecordLineNumber = -1;
-    private Set<Long> recordNumbersToProcess = null;
+    //private Set<Long> recordNumbersToProcess = null;
 
     //audit data
     private Integer fileAuditId = null;
@@ -427,14 +427,15 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 }
 
                 //if we're restricting the record numbers to process, then check if the new line we're on is one we want to process
-                if (recordNumbersToProcess == null
+                return true;
+                /*if (recordNumbersToProcess == null
                         || recordNumbersToProcess.contains(Long.valueOf(csvRecordLineNumber))) {
 
                     return true;
 
                 } else {
                     continue;
-                }
+                }*/
             }
         } catch (ArrayIndexOutOfBoundsException ex) {
             LOG.trace("ArrayIndexOutOfBoundsException at line " + csvRecordLineNumber);
@@ -534,9 +535,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     /**
      * called to restrict this parser to only processing specific rows
      */
-    public void setRecordNumbersToProcess(Set<Long> recordNumbersToProcess) {
+    /*public void setRecordNumbersToProcess(Set<Long> recordNumbersToProcess) {
         this.recordNumbersToProcess = recordNumbersToProcess;
-    }
+    }*/
 
 
     public CsvCell getCell(String column) {

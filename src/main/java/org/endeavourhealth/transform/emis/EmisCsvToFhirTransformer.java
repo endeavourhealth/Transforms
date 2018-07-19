@@ -6,7 +6,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.TransformErrorUtility;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -45,7 +44,7 @@ public abstract class EmisCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds) throws Exception {
 
         //for EMIS CSV, the exchange body will be a list of files received
         //split by /n but trim each one, in case there's a sneaky /r in there
@@ -68,7 +67,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         try {
             createParsers(serviceId, systemId, exchangeId, files, version, parsers);
-            transformParsers(version, parsers, processor, previousErrors, processPatientData);
+            transformParsers(version, parsers, processor, processPatientData);
 
         } finally {
             closeParsers(parsers.values());
@@ -431,7 +430,6 @@ public abstract class EmisCsvToFhirTransformer {
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors,
                                          boolean processPatientData) throws Exception {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
@@ -471,7 +469,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         //before getting onto the files that actually create FHIR resources, we need to
         //work out what record numbers to process, if we're re-running a transform
-        boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
+        //boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
 
         LOG.trace("Starting admin transforms");
 
@@ -499,39 +497,40 @@ public abstract class EmisCsvToFhirTransformer {
             ProblemTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-            if (!processingSpecificRecords) {
+            //if (!processingSpecificRecords) {
 
-                //if we have any new Obs, Conditions, Medication etc. that reference pre-existing parent obs or problems,
-                //then we need to retrieve the existing resources and update them
-                csvHelper.processRemainingObservationParentChildLinks(fhirResourceFiler);
+            //if we have any new Obs, Conditions, Medication etc. that reference pre-existing parent obs or problems,
+            //then we need to retrieve the existing resources and update them
+            csvHelper.processRemainingObservationParentChildLinks(fhirResourceFiler);
 
-                //process any new items linked to past consultations
-                csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
+            //process any new items linked to past consultations
+            csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
-                //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-                //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
-                //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
+            //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
+            //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
+            //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
 
-                //process any changes to ethnicity or marital status, without a change to the Patient
-                csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
+            //process any changes to ethnicity or marital status, without a change to the Patient
+            csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
 
-                //process any changes to Org-Location links without a change to the Location itself
-                csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler);
+            //process any changes to Org-Location links without a change to the Location itself
+            csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler);
 
-                //process any changes to Problems that didn't have an associated Observation change too
-                csvHelper.processRemainingProblems(fhirResourceFiler);
+            //process any changes to Problems that didn't have an associated Observation change too
+            csvHelper.processRemainingProblems(fhirResourceFiler);
 
-                //if we have any new Obs etc. that refer to pre-existing problems, we need to update the existing FHIR Problem
-                csvHelper.processRemainingProblemRelationships(fhirResourceFiler);
+            //if we have any new Obs etc. that refer to pre-existing problems, we need to update the existing FHIR Problem
+            csvHelper.processRemainingProblemRelationships(fhirResourceFiler);
 
-                //update any MedicationStatements to set the last issue date on them
-                csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
-            }
+            //update any MedicationStatements to set the last issue date on them
+            csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
+
+            //}
         }
     }
 
 
-    public static boolean findRecordsToProcess(Map<Class, AbstractCsvParser> allParsers, TransformError previousErrors) throws Exception {
+    /*public static boolean findRecordsToProcess(Map<Class, AbstractCsvParser> allParsers, TransformError previousErrors) throws Exception {
 
         boolean processingSpecificRecords = false;
 
@@ -550,7 +549,7 @@ public abstract class EmisCsvToFhirTransformer {
         }
 
         return processingSpecificRecords;
-    }
+    }*/
 
 
 }

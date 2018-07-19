@@ -41,6 +41,9 @@ public class BulkProblemTransformer extends BartsBasisTransformer {
                 }
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     /*
