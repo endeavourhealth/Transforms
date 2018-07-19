@@ -72,6 +72,29 @@ public class SREvent extends AbstractCsvParser {
                     "IDBranch",
                     "IDOrganisationRegisteredAt"
             };
+        } else   if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "IDStaffMemberProfileRole",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDAuthorisedBy",
+                    "IDProfileAuthorisedBy",
+                    "ContactEventLocation",
+                    "ContactMethod",
+                    "EventIncomplete",
+                    "ClinicalEvent",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDTeam",
+                    "IDBranch"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",
