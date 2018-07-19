@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASE;
@@ -31,7 +32,7 @@ public class CASEPreTransformer {
                 try {
                     createResource((CASE) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
         }

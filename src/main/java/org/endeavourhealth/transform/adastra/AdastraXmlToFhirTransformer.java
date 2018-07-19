@@ -21,8 +21,7 @@ import java.util.UUID;
 public abstract class AdastraXmlToFhirTransformer {
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String version) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
 
         AdastraCaseDataExport caseReport = XmlHelper.deserialize(exchangeBody, AdastraCaseDataExport.class);
 

@@ -32,6 +32,9 @@ public class PRSNLREFTransformer {
                 }
             }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void createPractitioner(PRSNLREF parser,

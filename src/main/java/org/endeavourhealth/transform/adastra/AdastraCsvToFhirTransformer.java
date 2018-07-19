@@ -33,8 +33,7 @@ public abstract class AdastraCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, TransformError previousErrors,
-                                 String version) throws Exception {
+                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
 
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
@@ -53,7 +52,7 @@ public abstract class AdastraCsvToFhirTransformer {
             validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, allParsers);
 
             LOG.trace("Transforming Adastra CSV content in {}", orgDirectory);
-            transformParsers(version, allParsers, processor, previousErrors);
+            transformParsers(version, allParsers, processor);
 
         } finally {
 
@@ -139,8 +138,7 @@ public abstract class AdastraCsvToFhirTransformer {
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         TransformError previousErrors) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AdastraCsvHelper csvHelper
                 = new AdastraCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());

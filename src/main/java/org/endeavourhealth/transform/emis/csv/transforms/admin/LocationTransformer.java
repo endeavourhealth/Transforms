@@ -36,6 +36,9 @@ public class LocationTransformer {
         }
 
         adminCacheFiler.close();
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void createResource(Location parser,

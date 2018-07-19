@@ -47,6 +47,9 @@ public class SRCtv3Transformer {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
             handleErrors(errors);
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     private static void handleErrors(List<ThreadPoolError> errors) throws Exception {

@@ -22,6 +22,7 @@ public class SessionUserTransformer {
 
         while (parser.nextRecord()) {
 
+            //don't continue if an exception is raised, since follow files depend on this working OK
             try {
                 createSessionUserMapping((SessionUser)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {

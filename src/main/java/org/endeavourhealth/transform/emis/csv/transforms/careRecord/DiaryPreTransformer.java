@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -22,7 +23,7 @@ public class DiaryPreTransformer {
             try {
                 createResource((Diary)parser, fhirResourceFiler, csvHelper, version);
             } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                throw new TransformException(parser.getCurrentState().toString(), ex);
             }
         }
     }
