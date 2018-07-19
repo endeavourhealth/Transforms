@@ -13,19 +13,19 @@ public class StaffMemberProfilePojo {
 
     // Pojo to help cache StaffMemberProfile records.
     private Long IDStaffMember;  // For use as a key
-    private CsvCell IDStaffMemberCell;
+    //private String IDStaffMemberCell;
     private CsvCell RowIdentifier;
-    private CsvCell DateProfileCreated;
-    private CsvCell IdProfileCreatedBy;
-    private CsvCell IDStaffMemberProfileRole;
-    private CsvCell StaffRole;
-    private CsvCell DateEmploymentStart;
-    private CsvCell DateEmploymentEnd;
-    private CsvCell PPAID;
-    private CsvCell GPLocalCode;
-    private CsvCell IDOrganisation;
-    private CsvCell GmpID;
-    private CsvCell RemovedData;
+    private Date DateProfileCreated;
+    private String IdProfileCreatedBy;
+    private String IDStaffMemberProfileRole;
+    private String StaffRole;
+    private Date DateEmploymentStart;
+    private Date DateEmploymentEnd;
+    private String PPAID;
+    private String GPLocalCode;
+    private String IDOrganisation;
+    private String GmpID;
+    private int RemovedData;
     private CsvCell auditCsv;
     private CsvCurrentState parserState;
 
@@ -34,24 +34,25 @@ public class StaffMemberProfilePojo {
     }
 
     public void setParserState(CsvCurrentState parserState) { this.parserState = parserState;}
-    public CsvCell getIDStaffMemberCell() { return IDStaffMemberCell;}
 
-    public void setIDStaffMemberCell(CsvCell idStaffMemberCell) { this.IDStaffMemberCell = idStaffMemberCell;}
+    //public String getIDStaffMemberCell() { return IDStaffMemberCell;}
 
-    public CsvCell getDateProfileCreated() {
+    //public void setIDStaffMemberCell(String idStaffMemberCell) { this.IDStaffMemberCell = idStaffMemberCell;}
+
+    public Date getDateProfileCreated() {
         return DateProfileCreated;
     }
 
 
-    public void setDateProfileCreated(CsvCell dateProfileCreated) {
+    public void setDateProfileCreated(Date dateProfileCreated) {
         DateProfileCreated = dateProfileCreated;
     }
 
-    public CsvCell getIdProfileCreatedBy() {
+    public String getIdProfileCreatedBy() {
         return IdProfileCreatedBy;
     }
 
-    public void setIdProfileCreatedBy(CsvCell idProfileCreatedBy) {
+    public void setIdProfileCreatedBy(String idProfileCreatedBy) {
         IdProfileCreatedBy = idProfileCreatedBy;
     }
 
@@ -71,76 +72,76 @@ public class StaffMemberProfilePojo {
         this.IDStaffMember = IDStaffMember;
     }
 
-    public CsvCell getIDStaffMemberProfileRole() {
+    public String getIDStaffMemberProfileRole() {
         return IDStaffMemberProfileRole;
     }
 
-    public void setIDStaffMemberProfileRole(CsvCell IDStaffMemberProfileRole) {
+    public void setIDStaffMemberProfileRole(String IDStaffMemberProfileRole) {
         this.IDStaffMemberProfileRole = IDStaffMemberProfileRole;
     }
 
-    public CsvCell getStaffRole() {
+    public String getStaffRole() {
         return StaffRole;
     }
 
-    public void setStaffRole(CsvCell staffRole) {
+    public void setStaffRole(String staffRole) {
         StaffRole = staffRole;
     }
 
-    public CsvCell getDateEmploymentStart() {
+    public Date getDateEmploymentStart() {
         return DateEmploymentStart;
     }
 
-    public void setDateEmploymentStart(CsvCell dateEmploymentStart) {
+    public void setDateEmploymentStart(Date dateEmploymentStart) {
         DateEmploymentStart = dateEmploymentStart;
     }
 
-    public CsvCell getDateEmploymentEnd() {
+    public Date getDateEmploymentEnd() {
         return DateEmploymentEnd;
     }
 
-    public void setDateEmploymentEnd(CsvCell dateEmploymentEnd) {
+    public void setDateEmploymentEnd(Date dateEmploymentEnd) {
         DateEmploymentEnd = dateEmploymentEnd;
     }
 
-    public CsvCell getPPAID() {
+    public String getPPAID() {
         return PPAID;
     }
 
-    public void setPPAID(CsvCell PPAID) {
+    public void setPPAID(String PPAID) {
         this.PPAID = PPAID;
     }
 
-    public CsvCell getGPLocalCode() {
+    public String getGPLocalCode() {
         return GPLocalCode;
     }
 
-    public void setGPLocalCode(CsvCell GPLocalCode) {
+    public void setGPLocalCode(String GPLocalCode) {
         this.GPLocalCode = GPLocalCode;
     }
 
-    public CsvCell getIDOrganisation() {
+    public String getIDOrganisation() {
         return IDOrganisation;
     }
 
-    public void setIDOrganisation(CsvCell IDOrganisation) {
+    public void setIDOrganisation(String IDOrganisation) {
         this.IDOrganisation = IDOrganisation;
     }
 
-    public CsvCell getGmpID() {
+    public String getGmpID() {
         return GmpID;
     }
 
-    public void setGmpID(CsvCell gmpID) {
+    public void setGmpID(String gmpID) {
         GmpID = gmpID;
     }
 
 
-    public CsvCell getRemovedData() {
+    public int getRemovedData() {
         return RemovedData;
     }
 
-    public void setRemovedData(CsvCell removedData) {
+    public void setRemovedData(int removedData) {
         RemovedData = removedData;
     }
 

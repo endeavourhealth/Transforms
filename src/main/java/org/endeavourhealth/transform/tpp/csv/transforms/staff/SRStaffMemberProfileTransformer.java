@@ -44,59 +44,59 @@ public class SRStaffMemberProfileTransformer {
 
         StaffMemberProfilePojo staffPojo = new StaffMemberProfilePojo();
         staffPojo.setIDStaffMember(staffId.getLong()); // Save id as Long for use as key.
-        staffPojo.setIDStaffMemberCell(staffId);   // and as CsvCell for builders.
+        //staffPojo.setIDStaffMemberCell(staffId);   // and as CsvCell for builders.
 
         CsvCell staffMemberProfileId = parser.getRowIdentifier();
         staffPojo.setRowIdentifier(staffMemberProfileId);
 
         CsvCell orgId = parser.getIDOrganisation();
         if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
-            staffPojo.setIDOrganisation(orgId);
+            staffPojo.setIDOrganisation(orgId.getString());
         }
 
         CsvCell roleStart = parser.getDateEmploymentStart();
         if (!roleStart.isEmpty()) {
-            staffPojo.setDateEmploymentStart(roleStart);
+            staffPojo.setDateEmploymentStart(roleStart.getDate());
         }
 
         CsvCell roleEnd = parser.getDateEmploymentEnd();
         if (!roleEnd.isEmpty()) {
-            staffPojo.setDateEmploymentEnd(roleEnd);
+            staffPojo.setDateEmploymentEnd(roleEnd.getDate());
         }
 
         CsvCell roleName = parser.getStaffRole();
         if (!roleName.isEmpty()) {
-            staffPojo.setStaffRole(roleName);
+            staffPojo.setStaffRole(roleName.getString());
         }
 
         CsvCell ppaId = parser.getPPAID();
         if (!ppaId.isEmpty()) {
-            staffPojo.setPPAID(ppaId);
+            staffPojo.setPPAID(ppaId.getString());
         }
 
         CsvCell gpLocalCode = parser.getGPLocalCode();
         if (!gpLocalCode.isEmpty()) {
-            staffPojo.setGPLocalCode(gpLocalCode);
+            staffPojo.setGPLocalCode(gpLocalCode.getString());
         }
 
         CsvCell gmpCode = parser.getGmpID();
         if (!gmpCode.isEmpty()) {
-            staffPojo.setGmpID(gmpCode);
+            staffPojo.setGmpID(gmpCode.getString());
         }
 
         CsvCell idProfileCreatedBy = parser.getIdProfileCreatedBy();
         if (!idProfileCreatedBy.isEmpty() && idProfileCreatedBy.getLong() > 0) {
-            staffPojo.setIdProfileCreatedBy(idProfileCreatedBy);
+            staffPojo.setIdProfileCreatedBy(idProfileCreatedBy.getString());
         }
 
         CsvCell dateProfileCreated = parser.getDateProfileCreated();
         if (!dateProfileCreated.isEmpty()) {
-            staffPojo.setDateProfileCreated(dateProfileCreated);
+            staffPojo.setDateProfileCreated(dateProfileCreated.getDate());
         }
 
         CsvCell IDStaffMemberProfileRole = parser.getIDStaffMemberProfileRole();
         if (!IDStaffMemberProfileRole.isEmpty()) {
-            staffPojo.setIDStaffMemberProfileRole(IDStaffMemberProfileRole);
+            staffPojo.setIDStaffMemberProfileRole(IDStaffMemberProfileRole.getString());
         }
 
         staffPojo.setParserState(parser.getCurrentState());
