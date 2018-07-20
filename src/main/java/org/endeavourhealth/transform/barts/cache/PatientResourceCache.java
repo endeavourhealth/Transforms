@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class PatientResourceCache {
@@ -58,25 +59,25 @@ public class PatientResourceCache {
             patientBuilder = new PatientBuilder();
             patientBuilder.setId(personId.toString());
 
-            //always set the managing organisation to Barts
+        } else {
+            patientBuilder = new PatientBuilder(patient);
+        }
+
+        //always set the managing organisation to Barts if not set
+        if (!patientBuilder.hasManagingOrganisation()) {
             String bartsId = csvHelper.findOrgRefIdForBarts();
             Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, bartsId);
             patientBuilder.setManagingOrganisation(organisationReference);
+        }
 
-            //for new patients, put the Person ID as an identifier on the resource
-            //create the Identity builder, which will generate a new one if the existing variable is still null
+        //and always ensure we've got the Person ID on the resource
+        List<Identifier> personIdIdentifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
+        if (personIdIdentifiers.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
             identifierBuilder.setValue(personId.toString());
-
-        } else {
-
-            patientBuilder = new PatientBuilder(patient);
         }
-
-        /*    patientBuildersByPersonId.put(personId, patientBuilder);
-        }*/
 
         return patientBuilder;
     }

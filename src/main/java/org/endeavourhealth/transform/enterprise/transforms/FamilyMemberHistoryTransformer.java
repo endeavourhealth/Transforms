@@ -76,6 +76,13 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         if (fhir.getCondition().size() > 1) {
             throw new TransformException("FamilyMemberHistory with more than one item not supported");
         }
+
+        //if there's no clinical code, then don't transform - there are a small number of records
+        //from Barts where there's no code, so we should skip them on outbound transforms
+        if (fhir.getCondition().isEmpty()) {
+            return;
+        }
+
         FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = fhir.getCondition().get(0);
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(condition.getCode());

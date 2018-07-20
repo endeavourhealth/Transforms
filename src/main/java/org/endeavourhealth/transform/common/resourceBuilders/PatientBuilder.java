@@ -431,4 +431,7 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public boolean hasManagingOrganisation() {
+        return this.patient.hasManagingOrganization();
+    }
 }
