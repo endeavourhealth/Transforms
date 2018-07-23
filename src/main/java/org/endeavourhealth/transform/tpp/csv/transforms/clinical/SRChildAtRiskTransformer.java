@@ -113,5 +113,7 @@ public class SRChildAtRiskTransformer {
 
         flagBuilder.setCategory("Clinical");
 
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), flagBuilder);
+
     }
 }
