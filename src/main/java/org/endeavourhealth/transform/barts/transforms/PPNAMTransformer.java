@@ -11,7 +11,9 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.emis.openhr.transforms.common.NameConverter;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +54,7 @@ public class PPNAMTransformer {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
-                    NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
+                    NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
 
                     csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
@@ -65,9 +67,6 @@ public class PPNAMTransformer {
         if (patientBuilder == null) {
             return;
         }
-
-        //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
-        NameBuilder.removeExistingName(patientBuilder, nameIdCell.getString());
 
         HumanName.NameUse nameUse = null;
 
@@ -85,6 +84,12 @@ public class PPNAMTransformer {
         CsvCell middleNameCell = parser.getMiddleName();
         CsvCell lastNameCell = parser.getLastName();
         CsvCell suffixCell = parser.getSuffix();
+
+        //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
+        NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
+
+        //and remove any pre-existing name that was added by the ADT feed
+        removeExistingNameWithoutIdByValue(patientBuilder, titleCell, prefixCell, firstNameCell, middleNameCell, lastNameCell, suffixCell);
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
@@ -113,49 +118,56 @@ public class PPNAMTransformer {
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
+    private static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, CsvCell titleCell, CsvCell prefixCell, CsvCell firstNameCell, CsvCell middleNameCell, CsvCell lastNameCell, CsvCell suffixCell) {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasName()) {
+            return;
+        }
 
-    /*private static String parseTitleAndPrefix(String title, String prefix) throws Exception {
+        List<HumanName> names = patient.getName();
+        for (int i=names.size()-1; i>=0; i--) {
+            HumanName name = names.get(i);
 
-        if (Strings.isNullOrEmpty(title) && Strings.isNullOrEmpty(prefix)) {
-            return "";
-        } else if (Strings.isNullOrEmpty(title) && !Strings.isNullOrEmpty(prefix)) {
-            return prefix;
-        } else if (!Strings.isNullOrEmpty(title) && Strings.isNullOrEmpty(prefix)) {
-            return title;
-        } else {
-            if (title.toLowerCase().equals(prefix.toLowerCase())) {
-                return prefix;
-            } else {
-                return processKnownDuplicateTitles(title, prefix);
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (name.hasId()) {
+                continue;
             }
 
+            if (!titleCell.isEmpty()
+                    && !NameConverter.hasPrefix(name, titleCell.getString())) {
+                continue;
+            }
+
+            if (!prefixCell.isEmpty()
+                    && !NameConverter.hasPrefix(name, prefixCell.getString())) {
+                continue;
+            }
+
+            if (!firstNameCell.isEmpty()
+                    && !NameConverter.hasGivenName(name, firstNameCell.getString())) {
+                continue;
+            }
+
+            if (!middleNameCell.isEmpty()
+                    && !NameConverter.hasGivenName(name, middleNameCell.getString())) {
+                continue;
+            }
+
+            if (!lastNameCell.isEmpty()
+                    && !NameConverter.hasFamilyName(name, lastNameCell.getString())) {
+                continue;
+            }
+
+            if (!suffixCell.isEmpty()
+                    && !NameConverter.hasSuffix(name, suffixCell.getString())) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            names.remove(i);
         }
     }
 
-    private static String processKnownDuplicateTitles(String title, String prefix) {
-
-        if (title.toLowerCase().replace(".", "").equals("master") && prefix.toLowerCase().replace(".", "").equals("mr")) {
-            return prefix;
-        }
-
-        if (title.toLowerCase().replace(".", "").equals("ms") && prefix.toLowerCase().replace(".", "").equals("miss")) {
-            return prefix;
-        }
-
-        if (title.toLowerCase().replace(".", "").equals("mst") && prefix.toLowerCase().replace(".", "").equals("mr")) {
-            return prefix;
-        }
-
-        if (title.toLowerCase().replace(".", "").equals("mister") && prefix.toLowerCase().replace(".", "").equals("mr")) {
-            return prefix;
-        }
-
-        if (title.toLowerCase().replace(".", "").equals("m")) {
-            return prefix;
-        }
-
-        return prefix + " " + title ;
-    }*/
 
     private static HumanName.NameUse convertNameUse(String statusCode) {
         switch (statusCode) {

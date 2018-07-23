@@ -119,7 +119,7 @@ public class PATIENTTransformer {
         CsvCell surname = parser.getSurname();
 
         //remove existing name if set
-        NameBuilder.removeExistingName(patientBuilder, patientId.getString());
+        NameBuilder.removeExistingNameById(patientBuilder, patientId.getString());
 
         //use patientId for name builder identifier so it can be removed and updated if needed (see above)
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);

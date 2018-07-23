@@ -117,11 +117,17 @@ public class CLEVETransformer {
             observationBuilder.setClinician(practitionerReference, clinicianId);
         }
 
-        CsvCell effectiveDate = parser.getEventPerformedDateTime();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(effectiveDate)) {
-            Date d = BartsCsvHelper.parseDate(effectiveDate);
+        CsvCell clinicallySignificantDate = parser.getClinicallySignificantDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(clinicallySignificantDate)) {
+            Date d = BartsCsvHelper.parseDate(clinicallySignificantDate);
             DateTimeType dateTimeType = new DateTimeType(d);
-            observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
+            observationBuilder.setEffectiveDate(dateTimeType, clinicallySignificantDate);
+        }
+
+        CsvCell performedDate = parser.getEventPerformedDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(performedDate)) {
+            Date d = BartsCsvHelper.parseDate(performedDate);
+            observationBuilder.setRecordedDate(d, performedDate);
         }
 
         //link to parent observation if we have a parent event

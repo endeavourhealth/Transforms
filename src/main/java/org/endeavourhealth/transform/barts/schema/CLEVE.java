@@ -30,9 +30,9 @@ public class CLEVE extends AbstractCsvParser {
                 "PARENT_EVENT_ID",
                 "EVENT_CD",
                 "ACCESSION_NBR_IDENT",
-                "EVENT_START_DT_TM",
-                "EVENT_END_DT_TM",
-                "CLIN_SIGNIFICANCE_DT_TM",
+                "EVENT_START_DT_TM",        //date  The Clinical date and time for the start of this event
+                "EVENT_END_DT_TM",          //date  Event end date and time
+                "CLIN_SIGNIFICANCE_DT_TM",  //date  Clinical Significant date and time
                 "EVENT_CLASS_CD",
                 "EVENT_RESULT_STATUS_CD",
                 "EVENT_RESULT_TXT",
@@ -42,8 +42,8 @@ public class CLEVE extends AbstractCsvParser {
                 "NORMALCY_CD",
                 "NORMAL_VALUE_LOW_TXT",
                 "NORMAL_VALUE_HIGH_TXT",
-                "EVENT_PERFORMED_DT_TM",
-                "EVENT_PERFORMED_PRSNL_ID",
+                "EVENT_PERFORMED_DT_TM",    //recorded date?
+                "EVENT_PERFORMED_PRSNL_ID", //recorded person AND practitioner
                 "EVENT_VERIFIED_DT_TM",
                 "EVENT_VERIFIED_PRSNL_ID",
                 "AUTHENTIC_IND",

@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,9 +74,6 @@ public class PPPHOTransformer {
             return;
         }
 
-        //we always fully recreate the phone record on the patient so just remove any matching one already there
-        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
-
         String number = numberCell.getString();
 
         //just append the extension on to the number
@@ -83,6 +81,12 @@ public class PPPHOTransformer {
         if (!extensionCell.isEmpty()) {
             number += " " + extensionCell.getString();
         }
+
+        //we always fully recreate the phone record on the patient so just remove any matching one already there
+        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+
+        //and remove any instance of this phone number created by the ADT feed
+        removeExistingContactPointWithoutIdByValue(patientBuilder, number);
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
         contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
@@ -123,6 +127,31 @@ public class PPPHOTransformer {
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+    }
+
+    private static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasTelecom()) {
+            return;
+        }
+
+        List<ContactPoint> telecoms = patient.getTelecom();
+        for (int i=telecoms.size()-1; i>=0; i--) {
+            ContactPoint telecom = telecoms.get(i);
+
+            //if this one has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (telecom.hasId()) {
+                continue;
+            }
+
+            if (telecom.hasValue()
+                    && !telecom.getValue().equalsIgnoreCase(number)) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            telecoms.remove(i);
+        }
     }
 
 

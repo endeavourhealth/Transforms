@@ -29,7 +29,7 @@ public class NameBuilder {
         }
     }
 
-    public static boolean removeExistingName(HasNameI parentBuilder, String idValue) {
+    public static boolean removeExistingNameById(HasNameI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove name without ID");
         }

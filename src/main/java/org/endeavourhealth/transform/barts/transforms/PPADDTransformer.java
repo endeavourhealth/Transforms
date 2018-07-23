@@ -9,7 +9,9 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +66,6 @@ public class PPADDTransformer {
             return;
         }
 
-        //we always fully re-create the address, so remove it from the patient
-        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
-
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
         CsvCell line3 = parser.getAddressLine3();
@@ -74,6 +73,12 @@ public class PPADDTransformer {
         CsvCell city = parser.getCity();
         CsvCell county = parser.getCountyText();
         CsvCell postcode = parser.getPostcode();
+
+        //we always fully re-create the address, so remove it from the patient
+        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+
+        //and remove any instance of the address added by the ADT feed
+        removeExistingAddressWithoutIdByValue(patientBuilder, line1, line2, line3, line4, city, county, postcode);
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(addressIdCell.getString(), addressIdCell);
@@ -101,6 +106,61 @@ public class PPADDTransformer {
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+    }
+
+    private static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, CsvCell line1, CsvCell line2, CsvCell line3, CsvCell line4, CsvCell city, CsvCell county, CsvCell postcode) {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasAddress()) {
+            return;
+        }
+
+        List<Address> addresses = patient.getAddress();
+        for (int i=addresses.size()-1; i>=0; i--) {
+            Address address = addresses.get(i);
+
+            //if this one has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (address.hasId()) {
+                continue;
+            }
+
+            if (!line1.isEmpty()
+                    && !AddressConverter.hasLine(address, line1.getString())) {
+                continue;
+            }
+
+            if (!line2.isEmpty()
+                    && !AddressConverter.hasLine(address, line2.getString())) {
+                continue;
+            }
+
+            if (!line3.isEmpty()
+                    && !AddressConverter.hasLine(address, line3.getString())) {
+                continue;
+            }
+
+            if (!line4.isEmpty()
+                    && !AddressConverter.hasLine(address, line4.getString())) {
+                continue;
+            }
+
+            if (!city.isEmpty()
+                    && !AddressConverter.hasCity(address, city.getString())) {
+                continue;
+            }
+
+            if (!county.isEmpty()
+                    && !AddressConverter.hasDistrict(address, county.getString())) {
+                continue;
+            }
+
+            if (!postcode.isEmpty()
+                    && !AddressConverter.hasPostcode(address, postcode.getString())) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            addresses.remove(i);
+        }
     }
 
 }
