@@ -103,22 +103,22 @@ public class CONSULTATIONTransformer {
 
         CsvCell historyText = parser.getHistory();
         if (!historyText.isEmpty()) {
-            encounterTextBuilder.append(historyText.getString());
+            encounterTextBuilder.append(historyText.getString()+" ");
         }
 
         CsvCell examinationText = parser.getExamination();
         if (!examinationText.isEmpty()) {
-            encounterTextBuilder.append(examinationText.getString());
+            encounterTextBuilder.append(examinationText.getString()+" ");
         }
 
         CsvCell diagnosisText = parser.getDiagnosis();
         if (!diagnosisText.isEmpty()) {
-            encounterTextBuilder.append(diagnosisText.getString());
+            encounterTextBuilder.append(diagnosisText.getString()+" ");
         }
 
         CsvCell treatmentPlanText = parser.getTreatmentPlan();
         if (!treatmentPlanText.isEmpty()) {
-            encounterTextBuilder.append(treatmentPlanText.getString());
+            encounterTextBuilder.append(treatmentPlanText.getString()+" ");
         }
 
         ObservationBuilder observationBuilder = null;
@@ -136,7 +136,7 @@ public class CONSULTATIONTransformer {
             observationBuilder.setEffectiveDate(dateTimeType, startDateTime);
             observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
-            observationBuilder.setNotes(encounterTextBuilder.toString());
+            observationBuilder.setNotes(encounterTextBuilder.toString().trim());
 
             //cache the link to this new observation
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
