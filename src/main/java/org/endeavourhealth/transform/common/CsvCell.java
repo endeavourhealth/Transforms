@@ -6,13 +6,21 @@ import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
 
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 
 public class CsvCell {
-    private String value;
+
+    public static final Charset CHARSET = Charset.forName("UTF-8");
+
+    //changed to store as a UTF-8 encoded byte array to save 50% memory; the additional
+    //CPU needed to decode seems minimal (100M encodes & decodes took 20s in testing)
+    private byte[] valueBytes;
+    //private String value;
+
     private int colIndex;
     private long rowAuditId;
     private ParserI parentParser;
@@ -22,8 +30,12 @@ public class CsvCell {
     public CsvCell(long rowAuditId, int colIndex, String value, ParserI parentParser) {
         this.rowAuditId = rowAuditId;
         this.colIndex = colIndex;
-        this.value = value;
         this.parentParser = parentParser;
+
+        if (!Strings.isNullOrEmpty(value)) { //treat empty Strings the same a null
+            this.valueBytes = value.getBytes(CHARSET);
+        }
+        //this.value = value;
     }
 
     public static CsvCell factoryDummyWrapper(String value) {
@@ -39,7 +51,8 @@ public class CsvCell {
     }
 
     public boolean isEmpty() {
-        return Strings.isNullOrEmpty(value);
+        return valueBytes == null;
+        //return Strings.isNullOrEmpty(value);
     }
 
     public boolean equalsValue(CsvCell other) {
@@ -55,31 +68,36 @@ public class CsvCell {
     }
 
     public String getString() {
-        return value;
+        if (valueBytes == null) {
+            return null;
+        } else {
+            return new String(valueBytes, CHARSET);
+        }
+        //return value;
     }
     public Integer getInt() {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
-        return Integer.valueOf(value);
+        return Integer.valueOf(getString());
     }
     public Long getLong() {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
-        return Long.valueOf(value);
+        return Long.valueOf(getString());
     }
     public Double getDouble() {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
-        return new Double(value);
+        return new Double(getString());
     }
     public Date getDate() throws TransformException {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
@@ -89,13 +107,13 @@ public class CsvCell {
 
         try {
             DateFormat dateFormat = parentParser.getDateFormat();
-            return dateFormat.parse(value);
+            return dateFormat.parse(getString());
         } catch (ParseException pe) {
-            throw new FileFormatException("", "Invalid date format [" + value + "]", pe);
+            throw new FileFormatException("", "Invalid date format [" + getString() + "]", pe);
         }
     }
     public Date getTime() throws TransformException {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
@@ -105,13 +123,13 @@ public class CsvCell {
 
         try {
             DateFormat timeFormat = parentParser.getTimeFormat();
-            return timeFormat.parse(value);
+            return timeFormat.parse(getString());
         } catch (ParseException pe) {
-            throw new FileFormatException("", "Invalid time format [" + value + "]", pe);
+            throw new FileFormatException("", "Invalid time format [" + getString() + "]", pe);
         }
     }
     public Date getDateTime() throws TransformException {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return null;
         }
 
@@ -121,17 +139,17 @@ public class CsvCell {
 
         try {
             DateFormat dateTimeFormat = parentParser.getDateTimeFormat();
-            return dateTimeFormat.parse(value);
+            return dateTimeFormat.parse(getString());
         } catch (ParseException pe) {
-            throw new FileFormatException("", "Invalid date time format [" + value + "]", pe);
+            throw new FileFormatException("", "Invalid date time format [" + getString() + "]", pe);
         }
     }
     public boolean getBoolean() {
-        if (Strings.isNullOrEmpty(value)) {
+        if (isEmpty()) {
             return false;
         }
 
-        return Boolean.parseBoolean(value);
+        return Boolean.parseBoolean(getString());
     }
     public boolean getIntAsBoolean() {
         Integer i = getInt();
@@ -145,7 +163,7 @@ public class CsvCell {
      * for logging purposes. To get the value as a String, just use getString()
      */
     public String toString() {
-        return "Value [" + value + "] RowAuditId " + rowAuditId + " ColIndex " + colIndex;
+        return "Value [" + getString() + "] RowAuditId " + rowAuditId + " ColIndex " + colIndex;
     }
 
     public static Date getDateTimeFromTwoCells(CsvCell dateCell, CsvCell timeCell) throws TransformException {
