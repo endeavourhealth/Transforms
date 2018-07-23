@@ -76,8 +76,8 @@ public class SRPatientAddressHistoryTransformer {
                     patientBuilder.removeAddress(address);
                 }
             }
-            boolean mapIds = !patientBuilder.isIdMapped();
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
+            //boolean mapIds = !patientBuilder.isIdMapped();
+            //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
             return;
         }
 
@@ -137,8 +137,8 @@ public class SRPatientAddressHistoryTransformer {
         if (!dateEventCell.isEmpty()) {
             addressBuilder.setStartDate(dateEventCell.getDate(), dateEventCell);
         }
-        boolean mapIds = !patientBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
+        //boolean mapIds = !patientBuilder.isIdMapped();
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
 
     }
 

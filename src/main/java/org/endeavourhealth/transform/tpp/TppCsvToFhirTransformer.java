@@ -341,9 +341,9 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         PatientResourceCache.filePatientAndEpisodeOfCareResources(fhirResourceFiler);
 

@@ -156,7 +156,7 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
-        boolean mapIds = !patientBuilder.isIdMapped();
+        // boolean mapIds = !patientBuilder.isIdMapped();
         //fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,patientBuilder);
         // Filing done by cache
     }

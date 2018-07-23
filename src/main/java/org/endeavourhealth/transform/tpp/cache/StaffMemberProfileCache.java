@@ -109,7 +109,7 @@ public class StaffMemberProfileCache {
 
                 if (pojo.getPPAID() != null) {
                     String ppaId = pojo.getPPAID();
-                    if (!!ppaId.isEmpty()) {
+                    if (!ppaId.isEmpty()) {
                         IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
                         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
                         identifierBuilder.setValue(ppaId, profileCell);
