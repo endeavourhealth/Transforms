@@ -139,7 +139,7 @@ public class DiagnosisTable extends AbstractCsvParser {
 
     @Override
     protected String getFileTypeDescription() {
-        return "Homerton diagnosis file";
+        return "Homerton Diagnosis file";
     }
 
     @Override

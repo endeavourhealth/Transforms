@@ -272,8 +272,8 @@ public class EncounterTransformer extends HomertonBasisTransformer {
             }
         }*/
 
-        //cache our encounter details so subsequent transforms can use them
-        csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
+        //TODO:// cache our encounter details so subsequent transforms can use them
+        //csvHelper.cacheEncounterIds(encounterIdCell, (Encounter)encounterBuilder.getResource());
 
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS

@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.homerton;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
@@ -15,22 +14,23 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class HomertonCsvHelper {
+public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvHelper.class);
 
     public static final String CODE_TYPE_SNOMED = "SNOMED CT";
     public static final String CODE_TYPE_ICD_10 = "ICD-10";
+    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
 
     private static CernerCodeValueRefDalI cernerCodeValueRefDalI = DalProvider.factoryCernerCodeValueRefDal();
     private static HashMap<String, CernerCodeValueRef> cernerCodes = new HashMap<>();
@@ -38,10 +38,11 @@ public class HomertonCsvHelper {
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
 
     //non-static caches
-    private Map<Long, UUID> encounterIdToEnconterResourceMap = new HashMap<>();
+    private Map<Long, UUID> encounterIdToEncounterResourceMap = new HashMap<>();
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
+    private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
 
     private PatientResourceCache patientCache = new PatientResourceCache();
 
@@ -145,6 +146,36 @@ public class HomertonCsvHelper {
         return ParserPool.getInstance().parse(json);
     }
 
+    public void cacheEncounterIdToPersonId(CsvCell encounterIdCell, CsvCell personIdCell) {
+        Long encounterId = encounterIdCell.getLong();
+        String personId = personIdCell.getString();
+        encounterIdToPersonIdMap.put(encounterId, personId);
+    }
+
+    public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+        Long encounterId = encounterIdCell.getLong();
+        String ret = encounterIdToPersonIdMap.get(encounterId);
+        if (ret == null
+                && !encounterIdToPersonIdMap.containsKey(encounterId)) { //we add null values to the map, so check for the key being present too
+
+            Encounter encounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell.getString());
+            if (encounter == null) {
+                //if no encounter, then add null to the map to save us hitting the DB repeatedly for the same encounter
+                encounterIdToPersonIdMap.put(encounterId, null);
+
+            } else {
+
+                //we then need to backwards convert the patient UUID to the person ID it came from
+                Reference patientUuidReference = encounter.getPatient();
+                Reference patientPersonIdReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(this, patientUuidReference);
+                ret = ReferenceHelper.getReferenceId(patientPersonIdReference);
+                encounterIdToPersonIdMap.put(encounterId, ret);
+            }
+        }
+
+        return ret;
+    }
+
     public String getProcedureOrDiagnosisConceptCodeType(CsvCell cell) {
         if (cell.isEmpty()) {
             return null;
@@ -228,58 +259,58 @@ public class HomertonCsvHelper {
     }
 
 
-    public UUID findEncounterResourceIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
-        ensureEncounterIdsAreCached(encounterIdCell);
-        Long encounterId = encounterIdCell.getLong();
-        return encounterIdToEnconterResourceMap.get(encounterId);
-    }
-
-    public UUID findPatientIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
-        ensureEncounterIdsAreCached(encounterIdCell);
-        Long encounterId = encounterIdCell.getLong();
-        return encounterIdToPatientResourceMap.get(encounterId);
-    }
-
-    public void cacheEncounterIds(CsvCell encounterIdCell, Encounter encounter) {
-        Long encounterId = encounterIdCell.getLong();
-
-        String id = encounter.getId();
-        UUID encounterUuid = UUID.fromString(id);
-        encounterIdToEnconterResourceMap.put(encounterId, encounterUuid);
-
-        Reference patientReference = encounter.getPatient();
-        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
-        UUID patientUuid = UUID.fromString(comps.getId());
-        encounterIdToPatientResourceMap.put(encounterId, patientUuid);
-    }
-
-    private void ensureEncounterIdsAreCached(CsvCell encounterIdCell) throws Exception {
-
-        Long encounterId = encounterIdCell.getLong();
-
-        //if already cached, return
-        if (encounterIdToEnconterResourceMap.containsKey(encounterId)) {
-            return;
-        }
-
-        ResourceId encounterResourceId = HomertonBasisTransformer.getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.getString());
-        if (encounterResourceId == null) {
-            //add nulls to the map so we don't keep hitting the DB
-            encounterIdToEnconterResourceMap.put(encounterId, null);
-            encounterIdToPatientResourceMap.put(encounterId, null);
-            return;
-        }
-
-        Encounter fhirEncounter = (Encounter)retrieveResource(ResourceType.Encounter, encounterResourceId.getResourceId());
-        if (fhirEncounter == null) {
-            //if encounter has been deleted, add nulls to the map so we don't keep hitting the DB
-            encounterIdToEnconterResourceMap.put(encounterId, null);
-            encounterIdToPatientResourceMap.put(encounterId, null);
-            return;
-        }
-
-        cacheEncounterIds(encounterIdCell, fhirEncounter);
-    }
+//    public UUID findEncounterResourceIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+//        ensureEncounterIdsAreCached(encounterIdCell);
+//        Long encounterId = encounterIdCell.getLong();
+//        return encounterIdToEnconterResourceMap.get(encounterId);
+//    }
+//
+//    public UUID findPatientIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+//        ensureEncounterIdsAreCached(encounterIdCell);
+//        Long encounterId = encounterIdCell.getLong();
+//        return encounterIdToPatientResourceMap.get(encounterId);
+//    }
+//
+//    public void cacheEncounterIds(CsvCell encounterIdCell, Encounter encounter) {
+//        Long encounterId = encounterIdCell.getLong();
+//
+//        String id = encounter.getId();
+//        UUID encounterUuid = UUID.fromString(id);
+//        encounterIdToEnconterResourceMap.put(encounterId, encounterUuid);
+//
+//        Reference patientReference = encounter.getPatient();
+//        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
+//        UUID patientUuid = UUID.fromString(comps.getId());
+//        encounterIdToPatientResourceMap.put(encounterId, patientUuid);
+//    }
+//
+//    private void ensureEncounterIdsAreCached(CsvCell encounterIdCell) throws Exception {
+//
+//        Long encounterId = encounterIdCell.getLong();
+//
+//        //if already cached, return
+//        if (encounterIdToEnconterResourceMap.containsKey(encounterId)) {
+//            return;
+//        }
+//
+//        ResourceId encounterResourceId = HomertonBasisTransformer.getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.getString());
+//        if (encounterResourceId == null) {
+//            //add nulls to the map so we don't keep hitting the DB
+//            encounterIdToEnconterResourceMap.put(encounterId, null);
+//            encounterIdToPatientResourceMap.put(encounterId, null);
+//            return;
+//        }
+//
+//        Encounter fhirEncounter = (Encounter)retrieveResource(ResourceType.Encounter, encounterResourceId.getResourceId());
+//        if (fhirEncounter == null) {
+//            //if encounter has been deleted, add nulls to the map so we don't keep hitting the DB
+//            encounterIdToEnconterResourceMap.put(encounterId, null);
+//            encounterIdToPatientResourceMap.put(encounterId, null);
+//            return;
+//        }
+//
+//        cacheEncounterIds(encounterIdCell, fhirEncounter);
+//    }
 
 
     public UUID findPatientIdFromPersonId(CsvCell personIdCell) throws Exception {

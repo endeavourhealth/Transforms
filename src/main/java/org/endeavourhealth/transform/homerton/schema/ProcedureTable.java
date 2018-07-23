@@ -90,9 +90,41 @@ public class ProcedureTable extends AbstractCsvParser {
         return super.getCell("ENCNTR_ID");
     }
 
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
+    public CsvCell getProcedureDateTime() {
+        return super.getCell("PROC_DT_TM");
+    }
+
+    public CsvCell getEncounterSliceID() {
+        return super.getCell("ENCNTR_SLICE_ID");
+    }
+
+    public CsvCell getConceptCode() {
+        return super.getCell("source_identifier");
+    }
+
+    public CsvCell getConceptCodeType() {
+        return super.getCell("source_vocabulary");
+    }
+
+    public CsvCell getProcedureDesc() {
+        return super.getCell("PROC_FTDESC");
+    }
+
+    public CsvCell getProcedureType() {
+        return super.getCell("principle_type");
+    }
+
+    public CsvCell getProcedureTypeCode() {
+        return super.getCell("principle_type_cd");
+    }
+
     @Override
     protected String getFileTypeDescription() {
-        return "Homerton procedure file";
+        return "Homerton Procedure file";
     }
 
     @Override

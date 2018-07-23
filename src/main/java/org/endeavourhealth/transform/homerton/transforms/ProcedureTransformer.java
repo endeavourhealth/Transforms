@@ -1,15 +1,20 @@
 package org.endeavourhealth.transform.homerton.transforms;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.HomertonCsvToFhirTransformer;
 import org.endeavourhealth.transform.homerton.schema.ProcedureTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -60,136 +65,122 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonCsvHelper csvHelper,
                                        String version, String primaryOrgOdsCode ) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
 
         CsvCell procedureIdCell = parser.getProcedureId();
-        CsvCell encounterIdCell = parser.getEncounterId();
 
-        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
-        // PatientTable
-        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
-        // EpisodeOfCare - ProcedureTable record cannot be linked to an EpisodeOfCare
+        //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the person ID
+        //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
 
-        // EncounterTable
-        ResourceId encounterResourceId = getEncounterResourceId(HomertonCsvToFhirTransformer.HOMERTON_RESOURCE_ID_SCOPE, encounterIdCell.toString());
-        if (encounterResourceId == null) {
-            TransformWarnings.log(LOG, parser, "Skipping Procedure {} because Encounter not found {} could be found in file {}", procedureIdCell.getString(), encounterIdCell.getString(), parser.getFilePath());
+            Procedure existingProcedure = (Procedure)csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, procedureIdCell.getString());
+            if (existingProcedure != null) {
+                ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
+                //remember to pass in false since this procedure is already ID mapped
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
+            }
+
             return;
         }
 
-        Encounter encounter = (Encounter)csvHelper.retrieveResource(ResourceType.Encounter, encounterResourceId.getResourceId());
+        // get encounter details (should already have been created previously)
+        CsvCell encounterIdCell = parser.getEncounterId();
+        String personId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
 
-        Reference patientReference = encounter.getPatient();
+        if (personId == null) {
+            //TransformWarnings.log(LOG, parser, "Skipping Procedure {} due to missing encounter", procedureIdCell.getString());
+            return;
+        }
 
-        // this DiagnosisTable resource id
-        //ResourceId procedureResourceId = getProcedureResourceId(parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
-
-        // ProcedureTable Code
-        //CodeableConcept procedureCode = new CodeableConcept();
-        //procedureCode.addCoding().setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
-
-        // Create resource
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-        //createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, ProcedureTable.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
-
         procedureBuilder.setId(procedureIdCell.getString(), procedureIdCell);
 
-        // set patient reference
-        procedureBuilder.setPatient(patientReference, encounterIdCell);
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId);
+        procedureBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
 
-        // save resource
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Save ProcedureTable:" + FhirSerializationHelper.serializeResource(procedureBuilder.getResource()));
+        procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
+
+        CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)) {
+            Date d = BartsCsvHelper.parseDate(procedureDateTimeCell);
+            DateTimeType dateTimeType = new DateTimeType(d);
+            procedureBuilder.setPerformed(dateTimeType, procedureDateTimeCell);
         }
-        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), procedureBuilder);
 
-    }
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+        procedureBuilder.setEncounter(encounterReference, encounterIdCell);
 
-
-    /*
-     *
-     */
-    /*public static void createProcedure(org.endeavourhealth.transform.homerton.schema.ProcedureTable parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       HomertonCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode ) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
-
-        // Organisation - Since EpisodeOfCare record is not established no need for Organization either
-        // PatientTable
-        //ResourceId patientResourceId = resolvePatientResource(parser.getCurrentState(), primaryOrgHL7OrgOID, fhirResourceFiler, parser.getLocalPatientId(), null, null, null, null, null, null, null);
-        // EpisodeOfCare - ProcedureTable record cannot be linked to an EpisodeOfCare
-        // EncounterTable
-        //ResourceId encounterResourceId = getEncounterResourceId( parser.getEncounterId().toString());
-        *//*
-        if (encounterResourceId == null) {
-            encounterResourceId = createEncounterResourceId(parser.getEncounterId().toString());
-
-            createEncounter(parser.getCurrentState(),  fhirResourceFiler, patientResourceId, null,  encounterResourceId, EncounterTable.EncounterState.FINISHED, parser.getAdmissionDateTime(), parser.getDischargeDateTime(), null, EncounterTable.EncounterClass.INPATIENT);
+        CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
+        if (!BartsCsvHelper.isEmptyOrIsZero(encounterSliceIdCell)) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
+            identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
         }
-        *//*
 
-        // this DiagnosisTable resource id
-        //ResourceId procedureResourceId = getProcedureResourceId(parser.getEncounterId().toString(), parser.getProcedureDateTimeAsString(), parser.getProcedureCode());
+        //TODO - need personnel data
+//        CsvCell personnelIdCell = parser.getPersonnelId();
+//        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
+//            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
+//            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+//        }
 
-        // ProcedureTable Code
-        //CodeableConcept procedureCode = new CodeableConcept();
-        //procedureCode.addCoding().setSystem(getCodeSystemName(HomertonCsvToFhirTransformer.CODE_SYSTEM_SNOMED)).setDisplay(parser.getProcedureText()).setCode(parser.getProcedureCode());
+        // Procedure is coded either as Snomed or OPCS4
+        CsvCell conceptCodeCell = parser.getConceptCode();
+        if (!conceptCodeCell.isEmpty()) {
 
-        // Create resource
-        ProcedureTable fhirProcedure = new ProcedureTable();
-        //createProcedureResource(fhirProcedure, procedureResourceId, encounterResourceId, patientResourceId, ProcedureTable.ProcedureStatus.COMPLETED, procedureCode, parser.getProcedureDateTime(), parser.getComment(), null);
+            String conceptCode = conceptCodeCell.getString();
+            CsvCell conceptCodeTypeCell = parser.getConceptCodeType();
 
-        fhirProcedure.setId(parser.getProcedureId());
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
-        // set patient reference
-        fhirProcedure.setSubject(ReferenceHelper.createReference(ResourceType.PatientTable, parser.getCNN()));
+            if (!HomertonCsvHelper.isEmptyOrIsZero(conceptCodeTypeCell)) {
 
-        // save resource
-        LOG.debug("Save ProcedureTable:" + FhirSerializationHelper.serializeResource(fhirProcedure));
-        savePatientResourceMapIds(fhirResourceFiler, parser.getCurrentState(), fhirProcedure.getId(), fhirProcedure);
+                String conceptCodeType = conceptCodeTypeCell.getString();
+                if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
 
-    }*/
+                    String term = TerminologyService.lookupSnomedTerm(conceptCode);
+                    if (Strings.isNullOrEmpty(term)) {
+                        TransformWarnings.log(LOG, parser, "Failed to find Snomed term for {}", conceptCodeCell);
+                    }
 
-    /*
-     *
-     */
-    public static void createProcedureResource(Procedure fhirProcedure, ResourceId procedureResourceId, ResourceId encounterResourceId, ResourceId patientResourceId, Procedure.ProcedureStatus status, CodeableConcept procedureCode, Date procedureDate, String notes, Identifier identifiers[]) throws Exception {
-        CodeableConcept cc = null;
-        Date d = null;
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeCell);
+                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
 
-        // Turn key into Resource id
+                } else if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_OPCS_4)) {
+                    String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+                    if (Strings.isNullOrEmpty(term)) {
+                        TransformWarnings.log(LOG, parser, "Failed to find OPCS4 term for {}", conceptCodeCell);
+                    }
 
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptCodeCell);
+                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
 
-        if (identifiers != null) {
-            for (int i = 0; i < identifiers.length; i++) {
-                fhirProcedure.addIdentifier(identifiers[i]);
+                } else {
+                    throw new TransformException("Unknown Procedure code type [" + conceptCodeType + "]");
+                }
             }
+        } else {
+            //if there's no code, create a non coded code so we retain the text
+            CsvCell term = parser.getProcedureDesc();
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            codeableConceptBuilder.setText(term.getString());
         }
 
-        // EncounterTable
-        if (encounterResourceId != null) {
-            fhirProcedure.setEncounter(ReferenceHelper.createReference(ResourceType.Encounter, encounterResourceId.getResourceId().toString()));
+        CsvCell procedureType = parser.getProcedureType();
+        if (!HomertonCsvHelper.isEmptyOrIsZero(procedureType)) {
+
+            procedureBuilder.setCategory(procedureType.getString(), procedureType);
         }
 
-
-        // status
-        fhirProcedure.setStatus(status);
-
-        // Code
-        fhirProcedure.setCode(procedureCode);
-
-        // Performed date/time
-        //Timing t = new Timing().addEvent(procedureDate);
-        DateTimeType dateDt = new DateTimeType(procedureDate);
-        fhirProcedure.setPerformed(dateDt);
-
-        // set notes
-        if (notes != null) {
-            fhirProcedure.addNotes(new Annotation().setText(notes));
-        }
-
+        // save resource
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }
 }

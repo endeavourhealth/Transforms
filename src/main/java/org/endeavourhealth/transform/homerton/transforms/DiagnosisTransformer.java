@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -70,6 +69,12 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
+        CsvCell encounterIdCell = parser.getEncounterId();
+        if (!encounterIdCell.isEmpty()) {
+            Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+            conditionBuilder.setEncounter(encounterReference, encounterIdCell);
+        }
+
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
         if (!diagnosisDateTimeCell.isEmpty()) {
 
@@ -119,7 +124,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
 
-                } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+                } else if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_ICD_10)) {
                     String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
                     if (Strings.isNullOrEmpty(term)) {
                         TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell);
@@ -131,7 +136,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
 
                 } else {
-                    throw new TransformException("Unknown DIAGN code type [" + conceptCodeType + "]");
+                    throw new TransformException("Unknown Diagnosis code type [" + conceptCodeType + "]");
                 }
             }
         } else {
