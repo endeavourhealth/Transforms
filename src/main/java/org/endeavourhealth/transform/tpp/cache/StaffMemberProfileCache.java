@@ -77,6 +77,9 @@ public class StaffMemberProfileCache {
                     String orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+                        if (practitionerBuilder.isIdMapped()) {
+                            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
+                        }
                         roleBuilder.setRoleManagingOrganisation(organisationReference, profileCell);
                     }
                 }
