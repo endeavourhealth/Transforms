@@ -6,15 +6,14 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorPatient;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
@@ -82,7 +81,12 @@ public class PatientResourceCache {
                         episodeOfCareBuilder.setId(idString);
                     }
                 }
-                fhirResourceFiler.savePatientResource(null,mapIds ,patientBuilder, episodeOfCareBuilder);
+                ResourceValidatorPatient validator = new ResourceValidatorPatient();
+                List<String> errors = new ArrayList<String>();
+                validator.validateResourceDelete(patientBuilder.getResource(),fhirResourceFiler.getServiceId(),mapIds,errors);
+                if (errors.isEmpty()) {
+                    fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder, episodeOfCareBuilder);
+                }
                 iterator.remove();
                 //PatientBuildersByRowId.remove(rowId);
                 EpisodeOfCareResourceCache.removeEpisodeOfCareByPatientId(rowId);
