@@ -18,6 +18,7 @@ import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
 
     private PatientResourceCache patientCache = new PatientResourceCache();
+    private EncounterResourceCache encounterCache = new EncounterResourceCache();
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -90,6 +92,8 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     public PatientResourceCache getPatientCache() {
         return patientCache;
     }
+
+    public EncounterResourceCache getEncounterCache() { return encounterCache; }
 
     public Service getService (UUID id) throws Exception {
         return serviceRepository.getById(id);

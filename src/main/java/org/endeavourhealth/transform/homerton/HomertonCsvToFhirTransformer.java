@@ -45,7 +45,9 @@ public abstract class HomertonCsvToFhirTransformer {
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
         try {
+            // non-patient transforms
             CodeTransformer.transform(createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper);
+            //TODO - locations
 
             // process the bulk patient file first if it exists in the batch, usually in the baseline folder
             PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper);
@@ -65,14 +67,9 @@ public abstract class HomertonCsvToFhirTransformer {
             // clinical transforms
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
+            EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
 
-
-        /*
-        EncounterTransformer.transform(version, createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
-        EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
-
-        ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROBLEM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
-        */
+            //TODO - Problems, Allergies
 
             LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
             fhirResourceFiler.waitToFinish();

@@ -197,9 +197,20 @@ public class EncounterTable extends AbstractCsvParser {
     public CsvCell getEncounterStatusMillenniumCode() {
         return super.getCell("ENCNTR_STATUS_CD");
     }
-    public CsvCell getEncounterTypeMillenniumCode() {
+    public CsvCell getEncounterTypeMillenniumClassCode() {
         return super.getCell("ENCNTR_TYPE_CLASS_CD");
     }
+
+    public CsvCell getEncounterEffectiveDate() {
+        return super.getCell("BEG_EFFECTIVE_DT_TM");
+    }
+
+    public CsvCell getEncounterCreatedDateTime() {
+        return super.getCell("CREATE_DT_TM");
+    }
+
+
+    public CsvCell getEncounterType() { return super.getCell("encntr_type"); }
 
     @Override
     protected String getFileTypeDescription() {
