@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonCsvHelper.class);
@@ -42,6 +43,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, UUID> encounterIdToPatientResourceMap = new HashMap<>();
     private Map<Long, UUID> personIdToPatientResourceMap = new HashMap<>();
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
+    private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
 
     private PatientResourceCache patientCache = new PatientResourceCache();
@@ -144,6 +146,42 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String json = resourceHistory.getResourceData();
         return ParserPool.getInstance().parse(json);
+    }
+
+    public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
+                                                      CsvCell childIdCell,
+                                                      ResourceType childResourceType) throws Exception {
+
+        if (isEmptyOrIsZero(encounterIdCell)) {
+            return;
+        }
+
+        Long encounterId = encounterIdCell.getLong();
+        ReferenceList list = consultationNewChildMap.get(encounterId);
+        if (list == null) {
+            //this is called from multiple threads, so sync and check again before adding
+            synchronized (consultationNewChildMap) {
+                list = consultationNewChildMap.get(encounterId);
+                if (list == null) {
+                    //we know there will only be a single cell, so use this reference list class to save memory
+                    list = new ReferenceListSingleCsvCells();
+                    //list = new ReferenceList();
+                    consultationNewChildMap.put(encounterId, list);
+                }
+            }
+        }
+
+        //ensure a local ID -> Discovery UUID mapping exists, which will end up happening,
+        //but it seems sensible to force it to happen here
+        IdHelper.getOrCreateEdsResourceId(serviceId, childResourceType, childIdCell.getString());
+
+        Reference resourceReference = ReferenceHelper.createReference(childResourceType, childIdCell.getString());
+        list.add(resourceReference, encounterIdCell);
+    }
+
+    public ReferenceList getAndRemoveNewConsultationRelationships(CsvCell encounterIdCell) {
+        Long encounterId = encounterIdCell.getLong();
+        return consultationNewChildMap.remove(encounterId);
     }
 
     public void cacheEncounterIdToPersonId(CsvCell encounterIdCell, CsvCell personIdCell) {

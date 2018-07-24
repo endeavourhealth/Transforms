@@ -82,11 +82,11 @@ public class ProcedureTable extends AbstractCsvParser {
 
     }
 
-    public CsvCell getProcedureId() {
+    public CsvCell getProcedureID() {
         return super.getCell("PROCEDURE_ID");
     }
 
-    public CsvCell getEncounterId() {
+    public CsvCell getEncounterID() {
         return super.getCell("ENCNTR_ID");
     }
 

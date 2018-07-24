@@ -20,30 +20,20 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 public class ProcedureTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
-    public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonCsvHelper csvHelper,
-                                 String primaryOrgOdsCode) throws Exception {
+                                 HomertonCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    String valStr = validateEntry((ProcedureTable) parser);
-                    if (valStr == null) {
-                        createProcedure((ProcedureTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
-                    } else {
-                        TransformWarnings.log(LOG, parser, "Validation error: {}", valStr);
-                    }
+                        createProcedure((ProcedureTable) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -54,19 +44,11 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    /*
-     *
-     */
-    public static String validateEntry(ProcedureTable parser) {
-        return null;
-    }
-
     public static void createProcedure(ProcedureTable parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       HomertonCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode ) throws Exception {
+                                       HomertonCsvHelper csvHelper) throws Exception {
 
-        CsvCell procedureIdCell = parser.getProcedureId();
+        CsvCell procedureIdCell = parser.getProcedureID();
 
         //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the person ID
         //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
@@ -84,7 +66,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         }
 
         // get encounter details (should already have been created previously)
-        CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell encounterIdCell = parser.getEncounterID();
         String personId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
 
         if (personId == null) {

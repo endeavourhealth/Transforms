@@ -9,8 +9,7 @@ import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.homerton.schema.*;
-import org.endeavourhealth.transform.homerton.transforms.CodeTransformer;
-import org.endeavourhealth.transform.homerton.transforms.PatientTransformer;
+import org.endeavourhealth.transform.homerton.transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,28 +45,33 @@ public abstract class HomertonCsvToFhirTransformer {
         Map<String, List<ParserI>> parserMap = new HashMap<>();
 
         try {
-            CodeTransformer.transform(version, createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+            CodeTransformer.transform(createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper);
 
             // process the bulk patient file first if it exists in the batch, usually in the baseline folder
-            PatientTransformer.transform(version, createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+            PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // process any incremental/delta patients
-            PatientTransformer.transform(version, createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
+            PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
+
+            // clinical pre-transformers
+            DiagnosisPreTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
+            ProcedurePreTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
+
+            // clinical transforms
+            DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
+
 
         /*
         EncounterTransformer.transform(version, createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
         EncounterResourceCache.fileEncounterResources(fhirResourceFiler);
 
-        DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
-
         ProblemTransformer.transform(version, createParsers(fileMap, parserMap, "PROBLEM", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
-
-        ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE);
         */
 
             LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);

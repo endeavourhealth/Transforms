@@ -24,16 +24,10 @@ public class CodeTransformer {
     public static final String DISP_TXT = "DispTxt";
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
-    private final static String DECIMAL_POINT = ".";
 
-    //private static SimpleDateFormat formatDaily = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    //private static SimpleDateFormat formatBulk = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
-
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonCsvHelper csvHelper,
-                                 String primaryOrgOdsCode) throws Exception {
+                                 HomertonCsvHelper csvHelper) throws Exception {
 
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure

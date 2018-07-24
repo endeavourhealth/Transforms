@@ -25,16 +25,14 @@ import java.util.List;
 public class DiagnosisTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonCsvHelper csvHelper,
-                                 String primaryOrgOdsCode) throws Exception {
+                                 HomertonCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createDiagnosis((DiagnosisTable) parser, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode);
+                    createDiagnosis((DiagnosisTable) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -47,10 +45,9 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
     public static void createDiagnosis(DiagnosisTable parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       HomertonCsvHelper csvHelper,
-                                       String version, String primaryOrgOdsCode) throws Exception {
+                                       HomertonCsvHelper csvHelper) throws Exception {
 
-        CsvCell diagnosisIdCell = parser.getDiagnosisId();
+        CsvCell diagnosisIdCell = parser.getDiagnosisID();
         ConditionBuilder conditionBuilder = new ConditionBuilder();
         conditionBuilder.setAsProblem(false);
         conditionBuilder.setId(diagnosisIdCell.getString(), diagnosisIdCell);
@@ -69,7 +66,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell encounterIdCell = parser.getEncounterID();
         if (!encounterIdCell.isEmpty()) {
             Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
             conditionBuilder.setEncounter(encounterReference, encounterIdCell);

@@ -21,11 +21,9 @@ import java.util.UUID;
 public class PatientTransformer extends HomertonBasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    public static void transform(String version,
-                                 List<ParserI> parsers,
+    public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonCsvHelper csvHelper,
-                                 String primaryOrgOdsCode) throws Exception {
+                                 HomertonCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {

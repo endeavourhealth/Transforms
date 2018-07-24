@@ -89,7 +89,7 @@ public class DiagnosisTable extends AbstractCsvParser {
     }
 
 
-    public CsvCell getDiagnosisId()  {
+    public CsvCell getDiagnosisID()  {
         return super.getCell("DIAGNOSIS_ID");
     }
 
@@ -101,7 +101,7 @@ public class DiagnosisTable extends AbstractCsvParser {
         return super.getCell("PERSON_ID");
     }
 
-    public CsvCell getEncounterId() {
+    public CsvCell getEncounterID() {
         return super.getCell("ENCNTR_ID");
     }
 
