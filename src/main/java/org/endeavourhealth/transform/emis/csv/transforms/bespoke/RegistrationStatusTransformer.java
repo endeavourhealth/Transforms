@@ -7,7 +7,6 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.appointment.Session;
 import org.endeavourhealth.transform.emis.csv.schema.bespoke.RegistrationStatus;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -21,7 +20,7 @@ public class RegistrationStatusTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Session.class);
+        AbstractCsvParser parser = parsers.get(RegistrationStatus.class);
         while (parser.nextRecord()) {
 
             try {
@@ -49,10 +48,12 @@ public class RegistrationStatusTransformer {
         EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(patientGuid, ResourceType.EpisodeOfCare);
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
 
-        //don't carry over the registration type from this file, since we get this in the normal daily extract, which is more up to date
-        /*CsvCell registrationTypeIdCell = parser.getRegistrationTypeId();
-        RegistrationType registrationType = convertRegistrationType(registrationTypeIdCell.getInt());
-        episodeBuilder.setRegistrationType(registrationType, registrationTypeIdCell);*/
+        //only carry over the registration type from this file if we've not got it on the episode
+        if (!episodeBuilder.hasRegistrationType()) {
+            CsvCell registrationTypeIdCell = parser.getRegistrationTypeId();
+            RegistrationType registrationType = convertRegistrationType(registrationTypeIdCell.getInt());
+            episodeBuilder.setRegistrationType(registrationType, registrationTypeIdCell);
+        }
 
         CsvCell registrationStatusIdCell = parser.getRegistrationStatusId();
         String registrationStatus = convertRegistrationStatus(registrationStatusIdCell.getInt());
@@ -92,20 +93,27 @@ public class RegistrationStatusTransformer {
             return RegistrationType.DUMMY;
         } else if (value == 8) { //Other
             return RegistrationType.OTHER;
+        } else if (value == 12) { //Walk-In Patient
+            return RegistrationType.WALK_IN;
+        } else if (value == 13) { //Minor Surgery
+            return RegistrationType.MINOR_SURGERY;
+        } else if (value == 11) { //Child Health Services
+            return RegistrationType.CHILD_HEALTH_SURVEILLANCE;
+        } else if (value == 9) { //Contraceptive Services
+            return RegistrationType.CONTRACEPTIVE_SERVICES;
+        } else if (value == 16) { //Yellow Fever
+            return RegistrationType.YELLOW_FEVER;
+        } else if (value == 10) { //Maternity Services
+            return RegistrationType.MATERNITY_SERVICES;
 
         } else {
             throw new TransformException("Unsupported registration type " + value);
         }
 
         //known types that aren't supported below:
-        /*9	Contraceptive Services
-        10	Maternity Services
-        11	Child Health Services
-        12	Walk-In Patient
-        13	Minor Surgery
+        /*
         14	Sexual Health
         15	Pre Registration
-        16	Yellow Fever
         17	Dermatology
         18	Diabetic
         19	Rheumatology

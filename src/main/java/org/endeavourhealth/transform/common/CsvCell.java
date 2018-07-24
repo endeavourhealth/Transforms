@@ -32,7 +32,7 @@ public class CsvCell {
         this.colIndex = colIndex;
         this.parentParser = parentParser;
 
-        if (!Strings.isNullOrEmpty(value)) { //treat empty Strings the same a null
+        if (value != null) {
             this.valueBytes = value.getBytes(CHARSET);
         }
         //this.value = value;
@@ -51,7 +51,7 @@ public class CsvCell {
     }
 
     public boolean isEmpty() {
-        return valueBytes == null;
+        return valueBytes == null || valueBytes.length == 0;
         //return Strings.isNullOrEmpty(value);
     }
 

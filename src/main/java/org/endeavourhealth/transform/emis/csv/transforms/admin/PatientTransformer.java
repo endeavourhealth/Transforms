@@ -735,9 +735,6 @@ public class PatientTransformer {
             } else {
                 throw new TransformException("Unsupported registration type " + csvRegType);
             }
-
-            /*TransformWarnings.log(LOG, parserI, "Unhandled Emis registration type {}", csvRegType);
-            return RegistrationType.OTHER;*/
         }
 
         /**
