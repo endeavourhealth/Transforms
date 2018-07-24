@@ -11,10 +11,15 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.cache.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRTrustTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
@@ -317,66 +322,66 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.trace("Starting admin transforms");
         // Code lookups
-//        SRMappingTransformer.transform(parsers, fhirResourceFiler);
-//        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-//        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
-//        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
-//        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
+        SRMappingTransformer.transform(parsers, fhirResourceFiler);
+        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
+        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
+        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
 
-//        // Organisations
-//        LocationResourceCache.setServiceId(fhirResourceFiler.getServiceId());
-//        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        LocationResourceCache.fileLocationResources(fhirResourceFiler);
-//        // Staff
-//        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        StaffMemberProfileCache.fileRemainder(csvHelper,fhirResourceFiler);
-//        StaffMemberProfileCache.clear();
+        // Organisations
+        LocationResourceCache.setServiceId(fhirResourceFiler.getServiceId());
+        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        LocationResourceCache.fileLocationResources(fhirResourceFiler);
+        // Staff
+        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        StaffMemberProfileCache.fileRemainder(csvHelper,fhirResourceFiler);
+        StaffMemberProfileCache.clear();
         // Appointment sessions (Rotas)
-//        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//
-//
-//        LOG.trace("Starting patient transforms");
-//        SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        PatientResourceCache.filePatientAndEpisodeOfCareResources(fhirResourceFiler);
-//
-//        LOG.trace("Starting appointment transforms");
-//        SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        AppointmentFlagCache.clear();
-//
-//        LOG.trace("Starting clinical transforms");
-//        SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//
-//        // medication (repeats first, then acutes and issues/orders)
-//        SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRPrimaryCareMedicationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//
-//        // referrals
-//        SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        ReferralRequestResourceCache.fileReferralRequestResources(fhirResourceFiler);
-//
-//        // problems and codes (observations)
-//        SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        ConditionResourceCache.fileConditionResources(fhirResourceFiler);
-//
-//        // drug allergies
-//        SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//
-//        // Immunisations (content first, then immunisations)
-//        SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
-//        SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-//        SRImmunisationConsentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+
+        LOG.trace("Starting patient transforms");
+        SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        PatientResourceCache.filePatientAndEpisodeOfCareResources(fhirResourceFiler);
+
+        LOG.trace("Starting appointment transforms");
+        SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        AppointmentFlagCache.clear();
+
+        LOG.trace("Starting clinical transforms");
+        SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        // medication (repeats first, then acutes and issues/orders)
+        SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPrimaryCareMedicationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        // referrals
+        SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        ReferralRequestResourceCache.fileReferralRequestResources(fhirResourceFiler);
+
+        // problems and codes (observations)
+        SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        ConditionResourceCache.fileConditionResources(fhirResourceFiler);
+
+        // drug allergies
+        SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        // Immunisations (content first, then immunisations)
+        SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
+        SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRImmunisationConsentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         // Media (documents - this is just a reference to documents that we are not getting so ignoring for now
         //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
