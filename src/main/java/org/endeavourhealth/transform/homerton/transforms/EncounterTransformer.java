@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.homerton.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -110,13 +111,13 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         // encounter date
         CsvCell encounterDate = parser.getEncounterEffectiveDate();
-        if (!encounterDate.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(encounterDate)) {
             encounterBuilder.setPeriodStart(encounterDate.getDate(), encounterDate);
         }
 
         // recorded date
         CsvCell recordedDateCell = parser.getEncounterCreatedDateTime();
-        if (!recordedDateCell.isEmpty()){
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(recordedDateCell)){
 
             Date dateRecorded = recordedDateCell.getDateTime();
             encounterBuilder.setRecordedDate(dateRecorded, recordedDateCell);

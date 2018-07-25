@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -73,7 +74,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         }
 
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
-        if (!diagnosisDateTimeCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(diagnosisDateTimeCell)) {
 
             Date d = diagnosisDateTimeCell.getDateTime();
             DateTimeType dateTimeType = new DateTimeType(d);
@@ -106,7 +107,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
-            if (!HomertonCsvHelper.isEmptyOrIsZero(conceptCodeTypeCell)) {
+            if (!conceptCodeTypeCell.isEmpty()) {
 
                 String conceptCodeType = conceptCodeTypeCell.getString();
                 if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
@@ -146,7 +147,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         }
 
         CsvCell diagnosisType = parser.getDiagnosisType();
-        if (!HomertonCsvHelper.isEmptyOrIsZero(diagnosisType)) {
+        if (!diagnosisType.isEmpty()) {
 
             conditionBuilder.setCategory(diagnosisType.getString(), diagnosisType);
         }
