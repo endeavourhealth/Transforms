@@ -3,7 +3,12 @@ package org.endeavourhealth.transform.homerton.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
@@ -55,8 +60,11 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // this will allow the Procedure transform to derive the PersonId from the EncounterId in that transform
         csvHelper.cacheEncounterIdToPersonId(encounterIdCell, personIdCell);
 
-        EncounterBuilder encounterBuilder
-                = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, csvHelper);
+        //EncounterBuilder encounterBuilder
+        //        = csvHelper.getEncounterCache().getEncounterBuilder(encounterIdCell, csvHelper);
+
+        EncounterBuilder encounterBuilder = new EncounterBuilder();
+        encounterBuilder.setId(encounterIdCell.getString(), encounterIdCell);
 
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
         encounterBuilder.setPatient(patientReference, personIdCell);
@@ -64,8 +72,9 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
 
-            boolean mapIds = !encounterBuilder.isIdMapped();
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+            //boolean mapIds = !encounterBuilder.isIdMapped();
+            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }
 
@@ -104,9 +113,9 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 
         // the organisation reference, i.e. Homerton
         Reference orgReference = csvHelper.createOrganisationReference(serviceId.toString());
-        if (encounterBuilder.isIdMapped()) {
-            orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
-        }
+//        if (encounterBuilder.isIdMapped()) {
+//            orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
+//        }
         encounterBuilder.setServiceProvider(orgReference);
 
         // encounter date
@@ -160,12 +169,21 @@ public class EncounterTransformer extends HomertonBasisTransformer {
             encounterBuilder.setStatus(getEncounterStatus(status.getString(), encounterIdCell, parser), status);
         }
 
+        //apply any newly linked child resources (diagnosis, procedures etc.)
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterIdCell);
+        if (newLinkedResources != null) {
+            //LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
+            containedListBuilder.addReferences(newLinkedResources);
+        }
+
         // Retrieve or create EpisodeOfCare?
         // TODO - requested episode info from Jonathan Black
 
         //and save the resource
-        boolean mapIds = !encounterBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+        //boolean mapIds = !encounterBuilder.isIdMapped();
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 
 
