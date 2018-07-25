@@ -118,7 +118,7 @@ public class ObservationTransformer {
         return findOriginalTargetResourceType(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid());
     }
 
-    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
+    public static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
