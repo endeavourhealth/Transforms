@@ -55,10 +55,14 @@ public class SRCodePreTransformer {
 
         // ethnicity and marital status lookup
         CsvCell readCode = parser.getCTV3Code();
-        if (!readCode.isEmpty()) {
+        String readcodeString = readCode.getString();
+        if (!readCode.isEmpty() && csvHelper.isEthnicityCode(readCode.getString())) {
 
             //try to get Ethnicity from code
-            EthnicCategory ethnicCategory = findEthnicityCode(readCode.getString());
+            EthnicCategory ethnicCategory = csvHelper.getKnownEthnicCategory(readcodeString);
+//            if (ethnicCategory == null) {
+//                ethnicCategory = findEthnicityCode(readCode.getString());
+//            }
             if (ethnicCategory != null) {
 
                 DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDate());
@@ -83,18 +87,18 @@ public class SRCodePreTransformer {
         if (readCode.equals("XE0oZ")) {
             //single
             return MaritalStatus.NEVER_MARRIED;
-        } else if (readCode.equals("XE0oa")){
+        } else if (readCode.equals("XE0oa")) {
             return MaritalStatus.MARRIED;
-        } else if (readCode.equals("1334.")){
+        } else if (readCode.equals("1334.")) {
             return MaritalStatus.DIVORCED;
         } else if (readCode.equals("1335.")
                 || readCode.equals("133C.")
-                || readCode.equals("XaMz6")){
+                || readCode.equals("XaMz6")) {
             return MaritalStatus.WIDOWED;
-        } else if (readCode.equals("XE0ob")){
+        } else if (readCode.equals("XE0ob")) {
             return MaritalStatus.LEGALLY_SEPARATED;
         } else if (readCode.equals("1336.")
-                || readCode.equals("Ua0HZ")){
+                || readCode.equals("Ua0HZ")) {
             return MaritalStatus.DOMESTIC_PARTNER;
         }
 
@@ -137,13 +141,17 @@ public class SRCodePreTransformer {
             return EthnicCategory.OTHER_BLACK;
         } else if (readCode.startsWith("9S9") || readCode.startsWith("XaJR9")) {
             return EthnicCategory.CHINESE;
-        } else if (readCode.startsWith("9SJ") || readCode.startsWith("XaFx1") || readCode.startsWith("XaJRA") ) {
+        } else if (readCode.startsWith("9SJ") || readCode.startsWith("XaFx1") || readCode.startsWith("XaJRA")) {
             return EthnicCategory.OTHER;
         } else if (readCode.startsWith("9SE") || readCode.startsWith("XaJRB")) {
             return EthnicCategory.NOT_STATED;
         } else {
             return null;
         }
+    }
+
+    private void buildKnownEthnicMap() {
+
     }
 }
 
