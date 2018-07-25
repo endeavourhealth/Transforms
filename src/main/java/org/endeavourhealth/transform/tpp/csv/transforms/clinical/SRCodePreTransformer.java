@@ -150,9 +150,7 @@ public class SRCodePreTransformer {
         }
     }
 
-    private void buildKnownEthnicMap() {
 
-    }
 }
 
 
