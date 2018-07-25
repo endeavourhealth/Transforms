@@ -49,6 +49,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                                        HomertonCsvHelper csvHelper) throws Exception {
 
         CsvCell diagnosisIdCell = parser.getDiagnosisID();
+
         ConditionBuilder conditionBuilder = new ConditionBuilder();
         conditionBuilder.setAsProblem(false);
         conditionBuilder.setId(diagnosisIdCell.getString(), diagnosisIdCell);
@@ -65,20 +66,25 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
             return;
         }
 
-        conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
-
         CsvCell encounterIdCell = parser.getEncounterID();
         if (!encounterIdCell.isEmpty()) {
             Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
             conditionBuilder.setEncounter(encounterReference, encounterIdCell);
         }
 
+        // if no disagnosis date exists, the condition is provisional and is of type Final
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(diagnosisDateTimeCell)) {
 
             Date d = diagnosisDateTimeCell.getDateTime();
             DateTimeType dateTimeType = new DateTimeType(d);
             conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
+
+            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+
+        } else {
+
+            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL);
         }
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
@@ -117,7 +123,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                         TransformWarnings.log(LOG, parser, "Failed to find Snomed term for {}", conceptCodeCell);
                     }
 
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeCell);
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
                     codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
@@ -128,7 +134,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                         TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell);
                     }
 
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeCell);
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeTypeCell);
                     codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived

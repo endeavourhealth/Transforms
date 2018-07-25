@@ -201,8 +201,12 @@ public class EncounterTable extends AbstractCsvParser {
         return super.getCell("ENCNTR_TYPE_CLASS_CD");
     }
 
-    public CsvCell getEncounterEffectiveDate() {
-        return super.getCell("BEG_EFFECTIVE_DT_TM");
+    public CsvCell getActiveStatusDateTime() {
+        return super.getCell("ACTIVE_STATUS_DT_TM");
+    }
+
+    public CsvCell getEncounterEndDateTime() {
+        return super.getCell("ENCNTR_COMPLETE_DT_TM");
     }
 
     public CsvCell getEncounterCreatedDateTime() {

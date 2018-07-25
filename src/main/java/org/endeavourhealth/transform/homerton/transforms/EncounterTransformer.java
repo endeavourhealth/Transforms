@@ -118,20 +118,25 @@ public class EncounterTransformer extends HomertonBasisTransformer {
 //        }
         encounterBuilder.setServiceProvider(orgReference);
 
-        // encounter date
-        CsvCell encounterDate = parser.getEncounterEffectiveDate();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(encounterDate)) {
-            encounterBuilder.setPeriodStart(encounterDate.getDate(), encounterDate);
+        // encounter start date and time
+        CsvCell encounterStartDateCell = parser.getActiveStatusDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(encounterStartDateCell)) {
+            encounterBuilder.setPeriodStart(encounterStartDateCell.getDateTime(), encounterStartDateCell);
+        }
+
+        // encounter end date and time (might not be finished so check end of time)
+        CsvCell encounterEndDateCell = parser.getEncounterEndDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(encounterEndDateCell)) {
+            encounterBuilder.setPeriodEnd(encounterEndDateCell.getDateTime(), encounterEndDateCell);
         }
 
         // recorded date
         CsvCell recordedDateCell = parser.getEncounterCreatedDateTime();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(recordedDateCell)){
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(recordedDateCell) && !BartsCsvHelper.isEmptyOrIsEndOfTime(recordedDateCell)){
 
             Date dateRecorded = recordedDateCell.getDateTime();
             encounterBuilder.setRecordedDate(dateRecorded, recordedDateCell);
         }
-
 
         // participant - Needs Personnel data - not currently available (TODO)
 //        CsvCell encounterDoneBy = parser.getIDDoneBy();
@@ -144,8 +149,10 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // class
         CsvCell encounterTypeClassCodeCell = parser.getEncounterTypeMillenniumClassCode();
         if (!encounterTypeClassCodeCell.isEmpty()) {
+
             Encounter.EncounterClass cls = getEncounterClass(encounterTypeClassCodeCell.getString(), parser);
             if (cls != null) {
+
                 encounterBuilder.setClass(cls, encounterTypeClassCodeCell);
             }
         }
@@ -166,6 +173,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // status
         CsvCell status = parser.getEncounterStatusMillenniumCode();
         if (!status.isEmpty()) {
+
             encounterBuilder.setStatus(getEncounterStatus(status.getString(), encounterIdCell, parser), status);
         }
 

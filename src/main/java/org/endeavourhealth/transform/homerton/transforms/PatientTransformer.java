@@ -62,6 +62,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         CsvCell nhsNumber = parser.getNHSNo();
         if (!nhsNumber.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
@@ -70,6 +73,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         CsvCell cnnCell = parser.getCNN();
         if (!cnnCell.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_CNN_PATIENT_ID);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
@@ -77,6 +83,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         }
 
         if (!millenniumPersonIdCell.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_HOMERTON_MRN_PATIENT_ID);
@@ -86,9 +95,8 @@ public class PatientTransformer extends HomertonBasisTransformer {
         patientBuilder.setActive(true);
 
         Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-
         // if patient already ID mapped, get the mapped ID for the org
-        boolean isResourceMapped = csvHelper.isResourceIdMapped(millenniumPersonIdCell.getString(), patientBuilder.getResource());
+        boolean isResourceMapped = patientBuilder.isIdMapped();
         if (isResourceMapped) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
@@ -97,12 +105,17 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell firstNameCell = parser.getFirstname();
         CsvCell lastNameCell = parser.getSurname();
 
+        //remove existing name if set
+        NameBuilder.removeExistingNameById(patientBuilder, millenniumPersonIdCell.getString());
+
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setId(millenniumPersonIdCell.getString(), millenniumPersonIdCell);  //so it can be removed if exists
         nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
         nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
         nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
 
         CsvCell mobileCell = parser.getMobileTel();
+        ContactPointBuilder.removeExistingContactPoints(patientBuilder);
         if (!mobileCell.isEmpty()) {
 
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
@@ -193,7 +206,11 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell countyCell = parser.getCounty();
         CsvCell postcodeCell = parser.getPostcode();
 
+        //remove existing address if set
+        AddressBuilder.removeExistingAddress(patientBuilder, millenniumPersonIdCell.getString());
+
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+        addressBuilder.setId(millenniumPersonIdCell.getString(), millenniumPersonIdCell);  //so it can be removed
         addressBuilder.setUse(Address.AddressUse.HOME);
         addressBuilder.addLine(line1Cell.getString(), line1Cell);
         addressBuilder.addLine(line2Cell.getString(), line2Cell);
@@ -212,6 +229,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient
+
         csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
 
         //if (LOG.isTraceEnabled()) {

@@ -80,14 +80,14 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId);
         procedureBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
 
-        procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
-
         CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)) {
             Date d = BartsCsvHelper.parseDate(procedureDateTimeCell);
             DateTimeType dateTimeType = new DateTimeType(d);
             procedureBuilder.setPerformed(dateTimeType, procedureDateTimeCell);
         }
+
+        procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
         procedureBuilder.setEncounter(encounterReference, encounterIdCell);
@@ -127,7 +127,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
                         TransformWarnings.log(LOG, parser, "Failed to find Snomed term for {}", conceptCodeCell);
                     }
 
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeCell);
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
                     codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
@@ -138,7 +138,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
                         TransformWarnings.log(LOG, parser, "Failed to find OPCS4 term for {}", conceptCodeCell);
                     }
 
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptCodeCell);
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptCodeTypeCell);
                     codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
                     codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
