@@ -726,6 +726,14 @@ public class PatientTransformer {
             return RegistrationType.MATERNITY_SERVICES;
         } else if (csvRegType.equalsIgnoreCase("Yellow Fever")) {
             return RegistrationType.YELLOW_FEVER;
+        } else if (csvRegType.equalsIgnoreCase("Pre Registration")) {
+            return RegistrationType.PRE_REGISTRATION;
+        } else if (csvRegType.equalsIgnoreCase("Sexual Health")) {
+            return RegistrationType.SEXUAL_HEALTH;
+        } else if (csvRegType.equalsIgnoreCase("Vasectomy")) {
+            return RegistrationType.VASECTOMY;
+        } else if (csvRegType.equalsIgnoreCase("Out of Hours")) {
+            return RegistrationType.OUT_OF_HOURS;
 
         } else {
             if (TransformConfig.instance().isEmisAllowUnmappedRegistrationTypes()) {
@@ -740,6 +748,7 @@ public class PatientTransformer {
         /**
          * This is the FULL list of registration types from Emis Web
          *
+         * THESE ONES ARE KNOWN TO BE USED
          Immediately Necessary
          Private
          Regular
@@ -753,11 +762,12 @@ public class PatientTransformer {
          Contraceptive Services
          Maternity Services
          Yellow Fever
-
-
-
          Sexual Health
          Pre Registration
+         Out of Hours
+         Vasectomy
+
+         THESE ONES TECHNICALLY EXIST BUT NO PATIENTS HAVE THEM
          Dermatology
          Diabetic
          Rheumatology
@@ -765,11 +775,9 @@ public class PatientTransformer {
          Coronary Health Checks
          Ultrasound
          BCG Clinic
-         Vasectomy
          Acupuncture
          Reflexology
          Hypnotherapy
-         Out of Hours
          Rehabilitation
          Antenatal
          Audiology

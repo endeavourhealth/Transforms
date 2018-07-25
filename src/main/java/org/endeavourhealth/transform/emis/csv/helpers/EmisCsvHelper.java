@@ -977,16 +977,16 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String additionalNotes = newConditionBuilder.getAdditionalNotes();
         conditionBuilder.setAdditionalNotes(additionalNotes);
 
+        //carry over any new links to child items
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
+
         ContainedListBuilder newContainedListBuilder = new ContainedListBuilder(newConditionBuilder);
         List<Reference> newLinkedItems = newContainedListBuilder.getContainedListItems();
-        List<Reference> newLinkedItemsIdMapped = new ArrayList<>();
         for (Reference reference: newLinkedItems) {
             Reference mappedReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-            newLinkedItemsIdMapped.add(mappedReference);
-        }
 
-        ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
-        containedListBuilder.addReferencesNoAudit(newLinkedItems);
+            containedListBuilder.addContainedListItem(mappedReference);
+        }
 
         //make sure to pass in FALSE to bypass ID mapping, since we're saving an already ID mapped instance
         fhirResourceFiler.savePatientResource(null, false, conditionBuilder);

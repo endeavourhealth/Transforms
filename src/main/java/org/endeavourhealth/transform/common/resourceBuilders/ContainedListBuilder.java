@@ -125,10 +125,10 @@ public class ContainedListBuilder {
     /**
      * used to copy references from one list to another without any audit info
      */
-    public void addReferencesNoAudit(List<Reference> references) {
+    /*public void addReferencesNoAudit(List<Reference> references) {
         for (Reference reference: references) {
             addContainedListItem(reference);
         }
-    }
+    }*/
 
 }

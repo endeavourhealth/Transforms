@@ -24,7 +24,7 @@ public class RegistrationStatusTransformer {
         while (parser.nextRecord()) {
 
             try {
-                processRecord((RegistrationStatus)parser, fhirResourceFiler, csvHelper);
+                processRecord((RegistrationStatus) parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -35,8 +35,8 @@ public class RegistrationStatusTransformer {
     }
 
     private static void processRecord(RegistrationStatus parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
         String patientGuid = patientGuidCell.getString();
@@ -45,7 +45,7 @@ public class RegistrationStatusTransformer {
         //has curly braces around it, so we need to ensure this is the same
         patientGuid = "{" + patientGuid.toUpperCase() + "}";
 
-        EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(patientGuid, ResourceType.EpisodeOfCare);
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare) csvHelper.retrieveResource(patientGuid, ResourceType.EpisodeOfCare);
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
 
         //only carry over the registration type from this file if we've not got it on the episode
@@ -66,17 +66,111 @@ public class RegistrationStatusTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, episodeBuilder);
     }
 
-    private static String convertRegistrationStatus(Integer obj) {
+    private static String convertRegistrationStatus(Integer obj) throws Exception {
         int value = obj.intValue();
 
-        //TODO
+        switch (value) {
+            case 1:
+                return "Patient has presented";
+            case 2:
+                return "Medical card (FP4) received";
+            case 3:
+                return "Application Form FP1 submitted";
+            case 4:
+                return "Notification of registration";
+            case 5:
+                return "Medical record sent by FHSA";
+            case 6:
+                return "Record Received";
+            case 7:
+                return "Left Practice. Still Registered";
+            case 8:
+                return "Correctly registered";
+            case 9:
+                return "Short stay";
+            case 10:
+                return "Long stay";
+            case 11:
+                return "Death";
+            case 12:
+                return "Dead (Practice notification)";
+            case 13:
+                return "Record Requested by FHSA";
+            case 14:
+                return "Removal to New HA/HB";
+            case 15:
+                return "Internal transfer";
+            case 16:
+                return "Mental hospital";
+            case 17:
+                return "Embarkation";
+            case 18:
+                return "New HA/HB - same GP";
+            case 19:
+                return "Adopted child";
+            case 20:
+                return "Services";
+            case 21:
+                return "Deduction at GP's request";
+            case 22:
+                return "Registration cancelled";
+            case 23:
+                return "Service dependant";
+            case 24:
+                return "Deduction at patient's request";
+            case 25:
+                return "Other reason";
+            case 26:
+                return "Returned undelivered";
+            case 27:
+                return "Internal transfer - address change";
+            case 28:
+                return "Internal transfer within partnership";
+            case 29:
+                return "Correspondence states 'gone away'";
+            case 30:
+                return "Practice advise outside of area";
+            case 31:
+                return "Practice advise patient no longer resident";
+            case 32:
+                return "Practice advise removal via screening system";
+            case 33:
+                return "Practice advise removal via vaccination data";
+            case 34:
+                return "Removal from Residential Institute";
+            case 35:
+                return "Records sent back to FHSA";
+            case 36:
+                return "Records received by FHSA";
+            case 37:
+                return "Registration expired";
+            default:
+                throw new TransformException("Unsupported registration status " + value);
+        }
+        
+        /*
+        NOTE: the below are also registration statuses, but no known patients have them
+        38	All records removed
+        39	Untraced-outwith HB
+        40	Multiple Transfer
+        41	Intra-consortium transfer
+        42	District birth
+        43	Transfer in
+        44	Transfer out
+        45	Movement in
+        46	Movement out
+        47	Died
+        48	Still birth
+        49	Living out, treated in
+        50	Living in, treated out
 
-        return null;
+         */
+
     }
 
     private static RegistrationType convertRegistrationType(Integer obj) throws Exception {
         int value = obj.intValue();
-        
+
         if (value == 1) { //Emergency
             return RegistrationType.EMERGENCY;
         } else if (value == 2) { //Immediately Necessary
@@ -101,39 +195,21 @@ public class RegistrationStatusTransformer {
             return RegistrationType.CHILD_HEALTH_SURVEILLANCE;
         } else if (value == 9) { //Contraceptive Services
             return RegistrationType.CONTRACEPTIVE_SERVICES;
-        } else if (value == 16) { //Yellow Fever
-            return RegistrationType.YELLOW_FEVER;
         } else if (value == 10) { //Maternity Services
             return RegistrationType.MATERNITY_SERVICES;
-
+        } else if (value == 16) { //Yellow Fever
+            return RegistrationType.YELLOW_FEVER;
+        } else if (value == 15) { //Pre Registration
+            return RegistrationType.PRE_REGISTRATION;
+        } else if (value == 14) { //Sexual Health
+            return RegistrationType.SEXUAL_HEALTH;
+        } else if (value == 24) { //Vasectomy
+            return RegistrationType.VASECTOMY;
+        } else if (value == 28) { //Out of Hours
+            return RegistrationType.OUT_OF_HOURS;
         } else {
             throw new TransformException("Unsupported registration type " + value);
         }
-
-        //known types that aren't supported below:
-        /*
-        14	Sexual Health
-        15	Pre Registration
-        17	Dermatology
-        18	Diabetic
-        19	Rheumatology
-        20	Chiropody
-        21	Coronary Health Checks
-        22	Ultrasound
-        23	BCG Clinic
-        24	Vasectomy
-        25	Acupuncture
-        26	Reflexology
-        27	Hypnotherapy
-        28	Out of Hours
-        29	Rehabilitation
-        30	Antenatal
-        31	Audiology
-        32	Gynaecology
-        33	Doppler
-        34	Secondary Registration
-        35	Urgent and Emergency Care
-        36	Externally Registered*/
 
     }
 }

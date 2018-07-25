@@ -93,7 +93,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         procedureBuilder.setEncounter(encounterReference, encounterIdCell);
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
-        if (!BartsCsvHelper.isEmptyOrIsZero(encounterSliceIdCell)) {
+        if (!HomertonCsvHelper.isEmptyOrIsZero(encounterSliceIdCell)) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(procedureBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
@@ -102,7 +102,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
 
         //TODO - need personnel data
 //        CsvCell personnelIdCell = parser.getPersonnelId();
-//        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
+//        if (!HomertonCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
 //            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
 //            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
 //        }
@@ -117,7 +117,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
-            if (!HomertonCsvHelper.isEmptyOrIsZero(conceptCodeTypeCell)) {
+            if (!conceptCodeTypeCell.isEmpty()) {
 
                 String conceptCodeType = conceptCodeTypeCell.getString();
                 if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
@@ -157,7 +157,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
         }
 
         CsvCell procedureType = parser.getProcedureType();
-        if (!HomertonCsvHelper.isEmptyOrIsZero(procedureType)) {
+        if (!procedureType.isEmpty()) {
 
             procedureBuilder.setCategory(procedureType.getString(), procedureType);
         }
