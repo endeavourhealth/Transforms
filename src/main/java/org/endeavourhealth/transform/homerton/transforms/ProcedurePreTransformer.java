@@ -69,6 +69,8 @@ public class ProcedurePreTransformer {
         public Object call() throws Exception {
 
             try {
+
+                LOG.debug("Caching ProcedureId {} against EncounterId {}", procedureIdCell.getString(), encounterIdCell.getString());
                 csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, procedureIdCell, ResourceType.Procedure);
 
             } catch (Throwable t) {

@@ -66,6 +66,9 @@ public abstract class HomertonCsvToFhirTransformer {
 
             // clinical transforms
             EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
+
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
 

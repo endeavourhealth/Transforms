@@ -181,7 +181,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterIdCell);
         if (newLinkedResources != null) {
-            //LOG.debug("Encounter " + encounterId + " has " + newLinkedResources.size() + " child resources");
+            LOG.debug("Encounter " + encounterIdCell.getString() + " has " + newLinkedResources.size() + " child resources");
             containedListBuilder.addReferences(newLinkedResources);
         }
 
