@@ -94,7 +94,8 @@ public class ProblemTransformer {
             String vocab = vocabCell.getString();
             String code = problemCodeCell.getString();
 
-            if (vocab.equalsIgnoreCase("SNOMED CT")) {
+            if (vocab.equalsIgnoreCase("SNOMED CT")
+                    || vocab.equalsIgnoreCase("UK ED Subset")) {
                 //the code is a SNOMED description ID, not concept ID, so we need to look up the term differently
                 SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(code);
                 if (snomedCode == null) {
@@ -141,10 +142,6 @@ public class ProblemTransformer {
             } else if (vocab.equalsIgnoreCase("Cerner")) {
                 //in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any attempt to look up an official term
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
-                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
-
-            } else if (vocab.equalsIgnoreCase("UK ED Subset")) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
             } else {
