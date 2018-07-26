@@ -96,9 +96,8 @@ public class SRStaffMemberTransformer {
             practitionerBuilder.setActive(true, obsolete);
         }
         // Get cached StaffMemberProfile records
-        if (StaffMemberProfileCache.containsStaffId(staffMemberId.getLong())) {
-            List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getStaffMemberProfilePojo(staffMemberId.getLong());
-
+        List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getStaffMemberProfilePojo(staffMemberId.getLong());
+        if (pojoList != null) {
             for (StaffMemberProfilePojo  pojo : pojoList) {
                 CsvCell profileCell = pojo.getRowIdentifier();
                 // create the internal link between staff member role and staff member
