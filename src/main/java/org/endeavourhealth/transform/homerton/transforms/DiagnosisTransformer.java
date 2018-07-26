@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -55,7 +56,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         conditionBuilder.setId(diagnosisIdCell.getString(), diagnosisIdCell);
 
         CsvCell personIdCell = parser.getPersonId();
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.toString());
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
         conditionBuilder.setPatient(patientReference, personIdCell);
 
         // delete the diagnosis if no longer active.  We have the patientId so this is straight forward
@@ -68,7 +69,8 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
 
         CsvCell encounterIdCell = parser.getEncounterID();
         if (!encounterIdCell.isEmpty()) {
-            Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+            Reference encounterReference
+                    = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
             conditionBuilder.setEncounter(encounterReference, encounterIdCell);
         }
 
@@ -118,20 +120,23 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                 String conceptCodeType = conceptCodeTypeCell.getString();
                 if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
 
-                    String term = TerminologyService.lookupSnomedTerm(conceptCode);
-                    if (Strings.isNullOrEmpty(term)) {
-                        TransformWarnings.log(LOG, parser, "Failed to find Snomed term for {}", conceptCodeCell);
+                    // Homerton use Snomed descriptionId instead of conceptId
+                    SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(conceptCode);
+                    if (snomedCode == null) {
+                        TransformWarnings.log(LOG, parser, "Failed to find Snomed term for DescriptionId {}", conceptCodeCell.getString());
+
+                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID, conceptCodeTypeCell);
+                        codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
+                    } else {
+                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
+                        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode(), conceptCodeCell);
+                        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm()); //don't pass in the cell as this is derived
+                        codeableConceptBuilder.setText(snomedCode.getTerm()); //don't pass in the cell as this is derived
                     }
-
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
-                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
-                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
-                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
-
                 } else if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_ICD_10)) {
                     String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
                     if (Strings.isNullOrEmpty(term)) {
-                        TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell);
+                        TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell.getString());
                     }
 
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeTypeCell);
