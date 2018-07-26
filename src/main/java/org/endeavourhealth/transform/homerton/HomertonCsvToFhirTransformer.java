@@ -65,9 +65,10 @@ public abstract class HomertonCsvToFhirTransformer {
             ProcedurePreTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
 
             // clinical transforms
+            EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
-            EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
+
 
             //TODO - Problems, Allergies
 

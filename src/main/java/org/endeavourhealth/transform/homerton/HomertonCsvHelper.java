@@ -175,6 +175,10 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         }
 
+        //ensure a local ID -> Discovery UUID mapping exists, which will end up happening,
+        //but it seems sensible to force it to happen here
+        IdHelper.getOrCreateEdsResourceId(serviceId, childResourceType, childIdCell.getString());
+
         Reference resourceReference = ReferenceHelper.createReference(childResourceType, childIdCell.getString());
         list.add(resourceReference, encounterIdCell);
     }
