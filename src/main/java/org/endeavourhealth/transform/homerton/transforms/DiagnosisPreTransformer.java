@@ -69,7 +69,7 @@ public class DiagnosisPreTransformer {
 
             try {
 
-                LOG.debug("Caching DiagnosisId {} against EncounterId {}", diagnosisIdCell.getString(), encounterIdCell.getString());
+                //LOG.debug("Caching DiagnosisId {} against EncounterId {}", diagnosisIdCell.getString(), encounterIdCell.getString());
                 csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, diagnosisIdCell, ResourceType.Condition);
 
             } catch (Throwable t) {

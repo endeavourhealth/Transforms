@@ -75,6 +75,10 @@ public abstract class HomertonCsvToFhirTransformer {
 
             //TODO - Problems, Allergies
 
+            // if we've got any updates to existing resources that haven't been handled in an above transform,
+            // apply them now, i.e. encounter items for previous created encounters
+            csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
+
             LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
             fhirResourceFiler.waitToFinish();
         } finally {

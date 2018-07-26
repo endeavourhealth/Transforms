@@ -18,6 +18,8 @@ import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.*;
@@ -181,6 +183,32 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         Reference resourceReference = ReferenceHelper.createReference(childResourceType, childIdCell.getString());
         list.add(resourceReference, encounterIdCell);
+    }
+
+    public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (Long encounterId: consultationNewChildMap.keySet()) {
+            ReferenceList newLinkedItems = consultationNewChildMap.get(encounterId);
+
+            Encounter existingEncounter
+                    = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
+            if (existingEncounter == null) {
+                //if the encounter has been deleted or does not exist, just skip it
+                return;
+            }
+
+            EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+            for (int i=0; i<newLinkedItems.size(); i++) {
+                Reference reference = newLinkedItems.getReference(i);
+                CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
+
+                Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+            }
+
+            fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
+        }
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(CsvCell encounterIdCell) {
