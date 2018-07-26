@@ -74,19 +74,23 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
             conditionBuilder.setEncounter(encounterReference, encounterIdCell);
         }
 
-        // if no disagnosis date exists, the condition is provisional and is of type Final
         CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(diagnosisDateTimeCell)) {
 
             Date d = diagnosisDateTimeCell.getDateTime();
             DateTimeType dateTimeType = new DateTimeType(d);
             conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
+        }
 
-            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+        CsvCell confirmation = parser.getConfirmation();
+        if (!confirmation.isEmpty()) {
+            String confirmationDesc = confirmation.getString();
+            if (confirmationDesc.equalsIgnoreCase("Confirmed")) {
+                conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED, confirmation);
 
-        } else {
-
-            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL);
+            } else {
+                conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL, confirmation);
+            }
         }
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();

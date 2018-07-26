@@ -137,6 +137,10 @@ public class DiagnosisTable extends AbstractCsvParser {
         return super.getCell("principle_type_cd");
     }
 
+    public CsvCell getConfirmation() {
+        return super.getCell("confirmation_status");
+    }
+
     @Override
     protected String getFileTypeDescription() {
         return "Homerton Diagnosis file";
