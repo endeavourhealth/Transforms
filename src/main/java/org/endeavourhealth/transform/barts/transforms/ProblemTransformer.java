@@ -143,6 +143,10 @@ public class ProblemTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
+            } else if (vocab.equalsIgnoreCase("UK ED Subset")) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE, vocabCell);
+                codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+
             } else {
                 throw new TransformException("Unexpected problem VOCAB [" + vocab + "]");
             }
