@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.schema.codes.SRCtv3Hierarchy;
+import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public class SRCtv3HierarchyTransformer {
     private static TppCtv3HierarchyRefDalI repository = DalProvider.factoryTppCtv3HierarchyRefDal();
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
-                                 FhirResourceFiler fhirResourceFiler) throws Exception {
+                                 FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
         //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
@@ -34,7 +35,7 @@ public class SRCtv3HierarchyTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SRCtv3Hierarchy)parser, threadPool);
+                    createResource((SRCtv3Hierarchy)parser, threadPool, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -58,7 +59,7 @@ public class SRCtv3HierarchyTransformer {
         throw new TransformException(parserState.toString(), exception);
     }
 
-    public static void createResource(SRCtv3Hierarchy parser, ThreadPool threadPool) throws Exception {
+    public static void createResource(SRCtv3Hierarchy parser, ThreadPool threadPool, TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         if (rowId.isEmpty()) {
@@ -83,6 +84,10 @@ public class SRCtv3HierarchyTransformer {
             TransformWarnings.log(LOG, parser, "ERROR: Child level Read code missing: {} for rowId{} in file : {}",
                     ctv3ChildLevel.getString(),rowId.getString(), parser.getFilePath());
             return;
+        }
+
+        if (TppCsvHelper.ETHNICITY_ROOT.equals(ctv3ParentReadCode.getString())) {
+            csvHelper.buildCTV3EthnicCodes(ctv3ChildReadCode.getString());
         }
 
         List<ThreadPoolError> errors =

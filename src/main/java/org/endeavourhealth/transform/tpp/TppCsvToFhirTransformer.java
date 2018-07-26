@@ -314,7 +314,7 @@ public abstract class TppCsvToFhirTransformer {
         // Consultations (Events)
         SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // Codes
-        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler);
+        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         // EventLink
         SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);

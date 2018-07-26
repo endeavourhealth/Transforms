@@ -34,7 +34,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final String ID_DELIMITER = ":";
 
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
-    private static final String ETHNICITY_ROOT = "XaBEN";
+    public static final String ETHNICITY_ROOT = "XaBEN";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
@@ -70,6 +70,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
+    private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -349,7 +350,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (knownEthnicCodes.containsKey(readCode)) {
             return true;
         } else {
-            return ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ETHNICITY_ROOT);
+            //return ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ETHNICITY_ROOT);
+            return this.ctv3EthnicCodes.contains(readCode);
         }
     }
 
@@ -613,6 +615,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         } else {
             return "caregiver";
         }
+    }
+
+    public void buildCTV3EthnicCodes(String ethnicCode) {
+        this.ctv3EthnicCodes.add(ethnicCode);
     }
 
     private void buildKnownEthnicCodes() {
