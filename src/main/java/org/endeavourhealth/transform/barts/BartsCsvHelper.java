@@ -812,7 +812,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             Encounter existingEncounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
             if (existingEncounter == null) {
                 //if the problem has been deleted, just skip it
-                return;
+                continue;
             }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);

@@ -198,7 +198,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
                     = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
             if (existingEncounter == null) {
                 //if the encounter has been deleted or does not exist, just skip it
-                return;
+                continue;
             }
 
             LOG.debug("Existing Encounter found for Id: {} , so repopulating", encounterId.toString());
