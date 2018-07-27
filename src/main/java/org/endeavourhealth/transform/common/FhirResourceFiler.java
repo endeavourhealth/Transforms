@@ -89,6 +89,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void saveAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         saveAdminResource(parserState, true, resources);
     }
+
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -98,6 +99,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deleteAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deleteAdminResource(parserState, true, resources);
     }
+
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -107,6 +109,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void savePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         savePatientResource(parserState, true, resources);
     }
+
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -116,6 +119,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deletePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deletePatientResource(parserState, true, resources);
     }
+
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -134,7 +138,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
 
             //validate we're treating the resource properly as admin / patient
             Resource resource = resourceBuilder.getResource();
@@ -155,18 +159,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //if we want to map IDs then put in the ID mapping queue, otherwise go straight to the filing queue
         if (mapIds) {
-            //TODO debug logging
-            LOG.debug("Mapping ids for:");
-            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
-                LOG.debug(resourceBuilder.getResource().getResourceType() + ":" + resourceBuilder.getResourceId());
-            }
             addToIdMappingQueue(parserState, isDelete, exchangeBatch, resourceBuilders);
 
         } else {
-            LOG.debug("Saving unmapped ids");
-            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
-
-                LOG.debug(resourceBuilder.getResource().getResourceType() + ":" + resourceBuilder.getResourceId());
+            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
                 addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilder, false);
             }
         }
@@ -200,7 +196,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         List<ThreadPoolError> errors = threadPoolFiler.submit(task);
         handleErrors(errors);
     }
-
 
 
     private ExchangeBatch getAdminBatch() throws Exception {
@@ -253,7 +248,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
      */
     private UUID findEdsPatientId(boolean mapIds, ResourceBuilderBase... resourceBuilders) throws Exception {
 
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
 
             try {
 
@@ -302,7 +297,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //if we get here, something is wrong since we've failed to find a patient ID
         LOG.error("No patient reference found for resources:");
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
             Resource resource = resourceBuilder.getResource();
             LOG.error("" + FhirSerializationHelper.serializeResource(resource));
         }
@@ -385,20 +380,20 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ThreadPoolError error: errors) {
+        for (ThreadPoolError error : errors) {
 
             Throwable cause = error.getException();
 
             //if the exception is one of our special types, then we
             if (cause instanceof FilingAndMappingException) {
-                FilingAndMappingException filingAndMappingException = (FilingAndMappingException)cause;
+                FilingAndMappingException filingAndMappingException = (FilingAndMappingException) cause;
                 List<CsvCurrentState> parserStates = filingAndMappingException.getParserStates();
                 Throwable innerCause = cause.getCause();
 
                 if (parserStates != null
-                    && !parserStates.isEmpty()) {
+                        && !parserStates.isEmpty()) {
 
-                    for (CsvCurrentState parserState: parserStates) {
+                    for (CsvCurrentState parserState : parserStates) {
                         logTransformRecordError(innerCause, parserState);
                     }
 
@@ -412,9 +407,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             //the cause may be an Exception or Error so we need to explicitly
             //cast to the right type to throw it without changing the method signature
             if (cause instanceof Exception) {
-                throw (Exception)cause;
+                throw (Exception) cause;
             } else if (cause instanceof Error) {
-                throw (Error)cause;
+                throw (Error) cause;
             }
         }
     }
@@ -469,8 +464,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             ServiceDalI serviceDal = DalProvider.factoryServiceDal();
             Service service = serviceDal.getById(serviceId);
             String msg = "" + patientDeleted + " resources deleted over "
-                       + patientCount + " patients in exchange "
-                       + exchangeId + " for " + service.getName() + " " + service.getId();
+                    + patientCount + " patients in exchange "
+                    + exchangeId + " for " + service.getName() + " " + service.getId();
 
             SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
         }
@@ -654,7 +649,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         private List<MapIdJob> jobs = new ArrayList<>();
 
-        public MapIdTask() { }
+        public MapIdTask() {
+        }
 
         public void addJob(MapIdJob job) {
             jobs.add(job);
@@ -673,9 +669,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
             List<ResourceBuilderBase> resourceBuilders = new ArrayList<>();
 
-            for (MapIdJob job: jobs) {
+            for (MapIdJob job : jobs) {
                 ResourceBuilderBase[] resourceBuildersArr = job.getResourceBuilders();
-                for (ResourceBuilderBase resourceBuilder: resourceBuildersArr) {
+                for (ResourceBuilderBase resourceBuilder : resourceBuildersArr) {
                     Resource resource = resourceBuilder.getResource();
                     resources.add(resource);
                     hmJobsByResource.put(resource, job);
@@ -693,7 +689,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 String err = "Exception mapping resources: ";
                 List<CsvCurrentState> parserStates = new ArrayList<>();
                 StringBuilder sb = new StringBuilder();
-                for (Resource resource: resources) {
+                for (Resource resource : resources) {
                     err += resource.getResourceType() + "/" + resource.getId() + " ";
                     if (parserStates != null) {
                         MapIdJob job = hmJobsByResource.get(resource);
@@ -714,7 +710,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             }
 
             //then bump onto the filing queue
-            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
                 Resource resource = resourceBuilder.getResource();
                 boolean isDefinitelyNewResource = definitelyNewResources.contains(resource);
                 MapIdJob job = hmJobsByResource.get(resource);
@@ -852,7 +848,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 String clsName = "org.endeavourhealth.transform.common.resourceValidators.ResourceValidator" + resource.getClass().getSimpleName();
                 try {
                     Class cls = Class.forName(clsName);
-                    validator = (ResourceValidatorBase)cls.newInstance();
+                    validator = (ResourceValidatorBase) cls.newInstance();
                     resourceValidators.put(resourceCls, validator);
 
                 } catch (Exception ex) {

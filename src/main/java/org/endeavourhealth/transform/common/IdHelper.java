@@ -80,7 +80,6 @@ public class IdHelper {
                     //if definitely no mapping on the DB, create and save a new ID
                     //passing in the explicit ID to use (if null, it'll just generate a new ID)
                     edsId = repository.findOrCreate(serviceId, resourceType.toString(), sourceId, explicitIdToUse);
-                    LOG.debug("Created new id:" + edsId.toString() + ": for " + resourceType.toString() + ":" + sourceId);
                 } else {
                     return null;
                 }
