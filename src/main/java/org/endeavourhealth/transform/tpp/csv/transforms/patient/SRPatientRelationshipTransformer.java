@@ -83,13 +83,15 @@ public class SRPatientRelationshipTransformer {
         CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
         if (!relationshipWithNameCell.isEmpty()) {
             HumanName name = new HumanName();
-            name.setText(relationshipWithNameCell.getString());
-            if(!parser.getIDPatientRelationshipWith().isEmpty()) {
+            if (!parser.getIDPatientRelationshipWith().isEmpty()) {
                 PatientBuilder relationshipBuilder = PatientResourceCache.getOrCreatePatientBuilder(
                         parser.getIDPatientRelationshipWith(), csvHelper, fhirResourceFiler);
                 if (relationshipBuilder.getNames().size() > 0) {
                     name = relationshipBuilder.getNames().get(0);
                 }
+            }
+            if (!name.hasText()) {
+                name.setText(relationshipWithNameCell.getString());
             }
             contactBuilder.addContactName(name);
         }
