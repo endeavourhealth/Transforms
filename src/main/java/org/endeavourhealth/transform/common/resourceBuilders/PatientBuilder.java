@@ -142,8 +142,16 @@ public class PatientBuilder extends ResourceBuilderBase
             }
         }
 
-        //we can't audit anything agsinst this change because we can't audit against something that isn't there
+        //we can't audit anything against this change because we can't audit against something that isn't there
     }
+
+    public void removeAllCareProviders() {
+        //if we've already set the care provider and then want to clear it, we need to remove any audits
+        getAuditWrapper().removeAudit("careProvider");
+
+        this.patient.getCareProvider().clear();
+    }
+
 
     public void setNhsNumberVerificationStatus(NhsNumberVerificationStatus verificationStatus, CsvCell... sourceCells) {
         //we may be updating a resource, so if null is passed in, we want to REMOVE it

@@ -49,17 +49,28 @@ public class PPAGPTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+
+        //we get no person ID when it's a delete, but we also get a replacement record for the person, adding the n
+        //new GP details, which will replace what's on the resource. So just return out here.
+        if (personIdCell.isEmpty()) {
+            return;
+        }
+
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
-
 
         //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell endDateCell = parser.getEndEffectiveDate();
         boolean delete = !activeCell.getIntAsBoolean()
                 || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
+
+        //if this record is adding an active GP/practice, then remove any existing references from the resource
+        if (!delete) {
+            patientBuilder.removeAllCareProviders();
+        }
 
         CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
