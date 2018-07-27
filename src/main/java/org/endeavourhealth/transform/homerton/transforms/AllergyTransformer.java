@@ -102,6 +102,7 @@ public class AllergyTransformer extends HomertonBasisTransformer {
         // it's rare, but there are cases where records have a textual term but not vocab or code
         CsvCell allergyCodeCell = parser.getAllergyCode();
         CsvCell vocabCell = parser.getVocabulary();
+        CsvCell allergyDescCell = parser.getAllergyDescriptionText();
         if (!vocabCell.isEmpty() && !allergyCodeCell.isEmpty()) {
             String vocab = vocabCell.getString();
             String code = allergyCodeCell.getString();
@@ -124,19 +125,22 @@ public class AllergyTransformer extends HomertonBasisTransformer {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, allergyCodeCell);
-
+                if (!allergyDescCell.isEmpty()) {
+                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyCodeCell);
+                }
             } else if (vocab.equalsIgnoreCase("Multum Allergy Category")) {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, allergyCodeCell);
-
+                if (!allergyDescCell.isEmpty()) {
+                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyCodeCell);
+                }
             } else {
                 throw new TransformException("Unexpected problem VOCAB [" + vocab + "]");
             }
         }
 
        // set the raw term on the codeable concept text - This is true if the vocab is 'Allergy' for example
-        CsvCell allergyDescCell = parser.getAllergyDescriptionText();
         if (!allergyDescCell.isEmpty()) {
 
             String term = allergyDescCell.getString();
