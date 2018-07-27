@@ -155,10 +155,18 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //if we want to map IDs then put in the ID mapping queue, otherwise go straight to the filing queue
         if (mapIds) {
+            //TODO debug logging
+            LOG.debug("Mapping ids for:");
+            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+                LOG.debug(resourceBuilder.getResource().getResourceType() + ":" + resourceBuilder.getResourceId());
+            }
             addToIdMappingQueue(parserState, isDelete, exchangeBatch, resourceBuilders);
 
         } else {
+            LOG.debug("Saving unmapped ids");
             for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+
+                LOG.debug(resourceBuilder.getResource().getResourceType() + ":" + resourceBuilder.getResourceId());
                 addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilder, false);
             }
         }
