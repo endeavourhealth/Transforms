@@ -119,5 +119,25 @@ public class ProblemTable extends AbstractCsvParser {
     public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
+    public CsvCell getOnsetDate() {
+        return super.getCell("ONSET_DT_TM");
+    }
+    public CsvCell getStatusLifecycle() {
+        return super.getCell("life_cycle_status");
+    }
+    public CsvCell getProblemDescriptionText() {
+        return super.getCell("nomenclature_description");
+    }
+    public CsvCell getProblemAnnotatedDisplay() {
+        return super.getCell("ANNOTATED_DISPLAY");
+    }
+    public CsvCell getProblemCode() { return super.getCell("source_identifier"); }
+    public CsvCell getVocabulary() {
+        return super.getCell("source_vocabulary");
+    }
+    public CsvCell getLifeCycleDateTime() {
+        return super.getCell("LIFE_CYCLE_DT_TM");
+    }
+
 
 }

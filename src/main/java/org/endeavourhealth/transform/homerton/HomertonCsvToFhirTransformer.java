@@ -71,9 +71,8 @@ public abstract class HomertonCsvToFhirTransformer {
 
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
-
-
-            //TODO - Problems, Allergies
+            ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROBLEM", csvHelper), fhirResourceFiler, csvHelper);
+            AllergyTransformer.transform(createParsers(fileMap, parserMap, "ALLERGY", csvHelper), fhirResourceFiler, csvHelper);
 
             // if we've got any updates to existing resources that haven't been handled in an above transform,
             // apply them now, i.e. encounter items for previous created encounters
@@ -87,9 +86,6 @@ public abstract class HomertonCsvToFhirTransformer {
             csvHelper.getPatientCache().cleanUpResourceCache();
         }
     }
-
-
-
 
     private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
         Map<String, List<String>> ret = new HashMap<>();
@@ -153,6 +149,8 @@ public abstract class HomertonCsvToFhirTransformer {
             return new ProblemTable(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("PROCEDURE")) {
             return new ProcedureTable(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("ALLERGY")) {
+            return new AllergyTable(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }

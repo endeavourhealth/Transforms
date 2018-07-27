@@ -91,6 +91,8 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
             } else {
                 conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL, confirmation);
             }
+        } else {
+            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.UNKNOWN, confirmation);
         }
 
         CsvCell encounterSliceIdCell = parser.getEncounterSliceID();

@@ -187,12 +187,12 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LOG.debug("Remaining consultationNewChildMap items to process: {}", consultationNewChildMap.size());
+        //LOG.debug("Remaining consultationNewChildMap items to process: {}", consultationNewChildMap.size());
 
         for (Long encounterId: consultationNewChildMap.keySet()) {
             ReferenceList newLinkedItems = consultationNewChildMap.get(encounterId);
 
-            LOG.debug("newLinkedItems for EncounterId: {} size is: {}", encounterId.toString(), newLinkedItems.size());
+            //LOG.debug("newLinkedItems for EncounterId: {} size is: {}", encounterId.toString(), newLinkedItems.size());
 
             Encounter existingEncounter
                     = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
@@ -201,7 +201,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
                 continue;
             }
 
-            LOG.debug("Existing Encounter found for Id: {} , so repopulating", encounterId.toString());
+            //LOG.debug("Existing Encounter found for Id: {} , so repopulating", encounterId.toString());
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
@@ -214,7 +214,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
                 containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
             }
 
-            LOG.debug("Saving newLinkedItems for EncounterId: {}", encounterId.toString());
+            //LOG.debug("Saving newLinkedItems for EncounterId: {}", encounterId.toString());
             fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
         }
     }
