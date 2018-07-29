@@ -5,6 +5,7 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
+import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -46,6 +47,19 @@ public abstract class BartsCsvToFhirTransformer {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + serviceId);
+
+        //separate out the bulk cleve files
+        List<ExchangePayloadFile> cleveBulks = new ArrayList<>();
+        for (int i=files.size()-1; i>=0; i--) {
+            ExchangePayloadFile f = files.get(i);
+            if (f.getType().equals("CLEVE")) {
+                String path = f.getPath();
+                if (path.indexOf("999999") > -1) {
+                    files.remove(i);
+                    cleveBulks.add(f);
+                }
+            }
+        }
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
@@ -143,6 +157,21 @@ public abstract class BartsCsvToFhirTransformer {
             //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
             csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
             csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
+
+            LOG.debug("Doing CLEVE bulks now");
+            for (ExchangePayloadFile bulk: cleveBulks) {
+                LOG.debug("Doing " + bulk.getPath());
+
+                List<ParserI> parsers = new ArrayList<>();
+                CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, bulk.getPath());
+                parsers.add(parser);
+
+                CLEVEPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+                CLEVETransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+                csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
+                csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
+            }
 
             LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
             fhirResourceFiler.waitToFinish();

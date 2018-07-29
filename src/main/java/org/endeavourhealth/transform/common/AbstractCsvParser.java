@@ -9,6 +9,7 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.csv.CsvHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
@@ -176,6 +177,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 5000);
 
         try {
+
+            AuditRowTask nextTask = new AuditRowTask(haveProcessedFileBefore);
+
             while (advanceToNextRow()) { //this just iterates through the rows, but handles S3 errors and recovers
 
                 if (this.csvRecordLineNumber % 50000 == 0) {
@@ -190,8 +194,21 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                     values[colIndex.intValue()] = value;
                 }
 
-                AuditRowTask task = new AuditRowTask(this.csvRecordLineNumber, values, haveProcessedFileBefore);
-                List<ThreadPoolError> errors = threadPool.submit(task);
+                SourceFileRecord fileRecord = new SourceFileRecord();
+                fileRecord.setSourceFileId(fileAuditId);
+                fileRecord.setSourceLocation("" + this.csvRecordLineNumber);
+                fileRecord.setValues(values);
+
+                nextTask.addRecord(fileRecord);
+                if (nextTask.isFull()) {
+                    List<ThreadPoolError> errors = threadPool.submit(nextTask);
+                    handleErrors(errors);
+                    nextTask = new AuditRowTask(haveProcessedFileBefore);
+                }
+            }
+
+            if (!nextTask.isEmpty()) {
+                List<ThreadPoolError> errors = threadPool.submit(nextTask);
                 handleErrors(errors);
             }
 
@@ -213,8 +230,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         ThreadPoolError first = errors.get(0);
         AuditRowTask callable = (AuditRowTask) first.getCallable();
         Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
     /**
@@ -583,79 +599,81 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     }
 
 
-    /*public String getString(String column) {
-        return csvRecord.get(column);
-    }
-    public Integer getInt(String column) {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return null;
-        }
-
-        return Integer.valueOf(s);
-    }
-    public Long getLong(String column) {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return null;
-        }
-
-        return Long.valueOf(s);
-    }
-    public Double getDouble(String column) {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return null;
-        }
-
-        return new Double(s);
-    }
-    public Date getDate(String column) throws TransformException {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return null;
-        }
-
-        try {
-            return dateFormat.parse(s);
-        } catch (ParseException pe) {
-            throw new FileFormatException(filePath, "Invalid date format [" + s + "]", pe);
-        }
-    }
-    public Date getTime(String column) throws TransformException {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return null;
-        }
-
-        try {
-            return timeFormat.parse(s);
-        } catch (ParseException pe) {
-            throw new FileFormatException(filePath, "Invalid time format [" + s + "]", pe);
-        }
-    }
-    public Date getDateTime(String dateColumn, String timeColumn) throws TransformException {
-        Date d = getDate(dateColumn);
-        Date t = getTime(timeColumn);
-        if (d == null) {
-            return null;
-        } else if (t == null) {
-            return d;
-        } else {
-            return new Date(d.getTime() + t.getTime());
-        }
-    }
-    public boolean getBoolean(String column) {
-        String s = csvRecord.get(column);
-        if (Strings.isNullOrEmpty(s)) {
-            return false;
-        }
-
-        return Boolean.parseBoolean(s);
-    }*/
-
 
     class AuditRowTask implements Callable {
+
+        private boolean haveProcessedFileBefore = false;
+        private List<SourceFileRecord> records = new ArrayList<>();
+        private boolean full;
+        private boolean empty;
+
+        public AuditRowTask(boolean haveProcessedFileBefore) {
+            this.haveProcessedFileBefore = haveProcessedFileBefore;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+
+                //if we've done this file before, re-load the past audit
+                List<SourceFileRecord> recordsToInsert = null;
+
+                if (haveProcessedFileBefore) {
+                    recordsToInsert = new ArrayList<>();
+
+                    for (SourceFileRecord record : records) {
+                        int lineNumber = Integer.parseInt(record.getSourceLocation());
+                        Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, lineNumber);
+                        if (existingId != null) {
+                            long rowAuditId = existingId.longValue();
+                            setRowAuditId(lineNumber, rowAuditId);
+
+                        } else {
+                            recordsToInsert.add(record);
+                        }
+                    }
+                } else {
+                    recordsToInsert = records;
+                }
+
+                if (!recordsToInsert.isEmpty()) {
+                    dal.auditFileRows(serviceId, recordsToInsert);
+
+                    //the above call will have set the IDs in each of the record objects
+                    for (SourceFileRecord record: recordsToInsert) {
+                        Long rowAuditId = record.getId();
+                        int lineNumber = Integer.parseInt(record.getSourceLocation());
+                        setRowAuditId(lineNumber, rowAuditId);
+                    }
+                }
+
+                return null;
+            } catch (Exception ex) {
+
+                String err = "Exception auditing rows ";
+                for (SourceFileRecord record : records) {
+                    err += record.getSourceLocation();
+                    err += ", ";
+                }
+                LOG.error(err, ex);
+                throw ex;
+            }
+        }
+
+        public void addRecord(SourceFileRecord fileRecord) {
+            this.records.add(fileRecord);
+        }
+
+        public boolean isFull() {
+            return this.records.size() >= TransformConfig.instance().getResourceSaveBatchSize();
+        }
+
+        public boolean isEmpty() {
+            return this.records.isEmpty();
+        }
+    }
+    /*class AuditRowTask implements Callable {
 
         private int lineNumber;
         private String[] values;
@@ -703,5 +721,5 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             }
         }
 
-    }
+    }*/
 }

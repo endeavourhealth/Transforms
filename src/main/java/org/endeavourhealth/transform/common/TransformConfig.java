@@ -32,6 +32,7 @@ public class TransformConfig {
     private int resourceCacheMaxSizeInMemory;
     private String resourceCacheTempPath;
     private boolean isLive;
+    private int resourceSaveBatchSize;
 
     //singleton
     private static TransformConfig instance;
@@ -67,6 +68,7 @@ public class TransformConfig {
         this.resourceCacheMaxSizeInMemory = 100000;
         this.resourceCacheTempPath = null; //using null means we'll offload resources to the DB
         this.isLive = false;
+        this.resourceSaveBatchSize = 50;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -119,6 +121,11 @@ public class TransformConfig {
             node = json.get("is_live");
             if (node != null) {
                 this.isLive = node.asBoolean();
+            }
+
+            node = json.get("resource_save_batch_size");
+            if (node != null) {
+                this.resourceSaveBatchSize = node.asInt();
             }
 
             node = json.get("emis");
@@ -244,6 +251,10 @@ public class TransformConfig {
 
     public boolean isLive() {
         return isLive;
+    }
+
+    public int getResourceSaveBatchSize() {
+        return resourceSaveBatchSize;
     }
 
     public String getCernerPatientIdFile() {

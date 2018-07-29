@@ -60,7 +60,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, CodeAndDate> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, ResourceType> parentObservationResourceTypes = new HashMap<>();
-
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
@@ -134,17 +133,14 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         resource.setId(createUniqueId(patientGuid, sourceGuid));
     }*/
 
-    public void saveClinicalOrDrugCode(EmisCsvCodeMap mapping) throws Exception {
-        //this is only needed for Cassandra backwards compatbility and can be removed in the future
-        mapping.setDataSharingAgreementGuid(dataSharingAgreementGuid);
 
-        mappingRepository.save(mapping);
-    }
+
+
 
     public EmisCsvCodeMap findClinicalCode(CsvCell codeIdCell) throws Exception {
         EmisCsvCodeMap ret = clinicalCodes.get(codeIdCell.getLong());
         if (ret == null) {
-            ret = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, false, codeIdCell.getLong());
+            ret = mappingRepository.getMostRecentCode(false, codeIdCell.getLong());
             if (ret == null) {
                 if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
@@ -183,7 +179,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         EmisCsvCodeMap ret = medication.get(codeIdCell.getLong());
         if (ret == null) {
-            ret = mappingRepository.getMostRecentCode(dataSharingAgreementGuid, true, codeIdCell.getLong());
+            ret = mappingRepository.getMostRecentCode(true, codeIdCell.getLong());
             if (ret == null) {
                 if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept

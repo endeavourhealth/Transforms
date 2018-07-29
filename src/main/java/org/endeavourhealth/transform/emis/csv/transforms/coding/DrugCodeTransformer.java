@@ -2,26 +2,31 @@ package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class DrugCodeTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DrugCodeTransformer.class);
+
+    private static EmisTransformDalI mappingDal = DalProvider.factoryEmisTransformDal();
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -36,14 +41,21 @@ public class DrugCodeTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
+            List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
+
             AbstractCsvParser parser = parsers.get(DrugCode.class);
             while (parser.nextRecord()) {
 
                 try {
-                    transform((DrugCode)parser, fhirResourceFiler, csvHelper, threadPool);
+                    transform((DrugCode)parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
+            }
+
+            //and save any still pending
+            if (!mappingsToSave.isEmpty()) {
+                threadPool.submit(new Task(mappingsToSave));
             }
 
         } finally {
@@ -55,14 +67,34 @@ public class DrugCodeTransformer {
     private static void transform(DrugCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  ThreadPool threadPool) throws Exception {
+                                  ThreadPool threadPool,
+                                  List<EmisCsvCodeMap> mappingsToSave) throws Exception {
 
         CsvCell codeId = parser.getCodeId();
         CsvCell term = parser.getTerm();
         CsvCell dmdId = parser.getDmdProductCodeId();
 
-        List<ThreadPoolError> errors = threadPool.submit(new DrugSaveCallable(parser.getCurrentState(), csvHelper, codeId, dmdId, term));
-        handleErrors(errors);
+        EmisCsvCodeMap mapping = new EmisCsvCodeMap();
+        mapping.setMedication(true);
+        mapping.setCodeId(codeId.getLong());
+        mapping.setSnomedConceptId(dmdId.getLong());
+        mapping.setSnomedTerm(term.getString());
+
+        //we need to generate the audit of the source cells to FHIR so we can apply it when we create resources
+        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+        if (!dmdId.isEmpty()) {
+            auditWrapper.auditValue(dmdId.getRowAuditId(), dmdId.getColIndex(), EmisCodeHelper.AUDIT_DRUG_CODE);
+        }
+        auditWrapper.auditValue(term.getRowAuditId(), term.getColIndex(), EmisCodeHelper.AUDIT_DRUG_TERM);
+        mapping.setAudit(auditWrapper);
+
+        mappingsToSave.add(mapping);
+        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
+            List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
+            mappingsToSave.clear();
+            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
+            handleErrors(errors);
+        }
     }
 
     private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
@@ -72,67 +104,38 @@ public class DrugCodeTransformer {
 
         //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
         ThreadPoolError first = errors.get(0);
-        DrugSaveCallable callable = (DrugSaveCallable)first.getCallable();
         Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
-    static class DrugSaveCallable implements Callable {
 
-        private CsvCurrentState parserState = null;
-        private EmisCsvHelper csvHelper = null;
-        private CsvCell codeId = null;
-        private CsvCell dmdId = null;
-        private CsvCell term = null;
+    static class Task implements Callable {
 
-        public DrugSaveCallable(CsvCurrentState parserState,
-                                EmisCsvHelper csvHelper,
-                                CsvCell codeId,
-                                CsvCell dmdId,
-                                CsvCell term) {
+        private List<EmisCsvCodeMap> mappings = null;
 
-            this.parserState = parserState;
-            this.csvHelper = csvHelper;
-            this.codeId = codeId;
-            this.dmdId = dmdId;
-            this.term = term;
+        public Task(List<EmisCsvCodeMap> mappings) {
+            this.mappings = mappings;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-                //we need to generate the audit of the source cells to FHIR so we can apply it when we create resources
-                ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-
-                //audit where the code came from, if we have one
-                if (!dmdId.isEmpty()) {
-                    auditWrapper.auditValue(dmdId.getRowAuditId(), dmdId.getColIndex(), EmisCodeHelper.AUDIT_DRUG_CODE);
-                }
-
-                //audit where the term came from
-                auditWrapper.auditValue(term.getRowAuditId(), term.getColIndex(), EmisCodeHelper.AUDIT_DRUG_TERM);
-
-                EmisCsvCodeMap mapping = new EmisCsvCodeMap();
-                mapping.setMedication(true);
-                mapping.setCodeId(codeId.getLong());
-                mapping.setSnomedConceptId(dmdId.getLong());
-                mapping.setSnomedTerm(term.getString());
-                mapping.setAudit(auditWrapper);
-
-                csvHelper.saveClinicalOrDrugCode(mapping);
+                //save the mapping batch
+                mappingDal.save(mappings);
 
             } catch (Throwable t) {
-                LOG.error("", t);
-                throw t;
+                String msg = "Error saving drug code records for code IDs ";
+                for (EmisCsvCodeMap mapping: mappings) {
+                    msg += mapping.getCodeId();
+                    msg += ", ";
+                }
+
+                LOG.error(msg, t);
+                throw new TransformException(msg, t);
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

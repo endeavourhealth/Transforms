@@ -430,6 +430,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             ReferenceList list = clinicalEventChildMap.get(parentEventId);
             updateExistingObservationWithNewChildLinks(parentEventId, list, fhirResourceFiler);
         }
+
+        clinicalEventChildMap.clear();
     }
 
 
@@ -828,6 +830,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
         }
+
+        consultationNewChildMap.clear();
     }
 
     public List<CernerCodeValueRef> getCernerCodesForSet(Long set) throws Exception {

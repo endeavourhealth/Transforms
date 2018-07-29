@@ -57,7 +57,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private Map<String, UUID> sourcePatientIdMap = new ConcurrentHashMap<>();
 
     //threading
+    private ReentrantLock mapIdTaskLock = new ReentrantLock();
     private MapIdTask nextMapIdTask = new MapIdTask();
+    private ReentrantLock resourceTaskLock = new ReentrantLock();
+    private FileResourceTask nextSaveResourceTask = new FileResourceTask(false);
+    private FileResourceTask nextDeleteResourceTask = new FileResourceTask(true);
     private ThreadPool threadPoolIdMapper = null;
     private ThreadPool threadPoolFiler = null;
 
@@ -89,7 +93,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void saveAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         saveAdminResource(parserState, true, resources);
     }
-
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -99,7 +102,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deleteAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deleteAdminResource(parserState, true, resources);
     }
-
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -109,7 +111,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void savePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         savePatientResource(parserState, true, resources);
     }
-
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -119,7 +120,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deletePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deletePatientResource(parserState, true, resources);
     }
-
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -138,7 +138,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
 
             //validate we're treating the resource properly as admin / patient
             Resource resource = resourceBuilder.getResource();
@@ -159,42 +159,119 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //if we want to map IDs then put in the ID mapping queue, otherwise go straight to the filing queue
         if (mapIds) {
-            addToIdMappingQueue(parserState, isDelete, exchangeBatch, resourceBuilders);
+            addToIdMappingQueue(parserState, isDelete, exchangeBatch.getBatchId(), resourceBuilders);
 
         } else {
-            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
-                addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilder, false);
-            }
+            addToFilingQueue(parserState, isDelete, exchangeBatch.getBatchId(), resourceBuilders);
         }
     }
 
     private void addToIdMappingQueue(CsvCurrentState parserState, boolean isDelete,
-                                     ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
+                                     UUID batchId, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
-        //we batch up ID mapping as it's more efficient to do multiple at once
-        MapIdJob job = new MapIdJob(parserState, isDelete, exchangeBatch, resourceBuilders);
-        nextMapIdTask.addJob(job);
+        //lock since this may be called from multiple threads and array lists aren't thread safe for adding
+        try {
+            mapIdTaskLock.lock();
 
-        //if the task is full, then execute it
-        if (nextMapIdTask.isFull()) {
-            runNextMapIdTask();
+            for (ResourceBuilderBase builder : resourceBuilders) {
+                ResourceJob job = new ResourceJob(parserState, isDelete, batchId, builder);
+                nextMapIdTask.addJob(job);
+            }
+
+            //if the task is full, then execute it
+            if (nextMapIdTask.isFull()) {
+                runNextMapIdTask();
+            }
+
+        } finally {
+            mapIdTaskLock.unlock();
         }
     }
 
     private void runNextMapIdTask() throws Exception {
-        MapIdTask task = nextMapIdTask;
-        nextMapIdTask = new MapIdTask();
+        try {
+            mapIdTaskLock.lock();
 
-        List<ThreadPoolError> errors = threadPoolIdMapper.submit(task);
-        handleErrors(errors);
+            MapIdTask task = nextMapIdTask;
+            nextMapIdTask = new MapIdTask();
+
+            if (!task.isEmpty()) {
+                List<ThreadPoolError> errors = threadPoolIdMapper.submit(task);
+                handleErrors(errors);
+            }
+        } finally {
+            mapIdTaskLock.unlock();
+        }
     }
 
-    private void addToFilingQueue(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch,
-                                  ResourceBuilderBase resourceBuilder, boolean isDefinitelyNewResource) throws Exception {
+    private void addToFilingQueue(CsvCurrentState parserState, boolean isDelete,
+                                  UUID batchId, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
-        FileResourceTask task = new FileResourceTask(parserState, isDelete, exchangeBatch, resourceBuilder, isDefinitelyNewResource);
-        List<ThreadPoolError> errors = threadPoolFiler.submit(task);
-        handleErrors(errors);
+        for (ResourceBuilderBase builder: resourceBuilders) {
+            ResourceJob job = new ResourceJob(parserState, isDelete, batchId, builder);
+            addToFilingQueue(job);
+        }
+    }
+
+    private void addToFilingQueue(ResourceJob job) throws Exception {
+        //lock since this may be called from multiple threads and array lists aren't thread safe for adding
+        try {
+            resourceTaskLock.lock();
+
+            if (job.isDelete()) {
+                nextDeleteResourceTask.addJob(job);
+            } else {
+                nextSaveResourceTask.addJob(job);
+            }
+
+            if (job.isDelete()) {
+                if (nextDeleteResourceTask.isFull()) {
+                    runNextDeleteResourceTask();
+                }
+            } else {
+                if (nextSaveResourceTask.isFull()) {
+                    runNextSaveResourceTask();
+                }
+            }
+
+        } finally {
+            resourceTaskLock.unlock();
+        }
+    }
+
+    private void runNextSaveResourceTask() throws Exception {
+        try {
+            resourceTaskLock.lock();
+
+            FileResourceTask task = nextSaveResourceTask;
+            nextSaveResourceTask = new FileResourceTask(false);
+
+            if (!task.isEmpty()) {
+                List<ThreadPoolError> errors = threadPoolFiler.submit(task);
+                handleErrors(errors);
+            }
+
+        } finally {
+            resourceTaskLock.unlock();
+        }
+
+    }
+
+    private void runNextDeleteResourceTask() throws Exception {
+        try {
+            resourceTaskLock.lock();
+
+            FileResourceTask task = nextDeleteResourceTask;
+            nextDeleteResourceTask = new FileResourceTask(true);
+
+            if (!task.isEmpty()) {
+                List<ThreadPoolError> errors = threadPoolFiler.submit(task);
+                handleErrors(errors);
+            }
+
+        } finally {
+            resourceTaskLock.unlock();
+        }
     }
 
 
@@ -248,7 +325,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
      */
     private UUID findEdsPatientId(boolean mapIds, ResourceBuilderBase... resourceBuilders) throws Exception {
 
-        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
 
             try {
 
@@ -297,7 +374,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //if we get here, something is wrong since we've failed to find a patient ID
         LOG.error("No patient reference found for resources:");
-        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
             Resource resource = resourceBuilder.getResource();
             LOG.error("" + FhirSerializationHelper.serializeResource(resource));
         }
@@ -343,6 +420,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         List<ThreadPoolError> errors = threadPoolIdMapper.waitAndStop();
         handleErrors(errors);
 
+        //now all mapping is complete, start the last filing tasks
+        runNextSaveResourceTask();
+        runNextDeleteResourceTask();
+
         //close down the filing pool
         errors = threadPoolFiler.waitAndStop();
         handleErrors(errors);
@@ -360,11 +441,12 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         //make sure the current job of ID mapping gets run
         runNextMapIdTask();
 
-        //close down the ID mapper pool
         List<ThreadPoolError> errors = threadPoolIdMapper.waitUntilEmpty();
         handleErrors(errors);
 
-        //close down the filing pool
+        runNextSaveResourceTask();
+        runNextDeleteResourceTask();
+
         errors = threadPoolFiler.waitUntilEmpty();
         handleErrors(errors);
     }
@@ -380,20 +462,20 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ThreadPoolError error : errors) {
+        for (ThreadPoolError error: errors) {
 
             Throwable cause = error.getException();
 
             //if the exception is one of our special types, then we
             if (cause instanceof FilingAndMappingException) {
-                FilingAndMappingException filingAndMappingException = (FilingAndMappingException) cause;
+                FilingAndMappingException filingAndMappingException = (FilingAndMappingException)cause;
                 List<CsvCurrentState> parserStates = filingAndMappingException.getParserStates();
                 Throwable innerCause = cause.getCause();
 
                 if (parserStates != null
-                        && !parserStates.isEmpty()) {
+                    && !parserStates.isEmpty()) {
 
-                    for (CsvCurrentState parserState : parserStates) {
+                    for (CsvCurrentState parserState: parserStates) {
                         logTransformRecordError(innerCause, parserState);
                     }
 
@@ -407,9 +489,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             //the cause may be an Exception or Error so we need to explicitly
             //cast to the right type to throw it without changing the method signature
             if (cause instanceof Exception) {
-                throw (Exception) cause;
+                throw (Exception)cause;
             } else if (cause instanceof Error) {
-                throw (Error) cause;
+                throw (Error)cause;
             }
         }
     }
@@ -464,8 +546,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             ServiceDalI serviceDal = DalProvider.factoryServiceDal();
             Service service = serviceDal.getById(serviceId);
             String msg = "" + patientDeleted + " resources deleted over "
-                    + patientCount + " patients in exchange "
-                    + exchangeId + " for " + service.getName() + " " + service.getId();
+                       + patientCount + " patients in exchange "
+                       + exchangeId + " for " + service.getName() + " " + service.getId();
 
             SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
         }
@@ -575,49 +657,43 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         }
     }
 
-    class MapIdJob {
+    class ResourceJob {
         private CsvCurrentState parserState = null;
         private boolean isDelete = false;
-        private ExchangeBatch exchangeBatch = null;
-        private ResourceBuilderBase[] resourceBuilders = null;
+        private UUID batchId = null;
+        private ResourceBuilderBase resourceBuilder = null;
+        private boolean isDefinitelyNewResource = false;
 
-        MapIdJob(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch, ResourceBuilderBase... resourceBuilders) {
+        ResourceJob(CsvCurrentState parserState, boolean isDelete, UUID batchId, ResourceBuilderBase resourceBuilder) {
             this.parserState = parserState;
             this.isDelete = isDelete;
-            this.exchangeBatch = exchangeBatch;
-            this.resourceBuilders = resourceBuilders;
+            this.batchId = batchId;
+            this.resourceBuilder = resourceBuilder;
         }
 
         public CsvCurrentState getParserState() {
             return parserState;
         }
 
-        public void setParserState(CsvCurrentState parserState) {
-            this.parserState = parserState;
-        }
-
         public boolean isDelete() {
             return isDelete;
         }
 
-        public void setDelete(boolean delete) {
-            isDelete = delete;
+        public UUID getBatchId() {
+            return batchId;
         }
 
-        public ExchangeBatch getExchangeBatch() {
-            return exchangeBatch;
+        public ResourceBuilderBase getResourceBuilder() {
+            return resourceBuilder;
         }
 
-        public void setExchangeBatch(ExchangeBatch exchangeBatch) {
-            this.exchangeBatch = exchangeBatch;
+
+        public boolean isDefinitelyNewResource() {
+            return isDefinitelyNewResource;
         }
 
-        public ResourceBuilderBase[] getResourceBuilders() {
-            return resourceBuilders;
-        }
-
-        public void setResourceBuilders(ResourceBuilderBase[] resourceBuilders) {
-            this.resourceBuilders = resourceBuilders;
+        public void setDefinitelyNewResource(boolean definitelyNewResource) {
+            isDefinitelyNewResource = definitelyNewResource;
         }
     }
 
@@ -647,12 +723,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
     class MapIdTask implements Callable {
 
-        private List<MapIdJob> jobs = new ArrayList<>();
+        private List<ResourceJob> jobs = new ArrayList<>();
 
-        public MapIdTask() {
-        }
+        public MapIdTask() { }
 
-        public void addJob(MapIdJob job) {
+        public void addJob(ResourceJob job) {
             jobs.add(job);
         }
 
@@ -660,23 +735,25 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return jobs.size() >= 10;
         }
 
+        public boolean isEmpty() {
+            return jobs.isEmpty();
+        }
+
         @Override
         public Object call() throws Exception {
 
             //collate all the resources from the jobs into a single list, with a map for reverse lookups
             List<Resource> resources = new ArrayList<>();
-            Map<Resource, MapIdJob> hmJobsByResource = new HashMap<>();
+            Map<Resource, ResourceJob> hmJobsByResource = new HashMap<>();
 
             List<ResourceBuilderBase> resourceBuilders = new ArrayList<>();
 
-            for (MapIdJob job : jobs) {
-                ResourceBuilderBase[] resourceBuildersArr = job.getResourceBuilders();
-                for (ResourceBuilderBase resourceBuilder : resourceBuildersArr) {
-                    Resource resource = resourceBuilder.getResource();
-                    resources.add(resource);
-                    hmJobsByResource.put(resource, job);
-                    resourceBuilders.add(resourceBuilder);
-                }
+            for (ResourceJob job: jobs) {
+                ResourceBuilderBase resourceBuilder = job.getResourceBuilder();
+                Resource resource = resourceBuilder.getResource();
+                resources.add(resource);
+                hmJobsByResource.put(resource, job);
+                resourceBuilders.add(resourceBuilder);
             }
 
             //do the ID mapping
@@ -689,10 +766,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 String err = "Exception mapping resources: ";
                 List<CsvCurrentState> parserStates = new ArrayList<>();
                 StringBuilder sb = new StringBuilder();
-                for (Resource resource : resources) {
+                for (Resource resource: resources) {
                     err += resource.getResourceType() + "/" + resource.getId() + " ";
                     if (parserStates != null) {
-                        MapIdJob job = hmJobsByResource.get(resource);
+                        ResourceJob job = hmJobsByResource.get(resource);
                         CsvCurrentState parserState = job.getParserState();
                         if (parserState == null) {
                             //if one of our jobs has a null parser state, then it's not a CSV-record level error
@@ -710,15 +787,14 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             }
 
             //then bump onto the filing queue
-            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
                 Resource resource = resourceBuilder.getResource();
                 boolean isDefinitelyNewResource = definitelyNewResources.contains(resource);
-                MapIdJob job = hmJobsByResource.get(resource);
-                CsvCurrentState parserState = job.getParserState();
-                boolean isDelete = job.isDelete();
-                ExchangeBatch exchangeBatch = job.exchangeBatch;
 
-                addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilder, isDefinitelyNewResource);
+                ResourceJob job = hmJobsByResource.get(resource);
+                job.setDefinitelyNewResource(isDefinitelyNewResource);
+
+                addToFilingQueue(job);
             }
 
             //seem to be retaining a lot of these in memory, so de-reference the jobs to help the GC
@@ -727,109 +803,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return null;
         }
     }
-
-    class FileResourceTask implements Callable {
-
-        private CsvCurrentState parserState = null;
-        private boolean isDelete = false;
-        private ExchangeBatch exchangeBatch = null;
-        private ResourceBuilderBase resourceBuilder = null;
-        private boolean isDefinitelyNewResource = false;
-
-        public FileResourceTask(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch,
-                                ResourceBuilderBase resourceBuilder, boolean isDefinitelyNewResource) {
-            this.parserState = parserState;
-            this.isDelete = isDelete;
-            this.exchangeBatch = exchangeBatch;
-            this.resourceBuilder = resourceBuilder;
-            this.isDefinitelyNewResource = isDefinitelyNewResource;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            Resource resource = resourceBuilder.getResource();
-
-            try {
-                //apply any existing merge mappings to the resource
-                Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
-                IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
-
-                //save or delete the resource
-                ResourceWrapper resourceWrapper = null;
-                UUID batchUuid = exchangeBatch.getBatchId();
-                if (isDelete) {
-                    resourceWrapper = storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
-                } else {
-                    resourceWrapper = storageService.exchangeBatchUpdate(exchangeId, batchUuid, resource, isDefinitelyNewResource);
-                }
-
-                //store our audit trail if we actually saved the resource
-                if (resourceWrapper != null) {
-                    ResourceFieldMappingAudit audit = resourceBuilder.getAuditWrapper();
-                    SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
-                    dal.saveResourceMappings(serviceId, resourceWrapper, audit);
-                }
-
-            } catch (Exception ex) {
-                LOG.error("", ex);
-                throw new FilingAndMappingException("Exception filing " + resource.getResourceType() + " " + resource.getId(), parserState, ex);
-            }
-
-            return null;
-        }
-    }
-
-    /*class MapAndSaveResourceTask implements Callable {
-
-        private CsvCurrentState parserState = null;
-        private boolean isDelete = false;
-        private boolean mapIds = false;
-        private ExchangeBatch exchangeBatch = null;
-        private boolean patientResources = false;
-        private Resource[] resources = null;
-
-        public MapAndSaveResourceTask(CsvCurrentState parserState, boolean isDelete, boolean mapIds,
-                                      ExchangeBatch exchangeBatch, boolean patientResources, Resource... resources) {
-            this.parserState = parserState;
-            this.isDelete = isDelete;
-            this.mapIds = mapIds;
-            this.exchangeBatch = exchangeBatch;
-            this.patientResources = patientResources;
-            this.resources = resources;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            for (Resource resource: resources) {
-
-                try {
-                    boolean isDefinitelyNewResource = false;
-                    if (mapIds) {
-                        isDefinitelyNewResource = IdHelper.mapIds(serviceId, systemId, resource);
-                    }
-
-                    UUID batchUuid = exchangeBatch.getBatchId();
-                    if (isDelete) {
-                        storageService.exchangeBatchDelete(exchangeId, batchUuid, resource);
-                    } else {
-                        storageService.exchangeBatchUpdate(exchangeId, batchUuid, resource, isDefinitelyNewResource);
-                    }
-
-                } catch (Exception ex) {
-                    LOG.error("", ex);
-                    throw new TransformException("Exception mapping or storing " + resource.getResourceType() + " " + resource.getId(), ex);
-                }
-            }
-
-            return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
-        }
-    }*/
 
 
     private static void validateResources(UUID serviceId, boolean mapIds, boolean deleting, ResourceBuilderBase... resourceBuilders) throws Exception {
@@ -848,7 +821,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 String clsName = "org.endeavourhealth.transform.common.resourceValidators.ResourceValidator" + resource.getClass().getSimpleName();
                 try {
                     Class cls = Class.forName(clsName);
-                    validator = (ResourceValidatorBase) cls.newInstance();
+                    validator = (ResourceValidatorBase)cls.newInstance();
                     resourceValidators.put(resourceCls, validator);
 
                 } catch (Exception ex) {
@@ -871,6 +844,117 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 msg += String.join("\n", validationErrors);
                 throw new TransformException(msg);
             }
+        }
+    }
+
+    class FileResourceTask implements Callable {
+
+        private boolean isDelete;
+        private List<ResourceJob> jobs;
+
+        public FileResourceTask(boolean isDelete) {
+            this.isDelete = isDelete;
+            this.jobs = new ArrayList<>();
+        }
+
+        public boolean isFull() {
+            return jobs.size() >= TransformConfig.instance().getResourceSaveBatchSize();
+        }
+
+        public boolean isEmpty() {
+            return jobs.isEmpty();
+        }
+
+        public void addJob(ResourceJob job) {
+            jobs.add(job);
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                Map<Resource, UUID> hmResourcesAndBatches = new HashMap<>();
+                Set<Resource> definitelyNewResources = new HashSet<>();
+                Map<String, ResourceFieldMappingAudit> hmAuditsByResourceId = new HashMap<>();
+
+                for (ResourceJob job: jobs) {
+                    /*if (job == null) {
+                        LOG.info("JOB IS NULL");
+                        for (int i=0; i<jobs.size(); i++) {
+                            LOG.info("at " + i + " = " + jobs.get(i));
+                        }
+                        LOG.error("NULL JOB FOUND", new Exception());
+                    }*/
+                    UUID batchId = job.getBatchId();
+                    ResourceBuilderBase builder = job.getResourceBuilder();
+                    Resource resource = builder.getResource();
+
+                    //apply any existing merge mappings to the resource - this is done here because not all resources
+                    //go through the ID mapping process, but this needs doing every time
+                    try {
+                        Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
+                        IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
+                    } catch (Exception ex) {
+                        LOG.error("", ex);
+                        throw new FilingAndMappingException("Exception applying external reference mappings to " + resource.getResourceType() + " " + resource.getId(), job.getParserState(), ex);
+                    }
+
+                    hmResourcesAndBatches.put(resource, batchId);
+
+                    ResourceFieldMappingAudit audit = builder.getAuditWrapper();
+                    String resourceId = resource.getId();
+                    hmAuditsByResourceId.put(resourceId, audit);
+
+                    if (job.isDefinitelyNewResource()) {
+                        definitelyNewResources.add(resource);
+                    }
+                }
+
+
+                //save or delete the resource
+                List<ResourceWrapper> wrappersUpdated = null;
+                if (isDelete) {
+                    wrappersUpdated = storageService.deleteResources(exchangeId, hmResourcesAndBatches, definitelyNewResources);
+                } else {
+                    wrappersUpdated = storageService.saveResources(exchangeId, hmResourcesAndBatches, definitelyNewResources);
+                }
+
+                //store our audit trail if we actually saved the resource
+                SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
+                Map<ResourceWrapper, ResourceFieldMappingAudit> hmAuditsToSave = new HashMap<>();
+                for (ResourceWrapper wrapper: wrappersUpdated) {
+                    ResourceFieldMappingAudit audit = hmAuditsByResourceId.get(wrapper.getResourceId().toString());
+                    hmAuditsToSave.put(wrapper, audit);
+                }
+                dal.saveResourceMappings(hmAuditsToSave);
+
+            } catch (Exception ex) {
+
+                String err = "Exception filing resources: ";
+                List<CsvCurrentState> parserStates = new ArrayList<>();
+                StringBuilder sb = new StringBuilder();
+                for (ResourceJob job: jobs) {
+                    ResourceBuilderBase builder = job.getResourceBuilder();
+                    Resource resource = builder.getResource();
+                    err += resource.getResourceType() + "/" + resource.getId() + " ";
+
+                    CsvCurrentState parserState = job.getParserState();
+                    if (parserState == null) {
+                        //if one of our jobs has a null parser state, then it's not a CSV-record level error
+                        //so null the list so it gets treated as a fatal error
+                        parserStates = null;
+                    } else {
+                        sb.append(parserState.toString());
+                        parserStates.add(parserState);
+                    }
+                }
+
+                LOG.error("Parser states:" + sb.toString());
+                LOG.error(err, ex);
+                throw new FilingAndMappingException(err, parserStates, ex);
+            }
+
+            return null;
         }
     }
 

@@ -6,6 +6,7 @@ import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
@@ -333,6 +334,8 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 5000);
 
         try {
+            AuditRowTask nextTask = new AuditRowTask(haveProcessedFileBefore);
+
             while (nextRecord()) {
 
                 if (this.currentLineNumber % 50000 == 0) {
@@ -349,8 +352,21 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
                     values[i] = value;
                 }
 
-                AuditRowTask task = new AuditRowTask(this.currentLineNumber, values, haveProcessedFileBefore);
-                List<ThreadPoolError> errors = threadPool.submit(task);
+                SourceFileRecord fileRecord = new SourceFileRecord();
+                fileRecord.setSourceFileId(fileAuditId);
+                fileRecord.setSourceLocation("" + this.currentLineNumber);
+                fileRecord.setValues(values);
+
+                nextTask.addRecord(fileRecord);
+                if (nextTask.isFull()) {
+                    List<ThreadPoolError> errors = threadPool.submit(nextTask);
+                    handleErrors(errors);
+                    nextTask = new AuditRowTask(haveProcessedFileBefore);
+                }
+            }
+
+            if (!nextTask.isEmpty()) {
+                List<ThreadPoolError> errors = threadPool.submit(nextTask);
                 handleErrors(errors);
             }
 
@@ -372,8 +388,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         ThreadPoolError first = errors.get(0);
         AuditRowTask callable = (AuditRowTask) first.getCallable();
         Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
     /**
@@ -433,8 +448,81 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
     }
 
-
     class AuditRowTask implements Callable {
+
+        private boolean haveProcessedFileBefore = false;
+        private List<SourceFileRecord> records = new ArrayList<>();
+        private boolean full;
+        private boolean empty;
+
+        public AuditRowTask(boolean haveProcessedFileBefore) {
+            this.haveProcessedFileBefore = haveProcessedFileBefore;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+
+                //if we've done this file before, re-load the past audit
+                List<SourceFileRecord> recordsToInsert = null;
+
+                if (haveProcessedFileBefore) {
+                    recordsToInsert = new ArrayList<>();
+
+                    for (SourceFileRecord record : records) {
+                        int lineNumber = Integer.parseInt(record.getSourceLocation());
+                        Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, lineNumber);
+                        if (existingId != null) {
+                            long rowAuditId = existingId.longValue();
+                            setRowAuditId(lineNumber, rowAuditId);
+
+                        } else {
+                            recordsToInsert.add(record);
+                        }
+                    }
+                } else {
+                    recordsToInsert = records;
+                }
+
+                if (!recordsToInsert.isEmpty()) {
+                    dal.auditFileRows(serviceId, recordsToInsert);
+
+                    //the above call will have set the IDs in each of the record objects
+                    for (SourceFileRecord record: recordsToInsert) {
+                        Long rowAuditId = record.getId();
+                        int lineNumber = Integer.parseInt(record.getSourceLocation());
+                        setRowAuditId(lineNumber, rowAuditId);
+                    }
+                }
+
+                return null;
+            } catch (Exception ex) {
+
+                String err = "Exception auditing rows ";
+                for (SourceFileRecord record : records) {
+                    err += record.getSourceLocation();
+                    err += ", ";
+                }
+                LOG.error(err, ex);
+                throw ex;
+            }
+        }
+
+        public void addRecord(SourceFileRecord fileRecord) {
+            this.records.add(fileRecord);
+        }
+
+        public boolean isFull() {
+            return this.records.size() >= TransformConfig.instance().getResourceSaveBatchSize();
+        }
+
+        public boolean isEmpty() {
+            return this.records.isEmpty();
+        }
+    }
+
+    /*class AuditRowTask implements Callable {
 
         private int lineNumber;
         private String[] values;
@@ -482,5 +570,5 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             }
         }
 
-    }
+    }*/
 }
