@@ -228,6 +228,8 @@ public class CLEVEPreTransformer {
                         CernerClinicalEventMappingState mappingState = new CernerClinicalEventMappingState();
                         mappingState.setServiceId(csvHelper.getServiceId());
                         mappingState.setEventId(record.getEventIdCell().getLong()); //only need to populate these two columns for the delete
+
+                        mappings.add(mappingState);
                     }
 
                     cernerDal.deleteCleveMappingStateTable(mappings);
