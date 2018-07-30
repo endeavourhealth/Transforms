@@ -191,6 +191,8 @@ public class TransformConfig {
             //if the config record is there, just log it out rather than throw an exception
             LOG.warn("No common queuereader config found in config DB with app_id queuereader and config_id common_config");
         }
+
+        LOG.debug("resourceSaveBatchSize = " + resourceSaveBatchSize);
     }
 
     public String getSharedStoragePath() {
