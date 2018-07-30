@@ -104,7 +104,7 @@ public class SlotTransformer {
             appointmentBuilder.setMinutesDuration(duration.getInt(), duration);
         }
 
-        Reference slotReference = csvHelper.createSlotReference(slotGuid);
+        Reference slotReference = csvHelper.createSlotReference(patientGuid, slotGuid);
         appointmentBuilder.addSlot(slotReference, slotGuid);
 
         //if we get an update to an appointment, we don't get the practitioners again, so we need to retrieve the existing instance

@@ -216,8 +216,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createScheduleReference(CsvCell scheduleGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
     }
-    public Reference createSlotReference(CsvCell slotGuid) throws Exception {
-        return ReferenceHelper.createReference(ResourceType.Slot, slotGuid.getString());
+    public Reference createSlotReference(CsvCell patientGuid, CsvCell slotGuid) throws Exception {
+        String resourceId = createUniqueId(patientGuid, slotGuid);
+        return ReferenceHelper.createReference(ResourceType.Slot, resourceId);
     }
 
 
