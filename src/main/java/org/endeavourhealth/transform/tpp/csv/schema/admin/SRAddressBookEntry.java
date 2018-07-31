@@ -21,24 +21,44 @@ public class SRAddressBookEntry extends AbstractCsvParser {
     // NB So far this is the same across versions
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateCreated",
-                "Title",
-                "FirstName",
-                "MiddleNames",
-                "Surname",
-                "OrganisationName",
-                "IDParentAddressBookEntry",
-                "HouseName",
-                "HouseNumber",
-                "NameOfRoad",
-                "NameOfLocality",
-                "NameOfTown",
-                "NameOfCounty",
-                "FullPostcode"
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+            return new String[] {
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreated",
+                    "Title",
+                    "FirstName",
+                    "MiddleNames",
+                    "Surname",
+                    "OrganisationName",
+                    "IDParentAddressBookEntry",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreated",
+                    "Title",
+                    "FirstName",
+                    "MiddleNames",
+                    "Surname",
+                    "OrganisationName",
+                    "IDParentAddressBookEntry",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostcode"
+            };
+        }
     }
 
     public CsvCell getRowIdentifier() {

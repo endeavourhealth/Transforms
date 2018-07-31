@@ -46,6 +46,7 @@ public abstract class TppCsvToFhirTransformer {
 
     public static final String VERSION_TEST_PACK = "TestPack"; //file format we got from the demo environment mid-2017
     public static final String VERSION_TEST_PACK_2 = "TestPack2"; //file format we got from 2017-04-27T09.08.00
+    public static final String VERSION_TEST_PACK_3 = "TestPack3"; //file format we got from 2017-04-26T09.37.00
     public static final String VERSION_87 = "87"; //file format first received from the pilot practice
     public static final String VERSION_88 = "88";
     public static final String VERSION_89 = "89"; //Basically 88 plus RemovedData as needed
@@ -98,6 +99,7 @@ public abstract class TppCsvToFhirTransformer {
         possibleVersions.add(VERSION_87);
         possibleVersions.add(VERSION_TEST_PACK);
         possibleVersions.add(VERSION_TEST_PACK_2);
+        possibleVersions.add(VERSION_TEST_PACK_3);
 
         for (String filePath : files) {
 

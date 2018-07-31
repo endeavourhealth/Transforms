@@ -21,7 +21,25 @@ public class SRPatient extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Title",
+                    "FirstName",
+                    "MiddleNames",
+                    "Surname",
+                    "PreviousSurname",
+                    "NHSNumber",
+                    "DateBirth",
+                    "DateDeath",
+                    "BirthPlace",
+                    "Gender",
+                    "SpeaksEnglish",
+                    "EmailAddress",
+                    "TestPatient"
+            };
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

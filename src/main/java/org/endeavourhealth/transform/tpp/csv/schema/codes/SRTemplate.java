@@ -21,8 +21,18 @@ public class SRTemplate extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DatePublished",
+                    "IDProfilePublishedBy",
+                    "TemplateName",
+                    "TemplateVersion"
+            };
+        }
         //TODO - update transform to check for null cells when using fields not in the older version
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{

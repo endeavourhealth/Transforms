@@ -22,11 +22,12 @@ public class SRImmunisationContent extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         //TODO - update transform to check for null cells when using fields not in the older version
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "Name",
-                    "Content",
+                    "Content"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {

@@ -28,35 +28,59 @@ public class SRPatientInformation extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "Title",
-                      "FirstName",
-                      "MiddleNames",
-                      "Surname",
-                      "PreviousSurname",
-                      "NHSNumber",
-                      "DateBirth",
-                      "DateDeath",
-                      "BirthPlace",
-                      "Gender",
-                      "SpeaksEnglish",
-                      "EmailAddress",
-                      "PreferredPharmacy",
-                      "TestPatient",
-                      "DateRegistration",
-                      "DateDeRegistration",
-                      "RegistrationStatus",
-                      "SSRef",
-                      "IDPatient",
-                      "IDOrganisation",
-                      "RemovedData"
-                    
-
-            };
-
+            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "Title",
+                        "FirstName",
+                        "MiddleNames",
+                        "Surname",
+                        "PreviousSurname",
+                        "NHSNumber",
+                        "DateBirth",
+                        "DateDeath",
+                        "BirthPlace",
+                        "Gender",
+                        "SpeaksEnglish",
+                        "EmailAddress",
+                        "PreferredPharmacy",
+                        "TestPatient",
+                        "DateRegistration",
+                        "DateDeRegistration",
+                        "RegistrationStatus",
+                        "SSRef",
+                        "IDPatient"
+                };
+            } else {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "Title",
+                        "FirstName",
+                        "MiddleNames",
+                        "Surname",
+                        "PreviousSurname",
+                        "NHSNumber",
+                        "DateBirth",
+                        "DateDeath",
+                        "BirthPlace",
+                        "Gender",
+                        "SpeaksEnglish",
+                        "EmailAddress",
+                        "PreferredPharmacy",
+                        "TestPatient",
+                        "DateRegistration",
+                        "DateDeRegistration",
+                        "RegistrationStatus",
+                        "SSRef",
+                        "IDPatient",
+                        "IDOrganisation",
+                        "RemovedData"
+                };
+            }
         }
+
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
  public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
  public CsvCell getTitle() { return super.getCell("Title");}

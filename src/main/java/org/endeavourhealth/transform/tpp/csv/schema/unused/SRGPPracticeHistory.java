@@ -22,18 +22,28 @@ public class SRGPPracticeHistory extends AbstractCsvParser {
 
         @Override
         protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "IDPractice",
-                      "IDProfileRegisteredGP",
-                      "DateFrom",
-                      "DateTo",
-                      "IDPatient",
-                      "RemovedData"
-                    
+            if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDPractice",
+                        "IDProfileRegisteredGP",
+                        "DateFrom",
+                        "DateTo"
+                };
+            } else {
+                return new String[]{
+                        "RowIdentifier",
+                        "IDOrganisationVisibleTo",
+                        "IDPractice",
+                        "IDProfileRegisteredGP",
+                        "DateFrom",
+                        "DateTo",
+                        "IDPatient",
+                        "RemovedData"
 
-            };
+                };
+            }
 
         }
  public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
