@@ -22,30 +22,8 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDOrganisationVisibleTo",
-                    "DateEventRecorded",
-                    "DateEvent",
-                    "IDProfileEnteredBy",
-                    "IDDoneBy",
-                    "TextualEventDoneBy",
-                    "IDOrganisationDoneAt",
-                    "NameOfBuilding",
-                    "NumberOfBuilding",
-                    "NameOfRoad",
-                    "NameOfLocality",
-                    "NameOfTown",
-                    "NameOfCounty",
-                    "FullPostCode",
-                    "DateTo",
-                    "AddressType",
-                    "IDEvent",
-                    "IDPatient",
-                    "IDOrganisation"
-            };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",

@@ -21,15 +21,8 @@ public class SRMedicationReadCodeDetails extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDMultiLexProduct",
-                    "DrugReadCode"
-            };
-        }
         //TODO - update transform to check for null cells when using fields not in the older version
-        else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
