@@ -300,9 +300,10 @@ public class IdHelper {
             Reference sourceReference = map.get(edsReference);
 
             if (sourceReference == null) {
-                TransformWarnings.log(LOG, serviceSystemAndExchangeIdI, "Failed to find Resource ID Mapping for EDS reference {}", edsReference.getReference());
-                LOG.warn("Failed to find Resource ID Mapping for EDS reference " + edsReference.getReference());
-                //throw new TransformException("Failed to find Resource ID Mapping for resource type " + resourceType.toString() + " ID " + components.getId());
+                //changing back to throw an exception as this is a serious error if it happens (i.e. implies a fundamental error in ID/reference mapping)
+                throw new TransformException("Failed to find source Resource ID for Discovery reference " + edsReference.getReference());
+                /*TransformWarnings.log(LOG, serviceSystemAndExchangeIdI, "Failed to find Resource ID Mapping for EDS reference {}", edsReference.getReference());
+                LOG.warn("Failed to find Resource ID Mapping for EDS reference " + edsReference.getReference());*/
 
             } else {
                 ret.add(sourceReference);
