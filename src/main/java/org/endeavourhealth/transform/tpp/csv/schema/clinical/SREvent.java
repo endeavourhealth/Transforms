@@ -72,7 +72,8 @@ public class SREvent extends AbstractCsvParser {
                     "IDBranch",
                     "IDOrganisationRegisteredAt"
             };
-        } else   if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)) {
+        } else   if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

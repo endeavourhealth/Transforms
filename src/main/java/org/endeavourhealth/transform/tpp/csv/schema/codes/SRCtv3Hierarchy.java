@@ -31,7 +31,8 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
                     "ChildLevel",
                     "RemovedData"
             };
-        } else if(version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+        } else if(version.equals(TppCsvToFhirTransformer.VERSION_88)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

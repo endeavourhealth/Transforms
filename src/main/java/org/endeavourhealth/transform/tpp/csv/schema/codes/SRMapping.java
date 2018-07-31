@@ -22,11 +22,18 @@ public class SRMapping extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IdMappingGroup",
-                "Mapping"
-        };
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IdMappingGroup",
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IdMappingGroup",
+                    "Mapping"
+            };
+        }
     }
 
     public CsvCell getRowIdentifier() {
