@@ -8,10 +8,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
-import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
 import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homerton.schema.EncounterTable;
@@ -111,12 +108,20 @@ public class EncounterTransformer extends HomertonBasisTransformer {
             return;
         }
 
-        // the organisation reference, i.e. Homerton
+        // the organisation reference, i.e. Homerton University Hospital
         Reference orgReference = csvHelper.createOrganisationReference(serviceId.toString());
-//        if (encounterBuilder.isIdMapped()) {
-//            orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
-//        }
         encounterBuilder.setServiceProvider(orgReference);
+
+        // the location information is in the encounter data. create a reference and FHIR instance if not already exists
+        CsvCell locationIDCell = parser.getLocationID();
+        if (!HomertonCsvHelper.isEmptyOrIsZero(locationIDCell)) {
+
+            // create or retrieve existing location resources created from the Encounter data
+            csvHelper.getLocationCache().getOrCreateLocationBuilder(locationIDCell, csvHelper, fhirResourceFiler, parser);
+
+            Reference locationReference = csvHelper.createLocationReference(locationIDCell.getString());
+            encounterBuilder.addLocation(locationReference);
+        }
 
         // encounter start date and time
         CsvCell encounterStartDateCell = parser.getActiveStatusDateTime();
@@ -164,9 +169,28 @@ public class EncounterTransformer extends HomertonBasisTransformer {
             encounterBuilder.setType(encounterTypeCell.getString(), encounterTypeCell);
         }
 
+        // encounter speciality
+        CsvCell encounterSpecialityCell = parser.getEncounterSpeciality();
+        if (!encounterSpecialityCell.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Specialty);
+            codeableConceptBuilder.setText(encounterSpecialityCell.getString());
+        }
+
+        // encounter category/source
+        CsvCell encounterCategoryCell = parser.getEncounterCategory();
+        if (!encounterCategoryCell.isEmpty()) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilder.setText(encounterCategoryCell.getString());
+        }
+
         // reason
         CsvCell reasonForVisit = parser.getReasonForVisitText();
         if (!reasonForVisit.isEmpty()) {
+
             encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
         }
 

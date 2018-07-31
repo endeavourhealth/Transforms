@@ -21,6 +21,7 @@ import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCs
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.homerton.cache.LocationResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EncounterResourceCache encounterCache = new EncounterResourceCache();
+    private LocationResourceCache locationCache = new LocationResourceCache();
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -91,15 +93,13 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
         return version;
     }
 
-    public PatientResourceCache getPatientCache() {
-        return patientCache;
-    }
+    public PatientResourceCache getPatientCache() { return patientCache; }
 
     public EncounterResourceCache getEncounterCache() { return encounterCache; }
 
-    public Service getService (UUID id) throws Exception {
-        return serviceRepository.getById(id);
-    }
+    public LocationResourceCache getLocationCache() { return locationCache; }
+
+    public Service getService (UUID id) throws Exception { return serviceRepository.getById(id);}
 
     // if the resource is already filed and has been retrieved from the DB, the sourceId will differ from the
     // saved (mapped) resource Id
@@ -109,6 +109,10 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
+
+    public Reference createLocationReference(String locationGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Location, locationGuid);
     }
 
     public Reference createPractitionerReference(String practitionerGuid) {

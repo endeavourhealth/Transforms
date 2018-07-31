@@ -47,7 +47,6 @@ public abstract class HomertonCsvToFhirTransformer {
         try {
             // non-patient transforms
             CodeTransformer.transform(createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper);
-            //TODO - locations
 
             // process the bulk patient file first if it exists in the batch, usually in the baseline folder
             PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper);
@@ -85,6 +84,7 @@ public abstract class HomertonCsvToFhirTransformer {
             //if we had any exception that caused us to bomb out of the transform, we'll have
             //potentially cached resources in the DB, so tidy them up now
             csvHelper.getPatientCache().cleanUpResourceCache();
+            csvHelper.getLocationCache().cleanUpResourceCache();
         }
     }
 
