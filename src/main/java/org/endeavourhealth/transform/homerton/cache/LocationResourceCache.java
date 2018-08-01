@@ -37,7 +37,7 @@ public class LocationResourceCache {
 
         Location location = (Location)csvHelper.retrieveResourceForLocalId(ResourceType.Location, locationID.toString());
         if (location == null) {
-            //if the patient doesn't exist yet, create a new one
+            //if the location doesn't exist yet, create a new one
             locationBuilder = new LocationBuilder();
             locationBuilder.setId(locationID.toString());
 
@@ -56,7 +56,7 @@ public class LocationResourceCache {
             if (!locationBuildingCell.isEmpty()) {
                 locationDisplayName = locationBuildingCell.getString().concat(", " + locationDisplayName);
             }
-            locationBuilder.setName(locationDisplayName, locationNameCell, locationBuildingCell, locationRoomCell);
+            locationBuilder.setName(locationDisplayName, locationNameCell, locationBuildingCell, locationNurseUnitCell, locationRoomCell);
 
             LocationPhysicalType physicalType = getLocationPhysicalType(parser);
             if (physicalType != null) {

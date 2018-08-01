@@ -132,7 +132,7 @@ public class CONSULTATIONTransformer {
                     + ":" + consultationId.getString();
             observationBuilder.setId(observationId, caseId, consultationId);
 
-            DateTimeType dateTimeType = new DateTimeType(startDateTime.getDate());
+            DateTimeType dateTimeType = new DateTimeType(startDateTime.getDateTime());
             observationBuilder.setEffectiveDate(dateTimeType, startDateTime);
             observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
