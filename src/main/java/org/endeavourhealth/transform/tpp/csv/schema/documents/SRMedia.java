@@ -21,7 +21,34 @@ public class SRMedia extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "DocumentUID",
+                    "IDOrganisationVisibleTo",
+                    "IDPatient",
+                    "IDEvent",
+                    "DateEvent",
+                    "IDDoneBy",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "IDOrganisationDoneAt",
+                    "FileName",
+                    "FileSize",
+                    "SenderTitle",
+                    "SenderFirstName",
+                    "SenderSurname",
+                    "SenderOrganisation",
+                    "RecipientTitle",
+                    "RecipientFirstName",
+                    "RecipientSurname",
+                    "RecipientOrganisation",
+                    "EmailAddress",
+                    "Direction",
+                    "CommunicationType",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
                     "DocumentUID",

@@ -39,8 +39,9 @@ public class SROrganisationBranch extends AbstractCsvParser {
                     "BranchObsolete",
                     "IDOrganisation"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87) ||
-                version.equals(TppCsvToFhirTransformer.VERSION_89))  {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

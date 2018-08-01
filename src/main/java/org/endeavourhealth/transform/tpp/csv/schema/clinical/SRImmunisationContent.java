@@ -24,6 +24,7 @@ public class SRImmunisationContent extends AbstractCsvParser {
         //TODO - update transform to check for null cells when using fields not in the older version
         if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",

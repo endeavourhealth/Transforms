@@ -32,7 +32,8 @@ public class SRCtv3 extends AbstractCsvParser {
                     "Ctv3Text"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

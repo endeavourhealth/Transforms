@@ -31,7 +31,8 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
                     "Ctv3Code",
                     "Version2Code"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "Ctv3Code",

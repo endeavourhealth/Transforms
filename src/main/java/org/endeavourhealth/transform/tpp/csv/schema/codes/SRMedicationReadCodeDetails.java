@@ -32,7 +32,8 @@ public class SRMedicationReadCodeDetails extends AbstractCsvParser {
                     "DrugReadCode",
                     "DrugReadCodeDesc"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "IDMultiLexProduct",
