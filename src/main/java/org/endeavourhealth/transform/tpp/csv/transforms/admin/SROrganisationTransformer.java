@@ -67,7 +67,7 @@ public class SROrganisationTransformer {
         if (mapIds) {
             organizationBuilder.setId(parser.getID().getString());
             locationBuilder.setId(parser.getID().getString());
-            organisationReference = csvHelper.createOrganisationReference(parser.getRowIdentifier());
+            organisationReference = csvHelper.createOrganisationReference(parser.getID());
         } else {
             organisationReference = csvHelper.createOrganisationReference(organizationBuilder.getResourceId());
         }
