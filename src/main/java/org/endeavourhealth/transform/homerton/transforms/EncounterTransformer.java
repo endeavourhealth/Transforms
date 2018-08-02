@@ -120,7 +120,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
             csvHelper.getLocationCache().getOrCreateLocationBuilder(locationIDCell, csvHelper, fhirResourceFiler, parser);
 
             Reference locationReference = csvHelper.createLocationReference(locationIDCell.getString());
-            encounterBuilder.addLocation(locationReference);
+            encounterBuilder.addLocation(locationReference, locationIDCell);
         }
 
         // encounter start date and time

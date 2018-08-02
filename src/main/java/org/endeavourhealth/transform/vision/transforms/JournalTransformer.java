@@ -579,6 +579,9 @@ public class JournalTransformer {
             conditionBuilder.setNotes(comments.getString(),comments);
         }
 
+        // no other confirmation status except confirmed
+        conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+
         CsvCell recordedDate = parser.getEnteredDateTime();
         conditionBuilder.setRecordedDate(recordedDate.getDate(), recordedDate);
 

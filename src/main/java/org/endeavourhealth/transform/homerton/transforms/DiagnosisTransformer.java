@@ -137,7 +137,11 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
                         codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode(), conceptCodeCell);
                         codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm()); //don't pass in the cell as this is derived
-                        codeableConceptBuilder.setText(snomedCode.getTerm()); //don't pass in the cell as this is derived
+
+                        CsvCell term = parser.getDiagnosisDisplay();
+                        if (!term.isEmpty()) {
+                            codeableConceptBuilder.setText(term.getString(), term);
+                        }
                     }
                 } else if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_ICD_10)) {
                     String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
@@ -148,7 +152,11 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeTypeCell);
                     codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
                     codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
-                    codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
+
+                    CsvCell origTerm = parser.getDiagnosisDisplay();
+                    if (!origTerm.isEmpty()) {
+                        codeableConceptBuilder.setText(origTerm.getString(), origTerm);
+                    }
 
                 } else {
                     throw new TransformException("Unknown Diagnosis code type [" + conceptCodeType + "]");
