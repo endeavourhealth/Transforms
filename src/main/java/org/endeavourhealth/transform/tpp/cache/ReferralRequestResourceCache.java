@@ -28,7 +28,7 @@ public class ReferralRequestResourceCache {
         if (referralRequestBuilder == null) {
 
             org.hl7.fhir.instance.model.ReferralRequest referralRequest
-                    = (org.hl7.fhir.instance.model.ReferralRequest)csvHelper.retrieveResource(referralOutIdCell.getString(), ResourceType.ReferralRequest, fhirResourceFiler);
+                    = (org.hl7.fhir.instance.model.ReferralRequest)csvHelper.retrieveResource(referralOutIdCell.getString(), ResourceType.ReferralRequest);
             if (referralRequest == null) {
                 //if the ReferalRequest doesn't exist yet, create a new one
                 referralRequestBuilder = new ReferralRequestBuilder();

@@ -95,8 +95,7 @@ public class SRPrimaryCareMedicationTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.MedicationStatement medicationStatement
                         = (org.hl7.fhir.instance.model.MedicationStatement) csvHelper.retrieveResource(medicationId.getString(),
-                        ResourceType.MedicationStatement,
-                        fhirResourceFiler);
+                        ResourceType.MedicationStatement);
 
                 if (medicationStatement != null) {
                     MedicationStatementBuilder medicationStatementBuilder
@@ -239,8 +238,7 @@ public class SRPrimaryCareMedicationTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.MedicationOrder medicationOrder
                         = (org.hl7.fhir.instance.model.MedicationOrder) csvHelper.retrieveResource(medicationId.getString(),
-                        ResourceType.MedicationOrder,
-                        fhirResourceFiler);
+                        ResourceType.MedicationOrder);
 
                 if (medicationOrder != null) {
                     MedicationOrderBuilder medicationOrderBuilder

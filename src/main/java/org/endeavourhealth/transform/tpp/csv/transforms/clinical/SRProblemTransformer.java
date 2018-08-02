@@ -59,8 +59,7 @@ public class SRProblemTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Condition condition
                         = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(problemId.getString(),
-                        ResourceType.Condition,
-                        fhirResourceFiler);
+                        ResourceType.Condition);
 
                 if (condition != null) {
                     ConditionBuilder conditionBuilder = new ConditionBuilder(condition);

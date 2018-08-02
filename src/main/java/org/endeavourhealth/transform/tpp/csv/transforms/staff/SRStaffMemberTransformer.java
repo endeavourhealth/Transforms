@@ -3,11 +3,9 @@ package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
@@ -96,13 +94,15 @@ public class SRStaffMemberTransformer {
             practitionerBuilder.setActive(true, obsolete);
         }
         // Get cached StaffMemberProfile records
-        List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getStaffMemberProfilePojo(staffMemberId.getLong());
+        List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getAndRemoveStaffMemberProfilePojo(staffMemberId.getLong());
         if (pojoList != null) {
             for (StaffMemberProfilePojo  pojo : pojoList) {
                 CsvCell profileCell = pojo.getRowIdentifier();
+
                 // create the internal link between staff member role and staff member
-                csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                       pojo.getIDStaffMemberProfileRole(), staffMemberId.getString());
+                //moved to happen in the staff profile transformer
+                /*csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                       pojo.getIDStaffMemberProfileRole(), staffMemberId.getString());*/
 
                 PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
@@ -110,9 +110,10 @@ public class SRStaffMemberTransformer {
                     String orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                        if (practitionerBuilder.isIdMapped()) {
+                        //our practitioner builder is never ID mapped
+                        /*if (practitionerBuilder.isIdMapped()) {
                             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-                        }
+                        }*/
                         roleBuilder.setRoleManagingOrganisation(organisationReference, profileCell);
                     }
                 }
@@ -166,17 +167,18 @@ public class SRStaffMemberTransformer {
                         identifierBuilder.setValue(gmpCode, profileCell);
                     }
                 }
-
-                StaffMemberProfileCache.removeStaffPojo(pojo);
             }
         }
-        boolean mapIds;
+
+        //we don't retrieve from the DB and update so it will never be ID mapped
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
+        /*boolean mapIds;
         if (practitionerBuilder.isIdMapped()) {
             mapIds = false;
         } else {
             mapIds = true;
         }
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, practitionerBuilder);
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, practitionerBuilder);*/
     }
 
 

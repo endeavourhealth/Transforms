@@ -62,8 +62,7 @@ public class SREventTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Encounter encounter
                         = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(eventId.getString(),
-                        ResourceType.Encounter,
-                        fhirResourceFiler);
+                        ResourceType.Encounter);
 
                 if (encounter != null) {
                     EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);

@@ -2,15 +2,18 @@ package org.endeavourhealth.transform.tpp.cache;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.core.csv.CsvHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.StaffMemberProfilePojo;
+import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,62 +27,71 @@ public class StaffMemberProfileCache {
     // A simple HashMap with index key and a pojo class as a temporary cache
     private static final Logger LOG = LoggerFactory.getLogger(StaffMemberProfileCache.class);
 
-    private static HashMap<Long, List<StaffMemberProfilePojo>> StaffMemberProfileByStaffId = new HashMap<>();
+    private static HashMap<Long, List<StaffMemberProfilePojo>> staffMemberProfileByStaffId = new HashMap<>();
 
     public static void addStaffPojo(StaffMemberProfilePojo pojo) {
         Long key = pojo.getIDStaffMember();
-        if (StaffMemberProfileByStaffId.containsKey(key)) {
-            StaffMemberProfileByStaffId.get(key).add(pojo);
+        if (staffMemberProfileByStaffId.containsKey(key)) {
+            staffMemberProfileByStaffId.get(key).add(pojo);
         } else {
             List<StaffMemberProfilePojo> pojoList = new ArrayList<StaffMemberProfilePojo>();
             pojoList.add(pojo);
-            StaffMemberProfileByStaffId.put(key, pojoList);
+            staffMemberProfileByStaffId.put(key, pojoList);
         }
     }
 
-    public static List<StaffMemberProfilePojo> getStaffMemberProfilePojo(Long pojoKey) {
-        return StaffMemberProfileByStaffId.get(pojoKey);
+    public static List<StaffMemberProfilePojo> getAndRemoveStaffMemberProfilePojo(Long pojoKey) {
+        return staffMemberProfileByStaffId.remove(pojoKey);
     }
 
-    public static void removeStaffPojo(StaffMemberProfilePojo pojo) {
-        StaffMemberProfileByStaffId.remove(pojo.getIDStaffMember());
-    }
+    /*public static void removeStaffPojo(StaffMemberProfilePojo pojo) {
+        staffMemberProfileByStaffId.remove(pojo.getIDStaffMember());
+    }*/
 
-    public static boolean containsStaffId(Long staffId) {
-        return (StaffMemberProfileByStaffId.containsKey(staffId));
-    }
+    /*public static boolean containsStaffId(Long staffId) {
+        return (staffMemberProfileByStaffId.containsKey(staffId));
+    }*/
 
     public static int size() {
-        return StaffMemberProfileByStaffId.size();
+        return staffMemberProfileByStaffId.size();
     }
 
     public static void clear() {
         LOG.info("Staff member profile cache still has " + size() + " records. Creating Practitioners. ");
-        StaffMemberProfileByStaffId.clear();
+        staffMemberProfileByStaffId.clear();
     }
 
-    public static void fileRemainder(TppCsvHelper  csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception{
+    public static void fileRemainder(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception{
         // For all remaining StaffMemberProfile records create new Practitioners via
         // PractionerBuilder so these records aren't lost. Presumably the staff records are somewhere in the
         // incoming files.
-        for (Long key : StaffMemberProfileByStaffId.keySet()) {
-            List<StaffMemberProfilePojo> pojoList = StaffMemberProfileByStaffId.get(key);
-            PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
-            String staffMemberId  = pojoList.get(0).getIDStaffMember().toString();
-            practitionerBuilder.setId(staffMemberId);
+        for (Long staffMemberId: staffMemberProfileByStaffId.keySet()) {
+            List<StaffMemberProfilePojo> pojoList = staffMemberProfileByStaffId.get(staffMemberId);
+
+            //retrieve the existing practitioner from the DB
+            Practitioner practitioner = (Practitioner)csvHelper.retrieveResource("" + staffMemberId, ResourceType.Practitioner);
+            if (practitioner == null) {
+                continue;
+            }
+
+            PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner);
+
             for (StaffMemberProfilePojo pojo : pojoList) {
-                csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                        pojo.getIDStaffMemberProfileRole(), staffMemberId);
+
                 CsvCell profileCell = pojo.getRowIdentifier();
                 PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
+
+//TODO set ID on role builder
+//TODO remove existing role from practitioner
+//TODO - do both the above in StaffMemberTransformer
+
+
                 // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
                 if (pojo.getIDOrganisation() != null) {
                     String orgId = pojo.getIDOrganisation();
                     if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
                         Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                        if (practitionerBuilder.isIdMapped()) {
-                            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-                        }
+                        organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
                         roleBuilder.setRoleManagingOrganisation(organisationReference, profileCell);
                     }
                 }
@@ -136,11 +148,9 @@ public class StaffMemberProfileCache {
 
                 // We know we need to map Ids as we just built this from local values
                 fhirResourceFiler.saveAdminResource(pojo.getParserState(),true, practitionerBuilder);
-
-
             }
         }
-        StaffMemberProfileByStaffId.clear();
+        staffMemberProfileByStaffId.clear();
     }
 }
 

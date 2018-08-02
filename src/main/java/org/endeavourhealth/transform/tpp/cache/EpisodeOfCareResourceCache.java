@@ -25,7 +25,7 @@ public class EpisodeOfCareResourceCache {
         if (episodeOfCareBuilder == null) {
 
             EpisodeOfCare EpisodeOfCare
-                    = (EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare, fhirResourceFiler);
+                    = (EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare);
             if (EpisodeOfCare == null) {
                 //if the Patient doesn't exist yet, create a new one
                  episodeOfCareBuilder = new EpisodeOfCareBuilder();

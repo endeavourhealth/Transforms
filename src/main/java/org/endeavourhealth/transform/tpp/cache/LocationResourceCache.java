@@ -9,7 +9,9 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
@@ -31,7 +33,7 @@ public class LocationResourceCache {
         if (LocationBuilder == null) {
 
             Location Location
-                    = (Location) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Location, fhirResourceFiler);
+                    = (Location) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Location);
             if (Location == null) {
                 //if the Location doesn't exist yet, create a new one
                 LocationBuilder = new LocationBuilder();

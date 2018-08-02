@@ -16,7 +16,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisation;
 import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Immunization;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -67,8 +66,7 @@ public class SRImmunisationTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Immunization immunization
                         = (org.hl7.fhir.instance.model.Immunization) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Immunization,
-                        fhirResourceFiler);
+                        ResourceType.Immunization);
 
                 if (immunization != null) {
                     ImmunizationBuilder immunizationBuilder
@@ -86,14 +84,14 @@ public class SRImmunisationTransformer {
         if (!eventId.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             if (immunizationBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
             }
             immunizationBuilder.setEncounter(eventReference, eventId);
         }
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         if (immunizationBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         immunizationBuilder.setPatient(patientReference, patientId);
 
@@ -113,11 +111,11 @@ public class SRImmunisationTransformer {
         if (!recordedBy.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 if (immunizationBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
                 }
                 immunizationBuilder.setRecordedBy(staffReference, recordedBy);
             }
@@ -128,7 +126,7 @@ public class SRImmunisationTransformer {
 
             Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
             if (immunizationBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
             }
             immunizationBuilder.setPerformer(staffReference, encounterDoneBy);
         }
@@ -137,7 +135,7 @@ public class SRImmunisationTransformer {
         if (!orgDoneAt.isEmpty()) {
             Reference locReference = csvHelper.createLocationReference(orgDoneAt);
             if (immunizationBuilder.isIdMapped()) {
-                locReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(locReference,fhirResourceFiler);
+                locReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locReference, fhirResourceFiler);
             }
             immunizationBuilder.setLocation(locReference, orgDoneAt);
         }
@@ -151,7 +149,7 @@ public class SRImmunisationTransformer {
         if (!siteLocation.isEmpty()) {
 
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation, parser);
-            if (tppMappingRef !=null) {
+            if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setSite(mappedTerm, siteLocation);
             }
@@ -160,8 +158,8 @@ public class SRImmunisationTransformer {
         CsvCell method = parser.getMethod();
         if (!method.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method,parser);
-            if (tppMappingRef !=null) {
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method, parser);
+            if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setRoute(mappedTerm, method);
             }
@@ -201,35 +199,29 @@ public class SRImmunisationTransformer {
             }
         }
 
-        Immunization.ImmunizationVaccinationProtocolComponent protocolComponent = new Immunization.ImmunizationVaccinationProtocolComponent();
-        boolean addProtocol = false;
-
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
-            addProtocol = true;
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart, parser);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (StringUtils.isNumeric(mappedTerm)) {
-                    protocolComponent.setDoseSequence(Integer.parseInt(mappedTerm));
+//TODO - confirm that this is the right FHIR field for this content
+                    immunizationBuilder.setProtocolSequenceNumber(Integer.parseInt(mappedTerm), vaccPart);
                 } else {
-                    protocolComponent.setDescription(mappedTerm);
+//TODO - confirm that this is the right FHIR field for this content
+                    immunizationBuilder.setProtocolDescription(mappedTerm, vaccPart);
                 }
             }
         }
 
         CsvCell immContent = parser.getIDImmunisationContent();
         if (!immContent.isEmpty()) {
-            addProtocol = true;
-            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong(),parser);
+            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong(), parser);
             if (tppImmunisationContent != null) {
                 String contentName = tppImmunisationContent.getName();
-                protocolComponent.setSeries(contentName);
+//TODO - confirm that this is the right FHIR field for this content
+                immunizationBuilder.setProtocolSeriesName(contentName, immContent);
             }
-        }
-
-        if (addProtocol) {
-            immunizationBuilder.setVaccinationProtocol(protocolComponent);
         }
 
         CsvCell batch = parser.getVaccBatchNumber();
@@ -241,7 +233,7 @@ public class SRImmunisationTransformer {
         if (!idEvent.isEmpty()) {
             Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
             if (immunizationBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
             }
             immunizationBuilder.setEncounter(eventReference, eventId);
         }

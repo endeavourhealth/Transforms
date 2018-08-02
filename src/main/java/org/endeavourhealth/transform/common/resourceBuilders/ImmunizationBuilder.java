@@ -248,4 +248,32 @@ public class ImmunizationBuilder extends ResourceBuilderBase
             throw new IllegalArgumentException("Unknown tag " + tag);
         }
     }
+
+    private Immunization.ImmunizationVaccinationProtocolComponent getProtocolComponent() {
+        if (this.immunization.hasVaccinationProtocol()) {
+            return this.immunization.getVaccinationProtocol().get(0);
+        } else {
+            Immunization.ImmunizationVaccinationProtocolComponent protocolComponent = new Immunization.ImmunizationVaccinationProtocolComponent();
+            this.immunization.addVaccinationProtocol(protocolComponent);
+            return protocolComponent;
+        }
+    }
+
+    public void setProtocolSequenceNumber(int val, CsvCell... sourceCells) {
+        getProtocolComponent().setDoseSequence(val);
+
+        auditValue("vaccinationProtocol[0].doseSequence", sourceCells);
+    }
+
+    public void setProtocolDescription(String desc, CsvCell... sourceCells) {
+        getProtocolComponent().setDescription(desc);
+
+        auditValue("vaccinationProtocol[0].description", sourceCells);
+    }
+
+    public void setProtocolSeriesName(String name, CsvCell... sourceCells) {
+        getProtocolComponent().setSeries(name);
+
+        auditValue("vaccinationProtocol[0].series", sourceCells);
+    }
 }

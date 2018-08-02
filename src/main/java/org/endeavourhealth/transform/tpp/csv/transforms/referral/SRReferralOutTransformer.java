@@ -74,8 +74,7 @@ public class SRReferralOutTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.ReferralRequest referralRequest
                         = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
-                        ResourceType.ReferralRequest,
-                        fhirResourceFiler);
+                        ResourceType.ReferralRequest);
 
                 if (referralRequest != null) {
                     ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);

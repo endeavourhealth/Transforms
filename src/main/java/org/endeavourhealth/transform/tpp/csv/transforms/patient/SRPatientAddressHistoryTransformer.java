@@ -69,7 +69,7 @@ public class SRPatientAddressHistoryTransformer {
                     patientBuilder.removeAddress(address);
                 }
             }
-            Patient patient = (Patient) csvHelper.retrieveResource(IdPatientCell.getString(), ResourceType.Patient, fhirResourceFiler);
+            Patient patient = (Patient) csvHelper.retrieveResource(IdPatientCell.getString(), ResourceType.Patient);
             addresses = patient.getAddress();
             for (Address address: addresses) {
                 if (address.getId().equals(rowIdCell.getString())) {

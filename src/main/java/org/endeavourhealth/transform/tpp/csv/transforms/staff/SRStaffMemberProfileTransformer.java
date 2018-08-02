@@ -1,5 +1,10 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -9,7 +14,9 @@ import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 
 public class SRStaffMemberProfileTransformer {
@@ -19,25 +26,46 @@ public class SRStaffMemberProfileTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
-        if (parser != null) {
-            while (parser.nextRecord()) {
+        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
+        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
-                try {
-                    createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        try {
+            AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, threadPool);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
                 }
             }
+
+            //call this to abort if we had any errors, during the above processing
+            fhirResourceFiler.failIfAnyErrors();
+        } finally {
+            List<ThreadPoolError> errors = threadPool.waitAndStop();
+            handleErrors(errors);
+        }
+    }
+
+    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
+        if (errors == null || errors.isEmpty()) {
+            return;
         }
 
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
+        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
+        ThreadPoolError first = errors.get(0);
+        Throwable exception = first.getException();
+        throw new TransformException("", exception);
     }
 
     private static void createResource(SRStaffMemberProfile parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                       TppCsvHelper csvHelper,
+                                       ThreadPool threadPool) throws Exception {
 
         //
 
@@ -98,9 +126,9 @@ public class SRStaffMemberProfileTransformer {
             staffPojo.setDateProfileCreated(dateProfileCreated.getDate());
         }
 
-        CsvCell IDStaffMemberProfileRole = parser.getIDStaffMemberProfileRole();
-        if (!IDStaffMemberProfileRole.isEmpty()) {
-            staffPojo.setIDStaffMemberProfileRole(IDStaffMemberProfileRole.getString());
+        CsvCell idStaffMemberProfileRole = parser.getIDStaffMemberProfileRole();
+        if (!idStaffMemberProfileRole.isEmpty()) {
+            staffPojo.setIDStaffMemberProfileRole(idStaffMemberProfileRole.getString());
         }
 
         staffPojo.setParserState(parser.getCurrentState());
@@ -109,6 +137,38 @@ public class SRStaffMemberProfileTransformer {
         StaffMemberProfileCache.addStaffPojo(staffPojo);
         if ((StaffMemberProfileCache.size())%10000==0) { //Cache size every 10k records
             LOG.info("Staff member profile cache at " + StaffMemberProfileCache.size());
+        }
+
+        Task task = new Task(csvHelper, staffId, idStaffMemberProfileRole);
+        List<ThreadPoolError> errors = threadPool.submit(task);
+        handleErrors(errors);
+    }
+
+    static class Task implements Callable {
+
+        private TppCsvHelper csvHelper;
+        private CsvCell staffMemberIdCell;
+        private CsvCell staffProfileIdCell;
+
+        public Task(TppCsvHelper csvHelper, CsvCell staffMemberIdCell, CsvCell staffProfileIdCell) {
+            this.csvHelper = csvHelper;
+            this.staffMemberIdCell = staffMemberIdCell;
+            this.staffProfileIdCell = staffProfileIdCell;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+                                            staffProfileIdCell.getString(), staffMemberIdCell.getString());
+
+            } catch (Throwable t) {
+                LOG.error("Error saving internal ID from " + staffProfileIdCell + " to " + staffMemberIdCell , t);
+                throw t;
+            }
+
+            return null;
         }
     }
 }

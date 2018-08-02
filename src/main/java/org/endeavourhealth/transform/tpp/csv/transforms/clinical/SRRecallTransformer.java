@@ -60,8 +60,7 @@ public class SRRecallTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.ProcedureRequest procedureRequest
                         = (org.hl7.fhir.instance.model.ProcedureRequest) csvHelper.retrieveResource(recallId.getString(),
-                        ResourceType.ProcedureRequest,
-                        fhirResourceFiler);
+                        ResourceType.ProcedureRequest);
 
                 if (procedureRequest != null) {
                     ProcedureRequestBuilder procedureRequestBuilder

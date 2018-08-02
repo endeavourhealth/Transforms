@@ -55,8 +55,7 @@ public class SRPatientRegistrationTransformer {
         if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
             org.hl7.fhir.instance.model.EpisodeOfCare episode
                     = (org.hl7.fhir.instance.model.EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(),
-                    ResourceType.EpisodeOfCare,
-                    fhirResourceFiler);
+                    ResourceType.EpisodeOfCare);
 
             if (episode != null) {
                 EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episode);

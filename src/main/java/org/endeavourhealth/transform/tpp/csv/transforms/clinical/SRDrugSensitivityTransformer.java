@@ -67,8 +67,7 @@ public class SRDrugSensitivityTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.AllergyIntolerance allergyIntolerance
                         = (org.hl7.fhir.instance.model.AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.AllergyIntolerance,
-                        fhirResourceFiler);
+                        ResourceType.AllergyIntolerance);
 
                 if (allergyIntolerance != null) {
                     AllergyIntoleranceBuilder allergyIntoleranceBuilder

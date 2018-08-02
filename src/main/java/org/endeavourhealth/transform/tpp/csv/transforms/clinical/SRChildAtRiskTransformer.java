@@ -57,8 +57,7 @@ public class SRChildAtRiskTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Flag flag
                         = (org.hl7.fhir.instance.model.Flag) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Flag,
-                        fhirResourceFiler);
+                        ResourceType.Flag);
 
                 if (flag != null) {
                     FlagBuilder flagBuilder

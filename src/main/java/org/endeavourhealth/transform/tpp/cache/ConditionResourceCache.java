@@ -2,17 +2,13 @@ package org.endeavourhealth.transform.tpp.cache;
 
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
-import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorCondition;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ConditionResourceCache {
@@ -31,8 +27,7 @@ public class ConditionResourceCache {
             org.hl7.fhir.instance.model.Condition condition
                     = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(
                     problemIdCell.getString(),
-                    ResourceType.Condition,
-                    fhirResourceFiler);
+                    ResourceType.Condition);
 
             if (condition == null) {
                 //if the Condition doesn't exist yet, create a new one

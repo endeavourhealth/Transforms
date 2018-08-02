@@ -75,8 +75,7 @@ public class SRRepeatTemplateTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.MedicationStatement medicationStatement
                         = (org.hl7.fhir.instance.model.MedicationStatement) csvHelper.retrieveResource(medicationId.getString(),
-                        ResourceType.MedicationStatement,
-                        fhirResourceFiler);
+                        ResourceType.MedicationStatement);
 
                 if (medicationStatement != null) {
                     MedicationStatementBuilder medicationStatementBuilder

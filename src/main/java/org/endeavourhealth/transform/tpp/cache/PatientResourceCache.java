@@ -26,7 +26,7 @@ public class PatientResourceCache {
         if (PatientBuilder == null) {
 
             Patient Patient
-                    = (Patient) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Patient, fhirResourceFiler);
+                    = (Patient) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.Patient);
             if (Patient == null) {
                 //if the Patient doesn't exist yet, create a new one
                 PatientBuilder = new PatientBuilder();

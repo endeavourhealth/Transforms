@@ -156,10 +156,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
+    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType) throws Exception {
 
         UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
 

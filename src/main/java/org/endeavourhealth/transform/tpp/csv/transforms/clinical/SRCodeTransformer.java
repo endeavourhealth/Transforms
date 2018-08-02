@@ -95,8 +95,7 @@ public class SRCodeTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.AllergyIntolerance allergyIntolerance
                         = (org.hl7.fhir.instance.model.AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.AllergyIntolerance,
-                        fhirResourceFiler);
+                        ResourceType.AllergyIntolerance);
 
                 if (allergyIntolerance != null) {
                     AllergyIntoleranceBuilder allergyIntoleranceBuilder
@@ -203,8 +202,7 @@ public class SRCodeTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Procedure procedure
                         = (org.hl7.fhir.instance.model.Procedure) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Procedure,
-                        fhirResourceFiler);
+                        ResourceType.Procedure);
 
                 if (procedure != null) {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
@@ -311,8 +309,7 @@ public class SRCodeTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Condition condition
                         = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(conditionId.getString(),
-                        ResourceType.Condition,
-                        fhirResourceFiler);
+                        ResourceType.Condition);
 
                 if (condition != null) {
                     ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
@@ -451,8 +448,7 @@ public class SRCodeTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.Observation observation
                         = (org.hl7.fhir.instance.model.Observation) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Observation,
-                        fhirResourceFiler);
+                        ResourceType.Observation);
 
                 if (observation != null) {
                     ObservationBuilder observationBuilder = new ObservationBuilder(observation);
@@ -577,8 +573,7 @@ public class SRCodeTransformer {
                 // get previously filed resource for deletion
                 org.hl7.fhir.instance.model.FamilyMemberHistory familyMemberHistory
                         = (org.hl7.fhir.instance.model.FamilyMemberHistory) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.FamilyMemberHistory,
-                        fhirResourceFiler);
+                        ResourceType.FamilyMemberHistory);
 
                 if (familyMemberHistory != null) {
                     FamilyMemberHistoryBuilder familyMemberHistoryBuilder

@@ -76,13 +76,11 @@ public class SRAppointmentTransformer {
                     // get previously filed resources for deletion
                     org.hl7.fhir.instance.model.Appointment appointment
                             = (org.hl7.fhir.instance.model.Appointment) csvHelper.retrieveResource(appointmentId.getString(),
-                            ResourceType.Appointment,
-                            fhirResourceFiler);
+                            ResourceType.Appointment);
 
                     org.hl7.fhir.instance.model.Slot slot
                             = (org.hl7.fhir.instance.model.Slot) csvHelper.retrieveResource(appointmentId.getString(),
-                            ResourceType.Slot,
-                            fhirResourceFiler);
+                            ResourceType.Slot);
 
                     if (appointment != null && slot != null) {
                         AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);

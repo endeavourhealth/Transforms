@@ -196,7 +196,7 @@ public class SROrganisationTransformer {
 
         OrganizationBuilder organizationBuilder;
         org.hl7.fhir.instance.model.Organization organization
-                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Organization, fhirResourceFiler);
+                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Organization);
         if (organization == null) {
             //if the Organization doesn't exist yet, create a new one
             organizationBuilder = new OrganizationBuilder();
