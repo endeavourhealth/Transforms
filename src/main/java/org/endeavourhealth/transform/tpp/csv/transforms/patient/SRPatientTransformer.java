@@ -139,7 +139,7 @@ public class SRPatientTransformer {
 
         }
         CsvCell spineMatched = parser.getSpineMatched();
-        if (!spineMatched.isEmpty()) {
+        if (spineMatched != null && !spineMatched.isEmpty()) {
             NhsNumberVerificationStatus numberVerificationStatus;
             if (spineMatched.getString().equalsIgnoreCase("true")) {
                 numberVerificationStatus = NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;

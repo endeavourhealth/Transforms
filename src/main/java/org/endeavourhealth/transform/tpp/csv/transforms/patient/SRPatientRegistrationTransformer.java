@@ -84,7 +84,7 @@ public class SRPatientRegistrationTransformer {
         }
         episodeBuilder.setPatient(patientReference, idPatient);
         CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
-        if (!orgIdCell.isEmpty()) {
+        if (orgIdCell != null && !orgIdCell.isEmpty()) {
 //            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
 //            organizationBuilder.setId(orgIdCell.getString());
 
