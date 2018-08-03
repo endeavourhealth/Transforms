@@ -74,7 +74,9 @@ public class CodeTransformer {
         auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
         auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
-        auditWrapper.auditValue(aliasNhsCdAliasCell.getRowAuditId(), aliasNhsCdAliasCell.getColIndex(), CODE_NHS_ALIAS);
+        if (aliasNhsCdAliasCell != null) {
+            auditWrapper.auditValue(aliasNhsCdAliasCell.getRowAuditId(), aliasNhsCdAliasCell.getColIndex(), CODE_NHS_ALIAS);
+        }
 
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),
