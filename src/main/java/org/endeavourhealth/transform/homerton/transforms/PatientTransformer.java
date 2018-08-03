@@ -233,11 +233,8 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //no need to save the resource now, as all patient resources are saved at the end of the Patient
 
         //csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder);
-
-        //if (LOG.isTraceEnabled()) {
-        //    LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
-       // }
+        boolean performIdMapping = !patientBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), performIdMapping, patientBuilder);
     }
 
     /*
