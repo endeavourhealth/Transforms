@@ -58,7 +58,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //NOTE: Homerton patients are never deleted
 
         CsvCell millenniumPersonIdCell = parser.getPersonId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        //PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        PatientBuilder patientBuilder = new PatientBuilder();
+        patientBuilder.setId(millenniumPersonIdCell.toString());
 
         CsvCell nhsNumber = parser.getNHSNo();
         if (!nhsNumber.isEmpty()) {
@@ -230,7 +232,8 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient
 
-        csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
+        //csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder);
 
         //if (LOG.isTraceEnabled()) {
         //    LOG.trace("Save PatientTable:" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));

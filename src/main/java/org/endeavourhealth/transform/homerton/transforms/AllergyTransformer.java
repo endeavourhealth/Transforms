@@ -126,14 +126,14 @@ public class AllergyTransformer extends HomertonBasisTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, allergyCodeCell);
                 if (!allergyDescCell.isEmpty()) {
-                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyDescCell);
                 }
             } else if (vocab.equalsIgnoreCase("Multum Allergy Category")) {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, allergyCodeCell);
                 if (!allergyDescCell.isEmpty()) {
-                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyCodeCell);
+                    codeableConceptBuilder.setCodingDisplay(allergyDescCell.getString(), allergyDescCell);
                 }
             } else {
                 throw new TransformException("Unexpected problem VOCAB [" + vocab + "]");
