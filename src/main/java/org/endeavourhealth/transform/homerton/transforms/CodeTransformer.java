@@ -64,7 +64,7 @@ public class CodeTransformer {
 
         String codeNHSAlias = "";
         CsvCell aliasNhsCdAliasCell = csvHelper.findCodeNHSAlias(codeValueCode.getString());
-        if (!aliasNhsCdAliasCell.isEmpty()) {
+        if (aliasNhsCdAliasCell != null) {
             codeNHSAlias = aliasNhsCdAliasCell.getString();
         }
 
