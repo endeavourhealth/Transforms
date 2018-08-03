@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.cache;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -22,26 +23,26 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-
+// A simple HashMap with index key and a pojo class as a temporary cache
 public class StaffMemberProfileCache {
-    // A simple HashMap with index key and a pojo class as a temporary cache
     private static final Logger LOG = LoggerFactory.getLogger(StaffMemberProfileCache.class);
 
-    private static HashMap<Long, List<StaffMemberProfilePojo>> staffMemberProfileByStaffId = new HashMap<>();
+    private HashMap<Long, List<StaffMemberProfilePojo>> staffMemberProfileByStaffId = new HashMap<>();
 
-    public static void addStaffPojo(StaffMemberProfilePojo pojo) {
-        Long key = pojo.getIDStaffMember();
-        if (staffMemberProfileByStaffId.containsKey(key)) {
-            staffMemberProfileByStaffId.get(key).add(pojo);
-        } else {
-            List<StaffMemberProfilePojo> pojoList = new ArrayList<StaffMemberProfilePojo>();
-            pojoList.add(pojo);
+    public void addStaffPojo(CsvCell staffMemberIdCell, StaffMemberProfilePojo pojo) {
+        Long key = staffMemberIdCell.getLong();
+
+        List<StaffMemberProfilePojo> pojoList = staffMemberProfileByStaffId.get(key);
+        if (pojoList == null) {
+            pojoList = new ArrayList<>();
             staffMemberProfileByStaffId.put(key, pojoList);
         }
+        pojoList.add(pojo);
     }
 
-    public static List<StaffMemberProfilePojo> getAndRemoveStaffMemberProfilePojo(Long pojoKey) {
-        return staffMemberProfileByStaffId.remove(pojoKey);
+    public List<StaffMemberProfilePojo> getAndRemoveStaffMemberProfilePojo(CsvCell staffMemberIdCell) {
+        Long key = staffMemberIdCell.getLong();
+        return staffMemberProfileByStaffId.remove(key);
     }
 
     /*public static void removeStaffPojo(StaffMemberProfilePojo pojo) {
@@ -52,105 +53,106 @@ public class StaffMemberProfileCache {
         return (staffMemberProfileByStaffId.containsKey(staffId));
     }*/
 
-    public static int size() {
+    public int size() {
         return staffMemberProfileByStaffId.size();
     }
 
-    public static void clear() {
-        LOG.info("Staff member profile cache still has " + size() + " records. Creating Practitioners. ");
-        staffMemberProfileByStaffId.clear();
-    }
 
-    public static void fileRemainder(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception{
+    public void fileRemainder(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
         // For all remaining StaffMemberProfile records create new Practitioners via
         // PractionerBuilder so these records aren't lost. Presumably the staff records are somewhere in the
         // incoming files.
-        for (Long staffMemberId: staffMemberProfileByStaffId.keySet()) {
+        for (Long staffMemberId : staffMemberProfileByStaffId.keySet()) {
             List<StaffMemberProfilePojo> pojoList = staffMemberProfileByStaffId.get(staffMemberId);
 
             //retrieve the existing practitioner from the DB
-            Practitioner practitioner = (Practitioner)csvHelper.retrieveResource("" + staffMemberId, ResourceType.Practitioner);
+            Practitioner practitioner = (Practitioner) csvHelper.retrieveResource("" + staffMemberId, ResourceType.Practitioner);
             if (practitioner == null) {
+                //if the practitioner has been deleted or something, we'll have null here
                 continue;
             }
 
             PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner);
 
             for (StaffMemberProfilePojo pojo : pojoList) {
-
-                CsvCell profileCell = pojo.getRowIdentifier();
-                PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
-
-//TODO set ID on role builder
-//TODO remove existing role from practitioner
-//TODO - do both the above in StaffMemberTransformer
-
-
-                // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
-                if (pojo.getIDOrganisation() != null) {
-                    String orgId = pojo.getIDOrganisation();
-                    if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
-                        Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                        organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-                        roleBuilder.setRoleManagingOrganisation(organisationReference, profileCell);
-                    }
-                }
-
-                if (pojo.getDateEmploymentStart() !=null) {
-                    Date roleStart = pojo.getDateEmploymentStart();
-                    if (roleStart != null) {
-                        roleBuilder.setRoleStartDate(roleStart, profileCell);
-                    }
-                }
-
-                if (pojo.getDateEmploymentEnd() != null) {
-                    Date roleEnd = pojo.getDateEmploymentEnd();
-                    if (roleEnd != null) {
-                        roleBuilder.setRoleEndDate(roleEnd, profileCell);
-                    }
-                }
-
-                if (pojo.getStaffRole() != null) {
-                    String roleName = pojo.getStaffRole();
-                    if (!roleName.isEmpty()) {
-                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
-                        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
-                        codeableConceptBuilder.setCodingDisplay(roleName, profileCell);
-                    }
-                }
-
-                if (pojo.getPPAID() != null) {
-                    String ppaId = pojo.getPPAID();
-                    if (!ppaId.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
-                        identifierBuilder.setValue(ppaId, profileCell);
-                    }
-                }
-
-                if (pojo.getGPLocalCode() != null) {
-                    String gpLocalCode = pojo.getGPLocalCode();
-                    if (!gpLocalCode.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
-                        identifierBuilder.setValue(gpLocalCode,profileCell);
-                    }
-                }
-
-                if (pojo.getGmpID() != null) {
-                    String gmpCode = pojo.getGmpID();
-                    if (!gmpCode.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
-                        identifierBuilder.setValue(gmpCode, profileCell);
-                    }
-                }
-
-                // We know we need to map Ids as we just built this from local values
-                fhirResourceFiler.saveAdminResource(pojo.getParserState(),true, practitionerBuilder);
+                addOrReplaceProfileOnPractitioner(practitionerBuilder, pojo, csvHelper);
             }
+
+            // We know we need to map Ids as we just built this from local values
+            fhirResourceFiler.saveAdminResource(null, true, practitionerBuilder);
         }
         staffMemberProfileByStaffId.clear();
     }
+
+    public static void addOrReplaceProfileOnPractitioner(PractitionerBuilder practitionerBuilder, StaffMemberProfilePojo profileCache, TppCsvHelper csvHelper) throws Exception {
+
+        //since this may be an update to an existing profile, we need to make sure to remove any existing matching instance
+        //from the practitioner resource
+        CsvCell profileIdCell = profileCache.getStaffMemberProfileIdCell();
+        String profileId = profileIdCell.getString();
+        PractitionerRoleBuilder.removeRoleForId(practitionerBuilder, profileId);
+
+        if (profileCache.isDeleted()) {
+            return;
+        }
+
+        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
+
+        //set the profile ID on the role element, so we can match up when we get updates
+        roleBuilder.setId(profileId, profileIdCell);
+
+        // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
+        String orgId = profileCache.getIdOrganisation();
+        if (!Strings.isNullOrEmpty(orgId)) {
+            Reference organisationReference = csvHelper.createOrganisationReference(orgId);
+
+            //this function is used for adding profiles to new and existing practitioners, so we need to convert if already mapped
+            if (practitionerBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            }
+
+            roleBuilder.setRoleManagingOrganisation(organisationReference);
+        }
+
+        Date start = profileCache.getDateEmploymentStart();
+        if (start != null) {
+            roleBuilder.setRoleStartDate(start);
+        }
+
+        Date end = profileCache.getDateEmploymentEnd();
+        if (end != null) {
+            roleBuilder.setRoleEndDate(end);
+        }
+
+        String roleDesc = profileCache.getStaffRole();
+        if (!Strings.isNullOrEmpty(roleDesc)) {
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
+            codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+            codeableConceptBuilder.setCodingDisplay(roleDesc);
+        }
+
+//TODO - how to avoid duplicating all the below identifiers every time we get an update to this record?
+        String ppaid = profileCache.getPpaid();
+        if (!Strings.isNullOrEmpty(ppaid)) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+            identifierBuilder.setValue(ppaid);
+        }
+
+        String localCode = profileCache.getGpLocalCode();
+        if (!Strings.isNullOrEmpty(localCode)) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+            identifierBuilder.setValue(localCode);
+        }
+
+        String gmpid = profileCache.getGmpId();
+        if (!Strings.isNullOrEmpty(gmpid)) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+            identifierBuilder.setValue(gmpid);
+        }
+    }
 }
+
 

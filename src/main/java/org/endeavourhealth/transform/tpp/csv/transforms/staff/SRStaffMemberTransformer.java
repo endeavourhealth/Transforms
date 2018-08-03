@@ -2,25 +2,25 @@ package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMember;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 public class SRStaffMemberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberTransformer.class);
+
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
@@ -37,10 +37,6 @@ public class SRStaffMemberTransformer {
                 }
             }
         }
-        // Check cache
-        if (StaffMemberProfileCache.size() > 0) {
-            LOG.error("Staff cache should be empty but has : " + StaffMemberProfileCache.size());
-        }
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
@@ -51,6 +47,7 @@ public class SRStaffMemberTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell staffMemberId = parser.getRowIdentifier();
+
         PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
         practitionerBuilder.setId(staffMemberId.getString(), staffMemberId);
 
@@ -93,80 +90,13 @@ public class SRStaffMemberTransformer {
 
             practitionerBuilder.setActive(true, obsolete);
         }
-        // Get cached StaffMemberProfile records
-        List<StaffMemberProfilePojo> pojoList = StaffMemberProfileCache.getAndRemoveStaffMemberProfilePojo(staffMemberId.getLong());
+
+        // Get cached StaffMemberProfile records and apply them
+        List<StaffMemberProfilePojo> pojoList = csvHelper.getStaffMemberProfileCache().getAndRemoveStaffMemberProfilePojo(staffMemberId);
         if (pojoList != null) {
             for (StaffMemberProfilePojo  pojo : pojoList) {
-                CsvCell profileCell = pojo.getRowIdentifier();
 
-                // create the internal link between staff member role and staff member
-                //moved to happen in the staff profile transformer
-                /*csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                       pojo.getIDStaffMemberProfileRole(), staffMemberId.getString());*/
-
-                PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
-
-                if (pojo.getIDOrganisation() != null) {
-                    String orgId = pojo.getIDOrganisation();
-                    if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
-                        Reference organisationReference = csvHelper.createOrganisationReference(orgId);
-                        //our practitioner builder is never ID mapped
-                        /*if (practitionerBuilder.isIdMapped()) {
-                            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-                        }*/
-                        roleBuilder.setRoleManagingOrganisation(organisationReference, profileCell);
-                    }
-                }
-
-                if (pojo.getDateEmploymentStart() !=null) {
-                    Date roleStart = pojo.getDateEmploymentStart();
-                    if (roleStart != null) {
-                        roleBuilder.setRoleStartDate(roleStart, profileCell);
-                    }
-                }
-
-                if (pojo.getDateEmploymentEnd() != null) {
-                    Date roleEnd = pojo.getDateEmploymentEnd();
-                    if (roleEnd != null) {
-                        roleBuilder.setRoleEndDate(roleEnd, profileCell);
-                    }
-                }
-
-                if (pojo.getStaffRole() != null) {
-                    String roleName = pojo.getStaffRole();
-                    if (!roleName.isEmpty()) {
-                        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
-                        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
-                        codeableConceptBuilder.setCodingDisplay(roleName, profileCell);
-                    }
-                }
-
-                if (pojo.getPPAID() != null) {
-                    String ppaId = pojo.getPPAID();
-                    if (!ppaId.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
-                        identifierBuilder.setValue(ppaId, profileCell);
-                    }
-                }
-
-                if (pojo.getGPLocalCode() != null) {
-                    String gpLocalCode = pojo.getGPLocalCode();
-                    if (!gpLocalCode.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
-                        identifierBuilder.setValue(gpLocalCode, profileCell);
-                    }
-                }
-
-                if (pojo.getGmpID() != null) {
-                    String gmpCode = pojo.getGmpID();
-                    if (!gmpCode.isEmpty()) {
-                        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-                        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
-                        identifierBuilder.setValue(gmpCode, profileCell);
-                    }
-                }
+                StaffMemberProfileCache.addOrReplaceProfileOnPractitioner(practitionerBuilder, pojo, csvHelper);
             }
         }
 

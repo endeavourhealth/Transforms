@@ -1,164 +1,91 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 
 import java.util.Date;
-import java.util.Objects;
 
+// Pojo to help cache StaffMemberProfile records.
 public class StaffMemberProfilePojo {
-    public StaffMemberProfilePojo() {
+
+    private CsvCell staffMemberProfileIdCell;
+    private String staffRole;
+    private Date dateEmploymentStart;
+    private Date dateEmploymentEnd;
+    private String ppaid;
+    private String gpLocalCode;
+    private String idOrganisation;
+    private String gmpId;
+    private boolean deleted;
+
+    public CsvCell getStaffMemberProfileIdCell() {
+        return staffMemberProfileIdCell;
     }
 
-
-    // Pojo to help cache StaffMemberProfile records.
-    private Long IDStaffMember;  // For use as a key
-    //private String IDStaffMemberCell;
-    private CsvCell RowIdentifier;
-    private Date DateProfileCreated;
-    private String IdProfileCreatedBy;
-    private String IDStaffMemberProfileRole;
-    private String StaffRole;
-    private Date DateEmploymentStart;
-    private Date DateEmploymentEnd;
-    private String PPAID;
-    private String GPLocalCode;
-    private String IDOrganisation;
-    private String GmpID;
-    private int RemovedData;
-    private CsvCell auditCsv;
-    private CsvCurrentState parserState;
-
-    public CsvCurrentState getParserState() {
-        return parserState;
-    }
-
-    public void setParserState(CsvCurrentState parserState) { this.parserState = parserState;}
-
-    //public String getIDStaffMemberCell() { return IDStaffMemberCell;}
-
-    //public void setIDStaffMemberCell(String idStaffMemberCell) { this.IDStaffMemberCell = idStaffMemberCell;}
-
-    public Date getDateProfileCreated() {
-        return DateProfileCreated;
-    }
-
-
-    public void setDateProfileCreated(Date dateProfileCreated) {
-        DateProfileCreated = dateProfileCreated;
-    }
-
-    public String getIdProfileCreatedBy() {
-        return IdProfileCreatedBy;
-    }
-
-    public void setIdProfileCreatedBy(String idProfileCreatedBy) {
-        IdProfileCreatedBy = idProfileCreatedBy;
-    }
-
-    public CsvCell getRowIdentifier() {
-        return RowIdentifier;
-    }
-
-    public void setRowIdentifier(CsvCell rowIdentifier) {
-        RowIdentifier = rowIdentifier;
-    }
-
-    public Long getIDStaffMember() {
-        return IDStaffMember;
-    }
-
-    public void setIDStaffMember(Long IDStaffMember) {
-        this.IDStaffMember = IDStaffMember;
-    }
-
-    public String getIDStaffMemberProfileRole() {
-        return IDStaffMemberProfileRole;
-    }
-
-    public void setIDStaffMemberProfileRole(String IDStaffMemberProfileRole) {
-        this.IDStaffMemberProfileRole = IDStaffMemberProfileRole;
+    public void setStaffMemberProfileIdCell(CsvCell staffMemberProfileIdCell) {
+        this.staffMemberProfileIdCell = staffMemberProfileIdCell;
     }
 
     public String getStaffRole() {
-        return StaffRole;
+        return staffRole;
     }
 
     public void setStaffRole(String staffRole) {
-        StaffRole = staffRole;
+        this.staffRole = staffRole;
     }
 
     public Date getDateEmploymentStart() {
-        return DateEmploymentStart;
+        return dateEmploymentStart;
     }
 
     public void setDateEmploymentStart(Date dateEmploymentStart) {
-        DateEmploymentStart = dateEmploymentStart;
+        this.dateEmploymentStart = dateEmploymentStart;
     }
 
     public Date getDateEmploymentEnd() {
-        return DateEmploymentEnd;
+        return dateEmploymentEnd;
     }
 
     public void setDateEmploymentEnd(Date dateEmploymentEnd) {
-        DateEmploymentEnd = dateEmploymentEnd;
+        this.dateEmploymentEnd = dateEmploymentEnd;
     }
 
-    public String getPPAID() {
-        return PPAID;
+    public String getPpaid() {
+        return ppaid;
     }
 
-    public void setPPAID(String PPAID) {
-        this.PPAID = PPAID;
+    public void setPpaid(String ppaid) {
+        this.ppaid = ppaid;
     }
 
-    public String getGPLocalCode() {
-        return GPLocalCode;
+    public String getGpLocalCode() {
+        return gpLocalCode;
     }
 
-    public void setGPLocalCode(String GPLocalCode) {
-        this.GPLocalCode = GPLocalCode;
+    public void setGpLocalCode(String gpLocalCode) {
+        this.gpLocalCode = gpLocalCode;
     }
 
-    public String getIDOrganisation() {
-        return IDOrganisation;
+    public String getIdOrganisation() {
+        return idOrganisation;
     }
 
-    public void setIDOrganisation(String IDOrganisation) {
-        this.IDOrganisation = IDOrganisation;
+    public void setIdOrganisation(String idOrganisation) {
+        this.idOrganisation = idOrganisation;
     }
 
-    public String getGmpID() {
-        return GmpID;
+    public String getGmpId() {
+        return gmpId;
     }
 
-    public void setGmpID(String gmpID) {
-        GmpID = gmpID;
+    public void setGmpId(String gmpId) {
+        this.gmpId = gmpId;
     }
 
-
-    public int getRemovedData() {
-        return RemovedData;
+    public boolean isDeleted() {
+        return deleted;
     }
 
-    public void setRemovedData(int removedData) {
-        RemovedData = removedData;
-    }
-
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StaffMemberProfilePojo that = (StaffMemberProfilePojo) o;
-        return RemovedData == that.RemovedData &&
-                Objects.equals(IDStaffMember, that.IDStaffMember);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(IDStaffMember, RemovedData);
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

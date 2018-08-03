@@ -67,6 +67,11 @@ public class IdentifierBuilder {
     public static void removeExistingIdentifiersForSystem(HasIdentifierI parentBuilder, String identifierSystem) {
         List<Identifier> matches = findExistingIdentifiersForSystem(parentBuilder, identifierSystem);
         for (Identifier match: matches) {
+
+            //remove any audits we've added for this Identifier
+            String identifierJsonPrefix = parentBuilder.getIdentifierJsonPrefix(match);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
             parentBuilder.removeIdentifier(match);
         }
     }

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.CodeableConcept;
@@ -7,7 +8,9 @@ import org.hl7.fhir.instance.model.Period;
 import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.Reference;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
@@ -25,6 +28,51 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
         if (this.role == null) {
             this.role = parentBuilder.addRole();
         }
+    }
+
+
+    public static boolean removeRoleForId(PractitionerBuilder parentBuilder, String idValue) {
+        if (Strings.isNullOrEmpty(idValue)) {
+            throw new IllegalArgumentException("Can't remove role without ID");
+        }
+
+        List<Practitioner.PractitionerPractitionerRoleComponent> matches = new ArrayList<>();
+
+        Practitioner practitioner = (Practitioner)parentBuilder.getResource();
+        if (!practitioner.hasPractitionerRole()) {
+            return false;
+        }
+        List<Practitioner.PractitionerPractitionerRoleComponent> roles = practitioner.getPractitionerRole();
+        for (Practitioner.PractitionerPractitionerRoleComponent role: roles) {
+            //if we match on ID, then remove this name from the parent object
+            if (role.hasId()
+                    && role.getId().equals(idValue)) {
+                matches.add(role);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+
+        } else if (matches.size() > 1) {
+            throw new IllegalArgumentException("Found " + matches.size() + " roles for ID " + idValue);
+
+        } else {
+            Practitioner.PractitionerPractitionerRoleComponent role = matches.get(0);
+
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getRoleJsonPrefix(role);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+            practitioner.getPractitionerRole().remove(role);
+            return true;
+        }
+    }
+
+    public void setId(String id, CsvCell... sourceCells) {
+        this.role.setId(id);
+
+        auditValue("id", sourceCells);
     }
 
     public void setRoleStartDate(Date date, CsvCell... sourceCells) {

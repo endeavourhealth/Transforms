@@ -21,6 +21,7 @@ import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, ReferenceList> encounterAppointmentOrVisitMap = new HashMap<>();
 
     private Map<String, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new HashMap<>();
+
+    private StaffMemberProfileCache staffMemberProfileCache = new StaffMemberProfileCache();
 
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
@@ -873,4 +876,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         knownEthnicCodes.put("Y16b7", EthnicCategory.NOT_STATED);
     }
 
+    public StaffMemberProfileCache getStaffMemberProfileCache() {
+        return staffMemberProfileCache;
+    }
 }

@@ -39,7 +39,7 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
                     "IDOrganisation",
                     "GmpID"
             };
-        } else if(version.equals(TppCsvToFhirTransformer.VERSION_89)
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
@@ -122,6 +122,11 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
     public CsvCell getGmpID() {
         return super.getCell("GmpID");
     }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
+
 
     @Override
     protected String getFileTypeDescription() {

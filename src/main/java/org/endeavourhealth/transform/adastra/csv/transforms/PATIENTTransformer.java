@@ -78,10 +78,13 @@ public class PATIENTTransformer {
             //remove existing NHS number to prevent duplicate filing error
             IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
+            String nhsNumberValue = nhsNumber.getString();
+            nhsNumberValue = nhsNumberValue.replace(" ", "");
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
+            identifierBuilder.setValue(nhsNumberValue, nhsNumber);
 
             CsvCell nhsNumberTraceStatus = parser.getNHSNoTraceStatus();
             if (!nhsNumberTraceStatus.isEmpty()) {

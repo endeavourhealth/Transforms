@@ -94,9 +94,7 @@ public class SREventTransformer {
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-
-            String staffMemberId =
-                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 encounterBuilder.setRecordedBy(staffReference, recordedBy);
@@ -105,24 +103,26 @@ public class SREventTransformer {
 
         CsvCell encounterDoneBy = parser.getIDDoneBy();
         if (!encounterDoneBy.isEmpty()) {
-
             Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
             encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, encounterDoneBy);
         }
 
-        CsvCell encounterAuthoriserId = parser.getIDAuthorisedBy();
+        //TPP consultation authoriser is not useful (in SystmOne for that matter), so not transforming
+        /*CsvCell encounterAuthoriserId = parser.getIDAuthorisedBy();
         if (!encounterAuthoriserId.isEmpty()) {
 
             String staffMemberId =
-                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, encounterAuthoriserId.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                if (encounterBuilder.isIdMapped()) {
+
+                //the EncounterBuilder is never created around a resource from the DB so it's NEVER ID mapped
+                *//*if (encounterBuilder.isIdMapped()) {
                     staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
-                }
+                }*//*
                 encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
             }
-        }
+        }*/
 
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 

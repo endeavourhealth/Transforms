@@ -23,6 +23,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.codes.SRCtv3Transformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutStatusDetailsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.referral.SRReferralOutTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberPreTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
@@ -339,14 +340,15 @@ public abstract class TppCsvToFhirTransformer {
         SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         LocationResourceCache.fileLocationResources(fhirResourceFiler);
+
         // Staff
+        SRStaffMemberPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this pre-caches data used by the proper transform
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        StaffMemberProfileCache.fileRemainder(csvHelper, fhirResourceFiler);
-        StaffMemberProfileCache.clear();
+        csvHelper.getStaffMemberProfileCache().fileRemainder(csvHelper, fhirResourceFiler);
+
 //        // Appointment sessions (Rotas)
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
 
         LOG.trace("Starting patient transforms");
         SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
