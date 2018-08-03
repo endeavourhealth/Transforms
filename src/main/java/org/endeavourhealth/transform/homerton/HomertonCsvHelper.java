@@ -49,6 +49,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, ReferenceList> clinicalEventChildMap = new HashMap<>();
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
+    private Map<String, CsvCell> codeValueNHSAlias = new HashMap<>();
 
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EncounterResourceCache encounterCache = new EncounterResourceCache();
@@ -293,6 +294,14 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public CernerCodeValueRef lookupCodeRef(String code) throws Exception {
         return lookupCodeRef(0L, code);
+    }
+
+    public void cacheCodeNHSAlias(String codeValue, CsvCell codeNHSAliasCell) {
+        codeValueNHSAlias.put(codeValue, codeNHSAliasCell);
+    }
+
+    public CsvCell findCodeNHSAlias(String codeValue) {
+        return codeValueNHSAlias.get(codeValue);
     }
 
     public CernerCodeValueRef lookupCodeRef(Long codeSet, String code) throws Exception {

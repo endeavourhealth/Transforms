@@ -24,6 +24,7 @@ public class CodeTransformer {
     public static final String DISP_TXT = "DispTxt";
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
+    public static final String CODE_NHS_ALIAS = "NHSAliasCode";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -36,7 +37,7 @@ public class CodeTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    transform((CodeTable) parser, fhirResourceFiler);
+                    transform((CodeTable) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -48,7 +49,7 @@ public class CodeTransformer {
     }
 
 
-    public static void transform(CodeTable parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void transform(CodeTable parser, FhirResourceFiler fhirResourceFiler, HomertonCsvHelper csvHelper) throws Exception {
         //For CodeTable the first column should always resolve as a numeric code. We've seen some bad data appended to CodeTable files
         if (!StringUtils.isNumeric(parser.getCodeValueCode().getString())) {
                     return;
@@ -60,7 +61,12 @@ public class CodeTransformer {
         CsvCell codeDispTxt = parser.getCodeDispTxt();
         CsvCell codeMeaningTxt = parser.getCodeMeaningTxt();
         CsvCell codeSetNbr = parser.getCodeSetNbr();
-        //CsvCell aliasNhsCdAlias = parser.getAliasNhsCdAlias();   //TODO:// requested from Homerton
+
+        String codeNHSAlias = "";
+        CsvCell aliasNhsCdAliasCell = csvHelper.findCodeNHSAlias(codeValueCode.getString());
+        if (!aliasNhsCdAliasCell.isEmpty()) {
+            codeNHSAlias = aliasNhsCdAliasCell.getString();
+        }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
         auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), CODE_VALUE);
@@ -68,6 +74,7 @@ public class CodeTransformer {
         auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
         auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
+        auditWrapper.auditValue(aliasNhsCdAliasCell.getRowAuditId(), aliasNhsCdAliasCell.getColIndex(), CODE_NHS_ALIAS);
 
         byte active = (byte)activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),
@@ -78,14 +85,11 @@ public class CodeTransformer {
                                     codeMeaningTxt.getString(),
                                     codeSetNbr.getLong(),
                                     "",
-                                    "",
+                                    codeNHSAlias,
                                     fhirResourceFiler.getServiceId(),
                                     auditWrapper);
 
-
                 //save to the DB
             repository.save(mapping, fhirResourceFiler.getServiceId());
-
-
     }
  }

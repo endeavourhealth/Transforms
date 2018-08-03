@@ -46,6 +46,7 @@ public abstract class HomertonCsvToFhirTransformer {
 
         try {
             // non-patient transforms
+            CodeNHSAliasTransformer.transform(createParsers(fileMap, parserMap, "CODESNHSALIAS", csvHelper), fhirResourceFiler, csvHelper);
             CodeTransformer.transform(createParsers(fileMap, parserMap, "CODES", csvHelper), fhirResourceFiler, csvHelper);
 
             // process the bulk patient file first if it exists in the batch, usually in the baseline folder
@@ -138,6 +139,8 @@ public abstract class HomertonCsvToFhirTransformer {
 
         if (type.equalsIgnoreCase("CODES")) {
             return new CodeTable(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("CODESNHSALIAS")) {
+            return new CodeNHSAliasTable(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("DIAGNOSIS")) {
             return new DiagnosisTable(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("ENCOUNTER")) {
