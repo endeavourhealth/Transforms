@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.documents;
+package org.endeavourhealth.transform.tpp.csv.schema.unused;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class SRLetter extends AbstractCsvParser {
+public class SRMedia extends AbstractCsvParser {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SRLetter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRMedia.class);
 
-    public SRLetter(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public SRMedia(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 TppCsvToFhirTransformer.CSV_FORMAT,
                 TppCsvToFhirTransformer.DATE_FORMAT,
@@ -21,10 +21,10 @@ public class SRLetter extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
+                    "DocumentUID",
                     "IDOrganisationVisibleTo",
                     "IDPatient",
                     "IDEvent",
@@ -33,7 +33,8 @@ public class SRLetter extends AbstractCsvParser {
                     "DateEventRecorded",
                     "IDProfileEnteredBy",
                     "IDOrganisationDoneAt",
-                    "DateFinalised",
+                    "FileName",
+                    "FileSize",
                     "SenderTitle",
                     "SenderFirstName",
                     "SenderSurname",
@@ -42,9 +43,63 @@ public class SRLetter extends AbstractCsvParser {
                     "RecipientFirstName",
                     "RecipientSurname",
                     "RecipientOrganisation",
+                    "EmailAddress",
                     "Direction",
                     "CommunicationType",
-                    "IDAppointment",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "DocumentUID",
+                    "IDOrganisationVisibleTo",
+                    "IDPatient",
+                    "IDEvent",
+                    "DateEvent",
+                    "IDDoneBy",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "IDOrganisationDoneAt",
+                    "FileName",
+                    "FileSize",
+                    "SenderTitle",
+                    "SenderFirstName",
+                    "SenderSurname",
+                    "SenderOrganisation",
+                    "RecipientTitle",
+                    "RecipientFirstName",
+                    "RecipientSurname",
+                    "RecipientOrganisation",
+                    "EmailAddress",
+                    "Direction",
+                    "CommunicationType"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DocumentUID",
+                    "IDPatient",
+                    "IDEvent",
+                    "DateEvent",
+                    "IDDoneBy",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "IDOrganisationDoneAt",
+                    "FileName",
+                    "FileSize",
+                    "SenderTitle",
+                    "SenderFirstName",
+                    "SenderSurname",
+                    "SenderOrganisation",
+                    "RecipientTitle",
+                    "RecipientFirstName",
+                    "RecipientSurname",
+                    "RecipientOrganisation",
+                    "EmailAddress",
+                    "Direction",
+                    "CommunicationType",
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
@@ -53,6 +108,7 @@ public class SRLetter extends AbstractCsvParser {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
+                    "DocumentUID",
                     "IDPatient",
                     "IDEvent",
                     "DateEvent",
@@ -60,7 +116,8 @@ public class SRLetter extends AbstractCsvParser {
                     "DateEventRecorded",
                     "IDProfileEnteredBy",
                     "IDOrganisationDoneAt",
-                    "DateFinalised",
+                    "FileName",
+                    "FileSize",
                     "SenderTitle",
                     "SenderFirstName",
                     "SenderSurname",
@@ -69,9 +126,9 @@ public class SRLetter extends AbstractCsvParser {
                     "RecipientFirstName",
                     "RecipientSurname",
                     "RecipientOrganisation",
+                    "EmailAddress",
                     "Direction",
                     "CommunicationType",
-                    "IDAppointment",
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
@@ -79,6 +136,7 @@ public class SRLetter extends AbstractCsvParser {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
+                    "DocumentUID",
                     "IDPatient",
                     "IDEvent",
                     "DateEvent",
@@ -86,7 +144,8 @@ public class SRLetter extends AbstractCsvParser {
                     "DateEventRecorded",
                     "IDProfileEnteredBy",
                     "IDOrganisationDoneAt",
-                    "DateFinalised",
+                    "FileName",
+                    "FileSize",
                     "SenderTitle",
                     "SenderFirstName",
                     "SenderSurname",
@@ -95,17 +154,22 @@ public class SRLetter extends AbstractCsvParser {
                     "RecipientFirstName",
                     "RecipientSurname",
                     "RecipientOrganisation",
+                    "EmailAddress",
                     "Direction",
                     "CommunicationType",
-                    "IDAppointment",
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
         }
     }
 
+
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getDocumentUID() {
+        return super.getCell("DocumentUID");
     }
 
     public CsvCell getIDOrganisationVisibleTo() {
@@ -140,8 +204,12 @@ public class SRLetter extends AbstractCsvParser {
         return super.getCell("IDOrganisationDoneAt");
     }
 
-    public CsvCell getDateFinalised() {
-        return super.getCell("DateFinalised");
+    public CsvCell getFileName() {
+        return super.getCell("FileName");
+    }
+
+    public CsvCell getFileSize() {
+        return super.getCell("FileSize");
     }
 
     public CsvCell getSenderTitle() {
@@ -176,16 +244,16 @@ public class SRLetter extends AbstractCsvParser {
         return super.getCell("RecipientOrganisation");
     }
 
+    public CsvCell getEmailAddress() {
+        return super.getCell("EmailAddress");
+    }
+
     public CsvCell getDirection() {
         return super.getCell("Direction");
     }
 
     public CsvCell getCommunicationType() {
         return super.getCell("CommunicationType");
-    }
-
-    public CsvCell getIDAppointment() {
-        return super.getCell("IDAppointment");
     }
 
     public CsvCell getIDOrganisation() {
@@ -200,10 +268,9 @@ public class SRLetter extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
     @Override
     protected String getFileTypeDescription() {
-        return "TPP Letters & comms Entry file ";
+        return "TPP file containing binary record attachments";
     }
 
     @Override

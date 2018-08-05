@@ -79,7 +79,7 @@ public class StaffMemberProfileCache {
             }
 
             // We know we need to map Ids as we just built this from local values
-            fhirResourceFiler.saveAdminResource(null, true, practitionerBuilder);
+            fhirResourceFiler.saveAdminResource(null, false, practitionerBuilder);
         }
         staffMemberProfileByStaffId.clear();
     }
@@ -131,9 +131,10 @@ public class StaffMemberProfileCache {
             codeableConceptBuilder.setCodingDisplay(roleDesc);
         }
 
-//TODO - how to avoid duplicating all the below identifiers every time we get an update to this record?
         String ppaid = profileCache.getPpaid();
         if (!Strings.isNullOrEmpty(ppaid)) {
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
             identifierBuilder.setValue(ppaid);
@@ -141,6 +142,8 @@ public class StaffMemberProfileCache {
 
         String localCode = profileCache.getGpLocalCode();
         if (!Strings.isNullOrEmpty(localCode)) {
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
             identifierBuilder.setValue(localCode);
@@ -148,6 +151,8 @@ public class StaffMemberProfileCache {
 
         String gmpid = profileCache.getGmpId();
         if (!Strings.isNullOrEmpty(gmpid)) {
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
             identifierBuilder.setValue(gmpid);

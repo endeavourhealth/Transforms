@@ -6,7 +6,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
@@ -46,12 +45,15 @@ public class SRRotaTransformer {
         CsvCell sessionId = parser.getRowIdentifier();
         scheduleBuilder.setId(sessionId.getString(), sessionId);
 
+        CsvCell removedCell = parser.getRemovedData();
+        if (removedCell != null && removedCell.getIntAsBoolean()) {
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), scheduleBuilder);
+            return;
+        }
+
         CsvCell locationBranchId = parser.getIDBranch();
         if (!locationBranchId.isEmpty() && locationBranchId.getLong() > 0) {
             Reference fhirReference = csvHelper.createLocationReference(locationBranchId);
-            if (scheduleBuilder.isIdMapped()) {
-                fhirReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(fhirReference,fhirResourceFiler);
-            }
             scheduleBuilder.setLocation(fhirReference, locationBranchId);
         }
 
@@ -66,24 +68,16 @@ public class SRRotaTransformer {
             scheduleBuilder.addComment(sessionName.getString(), sessionName);
         }
 
-        //not strictly necessary, since we're creating a NEW schedule resource (even if it's a delta), but good practice
-        scheduleBuilder.clearActors();
-
         CsvCell sessionActorStaffProfileId = parser.getIDProfileOwner();
-        if (!sessionActorStaffProfileId.isEmpty() && sessionActorStaffProfileId.getString() != "-1") {
+        if (!sessionActorStaffProfileId.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    sessionActorStaffProfileId.getString());
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, sessionActorStaffProfileId.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference practitionerReference
-                        = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-                if (scheduleBuilder.isIdMapped()) {
-                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference,fhirResourceFiler);
-                }
+                Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
                 scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
             }
         }
-        boolean mapIds = !scheduleBuilder.isIdMapped();
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, scheduleBuilder);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);
     }
 }

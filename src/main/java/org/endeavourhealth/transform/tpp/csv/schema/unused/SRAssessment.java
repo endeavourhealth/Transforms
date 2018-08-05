@@ -82,7 +82,7 @@ public class SRAssessment extends AbstractCsvParser {
  public CsvCell getReasonForUnplannedReview() { return super.getCell("ReasonForUnplannedReview");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRAssessment Entry file ";}
 

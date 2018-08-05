@@ -30,7 +30,7 @@ public class AddressBuilder {
         }
     }
 
-    public static boolean removeExistingAddress(HasAddressI parentBuilder, String idValue) {
+    public static boolean removeExistingAddressById(HasAddressI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove address without ID");
         }
@@ -75,6 +75,24 @@ public class AddressBuilder {
         this.address.setUse(use);
 
         auditNameValue("use", sourceCells);
+    }
+
+    /**
+     * helper function to add a line from separate house number and road cells
+     */
+    public void addLineFromHouseNumberAndRoad(CsvCell houseNumberCell, CsvCell roadCell) {
+        List<String> toks = new ArrayList<>();
+        if (!houseNumberCell.isEmpty()) {
+            toks.add(houseNumberCell.getString());
+        }
+        if (!roadCell.isEmpty()) {
+            toks.add(roadCell.getString());
+        }
+        if (toks.isEmpty()) {
+            return;
+        }
+        String str = String.join(" ", toks);
+        addLine(str, houseNumberCell, roadCell);
     }
 
     public void addLine(String line, CsvCell... sourceCells) {

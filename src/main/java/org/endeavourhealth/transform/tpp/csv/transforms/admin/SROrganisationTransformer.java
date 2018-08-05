@@ -1,11 +1,12 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisation;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -19,8 +20,6 @@ import java.util.Map;
 public class SROrganisationTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SROrganisationTransformer.class);
-    private static final String TRUST_PREFIX_STRING="TRUST-";
-    private static final String CCG_PREFIX_STRING="CCG-";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -46,277 +45,192 @@ public class SROrganisationTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
-        //first up, create the organisation resource
-        OrganizationBuilder organizationBuilder = createOrganisationResource(parser, fhirResourceFiler, csvHelper);
-        if (organizationBuilder == null) {
-            return;
-        }
-
-        //then the location and link the two
-        LocationBuilder locationBuilder = createLocationResource(parser, fhirResourceFiler, csvHelper);
-        if (locationBuilder == null) {
-            return;
-        }
-
-        //set the managing organisation for the location, basically itself!
-        // If either needs to be mapped then all references need to be local unmapped refs
-        boolean mapIds = !(organizationBuilder.isIdMapped() && locationBuilder.isIdMapped());
-        // Id possibly remapped to GUID if retrieved from DB
-        organizationBuilder = setOrgReferences(organizationBuilder,mapIds,parser,fhirResourceFiler,csvHelper);
-        Reference organisationReference;
-        if (mapIds) {
-            organizationBuilder.setId(parser.getID().getString());
-            locationBuilder.setId(parser.getID().getString());
-            organisationReference = csvHelper.createOrganisationReference(parser.getID());
-        } else {
-            organisationReference = csvHelper.createOrganisationReference(organizationBuilder.getResourceId());
-        }
-//        if (organizationBuilder.isIdMapped()) {
-//            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-//        }
-        locationBuilder.setManagingOrganisation(organisationReference, parser.getRowIdentifier());
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, organizationBuilder, locationBuilder);
-
+        createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+        createLocationResource(parser, fhirResourceFiler, csvHelper);
     }
 
-    public static LocationBuilder createLocationResource(SROrganisation parser,
-                                                         FhirResourceFiler fhirResourceFiler,
-                                                         TppCsvHelper csvHelper) throws Exception {
+    public static void createLocationResource(SROrganisation parser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell IdCell = parser.getID();
-        CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return null;
+
+        //note that throughout the TPP files, the organisation ID is used rather than the rowIdentifier when referring to orgs
+        CsvCell idCell = parser.getID();
+
+        if (idCell.isEmpty()) {
+            //already have logged this warning when creating the Organisation resource
+            //TransformWarnings.log(LOG, parser, "Skipping organisation RowIdentifier {} because no ID present", parser.getRowIdentifier());
+            return;
         }
 
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(IdCell, csvHelper,fhirResourceFiler);
-        boolean mapIds = true;
-        if (locationBuilder.isIdMapped()) {
-            locationBuilder.setId(locationBuilder.getResource().getId());
-            mapIds = false;
-        }
+        LocationBuilder locationBuilder = new LocationBuilder();
+        locationBuilder.setId(idCell.getString(), idCell);
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), mapIds, locationBuilder);
-            return null;
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
+            return;
         }
 
         CsvCell nameCell = parser.getName();
         if (!nameCell.getString().isEmpty()) {
-            locationBuilder.setName(nameCell.getString());
+            locationBuilder.setName(nameCell.getString(), nameCell);
         }
 
-        CsvCell locationIdCell = parser.getID();
-        if (locationIdCell.isEmpty()) {
-            return null;
-        }
-        locationBuilder.setId(locationIdCell.getString(), locationIdCell);
-
-        if (!locationBuilder.getAddresses().isEmpty()) {
-            locationBuilder.removeAddress(null);
-        }
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(IdCell.getString(), IdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.WORK);
+
         CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
+
         CsvCell numberOfBuildingCell = parser.getHouseNumber();
         CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
         CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
         CsvCell contactNumberCell = parser.getTelephone();
         if (!contactNumberCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, IdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, locationBuilder);
         }
 
         CsvCell secondaryContactCell = parser.getSecondaryTelephone();
         if (!secondaryContactCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, IdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, locationBuilder);
         }
 
         CsvCell faxCell = parser.getFax();
         if (!faxCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, IdCell, locationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, locationBuilder);
         }
 
+        Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, idCell.getString()); //we use the ID as the source both the org and location
+        locationBuilder.setManagingOrganisation(organisationReference);
 
-        return locationBuilder;
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
-    public static OrganizationBuilder createOrganisationResource(SROrganisation parser,
-                                                                 FhirResourceFiler fhirResourceFiler,
-                                                                 TppCsvHelper csvHelper) throws Exception {
+    public static void createOrganisationResource(SROrganisation parser,
+                                                  FhirResourceFiler fhirResourceFiler,
+                                                  TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell IdCell = parser.getID();
-        CsvCell rowIdCell = parser.getRowIdentifier();
+        //note that throughout the TPP files, the organisation ID is used rather than the rowIdentifier when referring to orgs
+        CsvCell idCell = parser.getID();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return null;
-        }
-        CsvCell organizationId = parser.getID();
-
-        if ((organizationId.isEmpty()) || (!StringUtils.isNumeric(organizationId.getString()))) {
-           // TransformWarnings.log(LOG, parser, "ERROR: missing or invalid Organization Id: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return null;
+        if (idCell.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "Skipping organisation RowIdentifier {} because no ID present", parser.getRowIdentifier());
+            return;
         }
 
-        OrganizationBuilder organizationBuilder;
-        org.hl7.fhir.instance.model.Organization organization
-                = (org.hl7.fhir.instance.model.Organization) csvHelper.retrieveResource(IdCell.getString(), ResourceType.Organization);
-        if (organization == null) {
-            //if the Organization doesn't exist yet, create a new one
-            organizationBuilder = new OrganizationBuilder();
-            organizationBuilder.setId(IdCell.getString(), IdCell);
-        } else {
-            organizationBuilder = new OrganizationBuilder(organization);
-            organizationBuilder.setId(organization.getId());
-        }
+        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        organizationBuilder.setId(idCell.getString(), idCell);
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
 
-        if ((obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
-                (deleted != null && !deleted.isEmpty() && deleted.getIntAsBoolean())) {
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(),!organizationBuilder.isIdMapped(), organizationBuilder);
-            return null;
+        if ((obsoleteCell != null && obsoleteCell.getBoolean())
+                || (deleted != null && deleted.getIntAsBoolean())) {
+            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
+            return;
         }
 
         CsvCell nameCell = parser.getName();
-        if (!nameCell.getString().isEmpty()) {
-            organizationBuilder.setName(nameCell.getString());
+        if (!nameCell.isEmpty()) {
+            organizationBuilder.setName(nameCell.getString(), nameCell);
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        addressBuilder.setId(IdCell.getString(), IdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.WORK);
+
         CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
+
+        // Some addresses have a house name with or without a street number or road name Try to handle combinations
         CsvCell numberOfBuildingCell = parser.getHouseNumber();
         CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
         CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
         CsvCell contactNumberCell = parser.getTelephone();
         if (!contactNumberCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, IdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, contactNumberCell, organizationBuilder);
         }
 
         CsvCell secondaryContactCell = parser.getSecondaryTelephone();
         if (!secondaryContactCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, IdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.PHONE, secondaryContactCell, organizationBuilder);
         }
 
         CsvCell faxCell = parser.getFax();
         if (!faxCell.isEmpty()) {
-            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, IdCell, organizationBuilder);
+            createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, organizationBuilder);
         }
 
-
-        return organizationBuilder;
-        //  fhirResourceFiler.saveAdminResource(null, organizationBuilder);
-    }
-
-    private static OrganizationBuilder setOrgReferences(OrganizationBuilder organizationBuilder, boolean mapIds,
-                                                        SROrganisation parser, FhirResourceFiler fhirResourceFiler,
-                                                        TppCsvHelper csvHelper) throws Exception {
-        CsvCell trustCell = parser.getIDTrust();
-        if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
-            //set the trust as a parent organisation for the organisation
-            //Reference trustReference = csvHelper.createOrganisationReference(trustCell);
-            String trustString =  TRUST_PREFIX_STRING + trustCell.getString();
-            Reference trustReference = ReferenceHelper.createReference(ResourceType.Organization,trustString);
-            if (!mapIds) {
-                trustReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(trustReference,fhirResourceFiler);
-            }
-            organizationBuilder.setParentOrganisation(trustReference, trustCell);
-        }
         CsvCell ccgCell = parser.getIDCcg();
         if (!ccgCell.isEmpty() && ccgCell.getInt() >= 0) {
-            //set the trust as a parent organisation for the organisation
-            String ccgString = CCG_PREFIX_STRING + ccgCell.getString();
-            Reference ccgReference = ReferenceHelper.createReference(ResourceType.Organization,ccgString);
-            if (!mapIds) {
-                ccgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(ccgReference,fhirResourceFiler);
-            }
+            String localCcgId = SRCcgTransformer.CCG_KEY_PREFIX + ccgCell.getString();
+            Reference ccgReference = ReferenceHelper.createReference(ResourceType.Organization, localCcgId);
             organizationBuilder.setParentOrganisation(ccgReference, ccgCell);
+
+        } else {
+            //only transform the trust cell if no CCG cell is present. If CCG is present, this is the true parent
+            //organisation. Only if not present, should the trust be used (for GP practices this points to obsolete PCTs)
+            CsvCell trustCell = parser.getIDTrust();
+            if (!trustCell.isEmpty() && trustCell.getInt() >= 0) {
+                String localTrustId = SRTrustTransformer.TRUST_KEY_PREFIX + trustCell.getString();
+                Reference trustReference = ReferenceHelper.createReference(ResourceType.Organization, localTrustId);
+                organizationBuilder.setParentOrganisation(trustReference, trustCell);
+            }
         }
 
-        return organizationBuilder;
+        Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, idCell.getString()); //we use the ID as the source both the org and location
+        organizationBuilder.setMainLocation(locationReference);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }
 
-    private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) {
-
-        ContactPoint.ContactPointUse use = ContactPoint.ContactPointUse.WORK;
+    private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, HasContactPointI parentBuilder) {
 
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(parentBuilder);
-        contactPointBuilder.setId(rowIdCell.getString(), contactCell);
-        contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, contactCell);
-        contactPointBuilder.setUse(use, contactCell);
-
+        contactPointBuilder.setSystem(system);
+        contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
         contactPointBuilder.setValue(contactCell.getString(), contactCell);
     }
 

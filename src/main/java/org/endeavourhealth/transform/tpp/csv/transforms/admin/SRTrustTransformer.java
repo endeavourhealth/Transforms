@@ -1,24 +1,23 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRTrust;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SRTrustTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRTrustTransformer.class);
 
-    private static final String TRUST_KEY_PREFIX  = "TRUST-";
+    public static final String TRUST_KEY_PREFIX = "TRUST-";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -58,12 +57,8 @@ public class SRTrustTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
+        LocationBuilder locationBuilder = new LocationBuilder();
+        locationBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell obsoleteCell  = parser.getRemovedData();
 
@@ -74,61 +69,43 @@ public class SRTrustTransformer {
 
         CsvCell nameCell = parser.getName();
         if (!nameCell.getString().isEmpty()) {
-            locationBuilder.setName(nameCell.getString());
+            locationBuilder.setName(nameCell.getString(), nameCell);
         }
 
         CsvCell odsCell = parser.getOdsCode();
         if (!odsCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(locationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(odsCell.getString(), odsCell);
-            }
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(locationBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setValue(odsCell.getString(), odsCell);
         }
-        // If address exists overwrite
-        if (!locationBuilder.getAddresses().isEmpty()) {
-            locationBuilder.removeAddress(null);
-        }
+
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.WORK);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
         CsvCell numberOfBuildingCell = parser.getHouseNumber();
         CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell  = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell  = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell  = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
         CsvCell fullPostCodeCell  = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
         CsvCell contactNumberCell = parser.getTelephone();
@@ -148,11 +125,9 @@ public class SRTrustTransformer {
 
         //set the managing organisation for the location, basically itself!
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, TRUST_KEY_PREFIX + rowIdCell.getString());
-        if (locationBuilder.isIdMapped()) {
-            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference,fhirResourceFiler);
-        }
-                //csvHelper.createOrganisationReference(rowIdCell);
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
     public static void createOrganisationResource(SRTrust parser,
@@ -161,16 +136,10 @@ public class SRTrustTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-
         OrganizationBuilder organizationBuilder = new OrganizationBuilder();
         organizationBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString());
 
-        CsvCell deleted  = parser.getRemovedData();
-
+        CsvCell deleted = parser.getRemovedData();
         if (deleted != null &&!deleted.isEmpty() && deleted.getBoolean()) {
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
@@ -178,58 +147,43 @@ public class SRTrustTransformer {
 
         CsvCell nameCell = parser.getName();
         if (!nameCell.getString().isEmpty()) {
-            organizationBuilder.setName(nameCell.getString());
+            organizationBuilder.setName(nameCell.getString(), nameCell);
         }
 
         CsvCell odsCell = parser.getOdsCode();
         if (!odsCell.isEmpty()) {
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(organizationBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-            if (identifiers.size() == 0) {
-                IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                identifierBuilder.setValue(odsCell.getString(), odsCell);
-            }
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setValue(odsCell.getString(), odsCell);
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-        addressBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
+        addressBuilder.setUse(Address.AddressUse.WORK);
         CsvCell nameOfBuildingCell  = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
         CsvCell numberOfBuildingCell = parser.getHouseNumber();
         CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell  = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell  = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell  = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
 
-        CsvCell fullPostCodeCell  = parser.getFullPostCode();
+        CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
         CsvCell contactNumberCell = parser.getTelephone();
@@ -246,6 +200,10 @@ public class SRTrustTransformer {
         if (!faxCell.isEmpty()) {
             createContactPoint(ContactPoint.ContactPointSystem.FAX, faxCell, rowIdCell, organizationBuilder);
         }
+
+        Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, TRUST_KEY_PREFIX + rowIdCell.getString()); //we use the ID as the source both the org and location
+        organizationBuilder.setMainLocation(locationReference);
+
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
     }
 

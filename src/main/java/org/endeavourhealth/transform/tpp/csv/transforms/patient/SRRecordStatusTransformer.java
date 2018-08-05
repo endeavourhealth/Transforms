@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
+package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -47,18 +47,13 @@ public class SRRecordStatusTransformer {
         }
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if (!removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
+        if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
             return;
         }
 
         CsvCell dateEvent = parser.getDateEvent();
         CsvCell medicalRecordStatusCell = parser.getMedicalRecordStatus();
         CsvCell patientId = parser.getIDPatient();
-        if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
-        }
 
         if (!medicalRecordStatusCell.isEmpty() && !dateEvent.isEmpty()) {
             csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDate(), medicalRecordStatusCell);

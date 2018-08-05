@@ -1,15 +1,16 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -18,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class SRPatientRegistrationTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRegistrationTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
@@ -46,105 +46,113 @@ public class SRPatientRegistrationTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}",
-                    rowIdCell.getString(), parser.getFilePath());
-            return;
+
+        //because we might receive an update to this record without a change in SRRecordStatus
+        //we need to retrieve the latest instance and update, so we don't lose that status
+        EpisodeOfCareBuilder episodeBuilder = null;
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare);
+        if (episodeOfCare == null) {
+            episodeBuilder = new EpisodeOfCareBuilder();
+            episodeBuilder.setId(rowIdCell.getString(), rowIdCell);
+
+        } else {
+            episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
         }
+
         CsvCell removeDataCell = parser.getRemovedData();
-        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            org.hl7.fhir.instance.model.EpisodeOfCare episode
-                    = (org.hl7.fhir.instance.model.EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(),
-                    ResourceType.EpisodeOfCare);
-
-            if (episode != null) {
-                EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episode);
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), episodeOfCareBuilder);
-            }
+        if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
+            boolean mapIds = !episodeBuilder.isIdMapped();
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
             return;
         }
 
-        CsvCell idPatient = parser.getIDPatient();
+        CsvCell patientIdCell = parser.getIDPatient();
 
-        if (idPatient.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        if (episodeBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
         }
-
-        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(idPatient, csvHelper, fhirResourceFiler);
-
-        EpisodeOfCareBuilder episodeBuilder = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(idPatient,
-                csvHelper, fhirResourceFiler);
-
-
-        Reference patientReference = csvHelper.createPatientReference(idPatient);
-        if (patientBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
-        }
-        episodeBuilder.setPatient(patientReference, idPatient);
-        CsvCell orgIdCell = parser.getIDOrganisationRegisteredAt();
-        if (orgIdCell != null && !orgIdCell.isEmpty()) {
-//            OrganizationBuilder organizationBuilder = new OrganizationBuilder();
-//            organizationBuilder.setId(orgIdCell.getString());
-
-            // Separate references needed for mutable objects in multithreaded code. Is this overkill?
-            Reference organizationReferenceCp = csvHelper.createOrganisationReference(orgIdCell);
-            Reference organizationReferenceMo = csvHelper.createOrganisationReference(orgIdCell);
-            Reference organizationReferenceEMo = csvHelper.createOrganisationReference(orgIdCell);
-            if (patientBuilder.isIdMapped()) {
-                organizationReferenceCp = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceCp,fhirResourceFiler);
-                organizationReferenceMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceMo,fhirResourceFiler);
-                organizationReferenceEMo = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReferenceEMo,fhirResourceFiler);
-            } else {
-                episodeBuilder.setId(idPatient.getString());  //use the patient ID as the ID for the episode to allow mapId to be set consistently
-            }
-            patientBuilder.addCareProvider(organizationReferenceCp);
-            patientBuilder.setManagingOrganisation(organizationReferenceMo, orgIdCell);
-            episodeBuilder.setManagingOrganisation(organizationReferenceEMo, orgIdCell);
-        }
+        episodeBuilder.setPatient(patientReference, patientIdCell);
 
         CsvCell regStartDateCell = parser.getDateRegistration();
         if (!regStartDateCell.isEmpty()) {
             episodeBuilder.setRegistrationStartDate(regStartDateCell.getDate(), regStartDateCell);
         }
+
         CsvCell regEndDateCell = parser.getDateDeRegistration();
         if (!regEndDateCell.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
-            patientBuilder.setActive(false, regEndDateCell);
-        } else if (!regStartDateCell.isEmpty()) {
-            patientBuilder.setActive(true, regStartDateCell);
         }
 
-        CsvCell regTypeCell = parser.getRegistrationStatus();
-        if (!regTypeCell.isEmpty()) {
-            episodeBuilder.setRegistrationType(mapToFhirRegistrationType(regTypeCell));
-        }
-
-        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(idPatient);
+        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
         if (medicalRecordStatusCell != null && !medicalRecordStatusCell.isEmpty()) {
             String medicalRecordStatus = convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
             episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
         }
-        // fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
-        // Moved to PatientResourceCache
+
+        CsvCell regTypeCell = parser.getRegistrationStatus();
+        RegistrationType regType = null;
+        if (!regTypeCell.isEmpty()) {
+            regType = mapToFhirRegistrationType(regTypeCell);
+            episodeBuilder.setRegistrationType(regType, regEndDateCell);
+        }
+
+        CsvCell orgIdCell = parser.getIDOrganisation();
+        if (!orgIdCell.isEmpty()) {
+
+            Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
+            if (episodeBuilder.isIdMapped()) {
+                orgReferenceEpisode = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceEpisode, csvHelper);
+            }
+            episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
+
+            //and we need to set a couple of fields on the patient recourd
+            PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+            if (patientBuilder != null) {
+
+                Reference orgReferencePatient = csvHelper.createOrganisationReference(orgIdCell);
+                if (patientBuilder.isIdMapped()) {
+                    orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
+                }
+                patientBuilder.setManagingOrganisation(orgReferencePatient, orgIdCell);
+
+                //and if the patient is registered for GMS, then this is their registered practice too
+                if (regType != null
+                        && regType == RegistrationType.REGULAR_GMS)
+                {
+                    Reference orgReferenceCareProvider = csvHelper.createOrganisationReference(orgIdCell);
+                    if (patientBuilder.isIdMapped()) {
+                        orgReferenceCareProvider = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceCareProvider, csvHelper);
+                    }
+                    patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
+                }
+            }
+        }
+
+        //we save the episode immediately, since it's complete now, but the patient isn't done yet
+        boolean mapIds = !episodeBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
     }
 
-    private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) {
+    private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
         // Fold to upper for easy comparison. Main concern is whether
         // patient is GMS, Private or temporary.
         String target = regTypeCell.getString().toUpperCase();
 
-        if (target.contains("GMS")) {
+        if (target.equals("GMS")) {
             return RegistrationType.REGULAR_GMS;
-        } else if (target.contains("IMMEDIATELY NECESSARY")) {
-            return RegistrationType.IMMEDIATELY_NECESSARY; // Historical
-        } else if (target.contains("PRIVATE")) {
+        } else if (target.equals("IMMEDIATELY NECESSARY")) {
+            return RegistrationType.IMMEDIATELY_NECESSARY;
+        } else if (target.equals("PRIVATE")) {
             return RegistrationType.PRIVATE;
-        } else if (target.contains("TEMPORARY")) {
+        } else if (target.equals("TEMPORARY")) {
             return RegistrationType.TEMPORARY;
+        } else if (target.equals("APPLIED")) {
+            return RegistrationType.PRE_REGISTRATION;
+
         } else {
-            return RegistrationType.OTHER;
+            throw new TransformException("Unmapped registration type " + target);
+            //return RegistrationType.OTHER;
         }
     }
 

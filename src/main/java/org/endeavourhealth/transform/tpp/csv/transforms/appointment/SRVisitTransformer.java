@@ -1,13 +1,11 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
+package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRVisit;
 import org.hl7.fhir.instance.model.Appointment;
@@ -19,8 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class SRVisitTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(SRVisitTransformer.class);
+
+    public static final String VISIT_ID_PREFIX = "Visit:"; //we can't just use the row ID as it will mix up with appointment row IDs
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -47,30 +46,18 @@ public class SRVisitTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell visitId = parser.getRowIdentifier();
-        String visitIdUnique = "Visit:"+visitId.getString();
+        String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Encounter encounter
-                        = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(visitIdUnique,
-                        ResourceType.Encounter);
-
-                if (encounter != null) {
-                    EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-                }
-                return;
-
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Appointment appointment = (Appointment)csvHelper.retrieveResource(visitIdUnique, ResourceType.Encounter);
+            if (appointment != null) {
+                AppointmentBuilder encounterBuilder = new AppointmentBuilder(appointment);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, encounterBuilder);
             }
+            return;
         }
 
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();

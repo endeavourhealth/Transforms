@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.cache;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.AppointmentFlagsPojo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,14 +9,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
+// A simple HashMap with index key and a pojo class as a temporary cache
 public class AppointmentFlagCache {
-    // A simple HashMap with index key and a pojo class as a temporary cache
+
     private static final Logger LOG = LoggerFactory.getLogger(AppointmentFlagCache.class);
 
-    private static HashMap<Long, List<AppointmentFlagsPojo>> appointmentFlagsByAppointmentId = new HashMap<>();
+    private HashMap<Long, List<AppointmentFlagsPojo>> appointmentFlagsByAppointmentId = new HashMap<>();
 
-    public static void addAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
+    public void addAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
         Long key = pojo.getIdAppointment().getLong();
         if (appointmentFlagsByAppointmentId.containsKey(key)) {
             appointmentFlagsByAppointmentId.get(key).add(pojo);
@@ -26,28 +27,19 @@ public class AppointmentFlagCache {
         }
     }
 
-    public static List<AppointmentFlagsPojo> getFlagsForAppointmentId(Long pojoKey) {
-        return appointmentFlagsByAppointmentId.get(pojoKey);
+    public List<AppointmentFlagsPojo> getAndRemoveFlagsForAppointmentId(Long pojoKey) {
+        return appointmentFlagsByAppointmentId.remove(pojoKey);
     }
 
-    public static void removeAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
-        appointmentFlagsByAppointmentId.remove(pojo.getIdAppointment());
+    /**
+     * we assume that if we ever get any SRAppointmentFlags, then we'll also always get a record
+     * in SRAppointment. This fn is called after the two are transformed to ensure that was the case
+     * and that there are no flags left over that didn't have a corresponding record in SRAppointment
+     */
+    public void checkForRemainingFlags() throws Exception {
+        if (!appointmentFlagsByAppointmentId.isEmpty()) {
+            throw new TransformException("" + appointmentFlagsByAppointmentId.size() + " appointment flags didn't have records in SRAppointment");
+        }
     }
-
-    public static void removeFlagsByAppointmentId(Long apptKey) {
-        appointmentFlagsByAppointmentId.remove(apptKey);
-    }
-
-    public static boolean containsAppointmentId(Long apptId) {
-        return (appointmentFlagsByAppointmentId.containsKey(apptId));
-    }
-
-    public static int size() {
-        return appointmentFlagsByAppointmentId.size();
-    }
-
-    public static void clear() {
-        LOG.info("Appointment flag cache will be cleared of " + size() + " records.");
-        appointmentFlagsByAppointmentId.clear();}
 }
 

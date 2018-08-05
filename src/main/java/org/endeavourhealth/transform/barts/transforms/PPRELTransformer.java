@@ -55,7 +55,7 @@ public class PPRELTransformer {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
-                    PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+                    PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
                     csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
@@ -110,7 +110,7 @@ public class PPRELTransformer {
         }
 
         //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
-        PatientContactBuilder.removeExistingContactPoint(patientBuilder, relationshipIdCell.getString());
+        PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
 
         PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);

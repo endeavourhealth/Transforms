@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
@@ -12,6 +13,8 @@ import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMember;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +51,21 @@ public class SRStaffMemberTransformer {
 
         CsvCell staffMemberId = parser.getRowIdentifier();
 
-        PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
-        practitionerBuilder.setId(staffMemberId.getString(), staffMemberId);
+        //both SRStaffMember and SRStaffMemberProfile feed into the same Practitioner resources,
+        //and we can get one record updated without the other(s). So we need to re-retrieve our existing
+        //Practitioner because we don't want to lose anything already on it.
+        PractitionerBuilder practitionerBuilder = null;
+        Practitioner practitioner = (Practitioner) csvHelper.retrieveResource(staffMemberId.getString(), ResourceType.Practitioner);
+        if (practitioner == null) {
+            practitionerBuilder = new PractitionerBuilder();
+            practitionerBuilder.setId(staffMemberId.getString(), staffMemberId);
+
+        } else {
+            practitionerBuilder = new PractitionerBuilder(practitioner);
+        }
+
+        //remove any existing name before adding the new one
+        NameBuilder.removeExistingNames(practitionerBuilder);
 
         CsvCell fullName = parser.getStaffName();
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
@@ -58,6 +74,9 @@ public class SRStaffMemberTransformer {
 
         CsvCell userName = parser.getStaffUserName();
         if (!userName.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_USERNAME);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_USERNAME);
             identifierBuilder.setValue(userName.getString(), userName);
@@ -65,8 +84,11 @@ public class SRStaffMemberTransformer {
 
         CsvCell nationalIdType = parser.getNationalIdType();
         if (!nationalIdType.isEmpty()) {
-            String nationalIdTypeSystem = getNationalIdTypeIdentifierSystem(nationalIdType.toString());
+            String nationalIdTypeSystem = getNationalIdTypeIdentifierSystem(nationalIdType.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(nationalIdTypeSystem)) {
+
+                IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, nationalIdTypeSystem);
+
                 CsvCell nationalId = parser.getIDNational();
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
                 identifierBuilder.setSystem(nationalIdTypeSystem);
@@ -76,6 +98,9 @@ public class SRStaffMemberTransformer {
 
         CsvCell smartCardId = parser.getIDSmartCard();
         if (!smartCardId.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_SMARTCARD_ID);
+
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_SMARTCARD_ID);
             identifierBuilder.setValue(smartCardId.getString(), smartCardId);
@@ -94,31 +119,28 @@ public class SRStaffMemberTransformer {
         // Get cached StaffMemberProfile records and apply them
         List<StaffMemberProfilePojo> pojoList = csvHelper.getStaffMemberProfileCache().getAndRemoveStaffMemberProfilePojo(staffMemberId);
         if (pojoList != null) {
-            for (StaffMemberProfilePojo  pojo : pojoList) {
-
+            for (StaffMemberProfilePojo pojo : pojoList) {
                 StaffMemberProfileCache.addOrReplaceProfileOnPractitioner(practitionerBuilder, pojo, csvHelper);
             }
         }
 
         //we don't retrieve from the DB and update so it will never be ID mapped
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
-        /*boolean mapIds;
-        if (practitionerBuilder.isIdMapped()) {
-            mapIds = false;
-        } else {
-            mapIds = true;
-        }
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(),mapIds, practitionerBuilder);*/
+        boolean mapIds = !practitionerBuilder.isIdMapped();
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, practitionerBuilder);
     }
 
 
-
-    private static String getNationalIdTypeIdentifierSystem (String nationalIdType) {
+    private static String getNationalIdTypeIdentifierSystem(String nationalIdType, TppCsvHelper csvHelper) throws Exception {
 
         switch (nationalIdType.toUpperCase()) {
-            case "GMC": return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
-            case "NMC": return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
-            default: return null;
+            case "GMC":
+                return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
+            case "NMC":
+                return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
+
+            default:
+                TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
+                return null;
         }
     }
 

@@ -25,12 +25,14 @@ public class SRMappingTransformer {
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRMapping.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRMapping)parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRMapping) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
 

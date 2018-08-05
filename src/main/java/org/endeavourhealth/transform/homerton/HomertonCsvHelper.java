@@ -517,7 +517,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
 
-        internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
+        internalIdDal.save(serviceId, idType, sourceId, destinationId);
 
         if (internalIdMapCache.containsKey(cacheKey)) {
             internalIdMapCache.replace(cacheKey, destinationId);

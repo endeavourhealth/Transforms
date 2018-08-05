@@ -4,7 +4,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointmentFlags;
 
 import java.util.Map;
@@ -56,7 +55,7 @@ public class SRAppointmentFlagsTransformer {
             apptFlagPojo.setRemovedData(removed);
         }
 
-        AppointmentFlagCache.addAppointmentFlagPojo(apptFlagPojo);
+        csvHelper.getAppointmentFlagCache().addAppointmentFlagPojo(apptFlagPojo);
 
     }
 }

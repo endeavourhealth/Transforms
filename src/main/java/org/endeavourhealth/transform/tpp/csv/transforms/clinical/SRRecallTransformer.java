@@ -6,7 +6,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -49,27 +48,16 @@ public class SRRecallTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
+        if (deleteData != null && deleteData.getIntAsBoolean()) { //null check required as the column didn't always exist
 
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            ProcedureRequest procedureRequest = (ProcedureRequest)csvHelper.retrieveResource(recallId.getString(), ResourceType.ProcedureRequest);
 
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.ProcedureRequest procedureRequest
-                        = (org.hl7.fhir.instance.model.ProcedureRequest) csvHelper.retrieveResource(recallId.getString(),
-                        ResourceType.ProcedureRequest);
-
-                if (procedureRequest != null) {
-                    ProcedureRequestBuilder procedureRequestBuilder
-                            = new ProcedureRequestBuilder(procedureRequest);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureRequestBuilder);
-                }
-                return;
-
+            if (procedureRequest != null) {
+                ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder(procedureRequest);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureRequestBuilder);
             }
+            return;
         }
 
         ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder();
@@ -141,8 +129,8 @@ public class SRRecallTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            procedureRequestBuilder.setEncounter (eventReference, eventId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
+            procedureRequestBuilder.setEncounter(eventReference, eventId);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureRequestBuilder);

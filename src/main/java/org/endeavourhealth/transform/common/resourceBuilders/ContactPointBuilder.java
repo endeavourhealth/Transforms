@@ -28,7 +28,7 @@ public class ContactPointBuilder {
         }
     }
 
-    public static boolean removeExistingContactPoint(HasContactPointI parentBuilder, String idValue) {
+    public static boolean removeExistingContactPointById(HasContactPointI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove patient contact without ID");
         }

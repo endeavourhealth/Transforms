@@ -7,7 +7,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AllergyIntoleranceBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -19,7 +18,6 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 
@@ -56,39 +54,25 @@ public class SRDrugSensitivityTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.AllergyIntolerance allergyIntolerance
-                        = (org.hl7.fhir.instance.model.AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.AllergyIntolerance);
-
-                if (allergyIntolerance != null) {
-                    AllergyIntoleranceBuilder allergyIntoleranceBuilder
-                            = new AllergyIntoleranceBuilder(allergyIntolerance);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-                }
-                return;
-
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            AllergyIntolerance allergyIntolerance = (AllergyIntolerance)csvHelper.retrieveResource(rowId.getString(), ResourceType.AllergyIntolerance);
+            if (allergyIntolerance != null) {
+                AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder(allergyIntolerance);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, allergyIntoleranceBuilder);
             }
+            return;
         }
 
         AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder();
         allergyIntoleranceBuilder.setId(rowId.getString(), rowId);
 
-        allergyIntoleranceBuilder.setPatient(csvHelper.createPatientReference(patientId));
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        allergyIntoleranceBuilder.setPatient(patientReference);
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-
-            String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 allergyIntoleranceBuilder.setRecordedBy(staffReference, recordedBy);
@@ -97,35 +81,27 @@ public class SRDrugSensitivityTransformer {
 
         CsvCell procedureDoneBy = parser.getIDDoneBy();
         if (!procedureDoneBy.isEmpty()) {
-
             Reference staffReference = csvHelper.createPractitionerReference(procedureDoneBy);
             allergyIntoleranceBuilder.setClinician(staffReference, procedureDoneBy);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-
             allergyIntoleranceBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateStarted();
         if (!effectiveDate.isEmpty()) {
-
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             allergyIntoleranceBuilder.setOnsetDate(dateTimeType, effectiveDate);
         }
 
         CsvCell endDate = parser.getDateEnded();
         if (!endDate.isEmpty()) {
-
             allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.INACTIVE);
-            DateTimeType dateTimeType = new DateTimeType(endDate.getDate());
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            String displayDate = sdf.format(dateTimeType);
-            allergyIntoleranceBuilder.setNote("Date ended: "+displayDate);
+            allergyIntoleranceBuilder.setEndDate(endDate.getDate(), endDate);
 
         } else {
-
             allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.ACTIVE);
         }
 
@@ -156,8 +132,7 @@ public class SRDrugSensitivityTransformer {
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
-
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             allergyIntoleranceBuilder.setEncounter (eventReference, eventId);
         }
 

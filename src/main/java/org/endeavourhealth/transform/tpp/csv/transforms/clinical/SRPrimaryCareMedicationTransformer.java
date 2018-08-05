@@ -3,18 +3,18 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRPrimaryCareMedication;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.MedicationStatement;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,13 +66,13 @@ public class SRPrimaryCareMedicationTransformer {
                     !isOtherMedication.getBoolean()) {
 
                 // create an order (issue) record for non dental, hospital and other acutes
-                createOrDeleteMedicationOrder(parser, fhirResourceFiler, csvHelper);
+                createMedicationOrder(parser, fhirResourceFiler, csvHelper);
             }
         } else {
 
             // create a repeat order record.
             // the initial medication statement will have been created by the repeat template transform
-            createOrDeleteMedicationOrder(parser, fhirResourceFiler, csvHelper);
+            createMedicationOrder(parser, fhirResourceFiler, csvHelper);
         }
     }
 
@@ -84,36 +84,20 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.MedicationStatement medicationStatement
-                        = (org.hl7.fhir.instance.model.MedicationStatement) csvHelper.retrieveResource(medicationId.getString(),
-                        ResourceType.MedicationStatement);
-
-                if (medicationStatement != null) {
-                    MedicationStatementBuilder medicationStatementBuilder
-                            = new MedicationStatementBuilder(medicationStatement);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
-                }
-                return;
-
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            MedicationStatement medicationStatement = (MedicationStatement) csvHelper.retrieveResource(medicationId.getString(), ResourceType.MedicationStatement);
+            if (medicationStatement != null) {
+                MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder(medicationStatement);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, medicationStatementBuilder);
             }
+            return;
         }
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
         medicationStatementBuilder.setId(medicationId.getString(), medicationId);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (medicationStatementBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
-        }
         medicationStatementBuilder.setPatient(patientReference, patientId);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
@@ -136,9 +120,6 @@ public class SRPrimaryCareMedicationTransformer {
                     recordedById.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                if (medicationStatementBuilder.isIdMapped()) {
-                    staffReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
-                }
                 medicationStatementBuilder.setRecordedBy(staffReference, recordedById);
             }
         }
@@ -147,9 +128,6 @@ public class SRPrimaryCareMedicationTransformer {
         if (!doneByClinicianId.isEmpty()) {
 
             Reference staffReference = csvHelper.createPractitionerReference(doneByClinicianId);
-            if (medicationStatementBuilder.isIdMapped()) {
-                staffReference =IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
-            }
             medicationStatementBuilder.setInformationSource(staffReference, recordedById);
         }
 
@@ -184,7 +162,7 @@ public class SRPrimaryCareMedicationTransformer {
             if (match.find()) {
 
                 String qty = match.group();
-                String units = quantity.getString().substring(match.end(),quantity.getString().length()).trim();
+                String units = quantity.getString().substring(match.end(), quantity.getString().length()).trim();
 
                 if (StringUtils.isNumeric(qty)) {
                     medicationStatementBuilder.setQuantityValue(Double.valueOf(qty), quantity);
@@ -209,45 +187,29 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            if (medicationStatementBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
-            }
-            medicationStatementBuilder.setEncounter (eventReference, eventId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
+            medicationStatementBuilder.setEncounter(eventReference, eventId);
         }
-        boolean mapIds = !medicationStatementBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, medicationStatementBuilder);
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationStatementBuilder);
     }
 
-    private static void createOrDeleteMedicationOrder  (SRPrimaryCareMedication parser,
-                                                        FhirResourceFiler fhirResourceFiler,
-                                                        TppCsvHelper csvHelper) throws Exception {
+    private static void createMedicationOrder(SRPrimaryCareMedication parser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              TppCsvHelper csvHelper) throws Exception {
 
         CsvCell medicationId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if (!deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.MedicationOrder medicationOrder
-                        = (org.hl7.fhir.instance.model.MedicationOrder) csvHelper.retrieveResource(medicationId.getString(),
-                        ResourceType.MedicationOrder);
-
-                if (medicationOrder != null) {
-                    MedicationOrderBuilder medicationOrderBuilder
-                            = new MedicationOrderBuilder(medicationOrder);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
-                }
-                return;
-
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            MedicationOrder medicationOrder = (MedicationOrder) csvHelper.retrieveResource(medicationId.getString(), ResourceType.MedicationOrder);
+            if (medicationOrder != null) {
+                MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder(medicationOrder);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, medicationOrderBuilder);
             }
+            return;
         }
 
         MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder();
@@ -261,33 +223,30 @@ public class SRPrimaryCareMedicationTransformer {
         // otherwise for a repeat order, use the previously created RepeatTemplate Id
         CsvCell repeatTemplateMedicationId = parser.getIDRepeatTemplate();
         if (!repeatTemplateMedicationId.isEmpty()) {
+            String repeatLocalId = SRRepeatTemplateTransformer.REPEAT_TEMPLATE_ID_PREFIX + repeatTemplateMedicationId.getString();
+            Reference statementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, repeatLocalId);
+            medicationOrderBuilder.setMedicationStatementReference(statementReference, repeatTemplateMedicationId);
 
-            Reference medicationStatementReference
-                    = csvHelper.createMedicationStatementReference(repeatTemplateMedicationId, patientId);
-            medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, repeatTemplateMedicationId);
         } else {
-
-            Reference medicationStatementReference
-                    = csvHelper.createMedicationStatementReference(medicationId, patientId);
-            medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, medicationId);
+            Reference statementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, medicationId.getString());
+            medicationOrderBuilder.setMedicationStatementReference(statementReference, medicationId);
         }
 
         CsvCell doneByClinicianId = parser.getIDDoneBy();
         if (!doneByClinicianId.isEmpty()) {
-
-            medicationOrderBuilder.setPrescriber(csvHelper.createPractitionerReference(doneByClinicianId.getString()));
+            Reference practitionerReference = csvHelper.createPractitionerReference(doneByClinicianId.getString());
+            medicationOrderBuilder.setPrescriber(practitionerReference);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-
             medicationOrderBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
         }
 
         CsvCell recordedById = parser.getIDProfileEnteredBy();
         if (!recordedById.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
                     recordedById.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
@@ -327,7 +286,7 @@ public class SRPrimaryCareMedicationTransformer {
             Matcher match = pattern.matcher(quantity.getString());
             if (match.find()) {
                 String qty = match.group();
-                String units = quantity.getString().substring(match.end(),quantity.getString().length()).trim();
+                String units = quantity.getString().substring(match.end(), quantity.getString().length()).trim();
 //                String qty = quantity.getString().substring(0, quantity.getString().indexOf(" "));
 //                String units = quantity.getString().substring(quantity.getString().indexOf(" ") + 1);
                 if (StringUtils.isNumeric(qty)) {
@@ -336,7 +295,7 @@ public class SRPrimaryCareMedicationTransformer {
                 medicationOrderBuilder.setQuantityUnit(units, quantity);
             }
 
-            }
+        }
 
         CsvCell dose = parser.getMedicationDosage();
         if (!dose.isEmpty()) {
@@ -348,8 +307,8 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            medicationOrderBuilder.setEncounter (eventReference, eventId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
+            medicationOrderBuilder.setEncounter(eventReference, eventId);
         }
         // No need to set boolean as this builder was created fresh from constructor so needs to be mapped
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);

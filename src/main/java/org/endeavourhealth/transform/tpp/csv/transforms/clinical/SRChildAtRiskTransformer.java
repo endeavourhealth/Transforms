@@ -2,7 +2,9 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.FlagBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRChildAtRisk;
@@ -46,27 +48,14 @@ public class SRChildAtRiskTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Flag flag
-                        = (org.hl7.fhir.instance.model.Flag) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Flag);
-
-                if (flag != null) {
-                    FlagBuilder flagBuilder
-                            = new FlagBuilder(flag);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), flagBuilder);
-                }
-                return;
-
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Flag flag = (Flag)csvHelper.retrieveResource(rowId.getString(), ResourceType.Flag);
+            if (flag != null) {
+                FlagBuilder flagBuilder = new FlagBuilder(flag);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, flagBuilder);
             }
+            return;
         }
 
         FlagBuilder flagBuilder = new FlagBuilder();
@@ -87,14 +76,9 @@ public class SRChildAtRiskTransformer {
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
-
-            String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                if (flagBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
-                }
                 flagBuilder.setAuthor(staffReference, recordedBy);
             }
         }
@@ -113,6 +97,5 @@ public class SRChildAtRiskTransformer {
         flagBuilder.setCategory("Clinical");
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), flagBuilder);
-
     }
 }

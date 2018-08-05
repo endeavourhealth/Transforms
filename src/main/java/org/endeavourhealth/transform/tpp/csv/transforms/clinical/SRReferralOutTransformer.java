@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.referral;
+package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
@@ -13,11 +13,9 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,39 +52,16 @@ public class SRReferralOutTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell referralOutId = parser.getRowIdentifier();
-        CsvCell patientId = parser.getIDPatient();
-        CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
+        ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
+
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData != null && !deleteData.getIntAsBoolean()) {
+            csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             return;
         }
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.ReferralRequest referralRequest
-                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
-                        ResourceType.ReferralRequest);
-
-                if (referralRequest != null) {
-                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
-                    return;
-                }
-            }
-        }
-
-        ReferralRequestBuilder referralRequestBuilder
-                = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
-
+        CsvCell patientId = parser.getIDPatient();
         Reference patientReference = csvHelper.createPatientReference(patientId);
         if (referralRequestBuilder.isIdMapped()) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
@@ -104,17 +79,16 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setDate(dateTimeType, referralDate);
         }
 
-        CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        if (!recordedBy.isEmpty()) {
+        CsvCell recordedByCell = parser.getIDProfileEnteredBy();
+        if (!recordedByCell.isEmpty()) {
 
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedByCell.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 if (referralRequestBuilder.isIdMapped()) {
                     staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
                 }
-                referralRequestBuilder.setRecordedBy(staffReference, recordedBy);
+                referralRequestBuilder.setRecordedBy(staffReference, recordedByCell);
             }
         }
 
@@ -126,6 +100,7 @@ public class SRReferralOutTransformer {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
             referralRequestBuilder.setRequester(practitionerReference, requestedByStaff);
+
         } else if (!requestedByOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
             if (referralRequestBuilder.isIdMapped()) {
@@ -264,7 +239,7 @@ public class SRReferralOutTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             if (referralRequestBuilder.isIdMapped()) {
                 eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
             }

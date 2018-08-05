@@ -8,11 +8,13 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -29,17 +31,24 @@ public class SRStaffMemberProfileTransformer {
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
 
+        List<InternalIdMap> mappingsToSave = new ArrayList<>();
+
         try {
             AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
             if (parser != null) {
                 while (parser.nextRecord()) {
 
                     try {
-                        createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, threadPool);
+                        createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave);
                     } catch (Exception ex) {
                         fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
                 }
+            }
+
+            if (!mappingsToSave.isEmpty()) {
+                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave, csvHelper));
+                handleErrors(errors);
             }
 
             //call this to abort if we had any errors, during the above processing
@@ -64,7 +73,8 @@ public class SRStaffMemberProfileTransformer {
     private static void createResource(SRStaffMemberProfile parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper,
-                                       ThreadPool threadPool) throws Exception {
+                                       ThreadPool threadPool,
+                                       List<InternalIdMap> mappingsToSave) throws Exception {
 
         CsvCell staffProfileIdCell = parser.getRowIdentifier();
 
@@ -114,41 +124,55 @@ public class SRStaffMemberProfileTransformer {
 
         CsvCell removedDataCell = parser.getRemovedData();
         //note this column isn't present on all versions, so we need to handle the cell being null
-        if (removedDataCell != null
-                && removedDataCell.getIntAsBoolean()) {
+        if (removedDataCell != null && removedDataCell.getIntAsBoolean()) {
             staffPojo.setDeleted(true);
         }
 
         //We have the pojo so write it out
         csvHelper.getStaffMemberProfileCache().addStaffPojo(staffId, staffPojo);
 
-        Task task = new Task(csvHelper, staffId, staffProfileIdCell);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
+        InternalIdMap mapping = new InternalIdMap();
+        mapping.setServiceId(csvHelper.getServiceId());
+        mapping.setIdType(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID);
+        mapping.setSourceId(staffProfileIdCell.getString());
+        mapping.setDestinationId(staffId.getString());
+
+        mappingsToSave.add(mapping);
+
+        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
+            List<InternalIdMap> copy = new ArrayList<>(mappingsToSave);
+            mappingsToSave.clear();
+
+            List<ThreadPoolError> errors = threadPool.submit(new Task(copy, csvHelper));
+            handleErrors(errors);
+        }
     }
 
     static class Task implements Callable {
 
+        private List<InternalIdMap> mappings;
         private TppCsvHelper csvHelper;
-        private CsvCell staffMemberIdCell;
-        private CsvCell staffProfileIdCell;
 
-        public Task(TppCsvHelper csvHelper, CsvCell staffMemberIdCell, CsvCell staffProfileIdCell) {
+        public Task(List<InternalIdMap> mappings, TppCsvHelper csvHelper) {
+            this.mappings = mappings;
             this.csvHelper = csvHelper;
-            this.staffMemberIdCell = staffMemberIdCell;
-            this.staffProfileIdCell = staffProfileIdCell;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-                csvHelper.saveInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                                            staffProfileIdCell.getString(), staffMemberIdCell.getString());
+                csvHelper.saveInternalIds(mappings);
 
             } catch (Throwable t) {
-                LOG.error("Error saving internal ID from " + staffProfileIdCell + " to " + staffMemberIdCell , t);
-                throw t;
+                String msg = "Error saving internal ID maps for staff member profile IDs ";
+                for (InternalIdMap mapping: mappings) {
+                    msg += mapping.getSourceId();
+                    msg += ", ";
+                }
+
+                LOG.error(msg, t);
+                throw new TransformException(msg, t);
             }
 
             return null;

@@ -52,7 +52,7 @@ public class SRReferralAllocation extends AbstractCsvParser {
  public CsvCell getIDProfileDeletedBy() { return super.getCell("IDProfileDeletedBy");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRReferralAllocation Entry file ";}
 

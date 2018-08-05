@@ -59,7 +59,8 @@ public abstract class ClinicalCodeTransformer {
 
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
-                threadPool.submit(new Task(mappingsToSave));
+                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
+                handleErrors(errors);
             }
 
         } finally {

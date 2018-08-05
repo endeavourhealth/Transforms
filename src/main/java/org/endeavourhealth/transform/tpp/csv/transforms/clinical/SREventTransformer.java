@@ -1,10 +1,13 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -51,25 +54,14 @@ public class SREventTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Encounter encounter
-                        = (org.hl7.fhir.instance.model.Encounter) csvHelper.retrieveResource(eventId.getString(),
-                        ResourceType.Encounter);
-
-                if (encounter != null) {
-                    EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-                }
-                return;
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Encounter encounter = (Encounter)csvHelper.retrieveResource(eventId.getString(), ResourceType.Encounter);
+            if (encounter != null) {
+                EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, encounterBuilder);
             }
+            return;
         }
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
@@ -115,11 +107,6 @@ public class SREventTransformer {
                     csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, encounterAuthoriserId.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-
-                //the EncounterBuilder is never created around a resource from the DB so it's NEVER ID mapped
-                *//*if (encounterBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
-                }*//*
                 encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
             }
         }*/
@@ -141,20 +128,17 @@ public class SREventTransformer {
         CsvCell visitOrg = parser.getIDOrganisation();
         if (!visitOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(visitOrg);
-            if (encounterBuilder.isIdMapped()) {
-                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference,fhirResourceFiler);
-            }
             encounterBuilder.setServiceProvider(orgReference, visitOrg);
         }
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
         //carry over linked items from any previous instance of this encounter.
-        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(encounterBuilder.getResourceId());
+        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(eventId);
         containedListBuilder.addReferences(previousReferences);
 
         //apply any new linked items from this extract. Encounter links set-up in Codes/Referral/Medication etc. pre-transformers
-        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(encounterBuilder.getResourceId());
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(eventId);
         containedListBuilder.addReferences(newLinkedResources);
 
         //apply any linked appointments / visits
@@ -162,7 +146,26 @@ public class SREventTransformer {
         if (appLinkedResources != null) {
             encounterBuilder.setAppointment(appLinkedResources.getReference(0));
         }
-        boolean mapIds = !encounterBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+
+        CsvCell branchIdCell = parser.getIDBranch();
+        if (!branchIdCell.isEmpty()) {
+            Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, branchIdCell.getString());
+            encounterBuilder.addLocation(locationReference, branchIdCell);
+        } else {
+            //if no branchID is present, this means it was done at the main surgery, so link to the location we will have
+            //creating using the ID of the org as it's source ID
+            CsvCell orgId = parser.getIDOrganisation();
+            if (!orgId.isEmpty()) { //empty in test pack for some reason
+                Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, orgId.getString());
+                encounterBuilder.addLocation(locationReference, branchIdCell);
+            }
+        }
+
+        //TODO - the following columns need transforming:
+        //getContactEventLocation
+        //getEventIncomplete
+        //getClinicalEvent()
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 }

@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
-import org.apache.commons.lang3.StringUtils;
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -9,20 +9,17 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
 import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SRPatientAddressHistoryTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistoryTransformer.class);
+
+    public static final String ADDRESS_ID_TO_PATIENT_ID = "AddressIdToPatientId";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -49,97 +46,79 @@ public class SRPatientAddressHistoryTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-        //TODO - have to implement delete method
-        CsvCell IdPatientCell = parser.getIDPatient();
-        if (IdPatientCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
-        }
-        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-        CsvCell removeDataCell = parser.getRemovedData();
-        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            List<Address> addresses = patientBuilder.getAddresses();
-            for (Address address: addresses) {
-                if (address.getId().equals(rowIdCell.getString())) {
-                    patientBuilder.removeAddress(address);
+
+        CsvCell removedCell = parser.getRemovedData();
+        if (removedCell != null && removedCell.getIntAsBoolean()) {
+
+            //if removed, we won't have the patient ID, so need to look it up
+            String patientId = csvHelper.getInternalId(ADDRESS_ID_TO_PATIENT_ID, rowIdCell.getString());
+            if (!Strings.isNullOrEmpty(patientId)) {
+
+                CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                if (patientBuilder != null) {
+                    //remove any existing instance of this address
+                    AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
                 }
             }
-            Patient patient = (Patient) csvHelper.retrieveResource(IdPatientCell.getString(), ResourceType.Patient);
-            addresses = patient.getAddress();
-            for (Address address: addresses) {
-                if (address.getId().equals(rowIdCell.getString())) {
-                    patientBuilder.removeAddress(address);
-                }
-            }
-            //boolean mapIds = !patientBuilder.isIdMapped();
-            //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
             return;
         }
 
+        CsvCell patientIdCell = parser.getIDPatient();
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //remove any existing instance of this address
+        AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(rowIdCell.getString(), rowIdCell);
 
-        CsvCell dateToCell = parser.getDateTo();
-        CsvCell addressTypeCell = parser.getAddressType();
-
-        Address.AddressUse addressUse;
-
-        if (!addressTypeCell.isEmpty()) {
-            addressUse = getAddressUse(addressTypeCell, dateToCell, parser, csvHelper);
-            addressBuilder.setUse(addressUse);
+        CsvCell dateFromCell = parser.getDateEvent();
+        if (!dateFromCell.isEmpty()) {
+            addressBuilder.setStartDate(dateFromCell.getDate(), dateFromCell);
         }
 
+        CsvCell dateToCell = parser.getDateTo();
         if (!dateToCell.isEmpty()) {
             addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
         }
+
+        CsvCell addressTypeCell = parser.getAddressType();
+        Address.AddressUse addressUse = getAddressUse(addressTypeCell, dateToCell, parser, csvHelper);
+        addressBuilder.setUse(addressUse, addressTypeCell);
+
         CsvCell nameOfBuildingCell = parser.getNameOfBuilding();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
         CsvCell numberOfBuildingCell = parser.getNumberOfBuilding();
         CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell = parser.getNameOfLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
         CsvCell fullPostCodeCell = parser.getFullPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
+
         CsvCell dateEventCell = parser.getDateEvent();
         if (!dateEventCell.isEmpty()) {
             addressBuilder.setStartDate(dateEventCell.getDate(), dateEventCell);
         }
-        //boolean mapIds = !patientBuilder.isIdMapped();
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, patientBuilder);
-
     }
 
     private static Address.AddressUse getAddressUse(CsvCell addressTypeCell, CsvCell dateToCell,

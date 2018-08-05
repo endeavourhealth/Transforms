@@ -1,14 +1,12 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
-import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.LocationResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisationBranch;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Reference;
@@ -46,15 +44,22 @@ public class SROrganisationBranchTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
+        CsvCell locationIdCell = parser.getID();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
-            return;
+        LocationBuilder locationBuilder = new LocationBuilder();
+
+        //until we get data for a practice with branches, we don't know whether the IDBranch on SREvent
+        //refers to the RowID or the ID columns on this table, so I'm setting this up to fail
+        //if we get data, so we can look and make the right call
+        //It should be:
+        //locationBuilder.setId(rowIdCell.getString(), rowIdCell);
+        //Or:
+        //locationBuilder.setId(locationIdCell.getString(), locationIdCell);
+        if (true) {
+            throw new TransformException("Don't know what ID to use for Location resource from SROrganisationBranch");
         }
 
-        LocationBuilder locationBuilder = LocationResourceCache.getLocationBuilder(rowIdCell, csvHelper,fhirResourceFiler);
-
-        CsvCell obsoleteCell  = parser.getBranchObsolete();
+        CsvCell obsoleteCell = parser.getBranchObsolete();
         CsvCell deleted = parser.getRemovedData();
 
         if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
@@ -65,62 +70,39 @@ public class SROrganisationBranchTransformer {
 
         CsvCell nameCell = parser.getBranchName();
         if (!nameCell.isEmpty()) {
-            locationBuilder.setName(nameCell.getString());
+            locationBuilder.setName(nameCell.getString(), nameCell);
         }
 
         CsvCell orgIdCell = parser.getIDOrganisation();
-        if (!orgIdCell.isEmpty()) {
-
-            Reference organisationReference = csvHelper.createOrganisationReference(orgIdCell);
-            locationBuilder.setManagingOrganisation(organisationReference,orgIdCell);
-        } else {
-            TransformWarnings.log(LOG,parser,"Missing Organization for row Id {} in {}",
-                    rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell locationIdCell = parser.getID();
-        if (!locationIdCell.isEmpty()) {
-           locationBuilder.setId(locationIdCell.getString());
-        }
+        Reference organisationReference = csvHelper.createOrganisationReference(orgIdCell);
+        locationBuilder.setManagingOrganisation(organisationReference, orgIdCell);
 
         AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
-        CsvCell nameOfBuildingCell  = parser.getHouseName();
+        addressBuilder.setUse(Address.AddressUse.WORK);
+        CsvCell nameOfBuildingCell = parser.getHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
             addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
         }
         CsvCell numberOfBuildingCell = parser.getHouseNumber();
         CsvCell nameOfRoadCell = parser.getRoadName();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
-        CsvCell nameOfLocalityCell  = parser.getLocality();
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
+        CsvCell nameOfLocalityCell = parser.getLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
-        CsvCell nameOfTownCell  = parser.getTown();
+        CsvCell nameOfTownCell = parser.getTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
-        CsvCell nameOfCountyCell  = parser.getCounty();
+        CsvCell nameOfCountyCell = parser.getCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
-        CsvCell fullPostCodeCell  = parser.getPostCode();
+        CsvCell fullPostCodeCell = parser.getPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
-        }
+    }
 }

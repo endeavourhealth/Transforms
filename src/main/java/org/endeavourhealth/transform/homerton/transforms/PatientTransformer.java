@@ -209,7 +209,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell postcodeCell = parser.getPostcode();
 
         //remove existing address if set
-        AddressBuilder.removeExistingAddress(patientBuilder, millenniumPersonIdCell.getString());
+        AddressBuilder.removeExistingAddressById(patientBuilder, millenniumPersonIdCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(millenniumPersonIdCell.getString(), millenniumPersonIdCell);  //so it can be removed

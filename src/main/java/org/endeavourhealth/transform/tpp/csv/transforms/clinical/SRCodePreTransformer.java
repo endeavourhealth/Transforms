@@ -38,6 +38,12 @@ public class SRCodePreTransformer {
 
     private static void processLine(SRCode parser, TppCsvHelper csvHelper) throws Exception {
 
+        //if this record is deleted, skip it
+        CsvCell removedCell = parser.getRemovedData();
+        if (removedCell != null && removedCell.getIntAsBoolean()) {
+            return;
+        }
+
         ResourceType resourceType = SRCodeTransformer.getTargetResourceType(parser, csvHelper);
 
         CsvCell observationId = parser.getRowIdentifier();
@@ -46,11 +52,7 @@ public class SRCodePreTransformer {
         // code linked consultation / encounter Id
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
-
-            csvHelper.cacheNewConsultationChildRelationship(eventLinkId,
-                    patientId,
-                    observationId,
-                    resourceType);
+            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, observationId, resourceType);
         }
 
         // ethnicity and marital status lookup
