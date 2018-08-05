@@ -209,6 +209,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRSystmOnline");
             set.add("SRTemplate");
             set.add("SRMedia");
+            set.add("SRImmunisationConsent");
 
             cachedFileNamesToIgnore = set;
         }
