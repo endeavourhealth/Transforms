@@ -406,7 +406,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRMapping generated db
-    public TppMappingRef lookUpTppMappingRef(CsvCell cell, AbstractCsvParser parser) throws Exception {
+    public TppMappingRef lookUpTppMappingRef(CsvCell cell) throws Exception {
 
         Long rowId = cell.getLong();
         String codeLookup = rowId.toString();
@@ -421,9 +421,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId);
         if (tppMappingRefFromDB == null) {
-
-            TransformWarnings.log(LOG, parser, "TPP mapping reference not found for id: {},  in file: {}, line: {}",
-                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
+            TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", rowId);
             return null;
         }
 

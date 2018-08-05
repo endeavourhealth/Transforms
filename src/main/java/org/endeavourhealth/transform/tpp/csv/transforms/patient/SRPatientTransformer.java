@@ -132,7 +132,7 @@ public class SRPatientTransformer {
         CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
         if (!speaksEnglishCell.isEmpty()) {
 
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell);
             if (mapping != null) {
                 String term = mapping.getMappedTerm();
                 if (term.equals("Unknown")) {

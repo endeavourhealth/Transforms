@@ -125,7 +125,7 @@ public class SRPatientAddressHistoryTransformer {
                                                     SRPatientAddressHistory parser, TppCsvHelper csvHelper) throws Exception {
         Address.AddressUse addressUse = null;
         try {
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
             if (mapping != null) {
 
                 addressUse = Address.AddressUse.fromCode(mapping.getMappedTerm().toLowerCase());

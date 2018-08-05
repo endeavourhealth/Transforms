@@ -116,7 +116,7 @@ public class SRImmunisationTransformer {
         CsvCell siteLocation = parser.getLocation();
         if (!siteLocation.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setSite(mappedTerm, siteLocation);
@@ -126,7 +126,7 @@ public class SRImmunisationTransformer {
         CsvCell method = parser.getMethod();
         if (!method.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setRoute(mappedTerm, method);
@@ -169,7 +169,7 @@ public class SRImmunisationTransformer {
 
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (StringUtils.isNumeric(mappedTerm)) {

@@ -125,7 +125,7 @@ public class SRReferralOutTransformer {
             //so only look up if it's not this value, since we believe this value means that the field isn't set
             if (serviceOffered.getLong().longValue() != 175137) {
 
-                TppMappingRef mapping = csvHelper.lookUpTppMappingRef(serviceOffered, parser);
+                TppMappingRef mapping = csvHelper.lookUpTppMappingRef(serviceOffered);
                 if (mapping != null) {
                     String term = mapping.getMappedTerm();
                     recipientServiceTypes.add(term);
@@ -136,7 +136,7 @@ public class SRReferralOutTransformer {
         CsvCell referralType = parser.getTypeOfReferral();
         if (!referralType.isEmpty()) {
             //TPP type of referral is a high-level of the the service type being referred so
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(referralType, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(referralType);
             if (mapping != null) {
                 String term = mapping.getMappedTerm();
                 recipientServiceTypes.add(term);
@@ -292,7 +292,7 @@ public class SRReferralOutTransformer {
 
     private static Boolean recipientIsPerson(CsvCell recipientTypeCell, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
 
-        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeCell, parser);
+        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeCell);
         if (tppMappingRef == null) {
             return false;
         }

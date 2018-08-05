@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
@@ -151,7 +152,7 @@ public class SRAppointmentTransformer {
         CsvCell appointmentStatus = parser.getAppointmentStatus();
         if (!appointmentStatus.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus);
             if (tppMappingRef != null) {
                 String statusTerm = tppMappingRef.getMappedTerm();
                 Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
@@ -166,16 +167,7 @@ public class SRAppointmentTransformer {
         // Check for appointment flags
         List<AppointmentFlagsPojo> pojoList = csvHelper.getAppointmentFlagCache().getAndRemoveFlagsForAppointmentId(appointmentId.getLong());
         if (pojoList != null) {
-
-            for (AppointmentFlagsPojo pojo : pojoList) {
-                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag(), parser);
-                if (tppMappingRef != null) {
-                    String flagMapping = tppMappingRef.getMappedTerm();
-                    if (!Strings.isNullOrEmpty(flagMapping)) {
-                        appointmentBuilder.setComments(flagMapping);
-                    }
-                }
-            }
+            AppointmentFlagCache.applyFlagsToAppointment(csvHelper, appointmentBuilder, pojoList);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);

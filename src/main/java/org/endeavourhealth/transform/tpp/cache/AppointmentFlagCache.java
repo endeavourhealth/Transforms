@@ -1,7 +1,13 @@
 package org.endeavourhealth.transform.tpp.cache;
 
-import org.endeavourhealth.core.exceptions.TransformException;
+import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
+import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.AppointmentFlagsPojo;
+import org.hl7.fhir.instance.model.Appointment;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +42,35 @@ public class AppointmentFlagCache {
      * in SRAppointment. This fn is called after the two are transformed to ensure that was the case
      * and that there are no flags left over that didn't have a corresponding record in SRAppointment
      */
-    public void checkForRemainingFlags() throws Exception {
-        if (!appointmentFlagsByAppointmentId.isEmpty()) {
-            throw new TransformException("" + appointmentFlagsByAppointmentId.size() + " appointment flags didn't have records in SRAppointment");
+    public void processRemainingFlags(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (Long appointmentId: appointmentFlagsByAppointmentId.keySet()) {
+            List<AppointmentFlagsPojo> flags = appointmentFlagsByAppointmentId.get(appointmentId);
+
+            Appointment appointment = (Appointment)csvHelper.retrieveResource("" + appointmentId, ResourceType.Appointment);
+            if (appointment == null) {
+                continue;
+            }
+
+            AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+            applyFlagsToAppointment(csvHelper, appointmentBuilder, flags);
+
+            fhirResourceFiler.savePatientResource(null, false, appointmentBuilder);
         }
+    }
+
+    public static void applyFlagsToAppointment(TppCsvHelper csvHelper, AppointmentBuilder appointmentBuilder, List<AppointmentFlagsPojo> pojoList) throws Exception {
+
+        for (AppointmentFlagsPojo pojo : pojoList) {
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag());
+            if (tppMappingRef != null) {
+                String flagMapping = tppMappingRef.getMappedTerm();
+                if (!Strings.isNullOrEmpty(flagMapping)) {
+//TODO - this is wrong. What if an appointment has multiple flags? This will just overwrite them and keep the last. Flags should be stored in a new extension, not comments.
+                    appointmentBuilder.setComments(flagMapping);
+                }
+            }
+        }
+
     }
 }
 

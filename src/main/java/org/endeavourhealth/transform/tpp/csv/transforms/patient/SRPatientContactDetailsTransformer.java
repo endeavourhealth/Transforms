@@ -79,7 +79,7 @@ public class SRPatientContactDetailsTransformer {
 
         CsvCell contactTypeCell = parser.getContactType();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong() > 0) {
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell);
             if (mapping != null) {
                 try {
                     use = ContactPoint.ContactPointUse.fromCode(mapping.getMappedTerm().toLowerCase());

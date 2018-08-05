@@ -413,7 +413,7 @@ public class SRCodeTransformer {
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {

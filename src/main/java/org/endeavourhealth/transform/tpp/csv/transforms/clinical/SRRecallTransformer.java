@@ -105,7 +105,7 @@ public class SRRecallTransformer {
         // these are locally configured statues not mapped
         if (!recallStatus.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
