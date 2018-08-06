@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -79,27 +78,23 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setDate(dateTimeType, referralDate);
         }
 
-        CsvCell recordedByCell = parser.getIDProfileEnteredBy();
-        if (!recordedByCell.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedByCell.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                if (referralRequestBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
-                }
-                referralRequestBuilder.setRecordedBy(staffReference, recordedByCell);
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            if (referralRequestBuilder.isIdMapped()) {
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
             }
+            referralRequestBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
         }
 
-        CsvCell requestedByStaff = parser.getIDDoneBy();
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
-        if (!requestedByStaff.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(requestedByStaff);
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
             if (referralRequestBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
-            referralRequestBuilder.setRequester(practitionerReference, requestedByStaff);
+            referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneBy);
 
         } else if (!requestedByOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
@@ -220,11 +215,12 @@ public class SRReferralOutTransformer {
             CsvCell referralRecipientId = parser.getRecipientID();
             if (!referralRecipientId.isEmpty()) {
                 if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
-                    Reference practitionerReference = csvHelper.createPractitionerReference(referralRecipientId);
+                    Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(referralRecipientId);
                     if (referralRequestBuilder.isIdMapped()) {
                         practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
                     }
                     referralRequestBuilder.addRecipient(practitionerReference, referralRecipientId);
+
                 } else {
                     Reference orgReference = csvHelper.createOrganisationReference(referralRecipientId);
                     if (referralRequestBuilder.isIdMapped()) {

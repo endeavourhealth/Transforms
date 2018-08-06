@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -71,15 +69,10 @@ public class SRVisitTransformer {
             appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
         }
 
-        CsvCell visitStaffAssigned = parser.getIDProfileAssigned();
-        if (!visitStaffAssigned.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    visitStaffAssigned.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, visitStaffAssigned);
-            }
+        CsvCell profileIdAssigned = parser.getIDProfileAssigned();
+        if (!profileIdAssigned.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdAssigned);
+            appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, profileIdAssigned);
         }
 
         CsvCell visitStatus = parser.getCurrentStatus();

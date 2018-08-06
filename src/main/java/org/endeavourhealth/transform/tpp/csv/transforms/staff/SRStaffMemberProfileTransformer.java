@@ -1,23 +1,25 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.StaffMemberCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
+import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 
 public class SRStaffMemberProfileTransformer {
@@ -27,155 +29,137 @@ public class SRStaffMemberProfileTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
+        AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-        List<InternalIdMap> mappingsToSave = new ArrayList<>();
-
-        try {
-            AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
-            if (parser != null) {
-                while (parser.nextRecord()) {
-
-                    try {
-                        createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave);
-                    } catch (Exception ex) {
-                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                    }
+                try {
+                    createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
-
-            if (!mappingsToSave.isEmpty()) {
-                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave, csvHelper));
-                handleErrors(errors);
-            }
-
-            //call this to abort if we had any errors, during the above processing
-            fhirResourceFiler.failIfAnyErrors();
-        } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
-        }
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
         }
 
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        throw new TransformException("", exception);
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
+
 
     private static void createResource(SRStaffMemberProfile parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper,
-                                       ThreadPool threadPool,
-                                       List<InternalIdMap> mappingsToSave) throws Exception {
+                                       TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell staffProfileIdCell = parser.getRowIdentifier();
-
+        //seems to be some bad data in this file, where we have a record that doesn't link to a staff member record
         CsvCell staffId = parser.getIDStaffMember(); //NB = rowId in SRStaffMember
         if (staffId.isEmpty()) {
             return;
         }
 
-        StaffMemberProfilePojo staffPojo = new StaffMemberProfilePojo();
-
-        staffPojo.setStaffMemberProfileIdCell(staffProfileIdCell);
-
+        CsvCell profileIdCell = parser.getRowIdentifier();
         CsvCell orgId = parser.getIDOrganisation();
-        if (!orgId.isEmpty()) { //shouldn't really happen, but there are a small number, so leave them without an org reference
-            staffPojo.setIdOrganisation(orgId.getString());
-        }
 
-        CsvCell roleStart = parser.getDateEmploymentStart();
-        if (!roleStart.isEmpty()) {
-            staffPojo.setDateEmploymentStart(roleStart.getDate());
-        }
+        //both SRStaffMember and SRStaffMemberProfile feed into the same Practitioner resources,
+        //and we can get one record updated without the other(s). So we need to re-retrieve our existing
+        //Practitioner because we don't want to lose anything already on it.
+        PractitionerBuilder practitionerBuilder = null;
+        Practitioner practitioner = (Practitioner) csvHelper.retrieveResource(profileIdCell.getString(), ResourceType.Practitioner);
+        if (practitioner == null) {
 
-        CsvCell roleEnd = parser.getDateEmploymentEnd();
-        if (!roleEnd.isEmpty()) {
-            staffPojo.setDateEmploymentEnd(roleEnd.getDate());
-        }
+            //if we're not interested in this practitioner, then skip it
+            if (!csvHelper.shouldTransformNewPractitioner(orgId)) {
+                return;
+            }
 
-        CsvCell roleName = parser.getStaffRole();
-        if (!roleName.isEmpty()) {
-            staffPojo.setStaffRole(roleName.getString());
-        }
+            practitionerBuilder = new PractitionerBuilder();
+            practitionerBuilder.setId(profileIdCell.getString(), profileIdCell);
+            practitionerBuilder.setActive(true); //only ever set active to true here, as there are several places this can be set to false
 
-        CsvCell ppaId = parser.getPPAID();
-        if (!ppaId.isEmpty()) {
-            staffPojo.setPpaid(ppaId.getString());
-        }
-
-        CsvCell gpLocalCode = parser.getGPLocalCode();
-        if (!gpLocalCode.isEmpty()) {
-            staffPojo.setGpLocalCode(gpLocalCode.getString());
-        }
-
-        CsvCell gmpCode = parser.getGmpID();
-        if (!gmpCode.isEmpty()) {
-            staffPojo.setGmpId(gmpCode.getString());
+        } else {
+            practitionerBuilder = new PractitionerBuilder(practitioner);
         }
 
         CsvCell removedDataCell = parser.getRemovedData();
-        //note this column isn't present on all versions, so we need to handle the cell being null
-        if (removedDataCell != null && removedDataCell.getIntAsBoolean()) {
-            staffPojo.setDeleted(true);
-        }
+        if (removedDataCell != null && removedDataCell.getIntAsBoolean()) { //null check required because the column isn't always present
+            //if the profle has been removed, mark the practitioner as non-active but don't
+            //delete, since data may reterence it
+            practitionerBuilder.setActive(false, removedDataCell);
 
-        //We have the pojo so write it out
-        csvHelper.getStaffMemberProfileCache().addStaffPojo(staffId, staffPojo);
+        } else {
 
-        InternalIdMap mapping = new InternalIdMap();
-        mapping.setServiceId(csvHelper.getServiceId());
-        mapping.setIdType(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID);
-        mapping.setSourceId(staffProfileIdCell.getString());
-        mapping.setDestinationId(staffId.getString());
+            //since this may be an update to an existing profile, we need to make sure to remove any existing matching instance
+            //from the practitioner resource
+            String profileId = profileIdCell.getString();
+            PractitionerRoleBuilder.removeRoleForId(practitionerBuilder, profileId);
 
-        mappingsToSave.add(mapping);
+            PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
 
-        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-            List<InternalIdMap> copy = new ArrayList<>(mappingsToSave);
-            mappingsToSave.clear();
+            //set the profile ID on the role element, so we can match up when we get updates
+            roleBuilder.setId(profileId, profileIdCell);
 
-            List<ThreadPoolError> errors = threadPool.submit(new Task(copy, csvHelper));
-            handleErrors(errors);
-        }
-    }
+            // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
+            if (!orgId.isEmpty()) {
+                Reference organisationReference = csvHelper.createOrganisationReference(orgId.getString());
 
-    static class Task implements Callable {
-
-        private List<InternalIdMap> mappings;
-        private TppCsvHelper csvHelper;
-
-        public Task(List<InternalIdMap> mappings, TppCsvHelper csvHelper) {
-            this.mappings = mappings;
-            this.csvHelper = csvHelper;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-                csvHelper.saveInternalIds(mappings);
-
-            } catch (Throwable t) {
-                String msg = "Error saving internal ID maps for staff member profile IDs ";
-                for (InternalIdMap mapping: mappings) {
-                    msg += mapping.getSourceId();
-                    msg += ", ";
+                //this function is used for adding profiles to new and existing practitioners, so we need to convert if already mapped
+                if (practitionerBuilder.isIdMapped()) {
+                    organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
                 }
 
-                LOG.error(msg, t);
-                throw new TransformException(msg, t);
+                roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
             }
 
-            return null;
+            CsvCell roleStart = parser.getDateEmploymentStart();
+            if (!roleStart.isEmpty()) {
+                roleBuilder.setRoleStartDate(roleStart.getDate(), roleStart);
+            }
+
+            CsvCell roleEnd = parser.getDateEmploymentEnd();
+            if (!roleEnd.isEmpty()) {
+                roleBuilder.setRoleEndDate(roleEnd.getDate(), roleEnd);
+            }
+
+            CsvCell roleName = parser.getStaffRole();
+            if (!roleName.isEmpty()) {
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
+                codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+                codeableConceptBuilder.setCodingDisplay(roleName.getString(), roleName);
+            }
+
+            CsvCell ppaId = parser.getPPAID();
+            if (!ppaId.isEmpty()) {
+                IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_DOCTOR_INDEX_NUMBER);
+                identifierBuilder.setValue(ppaId.getString(), ppaId);
+            }
+
+            CsvCell gpLocalCode = parser.getGPLocalCode();
+            if (!gpLocalCode.isEmpty()) {
+                IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_STAFF_GP_LOCAL_CODE);
+                identifierBuilder.setValue(gpLocalCode.getString(), gpLocalCode);
+            }
+
+            CsvCell gmpCode = parser.getGmpID();
+            if (!gmpCode.isEmpty()) {
+                IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_GMP_PPD_CODE);
+                identifierBuilder.setValue(gmpCode.getString(), gmpCode);
+            }
         }
+
+        StaffMemberCacheObj cachedStaff = csvHelper.getStaffMemberCache().getStaffMemberObj(staffId, profileIdCell);
+        if (cachedStaff != null) {
+            StaffMemberCache.addOrUpdatePractitionerDetails(practitionerBuilder, cachedStaff, csvHelper);
+        }
+
+        boolean mapIds = !practitionerBuilder.isIdMapped();
+        fhirResourceFiler.saveAdminResource(null, mapIds, practitionerBuilder);
     }
 }

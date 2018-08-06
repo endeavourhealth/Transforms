@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -77,21 +75,16 @@ public class SRRecallTransformer {
             procedureRequestBuilder.setScheduledDate(dateTimeType, recallDate);
         }
 
-        CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        if (!recordedBy.isEmpty()) {
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedBy.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                procedureRequestBuilder.setRecordedBy(staffReference, recordedBy);
-            }
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            procedureRequestBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
         }
 
-        CsvCell clinicianDoneBy = parser.getIDDoneBy();
-        if (!clinicianDoneBy.isEmpty()) {
-
-            Reference staffReference = csvHelper.createPractitionerReference(clinicianDoneBy);
-            procedureRequestBuilder.setPerformer(staffReference, clinicianDoneBy);
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            procedureRequestBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
         }
 
         CsvCell recallType = parser.getRecallType();

@@ -21,6 +21,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTrans
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfilePreTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
@@ -118,7 +119,7 @@ public abstract class TppCsvToFhirTransformer {
                 //have decided to ignore a non-empty file
                 ensureFileIsEmpty(filePath);
             } catch (IOException eio) {
-                LOG.error(eio.getMessage());
+                LOG.error("", eio);
             }
         }
 
@@ -327,9 +328,11 @@ public abstract class TppCsvToFhirTransformer {
         SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        csvHelper.getStaffMemberProfileCache().fileRemainder(csvHelper, fhirResourceFiler);
+
+        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just saves the profile->staff member mappings
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
+        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
+        csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
 
         LOG.trace("Starting patient demographics transforms");
         SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);

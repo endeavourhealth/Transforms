@@ -1,11 +1,14 @@
 package org.endeavourhealth.transform.tpp;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.*;
@@ -14,9 +17,12 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisat
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
@@ -50,7 +56,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
     private static HashMap<String, TppImmunisationContent> tppImmunisationContents = new HashMap<>();
 
-    private static InternalIdDalI internalIdDalI = DalProvider.factoryInternalIdDal();
+    private static InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private static HashMap<String, String> internalIdMapCache = new HashMap<>();
 
     private static TppMultiLexToCtv3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexToCtv3MapDal();
@@ -68,7 +74,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private Map<Long, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new HashMap<>();
 
-    private StaffMemberProfileCache staffMemberProfileCache = new StaffMemberProfileCache();
+    private StaffMemberCache staffMemberCache = new StaffMemberCache();
     private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
     private PatientResourceCache patientResourceCache = new PatientResourceCache();
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
@@ -80,6 +86,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
+    private String cachedOdsCode = null;
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -110,13 +117,38 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
 
-    public Reference createPractitionerReference(CsvCell practitionerGuid) {
+    public Reference createPractitionerReferenceForProfileId(CsvCell staffProfileIdCell) {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, staffProfileIdCell.getString());
+    }
+
+    public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell) throws Exception {
+        //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
+        Long staffMemberId = staffMemberIdCell.getLong();
+        Long profileId = staffMemberToProfileMap.get(staffMemberId);
+        if (profileId == null) {
+            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, "" + staffMemberId);
+            //if our staff member has multiple profiles, there'll be multiple mappings, but they all represent
+            //the same person, so just choose the first
+            if (mappings.isEmpty()) {
+                throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberId);
+            }
+            InternalIdMap mapping = mappings.get(0);
+            profileId = Long.valueOf(mapping.getSourceId());
+            staffMemberToProfileMap.put(staffMemberId, profileId);
+        }
+        
+        return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
+    }
+
+    private Map<Long, Long> staffMemberToProfileMap = new HashMap<>();
+
+    /*public Reference createPractitionerReference(CsvCell practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
 
     public Reference createPractitionerReference(String practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
-    }
+    }*/
 
     public Reference createScheduleReference(CsvCell scheduleGuid) {
         return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
@@ -169,6 +201,55 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return PARSER_POOL.parse(json);
     }
 
+
+    public boolean shouldTransformNewPractitioner(CsvCell organisationIdCell) throws Exception {
+
+        //if the practitioner is for our own org, then we always want to transform it
+        if (this.cachedOdsCode == null) {
+            ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+            Service service = serviceDal.getById(serviceId);
+            this.cachedOdsCode = service.getLocalId();
+        }
+        if (organisationIdCell.getString().equalsIgnoreCase(cachedOdsCode)) {
+            return true;
+        }
+
+        //if the practitioner isn't for our own org then it will already have been transformed, do we're safe to
+        //return false for any new practitioner elsewhere
+        return false;
+    }
+
+
+    public void ensurePractitionerIsTransformedForProfileId(CsvCell profileIdRecordedByCell) throws Exception {
+
+        //if we have an ID->UUID map for for the practitioner, then we've already transformed the practitioner, so are good
+        UUID uuid = IdHelper.getEdsResourceId(serviceId, ResourceType.Practitioner, profileIdRecordedByCell.getString());
+        if (uuid != null) {
+            return;
+        }
+
+        //if we don't have a mapping, then we've never transformed the practitioner, so need to do it now
+
+        //find the raw data for the profile by looking up in the ID map; we use it to store the ID of the audit table containing the raw record
+        String auditIdStr = internalIdDal.getDestinationId(serviceId, PROFILE_ID_TO_RECORD_AUDIT_ID, profileIdRecordedByCell.getString());
+        if (Strings.isNullOrEmpty(auditIdStr)) {
+            throw new TransformException("Failed to find raw record audit ID for staff profile ID " + profileIdRecordedByCell.getString());
+        }
+        long auditId = Long.parseLong(auditIdStr);
+
+        SourceFileMappingDalI sourceFileMappingDal = DalProvider.factorySourceFileMappingDal();
+        SourceFileRecord rawRecord = sourceFileMappingDal.findSourceFileRecordRow(serviceId, auditId);
+
+
+
+        //use internal ID map:  profile ID -> record audit ID, staff member ID -> record audit ID
+//TODO - transform on demand
+
+        //todo - store profile ID to audit mappings
+
+    }
+
+    public static final String PROFILE_ID_TO_RECORD_AUDIT_ID = "StaffProfileIdToRecordAuditId";
 
 
     public class DateAndCode {
@@ -558,7 +639,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void saveInternalIds(List<InternalIdMap> mappings) throws Exception {
 
-        internalIdDalI.save(mappings);
+        internalIdDal.save(mappings);
 
         for (InternalIdMap mapping: mappings) {
             String cacheKey = mapping.getIdType() + "|" + mapping.getSourceId();
@@ -572,7 +653,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return internalIdMapCache.get(cacheKey);
         }
 
-        String ret = internalIdDalI.getDestinationId(serviceId, idType, sourceId);
+        String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
 
         if (ret != null) {
             internalIdMapCache.put(cacheKey, ret);
@@ -884,8 +965,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         knownEthnicCodes.put("Y16b7", EthnicCategory.NOT_STATED);
     }
 
-    public StaffMemberProfileCache getStaffMemberProfileCache() {
-        return staffMemberProfileCache;
+    public StaffMemberCache getStaffMemberCache() {
+        return staffMemberCache;
     }
 
     public AppointmentFlagCache getAppointmentFlagCache() {

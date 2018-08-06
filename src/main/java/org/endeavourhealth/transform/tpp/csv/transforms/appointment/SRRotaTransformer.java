@@ -1,8 +1,5 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -10,7 +7,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
 import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.Map;
 
@@ -68,14 +64,10 @@ public class SRRotaTransformer {
             scheduleBuilder.addComment(sessionName.getString(), sessionName);
         }
 
-        CsvCell sessionActorStaffProfileId = parser.getIDProfileOwner();
-        if (!sessionActorStaffProfileId.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, sessionActorStaffProfileId.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-                scheduleBuilder.addActor(practitionerReference, sessionActorStaffProfileId);
-            }
+        CsvCell profileIdOwner = parser.getIDProfileOwner();
+        if (!profileIdOwner.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwner);
+            scheduleBuilder.addActor(practitionerReference, profileIdOwner);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);

@@ -1,11 +1,9 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -113,22 +111,16 @@ public class SRPrimaryCareMedicationTransformer {
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
-        CsvCell recordedById = parser.getIDProfileEnteredBy();
-        if (!recordedById.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedById.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                medicationStatementBuilder.setRecordedBy(staffReference, recordedById);
-            }
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            medicationStatementBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
         }
 
-        CsvCell doneByClinicianId = parser.getIDDoneBy();
-        if (!doneByClinicianId.isEmpty()) {
-
-            Reference staffReference = csvHelper.createPractitionerReference(doneByClinicianId);
-            medicationStatementBuilder.setInformationSource(staffReference, recordedById);
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
         }
 
         if (!parser.getDateMedicationEnd().isEmpty()) {
@@ -232,26 +224,22 @@ public class SRPrimaryCareMedicationTransformer {
             medicationOrderBuilder.setMedicationStatementReference(statementReference, medicationId);
         }
 
-        CsvCell doneByClinicianId = parser.getIDDoneBy();
-        if (!doneByClinicianId.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(doneByClinicianId.getString());
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            medicationOrderBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        }
+
+
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
             medicationOrderBuilder.setPrescriber(practitionerReference);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
             medicationOrderBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
-        }
-
-        CsvCell recordedById = parser.getIDProfileEnteredBy();
-        if (!recordedById.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    recordedById.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                medicationOrderBuilder.setRecordedBy(staffReference, recordedById);
-            }
         }
 
         CsvCell effectiveDate = parser.getDateEvent();

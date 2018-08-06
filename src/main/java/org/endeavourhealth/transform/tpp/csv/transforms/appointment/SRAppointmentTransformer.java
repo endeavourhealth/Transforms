@@ -1,9 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -130,16 +127,10 @@ public class SRAppointmentTransformer {
             appointmentBuilder.setMinutesDuration(durationMins);
         }
 
-        CsvCell appointmentStaffProfileId = parser.getIDProfileClinician();
-        if (!appointmentStaffProfileId.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID,
-                    appointmentStaffProfileId.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference practitionerReference
-                        = ReferenceHelper.createReference(ResourceType.Practitioner, staffMemberId);
-                appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, appointmentStaffProfileId);
-            }
+        CsvCell profileIdClinician = parser.getIDProfileClinician();
+        if (!profileIdClinician.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdClinician);
+            appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, profileIdClinician);
         }
 
         CsvCell patientSeenDate = parser.getDatePatientSeen();

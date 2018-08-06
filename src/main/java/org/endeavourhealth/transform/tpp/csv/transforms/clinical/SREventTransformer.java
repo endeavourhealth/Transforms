@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -84,19 +83,16 @@ public class SREventTransformer {
             encounterBuilder.setPeriodStart(eventDate.getDate(), eventDate);
         }
 
-        CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        if (!recordedBy.isEmpty()) {
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                encounterBuilder.setRecordedBy(staffReference, recordedBy);
-            }
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            encounterBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
         }
 
-        CsvCell encounterDoneBy = parser.getIDDoneBy();
-        if (!encounterDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
-            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, encounterDoneBy);
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneBy);
         }
 
         //TPP consultation authoriser is not useful (in SystmOne for that matter), so not transforming
@@ -161,9 +157,13 @@ public class SREventTransformer {
             }
         }
 
+        CsvCell incompleteCell = parser.getEventIncomplete();
+        if (incompleteCell.getBoolean()) {
+            encounterBuilder.setIncomplete(true, incompleteCell);
+        }
+
         //TODO - the following columns need transforming:
-        //getContactEventLocation
-        //getEventIncomplete
+        //getContactEventLocation()
         //getClinicalEvent()
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);

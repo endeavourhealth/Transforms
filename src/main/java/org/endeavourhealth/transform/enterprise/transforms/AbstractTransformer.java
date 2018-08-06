@@ -12,8 +12,8 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -374,7 +374,7 @@ public abstract class AbstractTransformer {
                         && fhirPractitioner.hasPractitionerRole()) {
 
                     if (fhirPractitioner.getPractitionerRole().size() > 1) {
-                        throw new Exception("Don't know how to handle practitioners with more than one role");
+                        throw new Exception("Don't know how to handle practitioners with more than one role: " + fhirPractitioner.getResourceType() + " " + fhirPractitioner.getId());
                     }
 
                     Practitioner.PractitionerPractitionerRoleComponent fhirRole = fhirPractitioner.getPractitionerRole().get(0);

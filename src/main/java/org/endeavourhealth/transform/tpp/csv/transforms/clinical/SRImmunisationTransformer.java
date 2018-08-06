@@ -1,13 +1,11 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -92,20 +90,16 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setPerformedDate(dateTimeType, eventDate);
         }
 
-        CsvCell recordedBy = parser.getIDProfileEnteredBy();
-        if (!recordedBy.isEmpty()) {
-
-            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                immunizationBuilder.setRecordedBy(staffReference, recordedBy);
-            }
+        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+        if (!profileIdRecordedBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            immunizationBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
         }
 
-        CsvCell encounterDoneBy = parser.getIDDoneBy();
-        if (!encounterDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
-            immunizationBuilder.setPerformer(staffReference, encounterDoneBy);
+        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        if (!staffMemberIdDoneBy.isEmpty()) {
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            immunizationBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
         }
 
         CsvCell dose = parser.getDose();

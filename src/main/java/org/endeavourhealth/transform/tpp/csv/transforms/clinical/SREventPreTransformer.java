@@ -61,9 +61,11 @@ public class SREventPreTransformer {
         }
 
         CsvCell consultationGuid = parser.getRowIdentifier();
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
         CsvCurrentState parserState = parser.getCurrentState();
 
-        LookupTask task = new LookupTask(parserState, consultationGuid, csvHelper);
+        LookupTask task = new LookupTask(parserState, consultationGuid, profileIdRecordedByCell, staffMemberIdDoneByCell, csvHelper);
         List<ThreadPoolError> errors = threadPool.submit(task);
         AbstractCsvCallable.handleErrors(errors);
     }
@@ -71,36 +73,44 @@ public class SREventPreTransformer {
     static class LookupTask extends AbstractCsvCallable {
 
         private CsvCell encounterIdCell;
+        private CsvCell profileIdRecordedByCell;
+        private CsvCell staffMemberIdDoneByCell;
         private TppCsvHelper csvHelper;
 
         public LookupTask(CsvCurrentState parserState,
                           CsvCell encounterIdCell,
+                          CsvCell profileIdRecordedByCell,
+                          CsvCell staffMemberIdDoneByCell,
                           TppCsvHelper csvHelper) {
 
             super(parserState);
             this.encounterIdCell = encounterIdCell;
+            this.profileIdRecordedByCell = profileIdRecordedByCell;
+            this.staffMemberIdDoneByCell = staffMemberIdDoneByCell;
             this.csvHelper = csvHelper;
         }
 
         @Override
         public Object call() throws Exception {
             try {
+                //we don't transform Practitioners until we need them, and these ensure it happens
+                csvHelper.ensurePractitionerIsTransformedForProfileId(profileIdRecordedByCell);
+                csvHelper.ensurePractitionerIsTransformedForStaffId(staffMemberIdDoneByCell);
+
                 //carry over linked items from any previous instance of this Consultation
                 Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterIdCell.getString(), ResourceType.Encounter);
-                if (previousVersion == null) {
-                    //if this is the first time, then we'll have a null resource
-                    return null;
+                if (previousVersion != null) { //if this is the first time, then we'll have a null resource
+
+                    EncounterBuilder encounterBuilder = new EncounterBuilder(previousVersion);
+                    ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+                    List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+
+                    //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
+                    List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
+
+                    csvHelper.cacheConsultationPreviousLinkedResources(encounterIdCell, previousReferencesLocalIds);
                 }
-
-                EncounterBuilder encounterBuilder = new EncounterBuilder(previousVersion);
-                ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
-
-                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
-
-                //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
-                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
-
-                csvHelper.cacheConsultationPreviousLinkedResources(encounterIdCell, previousReferencesLocalIds);
 
             } catch (Throwable t) {
                 LOG.error("", t);
