@@ -4,10 +4,13 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.ConditionResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRProblem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -19,6 +22,8 @@ import java.util.Map;
 public class SRProblemTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRProblemTransformer.class);
+
+    public static final String PROBLEM_ID_TO_CODE_ID = "ProblemIdToCodeId";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -48,33 +53,52 @@ public class SRProblemTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            //we use the code ID as the unique ID, which isn't present when deleting, so we need to look up what it was
+            String codeId = csvHelper.getInternalId(PROBLEM_ID_TO_CODE_ID, problemId.getString());
+            if (!Strings.isNullOrEmpty(codeId)) {
+                CsvCell dummyCodeIdCell = CsvCell.factoryDummyWrapper(codeId);
+                ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(dummyCodeIdCell, csvHelper);
 
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
+                ResourceType trueResourceType = SRCodeTransformer.wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, dummyCodeIdCell);
+                if (trueResourceType != null) {
+                    //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
+                    //Condition as well as the other resource, in which case we need to DELETE the condition resource
+                    csvHelper.getConditionResourceCache().returnToCacheForDelete(dummyCodeIdCell, conditionBuilder);
 
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Condition condition
-                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(problemId.getString(),
-                        ResourceType.Condition);
+                } else {
+                    //if a SRProblem refers to an SRCode that should be a Condition, they both SHARE the same FHIR resource
+                    //and we need to just down-grade the existing resource to a non-problem.
+                    conditionBuilder.setAsProblem(false);
 
-                if (condition != null) {
-                    ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+                    //clear down all the problem-specific condition fields
+                    conditionBuilder.setEndDateOrBoolean(null);
+                    conditionBuilder.setExpectedDuration(null);
+                    conditionBuilder.setProblemLastReviewDate(null);
+                    conditionBuilder.setProblemLastReviewedBy(null);
+                    conditionBuilder.setProblemSignificance(null);
+                    conditionBuilder.setParentProblem(null);
+                    conditionBuilder.setParentProblemRelationship(null);
+                    conditionBuilder.setAdditionalNotes(null);
+
+                    ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
+                    containedListBuilder.removeContainedList();
+
+                    //don't forget to return to the cache
+                    csvHelper.getConditionResourceCache().returnToCache(dummyCodeIdCell, conditionBuilder);
                 }
-                return;
-
             }
+
+            return;
         }
 
         //for problems, use the linked observationId as the ID to build up the resource to then add to in SRCode Transformer
         CsvCell linkedObsCodeId = parser.getIDCode();
 
-        ConditionBuilder conditionBuilder
-                = ConditionResourceCache.getConditionBuilder(linkedObsCodeId, patientId, csvHelper, fhirResourceFiler);
+        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(linkedObsCodeId, csvHelper);
+
+        //we may need to "upgrade" the existing condition to being a problem
+        conditionBuilder.setAsProblem(true);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         if (conditionBuilder.isIdMapped()) {
@@ -85,14 +109,13 @@ public class SRProblemTransformer {
         //the linked SRCode entry - cache the reference for the SRCode transformer to check that it is a problem
         CsvCell readV3Code = parser.getCTV3Code();
         if (!linkedObsCodeId.isEmpty() && ! readV3Code.isEmpty()) {
-            csvHelper.cacheProblemObservationGuid(patientId, linkedObsCodeId, readV3Code.getString());
+            csvHelper.cacheProblemObservationGuid(linkedObsCodeId, readV3Code.getString());
         }
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
-            String staffMemberId =
-                    csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId (InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 if (conditionBuilder.isIdMapped()) {
@@ -141,7 +164,7 @@ public class SRProblemTransformer {
         CsvCell severity = parser.getSeverity();
         if (severity != null) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
@@ -157,8 +180,8 @@ public class SRProblemTransformer {
                 conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
             }
         }
-        boolean mapIds = !conditionBuilder.isIdMapped();
-        // Conditions are filed by conditionResourceCache
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,conditionBuilder);
+
+        //don't forget to return to the cache
+        csvHelper.getConditionResourceCache().returnToCache(linkedObsCodeId, conditionBuilder);
     }
 }

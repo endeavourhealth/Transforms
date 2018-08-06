@@ -61,7 +61,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
-    public static boolean removeExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
+    public static boolean removeExistingContactPointById(PatientBuilder parentBuilder, String idValue) {
 
         Patient.ContactComponent patientContact = findExistingContactPoint(parentBuilder, idValue);
 

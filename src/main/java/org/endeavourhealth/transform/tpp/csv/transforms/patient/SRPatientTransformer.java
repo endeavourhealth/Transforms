@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
@@ -12,13 +11,11 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -29,8 +26,6 @@ import java.util.Map;
 public class SRPatientTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientTransformer.class);
-
-
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -58,26 +53,19 @@ public class SRPatientTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
         CsvCell nhsNumberCell = parser.getNHSNumber();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString())) ) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifer: {} in file : {}",rowIdCell.getString(), parser.getFilePath());
+
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(rowIdCell, csvHelper);
+
+        CsvCell removeDataCell = parser.getRemovedData();
+        if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
+            csvHelper.getPatientResourceCache().addToPendingDeletes(rowIdCell, patientBuilder);
             return;
         }
-
-        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(rowIdCell, csvHelper,fhirResourceFiler);
 
         IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
         identifierBuilderTpp.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
         identifierBuilderTpp.setUse(Identifier.IdentifierUse.SECONDARY);
         identifierBuilderTpp.setValue(rowIdCell.getString(), rowIdCell);
-
-        CsvCell removeDataCell = parser.getRemovedData();
-        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            if (PatientResourceCache.patientInCache(rowIdCell)) {
-                PatientResourceCache.removePatientByRowId(rowIdCell, fhirResourceFiler,parser);
-            }
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), patientBuilder);
-            return;
-        }
 
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
@@ -85,8 +73,13 @@ public class SRPatientTransformer {
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setValue(nhsNumber, nhsNumberCell);
-        } else {
-            TransformWarnings.log(LOG, parser, "No NHS number found record id: {}, file: {}", parser.getRowIdentifier().getString(), parser.getFilePath());
+
+            //this is only relevant if there is an NHS number
+            CsvCell spineMatched = parser.getSpineMatched();
+            if (spineMatched != null && !spineMatched.isEmpty()) { //need null check because it's not in all versions
+                NhsNumberVerificationStatus numberVerificationStatus = mapSpindeMatchedStatus(spineMatched);
+                patientBuilder.setNhsNumberVerificationStatus(numberVerificationStatus, spineMatched);
+            }
         }
 
         //Construct the name from individual fields
@@ -96,17 +89,20 @@ public class SRPatientTransformer {
         CsvCell titleCell = parser.getTitle();
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.setId(nhsNumberCell.getString(), nhsNumberCell);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+
         if (!titleCell.isEmpty()) {
             nameBuilder.addPrefix(titleCell.getString(), titleCell);
         }
-        nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+        if (!firstNameCell.isEmpty()) {
+            nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+        }
         if (!middleNamesCell.isEmpty()) {
             nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
         }
-        nameBuilder.addFamily(surnameCell.getString(), surnameCell);
-        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-
+        if (!surnameCell.isEmpty()) {
+            nameBuilder.addFamily(surnameCell.getString(), surnameCell);
+        }
 
         CsvCell dobCell = parser.getDateBirth();
         if (!dobCell.isEmpty()) {
@@ -120,37 +116,15 @@ public class SRPatientTransformer {
 
         CsvCell genderCell = parser.getGender();
         if (!genderCell.isEmpty()) {
-            if (genderCell.getString().equalsIgnoreCase("m")) {
-                patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, genderCell);
-            } else if (genderCell.getString().equalsIgnoreCase("f")) {
-                patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE);
-            } else {
-                TransformWarnings.log(LOG, parser, "Unknown gender code :{} in file {}", genderCell.getString(), parser.getFilePath());
-            }
+            Enumerations.AdministrativeGender gender = mapGender(genderCell);
+            patientBuilder.setGender(gender, genderCell);
         }
 
-
         CsvCell emailCell = parser.getEmailAddress();
-
         if (!emailCell.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setValue(emailCell.getString(), emailCell);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL,emailCell);
-
-        }
-        CsvCell spineMatched = parser.getSpineMatched();
-        if (spineMatched != null && !spineMatched.isEmpty()) {
-            NhsNumberVerificationStatus numberVerificationStatus;
-            if (spineMatched.getString().equalsIgnoreCase("true")) {
-                numberVerificationStatus = NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
-                patientBuilder.setNhsNumberVerificationStatus(numberVerificationStatus, spineMatched);
-            } else if (spineMatched.getString().equalsIgnoreCase("false")) {
-                numberVerificationStatus = NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED;
-                patientBuilder.setNhsNumberVerificationStatus(numberVerificationStatus, spineMatched);
-            } else {
-                TransformWarnings.log(LOG, parser, "NHS number verification status unknown : {} for Id :{} in file:{}",
-                        spineMatched.getString(), parser.getRowIdentifier().toString(), parser.getFilePath());
-            }
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
         }
 
         //Speaks English
@@ -158,7 +132,7 @@ public class SRPatientTransformer {
         CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
         if (!speaksEnglishCell.isEmpty()) {
 
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell);
             if (mapping != null) {
                 String term = mapping.getMappedTerm();
                 if (term.equals("Unknown")) {
@@ -193,6 +167,38 @@ public class SRPatientTransformer {
                 patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
         }
+
+    }
+
+    private static NhsNumberVerificationStatus mapSpindeMatchedStatus(CsvCell spineMatched) {
+        String s = spineMatched.getString();
+        if (Boolean.parseBoolean(s)) {
+            return NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
+
+        } else {
+            return NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED;
+        }
+    }
+
+    private static Enumerations.AdministrativeGender mapGender(CsvCell genderCell) throws TransformException {
+        String s = genderCell.getString();
+
+        if (s.equalsIgnoreCase("m")) {
+            return Enumerations.AdministrativeGender.MALE;
+
+        } else if (s.equalsIgnoreCase("f")) {
+            return Enumerations.AdministrativeGender.FEMALE;
+
+        } else if (s.equalsIgnoreCase("i")) {
+            return Enumerations.AdministrativeGender.OTHER;
+
+        } else if (s.equalsIgnoreCase("u")) {
+            return Enumerations.AdministrativeGender.UNKNOWN;
+
+        } else {
+            throw new TransformException("Unsupported gender " + s);
+        }
+
     }
 
 }

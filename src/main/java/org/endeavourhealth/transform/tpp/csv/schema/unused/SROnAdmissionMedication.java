@@ -80,7 +80,7 @@ public class SROnAdmissionMedication extends AbstractCsvParser {
  public CsvCell getIDPatient() { return super.getCell("IDPatient");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SROnAdmissionMedication Entry file ";}
 

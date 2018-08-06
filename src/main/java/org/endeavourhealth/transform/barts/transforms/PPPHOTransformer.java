@@ -54,7 +54,7 @@ public class PPPHOTransformer {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
-                    ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+                    ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
                     csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
@@ -83,7 +83,7 @@ public class PPPHOTransformer {
         }
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
-        ContactPointBuilder.removeExistingContactPoint(patientBuilder, phoneIdCell.getString());
+        ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
         //and remove any instance of this phone number created by the ADT feed
         removeExistingContactPointWithoutIdByValue(patientBuilder, number);

@@ -52,9 +52,9 @@ public class IdHelper {
         return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, true, explicitIdToUse);
     }
 
-    public static String getEdsResourceIdAsString(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
+    /*public static String getEdsResourceIdAsString(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
         return getEdsResourceId(serviceId, resourceType, sourceId).toString();
-    }
+    }*/
 
     public static UUID getEdsResourceId(UUID serviceId, ResourceType resourceType, String sourceId) throws Exception {
         return getOrCreateEdsResourceId(serviceId, resourceType, sourceId, false, null);

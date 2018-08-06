@@ -129,7 +129,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
 
-        internalIdDal.upsertRecord(serviceId, idType, sourceId, destinationId);
+        internalIdDal.save(serviceId, idType, sourceId, destinationId);
 
         //just replace in the cache
         internalIdMapCache.put(cacheKey, destinationId);

@@ -46,7 +46,7 @@ public class SRTeam extends AbstractCsvParser {
  public CsvCell getIDParentTeam() { return super.getCell("IDParentTeam");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRTeam Entry file ";}
 

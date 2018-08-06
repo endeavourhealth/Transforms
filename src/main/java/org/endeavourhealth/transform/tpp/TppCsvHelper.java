@@ -15,13 +15,16 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
-import org.endeavourhealth.transform.tpp.cache.StaffMemberProfileCache;
+import org.endeavourhealth.transform.tpp.cache.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientRegistrationTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final String ID_DELIMITER = ":";
 
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
-    public static final String ETHNICITY_ROOT = "XaBEN";
 
     private static final ParserPool PARSER_POOL = new ParserPool();
 
@@ -59,35 +61,34 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
     private static HashMap<String, TppCtv3Lookup> tppCtv3Lookups = new HashMap<>();
 
-    private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
-    private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
+    private Map<Long, ReferenceList> consultationNewChildMap = new HashMap<>();
+    private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
 
-    private Map<String, ReferenceList> encounterAppointmentOrVisitMap = new HashMap<>();
+    private Map<Long, ReferenceList> encounterAppointmentOrVisitMap = new HashMap<>();
 
-    private Map<String, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new HashMap<>();
+    private Map<Long, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new HashMap<>();
 
     private StaffMemberProfileCache staffMemberProfileCache = new StaffMemberProfileCache();
+    private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
+    private PatientResourceCache patientResourceCache = new PatientResourceCache();
+    private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
+    private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
 
-    private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<Long, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
-    private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
-    private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
+    private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
+    private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
 
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID exchangeId;
-    private final String dataSharingAgreementGuid;
-    private final boolean processPatientData;
 
-
-    public TppCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
+    public TppCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
-        this.dataSharingAgreementGuid = dataSharingAgreementGuid;
-        this.processPatientData = processPatientData;
         buildKnownEthnicCodes();
     }
 
@@ -125,16 +126,16 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Slot, slotGuid.getString());
     }
 
-    public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
+    public Reference createConditionReference(CsvCell problemGuid) {
+        return ReferenceHelper.createReference(ResourceType.Condition, problemGuid.getString());
     }
 
-    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
+    public Reference createMedicationStatementReference(CsvCell medicationStatementGuid) {
+        return ReferenceHelper.createReference(ResourceType.MedicationStatement, medicationStatementGuid.getString());
     }
 
-    public Reference createEncounterReference(CsvCell encounterGuid, CsvCell patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
+    public Reference createEncounterReference(CsvCell encounterGuid) {
+        return ReferenceHelper.createReference(ResourceType.Encounter, encounterGuid.getString());
     }
 
     public Reference createEpisodeReference(CsvCell patientGuid) {
@@ -142,20 +143,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid.getString());
     }
 
-    public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell patientGuid, CsvCell sourceGuid) {
-        String resourceId = createUniqueId(patientGuid, sourceGuid);
-        resourceBuilder.setId(resourceId, patientGuid, sourceGuid);
-    }
-
-    public static String createUniqueId(CsvCell patientGuid, CsvCell sourceGuid) {
-        // uniqueId is literally now the sourceId without the patientId
-        return sourceGuid.getString();
-
-//        if (sourceGuid == null) {
-//            return patientGuid.getString();
-//        } else {
-//            return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
-//        }
+    public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell sourceGuid) {
+        resourceBuilder.setId(sourceGuid.getString(), sourceGuid);
     }
 
 
@@ -179,6 +168,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
     }
+
+
 
     public class DateAndCode {
         private DateTimeType date = null;
@@ -210,7 +201,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
-                                                      CsvCell patientGuid,
                                                       CsvCell resourceGuid,
                                                       ResourceType resourceType) {
 
@@ -218,7 +208,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
+        Long consultationLocalUniqueId = consultationGuid.getLong();
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
             //we know there will only be a single CsvCell so use this implementation to save memory
@@ -227,17 +217,16 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
-        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        String resourceLocalUniqueId = resourceGuid.getString();
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
         list.add(resourceReference, consultationGuid);
     }
 
-    public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
-        return consultationNewChildMap.remove(encounterSourceId);
+    public ReferenceList getAndRemoveNewConsultationRelationships(CsvCell consultationIdCell) {
+        return consultationNewChildMap.remove(consultationIdCell.getLong());
     }
 
     public void cacheNewEncounterAppointmentOrVisitMap(CsvCell encounterId,
-                                                       CsvCell patientGuid,
                                                        String resourceGuid,
                                                        ResourceType resourceType) {
 
@@ -245,7 +234,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        String consultationLocalUniqueId = createUniqueId(patientGuid, encounterId);
+        Long consultationLocalUniqueId = encounterId.getLong();
         ReferenceList list = encounterAppointmentOrVisitMap.get(consultationLocalUniqueId);
         if (list == null) {
             //we know there will only be a single CsvCell so use this implementation to save memory
@@ -263,7 +252,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return encounterAppointmentOrVisitMap.remove(encounterSourceId);
     }
 
-    public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
+    public void cacheConsultationPreviousLinkedResources(CsvCell consultationIdCell, List<Reference> previousReferences) {
 
         if (previousReferences == null
                 || previousReferences.isEmpty()) {
@@ -275,19 +264,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
-        consultationExistingChildMap.put(encounterSourceId, obj);
+        consultationExistingChildMap.put(consultationIdCell.getLong(), obj);
     }
 
-    public ReferenceList findConsultationPreviousLinkedResources(String encounterSourceId) {
-        return consultationExistingChildMap.remove(encounterSourceId);
+    public ReferenceList findConsultationPreviousLinkedResources(CsvCell consultationIdCell) {
+        return consultationExistingChildMap.remove(consultationIdCell.getLong());
     }
 
-    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
-        problemReadCodes.put(createUniqueId(patientGuid, problemGuid), readCode);
+    public void cacheProblemObservationGuid(CsvCell problemGuid, String readCode) {
+        problemReadCodes.put(problemGuid.getLong(), readCode);
     }
 
-    public boolean isProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
-        return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
+    public boolean isProblemObservationGuid(CsvCell problemGuid) {
+        return problemReadCodes.containsKey(problemGuid.getLong());
     }
 
     public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, CsvCell medicalRecordStatusCell) {
@@ -296,17 +285,18 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         //String uniquePatientId = createUniqueId(patientGuid, null);
 
         // Check if we already have a status for this patient
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientGuid.getString());
+        Long key = patientGuid.getLong();
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(key);
 
         if (statusForPatient != null) {
             Date existingDate = statusForPatient.getKey();
             // Check if the new status has a data after the existing status
             if (newStatusDate.after(existingDate)) {
                 // Overwrite the existing status the the new status
-                medicalRecordStatusMap.put(patientGuid.getString(), new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
+                medicalRecordStatusMap.put(key, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
             }
         } else {
-            medicalRecordStatusMap.put(patientGuid.getString(), new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
+            medicalRecordStatusMap.put(key, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
         }
     }
 
@@ -314,12 +304,32 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         // Create the unique Id
         //String uniquePatientId = createUniqueId(patientGuid, null);
         // Find and remove the status entry
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid.getString());
+        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid.getLong());
         // return the status
         if (statusForPatient != null) {
             return statusForPatient.getValue();
         } else {
             return null;
+        }
+    }
+
+    public void processRemainingRegistrationStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        for (Long patientId: medicalRecordStatusMap.keySet()) {
+            Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientId);
+
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare)retrieveResource("" + patientId, ResourceType.EpisodeOfCare);
+            if (episodeOfCare == null) {
+                continue;
+            }
+
+            EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
+
+            CsvCell medicalRecordStatusCell = statusForPatient.getValue();
+            String medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
+            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
+
+            fhirResourceFiler.savePatientResource(null, false, episodeBuilder);
         }
     }
 
@@ -346,7 +356,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public boolean isEthnicityCode(String readCode) throws Exception {
-        //  DateAndCode cd = ethnicityMap.get()
         if (knownEthnicCodes.containsKey(readCode)) {
             return true;
         } else {
@@ -363,15 +372,15 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
-        DateAndCode dc = ethnicityMap.get(patientGuid.getString());
+        DateAndCode dc = ethnicityMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            ethnicityMap.put(patientGuid.getString(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
+            ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
         }
     }
 
     public CodeableConcept findEthnicity(CsvCell patientGuid) {
-        DateAndCode dc = ethnicityMap.remove(patientGuid.getString());
+        DateAndCode dc = ethnicityMap.remove(patientGuid.getLong());
         if (dc != null) {
             return dc.getCodeableConcept();
         } else {
@@ -380,10 +389,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
-        DateAndCode dc = maritalStatusMap.get(patientGuid);
+        DateAndCode dc = maritalStatusMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            maritalStatusMap.put(patientGuid.getString(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(maritalStatus)));
+            maritalStatusMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(maritalStatus)));
         }
     }
 
@@ -397,7 +406,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     // Lookup code reference from SRMapping generated db
-    public TppMappingRef lookUpTppMappingRef(CsvCell cell, AbstractCsvParser parser) throws Exception {
+    public TppMappingRef lookUpTppMappingRef(CsvCell cell) throws Exception {
 
         Long rowId = cell.getLong();
         String codeLookup = rowId.toString();
@@ -412,9 +421,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId);
         if (tppMappingRefFromDB == null) {
-
-            TransformWarnings.log(LOG, parser, "TPP mapping reference not found for id: {},  in file: {}, line: {}",
-                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
+            TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", rowId);
             return null;
         }
 
@@ -537,14 +544,25 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
-        String cacheKey = idType + "|" + sourceId;
+        InternalIdMap mapping = new InternalIdMap();
+        mapping.setServiceId(serviceId);
+        mapping.setIdType(idType);
+        mapping.setSourceId(sourceId);
+        mapping.setDestinationId(destinationId);
 
-        internalIdDalI.upsertRecord(serviceId, idType, sourceId, destinationId);
+        List<InternalIdMap> list = new ArrayList<>();
+        list.add(mapping);
 
-        if (internalIdMapCache.containsKey(cacheKey)) {
-            internalIdMapCache.replace(cacheKey, destinationId);
-        } else {
-            internalIdMapCache.put(cacheKey, destinationId);
+        saveInternalIds(list);
+    }
+
+    public void saveInternalIds(List<InternalIdMap> mappings) throws Exception {
+
+        internalIdDalI.save(mappings);
+
+        for (InternalIdMap mapping: mappings) {
+            String cacheKey = mapping.getIdType() + "|" + mapping.getSourceId();
+            internalIdMapCache.put(cacheKey, mapping.getDestinationId());
         }
     }
 
@@ -578,13 +596,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return exchangeId;
     }
 
-    public String getDataSharingAgreementGuid() {
-        return dataSharingAgreementGuid;
-    }
-
-    public boolean isProcessPatientData() {
-        return processPatientData;
-    }
 
     public String tppRelationtoFhir(String tppTerm) {
         // I considered an enum but e.g. father will include step, foster, grand etc fathers
@@ -617,9 +628,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public void buildCTV3EthnicCodes(String ethnicCode) {
-        this.ctv3EthnicCodes.add(ethnicCode);
-    }
 
     private void buildKnownEthnicCodes() {
 
@@ -878,5 +886,21 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public StaffMemberProfileCache getStaffMemberProfileCache() {
         return staffMemberProfileCache;
+    }
+
+    public AppointmentFlagCache getAppointmentFlagCache() {
+        return appointmentFlagCache;
+    }
+
+    public PatientResourceCache getPatientResourceCache() {
+        return patientResourceCache;
+    }
+
+    public ReferralRequestResourceCache getReferralRequestResourceCache() {
+        return referralRequestResourceCache;
+    }
+
+    public ConditionResourceCache getConditionResourceCache() {
+        return conditionResourceCache;
     }
 }

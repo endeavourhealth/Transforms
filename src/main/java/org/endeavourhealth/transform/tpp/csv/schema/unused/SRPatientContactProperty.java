@@ -44,7 +44,7 @@ public class SRPatientContactProperty extends AbstractCsvParser {
  public CsvCell getProperty() { return super.getCell("Property");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRPatientContactProperty Entry file ";}
 

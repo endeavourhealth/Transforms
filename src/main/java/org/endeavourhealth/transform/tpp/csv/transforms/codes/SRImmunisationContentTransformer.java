@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
+package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppImmunisationContentDalI;

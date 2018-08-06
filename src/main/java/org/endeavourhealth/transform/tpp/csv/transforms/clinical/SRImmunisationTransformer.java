@@ -10,12 +10,15 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisation;
 import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Immunization;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -55,45 +58,27 @@ public class SRImmunisationTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Immunization immunization
-                        = (org.hl7.fhir.instance.model.Immunization) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Immunization);
-
-                if (immunization != null) {
-                    ImmunizationBuilder immunizationBuilder
-                            = new ImmunizationBuilder(immunization);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
-                }
-                return;
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Immunization immunization = (Immunization) csvHelper.retrieveResource(rowId.getString(), ResourceType.Immunization);
+            if (immunization != null) {
+                ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder(immunization);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, immunizationBuilder);
             }
+            return;
         }
 
         ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder();
         immunizationBuilder.setId(rowId.getString(), rowId);
 
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        immunizationBuilder.setPatient(patientReference, patientId);
+
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            if (immunizationBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
-            }
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             immunizationBuilder.setEncounter(eventReference, eventId);
         }
-
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (immunizationBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-        }
-        immunizationBuilder.setPatient(patientReference, patientId);
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
@@ -110,34 +95,17 @@ public class SRImmunisationTransformer {
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
-            String staffMemberId =
-                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                if (immunizationBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
-                }
                 immunizationBuilder.setRecordedBy(staffReference, recordedBy);
             }
         }
 
         CsvCell encounterDoneBy = parser.getIDDoneBy();
         if (!encounterDoneBy.isEmpty()) {
-
             Reference staffReference = csvHelper.createPractitionerReference(encounterDoneBy);
-            if (immunizationBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
-            }
             immunizationBuilder.setPerformer(staffReference, encounterDoneBy);
-        }
-
-        CsvCell orgDoneAt = parser.getIDOrganisation();
-        if (!orgDoneAt.isEmpty()) {
-            Reference locReference = csvHelper.createLocationReference(orgDoneAt);
-            if (immunizationBuilder.isIdMapped()) {
-                locReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locReference, fhirResourceFiler);
-            }
-            immunizationBuilder.setLocation(locReference, orgDoneAt);
         }
 
         CsvCell dose = parser.getDose();
@@ -148,7 +116,7 @@ public class SRImmunisationTransformer {
         CsvCell siteLocation = parser.getLocation();
         if (!siteLocation.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setSite(mappedTerm, siteLocation);
@@ -158,7 +126,7 @@ public class SRImmunisationTransformer {
         CsvCell method = parser.getMethod();
         if (!method.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 immunizationBuilder.setRoute(mappedTerm, method);
@@ -201,7 +169,7 @@ public class SRImmunisationTransformer {
 
         CsvCell vaccPart = parser.getVaccPart();
         if (!vaccPart.isEmpty()) {
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(vaccPart);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (StringUtils.isNumeric(mappedTerm)) {
@@ -229,14 +197,8 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setLotNumber(batch.getString(), batch);
         }
 
-        CsvCell idEvent = parser.getIDEvent();
-        if (!idEvent.isEmpty()) {
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
-            if (immunizationBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
-            }
-            immunizationBuilder.setEncounter(eventReference, eventId);
-        }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), immunizationBuilder);
     }
 
     private static void parseDose(CsvCell dose, ImmunizationBuilder immunizationBuilder) {

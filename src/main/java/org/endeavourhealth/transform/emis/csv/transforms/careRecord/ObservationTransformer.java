@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -22,10 +23,7 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ObservationTransformer {
 
@@ -62,16 +60,16 @@ public class ObservationTransformer {
                                        EmisCsvHelper csvHelper,
                                        String version) throws Exception {
 
-        ResourceType resourceType = findOriginalTargetResourceType(fhirResourceFiler, parser);
-        if (resourceType != null) {
+        Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, parser);
+        for (ResourceType resourceType: resourceTypes) {
+
             switch (resourceType) {
                 case Observation:
                     createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                     break;
-                //checked below, as this is a special case
-                /*case Condition:
-                    createOrDeleteCondition(parser, csvProcessor, csvHelper);
-                    break;*/
+                case Condition:
+                    createOrDeleteCondition(parser, fhirResourceFiler, csvHelper, true);
+                    break;
                 case Procedure:
                     createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
                     break;
@@ -100,29 +98,21 @@ public class ObservationTransformer {
                     throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
             }
         }
-
-        //if EMIS has a non-Condition code (e.g. family history) that's flagged as a problem, we'll create
-        //a FHIR Condition (for the problem) as well as the FHIR FamilyMemberHistory. The above code will
-        //sort out deleting the FamilyMemberHistory, so we also need to see if the same EMIS observation
-        //was saved as a condition too
-        if (wasSavedAsResourceType(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid(), ResourceType.Condition)) {
-            createOrDeleteCondition(parser, fhirResourceFiler, csvHelper, true);
-        }
     }
 
 
     /**
      * finds out what resource type an EMIS observation was previously saved as
      */
-    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, Observation parser) throws Exception {
-        return findOriginalTargetResourceType(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid());
+    private static Set<ResourceType> findOriginalTargetResourceTypes(FhirResourceFiler fhirResourceFiler, Observation parser) throws Exception {
+        return findOriginalTargetResourceTypes(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid());
     }
 
-    public static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
+    public static Set<ResourceType> findOriginalTargetResourceTypes(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
-        //potentialResourceTypes.add(ResourceType.Condition); //don't check this here - as conditions are handled differently
+        potentialResourceTypes.add(ResourceType.Condition);
         potentialResourceTypes.add(ResourceType.Procedure);
         potentialResourceTypes.add(ResourceType.AllergyIntolerance);
         potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
@@ -131,20 +121,22 @@ public class ObservationTransformer {
         potentialResourceTypes.add(ResourceType.Specimen);
         potentialResourceTypes.add(ResourceType.DiagnosticReport);
         potentialResourceTypes.add(ResourceType.ReferralRequest);
+
+        Set<ResourceType> ret = new HashSet<>();
         
         for (ResourceType resourceType: potentialResourceTypes) {
             if (wasSavedAsResourceType(fhirResourceFiler, patientGuid, observationGuid, resourceType)) {
-                return resourceType;
+                ret.add(resourceType);
             }
         }
-        return null;
+
+        return ret;
     }
 
     private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid, ResourceType resourceType) throws Exception {
         String sourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
-        Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
-        Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
-        return edsReference != null;
+        UUID uuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, sourceId);
+        return uuid != null;
     }
     
 
@@ -539,7 +531,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             referralRequestBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -554,10 +546,19 @@ public class ObservationTransformer {
 
     }
 
-    private static ResourceType findObservationType(EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell patientGuidCell, CsvCell parentObservationCell) throws Exception {
+    private static ResourceType findParentObservationType(EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell patientGuidCell, CsvCell parentObservationCell) throws Exception {
         ResourceType parentResourceType = csvHelper.getCachedParentObservationResourceType(patientGuidCell, parentObservationCell);
         if (parentResourceType == null) {
-            parentResourceType = findOriginalTargetResourceType(fhirResourceFiler, patientGuidCell, parentObservationCell);
+            Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, patientGuidCell, parentObservationCell);
+
+            //due to a past bug, we will have generated ID mappings for some Observation records to the true destination
+            //resource type (e.g. Immunization) plus Observation and Condition, so the above function may return between
+            //one and three resource types. However this only happened when the Observation record was deleted, in which
+            //case we shouldn't be calling this function to add a child Observation to it. So simply validate that we only have one
+            if (resourceTypes.size() > 1) {
+                throw new TransformException("Found " + resourceTypes + " mapped from patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
+            }
+            parentResourceType = resourceTypes.iterator().next();
         }
         return parentResourceType;
     }
@@ -724,7 +725,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             diagnosticOrderBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -871,7 +872,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             specimenBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1004,7 +1005,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             allergyIntoleranceBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1156,7 +1157,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             diagnosticReportBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1321,7 +1322,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             procedureBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1493,7 +1494,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             conditionBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1737,7 +1738,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             observationBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -1918,7 +1919,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             familyMemberHistoryBuilder.setParentResource(parentReference, parentObservationCell);
         }
@@ -2075,7 +2076,7 @@ public class ObservationTransformer {
 
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
-            ResourceType parentResourceType = findObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
+            ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
             Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
             immunizationBuilder.setParentResource(parentReference, parentObservationCell);
         }

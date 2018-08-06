@@ -8,7 +8,6 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.idmappers.IdMapperAppointment;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -17,6 +16,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.Slot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,69 +62,49 @@ public class SRAppointmentTransformer {
         CsvCell appointmentId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
-//        boolean mappingNeeded = false;
 
-        if (patientId.isEmpty()) {
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
 
-            if ((deleteData != null) && !deleteData.isEmpty()) {
-                if (!deleteData.getIntAsBoolean()) {
-                    TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                            parser.getRowIdentifier().getString(), parser.getFilePath());
-                    return;
-                } else {
-
-                    // get previously filed resources for deletion
-                    org.hl7.fhir.instance.model.Appointment appointment
-                            = (org.hl7.fhir.instance.model.Appointment) csvHelper.retrieveResource(appointmentId.getString(),
-                            ResourceType.Appointment);
-
-                    org.hl7.fhir.instance.model.Slot slot
-                            = (org.hl7.fhir.instance.model.Slot) csvHelper.retrieveResource(appointmentId.getString(),
-                            ResourceType.Slot);
-
-                    if (appointment != null && slot != null) {
-                        AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-                        SlotBuilder slotBuilder = new SlotBuilder(slot);
-                        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
-                        return;
-                    }
-                }
-                return;
+            // get previously filed resources for deletion
+            Appointment appointment = (Appointment) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Appointment);
+            if (appointment != null) {
+                AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, appointmentBuilder);
             }
-        }
-
-        // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (patientReference.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "Patient reference not found for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
+            Slot slot = (Slot) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Slot);
+            if (slot != null) {
+                SlotBuilder slotBuilder = new SlotBuilder(slot);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder);
+            }
             return;
         }
 
+        // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
+        if (patientId.isEmpty()) {
+            return;
+        }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
-        AppointmentBuilder appointmentBuilder =  new AppointmentBuilder();
-         //       = AppointmentResourceCache.getAppointmentBuilder(appointmentId, csvHelper, fhirResourceFiler);
+        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+        appointmentBuilder.setId(appointmentId.getString(), appointmentId);
 
-        appointmentBuilder.setId(appointmentId.getString());
-
-      appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(appointmentId.getString(), appointmentId);
+
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
 
         Reference slotRef = csvHelper.createSlotReference(appointmentId);
         appointmentBuilder.addSlot(slotRef, appointmentId);
 
-
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
             Reference scheduleReference = csvHelper.createScheduleReference(rotaId);
-           slotBuilder.setSchedule(scheduleReference, rotaId);
+            slotBuilder.setSchedule(scheduleReference, rotaId);
         }
 
         //because we're only storing slots with patients, all slots are "busy"
-        slotBuilder.setFreeBusyType(org.hl7.fhir.instance.model.Slot.SlotStatus.BUSY);
-
+        slotBuilder.setFreeBusyType(Slot.SlotStatus.BUSY);
 
         //cell is both date and time, so create datetime from both
         CsvCell startDate = parser.getDateStart();
@@ -172,7 +152,7 @@ public class SRAppointmentTransformer {
         CsvCell appointmentStatus = parser.getAppointmentStatus();
         if (!appointmentStatus.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus);
             if (tppMappingRef != null) {
                 String statusTerm = tppMappingRef.getMappedTerm();
                 Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
@@ -185,31 +165,12 @@ public class SRAppointmentTransformer {
         }
 
         // Check for appointment flags
-
-        if (AppointmentFlagCache.containsAppointmentId(appointmentId.getLong())) {
-            List<AppointmentFlagsPojo> pojoList = AppointmentFlagCache.getFlagsForAppointmentId(appointmentId.getLong());
-
-            for (AppointmentFlagsPojo pojo : pojoList) {
-                TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag(), parser);
-                if (tppMappingRef != null) {
-                    String flagMapping = tppMappingRef.getMappedTerm();
-                    if (!Strings.isNullOrEmpty(flagMapping)) {
-                        appointmentBuilder.setComments(flagMapping);
-                    }
-                }
-            }
-            AppointmentFlagCache.removeFlagsByAppointmentId(appointmentId.getLong());
+        List<AppointmentFlagsPojo> pojoList = csvHelper.getAppointmentFlagCache().getAndRemoveFlagsForAppointmentId(appointmentId.getLong());
+        if (pojoList != null) {
+            AppointmentFlagCache.applyFlagsToAppointment(csvHelper, appointmentBuilder, pojoList);
         }
 
-        IdMapperAppointment mapper = new IdMapperAppointment();
-        boolean mapIds = !(appointmentBuilder.isIdMapped() && slotBuilder.isIdMapped());
-//        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(patientReference);
-//        String referenceId = comps.getId();
-//        LOG.info("Ids: appt" + appointmentBuilder.getResourceId()+ ". Patient:" + patientReference.getId() + ". Slot:" + slotBuilder.getResourceId() +
-//                "SlotRef:" + slotRef.getId() + "patientRef:" + referenceId);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds, appointmentBuilder, slotBuilder);
-
-
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
     }
 
     private static Appointment.AppointmentStatus convertAppointmentStatus(String status, SRAppointment parser) throws Exception {

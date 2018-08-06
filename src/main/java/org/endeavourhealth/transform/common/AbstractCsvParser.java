@@ -63,8 +63,6 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
         this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
-        //create (or find if re-processing) an audit entry for this file
-        ensureFileAudited();
     }
 
     @Override
@@ -423,6 +421,11 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         //we now only open the first set of parsers when starting a transform, so
         //need to check to open the subsequent ones
         if (csvReader == null) {
+
+            //create (or find if re-processing) an audit entry for this file
+            ensureFileAudited();
+
+            //now open the file for reading
             open("Starting");
         }
 

@@ -138,7 +138,7 @@ public class PATIENTTransformer {
         CsvCell addressPostcode = parser.getHomeAddressPostcode();
 
         //remove existing address if set
-        AddressBuilder.removeExistingAddress(patientBuilder, patientId.getString());
+        AddressBuilder.removeExistingAddressById(patientBuilder, patientId.getString());
 
         //use patientId for address builder identifier so it can be removed and updated if needed (see above)
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);

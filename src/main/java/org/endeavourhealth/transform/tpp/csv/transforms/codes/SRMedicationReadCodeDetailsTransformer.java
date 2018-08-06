@@ -26,12 +26,14 @@ public class SRMedicationReadCodeDetailsTransformer {
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRMedicationReadCodeDetails.class);
-        while (parser.nextRecord()) {
+        if (parser != null) {
+            while (parser.nextRecord()) {
 
-            try {
-                createResource((SRMedicationReadCodeDetails)parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                try {
+                    createResource((SRMedicationReadCodeDetails) parser, fhirResourceFiler);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
         }
 

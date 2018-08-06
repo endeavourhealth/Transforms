@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
-import org.apache.commons.lang3.StringUtils;
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -9,18 +9,18 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientContactDetails;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SRPatientContactDetailsTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientContactDetailsTransformer.class);
+
+    public static final String PHONE_ID_TO_PATIENT_ID = "PhoneIdToPatientId";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -48,41 +48,38 @@ public class SRPatientContactDetailsTransformer {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell IdPatientCell = parser.getIDPatient();
-
-        // TODO:// if the patientId is blank for patient contact details there is currently no way of obtaining
-        // the patient resource for editing.  This check is put in to allow transform progression passed initial
-        // spurious data files
-        if (IdPatientCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
-            return;
-        }
-
-        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-
         CsvCell removeDataCell = parser.getRemovedData();
-        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            List<ContactPoint> contacts = patientBuilder.getContactPoint();
-            for (ContactPoint contact: contacts) {
-                if (contact.getId().equals(rowIdCell.getString())) {
-                    patientBuilder.removeContactPoint(contact);
+        if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
+
+            //if removed we won't have a patient ID, so need to look it up
+            String patientId = csvHelper.getInternalId(PHONE_ID_TO_PATIENT_ID, rowIdCell.getString());
+            if (!Strings.isNullOrEmpty(patientId)) {
+                CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
+
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                if (patientBuilder != null) {
+                    ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
                 }
             }
-            //boolean mapids = !patientBuilder.isIdMapped();
-            //fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
+
             return;
         }
+
+
+        CsvCell patientIdCell = parser.getIDPatient();
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        if (patientBuilder == null) {
+            return;
+        }
+
+        //remove any existing instance of this phone number from the patient
+        ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
 
         ContactPoint.ContactPointUse use = null;
 
         CsvCell contactTypeCell = parser.getContactType();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong() > 0) {
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell, parser);
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell);
             if (mapping != null) {
                 try {
                     use = ContactPoint.ContactPointUse.fromCode(mapping.getMappedTerm().toLowerCase());

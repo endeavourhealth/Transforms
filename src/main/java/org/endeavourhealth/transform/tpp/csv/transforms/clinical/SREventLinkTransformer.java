@@ -5,6 +5,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SREventLink;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTransformer;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,10 @@ public class SREventLinkTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell patientId = parser.getIDPatient();
+        CsvCell removedData = parser.getRemovedData();
+        if (removedData != null && removedData.getIntAsBoolean()) {
+            return;
+        }
 
         CsvCell appointmentId = parser.getIDAppointment();
         CsvCell visitId = parser.getIDVisit();
@@ -48,20 +52,14 @@ public class SREventLinkTransformer {
 
             if (!appointmentId.isEmpty()) {
 
-                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId,
-                        patientId,
-                        appointmentId.getString(),
-                        ResourceType.Appointment);
+                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId, appointmentId.getString(), ResourceType.Appointment);
             }
 
             if (!visitId.isEmpty()) {
 
                 // appointments and visits are transformed into Appointments, so make sure Id is unique for visits
-                String visitIdUnique = "Visit:" + appointmentId.getString();
-                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId,
-                        patientId,
-                        visitIdUnique,
-                        ResourceType.Appointment);
+                String visitIdUnique = SRVisitTransformer.VISIT_ID_PREFIX + visitId.getString();
+                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId, visitIdUnique, ResourceType.Appointment);
             }
         }
     }

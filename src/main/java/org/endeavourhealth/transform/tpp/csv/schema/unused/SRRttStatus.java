@@ -48,7 +48,7 @@ public class SRRttStatus extends AbstractCsvParser {
  public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRRttStatus Entry file ";}
 

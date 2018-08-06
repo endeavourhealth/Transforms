@@ -36,8 +36,8 @@ public class NameBuilder {
 
         List<HumanName> matches = new ArrayList<>();
 
-        List<HumanName> namees = parentBuilder.getNames();
-        for (HumanName name: namees) {
+        List<HumanName> names = parentBuilder.getNames();
+        for (HumanName name: names) {
             //if we match on ID, then remove this name from the parent object
             if (name.hasId()
                     && name.getId().equals(idValue)) {
@@ -61,6 +61,18 @@ public class NameBuilder {
 
             parentBuilder.removeName(name);
             return true;
+        }
+    }
+
+    public static void removeExistingNames(HasNameI parentBuilder) {
+        List<HumanName> names = new ArrayList<>(parentBuilder.getNames()); //need to copy the array so we can remove while iterating
+        for (HumanName name: names) {
+
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getNameJsonPrefix(name);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+            parentBuilder.removeName(name);
         }
     }
 

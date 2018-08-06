@@ -1,16 +1,13 @@
-package org.endeavourhealth.transform.tpp.csv.transforms.referral;
+package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.ReferralRequestResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOutStatusDetails;
 import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ReferralRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +46,8 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
+        //TODO - doesn't the deleteData column need handling here?
+
         if (patientId.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
@@ -74,8 +73,16 @@ public class SRReferralOutStatusDetailsTransformer {
 //            }
         }
 
-        ReferralRequestBuilder referralRequestBuilder
-                = ReferralRequestResourceCache.getReferralBuilder(referralOutId, patientId, csvHelper, fhirResourceFiler);
+        ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
+        if (referralRequestBuilder == null) {
+            return;
+        }
+
+        Reference patientReference = csvHelper.createPatientReference(patientId);
+        if (referralRequestBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        }
+        referralRequestBuilder.setPatient(patientReference, patientId);
 
         CsvCell referralStatus = parser.getStatusOfReferralOut();
         if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {

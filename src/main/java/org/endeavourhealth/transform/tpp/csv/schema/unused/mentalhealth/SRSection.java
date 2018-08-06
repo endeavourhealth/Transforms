@@ -70,7 +70,7 @@ public class SRSection extends AbstractCsvParser {
  public CsvCell getActive() { return super.getCell("Active");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRSection Entry file ";}
 

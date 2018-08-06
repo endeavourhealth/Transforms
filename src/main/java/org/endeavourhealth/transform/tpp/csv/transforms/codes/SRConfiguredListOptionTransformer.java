@@ -7,10 +7,13 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfig
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.tpp.csv.schema.codes.SRConfiguredListOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class SRConfiguredListOptionTransformer {
@@ -24,21 +27,30 @@ public class SRConfiguredListOptionTransformer {
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(SRConfiguredListOption.class);
-        while (parser.nextRecord()) {
+        List<TppConfigListOption> mappingsToSave = new ArrayList<>();
 
-            try {
-                createResource((SRConfiguredListOption)parser, fhirResourceFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+        AbstractCsvParser parser = parsers.get(SRConfiguredListOption.class);
+        if (parser != null) {
+            while (parser.nextRecord()) {
+
+                try {
+                    createResource((SRConfiguredListOption) parser, fhirResourceFiler, mappingsToSave);
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
             }
+        }
+
+        //and save any still pending
+        if (!mappingsToSave.isEmpty()) {
+            repository.save(fhirResourceFiler.getServiceId(), mappingsToSave);
         }
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createResource(SRConfiguredListOption parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void createResource(SRConfiguredListOption parser, FhirResourceFiler fhirResourceFiler, List<TppConfigListOption> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell configListId = parser.getConfiguredList();
@@ -56,9 +68,13 @@ public class SRConfiguredListOptionTransformer {
                                     fhirResourceFiler.getServiceId().toString(),
                                     auditWrapper);
 
+        mappingsToSave.add(tppConfigListOption);
 
-        //save to the DB
-        repository.save(tppConfigListOption, fhirResourceFiler.getServiceId());
+        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
+            List<TppConfigListOption> copy = new ArrayList<>(mappingsToSave);
+            mappingsToSave.clear();
 
+            repository.save(fhirResourceFiler.getServiceId(), copy);
+        }
     }
 }

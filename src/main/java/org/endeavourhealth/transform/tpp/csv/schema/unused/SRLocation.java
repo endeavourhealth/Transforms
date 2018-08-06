@@ -62,7 +62,7 @@ public class SRLocation extends AbstractCsvParser {
  public CsvCell getIDOrganisation() { return super.getCell("IDOrganisation");}
 
 
- //TODO fix the string below to make it meaningful
+ //fix the string below to make it meaningful
      @Override
 protected String getFileTypeDescription() {return "TPP SRLocation Entry file ";}
 

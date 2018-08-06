@@ -76,7 +76,7 @@ public class SR18WeekWait extends AbstractCsvParser {
     public CsvCell getRemovedData() { return super.getCell("RemovedData");}
 
 
-    //TODO file the string below
+    //fix the string below
     @Override
     protected String getFileTypeDescription() {return "TPP SR18WeekWait Entry file ";}
 

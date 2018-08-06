@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.tpp.csv.schema.codes.SRCtv3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -33,16 +34,27 @@ public class SRCtv3Transformer {
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
 
+        List<TppCtv3Lookup> mappingsToSave = new ArrayList<>();
+
         try {
             AbstractCsvParser parser = parsers.get(SRCtv3.class);
-            while (parser.nextRecord()) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                try {
-                    createResource((SRCtv3) parser, threadPool);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    try {
+                        processRecord((SRCtv3) parser, threadPool, mappingsToSave);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
                 }
             }
+
+            //and save any still pending
+            if (!mappingsToSave.isEmpty()) {
+                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
+                handleErrors(errors);
+            }
+
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
             handleErrors(errors);
@@ -60,12 +72,10 @@ public class SRCtv3Transformer {
         //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
         ThreadPoolError first = errors.get(0);
         Throwable exception = first.getException();
-        SRCtv3Transformer.WebServiceLookup callable = (SRCtv3Transformer.WebServiceLookup)first.getCallable();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
-    public static void createResource(SRCtv3 parser, ThreadPool threadPool) throws Exception {
+    public static void processRecord(SRCtv3 parser, ThreadPool threadPool, List<TppCtv3Lookup> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         if (rowId.isEmpty()) {
@@ -76,53 +86,51 @@ public class SRCtv3Transformer {
         CsvCell ctv3Code = parser.getCtv3Code();
         CsvCell ctv3Text = parser.getCtv3Text();
 
-        List<ThreadPoolError> errors =
-                threadPool.submit(new SRCtv3Transformer.WebServiceLookup(
-                        parser.getCurrentState(), rowId, ctv3Code, ctv3Text));
+        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        handleErrors(errors);
+        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(ctv3Code.getRowAuditId(), ctv3Code.getColIndex(), CTV3_CODE);
+        auditWrapper.auditValue(ctv3Text.getRowAuditId(), ctv3Text.getColIndex(), CTV3_TEXT);
+
+        TppCtv3Lookup lookup = new TppCtv3Lookup(rowId.getLong(), ctv3Code.getString(), ctv3Text.getString(), auditWrapper);
+
+        mappingsToSave.add(lookup);
+
+        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
+            List<TppCtv3Lookup> copy = new ArrayList<>(mappingsToSave);
+            mappingsToSave.clear();
+            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
+            handleErrors(errors);
+        }
     }
 
-    static class WebServiceLookup implements Callable {
+    static class Task implements Callable {
 
-        private CsvCurrentState parserState = null;
-        private CsvCell rowId = null;
-        private CsvCell ctv3Code = null;
-        private CsvCell ctv3Text = null;
+        private List<TppCtv3Lookup> mappingsToSave = null;
 
-        public WebServiceLookup(CsvCurrentState parserState, CsvCell rowId, CsvCell ctv3Code, CsvCell ctv3Text) {
-            this.parserState = parserState;
-            this.rowId = rowId;
-            this.ctv3Code = ctv3Code;
-            this.ctv3Text = ctv3Text;
+        public Task(List<TppCtv3Lookup> mappingsToSave) {
+            this.mappingsToSave = mappingsToSave;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-                ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-
-                auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-                auditWrapper.auditValue(ctv3Code.getRowAuditId(), ctv3Code.getColIndex(), CTV3_CODE);
-                auditWrapper.auditValue(ctv3Text.getRowAuditId(), ctv3Text.getColIndex(), CTV3_TEXT);
-
-                TppCtv3Lookup lookup =
-                        new TppCtv3Lookup(rowId.getLong(), ctv3Code.getString(), ctv3Text.getString(), auditWrapper);
-
                 //save to the DB
-                repository.save(lookup);
+                repository.save(mappingsToSave);
 
             } catch (Throwable t) {
-                LOG.error("", t);
-                throw t;
+                String msg = "Error saving CTV3 lookup records for row IDs ";
+                for (TppCtv3Lookup mapping: mappingsToSave) {
+                    msg += mapping.getRowId();
+                    msg += ", ";
+                }
+
+                LOG.error(msg, t);
+                throw new TransformException(msg, t);
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

@@ -8,17 +8,22 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.ConditionResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRCode;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.endeavourhealth.core.terminology.Read2.isBPCode;
 
@@ -36,7 +41,14 @@ public class SRCodeTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SRCode) parser, fhirResourceFiler, csvHelper);
+                    CsvCell removedDataCell = ((SRCode) parser).getRemovedData();
+                    if (removedDataCell != null && removedDataCell.getIntAsBoolean()) {
+                        deleteResource((SRCode) parser, fhirResourceFiler, csvHelper);
+
+                    } else {
+                        createResource((SRCode) parser, fhirResourceFiler, csvHelper);
+                    }
+
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -47,63 +59,97 @@ public class SRCodeTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createResource(SRCode parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+    private static void deleteResource(SRCode parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       TppCsvHelper csvHelper) throws Exception {
 
-        //TODO - if removedData = true, then we need to work out the target resource type differently, since we don't have the CTV3 code in the current CSV record
+        CsvCell codeIdCell = parser.getRowIdentifier();
+        ResourceType resourceType = wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, codeIdCell);
+
+        if (resourceType != null) {
+            switch (resourceType) {
+                case Observation:
+                    createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
+                    break;
+                //conditions are checked at the bottom of this fn
+                /*case Condition:
+                    createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
+                    break;*/
+                case Procedure:
+                    createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
+                    break;
+                case AllergyIntolerance:
+                    createOrDeleteAllergy(parser, fhirResourceFiler, csvHelper);
+                    break;
+                case FamilyMemberHistory:
+                    createOrDeleteFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
+            }
+        }
+
+        //if we originally saved our record as a Condition, either because the record code indicated it should be
+        //condition or because we had a SRProblem record linked to us (in which case it will have been saved as
+        //a condition AS WELL as the other resource type), then we'll need to delete that condition now
+        if (wasOriginallySavedAsCondition(fhirResourceFiler, codeIdCell)) {
+            createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
+        }
+    }
+
+    private static void createResource(SRCode parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       TppCsvHelper csvHelper) throws Exception {
 
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+
         switch (resourceType) {
             case Observation:
-                createObservation(parser, fhirResourceFiler, csvHelper);
+                createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                 break;
             case Condition:
-                createCondition(parser, fhirResourceFiler, csvHelper);
+                createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                 break;
             case Procedure:
-                createProcedure(parser, fhirResourceFiler, csvHelper);
+                createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
                 break;
             case AllergyIntolerance:
-                createAllergy(parser, fhirResourceFiler, csvHelper);
+                createOrDeleteAllergy(parser, fhirResourceFiler, csvHelper);
                 break;
             case FamilyMemberHistory:
-                createFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
+                createOrDeleteFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
         }
+
+        //if we've saved our record as something other than a condition, but we have a SRProblem record linked
+        //to our record, then we ALSO want to save this record as a condition
+        CsvCell codeIdCell = parser.getRowIdentifier();
+        if (resourceType != ResourceType.Condition
+                && csvHelper.getConditionResourceCache().containsCondition(codeIdCell)) {
+
+            createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
+        }
     }
 
-    public static void createAllergy(SRCode parser,
-                                     FhirResourceFiler fhirResourceFiler,
-                                     TppCsvHelper csvHelper) throws Exception {
+    private static void createOrDeleteAllergy(SRCode parser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              TppCsvHelper csvHelper) throws Exception {
 
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if (deleteData != null && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.AllergyIntolerance allergyIntolerance
-                        = (org.hl7.fhir.instance.model.AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.AllergyIntolerance);
-
-                if (allergyIntolerance != null) {
-                    AllergyIntoleranceBuilder allergyIntoleranceBuilder
-                            = new AllergyIntoleranceBuilder(allergyIntolerance);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
-                    return;
-                }
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            AllergyIntolerance allergyIntolerance = (AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(), ResourceType.AllergyIntolerance);
+            if (allergyIntolerance != null) {
+                AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder(allergyIntolerance);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, allergyIntoleranceBuilder);
             }
+            return;
         }
 
         AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder();
@@ -175,40 +221,28 @@ public class SRCodeTransformer {
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
-
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             allergyIntoleranceBuilder.setEncounter(eventReference, eventId);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
     }
 
-    private static void createProcedure(SRCode parser,
-                                        FhirResourceFiler fhirResourceFiler,
-                                        TppCsvHelper csvHelper) throws Exception {
+    private static void createOrDeleteProcedure(SRCode parser,
+                                                FhirResourceFiler fhirResourceFiler,
+                                                TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if (deleteData != null && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Procedure procedure = (Procedure) csvHelper.retrieveResource(rowId.getString(), ResourceType.Procedure);
+            if (procedure != null) {
+                ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
                 return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Procedure procedure
-                        = (org.hl7.fhir.instance.model.Procedure) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Procedure);
-
-                if (procedure != null) {
-                    ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
-                    return;
-                }
             }
         }
 
@@ -277,8 +311,7 @@ public class SRCodeTransformer {
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
-
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             procedureBuilder.setEncounter(eventReference, eventId);
         }
 
@@ -289,62 +322,39 @@ public class SRCodeTransformer {
     }
 
 
-    private static void createCondition(SRCode parser,
-                                        FhirResourceFiler fhirResourceFiler,
-                                        TppCsvHelper csvHelper) throws Exception {
+    private static void createOrDeleteCondition(SRCode parser,
+                                                FhirResourceFiler fhirResourceFiler,
+                                                TppCsvHelper csvHelper) throws Exception {
 
         CsvCell conditionId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
-        boolean isProblem;
 
-        if (patientId.isEmpty()) {
+        //The condition resource may already exist as part of the Problem Transformer or will create one, set using the ID value of the code
+        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(conditionId, csvHelper);
 
-            if (deleteData != null && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
 
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Condition condition
-                        = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResource(conditionId.getString(),
-                        ResourceType.Condition);
+            boolean mapIds = !conditionBuilder.isIdMapped();
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
 
-                if (condition != null) {
-                    ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-                    return;
-                }
-            }
+            return;
         }
-
-        // Does the condition already exist in the condition resource cache? If so, it's a problem.
-
-        if (ConditionResourceCache.isIdInCache(conditionId.getLong())) {
-            isProblem = true;
-        } else {
-            isProblem = false;
-        }
-         //The condition resource will already exist as part of the Problem Transformer or will create one, set using the ID value of the code
-        ConditionBuilder conditionBuilder
-                = ConditionResourceCache.getConditionBuilder(conditionId, patientId, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         if (conditionBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         conditionBuilder.setPatient(patientReference, patientId);
 
         CsvCell recordedBy = parser.getIDProfileEnteredBy();
         if (!recordedBy.isEmpty()) {
 
-            String staffMemberId =
-                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
+            String staffMemberId = csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, recordedBy.getString());
             if (!Strings.isNullOrEmpty(staffMemberId)) {
                 Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
                 if (conditionBuilder.isIdMapped()) {
-                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
                 }
                 conditionBuilder.setRecordedBy(staffReference, recordedBy);
             }
@@ -355,7 +365,7 @@ public class SRCodeTransformer {
 
             Reference staffReference = csvHelper.createPractitionerReference(clinicianDoneBy);
             if (conditionBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
             }
             conditionBuilder.setClinician(staffReference, clinicianDoneBy);
         }
@@ -372,11 +382,6 @@ public class SRCodeTransformer {
         if (!effectiveDate.isEmpty()) {
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
             conditionBuilder.setOnset(dateTimeType, effectiveDate);
-        }
-        if (isProblem) {
-            //set the category on the condition, so we know it's a problem based on pre-existing data from cache
-            conditionBuilder.setCategory("complaint", conditionId);
-            conditionBuilder.setAsProblem(true);
         }
 
         CsvCell readV3Code = parser.getCTV3Code();
@@ -408,7 +413,7 @@ public class SRCodeTransformer {
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType, parser);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(episodeType);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
@@ -421,41 +426,33 @@ public class SRCodeTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             if (conditionBuilder.isIdMapped()) {
-                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference,fhirResourceFiler);
+                eventReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(eventReference, fhirResourceFiler);
             }
             conditionBuilder.setEncounter(eventReference, eventId);
         }
+
+        boolean mapIds = !conditionBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
     }
 
-    private static void createObservation(SRCode parser,
-                                          FhirResourceFiler fhirResourceFiler,
-                                          TppCsvHelper csvHelper) throws Exception {
+    private static void createOrDeleteObservation(SRCode parser,
+                                                  FhirResourceFiler fhirResourceFiler,
+                                                  TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if (deleteData != null && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else if ((deleteData != null) && !deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.Observation observation
-                        = (org.hl7.fhir.instance.model.Observation) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.Observation);
-
-                if (observation != null) {
-                    ObservationBuilder observationBuilder = new ObservationBuilder(observation);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
-                }
-                return;
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            Observation observation = (Observation) csvHelper.retrieveResource(rowId.getString(), ResourceType.Observation);
+            if (observation != null) {
+                ObservationBuilder observationBuilder = new ObservationBuilder(observation);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
             }
+            return;
         }
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
@@ -523,19 +520,23 @@ public class SRCodeTransformer {
         }
 
         CsvCell numericValue = parser.getNumericValue();
-        if (!numericValue.isEmpty() && parser.getIsNumeric().getBoolean()) {
+        CsvCell isNumericCell = parser.getIsNumeric();
+        if (!numericValue.isEmpty()
+                && (isNumericCell == null || isNumericCell.getBoolean())) { //null check required because the column wasn't always present
 
             observationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
         }
 
         CsvCell numericUnits = parser.getNumericUnit();
-        if (!numericUnits.isEmpty() && parser.getIsNumeric().getBoolean()) {
+        if (!numericUnits.isEmpty()
+                && (isNumericCell == null || isNumericCell.getBoolean())) { //null check required because the column wasn't always present
 
             observationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
         }
 
         CsvCell numericComparator = parser.getNumericComparator();
-        if (!numericComparator.isEmpty() && parser.getIsNumeric().getBoolean()) {
+        if (!numericComparator.isEmpty()
+                && (isNumericCell == null || isNumericCell.getBoolean())) { //null check required because the column wasn't always present
 
             Quantity.QuantityComparator comparator = convertComparator(numericComparator.getString());
             if (comparator != null) {
@@ -547,40 +548,28 @@ public class SRCodeTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             observationBuilder.setEncounter(eventReference, eventId);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
     }
 
-    private static void createFamilyMemberHistory(SRCode parser,
-                                                  FhirResourceFiler fhirResourceFiler,
-                                                  TppCsvHelper csvHelper) throws Exception {
+    private static void createOrDeleteFamilyMemberHistory(SRCode parser,
+                                                          FhirResourceFiler fhirResourceFiler,
+                                                          TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        if (patientId.isEmpty()) {
-
-            if (deleteData != null && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            FamilyMemberHistory familyMemberHistory = (FamilyMemberHistory) csvHelper.retrieveResource(rowId.getString(), ResourceType.FamilyMemberHistory);
+            if (familyMemberHistory != null) {
+                FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder(familyMemberHistory);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, familyMemberHistoryBuilder);
                 return;
-            } else if (!deleteData.isEmpty() && deleteData.getIntAsBoolean()) {
-
-                // get previously filed resource for deletion
-                org.hl7.fhir.instance.model.FamilyMemberHistory familyMemberHistory
-                        = (org.hl7.fhir.instance.model.FamilyMemberHistory) csvHelper.retrieveResource(rowId.getString(),
-                        ResourceType.FamilyMemberHistory);
-
-                if (familyMemberHistory != null) {
-                    FamilyMemberHistoryBuilder familyMemberHistoryBuilder
-                            = new FamilyMemberHistoryBuilder(familyMemberHistory);
-                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
-                    return;
-                }
             }
         }
 
@@ -657,7 +646,7 @@ public class SRCodeTransformer {
         CsvCell eventId = parser.getIDEvent();
         if (!eventId.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId, patientId);
+            Reference eventReference = csvHelper.createEncounterReference(eventId);
             familyMemberHistoryBuilder.setEncounter(eventReference, eventId);
         }
 
@@ -668,9 +657,9 @@ public class SRCodeTransformer {
     }
 
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, SRCode parser) throws Exception {
-        if (!Strings.isNullOrEmpty(parser.getNumericValue().getString())
-                && !parser.getIsNumeric().getBoolean()
-                && !parser.getNumericValue().getString().equalsIgnoreCase("0.0")) {
+        CsvCell valueCell = parser.getNumericValue();
+        if (!valueCell.isEmpty()
+                && !valueCell.getString().equalsIgnoreCase("0.0")) {
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
         }
     }
@@ -684,7 +673,7 @@ public class SRCodeTransformer {
                 && !isBPCode(readV3Code)
                 && (parser.getNumericValue().isEmpty())) {
             return ResourceType.Procedure;
-        } else if (csvHelper.isProblemObservationGuid(parser.getIDPatient(), parser.getRowIdentifier())) {
+        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
             return ResourceType.Condition;
         } else if ((!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
@@ -714,4 +703,40 @@ public class SRCodeTransformer {
             return null;
         }
     }
+
+    /**
+     * finds out what resource type an EMIS observation was previously saved as
+     */
+    public static boolean wasOriginallySavedAsCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
+        return checkIfWasSavedAsResourceType(fhirResourceFiler, codeId, ResourceType.Condition);
+    }
+
+    public static ResourceType wasOriginallySavedAsOtherThanCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
+
+        List<ResourceType> potentialResourceTypes = new ArrayList<>();
+        potentialResourceTypes.add(ResourceType.Observation);
+        //potentialResourceTypes.add(ResourceType.Condition); //don't check this here - as conditions are handled differently
+        potentialResourceTypes.add(ResourceType.Procedure);
+        potentialResourceTypes.add(ResourceType.AllergyIntolerance);
+        potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
+        potentialResourceTypes.add(ResourceType.Immunization);
+        potentialResourceTypes.add(ResourceType.DiagnosticOrder);
+        potentialResourceTypes.add(ResourceType.Specimen);
+        potentialResourceTypes.add(ResourceType.DiagnosticReport);
+        potentialResourceTypes.add(ResourceType.ReferralRequest);
+
+        for (ResourceType resourceType : potentialResourceTypes) {
+            if (checkIfWasSavedAsResourceType(fhirResourceFiler, codeId, resourceType)) {
+                return resourceType;
+            }
+        }
+        return null;
+    }
+
+    private static boolean checkIfWasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell codeId, ResourceType resourceType) throws Exception {
+        String sourceId = codeId.getString();
+        UUID uuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, sourceId);
+        return uuid != null;
+    }
+
 }

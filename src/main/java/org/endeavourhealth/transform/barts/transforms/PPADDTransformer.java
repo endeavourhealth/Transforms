@@ -52,7 +52,7 @@ public class PPADDTransformer {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
                 if (patientBuilder != null) {
-                    AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+                    AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
 
                     csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
                 }
@@ -75,7 +75,7 @@ public class PPADDTransformer {
         CsvCell postcode = parser.getPostcode();
 
         //we always fully re-create the address, so remove it from the patient
-        AddressBuilder.removeExistingAddress(patientBuilder, addressIdCell.getString());
+        AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
 
         //and remove any instance of the address added by the ADT feed
         removeExistingAddressWithoutIdByValue(patientBuilder, line1, line2, line3, line4, city, county, postcode);

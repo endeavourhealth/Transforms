@@ -8,11 +8,12 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Hiera
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.tpp.csv.schema.codes.SRCtv3Hierarchy;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.schema.codes.SRCtv3Hierarchy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -29,17 +30,27 @@ public class SRCtv3HierarchyTransformer {
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
 
-
         try {
-            AbstractCsvParser parser = parsers.get(SRCtv3Hierarchy.class);
-            while (parser.nextRecord()) {
+            List<TppCtv3HierarchyRef> mappingsToSave = new ArrayList<>();
 
-                try {
-                    createResource((SRCtv3Hierarchy)parser, threadPool, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            AbstractCsvParser parser = parsers.get(SRCtv3Hierarchy.class);
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        processRecord((SRCtv3Hierarchy) parser, threadPool, csvHelper, mappingsToSave);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
                 }
             }
+
+            //and save any still pending
+            if (!mappingsToSave.isEmpty()) {
+                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
+                handleErrors(errors);
+            }
+
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
             handleErrors(errors);
@@ -54,12 +65,10 @@ public class SRCtv3HierarchyTransformer {
         //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
         ThreadPoolError first = errors.get(0);
         Throwable exception = first.getException();
-        SRCtv3HierarchyTransformer.WebServiceLookup callable = (SRCtv3HierarchyTransformer.WebServiceLookup)first.getCallable();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
-    public static void createResource(SRCtv3Hierarchy parser, ThreadPool threadPool, TppCsvHelper csvHelper) throws Exception {
+    public static void processRecord(SRCtv3Hierarchy parser, ThreadPool threadPool, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         if (rowId.isEmpty()) {
@@ -86,57 +95,49 @@ public class SRCtv3HierarchyTransformer {
             return;
         }
 
-        if (TppCsvHelper.ETHNICITY_ROOT.equals(ctv3ParentReadCode.getString())) {
-            csvHelper.buildCTV3EthnicCodes(ctv3ChildReadCode.getString());
+        TppCtv3HierarchyRef mapping = new TppCtv3HierarchyRef(rowId.getLong(),
+                ctv3ParentReadCode.getString(),
+                ctv3ChildReadCode.getString(),
+                ctv3ChildLevel.getInt());
+
+        mappingsToSave.add(mapping);
+
+        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
+            List<TppCtv3HierarchyRef> copy = new ArrayList<>(mappingsToSave);
+            mappingsToSave.clear();
+            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
+            handleErrors(errors);
         }
-
-        List<ThreadPoolError> errors =
-                threadPool.submit(new SRCtv3HierarchyTransformer.WebServiceLookup(
-                        parser.getCurrentState(), rowId, ctv3ParentReadCode, ctv3ChildReadCode, ctv3ChildLevel));
-
-        handleErrors(errors);
     }
 
-    static class WebServiceLookup implements Callable {
+    static class Task implements Callable {
 
-        private CsvCurrentState parserState = null;
-        private CsvCell rowId = null;
-        private CsvCell ctv3ParentReadCode = null;
-        private CsvCell ctv3ChildReadCode = null;
-        private CsvCell ctv3ChildLevel = null;
+        private List<TppCtv3HierarchyRef> mappingsToSave;
 
-        public WebServiceLookup(CsvCurrentState parserState, CsvCell rowId, CsvCell ctv3ParentReadCode,
-                                CsvCell ctv3ChildReadCode, CsvCell ctv3ChildLevel) {
+        public Task(List<TppCtv3HierarchyRef> mappingsToSave) {
 
-            this.parserState = parserState;
-            this.rowId = rowId;
-            this.ctv3ParentReadCode = ctv3ParentReadCode;
-            this.ctv3ChildReadCode = ctv3ChildReadCode;
-            this.ctv3ChildLevel = ctv3ChildLevel;
+            this.mappingsToSave = mappingsToSave;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-                TppCtv3HierarchyRef ref = new TppCtv3HierarchyRef(rowId.getLong(),
-                        ctv3ParentReadCode.getString(),
-                        ctv3ChildReadCode.getString(),
-                        ctv3ChildLevel.getInt());
-
                 //save to the DB
-                repository.save(ref);
+                repository.save(mappingsToSave);
 
             } catch (Throwable t) {
-                LOG.error("", t);
-                throw t;
+                String msg = "Error saving CTV3 hierarchy records for row IDs ";
+                for (TppCtv3HierarchyRef mapping: mappingsToSave) {
+                    msg += mapping.getRowId();
+                    msg += ", ";
+                }
+
+                LOG.error(msg, t);
+                throw new TransformException(msg, t);
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

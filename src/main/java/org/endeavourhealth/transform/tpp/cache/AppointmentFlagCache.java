@@ -1,6 +1,13 @@
 package org.endeavourhealth.transform.tpp.cache;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
+import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.AppointmentFlagsPojo;
+import org.hl7.fhir.instance.model.Appointment;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,14 +15,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
+// A simple HashMap with index key and a pojo class as a temporary cache
 public class AppointmentFlagCache {
-    // A simple HashMap with index key and a pojo class as a temporary cache
+
     private static final Logger LOG = LoggerFactory.getLogger(AppointmentFlagCache.class);
 
-    private static HashMap<Long, List<AppointmentFlagsPojo>> appointmentFlagsByAppointmentId = new HashMap<>();
+    private HashMap<Long, List<AppointmentFlagsPojo>> appointmentFlagsByAppointmentId = new HashMap<>();
 
-    public static void addAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
+    public void addAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
         Long key = pojo.getIdAppointment().getLong();
         if (appointmentFlagsByAppointmentId.containsKey(key)) {
             appointmentFlagsByAppointmentId.get(key).add(pojo);
@@ -26,28 +33,44 @@ public class AppointmentFlagCache {
         }
     }
 
-    public static List<AppointmentFlagsPojo> getFlagsForAppointmentId(Long pojoKey) {
-        return appointmentFlagsByAppointmentId.get(pojoKey);
+    public List<AppointmentFlagsPojo> getAndRemoveFlagsForAppointmentId(Long pojoKey) {
+        return appointmentFlagsByAppointmentId.remove(pojoKey);
     }
 
-    public static void removeAppointmentFlagPojo(AppointmentFlagsPojo pojo) {
-        appointmentFlagsByAppointmentId.remove(pojo.getIdAppointment());
+    /**
+     * we assume that if we ever get any SRAppointmentFlags, then we'll also always get a record
+     * in SRAppointment. This fn is called after the two are transformed to ensure that was the case
+     * and that there are no flags left over that didn't have a corresponding record in SRAppointment
+     */
+    public void processRemainingFlags(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (Long appointmentId: appointmentFlagsByAppointmentId.keySet()) {
+            List<AppointmentFlagsPojo> flags = appointmentFlagsByAppointmentId.get(appointmentId);
+
+            Appointment appointment = (Appointment)csvHelper.retrieveResource("" + appointmentId, ResourceType.Appointment);
+            if (appointment == null) {
+                continue;
+            }
+
+            AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
+            applyFlagsToAppointment(csvHelper, appointmentBuilder, flags);
+
+            fhirResourceFiler.savePatientResource(null, false, appointmentBuilder);
+        }
     }
 
-    public static void removeFlagsByAppointmentId(Long apptKey) {
-        appointmentFlagsByAppointmentId.remove(apptKey);
-    }
+    public static void applyFlagsToAppointment(TppCsvHelper csvHelper, AppointmentBuilder appointmentBuilder, List<AppointmentFlagsPojo> pojoList) throws Exception {
 
-    public static boolean containsAppointmentId(Long apptId) {
-        return (appointmentFlagsByAppointmentId.containsKey(apptId));
-    }
+        for (AppointmentFlagsPojo pojo : pojoList) {
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(pojo.getFlag());
+            if (tppMappingRef != null) {
+                String flagMapping = tppMappingRef.getMappedTerm();
+                if (!Strings.isNullOrEmpty(flagMapping)) {
+//TODO - this is wrong. What if an appointment has multiple flags? This will just overwrite them and keep the last. Flags should be stored in a new extension, not comments.
+                    appointmentBuilder.setComments(flagMapping);
+                }
+            }
+        }
 
-    public static int size() {
-        return appointmentFlagsByAppointmentId.size();
     }
-
-    public static void clear() {
-        LOG.info("Appointment flag cache will be cleared of " + size() + " records.");
-        appointmentFlagsByAppointmentId.clear();}
 }
 

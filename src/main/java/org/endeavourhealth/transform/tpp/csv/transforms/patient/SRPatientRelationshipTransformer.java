@@ -1,26 +1,24 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
-import org.apache.commons.lang3.StringUtils;
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.NameConverter;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
-import org.endeavourhealth.transform.tpp.cache.PatientResourceCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRelationship;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SRPatientRelationshipTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRelationshipTransformer.class);
+
+    public static final String RELATIONSHIP_ID_TO_PATIENT_ID = "RelationshipIdToPatientId";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -46,55 +44,48 @@ public class SRPatientRelationshipTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
         CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell IdPatientCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = PatientResourceCache.getOrCreatePatientBuilder(IdPatientCell, csvHelper, fhirResourceFiler);
-
-        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-        contactBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell removeDataCell = parser.getRemovedData();
-        if ((removeDataCell != null) && !removeDataCell.isEmpty() && removeDataCell.getIntAsBoolean()) {
-            List<Patient.ContactComponent> contacts = patientBuilder.getPatientContactComponents();
-            for (Patient.ContactComponent cc: contacts) {
-                if (cc.getId().equals(rowIdCell.getString())) {
-                    patientBuilder.removePatientContactComponent(cc);
+        if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
+
+            //if removed we won't have a patient ID, so need to look it up
+            String patientId = csvHelper.getInternalId(RELATIONSHIP_ID_TO_PATIENT_ID, rowIdCell.getString());
+            if (!Strings.isNullOrEmpty(patientId)) {
+                CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
+
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                if (patientBuilder != null) {
+                    PatientContactBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
                 }
             }
             return;
         }
 
-        if (IdPatientCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                    parser.getRowIdentifier().getString(), parser.getFilePath());
+        CsvCell patientIdCell = parser.getIDPatient();
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        if (patientBuilder == null) {
             return;
         }
+
+        //make sure to remove any existing instance from the patient first
+        PatientContactBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+
+        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+        contactBuilder.setId(rowIdCell.getString(), rowIdCell);
+
         CsvCell relationshipTypeCell = parser.getRelationshipType();
         if (!relationshipTypeCell.isEmpty()) {
             String rel = csvHelper.tppRelationtoFhir(relationshipTypeCell.getString());
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
             codeableConceptBuilder.setText(rel);
-
         }
 
         CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
         if (!relationshipWithNameCell.isEmpty()) {
-            HumanName name = new HumanName();
-            if (!parser.getIDPatientRelationshipWith().isEmpty()) {
-                PatientBuilder relationshipBuilder = PatientResourceCache.getOrCreatePatientBuilder(
-                        parser.getIDPatientRelationshipWith(), csvHelper, fhirResourceFiler);
-                if (relationshipBuilder.getNames().size() > 0) {
-                    name = relationshipBuilder.getNames().get(0);
-                }
-            }
-            if (!name.hasText()) {
-                name.setText(relationshipWithNameCell.getString());
-            }
-            contactBuilder.addContactName(name);
+            HumanName humanName = NameConverter.convert(relationshipTypeCell.getString());
+            contactBuilder.addContactName(humanName, relationshipWithNameCell);
         }
+
         AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
         CsvCell nameOfBuildingCell = parser.getRelationshipWithHouseName();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -102,55 +93,44 @@ public class SRPatientRelationshipTransformer {
         }
         CsvCell numberOfBuildingCell = parser.getRelationshipWithHouseNumber();
         CsvCell nameOfRoadCell = parser.getRelationshipWithRoad();
-        StringBuilder next = new StringBuilder();
-        // Some addresses have a house name with or without a street number or road name
-        // Try to handle combinations
-        if (!numberOfBuildingCell.isEmpty()) {
-            next.append(numberOfBuildingCell.getString());
-        }
-        if (!nameOfRoadCell.isEmpty()) {
-            next.append(" ");
-            next.append(nameOfRoadCell.getString());
-        }
-        if (next.length() > 0) {
-            addressBuilder.addLine(next.toString());
-        }
+        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
         CsvCell nameOfLocalityCell = parser.getRelationshipWithLocality();
         if (!nameOfLocalityCell.isEmpty()) {
             addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
         }
         CsvCell nameOfTownCell = parser.getRelationshipWithPostTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.addLine(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getRelationshipWithCounty();
         if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.addLine(nameOfCountyCell.getString(), nameOfCountyCell);
+            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
         }
         CsvCell fullPostCodeCell = parser.getRelationshipWithPostCode();
         if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.addLine(fullPostCodeCell.getString(), fullPostCodeCell);
+            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
         CsvCell relWithTelephone = parser.getRelationshipWithTelephone();
         if (!(relWithTelephone).isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, relWithTelephone);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
             contactPointBuilder.setValue(relWithTelephone.getString(), relWithTelephone);
         }
         CsvCell relWithWorkTelephone = parser.getRelationshipWithWorkTelephone();
         if (!(relWithWorkTelephone).isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK, relWithWorkTelephone);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
             contactPointBuilder.setValue(relWithWorkTelephone.getString(), relWithWorkTelephone);
         }
         CsvCell relWithMobileTelephone = parser.getRelationshipWithMobileTelephone();
         if (!(relWithWorkTelephone).isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE, relWithMobileTelephone);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
             contactPointBuilder.setValue(relWithMobileTelephone.getString(), relWithMobileTelephone);
         }
         CsvCell relationshipWithFax = parser.getRelationshipWithFax();
@@ -165,8 +145,15 @@ public class SRPatientRelationshipTransformer {
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
             contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
         }
-        // boolean mapIds = !patientBuilder.isIdMapped();
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(),mapIds,patientBuilder);
-        // Filing done by cache
+
+        CsvCell startDateCell = parser.getDateEvent();
+        if (!startDateCell.isEmpty()) {
+            contactBuilder.setStartDate(startDateCell.getDate(), startDateCell);
+        }
+
+        CsvCell endDateCell = parser.getDateEnded();
+        if (!endDateCell.isEmpty()) {
+            contactBuilder.setEndDate(endDateCell.getDate(), endDateCell);
+        }
     }
 }

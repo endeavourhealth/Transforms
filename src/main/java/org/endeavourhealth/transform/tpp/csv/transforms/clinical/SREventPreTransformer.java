@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 public class SREventPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SREventPreTransformer.class);
@@ -47,7 +46,7 @@ public class SREventPreTransformer {
 
         } finally {
             List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            AbstractCsvCallable.handleErrors(errors);
         }
     }
 
@@ -56,54 +55,38 @@ public class SREventPreTransformer {
                                  TppCsvHelper csvHelper,
                                  ThreadPool threadPool) throws Exception {
 
-        CsvCell consultationGuid = parser.getRowIdentifier();
-        CsvCell patientGuid = parser.getIDPatient();
-
-        String encounterSourceId = TppCsvHelper.createUniqueId(patientGuid, consultationGuid);
-
-        CsvCurrentState parserState = parser.getCurrentState();
-
-        LookupTask task = new LookupTask(encounterSourceId, fhirResourceFiler, csvHelper, parserState);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
+        CsvCell removedData = parser.getRemovedData();
+        if (removedData != null && removedData.getIntAsBoolean()) {
             return;
         }
 
-        //if we've had multiple errors, just throw the first one, since the first exception is always most relevant
-        ThreadPoolError first = errors.get(0);
-        LookupTask callable = (LookupTask)first.getCallable();
-        Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        CsvCell consultationGuid = parser.getRowIdentifier();
+        CsvCurrentState parserState = parser.getCurrentState();
+
+        LookupTask task = new LookupTask(parserState, consultationGuid, csvHelper);
+        List<ThreadPoolError> errors = threadPool.submit(task);
+        AbstractCsvCallable.handleErrors(errors);
     }
 
-    static class LookupTask implements Callable {
+    static class LookupTask extends AbstractCsvCallable {
 
-        private String encounterSourceId;
-        private FhirResourceFiler fhirResourceFiler;
+        private CsvCell encounterIdCell;
         private TppCsvHelper csvHelper;
-        private CsvCurrentState parserState;
 
-        public LookupTask(String encounterSourceId,
-                          FhirResourceFiler fhirResourceFiler,
-                          TppCsvHelper csvHelper,
-                          CsvCurrentState parserState) {
+        public LookupTask(CsvCurrentState parserState,
+                          CsvCell encounterIdCell,
+                          TppCsvHelper csvHelper) {
 
-            this.encounterSourceId = encounterSourceId;
-            this.fhirResourceFiler = fhirResourceFiler;
+            super(parserState);
+            this.encounterIdCell = encounterIdCell;
             this.csvHelper = csvHelper;
-            this.parserState = parserState;
         }
 
         @Override
         public Object call() throws Exception {
             try {
                 //carry over linked items from any previous instance of this Consultation
-                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter);
+                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterIdCell.getString(), ResourceType.Encounter);
                 if (previousVersion == null) {
                     //if this is the first time, then we'll have a null resource
                     return null;
@@ -117,7 +100,7 @@ public class SREventPreTransformer {
                 //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
                 List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
 
-                csvHelper.cacheConsultationPreviousLinkedResources(encounterSourceId, previousReferencesLocalIds);
+                csvHelper.cacheConsultationPreviousLinkedResources(encounterIdCell, previousReferencesLocalIds);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -125,10 +108,6 @@ public class SREventPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }
