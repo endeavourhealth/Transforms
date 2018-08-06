@@ -66,8 +66,6 @@ public class PatientResourceCache {
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
         }
 
-        LOG.trace("Finishing saving " + patientBuildersByPersonId.size() + " patients to the DB, clearing cache...");
-
         //clear down as everything has been saved
         patientBuildersByPersonId.clear();
     }

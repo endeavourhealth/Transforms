@@ -51,14 +51,14 @@ public abstract class HomertonCsvToFhirTransformer {
 
             // process the bulk patient file first if it exists in the batch, usually in the baseline folder
             PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENTSFULL", csvHelper), fhirResourceFiler, csvHelper);
-            //csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
+            csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+            //fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // process any incremental/delta patients
             PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper);
-            //csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
+            csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             // clinical pre-transformers
             DiagnosisPreTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
@@ -68,7 +68,7 @@ public abstract class HomertonCsvToFhirTransformer {
             // clinical transforms
             EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
 
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+            //fhirResourceFiler.waitUntilEverythingIsSaved();
 
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);

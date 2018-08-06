@@ -58,9 +58,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         //NOTE: Homerton patients are never deleted
 
         CsvCell millenniumPersonIdCell = parser.getPersonId();
-        //PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
-        PatientBuilder patientBuilder = new PatientBuilder();
-        patientBuilder.setId(millenniumPersonIdCell.toString());
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
+        //PatientBuilder patientBuilder = new PatientBuilder();
+        //patientBuilder.setId(millenniumPersonIdCell.toString());
 
         CsvCell nhsNumber = parser.getNHSNo();
         if (!nhsNumber.isEmpty()) {
@@ -157,12 +157,9 @@ public class PatientTransformer extends HomertonBasisTransformer {
         if (!csvHelper.isEmptyOrIsZero(ethnicityIdCell)) {
 
             CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityIdCell.getString());
-            if (codeRef == null) {
-                //TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
-                //        ethnicityIdCell.getLong(), parser.getEthnicGroupName().getString());
+            if (codeRef != null) {
 
-            } else {
-                String codeDesc = codeRef.getAliasNhsCdAlias();   //TODO - requested this from Homerton, commented out logging for now
+                String codeDesc = codeRef.getAliasNhsCdAlias();
                 if (!Strings.isNullOrEmpty(codeDesc)) {
                     EthnicCategory ethnicCategory = convertEthnicCategory(codeDesc);
                     patientBuilder.setEthnicity(ethnicCategory, ethnicityIdCell);
@@ -176,7 +173,6 @@ public class PatientTransformer extends HomertonBasisTransformer {
             //if this field is empty we should clear the value from the patient
             patientBuilder.setEthnicity(null);
         }
-
 
         // Date of birth
         CsvCell dobCell = parser.getDOB();
@@ -230,16 +226,14 @@ public class PatientTransformer extends HomertonBasisTransformer {
         CsvCell religionCell = parser.getReligionID();
         HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
-        //no need to save the resource now, as all patient resources are saved at the end of the Patient
+        //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
 
-        //csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
-        boolean performIdMapping = !patientBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), performIdMapping, patientBuilder);
+        csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
+
+        //boolean performIdMapping = !patientBuilder.isIdMapped();
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), performIdMapping, patientBuilder);
     }
 
-    /*
-     *
-     */
     public static Enumerations.AdministrativeGender convertGenderToFHIR(int gender) {
         if (gender == 1) {
             return Enumerations.AdministrativeGender.FEMALE;
