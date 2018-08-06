@@ -65,8 +65,12 @@ public class AppointmentFlagCache {
             if (tppMappingRef != null) {
                 String flagMapping = tppMappingRef.getMappedTerm();
                 if (!Strings.isNullOrEmpty(flagMapping)) {
-//TODO - this is wrong. What if an appointment has multiple flags? This will just overwrite them and keep the last. Flags should be stored in a new extension, not comments.
-                    appointmentBuilder.setComments(flagMapping);
+                    String comment = ((org.hl7.fhir.instance.model.Appointment) appointmentBuilder.getResource()).getComment();
+                    if (!Strings.isNullOrEmpty(comment) && !comment.contains(flagMapping)) {
+                        appointmentBuilder.setComments(comment + "," + flagMapping);
+                    } else {
+                        appointmentBuilder.setComments(flagMapping);
+                    }
                 }
             }
         }

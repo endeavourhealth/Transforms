@@ -46,7 +46,14 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
-        //TODO - doesn't the deleteData column need handling here?
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            // get previously filed resource for deletion
+            ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
+            if (referralRequestBuilder != null) {
+                csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
+            }
+            return;
+        }
 
         if (patientId.isEmpty()) {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",

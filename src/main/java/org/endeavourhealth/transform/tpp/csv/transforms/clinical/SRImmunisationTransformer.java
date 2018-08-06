@@ -173,10 +173,8 @@ public class SRImmunisationTransformer {
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (StringUtils.isNumeric(mappedTerm)) {
-//TODO - confirm that this is the right FHIR field for this content
                     immunizationBuilder.setProtocolSequenceNumber(Integer.parseInt(mappedTerm), vaccPart);
                 } else {
-//TODO - confirm that this is the right FHIR field for this content
                     immunizationBuilder.setProtocolDescription(mappedTerm, vaccPart);
                 }
             }
@@ -187,7 +185,6 @@ public class SRImmunisationTransformer {
             TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong(), parser);
             if (tppImmunisationContent != null) {
                 String contentName = tppImmunisationContent.getName();
-//TODO - confirm that this is the right FHIR field for this content
                 immunizationBuilder.setProtocolSeriesName(contentName, immContent);
             }
         }
