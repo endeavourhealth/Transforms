@@ -157,14 +157,22 @@ public class SREventTransformer {
             }
         }
 
-        CsvCell incompleteCell = parser.getEventIncomplete();
-        if (incompleteCell.getBoolean()) {
-            encounterBuilder.setIncomplete(true, incompleteCell);
+        CsvCell contactEventLocationCell = parser.getContactEventLocation();
+        if (!contactEventLocationCell.isEmpty() && contactEventLocationCell.getInt() != -1) {
+            //TODO - verify that this cell IS a number and work out how that maps to our Location resources
+            Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, contactEventLocationCell.getString());
+            encounterBuilder.addLocation(locationReference, branchIdCell);
         }
 
-        //TODO - the following columns need transforming:
-        //getContactEventLocation()
+        CsvCell eventIncomplete = parser.getEventIncomplete();
+        if (!eventIncomplete.getBoolean()) {
+            encounterBuilder.setIncomplete(true, eventIncomplete);
+        }
+
+        //TODO - the following column need transforming:
+        // Cannot find any clinic related information in Encounter - FG
         //getClinicalEvent()
+
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
