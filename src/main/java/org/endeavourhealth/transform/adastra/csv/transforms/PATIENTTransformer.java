@@ -88,9 +88,9 @@ public class PATIENTTransformer {
             if (!nhsNumberTraceStatus.isEmpty()) {
 
                 if (nhsNumberTraceStatus.getString().equalsIgnoreCase("V")) {
-                    patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_AND_VERIFIED);
+                    patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_AND_VERIFIED, nhsNumberTraceStatus);
                 } else {
-                    patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED);
+                    patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED, nhsNumberTraceStatus);
                 }
             }
         } else {
@@ -192,7 +192,7 @@ public class PATIENTTransformer {
 
         CsvCell ethnicity = parser.getEthnicity();
         if (!ethnicity.isEmpty()) {
-            patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()));
+            patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()), ethnicity);
         }
 
         Date registrationEndDate = episodeBuilder.getRegistrationEndDate();

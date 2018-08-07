@@ -43,6 +43,8 @@ public class PRESCRIPTIONSPreTransformer {
 
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
+        CsvCell drugName = parser.getDrugName();
+        CsvCell quantity = parser.getQuanity();
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (patientId.isEmpty()) {
@@ -51,10 +53,13 @@ public class PRESCRIPTIONSPreTransformer {
             return;
         }
 
-        //create a unique drug Id
+        String drugNameFirstPart = drugName.getString().substring(0, drugName.getString().indexOf(" "));
+        String drugQty = quantity.getString();
+
+        //create a unique Id for the drug based on case : consultation : drugName + qty
         String drugId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + patientId.getString();
+                + ":" + drugNameFirstPart.concat(drugQty);
 
         //linked consultation encounter record
         if (!consultationId.isEmpty()) {

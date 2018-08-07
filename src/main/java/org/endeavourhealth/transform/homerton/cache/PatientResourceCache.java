@@ -32,7 +32,7 @@ public class PatientResourceCache {
         if (patient == null) {
             //if the patient doesn't exist yet, create a new one
             patientBuilder = new PatientBuilder();
-            patientBuilder.setId(personId.toString());
+            patientBuilder.setId(personId.toString(), milleniumPersonIdCell);
 
         } else {
 

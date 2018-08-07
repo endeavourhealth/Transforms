@@ -69,14 +69,14 @@ public class AllergyTransformer extends HomertonBasisTransformer {
 
         CsvCell allergyDateCell = parser.getAllergyDate();
         if (!allergyDateCell.isEmpty()) {
-            DateTimeType onsetDate = new DateTimeType(allergyDateCell.getDate());
+            DateTimeType onsetDate = new DateTimeType(allergyDateCell.getDateTime());
             allergyIntoleranceBuilder.setOnsetDate(onsetDate, allergyDateCell);
         }
 
-        CsvCell recordedDate = parser.getRecordedDate();
-        if (!recordedDate.isEmpty()) {
+        CsvCell recordedDateCell = parser.getRecordedDate();
+        if (!recordedDateCell.isEmpty()) {
 
-            allergyIntoleranceBuilder.setRecordedDate(recordedDate.getDateTime(), recordedDate);
+            allergyIntoleranceBuilder.setRecordedDate(recordedDateCell.getDateTime(), recordedDateCell);
         }
 
         // TODO - need personnel data to map

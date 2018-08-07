@@ -51,19 +51,25 @@ public class PRESCRIPTIONSTransformer {
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
 
-        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
+        CsvCell drugName = parser.getDrugName();
+        String drugNameFirstPart = drugName.getString().substring(0, drugName.getString().indexOf(" "));
 
+        CsvCell quantity = parser.getQuanity();
+        String drugQty = quantity.getString();
+
+        //create a unique Id for the drug based on case : consultation : drugName + qty
         String drugId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + patientId.getString();
+                + ":" + drugNameFirstPart.concat(drugQty);
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
-        medicationStatementBuilder.setId(drugId, caseId, consultationId, patientId);
+        medicationStatementBuilder.setId(drugId, caseId, consultationId);
 
+        CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
             medicationStatementBuilder.setPatient(csvHelper.createPatientReference(patientId));
         } else {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for CaseId: {},  file: {}",
+            TransformWarnings.log(LOG, parser, "No Patient Id in record for CaseId: {},  file: {}",
                     caseId.getString(), parser.getFilePath());
             return;
         }
@@ -79,13 +85,11 @@ public class PRESCRIPTIONSTransformer {
                 = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
 
         // the drugs are not be coded, but has a name, so set as text
-        CsvCell drugName = parser.getDrugName();
         if (!drugName.isEmpty()) {
             codeableConceptBuilder.setText(drugName.getString(), drugName);
         }
 
         // quantity and preparation (ml, gram, tablet etc.)
-        CsvCell quantity = parser.getQuanity();
         if (!quantity.isEmpty()) {
 
             medicationStatementBuilder.setQuantityValue(quantity.getDouble(), quantity);
