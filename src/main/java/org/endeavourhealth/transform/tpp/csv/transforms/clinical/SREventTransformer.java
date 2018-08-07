@@ -159,9 +159,16 @@ public class SREventTransformer {
 
         CsvCell contactEventLocationCell = parser.getContactEventLocation();
         if (!contactEventLocationCell.isEmpty() && contactEventLocationCell.getInt() != -1) {
-            //TODO - verify that this cell IS a number and work out how that maps to our Location resources
-            Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, contactEventLocationCell.getString());
-            encounterBuilder.addLocation(locationReference, branchIdCell);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactEventLocationCell, parser);
+            if (tppConfigListOption != null) {
+                String contactEventLocation = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(contactEventLocation)) {
+                    CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder,
+                            CodeableConceptBuilder.Tag.Encounter_Location_Type);
+                    //possible values Telephone, Home, Surgery
+                    codeableConceptbuilder.setText(contactEventLocation);
+                }
+            }
         }
 
         CsvCell eventIncomplete = parser.getEventIncomplete();
