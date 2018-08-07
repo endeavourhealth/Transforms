@@ -6,8 +6,6 @@ import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
-import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -61,16 +59,16 @@ public class PATIENTTransformer {
             return;
         }
 
-        //has the patient already been created within this session?
-        boolean patientCreatedInSession = PatientResourceCache.patientInCache(patientId);
+        //has the patient already been created within this session - check the cache before it is removed?
+        boolean patientCreatedInSession = csvHelper.getPatientCache().patientInCache(patientId);
 
         //get EpisodeofCare already populated from preceeding CASE transform
         EpisodeOfCareBuilder episodeBuilder
-                = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
+                = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
         //get or create Patient Resource builder.  If two patients in same file, first already created, so retrieve from cache
         PatientBuilder patientBuilder
-                = PatientResourceCache.getOrCreatePatientBuilder(patientId, csvHelper, fhirResourceFiler);
+                = csvHelper.getPatientCache().getOrCreatePatientBuilder(patientId, csvHelper, fhirResourceFiler);
 
         CsvCell nhsNumber = parser.getNHSNumber();
         if (!nhsNumber.isEmpty()) {
@@ -226,11 +224,18 @@ public class PATIENTTransformer {
 
             boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
+
+            // return the builders back to their caches
+            csvHelper.getPatientCache().returnPatientBuilder(patientId, patientBuilder);
+            csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
         } else {
             //patient already saved during session, so just file the new episode
             //determine if episode already has mapped Id, i.e. retrieved from DB
             boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
+
+            // return the builder back to the cache
+            csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
         }
     }
 

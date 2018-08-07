@@ -78,4 +78,11 @@ public class EncounterResourceCache {
         encounterBuildersByEncounterId.removeFromCache(encounterId);
     }
 
+    public void cleanUpResourceCache() {
+        try {
+            encounterBuildersByEncounterId.clear();
+        } catch (Exception ex) {
+            LOG.error("Error cleaning up cache", ex);
+        }
+    }
 }

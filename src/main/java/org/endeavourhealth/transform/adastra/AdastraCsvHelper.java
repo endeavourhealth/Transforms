@@ -7,6 +7,9 @@ import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
+import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -36,6 +39,10 @@ public class AdastraCsvHelper {
     private Map<String, CsvCell> consultationDateMap = new HashMap<>();
     private Map<String, CsvCell> caseCaseNoMap = new HashMap<>();
     private Map<String, String> caseOutcomeMap = new HashMap<>();
+
+    private PatientResourceCache patientCache = new PatientResourceCache();
+    private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
+    private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
@@ -89,6 +96,12 @@ public class AdastraCsvHelper {
     public Service getService (UUID id) throws Exception {
         return serviceRepository.getById(id);
     }
+
+    public PatientResourceCache getPatientCache() { return patientCache; }
+
+    public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
+
+    public EpisodeOfCareResourceCache getEpisodeOfCareCache() { return episodeOfCareCache; }
 
     public Reference createEncounterReference(CsvCell encounterGuid) {
         return ReferenceHelper.createReference(ResourceType.Encounter, encounterGuid.getString());

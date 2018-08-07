@@ -9,7 +9,6 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCodeableConceptHelper;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homerton.schema.PatientTable;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -48,7 +47,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         // first up, get or create the Homerton organisation
         UUID serviceId = parser.getServiceId();
         OrganizationBuilder organizationBuilder
-                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(serviceId, csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
                     serviceId.toString());
@@ -59,8 +58,6 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         CsvCell millenniumPersonIdCell = parser.getPersonId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(millenniumPersonIdCell, csvHelper);
-        //PatientBuilder patientBuilder = new PatientBuilder();
-        //patientBuilder.setId(millenniumPersonIdCell.toString());
 
         CsvCell nhsNumber = parser.getNHSNo();
         if (!nhsNumber.isEmpty()) {
@@ -96,13 +93,14 @@ public class PatientTransformer extends HomertonBasisTransformer {
 
         patientBuilder.setActive(true);
 
-        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
         // if patient already ID mapped, get the mapped ID for the org
+        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
         boolean isResourceMapped = patientBuilder.isIdMapped();
         if (isResourceMapped) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
         patientBuilder.setManagingOrganisation(organisationReference);
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
 
         CsvCell firstNameCell = parser.getFirstname();
         CsvCell lastNameCell = parser.getSurname();
@@ -227,11 +225,8 @@ public class PatientTransformer extends HomertonBasisTransformer {
         HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
-
+        //here we simply return the patient builder to the cache
         csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
-
-        //boolean performIdMapping = !patientBuilder.isIdMapped();
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), performIdMapping, patientBuilder);
     }
 
     public static Enumerations.AdministrativeGender convertGenderToFHIR(int gender) {

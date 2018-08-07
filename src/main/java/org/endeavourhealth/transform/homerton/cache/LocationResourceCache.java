@@ -75,8 +75,6 @@ public class LocationResourceCache {
             locationBuilder = new LocationBuilder(location);
         }
 
-        locationResourceByLocationId.addToCache(locationID, locationBuilder);
-
         return locationBuilder;
     }
 
@@ -92,6 +90,16 @@ public class LocationResourceCache {
             return LocationPhysicalType.BUILDING;
 
         return null;
+    }
+
+    public void returnLocationBuilder(CsvCell locationIdCell, LocationBuilder locationBuilder) throws Exception {
+        Long locationID = locationIdCell.getLong();
+        locationResourceByLocationId.addToCache(locationID, locationBuilder);
+    }
+
+    public void removeLocationFromCache(CsvCell locationIdCell) throws Exception {
+        Long locationID = locationIdCell.getLong();
+        locationResourceByLocationId.removeFromCache(locationID);
     }
 
     public void cleanUpResourceCache() {

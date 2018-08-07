@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homerton.HomertonCsvHelper;
-import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homerton.schema.EncounterTable;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Identifier;
@@ -101,7 +100,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // Organisation, get the Homerton organisation (already created/cached in Patient)
         UUID serviceId = parser.getServiceId();
         OrganizationBuilder organizationBuilder
-                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(serviceId, csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
             TransformWarnings.log(LOG, parser, "Error retrieving Organization resource for ServiceId: {}",
                     serviceId.toString());
@@ -111,16 +110,19 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // the organisation reference, i.e. Homerton University Hospital
         Reference orgReference = csvHelper.createOrganisationReference(serviceId.toString());
         encounterBuilder.setServiceProvider(orgReference);
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
 
         // the location information is in the encounter data. create a reference and FHIR instance if not already exists
         CsvCell locationIDCell = parser.getLocationID();
         if (!HomertonCsvHelper.isEmptyOrIsZero(locationIDCell)) {
 
             // create or retrieve existing location resources created from the Encounter data
-            csvHelper.getLocationCache().getOrCreateLocationBuilder(locationIDCell, csvHelper, fhirResourceFiler, parser);
+            LocationBuilder locationBuilder =
+                    csvHelper.getLocationCache().getOrCreateLocationBuilder(locationIDCell, csvHelper, fhirResourceFiler, parser);
 
             Reference locationReference = csvHelper.createLocationReference(locationIDCell.getString());
             encounterBuilder.addLocation(locationReference, locationIDCell);
+            csvHelper.getLocationCache().returnLocationBuilder(locationIDCell, locationBuilder);
         }
 
         // encounter start date and time

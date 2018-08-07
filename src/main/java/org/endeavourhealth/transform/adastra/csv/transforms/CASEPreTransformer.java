@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.adastra.csv.transforms;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
-import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASE;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -50,12 +49,13 @@ public class CASEPreTransformer {
         // first up, create the OOH organisation
         UUID serviceId = parser.getServiceId();
         OrganizationBuilder organizationBuilder
-                = OrganisationResourceCache.getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
                     serviceId.toString());
             return;
         }
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
 
         //simply cache the case Patient and CaseNo references here for use in Consultation, Clinical Code,
         //Prescription and Notes transforms

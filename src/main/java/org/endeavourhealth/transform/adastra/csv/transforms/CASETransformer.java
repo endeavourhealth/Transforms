@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.adastra.csv.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
-import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASE;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -53,7 +52,7 @@ public class CASETransformer {
         CsvCell caseId = parser.getCaseId();
 
         EpisodeOfCareBuilder episodeBuilder
-                = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
+                = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
         CsvCell caseNo = parser.getCaseNo();
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
@@ -93,5 +92,8 @@ public class CASETransformer {
         if (!priority.isEmpty()) {
             episodeBuilder.setPriority (priority.getString(), priority);
         }
+
+        // return the builder back to the cache
+        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
     }
 }

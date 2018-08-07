@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory;
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    //private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
-
     private ResourceCache<Long, PatientBuilder> patientBuildersByPersonId = new ResourceCache<>();
-
 
     public PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, HomertonCsvHelper csvHelper) throws Exception {
 

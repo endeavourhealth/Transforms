@@ -22,6 +22,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.homerton.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.homerton.cache.LocationResourceCache;
+import org.endeavourhealth.transform.homerton.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homerton.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -54,6 +55,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EncounterResourceCache encounterCache = new EncounterResourceCache();
     private LocationResourceCache locationCache = new LocationResourceCache();
+    private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
 
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -99,6 +101,8 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
     public EncounterResourceCache getEncounterCache() { return encounterCache; }
 
     public LocationResourceCache getLocationCache() { return locationCache; }
+
+    public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
 
     public Service getService (UUID id) throws Exception { return serviceRepository.getById(id);}
 

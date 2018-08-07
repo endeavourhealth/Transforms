@@ -54,7 +54,7 @@ public abstract class HomertonCsvToFhirTransformer {
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
-            //fhirResourceFiler.waitUntilEverythingIsSaved();
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // process any incremental/delta patients
             PatientTransformer.transform(createParsers(fileMap, parserMap, "PATIENT", csvHelper), fhirResourceFiler, csvHelper);
@@ -67,9 +67,6 @@ public abstract class HomertonCsvToFhirTransformer {
 
             // clinical transforms
             EncounterTransformer.transform(createParsers(fileMap, parserMap, "ENCOUNTER", csvHelper), fhirResourceFiler, csvHelper);
-
-            //fhirResourceFiler.waitUntilEverythingIsSaved();
-
             DiagnosisTransformer.transform(createParsers(fileMap, parserMap, "DIAGNOSIS", csvHelper), fhirResourceFiler, csvHelper);
             ProcedureTransformer.transform(createParsers(fileMap, parserMap, "PROCEDURE", csvHelper), fhirResourceFiler, csvHelper);
             ProblemTransformer.transform(createParsers(fileMap, parserMap, "PROBLEM", csvHelper), fhirResourceFiler, csvHelper);
@@ -85,6 +82,8 @@ public abstract class HomertonCsvToFhirTransformer {
             //if we had any exception that caused us to bomb out of the transform, we'll have
             //potentially cached resources in the DB, so tidy them up now
             csvHelper.getPatientCache().cleanUpResourceCache();
+            csvHelper.getEncounterCache().cleanUpResourceCache();
+            csvHelper.getOrganisationCache().cleanUpResourceCache();
             csvHelper.getLocationCache().cleanUpResourceCache();
         }
     }

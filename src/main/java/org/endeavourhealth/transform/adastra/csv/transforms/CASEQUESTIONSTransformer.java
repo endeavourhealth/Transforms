@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.adastra.csv.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
-import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.csv.schema.CASEQUESTIONS;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -47,7 +46,7 @@ public class CASEQUESTIONSTransformer {
         CsvCell caseId = parser.getCaseId();
 
         EpisodeOfCareBuilder episodeBuilder
-                = EpisodeOfCareResourceCache.getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
+                = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
         CsvCell questionSetName = parser.getQuestionSetName();
         CsvCell question = parser.getQuestion();
@@ -82,5 +81,8 @@ public class CASEQUESTIONSTransformer {
                 csvHelper.cacheCaseOutcome(caseId.getString(), answerOutcomeText);
             }
         }
+
+        // return the builder back to the cache
+        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
     }
 }
