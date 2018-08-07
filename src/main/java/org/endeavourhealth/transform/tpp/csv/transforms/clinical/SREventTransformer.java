@@ -90,7 +90,7 @@ public class SREventTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty()) {
+        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong()> 0) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
             encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneBy);
         }

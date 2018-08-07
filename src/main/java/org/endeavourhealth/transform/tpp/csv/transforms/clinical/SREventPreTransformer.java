@@ -95,7 +95,7 @@ public class SREventPreTransformer {
             try {
                 //we don't transform Practitioners until we need them, and these ensure it happens
                 csvHelper.ensurePractitionerIsTransformedForProfileId(profileIdRecordedByCell);
-                csvHelper.ensurePractitionerIsTransformedForStaffId(staffMemberIdDoneByCell);
+                //csvHelper.ensurePractitionerIsTransformedForStaffId(staffMemberIdDoneByCell);
 
                 //carry over linked items from any previous instance of this Consultation
                 Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterIdCell.getString(), ResourceType.Encounter);
