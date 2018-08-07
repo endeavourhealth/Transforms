@@ -123,7 +123,7 @@ public class DrugCodeTransformer {
 
             try {
                 //save the mapping batch
-                mappingDal.save(mappings);
+                mappingDal.saveCodeMappings(mappings);
 
             } catch (Throwable t) {
                 String msg = "Error saving drug code records for code IDs ";

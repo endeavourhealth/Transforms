@@ -71,7 +71,7 @@ public class SROrganisationBranchTransformer {
         if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
                 (deleted != null && !deleted.isEmpty() && deleted.getBoolean())) {
 
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
+            adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
@@ -113,7 +113,7 @@ public class SROrganisationBranchTransformer {
             addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(locationBuilder);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }

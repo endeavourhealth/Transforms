@@ -9,11 +9,14 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminRes
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -26,6 +29,9 @@ public class EmisAdminCacheFiler {
     private String dataSharingAgreementGuid = null;
     private ThreadPool threadPool = null;
 
+    private List<EmisAdminResourceCache> resourcesToSave = new ArrayList<>();
+    private List<EmisAdminResourceCache> resourcesToDelete = new ArrayList<>();
+
     public EmisAdminCacheFiler(String dataSharingAgreementGuid) throws Exception {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
 
@@ -34,7 +40,37 @@ public class EmisAdminCacheFiler {
     }
 
     public void close() throws Exception {
+
+        if (!this.resourcesToSave.isEmpty()) {
+            runPendingSaves();
+        }
+        if (!this.resourcesToDelete.isEmpty()) {
+            runPendingDeletes();
+        }
+
         List<ThreadPoolError> errors = threadPool.waitAndStop();
+        handleErrors(errors);
+    }
+
+    public EmisAdminResourceCache getResourceFromCache(ResourceType resourceType, String sourceId) throws Exception {
+        return mappingRepository.getAdminResource(this.dataSharingAgreementGuid, resourceType, sourceId);
+    }
+
+    private void runPendingSaves() throws Exception {
+        List<EmisAdminResourceCache> copy = new ArrayList<>(resourcesToSave);
+        resourcesToSave.clear();
+
+        SaveAdminTask task = new SaveAdminTask(copy, false);
+        List<ThreadPoolError> errors = threadPool.submit(task);
+        handleErrors(errors);
+    }
+
+    private void runPendingDeletes() throws Exception {
+        List<EmisAdminResourceCache> copy = new ArrayList<>(resourcesToDelete);
+        resourcesToDelete.clear();
+
+        SaveAdminTask task = new SaveAdminTask(copy, true);
+        List<ThreadPoolError> errors = threadPool.submit(task);
         handleErrors(errors);
     }
 
@@ -43,7 +79,7 @@ public class EmisAdminCacheFiler {
      * table so that when new organisations are added to the extract, we can populate the db with
      * all those resources for the new org
      */
-    public void saveAdminResourceToCache(CsvCurrentState parserState, ResourceBuilderBase resourceBuilder) throws Exception {
+    public void saveAdminResourceToCache(ResourceBuilderBase resourceBuilder) throws Exception {
 
         Resource fhirResource = resourceBuilder.getResource();
 
@@ -54,12 +90,14 @@ public class EmisAdminCacheFiler {
         cache.setResourceData(parser.composeString(fhirResource));
         cache.setAudit(resourceBuilder.getAuditWrapper());
 
-        SaveAdminTask task = new SaveAdminTask(cache, false, parserState);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
+        this.resourcesToSave.add(cache);
+        if (this.resourcesToSave.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
+            runPendingSaves();
+        }
     }
 
-    public void deleteAdminResourceFromCache(CsvCurrentState parserState, ResourceBuilderBase resourceBuilder) throws Exception {
+
+    public void deleteAdminResourceFromCache(ResourceBuilderBase resourceBuilder) throws Exception {
 
         Resource fhirResource = resourceBuilder.getResource();
 
@@ -68,9 +106,10 @@ public class EmisAdminCacheFiler {
         cache.setResourceType(fhirResource.getResourceType().toString());
         cache.setEmisGuid(fhirResource.getId());
 
-        SaveAdminTask task = new SaveAdminTask(cache, true, parserState);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
+        this.resourcesToDelete.add(cache);
+        if (this.resourcesToDelete.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
+            runPendingDeletes();
+        }
     }
 
     private void handleErrors(List<ThreadPoolError> errors) throws Exception {
@@ -80,32 +119,29 @@ public class EmisAdminCacheFiler {
 
         //if we've had multiple errors, just throw the first one, since the first exception is always most relevant
         ThreadPoolError first = errors.get(0);
-        SaveAdminTask callable = (SaveAdminTask)first.getCallable();
         Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        throw new TransformException("", exception);
     }
 
     static class SaveAdminTask implements Callable {
 
-        private EmisAdminResourceCache cacheObj;
+        private List<EmisAdminResourceCache> list;
         private boolean delete;
         private CsvCurrentState parserState;
 
-        public SaveAdminTask(EmisAdminResourceCache cacheObj, boolean delete, CsvCurrentState parserState) {
-            this.cacheObj = cacheObj;
+        public SaveAdminTask(List<EmisAdminResourceCache> list, boolean delete) {
+            this.list = list;
             this.delete = delete;
-            this.parserState = parserState;
         }
 
         @Override
         public Object call() throws Exception {
             try {
                 if (delete) {
-                    mappingRepository.delete(cacheObj);
+                    mappingRepository.deleteAdminResources(list);
 
                 } else {
-                    mappingRepository.save(cacheObj);
+                    mappingRepository.saveAdminResources(list);
                 }
 
             } catch (Throwable t) {
@@ -114,10 +150,6 @@ public class EmisAdminCacheFiler {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

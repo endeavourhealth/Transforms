@@ -72,7 +72,7 @@ public class SRCcgTransformer {
         if (obsoleteCell != null //note this cell wasn't present in all versions, so need to check for null cell
                 && obsoleteCell.getBoolean()) {
 
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
+            adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
@@ -140,7 +140,7 @@ public class SRCcgTransformer {
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
 
         //save to admin cache too
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(locationBuilder);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
@@ -158,7 +158,7 @@ public class SRCcgTransformer {
         CsvCell obsoleteCell = parser.getRemovedData();
         if (obsoleteCell != null && obsoleteCell.getBoolean()) {
 
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), organizationBuilder);
+            adminCacheFiler.deleteAdminResourceFromCache(organizationBuilder);
 
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
@@ -224,7 +224,7 @@ public class SRCcgTransformer {
         organizationBuilder.setMainLocation(locationReference);
 
         //save to admin cache too
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), organizationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(organizationBuilder);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }

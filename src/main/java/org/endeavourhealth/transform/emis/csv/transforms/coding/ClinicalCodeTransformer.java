@@ -159,7 +159,7 @@ public abstract class ClinicalCodeTransformer {
                 }
 
                 //and save the mapping batch
-                mappingDal.save(mappings);
+                mappingDal.saveCodeMappings(mappings);
 
             } catch (Throwable t) {
                 String msg = "Error saving clinical code records for code IDs ";

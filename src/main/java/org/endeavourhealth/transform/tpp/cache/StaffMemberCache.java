@@ -2,33 +2,43 @@ package org.endeavourhealth.transform.tpp.cache;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.StaffMemberCacheObj;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StaffMemberCache {
     private static final Logger LOG = LoggerFactory.getLogger(StaffMemberCache.class);
 
     private HashMap<Long, StaffMemberCacheObj> cache = new HashMap<>();
     private Set<Long> staffProfileIdsProcessed = new HashSet<>();
+    private String cachedOdsCode = null;
+    private Set<Long> staffProfileIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //this gives us a concurrent hash set
 
     public void addStaffMemberObj(CsvCell staffMemberIdCell, StaffMemberCacheObj obj) {
         Long key = staffMemberIdCell.getLong();
@@ -46,7 +56,13 @@ public class StaffMemberCache {
 
     public void processRemainingStaffMembers(TppCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
+        if (cache.isEmpty()) {
+            return;
+        }
+
         InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+
+        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
 
         for (Long staffMemberId: cache.keySet()) {
             StaffMemberCacheObj cachedStaff = cache.get(staffMemberId);
@@ -61,21 +77,46 @@ public class StaffMemberCache {
                     continue;
                 }
 
-                Practitioner practitioner = (Practitioner)csvHelper.retrieveResource("" + profileId, ResourceType.Practitioner);
-
-                //if we've not transformed this practitioner before, because they're not relevant to our data, then skip it
-                if (practitioner == null) {
+                //retrieve the practitioner from the admin cache, so it's not in its ID mapped state, which
+                //allows us to make changes and then save back to the admin cache
+                EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, "" + profileId);
+                if (adminCacheResource == null) {
                     continue;
                 }
 
-                PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner);
+                String json = adminCacheResource.getResourceData();
+                Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(json);
+                ResourceFieldMappingAudit audit = adminCacheResource.getAudit();
+
+                PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner, audit);
 
                 //update the staff member details
                 addOrUpdatePractitionerDetails(practitionerBuilder, cachedStaff, csvHelper);
+                adminCacheFiler.saveAdminResourceToCache(practitionerBuilder);
 
-                fhirResourceFiler.saveAdminResource(null, false, practitionerBuilder);
+                if (shouldSavePractitioner(practitionerBuilder, csvHelper)) {
+                    fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
+                }
             }
         }
+
+        //we must save any past practitioners that we didn't save to our EHR DB, but now are referred to
+        for (Long profileId: staffProfileIdsThatMustBeTransformed) {
+
+            EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, "" + profileId);
+            if (adminCacheResource == null) {
+                throw new TransformException("No admin cache record found for Practitioner " + profileId);
+            }
+
+            String json = adminCacheResource.getResourceData();
+            Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(json);
+            ResourceFieldMappingAudit audit = adminCacheResource.getAudit();
+
+            PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner, audit);
+            fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
+        }
+
+        adminCacheFiler.close();
     }
 
     public static void addOrUpdatePractitionerDetails(PractitionerBuilder practitionerBuilder, StaffMemberCacheObj cachedStaff, TppCsvHelper csvHelper) throws Exception {
@@ -136,10 +177,71 @@ public class StaffMemberCache {
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
             case "NMC":
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
+            case "GDP ID": //general dental practitioner
+                return FhirIdentifierUri.IDENTIFIER_SYSTEM_GDP_NUMBER;
 
             default:
                 TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
                 return null;
         }
     }
+
+
+
+
+    public void ensurePractitionerIsTransformedForProfileId(CsvCell profileIdRecordedByCell, TppCsvHelper csvHelper) throws Exception {
+
+        //if we have an ID->UUID map for for the practitioner, then we've already transformed the practitioner, so are good
+        UUID uuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Practitioner, profileIdRecordedByCell.getString());
+        if (uuid != null) {
+            return;
+        }
+
+        //if we don't have a mapping, then we've never transformed the practitioner, so need to do it now
+        this.staffProfileIdsThatMustBeTransformed.add(profileIdRecordedByCell.getLong());
+    }
+
+    public boolean shouldSavePractitioner(PractitionerBuilder practitionerBuilder, TppCsvHelper csvHelper) throws Exception {
+
+        //this only works on non-ID mapped resources
+        if (practitionerBuilder.isIdMapped()) {
+            throw new TransformException("Need non ID-mapped resource");
+        }
+
+        //if we have an existing ID->UUID map for for the practitioner, then we've already transformed the practitioner, so want to continue
+        String profileId = practitionerBuilder.getResourceId();
+        UUID uuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Practitioner, profileId);
+        if (uuid != null) {
+            return true;
+        }
+
+        //if we've found a record that refers to this staff member, then we want to transform it
+        boolean mustTransform = this.staffProfileIdsThatMustBeTransformed.remove(Long.valueOf(profileId));
+        if (mustTransform) {
+            return true;
+        }
+
+        //if the practitioner is for our own org, then we always want to transform it
+        if (this.cachedOdsCode == null) {
+            ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+            Service service = serviceDal.getById(csvHelper.getServiceId());
+            this.cachedOdsCode = service.getLocalId();
+        }
+
+        Practitioner practitioner = (Practitioner)practitionerBuilder.getResource();
+        if (practitioner.hasPractitionerRole()) {
+            Practitioner.PractitionerPractitionerRoleComponent role = practitioner.getPractitionerRole().get(0);
+            if (role.hasManagingOrganization()) {
+                Reference orgReference = role.getManagingOrganization();
+                String orgOdsCode = ReferenceHelper.getReferenceId(orgReference);
+
+                if (orgOdsCode.equalsIgnoreCase(cachedOdsCode)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 }

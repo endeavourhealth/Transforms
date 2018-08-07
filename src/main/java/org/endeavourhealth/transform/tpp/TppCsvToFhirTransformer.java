@@ -329,7 +329,11 @@ public abstract class TppCsvToFhirTransformer {
         SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just saves the profile->staff member mappings
+        //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
+        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
         csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
@@ -355,15 +359,12 @@ public abstract class TppCsvToFhirTransformer {
         SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting clinical transforms");
-        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
         SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);

@@ -2,6 +2,9 @@ package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -69,22 +72,21 @@ public class SRStaffMemberProfileTransformer {
         //and we can get one record updated without the other(s). So we need to re-retrieve our existing
         //Practitioner because we don't want to lose anything already on it.
         PractitionerBuilder practitionerBuilder = null;
-//TODO - how do we store in the admin cache? This resource is potentially already ID mapped!!
-//TODO - don't forget to apply the admin resource cache when first doing the transform
-        Practitioner practitioner = (Practitioner) csvHelper.retrieveResource(profileIdCell.getString(), ResourceType.Practitioner);
-        if (practitioner == null) {
 
-            //if we're not interested in this practitioner, then skip it
-            if (!csvHelper.shouldTransformNewPractitioner(orgId)) {
-                return;
-            }
-
+        //rather than retrieve the ID mapped instance of the resource, retrieve the resource from the admin resource cache,
+        //which gives us a non-ID mapped version to work with. This then lets us easily save our changes back to the admin resource cache
+        EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, profileIdCell.getString());
+        if (adminCacheResource == null) {
             practitionerBuilder = new PractitionerBuilder();
             practitionerBuilder.setId(profileIdCell.getString(), profileIdCell);
             practitionerBuilder.setActive(true); //only ever set active to true here, as there are several places this can be set to false
 
         } else {
-            practitionerBuilder = new PractitionerBuilder(practitioner);
+            String json = adminCacheResource.getResourceData();
+            Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(json);
+            ResourceFieldMappingAudit audit = adminCacheResource.getAudit();
+
+            practitionerBuilder = new PractitionerBuilder(practitioner, audit);
         }
 
         CsvCell removedDataCell = parser.getRemovedData();
@@ -108,12 +110,7 @@ public class SRStaffMemberProfileTransformer {
             // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
             if (!orgId.isEmpty()) {
                 Reference organisationReference = csvHelper.createOrganisationReference(orgId.getString());
-
-                //this function is used for adding profiles to new and existing practitioners, so we need to convert if already mapped
-                if (practitionerBuilder.isIdMapped()) {
-                    organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
-                }
-
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
                 roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
             }
 
@@ -167,7 +164,11 @@ public class SRStaffMemberProfileTransformer {
             StaffMemberCache.addOrUpdatePractitionerDetails(practitionerBuilder, cachedStaff, csvHelper);
         }
 
-        boolean mapIds = !practitionerBuilder.isIdMapped();
-        fhirResourceFiler.saveAdminResource(null, mapIds, practitionerBuilder);
+        adminCacheFiler.saveAdminResourceToCache(practitionerBuilder);
+
+        //if we're not interested in this practitioner, then don't save to the main DB
+        if (csvHelper.getStaffMemberCache().shouldSavePractitioner(practitionerBuilder, csvHelper)) {
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
+        }
     }
 }

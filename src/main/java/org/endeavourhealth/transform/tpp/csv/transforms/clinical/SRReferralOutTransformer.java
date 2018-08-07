@@ -286,7 +286,7 @@ public class SRReferralOutTransformer {
         }
     }
 
-    private static Boolean recipientIsPerson(CsvCell recipientTypeCell, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
+    public static Boolean recipientIsPerson(CsvCell recipientTypeCell, TppCsvHelper csvHelper, AbstractCsvParser parser) throws Exception {
 
         TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recipientTypeCell);
         if (tppMappingRef == null) {

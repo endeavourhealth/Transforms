@@ -109,18 +109,6 @@ public class SREventTransformer {
 
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-        CsvCell contactTypeCell = parser.getContactMethod();
-        if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell, parser);
-            if (tppConfigListOption != null) {
-                String contactType = tppConfigListOption.getListOptionName();
-                if (!Strings.isNullOrEmpty(contactType)) {
-                    CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-                    codeableConceptbuilder.setText(contactType);
-                }
-            }
-        }
-
         CsvCell visitOrg = parser.getIDOrganisation();
         if (!visitOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(visitOrg);
@@ -163,10 +151,9 @@ public class SREventTransformer {
             if (tppConfigListOption != null) {
                 String contactEventLocation = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactEventLocation)) {
-                    CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder,
-                            CodeableConceptBuilder.Tag.Encounter_Location_Type);
-                    //possible values Telephone, Home, Surgery
-                    codeableConceptbuilder.setText(contactEventLocation);
+                    //possible values Telephone, Home, Surgery etc.
+                    CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Location_Type);
+                    codeableConceptbuilder.setText(contactEventLocation, contactEventLocationCell);
                 }
             }
         }
@@ -176,10 +163,29 @@ public class SREventTransformer {
             encounterBuilder.setIncomplete(true, eventIncomplete);
         }
 
-        //TODO - the following column need transforming:
-        // Cannot find any clinic related information in Encounter - FG
-        //getClinicalEvent()
+        String methodDesc;
 
+        CsvCell clinicalEventCell = parser.getClinicalEvent();
+        if (clinicalEventCell.getBoolean()) {
+            methodDesc = "Clinical";
+
+        } else {
+            methodDesc = "Administrative";
+        }
+
+        CsvCell contactTypeCell = parser.getContactMethod();
+        if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell, parser);
+            if (tppConfigListOption != null) {
+                String contactType = tppConfigListOption.getListOptionName();
+                if (!Strings.isNullOrEmpty(contactType)) {
+                    methodDesc += ", " + contactType;
+                }
+            }
+        }
+
+        CodeableConceptBuilder codeableConceptbuilder = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptbuilder.setText(methodDesc, clinicalEventCell, contactTypeCell);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }

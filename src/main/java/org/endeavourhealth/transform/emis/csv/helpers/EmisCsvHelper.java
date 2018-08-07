@@ -140,7 +140,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public EmisCsvCodeMap findClinicalCode(CsvCell codeIdCell) throws Exception {
         EmisCsvCodeMap ret = clinicalCodes.get(codeIdCell.getLong());
         if (ret == null) {
-            ret = mappingRepository.getMostRecentCode(false, codeIdCell.getLong());
+            ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
             if (ret == null) {
                 if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
@@ -179,7 +179,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         EmisCsvCodeMap ret = medication.get(codeIdCell.getLong());
         if (ret == null) {
-            ret = mappingRepository.getMostRecentCode(true, codeIdCell.getLong());
+            ret = mappingRepository.getCodeMapping(true, codeIdCell.getLong());
             if (ret == null) {
                 if (TransformConfig.instance().isEmisAllowMissingCodes()) {
                     //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
@@ -856,7 +856,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void applyAdminResourceCache(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        List<EmisAdminResourceCache> cachedResources = mappingRepository.getCachedResources(dataSharingAgreementGuid);
+        List<EmisAdminResourceCache> cachedResources = mappingRepository.getAdminResources(dataSharingAgreementGuid);
         LOG.trace("Got to apply " + cachedResources.size() + " admin resources");
 
         int count = 0;

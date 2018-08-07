@@ -34,7 +34,7 @@ public class SRReferralOutPreTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void processRecord(SRReferralOut parser, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) {
+    private static void processRecord(SRReferralOut parser, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
         //if this record is deleted, skip it
         CsvCell removedCell = parser.getRemovedData();
         if (removedCell != null && removedCell.getIntAsBoolean()) {
@@ -42,11 +42,23 @@ public class SRReferralOutPreTransformer {
         }
 
         CsvCell id = parser.getRowIdentifier();
-        CsvCell patientId = parser.getIDPatient();
 
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
             csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id, ResourceType.ReferralRequest);
+        }
+
+        //referral out has a unique field, where the recipient may be a practitioner at another service,
+        //in which case we need to ensure that we've transformed that practitioner, since we onlt do practitioners
+        //that we need, rather than the full 3M+ records.
+        CsvCell referralRecipientType = parser.getRecipientIDType();
+        CsvCell referralRecipientId = parser.getRecipientID();
+        if (!referralRecipientType.isEmpty()
+                && !referralRecipientId.isEmpty()) {
+
+            if (SRReferralOutTransformer.recipientIsPerson(referralRecipientType, csvHelper, parser)) {
+                csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForProfileId(referralRecipientId, csvHelper);
+            }
         }
     }
 }

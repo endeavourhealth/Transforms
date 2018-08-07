@@ -69,7 +69,7 @@ public class SRTrustTransformer {
         CsvCell obsoleteCell  = parser.getRemovedData();
 
         if (obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
+            adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -134,7 +134,7 @@ public class SRTrustTransformer {
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, TRUST_KEY_PREFIX + rowIdCell.getString());
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
 
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(locationBuilder);
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
@@ -150,7 +150,7 @@ public class SRTrustTransformer {
 
         CsvCell deleted = parser.getRemovedData();
         if (deleted != null &&!deleted.isEmpty() && deleted.getBoolean()) {
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), organizationBuilder);
+            adminCacheFiler.deleteAdminResourceFromCache(organizationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -214,7 +214,7 @@ public class SRTrustTransformer {
         Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, TRUST_KEY_PREFIX + rowIdCell.getString()); //we use the ID as the source both the org and location
         organizationBuilder.setMainLocation(locationReference);
 
-        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), organizationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(organizationBuilder);
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }
 
