@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -17,6 +18,12 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     }
 
     public AllergyIntoleranceBuilder(AllergyIntolerance allergyIntolerance) {
+        this(allergyIntolerance, null);
+    }
+
+    public AllergyIntoleranceBuilder(AllergyIntolerance allergyIntolerance, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.allergyIntolerance = allergyIntolerance;
         if (this.allergyIntolerance == null) {
             this.allergyIntolerance = new AllergyIntolerance();

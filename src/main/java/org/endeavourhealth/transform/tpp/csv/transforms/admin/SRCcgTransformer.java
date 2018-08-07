@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRCcg;
 import org.hl7.fhir.instance.model.*;
@@ -23,17 +24,20 @@ public class SRCcgTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-
         AbstractCsvParser parser = parsers.get(SRCcg.class);
         if (parser != null) {
+            EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
+
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SRCcg) parser, fhirResourceFiler, csvHelper);
+                    createResource((SRCcg) parser, fhirResourceFiler, csvHelper, adminCacheFiler);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+
+            adminCacheFiler.close();
         }
 
         //call this to abort if we had any errors, during the above processing
@@ -42,19 +46,21 @@ public class SRCcgTransformer {
 
     public static void createResource(SRCcg parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                      TppCsvHelper csvHelper,
+                                      EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         //first up, create the organisation resource
-        createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+        createOrganisationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
 
         //then the location and link the two
-        createLocationResource(parser, fhirResourceFiler, csvHelper);
+        createLocationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
 
     }
 
     public static void createLocationResource(SRCcg parser,
                                               FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+                                              TppCsvHelper csvHelper,
+                                              EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
@@ -65,6 +71,8 @@ public class SRCcgTransformer {
         CsvCell obsoleteCell = parser.getRemovedData();
         if (obsoleteCell != null //note this cell wasn't present in all versions, so need to check for null cell
                 && obsoleteCell.getBoolean()) {
+
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
 
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
@@ -131,12 +139,16 @@ public class SRCcgTransformer {
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, CCG_KEY_PREFIX + rowIdCell.getString());
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
 
+        //save to admin cache too
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
     public static void createOrganisationResource(SRCcg parser,
                                                   FhirResourceFiler fhirResourceFiler,
-                                                  TppCsvHelper csvHelper) throws Exception {
+                                                  TppCsvHelper csvHelper,
+                                                  EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
@@ -145,6 +157,9 @@ public class SRCcgTransformer {
 
         CsvCell obsoleteCell = parser.getRemovedData();
         if (obsoleteCell != null && obsoleteCell.getBoolean()) {
+
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), organizationBuilder);
+
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -207,6 +222,9 @@ public class SRCcgTransformer {
 
         Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, CCG_KEY_PREFIX + rowIdCell.getString()); //we use the ID as the source both the org and location
         organizationBuilder.setMainLocation(locationReference);
+
+        //save to admin cache too
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), organizationBuilder);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }

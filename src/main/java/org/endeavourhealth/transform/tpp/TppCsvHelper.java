@@ -41,11 +41,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvHelper.class);
 
-    private static final String ID_DELIMITER = ":";
-
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
-
     private static final ParserPool PARSER_POOL = new ParserPool();
+
+    public static final String ADMIN_CACHE_KEY = "TPP";
 
     private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
     private static HashMap<String, TppMappingRef> tppMappingRefs = new HashMap<>();
@@ -240,7 +239,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         SourceFileMappingDalI sourceFileMappingDal = DalProvider.factorySourceFileMappingDal();
         SourceFileRecord rawRecord = sourceFileMappingDal.findSourceFileRecordRow(serviceId, auditId);
 
-
+//TODO - implement TPP adnin resource cache and retrieve from there using profile ID!!
 
         //use internal ID map:  profile ID -> record audit ID, staff member ID -> record audit ID
 //TODO - transform on demand

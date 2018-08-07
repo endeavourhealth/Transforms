@@ -59,7 +59,10 @@ public class EmisAdminCacheFiler {
         handleErrors(errors);
     }
 
-    public void deleteAdminResourceFromCache(CsvCurrentState parserState, Resource fhirResource) throws Exception {
+    public void deleteAdminResourceFromCache(CsvCurrentState parserState, ResourceBuilderBase resourceBuilder) throws Exception {
+
+        Resource fhirResource = resourceBuilder.getResource();
+
         EmisAdminResourceCache cache = new EmisAdminResourceCache();
         cache.setDataSharingAgreementGuid(dataSharingAgreementGuid);
         cache.setResourceType(fhirResource.getResourceType().toString());

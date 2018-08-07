@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SRTrust;
 import org.hl7.fhir.instance.model.*;
@@ -26,12 +27,15 @@ public class SRTrustTransformer {
         AbstractCsvParser parser = parsers.get(SRTrust.class);
         if (parser != null) {
             while (parser.nextRecord()) {
+                EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
 
                 try {
-                    createResource((SRTrust) parser, fhirResourceFiler, csvHelper);
+                    createResource((SRTrust) parser, fhirResourceFiler, csvHelper, adminCacheFiler);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
+
+                adminCacheFiler.close();
             }
         }
 
@@ -41,28 +45,31 @@ public class SRTrustTransformer {
 
     public static void createResource(SRTrust parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                      TppCsvHelper csvHelper,
+                                      EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         //first up, create the organisation resource
-        createOrganisationResource(parser, fhirResourceFiler, csvHelper);
+        createOrganisationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
 
         //then the location and link the two
-        createLocationResource(parser, fhirResourceFiler, csvHelper);
+        createLocationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
 
     }
 
     public static void createLocationResource(SRTrust parser,
                                               FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+                                              TppCsvHelper csvHelper,
+                                              EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
         LocationBuilder locationBuilder = new LocationBuilder();
-        locationBuilder.setId(rowIdCell.getString(), rowIdCell);
+        locationBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
 
         CsvCell obsoleteCell  = parser.getRemovedData();
 
         if (obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -127,12 +134,14 @@ public class SRTrustTransformer {
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, TRUST_KEY_PREFIX + rowIdCell.getString());
         locationBuilder.setManagingOrganisation(organisationReference, rowIdCell);
 
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
     public static void createOrganisationResource(SRTrust parser,
                                                   FhirResourceFiler fhirResourceFiler,
-                                                  TppCsvHelper csvHelper) throws Exception {
+                                                  TppCsvHelper csvHelper,
+                                                  EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
 
@@ -141,6 +150,7 @@ public class SRTrustTransformer {
 
         CsvCell deleted = parser.getRemovedData();
         if (deleted != null &&!deleted.isEmpty() && deleted.getBoolean()) {
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), organizationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -204,7 +214,8 @@ public class SRTrustTransformer {
         Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, TRUST_KEY_PREFIX + rowIdCell.getString()); //we use the ID as the source both the org and location
         organizationBuilder.setMainLocation(locationReference);
 
-        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), organizationBuilder);
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }
 
     private static void createContactPoint(ContactPoint.ContactPointSystem system, CsvCell contactCell, CsvCell rowIdCell, HasContactPointI parentBuilder) throws Exception {

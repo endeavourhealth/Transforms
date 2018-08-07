@@ -57,7 +57,7 @@ public class LocationTransformer {
 
             //this resource exists in our admin resource cache, so we can populate the
             //main database when new practices come on, so we need to update that too
-            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder.getResource());
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
             return;
         }
 

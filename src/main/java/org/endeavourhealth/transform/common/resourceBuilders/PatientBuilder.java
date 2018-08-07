@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -26,6 +27,12 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public PatientBuilder(Patient patient) {
+        this(patient, null);
+    }
+
+    public PatientBuilder(Patient patient, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.patient = patient;
         if (this.patient == null) {
             this.patient = new Patient();

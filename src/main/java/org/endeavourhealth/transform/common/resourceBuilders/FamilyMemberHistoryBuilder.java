@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -18,6 +19,12 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     }
 
     public FamilyMemberHistoryBuilder(FamilyMemberHistory familyMemberHistory) {
+        this(familyMemberHistory, null);
+    }
+
+    public FamilyMemberHistoryBuilder(FamilyMemberHistory familyMemberHistory, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.familyMemberHistory = familyMemberHistory;
         if (this.familyMemberHistory == null) {
             this.familyMemberHistory = new FamilyMemberHistory();

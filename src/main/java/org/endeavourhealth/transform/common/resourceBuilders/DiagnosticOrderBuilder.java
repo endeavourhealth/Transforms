@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -16,6 +17,12 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     }
 
     public DiagnosticOrderBuilder(DiagnosticOrder diagnosticOrder) {
+        this(diagnosticOrder, null);
+    }
+
+    public DiagnosticOrderBuilder(DiagnosticOrder diagnosticOrder, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.diagnosticOrder = diagnosticOrder;
         if (this.diagnosticOrder == null) {
             this.diagnosticOrder = new DiagnosticOrder();

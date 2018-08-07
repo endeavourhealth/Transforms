@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralRequestSendMode;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -24,6 +25,12 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     }
 
     public ReferralRequestBuilder(ReferralRequest referralRequest) {
+        this(referralRequest, null);
+    }
+
+    public ReferralRequestBuilder(ReferralRequest referralRequest, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.referralRequest = referralRequest;
         if (this.referralRequest == null) {
             this.referralRequest = new ReferralRequest();

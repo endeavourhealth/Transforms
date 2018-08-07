@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisationBranch;
 import org.hl7.fhir.instance.model.Address;
@@ -25,14 +26,18 @@ public class SROrganisationBranchTransformer {
 
         AbstractCsvParser parser = parsers.get(SROrganisationBranch.class);
         if (parser != null) {
+            EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
+
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SROrganisationBranch) parser, fhirResourceFiler, csvHelper);
+                    createResource((SROrganisationBranch) parser, fhirResourceFiler, csvHelper, adminCacheFiler);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+
+            adminCacheFiler.close();
         }
 
         //call this to abort if we had any errors, during the above processing
@@ -41,7 +46,8 @@ public class SROrganisationBranchTransformer {
 
     public static void createResource(SROrganisationBranch parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                      TppCsvHelper csvHelper,
+                                      EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
         CsvCell locationIdCell = parser.getID();
@@ -64,6 +70,9 @@ public class SROrganisationBranchTransformer {
 
         if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
                 (deleted != null && !deleted.isEmpty() && deleted.getBoolean())) {
+
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
+
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -104,5 +113,8 @@ public class SROrganisationBranchTransformer {
             addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 }

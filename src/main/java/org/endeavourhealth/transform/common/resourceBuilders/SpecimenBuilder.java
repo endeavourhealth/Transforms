@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -16,6 +17,12 @@ public class SpecimenBuilder extends ResourceBuilderBase
     }
 
     public SpecimenBuilder(Specimen specimen) {
+        this(specimen, null);
+    }
+
+    public SpecimenBuilder(Specimen specimen, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.specimen = specimen;
         if (this.specimen == null) {
             this.specimen = new Specimen();

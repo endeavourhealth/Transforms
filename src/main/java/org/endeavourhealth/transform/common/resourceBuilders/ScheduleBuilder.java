@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,6 +20,12 @@ public class ScheduleBuilder extends ResourceBuilderBase {
     }
 
     public ScheduleBuilder(Schedule schedule) {
+        this(schedule, null);
+    }
+
+    public ScheduleBuilder(Schedule schedule, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.schedule = schedule;
         if (this.schedule == null) {
             this.schedule = new Schedule();

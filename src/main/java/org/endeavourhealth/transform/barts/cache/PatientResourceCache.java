@@ -23,7 +23,7 @@ import java.util.Set;
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
-    private ResourceCache<Long, Patient> patientBuildersByPersonId = new ResourceCache<>();
+    private ResourceCache<Long, PatientBuilder> patientBuildersByPersonId = new ResourceCache<>();
     //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
     private Set<Long> personIdsJustDeleted = new HashSet<>();
 
@@ -41,9 +41,9 @@ public class PatientResourceCache {
         }
 
         //check the cache
-        Patient cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        PatientBuilder cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
         if (cachedResource != null) {
-            return new PatientBuilder(cachedResource);
+            return cachedResource;
         }
 
         //check the cache first
@@ -88,7 +88,7 @@ public class PatientResourceCache {
     }
 
     public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
-        patientBuildersByPersonId.addToCache(personId, (Patient)patientBuilder.getResource());
+        patientBuildersByPersonId.addToCache(personId, patientBuilder);
     }
 
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -96,8 +96,7 @@ public class PatientResourceCache {
         LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 
         for (Long personId: patientBuildersByPersonId.keySet()) {
-            Patient patient = (Patient)patientBuildersByPersonId.getAndRemoveFromCache(personId);
-            PatientBuilder patientBuilder = new PatientBuilder(patient);
+            PatientBuilder patientBuilder = patientBuildersByPersonId.getAndRemoveFromCache(personId);
             //PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
 
             boolean performIdMapping = !patientBuilder.isIdMapped();

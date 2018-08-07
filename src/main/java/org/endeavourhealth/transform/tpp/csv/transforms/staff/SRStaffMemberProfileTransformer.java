@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.cache.StaffMemberCache;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
@@ -31,14 +32,18 @@ public class SRStaffMemberProfileTransformer {
 
         AbstractCsvParser parser = parsers.get(SRStaffMemberProfile.class);
         if (parser != null) {
+            EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
+
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper);
+                    createResource((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, adminCacheFiler);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+
+            adminCacheFiler.close();
         }
 
         //call this to abort if we had any errors, during the above processing
@@ -48,7 +53,8 @@ public class SRStaffMemberProfileTransformer {
 
     private static void createResource(SRStaffMemberProfile parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                       TppCsvHelper csvHelper,
+                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         //seems to be some bad data in this file, where we have a record that doesn't link to a staff member record
         CsvCell staffId = parser.getIDStaffMember(); //NB = rowId in SRStaffMember
@@ -63,6 +69,8 @@ public class SRStaffMemberProfileTransformer {
         //and we can get one record updated without the other(s). So we need to re-retrieve our existing
         //Practitioner because we don't want to lose anything already on it.
         PractitionerBuilder practitionerBuilder = null;
+//TODO - how do we store in the admin cache? This resource is potentially already ID mapped!!
+//TODO - don't forget to apply the admin resource cache when first doing the transform
         Practitioner practitioner = (Practitioner) csvHelper.retrieveResource(profileIdCell.getString(), ResourceType.Practitioner);
         if (practitioner == null) {
 

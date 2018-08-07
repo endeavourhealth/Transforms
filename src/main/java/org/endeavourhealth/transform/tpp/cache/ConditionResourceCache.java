@@ -16,19 +16,19 @@ import java.util.Set;
 public class ConditionResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResourceCache.class);
 
-    private ResourceCache<Long, Condition> conditionResourceCache = new ResourceCache<>();
+    private ResourceCache<Long, ConditionBuilder> conditionResourceCache = new ResourceCache<>();
     private Set<Long> conditionsToDelete = new HashSet<>();
 
     public ConditionBuilder getConditionBuilderAndRemoveFromCache(CsvCell codeIdCell, TppCsvHelper csvHelper) throws Exception {
 
         Long key = codeIdCell.getLong();
 
-        Condition condition = conditionResourceCache.getAndRemoveFromCache(key);
-        if (condition != null) {
-            return new ConditionBuilder(condition);
+        ConditionBuilder cachedBuilder = conditionResourceCache.getAndRemoveFromCache(key);
+        if (cachedBuilder != null) {
+            return cachedBuilder;
         }
 
-        condition = (Condition) csvHelper.retrieveResource(codeIdCell.getString(), ResourceType.Condition);
+        Condition condition = (Condition) csvHelper.retrieveResource(codeIdCell.getString(), ResourceType.Condition);
         if (condition != null) {
             return new ConditionBuilder(condition);
         }
@@ -46,26 +46,22 @@ public class ConditionResourceCache {
     }
 
     public void returnToCache(CsvCell codeIdCell, ConditionBuilder conditionBuilder) throws Exception {
-        Condition condition = (Condition)conditionBuilder.getResource();
         Long key = codeIdCell.getLong();
-
-        conditionResourceCache.addToCache(key, condition);
+        conditionResourceCache.addToCache(key, conditionBuilder);
     }
 
 
     public void returnToCacheForDelete(CsvCell codeIdCell, ConditionBuilder conditionBuilder) throws Exception {
-        Condition condition = (Condition)conditionBuilder.getResource();
         Long key = codeIdCell.getLong();
 
-        conditionResourceCache.addToCache(key, condition);
+        conditionResourceCache.addToCache(key, conditionBuilder);
         conditionsToDelete.add(key);
     }
 
     public void fileConditionResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         for (Long codeId: conditionResourceCache.keySet()) {
-            Condition condition = conditionResourceCache.getAndRemoveFromCache(codeId);
-            ConditionBuilder conditionBuilder = new ConditionBuilder(condition);
+            ConditionBuilder conditionBuilder = conditionResourceCache.getAndRemoveFromCache(codeId);
 
             boolean mapIds = !conditionBuilder.isIdMapped();
             if (conditionsToDelete.contains(codeId)) {

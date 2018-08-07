@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.LocationPhysicalType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,6 +20,12 @@ public class LocationBuilder extends ResourceBuilderBase
     }
 
     public LocationBuilder(Location location) {
+        this(location, null);
+    }
+
+    public LocationBuilder(Location location, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.location = location;
         if (this.location == null) {
             this.location = new Location();

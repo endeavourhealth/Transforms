@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,6 +21,12 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     public ProcedureBuilder(Procedure procedure) {
+        this(procedure, null);
+    }
+
+    public ProcedureBuilder(Procedure procedure, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.procedure = procedure;
         if (this.procedure == null) {
             this.procedure = new Procedure();

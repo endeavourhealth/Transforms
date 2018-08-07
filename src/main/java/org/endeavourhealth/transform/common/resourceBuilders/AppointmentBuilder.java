@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -12,14 +13,18 @@ public class AppointmentBuilder extends ResourceBuilderBase
         implements HasCodeableConceptI {
 
     private Appointment appointment = null;
-    private boolean retrieved = true;
 
     public AppointmentBuilder() {
         this(null);
-        this.retrieved = false;
     }
 
     public AppointmentBuilder(Appointment appointment) {
+        this(appointment, null);
+    }
+
+    public AppointmentBuilder(Appointment appointment, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.appointment = appointment;
         if (this.appointment == null) {
             this.appointment = new Appointment();
@@ -158,7 +163,4 @@ public class AppointmentBuilder extends ResourceBuilderBase
         }
     }
 
-    public boolean isRetrieved() { return this.retrieved;}
-
-    public void setRetrieved(boolean retrieved) { this.retrieved = retrieved;}
 }

@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,6 +20,12 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     }
 
     public DiagnosticReportBuilder(DiagnosticReport diagnosticReport) {
+        this(diagnosticReport, null);
+    }
+
+    public DiagnosticReportBuilder(DiagnosticReport diagnosticReport, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.diagnosticReport = diagnosticReport;
         if (this.diagnosticReport == null) {
             this.diagnosticReport = new DiagnosticReport();

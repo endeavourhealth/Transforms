@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -18,6 +19,12 @@ public class OrganizationBuilder extends ResourceBuilderBase
     }
 
     public OrganizationBuilder(Organization organization) {
+        this(organization, null);
+    }
+
+    public OrganizationBuilder(Organization organization, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.organization = organization;
         if (this.organization == null) {
             this.organization = new Organization();

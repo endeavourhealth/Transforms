@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisation;
 import org.hl7.fhir.instance.model.Address;
@@ -27,14 +28,18 @@ public class SROrganisationTransformer {
 
         AbstractCsvParser parser = parsers.get(SROrganisation.class);
         if (parser != null) {
+            EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
+
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SROrganisation) parser, fhirResourceFiler, csvHelper);
+                    createResource((SROrganisation) parser, fhirResourceFiler, csvHelper, adminCacheFiler);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+
+            adminCacheFiler.close();
         }
 
         //call this to abort if we had any errors, during the above processing
@@ -43,15 +48,17 @@ public class SROrganisationTransformer {
 
     public static void createResource(SROrganisation parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      TppCsvHelper csvHelper) throws Exception {
+                                      TppCsvHelper csvHelper,
+                                      EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
-        createOrganisationResource(parser, fhirResourceFiler, csvHelper);
-        createLocationResource(parser, fhirResourceFiler, csvHelper);
+        createOrganisationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
+        createLocationResource(parser, fhirResourceFiler, csvHelper, adminCacheFiler);
     }
 
     public static void createLocationResource(SROrganisation parser,
                                               FhirResourceFiler fhirResourceFiler,
-                                              TppCsvHelper csvHelper) throws Exception {
+                                              TppCsvHelper csvHelper,
+                                              EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
 
         //note that throughout the TPP files, the organisation ID is used rather than the rowIdentifier when referring to orgs
@@ -68,6 +75,7 @@ public class SROrganisationTransformer {
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), locationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -125,12 +133,14 @@ public class SROrganisationTransformer {
         Reference organisationReference = ReferenceHelper.createReference(ResourceType.Organization, idCell.getString()); //we use the ID as the source both the org and location
         locationBuilder.setManagingOrganisation(organisationReference);
 
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), locationBuilder);
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
     public static void createOrganisationResource(SROrganisation parser,
                                                   FhirResourceFiler fhirResourceFiler,
-                                                  TppCsvHelper csvHelper) throws Exception {
+                                                  TppCsvHelper csvHelper,
+                                                  EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
         //note that throughout the TPP files, the organisation ID is used rather than the rowIdentifier when referring to orgs
         CsvCell idCell = parser.getID();
@@ -148,6 +158,7 @@ public class SROrganisationTransformer {
 
         if ((obsoleteCell != null && obsoleteCell.getBoolean())
                 || (deleted != null && deleted.getIntAsBoolean())) {
+            adminCacheFiler.deleteAdminResourceFromCache(parser.getCurrentState(), organizationBuilder);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }
@@ -223,6 +234,7 @@ public class SROrganisationTransformer {
         Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, idCell.getString()); //we use the ID as the source both the org and location
         organizationBuilder.setMainLocation(locationReference);
 
+        adminCacheFiler.saveAdminResourceToCache(parser.getCurrentState(), organizationBuilder);
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }
 

@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class EncounterResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterResourceCache.class);
 
-    private ResourceCache<String, Encounter> encounterBuildersByEncounterId = new ResourceCache<>();
+    private ResourceCache<String, EncounterBuilder> encounterBuildersByEncounterId = new ResourceCache<>();
 
     public EncounterResourceCache() {};
 
@@ -25,9 +25,9 @@ public class EncounterResourceCache {
         String encounterId = encounterIdCell.getString();
 
         //check the cache
-        Encounter cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
+        EncounterBuilder cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
         if (cachedResource != null) {
-            return new EncounterBuilder(cachedResource);
+            return cachedResource;
         }
 
         EncounterBuilder encounterBuilder = null;
@@ -70,7 +70,7 @@ public class EncounterResourceCache {
 
     public void returnEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
         String encounterId = encounterIdCell.getString();
-        encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
+        encounterBuildersByEncounterId.addToCache(encounterId, encounterBuilder);
     }
 
     public void removeEncounterFromCache(CsvCell encounterIdCell) throws Exception {

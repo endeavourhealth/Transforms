@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
 
-    private ResourceCache<Long, Location> locationResourceByLocationId = new ResourceCache<>();
+    private ResourceCache<Long, LocationBuilder> locationResourceByLocationId = new ResourceCache<>();
 
 
     public LocationBuilder getOrCreateLocationBuilder(CsvCell locationIdCell,
@@ -28,9 +28,9 @@ public class LocationResourceCache {
         Long locationID = locationIdCell.getLong();
 
         //check the cache
-        Location cachedResource = locationResourceByLocationId.getAndRemoveFromCache(locationID);
+        LocationBuilder cachedResource = locationResourceByLocationId.getAndRemoveFromCache(locationID);
         if (cachedResource != null) {
-            return new LocationBuilder(cachedResource);
+            return cachedResource;
         }
 
         LocationBuilder locationBuilder = null;
@@ -75,7 +75,7 @@ public class LocationResourceCache {
             locationBuilder = new LocationBuilder(location);
         }
 
-        locationResourceByLocationId.addToCache(locationID, (Location)locationBuilder.getResource());
+        locationResourceByLocationId.addToCache(locationID, locationBuilder);
 
         return locationBuilder;
     }

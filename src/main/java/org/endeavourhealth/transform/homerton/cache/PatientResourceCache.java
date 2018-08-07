@@ -15,7 +15,7 @@ public class PatientResourceCache {
 
     //private static Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
 
-    private ResourceCache<Long, Patient> patientBuildersByPersonId = new ResourceCache<>();
+    private ResourceCache<Long, PatientBuilder> patientBuildersByPersonId = new ResourceCache<>();
 
 
     public PatientBuilder getPatientBuilder(CsvCell milleniumPersonIdCell, HomertonCsvHelper csvHelper) throws Exception {
@@ -23,9 +23,9 @@ public class PatientResourceCache {
         Long personId = milleniumPersonIdCell.getLong();
 
         //check the cache
-        Patient cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        PatientBuilder cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
         if (cachedResource != null) {
-            return new PatientBuilder(cachedResource);
+            return cachedResource;
         }
 
         PatientBuilder patientBuilder = null;
@@ -51,7 +51,7 @@ public class PatientResourceCache {
     }
 
     public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
-        patientBuildersByPersonId.addToCache(personId, (Patient)patientBuilder.getResource());
+        patientBuildersByPersonId.addToCache(personId, patientBuilder);
     }
 
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -59,8 +59,7 @@ public class PatientResourceCache {
         LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
 
         for (Long personId: patientBuildersByPersonId.keySet()) {
-            Patient patient = patientBuildersByPersonId.getAndRemoveFromCache(personId);
-            PatientBuilder patientBuilder = new PatientBuilder(patient);
+            PatientBuilder patientBuilder = patientBuildersByPersonId.getAndRemoveFromCache(personId);
 
             boolean performIdMapping = !patientBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);

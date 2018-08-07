@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.PeriodHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -18,6 +19,12 @@ public class PractitionerBuilder extends ResourceBuilderBase
     }
 
     public PractitionerBuilder(Practitioner practitioner) {
+        this(practitioner, null);
+    }
+
+    public PractitionerBuilder(Practitioner practitioner, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.practitioner = practitioner;
         if (this.practitioner == null) {
             this.practitioner = new Practitioner();

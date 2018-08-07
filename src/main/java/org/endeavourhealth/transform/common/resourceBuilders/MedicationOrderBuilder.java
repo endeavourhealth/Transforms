@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,6 +21,12 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
     }
 
     public MedicationOrderBuilder(MedicationOrder medicationOrder) {
+        this(medicationOrder, null);
+    }
+
+    public MedicationOrderBuilder(MedicationOrder medicationOrder, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.medicationOrder = medicationOrder;
         if (this.medicationOrder == null) {
             this.medicationOrder = new MedicationOrder();

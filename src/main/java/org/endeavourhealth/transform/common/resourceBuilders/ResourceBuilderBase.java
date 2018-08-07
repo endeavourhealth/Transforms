@@ -5,10 +5,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.hl7.fhir.instance.model.DomainResource;
-import org.hl7.fhir.instance.model.Extension;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
 import java.util.UUID;
@@ -17,9 +14,9 @@ public abstract class ResourceBuilderBase {
 
     private ResourceFieldMappingAudit auditWrapper = null;
 
-    public ResourceBuilderBase() {
+    /*public ResourceBuilderBase() {
         this(null);
-    }
+    }*/
 
     public ResourceBuilderBase(ResourceFieldMappingAudit auditWrapper) {
         this.auditWrapper = auditWrapper;
@@ -219,10 +216,80 @@ public abstract class ResourceBuilderBase {
         auditStringExtension(extension, sourceCells);
     }
 
+    public static ResourceBuilderBase factory(Resource resource, ResourceFieldMappingAudit audit) {
+        if (resource instanceof AllergyIntolerance) {
+            return new AllergyIntoleranceBuilder((AllergyIntolerance) resource, audit);
 
+        } else if (resource instanceof Appointment) {
+            return new AppointmentBuilder((Appointment) resource, audit);
 
+        } else if (resource instanceof Condition) {
+            return new ConditionBuilder((Condition) resource, audit);
 
+        } else if (resource instanceof DiagnosticOrder) {
+            return new DiagnosticOrderBuilder((DiagnosticOrder) resource, audit);
 
+        } else if (resource instanceof DiagnosticReport) {
+            return new DiagnosticReportBuilder((DiagnosticReport) resource, audit);
+
+        } else if (resource instanceof Encounter) {
+            return new EncounterBuilder((Encounter) resource, audit);
+
+        } else if (resource instanceof EpisodeOfCare) {
+            return new EpisodeOfCareBuilder((EpisodeOfCare) resource, audit);
+
+        } else if (resource instanceof FamilyMemberHistory) {
+            return new FamilyMemberHistoryBuilder((FamilyMemberHistory) resource, audit);
+
+        } else if (resource instanceof Flag) {
+            return new FlagBuilder((Flag) resource, audit);
+
+        } else if (resource instanceof Immunization) {
+            return new ImmunizationBuilder((Immunization) resource, audit);
+
+        } else if (resource instanceof Location) {
+            return new LocationBuilder((Location) resource, audit);
+
+        } else if (resource instanceof MedicationOrder) {
+            return new MedicationOrderBuilder((MedicationOrder) resource, audit);
+
+        } else if (resource instanceof MedicationStatement) {
+            return new MedicationStatementBuilder((MedicationStatement) resource, audit);
+
+        } else if (resource instanceof Observation) {
+            return new ObservationBuilder((Observation) resource, audit);
+
+        } else if (resource instanceof Organization) {
+            return new OrganizationBuilder((Organization) resource, audit);
+
+        } else if (resource instanceof Patient) {
+            return new PatientBuilder((Patient) resource, audit);
+
+        } else if (resource instanceof Practitioner) {
+            return new PractitionerBuilder((Practitioner) resource, audit);
+
+        } else if (resource instanceof Procedure) {
+            return new ProcedureBuilder((Procedure) resource, audit);
+
+        } else if (resource instanceof ProcedureRequest) {
+            return new ProcedureRequestBuilder((ProcedureRequest) resource, audit);
+
+        } else if (resource instanceof ReferralRequest) {
+            return new ReferralRequestBuilder((ReferralRequest) resource, audit);
+
+        } else if (resource instanceof Schedule) {
+            return new ScheduleBuilder((Schedule) resource, audit);
+
+        } else if (resource instanceof Slot) {
+            return new SlotBuilder((Slot) resource, audit);
+
+        } else if (resource instanceof Specimen) {
+            return new SpecimenBuilder((Specimen) resource, audit);
+
+        } else {
+            throw new RuntimeException("Unsupported Resource type " + resource.getClass());
+        }
+    }
 
 
     /*public void removeAudit(String auditJsonPrefix) {

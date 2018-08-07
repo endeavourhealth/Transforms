@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AnnotationHelper;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -19,6 +20,12 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     public ImmunizationBuilder(Immunization immunization) {
+        this(immunization, null);
+    }
+
+    public ImmunizationBuilder(Immunization immunization, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.immunization = immunization;
         if (this.immunization == null) {
             this.immunization = new Immunization();

@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.DomainResource;
 import org.hl7.fhir.instance.model.Meta;
@@ -18,6 +19,12 @@ public class SlotBuilder extends ResourceBuilderBase {
     }
 
     public SlotBuilder(Slot slot) {
+        this(slot, null);
+    }
+
+    public SlotBuilder(Slot slot, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.slot = slot;
         if (this.slot == null) {
             this.slot = new Slot();

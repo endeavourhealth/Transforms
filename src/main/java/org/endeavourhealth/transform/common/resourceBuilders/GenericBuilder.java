@@ -9,7 +9,7 @@ public class GenericBuilder extends ResourceBuilderBase {
     private Resource resource;
 
     public GenericBuilder(Resource resource) {
-        this.resource = resource;
+        this(resource, null);
     }
 
     public GenericBuilder(Resource resource, ResourceFieldMappingAudit auditWrapper) {

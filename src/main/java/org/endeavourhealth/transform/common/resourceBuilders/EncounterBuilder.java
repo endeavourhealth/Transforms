@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -26,6 +27,12 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     public EncounterBuilder(Encounter encounter) {
+        this(encounter, null);
+    }
+
+    public EncounterBuilder(Encounter encounter, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.encounter = encounter;
         if (this.encounter == null) {
             this.encounter = new Encounter();

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,6 +21,12 @@ public class FlagBuilder extends ResourceBuilderBase
     }
 
     public FlagBuilder(Flag flag) {
+        this(flag, null);
+    }
+
+    public FlagBuilder(Flag flag, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.flag = flag;
         if (this.flag == null) {
             this.flag = new Flag();

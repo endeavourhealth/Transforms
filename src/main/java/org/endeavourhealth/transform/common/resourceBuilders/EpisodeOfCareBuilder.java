@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -17,6 +18,12 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     }
 
     public EpisodeOfCareBuilder(EpisodeOfCare episodeOfCare) {
+        this(episodeOfCare, null);
+    }
+
+    public EpisodeOfCareBuilder(EpisodeOfCare episodeOfCare, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.episodeOfCare = episodeOfCare;
         if (this.episodeOfCare == null) {
             this.episodeOfCare = new EpisodeOfCare();

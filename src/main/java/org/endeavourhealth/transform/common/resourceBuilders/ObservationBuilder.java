@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,6 +21,12 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     public ObservationBuilder(Observation observation) {
+        this(observation, null);
+    }
+
+    public ObservationBuilder(Observation observation, ResourceFieldMappingAudit audit) {
+        super(audit);
+
         this.observation = observation;
         if (this.observation == null) {
             this.observation = new Observation();

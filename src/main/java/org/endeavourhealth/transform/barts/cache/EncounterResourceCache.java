@@ -13,7 +13,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +24,7 @@ public class EncounterResourceCache {
 
     public static final String DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX = ":EmergencyDuplicate";
 
-    private ResourceCache<String, Encounter> encounterBuildersByEncounterId = new ResourceCache<>();
+    private ResourceCache<String, EncounterBuilder> encounterBuildersByEncounterId = new ResourceCache<>();
     private Set<String> encounterIdsJustDeleted = new HashSet<>();
     private Map<String, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
@@ -67,12 +66,12 @@ public class EncounterResourceCache {
 
     public void returnEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
         String encounterId = encounterIdCell.getString();
-        encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
+        encounterBuildersByEncounterId.addToCache(encounterId, encounterBuilder);
     }
 
     public void returnDuplicateEmergencyEncounterBuilder(CsvCell encounterIdCell, EncounterBuilder encounterBuilder) throws Exception {
         String encounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
-        encounterBuildersByEncounterId.addToCache(encounterId, (Encounter)encounterBuilder.getResource());
+        encounterBuildersByEncounterId.addToCache(encounterId, encounterBuilder);
     }
 
     /**
@@ -88,9 +87,9 @@ public class EncounterResourceCache {
         }
 
         //check the cache
-        Encounter cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
+        EncounterBuilder cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
         if (cachedResource != null) {
-            return new EncounterBuilder(cachedResource);
+            return cachedResource;
         }
 
         EncounterBuilder encounterBuilder = null;
@@ -178,9 +177,9 @@ public class EncounterResourceCache {
         }
 
         //check the cache
-        Encounter cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
+        EncounterBuilder cachedResource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
         if (cachedResource != null) {
-            return new EncounterBuilder(cachedResource);
+            return cachedResource;
         }
 
         //if not in the cache, check the DB
@@ -219,8 +218,7 @@ public class EncounterResourceCache {
 
         LOG.trace("Saving " + encounterBuildersByEncounterId.size() + " encounters to the DB");
         for (String encounterId: encounterBuildersByEncounterId.keySet()) {
-            Resource resource = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
-            EncounterBuilder encounterBuilder = new EncounterBuilder((Encounter)resource);
+            EncounterBuilder encounterBuilder = encounterBuildersByEncounterId.getAndRemoveFromCache(encounterId);
 
             //find the patient UUID for the encounter, so we can tidy up HL7 encounters after doing all the saving
             Reference patientReference = encounterBuilder.getPatient();

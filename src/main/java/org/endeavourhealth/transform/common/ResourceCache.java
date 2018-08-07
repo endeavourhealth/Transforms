@@ -1,19 +1,20 @@
 package org.endeavourhealth.transform.common;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.QueuedMessageDalI;
-import org.endeavourhealth.core.database.dal.audit.models.QueuedMessageType;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -22,11 +23,11 @@ import java.util.zip.GZIPOutputStream;
  * cache for FHIR Resources, that keeps as many in possible in memory
  * but will start offloading to the DB if it gets too large
  */
-public class ResourceCache<T, S extends Resource> {
+public class ResourceCache<T, S extends ResourceBuilderBase> {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceCache.class);
 
     private Map<T, CacheEntryProxy> cache = new HashMap<>();
-    private Set<T> keysInMemory = new HashSet<>();
+    //private Set<T> keysInMemory = new HashSet<>();
     private QueuedMessageDalI dal = DalProvider.factoryQueuedMessageDal();
     private ReentrantLock lock = new ReentrantLock();
 
@@ -35,10 +36,10 @@ public class ResourceCache<T, S extends Resource> {
      */
     public ResourceCache() {}
 
-    public void addToCache(T key, S resource) throws Exception {
+    public void addToCache(T key, S resourceBuilder) throws Exception {
 
-        if (resource == null) {
-            throw new Exception("Can't add null resource to ResourceCache");
+        if (resourceBuilder == null) {
+            throw new Exception("Can't add null resourceBuilder to ResourceCache");
         }
 
         try {
@@ -51,7 +52,7 @@ public class ResourceCache<T, S extends Resource> {
             }
 
             //add the new resource to the map
-            CacheEntryProxy entry = new CacheEntryProxy(key, resource);
+            CacheEntryProxy entry = new CacheEntryProxy(key, resourceBuilder);
             cache.put(key, entry);
 
         } finally {
@@ -59,7 +60,7 @@ public class ResourceCache<T, S extends Resource> {
         }
 
         //see if we need to offload anything to the DB
-        offloadResourcesIfNecessary();
+        //offloadResourcesIfNecessary();
     }
 
     public boolean contains(T key) {
@@ -147,7 +148,7 @@ public class ResourceCache<T, S extends Resource> {
      * we have a max limit on the number of EncounterBuilders we can keep in memory, since keeping too many
      * will result in memory problems. So whenever the cache state changes, check
      */
-    private void offloadResourcesIfNecessary() throws Exception {
+    /*private void offloadResourcesIfNecessary() throws Exception {
 
         try {
             lock.lock();
@@ -174,7 +175,7 @@ public class ResourceCache<T, S extends Resource> {
         } finally {
             lock.unlock();
         }
-    }
+    }*/
 
     /**
      * proxy class to hold the reference to a Resource or the UUID used to store it in the DB
@@ -183,11 +184,10 @@ public class ResourceCache<T, S extends Resource> {
         private T key = null;
         private byte[] compressedBytes = null;
         private int originalLen = -1;
-        /*private String resourceJson = null;
-        private ResourceType resourceType = null;
-        private String resourceId = null;*/
-        //private Resource resource = null;
-        private UUID tempStorageUuid = null;
+        private byte[] compressedAuditBytes = null;
+        private int originalAuditLen = -1;
+
+        //private UUID tempStorageUuid = null;
 
         public CacheEntryProxy(T key, S resource) throws Exception {
             this.key = key;
@@ -202,7 +202,7 @@ public class ResourceCache<T, S extends Resource> {
         /**
          * offloads the Resource to the audit.queued_message table for safe keeping, to reduce memory load
          */
-        public void offloadFromMemory() throws Exception {
+        /*public void offloadFromMemory() throws Exception {
             //if (resource == null) {
             //if (resourceJson == null) {
             if (compressedBytes == null) {
@@ -240,12 +240,6 @@ public class ResourceCache<T, S extends Resource> {
             } else {
                 return FilenameUtils.concat(offloadToDiskPath, tempStorageUuid.toString() + ".tmp");
             }
-        }
-
-        /*public boolean isOffloaded() {
-            return this.compressedBytes == null && this.tempStorageUuid != null;
-            //return this.resourceJson == null && this.tempStorageUuid != null;
-            //return this.resource == null && this.tempStorageUuid != null;
         }*/
 
         /**
@@ -253,17 +247,13 @@ public class ResourceCache<T, S extends Resource> {
          * NOTE, this is a one-time function as these objects can only be used once
          */
         public S getResource() throws Exception {
+            return decompressBytes();
+        }
+        /*public S getResource() throws Exception {
 
-            //if (this.resource == null && this.tempStorageUuid == null) {
-            //if (this.resourceJson == null && this.tempStorageUuid == null) {
             if (this.compressedBytes == null && this.tempStorageUuid == null) {
                 throw new Exception("Cannot get Resource after removing or cleaning up");
             }
-
-            /*if (resource != null) {
-                return resource;*/
-            /*if (resourceJson != null) {
-                return FhirSerializationHelper.deserializeResource(resourceJson);*/
 
             S ret = decompressBytes();
             if (ret != null) {
@@ -287,16 +277,12 @@ public class ResourceCache<T, S extends Resource> {
             release();
 
             //LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
-
-            //if we've just retrieved one from memory, we probably will need to write another one to DB
-            //we're being removed from the cache, so don't increment this or start offloading anything new
-            /*keysInMemory.add(this.key);
-            offloadResourcesIfNecessary();*/
-
             return ret;
-        }
+        }*/
 
-        private void compressBytes(Resource resource) throws Exception {
+        private void compressBytes(ResourceBuilderBase resourceBuilder) throws Exception {
+
+            Resource resource = resourceBuilder.getResource();
             String json = FhirSerializationHelper.serializeResource(resource);
             byte[] bytes = json.getBytes("UTF-8");
 
@@ -308,7 +294,19 @@ public class ResourceCache<T, S extends Resource> {
             this.originalLen = bytes.length;
             this.compressedBytes = out.toByteArray();
 
-            keysInMemory.add(this.key);
+            ResourceFieldMappingAudit audit = resourceBuilder.getAuditWrapper();
+            json = audit.writeToJson();
+            bytes = json.getBytes("UTF-8");
+
+            out = new ByteArrayOutputStream();
+            gzip = new GZIPOutputStream(out);
+            gzip.write(bytes);
+            gzip.close();
+
+            this.originalAuditLen = bytes.length;
+            this.compressedAuditBytes = out.toByteArray();
+
+            //keysInMemory.add(this.key);
             //LOG.debug("Adding key in memory " + key);
         }
 
@@ -320,7 +318,7 @@ public class ResourceCache<T, S extends Resource> {
             }
 
             byte[] bytesOut = new byte[this.originalLen];
-            ByteArrayInputStream in = new ByteArrayInputStream(compressedBytes);
+            ByteArrayInputStream in = new ByteArrayInputStream(this.compressedBytes);
             GZIPInputStream gzipInputStream = new GZIPInputStream(in);
 
             int pos = 0;
@@ -335,10 +333,34 @@ public class ResourceCache<T, S extends Resource> {
             }
 
             String resourceJson = new String(bytesOut, "UTF-8");
-            return (S)FhirSerializationHelper.deserializeResource(resourceJson);
+            Resource resource = FhirSerializationHelper.deserializeResource(resourceJson);
+
+            bytesOut = new byte[this.originalAuditLen];
+            in = new ByteArrayInputStream(this.compressedAuditBytes);
+            gzipInputStream = new GZIPInputStream(in);
+
+            pos = 0;
+            remaining = bytesOut.length;
+            while (true) {
+                int read = gzipInputStream.read(bytesOut, pos, remaining);
+                pos += read;
+                remaining -= read;
+                if (remaining <= 0) {
+                    break;
+                }
+            }
+
+            String auditJson = new String(bytesOut, "UTF-8");
+            ResourceFieldMappingAudit audit = ResourceFieldMappingAudit.readFromJson(auditJson);
+
+            return (S)ResourceBuilderBase.factory(resource, audit);
         }
 
         public void release() throws Exception {
+            this.compressedBytes = null;
+            this.compressedAuditBytes = null;
+        }
+        /*public void release() throws Exception {
             if (this.tempStorageUuid != null) {
 
                 String tempFileName = getTempFileName();
@@ -357,15 +379,8 @@ public class ResourceCache<T, S extends Resource> {
                 //LOG.debug("Removing key in memory " + key);
                 this.compressedBytes = null;
             }
-            /*if (this.resourceJson != null) {
-                countInMemory--;
-                this.resourceJson = null;
-            }*/
-            /*if (this.resource != null) {
-                countInMemory--;
-                this.resource = null;
-            }*/
-        }
+
+        }*/
     }
 
 }
