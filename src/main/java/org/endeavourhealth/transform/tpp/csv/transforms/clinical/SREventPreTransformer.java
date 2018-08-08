@@ -67,7 +67,7 @@ public class SREventPreTransformer {
                     parser.getRowIdentifier(), profileIdRecordedByCell);
             return;
         }
-        CsvCell staffMemberIdDoneByCell = parsesr.getIDDoneBy();
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
         if (staffMemberIdDoneByCell.isEmpty() || staffMemberIdDoneByCell.getLong() < 0) {
             TransformWarnings.log(LOG, parser, "Skipping Event RowIdentifier {} because of invalid Staff Member {} ",
                     parser.getRowIdentifier(), staffMemberIdDoneByCell);
