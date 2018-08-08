@@ -62,7 +62,17 @@ public class SREventPreTransformer {
 
         CsvCell consultationGuid = parser.getRowIdentifier();
         CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
-        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        if (profileIdRecordedByCell.isEmpty() || profileIdRecordedByCell.getLong() < 0) {
+            TransformWarnings.log(LOG, parser, "Skipping Event RowIdentifier {} because of invalid Staff Profile {} ",
+                    parser.getRowIdentifier(), profileIdRecordedByCell);
+            return;
+        }
+        CsvCell staffMemberIdDoneByCell = parsesr.getIDDoneBy();
+        if (staffMemberIdDoneByCell.isEmpty() || staffMemberIdDoneByCell.getLong() < 0) {
+            TransformWarnings.log(LOG, parser, "Skipping Event RowIdentifier {} because of invalid Staff Member {} ",
+                    parser.getRowIdentifier(), staffMemberIdDoneByCell);
+            return;
+        }
         CsvCurrentState parserState = parser.getCurrentState();
 
         LookupTask task = new LookupTask(parserState, consultationGuid, profileIdRecordedByCell, staffMemberIdDoneByCell, csvHelper);
