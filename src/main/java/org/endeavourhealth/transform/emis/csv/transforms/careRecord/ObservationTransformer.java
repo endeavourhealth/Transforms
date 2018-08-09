@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -111,8 +110,6 @@ public class ObservationTransformer {
     public static Set<ResourceType> findOriginalTargetResourceTypes(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
-        potentialResourceTypes.add(ResourceType.Observation);
-        potentialResourceTypes.add(ResourceType.Condition);
         potentialResourceTypes.add(ResourceType.Procedure);
         potentialResourceTypes.add(ResourceType.AllergyIntolerance);
         potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
@@ -121,6 +118,8 @@ public class ObservationTransformer {
         potentialResourceTypes.add(ResourceType.Specimen);
         potentialResourceTypes.add(ResourceType.DiagnosticReport);
         potentialResourceTypes.add(ResourceType.ReferralRequest);
+        potentialResourceTypes.add(ResourceType.Condition);
+        potentialResourceTypes.add(ResourceType.Observation);
 
         Set<ResourceType> ret = new HashSet<>();
         
@@ -553,21 +552,29 @@ public class ObservationTransformer {
         if (parentResourceType == null) {
             Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, patientGuidCell, parentObservationCell);
 
-            //due to a past bug, we will have generated ID mappings for some Observation records to the true destination
-            //resource type (e.g. Immunization) plus Observation and Condition, so the above function may return between
-            //one and three resource types. However this only happened when the Observation record was deleted, in which
-            //case we shouldn't be calling this function to add a child Observation to it. So simply validate that we only have one
-            if (resourceTypes.size() > 1) {
-                throw new TransformException("Found " + resourceTypes.size() + " mapped from patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
-            }
-
             //the Emis test pack includes child observations that refer to parents that never existed
             if (resourceTypes.isEmpty()) {
                 return null;
                 //throw new TransformException("Didn't find parent resource type for patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
-            }
 
-            parentResourceType = resourceTypes.iterator().next();
+            } else if (resourceTypes.size() > 1) {
+
+                //due to a past bug, we will have generated ID mappings for some Observation records to the true destination
+                //resource type (e.g. Immunization) plus Observation and Condition, so the above function may return between
+                //one and three resource types. So if we find multiple resource types, we need to find out which one actually has a resource
+                String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, parentObservationCell);
+                for (ResourceType resourceType: resourceTypes) {
+                    Resource resource = csvHelper.retrieveResource(sourceId, resourceType);
+                    if (resource != null) {
+                        parentResourceType = resourceType;
+                        break;
+                    }
+                }
+                //throw new TransformException("Found " + resourceTypes.size() + " mapped from patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
+
+            } else {
+                parentResourceType = resourceTypes.iterator().next();
+            }
         }
         return parentResourceType;
     }
