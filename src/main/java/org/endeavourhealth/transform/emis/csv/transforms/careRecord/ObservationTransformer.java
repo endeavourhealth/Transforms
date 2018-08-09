@@ -532,8 +532,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            referralRequestBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                referralRequestBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these fields are empty, as we don't stored them in this resource type,
@@ -556,8 +558,15 @@ public class ObservationTransformer {
             //one and three resource types. However this only happened when the Observation record was deleted, in which
             //case we shouldn't be calling this function to add a child Observation to it. So simply validate that we only have one
             if (resourceTypes.size() > 1) {
-                throw new TransformException("Found " + resourceTypes + " mapped from patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
+                throw new TransformException("Found " + resourceTypes.size() + " mapped from patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
             }
+
+            //the Emis test pack includes child observations that refer to parents that never existed
+            if (resourceTypes.isEmpty()) {
+                return null;
+                //throw new TransformException("Didn't find parent resource type for patient " + patientGuidCell.getString() + " and observation " + parentObservationCell.getString());
+            }
+
             parentResourceType = resourceTypes.iterator().next();
         }
         return parentResourceType;
@@ -726,8 +735,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            diagnosticOrderBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                diagnosticOrderBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -873,8 +884,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            specimenBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                specimenBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1006,8 +1019,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            allergyIntoleranceBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                allergyIntoleranceBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         assertValueEmpty(allergyIntoleranceBuilder, parser);
@@ -1158,8 +1173,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            diagnosticReportBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                diagnosticReportBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1323,8 +1340,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            procedureBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                procedureBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1495,8 +1514,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            conditionBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                conditionBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -1739,8 +1760,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            observationBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                observationBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
@@ -1920,8 +1943,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            familyMemberHistoryBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                familyMemberHistoryBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
@@ -2077,8 +2102,10 @@ public class ObservationTransformer {
         CsvCell parentObservationCell = parser.getParentObservationGuid();
         if (!parentObservationCell.isEmpty()) {
             ResourceType parentResourceType = findParentObservationType(csvHelper, fhirResourceFiler, patientGuid, parentObservationCell);
-            Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
-            immunizationBuilder.setParentResource(parentReference, parentObservationCell);
+            if (parentResourceType != null) {
+                Reference parentReference = ReferenceHelper.createReference(parentResourceType, csvHelper.createUniqueId(patientGuid, parentObservationCell));
+                immunizationBuilder.setParentResource(parentReference, parentObservationCell);
+            }
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
