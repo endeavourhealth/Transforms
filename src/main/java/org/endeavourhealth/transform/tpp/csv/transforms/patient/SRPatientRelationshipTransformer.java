@@ -148,7 +148,7 @@ public class SRPatientRelationshipTransformer {
 
         CsvCell startDateCell = parser.getDateEvent();
         if (!startDateCell.isEmpty()) {
-            contactBuilder.setStartDate(startDateCell.getDate(), startDateCell);
+            contactBuilder.setStartDate(startDateCell.getDateTime(), startDateCell);
         }
 
         CsvCell endDateCell = parser.getDateEnded();

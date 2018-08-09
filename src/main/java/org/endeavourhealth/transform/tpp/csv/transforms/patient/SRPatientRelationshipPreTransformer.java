@@ -1,15 +1,11 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRelationship;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class SRPatientRelationshipPreTransformer {
@@ -19,33 +15,27 @@ public class SRPatientRelationshipPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             AbstractCsvParser parser = parsers.get(SRPatientRelationship.class);
             if (parser != null) {
                 while (parser.nextRecord()) {
 
                     try {
-                        processRecord((SRPatientRelationship) parser, fhirResourceFiler, csvHelper, threadPool);
+                        processRecord((SRPatientRelationship) parser, fhirResourceFiler, csvHelper);
                     } catch (Exception ex) {
                         fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
                 }
             }
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void processRecord(SRPatientRelationship parser, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    private static void processRecord(SRPatientRelationship parser, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
         CsvCell patientIdCell = parser.getIDPatient();
@@ -54,8 +44,7 @@ public class SRPatientRelationshipPreTransformer {
         }
 
         Task task = new Task(parser.getCurrentState(), rowIdCell, patientIdCell, csvHelper);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        AbstractCsvCallable.handleErrors(errors);
+        csvHelper.submitToThreadPool(task);
     }
 
     static class Task extends AbstractCsvCallable {

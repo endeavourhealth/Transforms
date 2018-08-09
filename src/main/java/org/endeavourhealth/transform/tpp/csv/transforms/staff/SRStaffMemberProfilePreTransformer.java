@@ -1,9 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -26,10 +23,6 @@ public class SRStaffMemberProfilePreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
 
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
-
         List<InternalIdMap> mappingsToSave = new ArrayList<>();
 
         try {
@@ -38,7 +31,7 @@ public class SRStaffMemberProfilePreTransformer {
                 while (parser.nextRecord()) {
 
                     try {
-                        processRecord((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave);
+                        processRecord((SRStaffMemberProfile) parser, fhirResourceFiler, csvHelper, mappingsToSave);
                     } catch (Exception ex) {
                         fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
@@ -46,33 +39,19 @@ public class SRStaffMemberProfilePreTransformer {
             }
 
             if (!mappingsToSave.isEmpty()) {
-                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave, csvHelper));
-                handleErrors(errors);
+                csvHelper.submitToThreadPool(new Task(mappingsToSave, csvHelper));
             }
 
             //call this to abort if we had any errors, during the above processing
             fhirResourceFiler.failIfAnyErrors();
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        throw new TransformException("", exception);
     }
 
     private static void processRecord(SRStaffMemberProfile parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper,
-                                      ThreadPool threadPool,
                                       List<InternalIdMap> mappingsToSave) throws Exception {
 
         CsvCell staffProfileIdCell = parser.getRowIdentifier();
@@ -94,8 +73,7 @@ public class SRStaffMemberProfilePreTransformer {
             List<InternalIdMap> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
 
-            List<ThreadPoolError> errors = threadPool.submit(new Task(copy, csvHelper));
-            handleErrors(errors);
+            csvHelper.submitToThreadPool(new Task(copy, csvHelper));
         }
     }
 

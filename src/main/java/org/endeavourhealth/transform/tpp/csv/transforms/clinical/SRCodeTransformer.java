@@ -164,20 +164,19 @@ public class SRCodeTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-
-            allergyIntoleranceBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            allergyIntoleranceBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             allergyIntoleranceBuilder.setOnsetDate(dateTimeType, effectiveDate);
         }
 
@@ -252,7 +251,7 @@ public class SRCodeTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             procedureBuilder.addPerformer(staffReference, staffMemberIdDoneBy);
         }
 
@@ -261,12 +260,12 @@ public class SRCodeTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            procedureBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            procedureBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             procedureBuilder.setPerformed(dateTimeType, effectiveDate);
         }
 
@@ -345,7 +344,7 @@ public class SRCodeTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             if (conditionBuilder.isIdMapped()) {
                 staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
             }
@@ -357,12 +356,12 @@ public class SRCodeTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            conditionBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            conditionBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             conditionBuilder.setOnset(dateTimeType, effectiveDate);
         }
 
@@ -450,7 +449,7 @@ public class SRCodeTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             observationBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
@@ -460,13 +459,13 @@ public class SRCodeTransformer {
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
 
-            observationBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            observationBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
@@ -562,7 +561,7 @@ public class SRCodeTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             familyMemberHistoryBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
@@ -572,13 +571,13 @@ public class SRCodeTransformer {
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
 
-            familyMemberHistoryBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            familyMemberHistoryBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             familyMemberHistoryBuilder.setDate(dateTimeType, effectiveDate);
         }
 

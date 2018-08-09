@@ -69,12 +69,12 @@ public class SRReferralOutTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            referralRequestBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            referralRequestBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell referralDate = parser.getDateEvent();
         if (!referralDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(referralDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(referralDate.getDateTime());
             referralRequestBuilder.setDate(dateTimeType, referralDate);
         }
 
@@ -90,7 +90,7 @@ public class SRReferralOutTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             if (referralRequestBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }

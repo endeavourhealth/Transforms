@@ -78,7 +78,7 @@ public class SRPatientAddressHistoryTransformer {
 
         CsvCell dateFromCell = parser.getDateEvent();
         if (!dateFromCell.isEmpty()) {
-            addressBuilder.setStartDate(dateFromCell.getDate(), dateFromCell);
+            addressBuilder.setStartDate(dateFromCell.getDateTime(), dateFromCell);
         }
 
         CsvCell dateToCell = parser.getDateTo();
@@ -117,7 +117,7 @@ public class SRPatientAddressHistoryTransformer {
 
         CsvCell dateEventCell = parser.getDateEvent();
         if (!dateEventCell.isEmpty()) {
-            addressBuilder.setStartDate(dateEventCell.getDate(), dateEventCell);
+            addressBuilder.setStartDate(dateEventCell.getDateTime(), dateEventCell);
         }
     }
 

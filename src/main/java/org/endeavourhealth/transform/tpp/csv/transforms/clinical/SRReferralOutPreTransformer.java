@@ -57,7 +57,7 @@ public class SRReferralOutPreTransformer {
                 && !referralRecipientId.isEmpty()) {
 
             if (SRReferralOutTransformer.recipientIsPerson(referralRecipientType, csvHelper, parser)) {
-                csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForProfileId(referralRecipientId, csvHelper);
+                csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForStaffProfileId(referralRecipientId, csvHelper);
             }
         }
     }

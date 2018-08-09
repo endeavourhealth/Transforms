@@ -57,8 +57,8 @@ public abstract class EmisCsvToFhirTransformer {
 
         //TODO - call RegistrationStatusTransformer
 
-        String orgDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
-        boolean processPatientData = shouldProcessPatientData(orgDirectory, files);
+        ExchangePayloadFile.validateFilesAreInSameDirectory(files);
+        boolean processPatientData = shouldProcessPatientData(files);
 
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
@@ -81,14 +81,14 @@ public abstract class EmisCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    private static boolean shouldProcessPatientData(String orgDirectory, List<ExchangePayloadFile> csvFiles) throws Exception {
+    public static boolean shouldProcessPatientData(List<ExchangePayloadFile> csvFiles) throws Exception {
 
         //find the extract date from one of the CSV file names
         ExchangePayloadFile firstFileObj = csvFiles.get(0);
         Date extractDate = findExtractDate(firstFileObj.getPath());
 
         //our org GUID is the same as the directory name
-        String orgGuid = new File(orgDirectory).getName();
+        String orgGuid = new File(firstFileObj.getPath()).getParent();
 
         Date startDate = findStartDate(orgGuid);
 

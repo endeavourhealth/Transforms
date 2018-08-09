@@ -66,7 +66,7 @@ public class SRRecallTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            procedureRequestBuilder.setRecordedDateTime(dateRecored.getDate(), dateRecored);
+            procedureRequestBuilder.setRecordedDateTime(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell recallDate = parser.getDateRecall();
@@ -83,7 +83,7 @@ public class SRRecallTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             procedureRequestBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
         }
 

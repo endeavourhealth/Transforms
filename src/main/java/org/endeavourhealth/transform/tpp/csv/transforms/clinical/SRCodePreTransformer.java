@@ -67,7 +67,7 @@ public class SRCodePreTransformer {
 //            }
             if (ethnicCategory != null) {
 
-                DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDate());
+                DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
                 csvHelper.cacheEthnicity(patientId, dateTimeType, ethnicCategory);
             } else {
 
@@ -75,7 +75,7 @@ public class SRCodePreTransformer {
                 MaritalStatus maritalStatus = findMaritalStatus(readCode.getString());
                 if (maritalStatus != null) {
 
-                    DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDate());
+                    DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
                     csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus);
                 }
             }

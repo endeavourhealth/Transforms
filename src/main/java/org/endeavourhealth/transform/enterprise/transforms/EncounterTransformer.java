@@ -495,7 +495,7 @@ public class EncounterTransformer extends AbstractTransformer {
         if (!fhir.hasType()
                 || !fhir.hasClass_()) {
             //LOG.debug("No type or class");
-            return null;
+            return source;
         }
 
         String hl7MessageTypeText = null;

@@ -21,6 +21,8 @@ import java.util.Map;
 public class SRPatientRegistrationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRegistrationTransformer.class);
 
+    public static final String PATIENT_ID_TO_ACTIVE_EPISODE_ID = "PatientIdToActiveEpisodeId";
+
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  TppCsvHelper csvHelper) throws Exception {
@@ -127,6 +129,11 @@ public class SRPatientRegistrationTransformer {
                     patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
                 }
             }
+        }
+
+        //save a mapping to allow us to find the active episode for the patient
+        if (episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
+            csvHelper.saveInternalId(PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientIdCell.getString(), rowIdCell.getString());
         }
 
         //we save the episode immediately, since it's complete now, but the patient isn't done yet

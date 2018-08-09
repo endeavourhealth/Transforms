@@ -315,7 +315,7 @@ public abstract class TppCsvToFhirTransformer {
 
         //reference data
         LOG.trace("Starting reference data transforms");
-        SRCtv3Transformer.transform(parsers, fhirResourceFiler);
+        SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
         SRMappingTransformer.transform(parsers, fhirResourceFiler);
@@ -337,6 +337,9 @@ public abstract class TppCsvToFhirTransformer {
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
         csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
+
+        //make sure all practitioners are saved to the DB before doing anything clinical
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         LOG.trace("Starting patient demographics transforms");
         SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -386,6 +389,9 @@ public abstract class TppCsvToFhirTransformer {
 
         //TODO - commented out for now. Review
         //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        //close down the utility thread pool
+        csvHelper.stopThreadPool();
     }
 
     private boolean isFileBulk(String[] infiles) {

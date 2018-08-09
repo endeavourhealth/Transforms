@@ -80,13 +80,13 @@ public class SRImmunisationTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            immunizationBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            immunizationBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell eventDate = parser.getDateEvent();
         if (!eventDate.isEmpty()) {
 
-            DateTimeType dateTimeType = new DateTimeType(eventDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(eventDate.getDateTime());
             immunizationBuilder.setPerformedDate(dateTimeType, eventDate);
         }
 
@@ -98,7 +98,7 @@ public class SRImmunisationTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             immunizationBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
         }
 

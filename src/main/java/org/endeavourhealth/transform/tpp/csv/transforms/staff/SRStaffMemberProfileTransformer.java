@@ -8,7 +8,6 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
@@ -110,7 +109,6 @@ public class SRStaffMemberProfileTransformer {
             // This is a candidate for refactoring with the same code in SRStaffMemberTransformer - maybe when I'm more certain of FhirResourceFiler
             if (!orgId.isEmpty()) {
                 Reference organisationReference = csvHelper.createOrganisationReference(orgId.getString());
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
                 roleBuilder.setRoleManagingOrganisation(organisationReference, orgId);
             }
 

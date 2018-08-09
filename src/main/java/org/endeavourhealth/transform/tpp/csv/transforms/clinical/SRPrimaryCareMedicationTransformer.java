@@ -101,13 +101,13 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
 
-            medicationStatementBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            medicationStatementBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
 
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
@@ -119,7 +119,7 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
         }
 
@@ -233,19 +233,19 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             medicationOrderBuilder.setPrescriber(practitionerReference);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            medicationOrderBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            medicationOrderBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
 
-            DateTimeType date = new DateTimeType(effectiveDate.getDate());
+            DateTimeType date = new DateTimeType(effectiveDate.getDateTime());
             medicationOrderBuilder.setDateWritten(date, effectiveDate);
         }
 

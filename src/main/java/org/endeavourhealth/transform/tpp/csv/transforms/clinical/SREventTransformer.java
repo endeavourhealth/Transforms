@@ -3,23 +3,33 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SREvent;
+import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientRegistrationTransformer;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class SREventTransformer {
 
@@ -70,17 +80,20 @@ public class SREventTransformer {
         encounterBuilder.setPatient(patientReference, patientId);
 
         //link the encounter to the episode of care
-        Reference episodeReference = csvHelper.createEpisodeReference(patientId);
-        encounterBuilder.setEpisodeOfCare(episodeReference);
+        String episodeId = findEpisodeIdForPatient(patientId, csvHelper);
+        if (!Strings.isNullOrEmpty(episodeId)) {
+            Reference episodeReference = csvHelper.createEpisodeReference(episodeId);
+            encounterBuilder.setEpisodeOfCare(episodeReference);
+        }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            encounterBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            encounterBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell eventDate = parser.getDateEvent();
         if (!eventDate.isEmpty()) {
-            encounterBuilder.setPeriodStart(eventDate.getDate(), eventDate);
+            encounterBuilder.setPeriodStart(eventDate.getDateTime(), eventDate);
         }
 
         CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
@@ -91,7 +104,7 @@ public class SREventTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong()> 0) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneBy);
         }
 
@@ -159,7 +172,7 @@ public class SREventTransformer {
         }
 
         CsvCell eventIncomplete = parser.getEventIncomplete();
-        if (!eventIncomplete.getBoolean()) {
+        if (!eventIncomplete.isEmpty() && eventIncomplete.getBoolean()) {
             encounterBuilder.setIncomplete(true, eventIncomplete);
         }
 
@@ -188,5 +201,58 @@ public class SREventTransformer {
         codeableConceptbuilder.setText(methodDesc, clinicalEventCell, contactTypeCell);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+    }
+
+
+    private static String findEpisodeIdForPatient(CsvCell patientId, TppCsvHelper csvHelper) throws Exception {
+
+        //we have an internal ID mapping to tell us the active episode for each patient
+        String episodeId = csvHelper.getInternalId(SRPatientRegistrationTransformer.PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientId.getString());
+        if (!Strings.isNullOrEmpty(episodeId)) {
+            return episodeId;
+        }
+
+        //if the patient has no active episode, work out the most relevant one and use that
+        ResourceWrapper mostRecentEnded = null;
+        Date mostRecentEndDate = null;
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        UUID patientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, patientId.getString());
+        List<ResourceWrapper> episodeWrappers = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid, ResourceType.EpisodeOfCare.toString());
+        for (ResourceWrapper wrapper: episodeWrappers) {
+            if (wrapper.isDeleted()) {
+                continue;
+            }
+
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+
+            Date endDate = null;
+            if (episodeOfCare.hasPeriod()) {
+                endDate = episodeOfCare.getPeriod().getEnd();
+            }
+
+            //if no end date, then this episode is active and should be the one used
+            if (endDate == null) {
+                mostRecentEnded = wrapper;
+                break;
+            }
+
+            if (mostRecentEnded == null
+                    || endDate.after(mostRecentEndDate)) {
+                mostRecentEnded = wrapper;
+                mostRecentEndDate = endDate;
+            }
+        }
+
+        if (mostRecentEnded != null) {
+            Reference episodeReference = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, mostRecentEnded.getResourceId().toString());
+            episodeReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(csvHelper, episodeReference);
+            episodeId = ReferenceHelper.getReferenceId(episodeReference);
+
+            //and save the mapping so we don't have to repeat this again
+            csvHelper.saveInternalId(SRPatientRegistrationTransformer.PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientId.getString(), episodeId);
+        }
+
+        return null;
     }
 }

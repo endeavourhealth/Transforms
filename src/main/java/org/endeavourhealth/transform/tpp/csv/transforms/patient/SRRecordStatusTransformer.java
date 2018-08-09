@@ -56,7 +56,7 @@ public class SRRecordStatusTransformer {
         CsvCell patientId = parser.getIDPatient();
 
         if (!medicalRecordStatusCell.isEmpty() && !dateEvent.isEmpty()) {
-            csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDate(), medicalRecordStatusCell);
+            csvHelper.cacheMedicalRecordStatus(patientId, dateEvent.getDateTime(), medicalRecordStatusCell);
         }
     }
 }

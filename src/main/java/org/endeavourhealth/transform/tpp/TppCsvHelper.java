@@ -5,19 +5,20 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.*;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
@@ -42,44 +44,37 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static final String ADMIN_CACHE_KEY = "TPP";
 
     private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
-    private static Map<String, TppMappingRef> tppMappingRefs = new ConcurrentHashMap<>();
-
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
-    private static Map<String, TppConfigListOption> tppConfigListOptions = new ConcurrentHashMap<>();
-
     private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
-    private static Map<String, TppImmunisationContent> tppImmunisationContents = new ConcurrentHashMap<>();
-
     private static InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
-    private static Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
-
     private static TppMultiLexToCtv3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexToCtv3MapDal();
-    private static Map<String, TppMultiLexToCtv3Map> multiLexToCTV3Map = new ConcurrentHashMap<>();
-
+    private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
     private static TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
 
-    private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
+    private static Map<String, TppMappingRef> tppMappingRefs = new ConcurrentHashMap<>();
+    private static Map<String, TppConfigListOption> tppConfigListOptions = new ConcurrentHashMap<>();
+    private static Map<String, TppImmunisationContent> tppImmunisationContents = new ConcurrentHashMap<>();
+    private static Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
+    private static Map<String, TppMultiLexToCtv3Map> multiLexToCTV3Map = new ConcurrentHashMap<>();
     private static Map<String, TppCtv3Lookup> tppCtv3Lookups = new ConcurrentHashMap<>();
 
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
-    private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
-
+    private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> encounterAppointmentOrVisitMap = new ConcurrentHashMap<>();
-
     private Map<Long, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new ConcurrentHashMap<>();
-
     private StaffMemberCache staffMemberCache = new StaffMemberCache();
     private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
     private PatientResourceCache patientResourceCache = new PatientResourceCache();
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
     private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
-
     private Map<Long, String> problemReadCodes = new HashMap<>();
     private Map<String, String> allergyReadCodes = new HashMap<>();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
+    private Map<String, Long> staffMemberToProfileMap = new HashMap<>();
+    private ThreadPool utilityThreadPool = null;
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -114,26 +109,79 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, staffProfileIdCell.getString());
     }
 
-    public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell) throws Exception {
-        //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
-        Long staffMemberId = staffMemberIdCell.getLong();
-        Long profileId = staffMemberToProfileMap.get(staffMemberId);
-        if (profileId == null) {
-            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, "" + staffMemberId);
-            //if our staff member has multiple profiles, there'll be multiple mappings, but they all represent
-            //the same person, so just choose the first
-            if (mappings.isEmpty()) {
-                throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberId);
-            }
-            InternalIdMap mapping = mappings.get(0);
-            profileId = Long.valueOf(mapping.getSourceId());
-            staffMemberToProfileMap.put(staffMemberId, profileId);
-        }
-        
+    public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
+        Long profileId = findStaffProfileIdForStaffMemberId(staffMemberIdCell, profileIdRecordedBy, organisationDoneAtCell);
         return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
     }
 
-    private Map<Long, Long> staffMemberToProfileMap = new HashMap<>();
+    public Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
+
+        //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
+        String cacheKey = staffMemberIdCell.getString() + "/" + profileIdRecordedBy.getString() + "/" + organisationDoneAtCell.getString();
+        Long profileId = staffMemberToProfileMap.get(cacheKey);
+        if (profileId == null) {
+
+            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
+            if (mappings.isEmpty()) {
+                throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
+            }
+
+            //our staff member is likely to have multiple role profiles, so we use the profile ID recorded by and organisation
+            //to narrow it down to the correct one, since 99% of the time, the person who recorded the consultation actually did the consultation
+
+            //if one of the profiles for the staff member is the same as recorded the consultation, then that's the one to us
+            if (!profileIdRecordedBy.isEmpty()) {
+                for (InternalIdMap mapping: mappings) {
+                    if (mapping.getSourceId().equals(profileIdRecordedBy.getString())) {
+                        profileId = Long.valueOf(mapping.getSourceId());
+                        break;
+                    }
+                }
+            }
+
+            //if we know the organisation is was done at, we can try to use that to narrow down the profile ID
+            if (profileId == null
+                    && !organisationDoneAtCell.isEmpty()) {
+                for (InternalIdMap mapping: mappings) {
+
+                    String mappingProfileId = mapping.getSourceId();
+
+                    //note that we don't save practitioners to the EHR database until needed, so we have to use the admin cache
+                    //as a source for the UNMAPPED practitioner data
+                    EmisTransformDalI dal = DalProvider.factoryEmisTransformDal();
+                    EmisAdminResourceCache adminResourceObj = dal.getAdminResource(TppCsvHelper.ADMIN_CACHE_KEY, ResourceType.Practitioner, mappingProfileId);
+                    if (adminResourceObj == null) {
+                        continue;
+                    }
+
+                    //note this practitioner is NOT ID mapped
+                    Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(adminResourceObj.getResourceData());
+                    if (practitioner.hasPractitionerRole()) {
+
+                        Practitioner.PractitionerPractitionerRoleComponent role = practitioner.getPractitionerRole().get(0);
+                        if (role.hasManagingOrganization()) {
+                            Reference orgReference = role.getManagingOrganization();
+                            String sourceOrgId = ReferenceHelper.getReferenceId(orgReference);
+                            if (sourceOrgId.equalsIgnoreCase(organisationDoneAtCell.getString())) {
+                                profileId = Long.valueOf(mapping.getSourceId());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            //if we still can't work out which profile it is, fall back on using the first
+            if (profileId == null) {
+                InternalIdMap mapping = mappings.get(0);
+                profileId = Long.valueOf(mapping.getSourceId());
+            }
+
+            staffMemberToProfileMap.put(cacheKey, profileId);
+        }
+
+        return profileId;
+    }
 
     /*public Reference createPractitionerReference(CsvCell practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
@@ -163,9 +211,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Encounter, encounterGuid.getString());
     }
 
-    public Reference createEpisodeReference(CsvCell patientGuid) {
+    public Reference createEpisodeReference(String episodeId) {
         //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
-        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid.getString());
+        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId);
     }
 
     public static void setUniqueId(ResourceBuilderBase resourceBuilder, CsvCell sourceGuid) {
@@ -927,5 +975,29 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public ConditionResourceCache getConditionResourceCache() {
         return conditionResourceCache;
+    }
+
+    public void submitToThreadPool(Callable callable) throws Exception {
+        if (this.utilityThreadPool == null) {
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000);
+        }
+
+        List<ThreadPoolError> errors = utilityThreadPool.submit(callable);
+        AbstractCsvCallable.handleErrors(errors);
+    }
+
+    public void waitUntilThreadPoolIsEmpty() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
+    public void stopThreadPool() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
+            AbstractCsvCallable.handleErrors(errors);
+        }
     }
 }

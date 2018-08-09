@@ -32,8 +32,13 @@ public abstract class AbstractCsvCallable implements Callable {
         //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
         ThreadPoolError first = errors.get(0);
         Throwable exception = first.getException();
-        AbstractCsvCallable callable = (AbstractCsvCallable)first.getCallable();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        Callable callable = first.getCallable();
+        if (callable instanceof AbstractCsvCallable) {
+            AbstractCsvCallable csvCallable = (AbstractCsvCallable)first.getCallable();
+            CsvCurrentState parserState = csvCallable.getParserState();
+            throw new TransformException(parserState.toString(), exception);
+        } else {
+            throw new TransformException("", exception);
+        }
     }
 }

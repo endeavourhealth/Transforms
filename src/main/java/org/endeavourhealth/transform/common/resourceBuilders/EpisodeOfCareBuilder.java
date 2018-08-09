@@ -192,4 +192,12 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     public boolean hasRegistrationType() {
         return ExtensionConverter.hasExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
     }
+
+    public EpisodeOfCare.EpisodeOfCareStatus getStatus() {
+        if (episodeOfCare.hasStatus()) {
+            return episodeOfCare.getStatus();
+        } else {
+            return null;
+        }
+    }
 }

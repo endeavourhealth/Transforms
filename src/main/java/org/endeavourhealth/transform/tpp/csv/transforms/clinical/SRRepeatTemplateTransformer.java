@@ -76,12 +76,12 @@ public class SRRepeatTemplateTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-            medicationStatementBuilder.setRecordedDate(dateRecored.getDate(), dateRecored);
+            medicationStatementBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDate());
+            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
@@ -93,7 +93,7 @@ public class SRRepeatTemplateTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy);
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
         }
 

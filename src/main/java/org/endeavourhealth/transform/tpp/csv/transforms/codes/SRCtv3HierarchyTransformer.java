@@ -1,11 +1,8 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3HierarchyRef;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -26,10 +23,6 @@ public class SRCtv3HierarchyTransformer {
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             List<TppCtv3HierarchyRef> mappingsToSave = new ArrayList<>();
 
@@ -38,7 +31,7 @@ public class SRCtv3HierarchyTransformer {
                 while (parser.nextRecord()) {
 
                     try {
-                        processRecord((SRCtv3Hierarchy) parser, threadPool, csvHelper, mappingsToSave);
+                        processRecord((SRCtv3Hierarchy) parser, csvHelper, mappingsToSave);
                     } catch (Exception ex) {
                         fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
@@ -47,28 +40,18 @@ public class SRCtv3HierarchyTransformer {
 
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
-                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
-                handleErrors(errors);
+                csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
-        }
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        throw new TransformException("", exception);
+        fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void processRecord(SRCtv3Hierarchy parser, ThreadPool threadPool, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
+
+    public static void processRecord(SRCtv3Hierarchy parser, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         if (rowId.isEmpty()) {
@@ -105,8 +88,7 @@ public class SRCtv3HierarchyTransformer {
         if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
             List<TppCtv3HierarchyRef> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
-            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
-            handleErrors(errors);
+            csvHelper.submitToThreadPool(new Task(copy));
         }
     }
 
