@@ -330,7 +330,6 @@ public abstract class TppCsvToFhirTransformer {
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
-        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
@@ -362,6 +361,7 @@ public abstract class TppCsvToFhirTransformer {
         SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting clinical transforms");
+        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
