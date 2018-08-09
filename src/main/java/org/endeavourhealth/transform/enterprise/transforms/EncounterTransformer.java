@@ -263,7 +263,7 @@ public class EncounterTransformer extends AbstractTransformer {
     }
 
 
-    private CodeableConcept findSourceCodeableConcept(Encounter fhir) throws Exception {
+    private static CodeableConcept findSourceCodeableConcept(Encounter fhir) {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -458,7 +458,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return null;
     }
 
-    private void transformEncounterRaw(Long enterpriseId, Resource resource, EnterpriseTransformParams params,
+    /*private void transformEncounterRaw(Long enterpriseId, Resource resource, EnterpriseTransformParams params,
                                        long id, long organisationId, long patientId, long personId, long practitionerId,
                                        long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
                                        Long serviceProviderOrganisationId, Long recordingPractitionerId, Date recordingDate,
@@ -470,7 +470,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
 
 
-    }
+    }*/
 
     /*public static String findEncounterTypeTerm(Encounter fhir) {
         return findEncounterTypeTerm(fhir, null);
@@ -479,16 +479,10 @@ public class EncounterTransformer extends AbstractTransformer {
     private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
 
         String source = null;
-        if (fhir.hasExtension()) {
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
-            if (extension != null) {
-                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-                source = codeableConcept.getText();
-                /*String term = codeableConcept.getText();
-                if (!Strings.isNullOrEmpty(term)) {
-                    return term;
-                }*/
-            }
+
+        CodeableConcept sourceCodeableConcept = findSourceCodeableConcept(fhir);
+        if (sourceCodeableConcept != null) {
+            source = sourceCodeableConcept.getText();
         }
 
         //if the fhir resource doesn't have a type or class, then return out
