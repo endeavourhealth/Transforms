@@ -16,6 +16,8 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class SRPatientRegistrationTransformer {
@@ -142,24 +144,54 @@ public class SRPatientRegistrationTransformer {
     }
 
     private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
-        // Fold to upper for easy comparison. Main concern is whether
-        // patient is GMS, Private or temporary.
-        String target = regTypeCell.getString().toUpperCase();
 
-        if (target.equals("GMS")) {
+        //there is some SystmOne legacy data where patients have multiple reg types, generally GMS + one of the old
+        //IOS registrations. In these cases, carry over GMS.
+        List<RegistrationType> types = new ArrayList<>();
+
+        // Main concern is whether patient is GMS, Private or temporary.
+        String s = regTypeCell.getString();
+        String[] toks = s.split(",");
+
+        for (String tok: toks) {
+
+            if (tok.equalsIgnoreCase("GMS")) {
+                types.add(RegistrationType.REGULAR_GMS);
+            } else if (tok.equalsIgnoreCase("IMMEDIATELY NECESSARY")) {
+                types.add(RegistrationType.IMMEDIATELY_NECESSARY);
+            } else if (tok.equalsIgnoreCase("PRIVATE")) {
+                types.add(RegistrationType.PRIVATE);
+            } else if (tok.equalsIgnoreCase("TEMPORARY")) {
+                types.add(RegistrationType.TEMPORARY);
+            } else if (tok.equalsIgnoreCase("APPLIED")) {
+                types.add(RegistrationType.PRE_REGISTRATION);
+            } else if (tok.equalsIgnoreCase("MINOR SURGERY")) {
+                types.add(RegistrationType.MINOR_SURGERY);
+            } else {
+                throw new TransformException("Unmapped registration type " + tok);
+            }
+        }
+
+        if (types.size() == 1) {
+            return types.get(0);
+
+        } else if (types.contains(RegistrationType.REGULAR_GMS)) {
             return RegistrationType.REGULAR_GMS;
-        } else if (target.equals("IMMEDIATELY NECESSARY")) {
-            return RegistrationType.IMMEDIATELY_NECESSARY;
-        } else if (target.equals("PRIVATE")) {
-            return RegistrationType.PRIVATE;
-        } else if (target.equals("TEMPORARY")) {
-            return RegistrationType.TEMPORARY;
-        } else if (target.equals("APPLIED")) {
+
+        } else if (types.contains(RegistrationType.PRE_REGISTRATION)) {
             return RegistrationType.PRE_REGISTRATION;
 
+        } else if (types.contains(RegistrationType.PRIVATE)) {
+            return RegistrationType.PRIVATE;
+
+        } else if (types.contains(RegistrationType.TEMPORARY)) {
+            return RegistrationType.TEMPORARY;
+
+        } else if (types.contains(RegistrationType.IMMEDIATELY_NECESSARY)) {
+            return RegistrationType.IMMEDIATELY_NECESSARY;
+
         } else {
-            throw new TransformException("Unmapped registration type " + target);
-            //return RegistrationType.OTHER;
+            throw new TransformException("Don't know how to handle registration type string " + s);
         }
     }
 
