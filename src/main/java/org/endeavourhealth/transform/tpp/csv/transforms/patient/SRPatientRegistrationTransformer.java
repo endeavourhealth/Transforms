@@ -160,16 +160,26 @@ public class SRPatientRegistrationTransformer {
 
             if (tok.equalsIgnoreCase("GMS")) {
                 types.add(RegistrationType.REGULAR_GMS);
-            } else if (tok.equalsIgnoreCase("IMMEDIATELY NECESSARY")) {
+            } else if (tok.equalsIgnoreCase("IMMEDIATELY NECESSARY")
+                    || tok.equalsIgnoreCase("Immediately Necessary Treatment")) {
                 types.add(RegistrationType.IMMEDIATELY_NECESSARY);
             } else if (tok.equalsIgnoreCase("PRIVATE")) {
                 types.add(RegistrationType.PRIVATE);
-            } else if (tok.equalsIgnoreCase("TEMPORARY")) {
+            } else if (tok.equalsIgnoreCase("TEMPORARY")
+                    || tok.equalsIgnoreCase("Temporary Resident < 16 days")
+                    || tok.equalsIgnoreCase("Temporary Resident 16 days to 3 months")) {
                 types.add(RegistrationType.TEMPORARY);
             } else if (tok.equalsIgnoreCase("APPLIED")) {
                 types.add(RegistrationType.PRE_REGISTRATION);
             } else if (tok.equalsIgnoreCase("MINOR SURGERY")) {
                 types.add(RegistrationType.MINOR_SURGERY);
+            } else if (tok.equalsIgnoreCase("Contraception")) {
+                types.add(RegistrationType.CONTRACEPTIVE_SERVICES);
+            } else if (tok.equalsIgnoreCase("Child Health Surveillance")) {
+                types.add(RegistrationType.CHILD_HEALTH_SURVEILLANCE);
+            } else if (tok.equalsIgnoreCase("Maternity")) {
+                types.add(RegistrationType.MATERNITY_SERVICES);
+
             } else {
                 throw new TransformException("Unmapped registration type " + tok);
             }
