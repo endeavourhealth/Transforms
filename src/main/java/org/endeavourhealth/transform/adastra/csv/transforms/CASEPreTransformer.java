@@ -48,6 +48,8 @@ public class CASEPreTransformer {
 
         // first up, create the OOH organisation from the DDS service details
         UUID serviceId = parser.getServiceId();
+        boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
+
         OrganizationBuilder organizationBuilder
                 = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
@@ -57,7 +59,7 @@ public class CASEPreTransformer {
         }
 
         // if this is the first run, the organization will not have been created or cached
-        if (!csvHelper.getOrganisationCache().organizationInCache(serviceId.toString())) {
+        if (!orgInCache) {
             //lookup the Service details from DDS
             Service service = csvHelper.getService(serviceId);
             if (service != null) {

@@ -55,6 +55,8 @@ public class PROVIDERTransformer {
         }
 
         String gpPracticeCode = gpPracticeCodeCell.getString();
+        boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(gpPracticeCode);
+
         OrganizationBuilder organizationBuilder
                 = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(  gpPracticeCode,
                                                                                     csvHelper,
@@ -68,7 +70,7 @@ public class PROVIDERTransformer {
         }
 
         // if this is the first run, the organization will not have been created or cached, so do this
-        if (!csvHelper.getOrganisationCache().organizationInCache(gpPracticeCode)) {
+        if (!orgInCache) {
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
