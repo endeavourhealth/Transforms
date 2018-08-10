@@ -57,29 +57,29 @@ public class SRCodePreTransformer {
 
         // ethnicity and marital status lookup
         CsvCell readCode = parser.getCTV3Code();
-        String readcodeString = readCode.getString();
-        if (!readCode.isEmpty() && csvHelper.isEthnicityCode(readCode.getString())) {
+        if (!readCode.isEmpty()) {
+
+            DateTimeType dateTimeType = null;
+            CsvCell eventDateCell = parser.getDateEvent();
+            if (!eventDateCell.isEmpty()) {
+                dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
+            }
 
             //try to get Ethnicity from code
-            EthnicCategory ethnicCategory = csvHelper.getKnownEthnicCategory(readcodeString);
-//            if (ethnicCategory == null) {
-//                ethnicCategory = findEthnicityCode(readCode.getString());
-//            }
+            EthnicCategory ethnicCategory = csvHelper.getKnownEthnicCategory(readCode.getString());
             if (ethnicCategory != null) {
-
-                DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
                 csvHelper.cacheEthnicity(patientId, dateTimeType, ethnicCategory);
-            } else {
-
-                //try to get Marital status from code
-                MaritalStatus maritalStatus = findMaritalStatus(readCode.getString());
-                if (maritalStatus != null) {
-
-                    DateTimeType dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
-                    csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus);
-                }
             }
+
+            //try to get Marital status from code
+            MaritalStatus maritalStatus = findMaritalStatus(readCode.getString());
+            if (maritalStatus != null) {
+                csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus);
+            }
+
         }
+
+
     }
 
     private static MaritalStatus findMaritalStatus(String readCode) {
