@@ -102,6 +102,8 @@ public class SRPatientRegistrationTransformer {
         }
 
         CsvCell orgIdCell = parser.getIDOrganisation();
+        LOG.debug("Doing episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " and org ID " + orgIdCell.getString());
+
         if (!orgIdCell.isEmpty()) {
 
             Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
@@ -141,6 +143,7 @@ public class SRPatientRegistrationTransformer {
         //we save the episode immediately, since it's complete now, but the patient isn't done yet
         boolean mapIds = !episodeBuilder.isIdMapped();
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
+        LOG.debug("Added episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " to resource filer");
     }
 
     private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {

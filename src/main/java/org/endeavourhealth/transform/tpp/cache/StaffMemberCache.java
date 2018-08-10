@@ -156,6 +156,12 @@ public class StaffMemberCache {
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GDP_NUMBER;
             case "RPSGB": //royal pharmaceutical society of GB
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_RPSGB_NUMBER;
+            case "GPhC": //general pharmaceutical council
+                return FhirIdentifierUri.IDENTIFIER_SYSTEM_GPhC_NUMBER;
+            case "Pathology ID":
+                return null;
+            case "Local Person ID":
+                return null;
             default:
                 TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
                 return null;
