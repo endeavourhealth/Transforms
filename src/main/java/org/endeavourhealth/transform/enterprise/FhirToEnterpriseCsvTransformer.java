@@ -324,6 +324,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         tranformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
         tranformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
         tranformResources(ResourceType.Specimen, resources, threadPool, params);
+        tranformResources(ResourceType.Flag, resources, threadPool, params);
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
@@ -340,7 +341,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                 String resourceType = resource.getResourceType();
                 resourceTypesMissed.add(resourceType);
             }
-            String s = String.join(", " + resourceTypesMissed);
+            String s = String.join(", ", resourceTypesMissed);
             throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
         }
     }
@@ -365,6 +366,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             return data.getAppointments();
         } else if (resourceType == ResourceType.Encounter) {
             return data.getEncounters();
+        } else if (resourceType == ResourceType.Flag) {
+            return data.getFlags();
         } else if (resourceType == ResourceType.Condition) {
             return data.getObservations();
         } else if (resourceType == ResourceType.Procedure) {
@@ -416,6 +419,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             return new AppointmentTransformer();
         } else if (resourceType == ResourceType.Encounter) {
             return new EncounterTransformer();
+        } else if (resourceType == ResourceType.Flag) {
+            return new FlagTransformer();
         } else if (resourceType == ResourceType.Condition) {
             return new ConditionTransformer();
         } else if (resourceType == ResourceType.Procedure) {

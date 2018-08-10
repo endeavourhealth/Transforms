@@ -44,6 +44,7 @@ public class OutputContainer {
         csvWriters.add(new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterDetail("encounter_detail.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterRaw("encounter_raw.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Flag("flag.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Observation("observation.csv", csvFormat, dateFormat, timeFormat));
@@ -52,8 +53,6 @@ public class OutputContainer {
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
     }
-
-
 
     public byte[] writeToZip() throws Exception {
 
@@ -182,6 +181,10 @@ public class OutputContainer {
 
     public EncounterRaw getEncounterRaws() {
         return findCsvWriter(EncounterRaw.class);
+    }
+
+    public Flag getFlags() {
+        return findCsvWriter(Flag.class);
     }
 
     public ReferralRequest getReferralRequests() {
