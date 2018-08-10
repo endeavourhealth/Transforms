@@ -23,7 +23,7 @@ public class Flag extends AbstractEnterpriseCsvWriter {
                             Date effectiveDate,
                             Integer datePrecisionId,
                             Boolean isActive,
-                            String alertText
+                            String flagText
     ) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
@@ -34,7 +34,7 @@ public class Flag extends AbstractEnterpriseCsvWriter {
                 convertDate(effectiveDate),
                 convertInt(datePrecisionId),
                 convertBoolean(isActive),
-                alertText);
+                flagText);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class Flag extends AbstractEnterpriseCsvWriter {
                 "effective_date",
                 "date_precision_id",
                 "is_active",
-                "alert_text"
+                "flag_text"
         };
     }
 
