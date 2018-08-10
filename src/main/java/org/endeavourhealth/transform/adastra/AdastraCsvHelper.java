@@ -39,6 +39,7 @@ public class AdastraCsvHelper {
     private Map<String, CsvCell> consultationDateMap = new HashMap<>();
     private Map<String, CsvCell> caseCaseNoMap = new HashMap<>();
     private Map<String, String> caseOutcomeMap = new HashMap<>();
+    private Map<String, CsvCell> patientCareProviderMap = new HashMap<>();
 
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
@@ -149,6 +150,14 @@ public class AdastraCsvHelper {
 
     public CsvCell findConsultationDateTime(String consultationId) {
         return consultationDateMap.get(consultationId);
+    }
+
+    public void cachePatientCareProvider(String patientId, CsvCell providerCell) {
+        patientCareProviderMap.put(patientId, providerCell);
+    }
+
+    public CsvCell findPatientCareProvider(String patientId) {
+        return patientCareProviderMap.get(patientId);
     }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationIDCell,

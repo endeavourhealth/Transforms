@@ -74,8 +74,8 @@ public abstract class AdastraCsvToFhirTransformer {
 
     private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        findFileAndOpenParser(PATIENT.class, serviceId, systemId, exchangeId, files, version, parsers);
         findFileAndOpenParser(PROVIDER.class, serviceId, systemId, exchangeId, files, version, parsers);
+        findFileAndOpenParser(PATIENT.class, serviceId, systemId, exchangeId, files, version, parsers);
         findFileAndOpenParser(CASE.class, serviceId, systemId, exchangeId, files, version, parsers);
         findFileAndOpenParser(CASEQUESTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
         findFileAndOpenParser(NOTES.class, serviceId, systemId, exchangeId, files, version, parsers);
@@ -146,6 +146,9 @@ public abstract class AdastraCsvToFhirTransformer {
             CASEPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             CLINICALCODESPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             PRESCRIPTIONSPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+
+            //then the single admin transform
+            PROVIDERTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
             //then for the patient resources - note the order of these transforms is important
             CASETransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

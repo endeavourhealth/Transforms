@@ -1,32 +1,27 @@
 package org.endeavourhealth.transform.adastra.cache;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ResourceCache;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
-import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Organization;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
 public class OrganisationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationResourceCache.class);
 
-    private ResourceCache<UUID, OrganizationBuilder> organizationBuildersByLocationUUID = new ResourceCache<>();
+    private ResourceCache<String, OrganizationBuilder> organizationBuildersByLocationID = new ResourceCache<>();
 
-    public OrganizationBuilder getOrCreateOrganizationBuilder(UUID serviceId,
+    public OrganizationBuilder getOrCreateOrganizationBuilder(String orgId,
                                                               AdastraCsvHelper csvHelper,
                                                               FhirResourceFiler fhirResourceFiler,
                                                               AbstractCsvParser parser) throws Exception {
 
-        OrganizationBuilder cachedResource = organizationBuildersByLocationUUID.getAndRemoveFromCache(serviceId);
+        OrganizationBuilder cachedResource
+                = organizationBuildersByLocationID.getAndRemoveFromCache(orgId);
         if (cachedResource != null) {
             return cachedResource;
         }
@@ -34,33 +29,13 @@ public class OrganisationResourceCache {
         OrganizationBuilder organizationBuilder = null;
 
         Organization organization
-                = (Organization) csvHelper.retrieveResource(serviceId.toString(), ResourceType.Organization, fhirResourceFiler);
+                = (Organization) csvHelper.retrieveResource(orgId, ResourceType.Organization, fhirResourceFiler);
         if (organization == null) {
 
-            //if the Organization resource doesn't exist yet, create a new one using the ServiceId
+            //if the Organization resource doesn't exist yet, create a new one using the ServiceId or ODS code (if a provider)
             organizationBuilder = new OrganizationBuilder();
-            organizationBuilder.setId(serviceId.toString());
+            organizationBuilder.setId(orgId);
 
-            //lookup the Service details from DDS
-            Service service = csvHelper.getService(serviceId);
-            if (service != null) {
-
-                String localId = service.getLocalId();
-                if (!localId.isEmpty()) {
-                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-                    identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-                    identifierBuilder.setValue(localId);
-                }
-
-                String serviceName = service.getName();
-                if (!serviceName.isEmpty()) {
-                    organizationBuilder.setName(serviceName);
-                }
-            }
-
-            //save the new OOH organization resource
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
         } else {
             organizationBuilder = new OrganizationBuilder(organization);
         }
@@ -68,17 +43,21 @@ public class OrganisationResourceCache {
         return organizationBuilder;
     }
 
-    public void returnOrganizationBuilder(UUID serviceId, OrganizationBuilder organizationBuilder) throws Exception {
-        organizationBuildersByLocationUUID.addToCache(serviceId, organizationBuilder);
+    public boolean organizationInCache(String orgId) {
+        return organizationBuildersByLocationID.contains(orgId);
     }
 
-    public void removeOrganizationFromCache(UUID serviceId) throws Exception {
-        organizationBuildersByLocationUUID.removeFromCache(serviceId);
+    public void returnOrganizationBuilder(String orgId, OrganizationBuilder organizationBuilder) throws Exception {
+        organizationBuildersByLocationID.addToCache(orgId, organizationBuilder);
+    }
+
+    public void removeOrganizationFromCache(String orgId) throws Exception {
+        organizationBuildersByLocationID.removeFromCache(orgId);
     }
 
     public void cleanUpResourceCache() {
         try {
-            organizationBuildersByLocationUUID.clear();
+            organizationBuildersByLocationID.clear();
         } catch (Exception ex) {
             LOG.error("Error cleaning up cache", ex);
         }

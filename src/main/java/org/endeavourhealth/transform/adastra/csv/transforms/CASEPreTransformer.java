@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.CASE;
@@ -7,7 +9,9 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,23 +46,49 @@ public class CASEPreTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
+        // first up, create the OOH organisation from the DDS service details
+        UUID serviceId = parser.getServiceId();
+        OrganizationBuilder organizationBuilder
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ServiceId: {}",
+                    serviceId.toString());
+            return;
+        }
+
+        // if this is the first run, the organization will not have been created or cached
+        if (!csvHelper.getOrganisationCache().organizationInCache(serviceId.toString())) {
+            //lookup the Service details from DDS
+            Service service = csvHelper.getService(serviceId);
+            if (service != null) {
+
+                String localId = service.getLocalId();
+                if (!localId.isEmpty()) {
+                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+                    identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+                    identifierBuilder.setValue(localId);
+                }
+
+                String serviceName = service.getName();
+                if (!serviceName.isEmpty()) {
+                    organizationBuilder.setName(serviceName);
+                }
+            }
+
+            //save the new OOH organization resource
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+
+            //add to cache
+            csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);
+        }
+
+        // next up, simply cache the case Patient and CaseNo references here for use in Consultation, Clinical Code,
+        // Prescription and Notes transforms
         CsvCell caseId = parser.getCaseId();
         CsvCell caseNo = parser.getCaseNo();
         CsvCell patientId = parser.getPatientId();
 
-        // first up, create the OOH organisation
-        UUID serviceId = parser.getServiceId();
-        OrganizationBuilder organizationBuilder
-                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId, csvHelper, fhirResourceFiler, parser);
-        if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
-                    serviceId.toString());
-            return;
-        }
-        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
-
-        //simply cache the case Patient and CaseNo references here for use in Consultation, Clinical Code,
-        //Prescription and Notes transforms
         if (!caseId.isEmpty()) {
 
             if (!patientId.isEmpty()) {

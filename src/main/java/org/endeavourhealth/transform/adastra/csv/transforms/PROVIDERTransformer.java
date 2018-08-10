@@ -1,11 +1,15 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.PROVIDER;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,12 +46,49 @@ public class PROVIDERTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
-        //get Patient Resource builder from cache
-        PatientBuilder patientBuilder = new PatientBuilder();
+        CsvCell patientIdCell = parser.getPatientId();
+        CsvCell gpPracticeCodeCell = parser.getGPPracticeNatCode();
+        if (gpPracticeCodeCell.isEmpty()) {
+            TransformWarnings.log(LOG, parser, "Provider GP Practice Code is blank for PatientId: {}",
+                    patientIdCell.getString());
+            return;
+        }
 
-        CsvCell patientId = parser.getPatientId();
-        CsvCell caseId = parser.getCaseId();
+        String gpPracticeCode = gpPracticeCodeCell.getString();
+        OrganizationBuilder organizationBuilder
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(  gpPracticeCode,
+                                                                                    csvHelper,
+                                                                                    fhirResourceFiler,
+                                                                                    parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser,
+                    "Error creating or retrieving Provider Organization resource for Practice Code: {}",
+                                gpPracticeCode);
+            return;
+        }
 
+        // if this is the first run, the organization will not have been created or cached, so do this
+        if (!csvHelper.getOrganisationCache().organizationInCache(gpPracticeCode)) {
 
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setValue(gpPracticeCode);
+
+            CsvCell gpPracticeName = parser.getGPPracticeName();
+            organizationBuilder.setName(gpPracticeName.getString());
+
+            CsvCell gpPracticePostCodeCell = parser.getGPPracticePostcode();
+            organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
+
+            //save the new OOH organization resource
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+
+            //add to cache
+            csvHelper.getOrganisationCache().returnOrganizationBuilder(gpPracticeCode, organizationBuilder);
+        }
+
+        //cache the patient and practice code map to retrieve in the Patient transform
+        csvHelper.cachePatientCareProvider(patientIdCell.getString(), gpPracticeCodeCell);
     }
 }

@@ -211,11 +211,19 @@ public class PATIENTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
 
-        // set the managing organization
+        // set the managing OOH organization
         patientBuilder.setManagingOrganisation(organisationReference);
 
-        //set the patient's care provider, which for this instance, is the OOH service
-        //TODO:  enabling causes mapping error - //patientBuilder.addCareProvider(organisationReference);
+        //set the patient's GP as a care provider
+        CsvCell patientGPCareProviderCodeCell = csvHelper.findPatientCareProvider(patientId.getString());
+        if (patientGPCareProviderCodeCell != null) {
+
+            Reference gpOrganisationReference = csvHelper.createOrganisationReference(patientGPCareProviderCodeCell.getString());
+            if (isResourceMapped) {
+                gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(gpOrganisationReference, fhirResourceFiler);
+            }
+            patientBuilder.addCareProvider(gpOrganisationReference);
+        }
 
         if (!patientCreatedInSession) {
             //save both resources together, so the new patient is saved before the episode
