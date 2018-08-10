@@ -40,6 +40,7 @@ public class StaffMemberCache {
     private Set<Long> staffProfileIdsProcessed = new HashSet<>();
     private String cachedOdsCode = null;
     private Set<Long> staffProfileIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //this gives us a concurrent hash set
+    private Set<Long> staffMemberIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //this gives us a concurrent hash set
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
 
     public void addStaffMemberObj(CsvCell staffMemberIdCell, StaffMemberCacheObj obj) {
@@ -178,11 +179,25 @@ public class StaffMemberCache {
 
     public void ensurePractitionerIsTransformedForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell, TppCsvHelper csvHelper) throws Exception {
 
-        //we need to map staff member ID to a suitable staff profile ID
-        Long profileId = csvHelper.findStaffProfileIdForStaffMemberId(staffMemberIdCell, profileIdRecordedBy, organisationDoneAtCell);
+        Long staffMemberId = staffMemberIdCell.getLong();
 
-        CsvCell dummyProfileIdCell = CsvCell.factoryDummyWrapper("" + profileId);
-        ensurePractitionerIsTransformedForStaffProfileId(dummyProfileIdCell, csvHelper);
+        //if we've already done the below for this staff member, then return out
+        if (staffMemberIdsThatMustBeTransformed.contains(staffMemberId)) {
+            return;
+        }
+        staffMemberIdsThatMustBeTransformed.add(staffMemberId);
+
+        //find all the profiles for this staff member
+        List<InternalIdMap> mappings = internalIdDal.getSourceId(csvHelper.getServiceId(), InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
+        if (mappings.isEmpty()) {
+            throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
+        }
+
+        for (InternalIdMap mapping: mappings) {
+            String profileIdStr = mapping.getSourceId();
+            CsvCell dummyProfileIdCell = CsvCell.factoryDummyWrapper("" + profileIdStr);
+            ensurePractitionerIsTransformedForStaffProfileId(dummyProfileIdCell, csvHelper);
+        }
     }
 
     public boolean shouldSavePractitioner(PractitionerBuilder practitionerBuilder, TppCsvHelper csvHelper) throws Exception {
