@@ -2,15 +2,13 @@ package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +117,19 @@ public class SRPatientAddressHistoryTransformer {
         if (!dateEventCell.isEmpty()) {
             addressBuilder.setStartDate(dateEventCell.getDateTime(), dateEventCell);
         }
+
+        //note, the managing organisation is set from the SRPatientRegistrationTransformer too, except
+        //this means that if a patient doesn't have a record in that file, the mananging org won't get set.
+        //So set it here too, on the assumption that a patient will always have an address.
+        CsvCell orgIdCell = parser.getIDOrganisation();
+        if (!orgIdCell.isEmpty()) {
+            Reference orgReferencePatient = csvHelper.createOrganisationReference(orgIdCell);
+            if (patientBuilder.isIdMapped()) {
+                orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
+            }
+            patientBuilder.setManagingOrganisation(orgReferencePatient, orgIdCell);
+        }
+
     }
 
     private static Address.AddressUse getAddressUse(CsvCell addressTypeCell, CsvCell dateToCell,

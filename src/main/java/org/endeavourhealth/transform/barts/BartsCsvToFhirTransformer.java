@@ -160,7 +160,17 @@ public abstract class BartsCsvToFhirTransformer {
 
             LOG.debug("Doing CLEVE bulks now");
             for (ExchangePayloadFile bulk: cleveBulks) {
-                LOG.debug("Doing " + bulk.getPath());
+                String path = bulk.getPath();
+                LOG.debug("Doing " + path);
+
+                //these are done and we don't need to reprocess them
+                if (path.endsWith("_55")
+                        || path.endsWith("_54")
+                        || path.endsWith("_53")
+                        || path.endsWith("_52")
+                        || path.endsWith("_51")) {
+                    continue;
+                }
 
                 List<ParserI> parsers = new ArrayList<>();
                 CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, bulk.getPath());
