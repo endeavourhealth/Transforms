@@ -1,10 +1,12 @@
 package org.endeavourhealth.transform.tpp.cache;
 
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +50,15 @@ public class PatientResourceCache {
         for (Long key: patientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = patientBuildersByRowId.get(key);
             boolean mapIds = !patientBuilder.isIdMapped();
-            fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder);
+            try {
+                fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder);
+            } catch (Exception ex) {
+                LOG.error("Error saving patient " + key);
+                Resource patient = patientBuilder.getResource();
+                String json = FhirSerializationHelper.serializeResource(patient);
+                LOG.error(json);
+                throw ex;
+            }
         }
 
         patientBuildersByRowId.clear();
