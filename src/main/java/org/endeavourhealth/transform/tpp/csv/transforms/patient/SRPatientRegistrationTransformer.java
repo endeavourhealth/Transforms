@@ -179,6 +179,11 @@ public class SRPatientRegistrationTransformer {
                 types.add(RegistrationType.CHILD_HEALTH_SURVEILLANCE);
             } else if (tok.equalsIgnoreCase("Maternity")) {
                 types.add(RegistrationType.MATERNITY_SERVICES);
+            } else if (tok.equalsIgnoreCase("Walk-in Patient")) {
+                types.add(RegistrationType.WALK_IN);
+            } else if (tok.equalsIgnoreCase("Other")
+                    || tok.equalsIgnoreCase("Remotely Registered")) {
+                types.add(RegistrationType.OTHER);
 
             } else {
                 throw new TransformException("Unmapped registration type " + tok);
