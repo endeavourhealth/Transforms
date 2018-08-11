@@ -209,7 +209,8 @@ public class SRPatientRegistrationTransformer {
             return RegistrationType.IMMEDIATELY_NECESSARY;
 
         } else {
-            throw new TransformException("Don't know how to handle registration type string " + s);
+            return types.get(0);
+            //throw new TransformException("Don't know how to handle registration type string " + s);
         }
     }
 
