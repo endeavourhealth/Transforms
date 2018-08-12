@@ -21,10 +21,13 @@ import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class ObservationTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ObservationTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -152,6 +155,11 @@ public class ObservationTransformer {
         }
 
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+
+        if (parser.getObservationGuid().getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
+            LOG.debug("Getting resource type for parent " + parser.getObservationGuid());
+        }
+
         switch (resourceType) {
             case Observation:
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
@@ -548,6 +556,11 @@ public class ObservationTransformer {
     }
 
     private static ResourceType findParentObservationType(EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell patientGuidCell, CsvCell parentObservationCell) throws Exception {
+
+        if (parentObservationCell.getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
+            LOG.debug("Getting resource type for parent " + parentObservationCell);
+        }
+
         ResourceType parentResourceType = csvHelper.getCachedParentObservationResourceType(patientGuidCell, parentObservationCell);
         if (parentResourceType == null) {
             Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, patientGuidCell, parentObservationCell);

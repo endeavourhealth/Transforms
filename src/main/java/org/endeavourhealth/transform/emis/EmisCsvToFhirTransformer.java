@@ -31,7 +31,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public abstract class EmisCsvToFhirTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(EmisCsvToFhirTransformer.class);
 
     public static final String VERSION_5_4 = "5.4"; //version being received live from Emis as of Dec 2016

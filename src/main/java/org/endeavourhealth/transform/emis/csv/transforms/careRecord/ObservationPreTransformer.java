@@ -11,10 +11,13 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class ObservationPreTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ObservationPreTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -57,6 +60,10 @@ public class ObservationPreTransformer {
 
         CsvCell observationGuid = parser.getObservationGuid();
         CsvCell patientGuid = parser.getPatientGuid();
+
+        if (observationGuid.getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
+            LOG.debug("Getting resource type for parent " + observationGuid);
+        }
 
         csvHelper.cacheParentObservationResourceType(patientGuid, observationGuid, resourceType);
 
