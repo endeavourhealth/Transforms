@@ -181,7 +181,10 @@ public class SRPatientRegistrationTransformer {
                 types.add(RegistrationType.MATERNITY_SERVICES);
             } else if (tok.equalsIgnoreCase("Walk-in Patient")) {
                 types.add(RegistrationType.WALK_IN);
+            } else if (tok.equalsIgnoreCase("Emergency")) {
+                types.add(RegistrationType.EMERGENCY);
             } else if (tok.equalsIgnoreCase("Other")
+                    || tok.equalsIgnoreCase("Patient")
                     || tok.equalsIgnoreCase("Remotely Registered")) {
                 types.add(RegistrationType.OTHER);
 
@@ -195,6 +198,9 @@ public class SRPatientRegistrationTransformer {
 
         } else if (types.contains(RegistrationType.REGULAR_GMS)) {
             return RegistrationType.REGULAR_GMS;
+
+        } else if (types.contains(RegistrationType.EMERGENCY)) {
+            return RegistrationType.EMERGENCY;
 
         } else if (types.contains(RegistrationType.PRE_REGISTRATION)) {
             return RegistrationType.PRE_REGISTRATION;
