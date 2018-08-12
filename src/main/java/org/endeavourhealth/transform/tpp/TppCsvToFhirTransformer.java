@@ -330,9 +330,10 @@ public abstract class TppCsvToFhirTransformer {
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
+        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this must be done before the next two
         SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
 
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
