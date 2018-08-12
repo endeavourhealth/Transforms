@@ -10,11 +10,20 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRTrustTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfilePreTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -304,9 +313,8 @@ public abstract class TppCsvToFhirTransformer {
         TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                                                     fhirResourceFiler.getExchangeId());
 
-        //TODO - restore all these!!!
         //reference data
-   /*     LOG.trace("Starting reference data transforms");
+        LOG.trace("Starting reference data transforms");
         SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
@@ -332,7 +340,7 @@ public abstract class TppCsvToFhirTransformer {
 
         //make sure all practitioners are saved to the DB before doing anything clinical
         fhirResourceFiler.waitUntilEverythingIsSaved();
-*/
+
         LOG.trace("Starting patient demographics transforms");
         SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRPatientContactDetailsPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
