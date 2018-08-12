@@ -155,11 +155,6 @@ public class ObservationTransformer {
         }
 
         ResourceType resourceType = getTargetResourceType(parser, csvHelper);
-
-        if (parser.getObservationGuid().getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
-            LOG.debug("Getting resource type for parent " + parser.getObservationGuid());
-        }
-
         switch (resourceType) {
             case Observation:
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
@@ -342,56 +337,6 @@ public class ObservationTransformer {
         return false;
     }*/
 
-    /*public static ResourceType getTargetResourceType(Observation parser,
-                                                     CsvProcessor csvProcessor,
-                                                     EmisCsvHelper csvHelper) throws Exception {
-
-        String observationTypeString = parser.getObservationType();
-        ObservationType observationType = ObservationType.fromValue(observationTypeString);
-        Double value = parser.getValue();
-
-        if (observationType == ObservationType.VALUE
-                || observationType == ObservationType.INVESTIGATION
-                || value != null) { //anything with a value, even if not labelled as a Value has to go into an Observation resource
-            if (isDiagnosticReport(parser, csvProcessor, csvHelper)) {
-                return ResourceType.DiagnosticReport;
-            } else {
-                return ResourceType.Observation;
-            }
-
-        } else if (observationType == ObservationType.ALLERGY) {
-            return ResourceType.AllergyIntolerance;
-
-        } else if (observationType == ObservationType.TEST_REQUEST) {
-            return ResourceType.DiagnosticOrder;
-
-        } else if (observationType == ObservationType.IMMUNISATION) {
-            return ResourceType.Immunization;
-
-        } else if (observationType == ObservationType.FAMILY_HISTORY) {
-            return ResourceType.FamilyMemberHistory;
-
-        } else if (observationType == ObservationType.REFERRAL) {
-            return ResourceType.ReferralRequest;
-
-        } else if (observationType == ObservationType.DOCUMENT) {
-            return ResourceType.Observation;
-
-        } else if (observationType == ObservationType.ANNOTATED_IMAGE) {
-            return ResourceType.Observation;
-
-        } else if (observationType == ObservationType.OBSERVATION) {
-            if (isProcedure(parser, csvProcessor, csvHelper)) {
-                return ResourceType.Procedure;
-            } else {
-                return ResourceType.Condition;
-            }
-
-        } else {
-            throw new IllegalArgumentException("Unhandled ObservationType " + observationType);
-        }
-    }
-*/
     private static boolean isDiagnosticReport(Observation parser,
                                               EmisCsvHelper csvHelper) throws Exception {
 
@@ -401,9 +346,11 @@ public class ObservationTransformer {
         }
 
         //if it doesn't have any child observations linking to it, then don't store as a report
-        if (!csvHelper.hasChildObservations(parser.getObservationGuid(), parser.getPatientGuid())) {
+        //no, don't test this. Depending on the order of data, we may get this wrong when called from the ObservationPreTransformer,
+        //since we may not have cached the child observations yet. So be consistent and use the code type to check.
+        /*if (!csvHelper.hasChildObservations(parser.getObservationGuid(), parser.getPatientGuid())) {
             return false;
-        }
+        }*/
 
         //if we pass the above checks, then check what kind of code it is. If one of the below types, then store as a report.
         CsvCell codeIdCell = parser.getCodeId();
@@ -556,10 +503,6 @@ public class ObservationTransformer {
     }
 
     private static ResourceType findParentObservationType(EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell patientGuidCell, CsvCell parentObservationCell) throws Exception {
-
-        if (parentObservationCell.getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
-            LOG.debug("Getting resource type for parent " + parentObservationCell);
-        }
 
         ResourceType parentResourceType = csvHelper.getCachedParentObservationResourceType(patientGuidCell, parentObservationCell);
         if (parentResourceType == null) {

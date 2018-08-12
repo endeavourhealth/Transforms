@@ -332,9 +332,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return observationChildMap.containsKey(parentObservationSourceId);
     }*/
 
-    public boolean hasChildObservations(CsvCell parentObservationGuid, CsvCell patientGuid) {
+    /*public boolean hasChildObservations(CsvCell parentObservationGuid, CsvCell patientGuid) {
         return observationChildMap.containsKey(createUniqueId(patientGuid, parentObservationGuid));
-    }
+    }*/
 
     public void cacheObservationParentRelationship(CsvCell parentObservationGuid,
                                                    CsvCell patientGuid,

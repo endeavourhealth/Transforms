@@ -56,14 +56,11 @@ public class ObservationPreTransformer {
             return;
         }
 
-        ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
 
         CsvCell observationGuid = parser.getObservationGuid();
         CsvCell patientGuid = parser.getPatientGuid();
 
-        if (observationGuid.getString().equalsIgnoreCase("{2E18F78E-6858-4BD4-B9BC-D44EAE87B44A}")) {
-            LOG.debug("Getting resource type for parent " + observationGuid);
-        }
+        ResourceType resourceType = ObservationTransformer.getTargetResourceType(parser, csvHelper);
 
         csvHelper.cacheParentObservationResourceType(patientGuid, observationGuid, resourceType);
 
