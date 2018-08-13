@@ -80,8 +80,9 @@ public class CASEPreTransformer {
             }
 
             //save the new OOH organization resource
-            boolean mapIds = !organizationBuilder.isIdMapped();
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
+            //boolean mapIds = !organizationBuilder.isIdMapped();
+            //fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
             //add to cache
             csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);

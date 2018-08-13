@@ -84,8 +84,9 @@ public class PROVIDERTransformer {
             organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
 
             //save the new OOH organization resource
-            boolean mapIds = !organizationBuilder.isIdMapped();
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
+            //boolean mapIds = !organizationBuilder.isIdMapped();
+            //fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
             //add to cache
             csvHelper.getOrganisationCache().returnOrganizationBuilder(gpPracticeCode, organizationBuilder);
