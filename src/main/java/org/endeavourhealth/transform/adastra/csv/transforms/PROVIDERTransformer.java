@@ -57,20 +57,20 @@ public class PROVIDERTransformer {
         String gpPracticeCode = gpPracticeCodeCell.getString();
         boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(gpPracticeCode);
 
-        OrganizationBuilder organizationBuilder
-                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(  gpPracticeCode,
-                                                                                    csvHelper,
-                                                                                    fhirResourceFiler,
-                                                                                    parser);
-        if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser,
-                    "Error creating or retrieving Provider Organization resource for Practice Code: {}",
-                                gpPracticeCode);
-            return;
-        }
-
-        // if this is the first run, the organization will not have been created or cached, so do this
+        // if this is the first run, the organization will not have been created or cached, so do this.  Only happens once per org
         if (!orgInCache) {
+
+            OrganizationBuilder organizationBuilder
+                    = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(  gpPracticeCode,
+                                                                                        csvHelper,
+                                                                                        fhirResourceFiler,
+                                                                                        parser);
+            if (organizationBuilder == null) {
+                TransformWarnings.log(LOG, parser,
+                        "Error creating or retrieving Provider Organization resource for Practice Code: {}",
+                        gpPracticeCode);
+                return;
+            }
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
@@ -84,7 +84,8 @@ public class PROVIDERTransformer {
             organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
 
             //save the new OOH organization resource
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+            boolean mapIds = !organizationBuilder.isIdMapped();
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
 
             //add to cache
             csvHelper.getOrganisationCache().returnOrganizationBuilder(gpPracticeCode, organizationBuilder);

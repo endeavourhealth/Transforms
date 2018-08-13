@@ -50,16 +50,17 @@ public class CASEPreTransformer {
         UUID serviceId = parser.getServiceId();
         boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
 
-        OrganizationBuilder organizationBuilder
-                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
-        if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ServiceId: {}",
-                    serviceId.toString());
-            return;
-        }
-
-        // if this is the first run, the organization will not have been created or cached
+        // if this is the first run, the organization will not have been created or cached - will only run once for th OOH org
         if (!orgInCache) {
+
+            OrganizationBuilder organizationBuilder
+                    = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
+            if (organizationBuilder == null) {
+                TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ServiceId: {}",
+                        serviceId.toString());
+                return;
+            }
+
             //lookup the Service details from DDS
             Service service = csvHelper.getService(serviceId);
             if (service != null) {
@@ -79,7 +80,8 @@ public class CASEPreTransformer {
             }
 
             //save the new OOH organization resource
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+            boolean mapIds = !organizationBuilder.isIdMapped();
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
 
             //add to cache
             csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);
