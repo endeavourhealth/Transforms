@@ -47,13 +47,16 @@ public class CASEPreTransformer {
                                       String version) throws Exception {
 
         // first up, create the OOH organisation from the DDS service details
-        // if this is the first run, the organization will not have been created yet - will only run once for th OOH org
+        // if this is the first run, the organization will not have been created yet or cached - will only run once for th OOH org
         UUID serviceId = parser.getServiceId();
-        boolean oohMainOrgAlreadyFiled
-                = csvHelper.getOrganisationCache().organizationInDB(serviceId.toString(), csvHelper, fhirResourceFiler);
-        if (!oohMainOrgAlreadyFiled) {
+        boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
+        if (!orgInCache) {
+            boolean oohMainOrgAlreadyFiled
+                    = csvHelper.getOrganisationCache().organizationInDB(serviceId.toString(), csvHelper, fhirResourceFiler);
+            if (!oohMainOrgAlreadyFiled) {
 
-            createMainOOHOrganization(parser, fhirResourceFiler, csvHelper);
+                createMainOOHOrganization(parser, fhirResourceFiler, csvHelper);
+            }
         }
 
         // next up, simply cache the case Patient and CaseNo references here for use in Consultation, Clinical Code,
@@ -96,6 +99,7 @@ public class CASEPreTransformer {
 
             String localId = service.getLocalId();
             if (!localId.isEmpty()) {
+                organizationBuilder.getIdentifiers().clear();
                 IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
                 identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
                 identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
