@@ -57,7 +57,7 @@ public class PROVIDERTransformer {
         String gpPracticeCode = gpPracticeCodeCell.getString();
         boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(gpPracticeCode);
 
-        // if this is the first run, the organization will not have been created or cached, so do this.  Only happens once per org
+        // Provider organizations appear multiple times in the PROVIDER file, so only create and cache once
         if (!orgInCache) {
 
             OrganizationBuilder organizationBuilder
@@ -84,9 +84,8 @@ public class PROVIDERTransformer {
             organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
 
             //save the new OOH organization resource
-            //boolean mapIds = !organizationBuilder.isIdMapped();
-            //fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+            boolean mapIds = !(csvHelper.isResourceIdMapped(gpPracticeCode, organizationBuilder.getResource()));
+            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
 
             //add to cache
             csvHelper.getOrganisationCache().returnOrganizationBuilder(gpPracticeCode, organizationBuilder);

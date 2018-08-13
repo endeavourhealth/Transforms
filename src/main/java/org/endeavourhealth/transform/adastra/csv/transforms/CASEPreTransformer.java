@@ -47,45 +47,13 @@ public class CASEPreTransformer {
                                       String version) throws Exception {
 
         // first up, create the OOH organisation from the DDS service details
+        // if this is the first run, the organization will not have been created yet - will only run once for th OOH org
         UUID serviceId = parser.getServiceId();
-        boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
+        boolean oohMainOrgAlreadyFiled
+                = csvHelper.getOrganisationCache().organizationInDB(serviceId.toString(), csvHelper, fhirResourceFiler);
+        if (!oohMainOrgAlreadyFiled) {
 
-        // if this is the first run, the organization will not have been created or cached - will only run once for th OOH org
-        if (!orgInCache) {
-
-            OrganizationBuilder organizationBuilder
-                    = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
-            if (organizationBuilder == null) {
-                TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ServiceId: {}",
-                        serviceId.toString());
-                return;
-            }
-
-            //lookup the Service details from DDS
-            Service service = csvHelper.getService(serviceId);
-            if (service != null) {
-
-                String localId = service.getLocalId();
-                if (!localId.isEmpty()) {
-                    IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-                    identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-                    identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-                    identifierBuilder.setValue(localId);
-                }
-
-                String serviceName = service.getName();
-                if (!serviceName.isEmpty()) {
-                    organizationBuilder.setName(serviceName);
-                }
-            }
-
-            //save the new OOH organization resource
-            //boolean mapIds = !organizationBuilder.isIdMapped();
-            //fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
-            fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
-
-            //add to cache
-            csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);
+            createMainOOHOrganization(parser, fhirResourceFiler, csvHelper);
         }
 
         // next up, simply cache the case Patient and CaseNo references here for use in Consultation, Clinical Code,
@@ -108,5 +76,41 @@ public class CASEPreTransformer {
                     patientId.getString(), parser.getFilePath());
             return;
         }
+    }
+
+    private static void createMainOOHOrganization(CASE parser, FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
+
+        UUID serviceId = parser.getServiceId();
+
+        OrganizationBuilder organizationBuilder
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (serviceId.toString(), csvHelper, fhirResourceFiler, parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ServiceId: {}",
+                    serviceId.toString());
+            return;
+        }
+
+        //lookup the Service details from DDS
+        Service service = csvHelper.getService(serviceId);
+        if (service != null) {
+
+            String localId = service.getLocalId();
+            if (!localId.isEmpty()) {
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+                identifierBuilder.setValue(localId);
+            }
+
+            String serviceName = service.getName();
+            if (!serviceName.isEmpty()) {
+                organizationBuilder.setName(serviceName);
+            }
+        }
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+
+        //add to cache
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);
     }
 }

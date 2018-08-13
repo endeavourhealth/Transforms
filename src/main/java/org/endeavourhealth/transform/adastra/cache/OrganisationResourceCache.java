@@ -47,6 +47,10 @@ public class OrganisationResourceCache {
         return organizationBuildersByLocationID.contains(orgId);
     }
 
+    public boolean organizationInDB(String orgId, AdastraCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception  {
+        return (csvHelper.retrieveResource(orgId, ResourceType.Organization, fhirResourceFiler) != null);
+    }
+
     public void returnOrganizationBuilder(String orgId, OrganizationBuilder organizationBuilder) throws Exception {
         organizationBuildersByLocationID.addToCache(orgId, organizationBuilder);
     }
