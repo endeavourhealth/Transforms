@@ -214,7 +214,8 @@ public class SRReferralOutTransformer {
 
             CsvCell referralRecipientId = parser.getRecipientID();
             if (!referralRecipientId.isEmpty()) {
-                if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
+                //TODO - restore this after understanding what the field actually contains
+                /*if (recipientIsPerson(referralRecipientType, csvHelper, parser)) {
                     Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(referralRecipientId);
                     if (referralRequestBuilder.isIdMapped()) {
                         practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
@@ -227,7 +228,7 @@ public class SRReferralOutTransformer {
                         orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, fhirResourceFiler);
                     }
                     referralRequestBuilder.addRecipient(orgReference, referralRecipientId);
-                }
+                }*/
             }
         }
 
@@ -294,10 +295,19 @@ public class SRReferralOutTransformer {
         }
 
         String term = tppMappingRef.getMappedTerm();
-
-        if (term.toLowerCase().startsWith("organisation")) {
+        if (term.equals("Organisation ID")) {
             return false;
         }
+
+        //TODO - properly handle the five different types of data
+        //known options are:
+        /*
+        "Unknown"
+        "GMC Number"
+        "NMC Number"
+        "Organisation ID"
+        "Other ID"
+        */
 
         return true;
     }

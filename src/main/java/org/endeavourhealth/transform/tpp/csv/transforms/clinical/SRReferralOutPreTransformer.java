@@ -56,9 +56,10 @@ public class SRReferralOutPreTransformer {
         if (!referralRecipientType.isEmpty()
                 && !referralRecipientId.isEmpty()) {
 
-            if (SRReferralOutTransformer.recipientIsPerson(referralRecipientType, csvHelper, parser)) {
+            //TODO - restore this after understanding what the field actually contains
+            /*if (SRReferralOutTransformer.recipientIsPerson(referralRecipientType, csvHelper, parser)) {
                 csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForStaffProfileId(referralRecipientId, csvHelper);
-            }
+            }*/
         }
     }
 }
