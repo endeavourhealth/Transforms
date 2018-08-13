@@ -72,19 +72,30 @@ public class PROVIDERTransformer {
                 return;
             }
 
+            organizationBuilder.getIdentifiers().clear();
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
             identifierBuilder.setValue(gpPracticeCode);
 
             CsvCell gpPracticeName = parser.getGPPracticeName();
-            organizationBuilder.setName(gpPracticeName.getString());
+            if (!gpPracticeName.isEmpty()) {
+
+                organizationBuilder.setName(gpPracticeName.getString());
+            }
 
             CsvCell gpPracticePostCodeCell = parser.getGPPracticePostcode();
-            organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
+            if (!gpPracticeCodeCell.isEmpty()) {
 
-            //save the new OOH organization resource
+                // we are only interested in the first non empty postcode for the organization to file
+                if (organizationBuilder.getAddresses().isEmpty()) {
+                    organizationBuilder.addAddress().setPostalCode(gpPracticePostCodeCell.getString());
+                }
+            }
+
+            // check if the resource has already been Id mapped
             boolean mapIds = !(csvHelper.isResourceIdMapped(gpPracticeCode, organizationBuilder.getResource()));
+            //save the new OOH organization resource
             fhirResourceFiler.saveAdminResource(parser.getCurrentState(), mapIds, organizationBuilder);
 
             //add to cache
