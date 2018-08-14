@@ -524,7 +524,8 @@ public abstract class EmisCsvToFhirTransformer {
             //update any MedicationStatements to set the last issue date on them
             csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
 
-            //}
+            //close down the utility thread pool
+            csvHelper.stopThreadPool();
         }
     }
 

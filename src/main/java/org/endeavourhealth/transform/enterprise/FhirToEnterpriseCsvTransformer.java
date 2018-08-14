@@ -72,7 +72,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         OutputContainer data = new OutputContainer(pseudonymised);
         EnterpriseTransformParams params = new EnterpriseTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
-        Long enterpriseOrgId = findEnterpriseOrgId(serviceId, systemId, params, resources);
+        Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
         params.setBatchSize(batchSize);
 
@@ -107,11 +107,11 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         return i.intValue();
     }*/
 
-    private static Long findEnterpriseOrgId(UUID serviceId, UUID systemId, EnterpriseTransformParams params, List<ResourceWrapper> resources) throws Exception {
+    private static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformParams params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
         EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-        Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString(), systemId.toString());
+        Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString());
         if (enterpriseOrganisationId != null) {
             return enterpriseOrganisationId;
         }
@@ -146,7 +146,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         Patient patient = (Patient)FhirResourceHelper.deserialiseResouce(json);
         if (!patient.hasManagingOrganization()) {
-            throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId + " and system " + systemId);
+            throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
         }
 
         Reference orgReference = patient.getManagingOrganization();
@@ -181,7 +181,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
-        enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), systemId.toString(), enterpriseOrganisationId);
+        enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());

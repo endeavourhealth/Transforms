@@ -1,8 +1,5 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -27,10 +24,6 @@ public class ConsultationPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //use a thread pool to perform multiple lookups in parallel
-        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(fhirResourceFiler.getServiceId());
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
-
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
@@ -38,22 +31,20 @@ public class ConsultationPreTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    transform((Consultation)parser, fhirResourceFiler, csvHelper, threadPool);
+                    processRecord((Consultation)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    public static void transform(Consultation parser,
+    public static void processRecord(Consultation parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper,
-                                      ThreadPool threadPool) throws Exception {
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell consultationGuid = parser.getConsultationGuid();
         CsvCell patientGuid = parser.getPatientGuid();
@@ -63,21 +54,7 @@ public class ConsultationPreTransformer {
         CsvCurrentState parserState = parser.getCurrentState();
 
         LookupTask task = new LookupTask(encounterSourceId, fhirResourceFiler, csvHelper, parserState);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
-    }
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since the first exception is always most relevant
-        ThreadPoolError first = errors.get(0);
-        LookupTask callable = (LookupTask)first.getCallable();
-        Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
+        csvHelper.submitToThreadPool(task);
     }
 
     static class LookupTask implements Callable {

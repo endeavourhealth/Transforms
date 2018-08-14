@@ -1,14 +1,11 @@
 package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -38,10 +35,6 @@ public abstract class ClinicalCodeTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
-
         try {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
 
@@ -51,7 +44,7 @@ public abstract class ClinicalCodeTransformer {
                 //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                 //to parse any record in this file it a critical error
                 try {
-                    transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave, version);
+                    transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, mappingsToSave, version);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -59,32 +52,19 @@ public abstract class ClinicalCodeTransformer {
 
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
-                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
-                handleErrors(errors);
+                csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
 
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        throw new TransformException("", exception);
-    }
 
     private static void transform(ClinicalCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  ThreadPool threadPool,
                                   List<EmisCsvCodeMap> mappingsToSave,
                                   String version) throws Exception {
 
@@ -129,8 +109,7 @@ public abstract class ClinicalCodeTransformer {
         if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
             List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
-            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
-            handleErrors(errors);
+            csvHelper.submitToThreadPool(new Task(copy));
         }
     }
 

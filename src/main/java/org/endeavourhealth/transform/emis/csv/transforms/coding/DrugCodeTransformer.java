@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
-import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -33,11 +31,6 @@ public class DrugCodeTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //inserting the entries into the IdCodeMap table is a lot slower than the rest of this
-        //file, so split up the saving over a few threads
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
-
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
@@ -47,7 +40,7 @@ public class DrugCodeTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    transform((DrugCode)parser, fhirResourceFiler, csvHelper, threadPool, mappingsToSave);
+                    transform((DrugCode)parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -55,20 +48,17 @@ public class DrugCodeTransformer {
 
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
-                List<ThreadPoolError> errors = threadPool.submit(new Task(mappingsToSave));
-                handleErrors(errors);
+                csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
     private static void transform(DrugCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  ThreadPool threadPool,
                                   List<EmisCsvCodeMap> mappingsToSave) throws Exception {
 
         CsvCell codeId = parser.getCodeId();
@@ -93,8 +83,7 @@ public class DrugCodeTransformer {
         if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
             List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
-            List<ThreadPoolError> errors = threadPool.submit(new Task(copy));
-            handleErrors(errors);
+            csvHelper.submitToThreadPool(new Task(copy));
         }
     }
 
