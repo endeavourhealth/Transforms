@@ -305,6 +305,8 @@ public abstract class AbstractTransformer {
             for (ResourceWrapper resource: resourcesToFindOnDb) {
                 Long enterpriseId = ret.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
+
+                LOG.debug("mapIds for Orgs (step 4a):  "+resource.getResourceId().toString()+" has entId of: "+enterpriseId);
             }
         }
 
@@ -317,6 +319,8 @@ public abstract class AbstractTransformer {
             for (ResourceWrapper resource: resourcesToFindOrCreateOnDb) {
                 Long enterpriseId = ret.get(resource);
                 addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
+
+                LOG.debug("mapIds for Orgs (step 4b):  "+resource.getResourceId().toString()+" has entId of: "+enterpriseId);
             }
         }
 
