@@ -171,7 +171,9 @@ public abstract class BartsCsvToFhirTransformer {
                         || path.endsWith("_51")
                         || path.endsWith("_50")
                         || path.endsWith("_49")
-                        || path.endsWith("_48")) {
+                        || path.endsWith("_48")
+                        || path.endsWith("_47")
+                        || path.endsWith("_46")) {
                     continue;
                 }
 

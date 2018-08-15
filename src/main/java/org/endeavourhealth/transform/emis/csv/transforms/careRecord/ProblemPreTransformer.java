@@ -12,8 +12,10 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class ProblemPreTransformer {
@@ -98,6 +100,20 @@ public class ProblemPreTransformer {
                 ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
                 List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+
+                //note: a previous bug has meant we've ended up with duplicate references in the contained list,
+                //because Reference doesn't implement equals or hashCode. The below function fails if the same reference
+                //is passed in twice, so we need to remove any duplicates here.
+                Set<String> tmpFound = new HashSet<>();
+                for (int i=previousReferencesDiscoveryIds.size()-1; i>=0; i--) {
+                    Reference ref = previousReferencesDiscoveryIds.get(i);
+                    String refValue = ref.getReference();
+                    if (tmpFound.contains(refValue)) {
+                        previousReferencesDiscoveryIds.remove(i);
+                    } else {
+                        tmpFound.add(refValue);
+                    }
+                }
 
                 //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
                 List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);

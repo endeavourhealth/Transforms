@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.emis.csv.schema.bespoke;
+package org.endeavourhealth.transform.emis.custom.schema;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.transform.common.AbstractCsvParser;

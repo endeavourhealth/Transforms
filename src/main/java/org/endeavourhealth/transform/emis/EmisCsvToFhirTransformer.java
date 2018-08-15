@@ -45,16 +45,12 @@ public abstract class EmisCsvToFhirTransformer {
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds) throws Exception {
 
-        //for EMIS CSV, the exchange body will be a list of files received
-        //split by /n but trim each one, in case there's a sneaky /r in there
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + serviceId);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
         String version = determineVersion(files);
-
-        //TODO - call RegistrationStatusTransformer
 
         ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         boolean processPatientData = shouldProcessPatientData(files);
@@ -523,10 +519,11 @@ public abstract class EmisCsvToFhirTransformer {
 
             //update any MedicationStatements to set the last issue date on them
             csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
-
-            //close down the utility thread pool
-            csvHelper.stopThreadPool();
         }
+
+
+        //close down the utility thread pool
+        csvHelper.stopThreadPool();
     }
 
 

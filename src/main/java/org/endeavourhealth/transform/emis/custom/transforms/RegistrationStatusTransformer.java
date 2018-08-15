@@ -1,30 +1,20 @@
-package org.endeavourhealth.transform.emis.csv.transforms.bespoke;
+package org.endeavourhealth.transform.emis.custom.transforms;
 
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.schema.bespoke.RegistrationStatus;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.ResourceType;
-
-import java.util.Map;
+import org.endeavourhealth.transform.emis.custom.schema.RegistrationStatus;
 
 public class RegistrationStatusTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
-                                 FhirResourceFiler fhirResourceFiler,
-                                 EmisCsvHelper csvHelper) throws Exception {
+    public static void transform(AbstractCsvParser parser,
+                                 FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(RegistrationStatus.class);
         while (parser.nextRecord()) {
 
             try {
-                processRecord((RegistrationStatus) parser, fhirResourceFiler, csvHelper);
+                processRecord((RegistrationStatus) parser, fhirResourceFiler);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -35,10 +25,9 @@ public class RegistrationStatusTransformer {
     }
 
     private static void processRecord(RegistrationStatus parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        CsvCell patientGuidCell = parser.getPatientGuid();
+       /* CsvCell patientGuidCell = parser.getPatientGuid();
         String patientGuid = patientGuidCell.getString();
 
         //the patient GUID in the standard extract files is in upper case and
@@ -63,7 +52,7 @@ public class RegistrationStatusTransformer {
         //TODO - should we carry over the concept of a registration status being "active" or not? Status 1-3 are NOT counted as active?
         //TODO - how to handle multiple records per patient? Make this like a pre-transformer or something?
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, episodeBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, episodeBuilder);*/
     }
 
     private static String convertRegistrationStatus(Integer obj) throws Exception {
