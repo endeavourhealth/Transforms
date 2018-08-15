@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -49,6 +50,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
     private Map<String, Integer> cachedHeaderMap = null;
+    private Charset encoding = null;
 
     public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
                              String version, String filePath, CSVFormat csvFormat,
@@ -63,6 +65,22 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
         this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+    }
+
+    public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
+                             String version, String filePath, CSVFormat csvFormat,
+                             String dateFormat, String timeFormat, Charset encoding) throws Exception {
+
+        this.serviceId = serviceId;
+        this.systemId = systemId;
+        this.exchangeId = exchangeId;
+        this.version = version;
+        this.filePath = filePath;
+        this.csvFormat = csvFormat;
+        this.dateFormat = new SimpleDateFormat(dateFormat);
+        this.timeFormat = new SimpleDateFormat(timeFormat);
+        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+        this.encoding = encoding;
     }
 
     @Override
@@ -106,8 +124,13 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         } else {
             LOG.info(action + " " + filePath + " (" + numLines + " lines)");
         }
-
-        InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
+        InputStreamReader isr = null;
+        if (encoding != null) {
+            isr = FileHelper.readFileReaderFromSharedStorage(filePath, encoding);
+        }
+        else {
+            isr = FileHelper.readFileReaderFromSharedStorage(filePath);
+        }
         this.csvReader = new CSVParser(isr, csvFormat);
         try {
             this.csvIterator = csvReader.iterator();

@@ -32,6 +32,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.nio.charset.Charset;
 import java.util.*;
 
 public abstract class TppCsvToFhirTransformer {
@@ -42,6 +43,7 @@ public abstract class TppCsvToFhirTransformer {
     /*public static final String DATE_FORMAT = "mm/dd/yyyy";
     public static final String TIME_FORMAT = "hh:mm:ss a";*/
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    public static final Charset ENCODING = Charset.forName("Cp1252");
 
     public static final String VERSION_TEST_PACK = "TestPack"; //file format we got from the demo environment mid-2017
     public static final String VERSION_TEST_PACK_2 = "TestPack2"; //file format we got since 2017-04-26

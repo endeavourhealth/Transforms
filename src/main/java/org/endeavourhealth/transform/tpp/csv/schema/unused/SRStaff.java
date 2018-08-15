@@ -16,7 +16,8 @@ public class SRStaff extends AbstractCsvParser {
         super(serviceId, systemId, exchangeId, version, filePath,
                 TppCsvToFhirTransformer.CSV_FORMAT,
                 TppCsvToFhirTransformer.DATE_FORMAT,
-                TppCsvToFhirTransformer.TIME_FORMAT);
+                TppCsvToFhirTransformer.TIME_FORMAT,
+                TppCsvToFhirTransformer.ENCODING);
     }
 
     @Override
