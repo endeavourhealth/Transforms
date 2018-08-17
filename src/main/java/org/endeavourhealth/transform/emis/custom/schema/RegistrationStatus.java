@@ -14,7 +14,7 @@ public class RegistrationStatus extends AbstractCsvParser {
                 exchangeId,
                 version,
                 filePath,
-                csvFormat.withHeader(getHeaders()), //unlike other CSV files this one doesn't have headers in it
+                csvFormat,
                 dateFormat,
                 timeFormat);
     }
@@ -31,8 +31,10 @@ public class RegistrationStatus extends AbstractCsvParser {
         return new String[] {
                 "OrganisationGuid",
                 "PatientGuid",
-                "RegistrationStatusId",
-                "RegistrationTypeId"
+                "Date",
+                "RegistrationStatus",
+                "RegistrationType",
+                "ProcessingOrder"
         };
     }
 
@@ -44,12 +46,20 @@ public class RegistrationStatus extends AbstractCsvParser {
         return getCell("PatientGuid");
     }
 
-    public CsvCell getRegistrationStatusId() {
-        return getCell("RegistrationStatusId");
+    public CsvCell getDate() {
+        return getCell("Date");
     }
 
-    public CsvCell getRegistrationTypeId() {
-        return getCell("RegistrationTypeId");
+    public CsvCell getRegistrationStatus() {
+        return getCell("RegistrationStatus");
+    }
+
+    public CsvCell getRegistrationType() {
+        return getCell("RegistrationType");
+    }
+
+    public CsvCell getProcessingOrder() {
+        return getCell("ProcessingOrder");
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
@@ -91,7 +92,10 @@ public class SRPatientRegistrationTransformer {
         CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
         if (medicalRecordStatusCell != null && !medicalRecordStatusCell.isEmpty()) {
             String medicalRecordStatus = convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
-            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
+
+            //record status is stored in a contained list, so we can maintain a history of it
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+            containedListBuilder.addCodeableConcept(medicalRecordStatus, medicalRecordStatusCell);
         }
 
         CsvCell regTypeCell = parser.getRegistrationStatus();

@@ -99,7 +99,7 @@ public class ProblemPreTransformer {
                 ConditionBuilder conditionBuilder = new ConditionBuilder(previousVersion);
                 ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
-                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
 
                 //note: a previous bug has meant we've ended up with duplicate references in the contained list,
                 //because Reference doesn't implement equals or hashCode. The below function fails if the same reference

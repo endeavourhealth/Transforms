@@ -106,7 +106,7 @@ public class SREventPreTransformer {
                     EncounterBuilder encounterBuilder = new EncounterBuilder(previousVersion);
                     ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-                    List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+                    List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
 
                     //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
                     List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);

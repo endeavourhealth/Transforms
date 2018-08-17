@@ -126,7 +126,7 @@ public class EncounterResourceCache {
                     CsvCell[] sourceCells = newLinkedResources.getSourceCells(i);
                     //note we need to convert the reference from a local ID one to a Discovery UUID one
                     reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, csvHelper);
-                    containedListBuilder.addContainedListItem(reference, sourceCells);
+                    containedListBuilder.addReference(reference, sourceCells);
                 }
             }
 

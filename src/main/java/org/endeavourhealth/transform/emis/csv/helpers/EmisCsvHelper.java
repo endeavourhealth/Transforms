@@ -518,7 +518,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
                 Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+                containedListBuilder.addReference(globallyUniqueReference, sourceCells);
             }
 
             fhirResourceFiler.savePatientResource(null, false, conditionBuilder);
@@ -983,11 +983,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
         ContainedListBuilder newContainedListBuilder = new ContainedListBuilder(newConditionBuilder);
-        List<Reference> newLinkedItems = newContainedListBuilder.getContainedListItems();
+        List<Reference> newLinkedItems = newContainedListBuilder.getReferences();
         for (Reference reference: newLinkedItems) {
             Reference mappedReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
 
-            containedListBuilder.addContainedListItem(mappedReference);
+            containedListBuilder.addReference(mappedReference);
         }
 
         //make sure to pass in FALSE to bypass ID mapping, since we're saving an already ID mapped instance
@@ -1120,7 +1120,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
                 Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+                containedListBuilder.addReference(globallyUniqueReference, sourceCells);
             }
 
             fhirResourceFiler.savePatientResource(null, false, encounterBuilder);

@@ -220,7 +220,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
                 Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+                containedListBuilder.addReference(globallyUniqueReference, sourceCells);
             }
 
             //LOG.debug("Saving newLinkedItems for EncounterId: {}", encounterId.toString());

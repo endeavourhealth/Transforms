@@ -9,7 +9,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 import java.util.List;
 
-public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI {
+public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI, HasContainedListI {
 
     private EpisodeOfCare episodeOfCare = null;
 
@@ -44,6 +44,11 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     @Override
     public DomainResource getResource() {
         return episodeOfCare;
+    }
+
+    @Override
+    public String getContainedListExtensionUrl() {
+        return FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS;
     }
 
     public void setManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
@@ -146,12 +151,13 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditCodingExtension(extension, sourceCells);
     }
 
-    public void setMedicalRecordStatus(String registrationStatus, CsvCell... sourceCells) {
+    //reg status is now stored in a contained list
+    /*public void setMedicalRecordStatus(String registrationStatus, CsvCell... sourceCells) {
         StringType stringType = new StringType(registrationStatus);
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS, stringType);
 
         auditCodingExtension(extension, sourceCells);
-    }
+    }*/
 
     public void setOutcome(String episodeOutcome, CsvCell... sourceCells) {
         StringType stringType = new StringType(episodeOutcome);

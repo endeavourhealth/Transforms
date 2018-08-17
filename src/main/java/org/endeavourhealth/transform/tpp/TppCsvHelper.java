@@ -23,6 +23,7 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.tpp.cache.*;
@@ -400,7 +401,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             CsvCell medicalRecordStatusCell = statusForPatient.getValue();
             String medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
-            episodeBuilder.setMedicalRecordStatus(medicalRecordStatus, medicalRecordStatusCell);
+
+            //record status is stored in a contained list, so we can maintain a history of it
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+            containedListBuilder.addCodeableConcept(medicalRecordStatus, medicalRecordStatusCell);
 
             fhirResourceFiler.savePatientResource(null, false, episodeBuilder);
         }

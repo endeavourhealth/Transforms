@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.ExchangePayloadFile;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.custom.helpers.EmisCustomCsvHelper;
 import org.endeavourhealth.transform.emis.custom.schema.RegistrationStatus;
 import org.endeavourhealth.transform.emis.custom.transforms.RegistrationStatusTransformer;
 import org.slf4j.Logger;
@@ -36,12 +37,16 @@ public class EmisCustomCsvToFhirTransformer {
         //the processor is responsible for saving FHIR resources
         FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
+        EmisCustomCsvHelper csvHelper = new EmisCustomCsvHelper();
+
         ExchangePayloadFile fileObj = files.get(0);
         String filePath = fileObj.getPath();
         AbstractCsvParser parser = new RegistrationStatus(serviceId, systemId, exchangeId, null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
 
         try {
-            RegistrationStatusTransformer.transform(parser, fhirResourceFiler);
+            RegistrationStatusTransformer.transform(parser, fhirResourceFiler, csvHelper);
+
+            csvHelper.saveRegistrationStatues(fhirResourceFiler);
 
         } finally {
             try {

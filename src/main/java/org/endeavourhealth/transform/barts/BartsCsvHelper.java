@@ -825,7 +825,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
                 Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
-                containedListBuilder.addContainedListItem(globallyUniqueReference, sourceCells);
+                containedListBuilder.addReference(globallyUniqueReference, sourceCells);
             }
 
             fhirResourceFiler.savePatientResource(null, false, encounterBuilder);

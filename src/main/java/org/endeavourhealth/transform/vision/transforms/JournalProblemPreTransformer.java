@@ -127,7 +127,7 @@ public class JournalProblemPreTransformer {
                 ConditionBuilder conditionBuilder = new ConditionBuilder(previousVersion);
                 ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
-                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getContainedListItems();
+                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
 
                 //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
                 List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);

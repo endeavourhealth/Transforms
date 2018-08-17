@@ -1,15 +1,14 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
-import org.hl7.fhir.instance.model.DomainResource;
-import org.hl7.fhir.instance.model.List_;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ContainedListBuilder {
@@ -22,7 +21,7 @@ public class ContainedListBuilder {
         this.parentBuilder = parentBuilder;
     }
 
-    public void addContainedListItem(Reference reference, CsvCell... sourceCells) {
+    public boolean addReference(Reference reference, CsvCell... sourceCells) {
 
         DomainResource resource = parentBuilder.getResource();
 
@@ -30,9 +29,11 @@ public class ContainedListBuilder {
 
         //avoid having duplicates, so check before we add
         for (List_.ListEntryComponent entry: list.getEntry()) {
-            Reference existingReference = entry.getItem();
-            if (ReferenceHelper.equals(existingReference, reference)) {
-                return;
+            if (entry.hasItem()) {
+                Reference existingReference = entry.getItem();
+                if (ReferenceHelper.equals(existingReference, reference)) {
+                    return false;
+                }
             }
         }
 
@@ -42,6 +43,8 @@ public class ContainedListBuilder {
         int listIndex = resource.getContained().indexOf(list);
         int entryIndex = list.getEntry().indexOf(entry);
         parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].item.reference", sourceCells);
+
+        return true;
     }
 
     public void removeContainedList() {
@@ -59,7 +62,7 @@ public class ContainedListBuilder {
         ExtensionConverter.removeExtension(resource, extensionUrl);
     }
 
-    public List<Reference> getContainedListItems() {
+    public List<Reference> getReferences() {
 
         List<Reference> ret = new ArrayList<>();
 
@@ -68,8 +71,10 @@ public class ContainedListBuilder {
                 && list.hasEntry()) {
 
             for (List_.ListEntryComponent entry: list.getEntry()) {
-                Reference reference = entry.getItem();
-                ret.add(reference);
+                if (entry.hasItem()) {
+                    Reference reference = entry.getItem();
+                    ret.add(reference);
+                }
             }
         }
 
@@ -118,17 +123,49 @@ public class ContainedListBuilder {
         for (int i=0; i<referenceList.size(); i++) {
             Reference reference = referenceList.getReference(i);
             CsvCell[] sourceCells = referenceList.getSourceCells(i);
-            addContainedListItem(reference, sourceCells);
+            addReference(reference, sourceCells);
         }
     }
 
-    /**
-     * used to copy references from one list to another without any audit info
-     */
-    /*public void addReferencesNoAudit(List<Reference> references) {
-        for (Reference reference: references) {
-            addContainedListItem(reference);
+    public boolean addCodeableConcept(String text, CsvCell... sourceCells) {
+        DomainResource resource = parentBuilder.getResource();
+        List_ list = getOrCreateContainedList();
+
+        //avoid having duplicates, so check before we add
+        for (List_.ListEntryComponent entry: list.getEntry()) {
+            if (entry.hasFlag()) {
+                CodeableConcept existingCodeableConcept = entry.getFlag();
+                String existingText = existingCodeableConcept.getText();
+                if (existingText.equals(text)) {
+                    return false;
+                }
+            }
         }
-    }*/
+
+        List_.ListEntryComponent entry = list.addEntry();
+
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(text);
+        entry.setFlag(codeableConcept);
+
+        int listIndex = resource.getContained().indexOf(list);
+        int entryIndex = list.getEntry().indexOf(entry);
+        parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].flag.text", sourceCells);
+
+        return true;
+    }
+
+    public void addDateToLastItem(Date date, CsvCell... sourceCells) {
+        DomainResource resource = parentBuilder.getResource();
+        List_ list = getOrCreateContainedList();
+
+        List<List_.ListEntryComponent> entries = list.getEntry();
+        List_.ListEntryComponent lastEntry = entries.get(entries.size()-1);
+
+        lastEntry.setDate(date);
+
+        int listIndex = resource.getContained().indexOf(list);
+        int entryIndex = list.getEntry().indexOf(lastEntry);
+        parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].date", sourceCells);
+    }
 
 }
