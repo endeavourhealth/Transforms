@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.emis.custom.helpers;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -11,6 +13,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -48,8 +51,9 @@ public class EmisCustomCsvHelper {
             for (RegStatusObj obj: list) {
 
                 CsvCell regStatusCell = obj.getRegStatusCell();
-                String registrationStatus = convertRegistrationStatus(regStatusCell.getInt());
-                boolean added = containedListBuilder.addCodeableConcept(registrationStatus, regStatusCell);
+                RegistrationStatus registrationStatus = convertRegistrationStatus(regStatusCell.getInt());
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(registrationStatus);
+                boolean added = containedListBuilder.addCodeableConcept(codeableConcept, regStatusCell);
                 if (added) {
                     CsvCell dateCell = obj.getDateTimeCell();
                     containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
@@ -110,106 +114,88 @@ public class EmisCustomCsvHelper {
     }
 
 
-    private static String convertRegistrationStatus(Integer obj) throws Exception {
+    private static RegistrationStatus convertRegistrationStatus(Integer obj) throws Exception {
         int value = obj.intValue();
+
 
         switch (value) {
             case 1:
-                return "Patient has presented";
+                return RegistrationStatus.REGISTERED_PRESENTED;
             case 2:
-                return "Medical card (FP4) received";
+                return RegistrationStatus.REGISTERED_MEDICAL_CARD_RECEIVED;
             case 3:
-                return "Application Form FP1 submitted";
+                return RegistrationStatus.REGISTERED_FP1_SUBMITTED;
             case 4:
-                return "Notification of registration";
+                return RegistrationStatus.REGISTERED;
             case 5:
-                return "Medical record sent by FHSA";
+                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
             case 6:
-                return "Record Received";
+                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
             case 7:
-                return "Left Practice. Still Registered";
+                return RegistrationStatus.REGISTERED_LEFT_PRACTICE_STILL_REGISTERED;
             case 8:
-                return "Correctly registered";
+                return RegistrationStatus.REGISTERED_CORRECTLY;
             case 9:
-                return "Short stay";
+                return RegistrationStatus.REGISTERED_TEMPORARY_SHORT_STAY;
             case 10:
-                return "Long stay";
+                return RegistrationStatus.REGISTERED_TEMPORARY_LONG_STAY;
             case 11:
-                return "Death";
+                return RegistrationStatus.DEDUCTION_DEATH;
             case 12:
-                return "Dead (Practice notification)";
+                return RegistrationStatus.DEDUCTION_DEATH_NOTIFICATION;
             case 13:
-                return "Record Requested by FHSA";
+                return RegistrationStatus.DEDUCTION_RECORD_REQUESTED_BY_FHSA;
             case 14:
-                return "Removal to New HA/HB";
+                return RegistrationStatus.REGISTERED_REMOVAL_TO_NEW_HA;
             case 15:
-                return "Internal transfer";
+                return RegistrationStatus.REGISTERED_INTERNAL_TRANSFER;
             case 16:
-                return "Mental hospital";
+                return RegistrationStatus.DEDUCTION_MENTAL_HOSPITAL;
             case 17:
-                return "Embarkation";
+                return RegistrationStatus.DEDUCTION_EMBARKATION;
             case 18:
-                return "New HA/HB - same GP";
+                return RegistrationStatus.REGISTERED_NEW_HA_SAME_GP;
             case 19:
-                return "Adopted child";
+                return RegistrationStatus.DEDUCTION_ADOPTED_CHILD;
             case 20:
-                return "Services";
+                return RegistrationStatus.DEDUCTION_SERVICES;
             case 21:
-                return "Deduction at GP's request";
+                return RegistrationStatus.DEDUCTION_AT_GP_REQUEST;
             case 22:
-                return "Registration cancelled";
+                return RegistrationStatus.DEDUCTION_REGISTRATION_CANCELLED;
             case 23:
-                return "Service dependant";
+                return RegistrationStatus.REGISTERED_SERVICES_DEPENDENT;
             case 24:
-                return "Deduction at patient's request";
+                return RegistrationStatus.DEDUCTION_AT_PATIENT_REQUEST;
             case 25:
-                return "Other reason";
+                return RegistrationStatus.DEDUCTION_OTHER_REASON;
             case 26:
-                return "Returned undelivered";
+                return RegistrationStatus.DEDUCTION_MAIL_RETURNED_UNDELIVERED;
             case 27:
-                return "Internal transfer - address change";
+                return RegistrationStatus.REGISTERED_INTERNAL_TRANSFER_ADDRESS_CHANGE;
             case 28:
-                return "Internal transfer within partnership";
+                return RegistrationStatus.REGISTERED_INTERNAL_TRANSFER_WITHIN_PARTNERSHIP;
             case 29:
-                return "Correspondence states 'gone away'";
+                return RegistrationStatus.DEDUCTION_MAIL_STATES_GONE_AWAY;
             case 30:
-                return "Practice advise outside of area";
+                return RegistrationStatus.DEDUCTION_OUTSIDE_OF_AREA;
             case 31:
-                return "Practice advise patient no longer resident";
+                return RegistrationStatus.DEDUCTION_NO_LONGER_RESIDENT;
             case 32:
-                return "Practice advise removal via screening system";
+                return RegistrationStatus.DEDUCTION_VIA_SCREENING_SYSTEM;
             case 33:
-                return "Practice advise removal via vaccination data";
+                return RegistrationStatus.DEDUCTION_VIA_VACCINATION_DATA;
             case 34:
-                return "Removal from Residential Institute";
+                return RegistrationStatus.REGISTERED_REMOVAL_FROM_RESIDENTIAL_INSITUTE;
             case 35:
-                return "Records sent back to FHSA";
+                return RegistrationStatus.DEDUCTION_RECORDS_SENT_BACK_TO_FHSA;
             case 36:
-                return "Records received by FHSA";
+                return RegistrationStatus.DEDUCTION_RECORDS_RECEIVED_BY_FHSA;
             case 37:
-                return "Registration expired";
+                return RegistrationStatus.DEDUCTION_REGISTRATION_EXPIRED;
             default:
                 throw new TransformException("Unsupported registration status " + value);
         }
-
-        /*
-        NOTE: the below are also registration statuses, but no known patients have them
-        38	All records removed
-        39	Untraced-outwith HB
-        40	Multiple Transfer
-        41	Intra-consortium transfer
-        42	District birth
-        43	Transfer in
-        44	Transfer out
-        45	Movement in
-        46	Movement out
-        47	Died
-        48	Still birth
-        49	Living out, treated in
-        50	Living in, treated out
-
-         */
-
     }
 
     private static RegistrationType convertRegistrationType(Integer obj) throws Exception {

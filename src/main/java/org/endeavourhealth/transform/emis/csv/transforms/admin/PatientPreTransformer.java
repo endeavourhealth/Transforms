@@ -1,10 +1,16 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Patient;
+import org.hl7.fhir.instance.model.EpisodeOfCare;
+import org.hl7.fhir.instance.model.List_;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +35,7 @@ public class PatientPreTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    processLine((Patient)parser, fhirResourceFiler, csvHelper, version);
+                    processLine((Patient) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -46,49 +52,46 @@ public class PatientPreTransformer {
                                     String version) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
-        String patientGuid = patientGuidCell.getString();
-        CsvCurrentState parserState = parser.getCurrentState();
 
-        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(patientGuid, fhirResourceFiler, parserState);
+        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(patientGuidCell, fhirResourceFiler, csvHelper);
         csvHelper.submitToThreadPool(task);
-    }
-
-
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since the first exception is always most relevant
-        ThreadPoolError first = errors.get(0);
-        PreCreateEdsPatientIdTask callable = (PreCreateEdsPatientIdTask)first.getCallable();
-        Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
     }
 
     static class PreCreateEdsPatientIdTask implements Callable {
 
-        private String sourceEmisPatientGuid;
+        private CsvCell patientGuidCell;
         private FhirResourceFiler fhirResourceFiler;
-        private CsvCurrentState parserState;
+        private EmisCsvHelper csvHelper;
 
-        public PreCreateEdsPatientIdTask(String sourceEmisPatientGuid,
-                          FhirResourceFiler fhirResourceFiler,
-                          CsvCurrentState parserState) {
+        public PreCreateEdsPatientIdTask(CsvCell patientGuidCell,
+                                         FhirResourceFiler fhirResourceFiler,
+                                         EmisCsvHelper csvHelper) {
 
-            this.sourceEmisPatientGuid = sourceEmisPatientGuid;
+            this.patientGuidCell = patientGuidCell;
             this.fhirResourceFiler = fhirResourceFiler;
-            this.parserState = parserState;
+            this.csvHelper = csvHelper;
         }
 
         @Override
         public Object call() throws Exception {
             try {
+                String sourceEmisPatientGuid = patientGuidCell.getString();
 
                 //just make the call into the ID helper, which will create and cache or just cache, so no creation is needed
                 //when we get to the point of creating and saving resources
                 IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceEmisPatientGuid);
+
+                //we also want to cache the registration status from any pre-exsting episode of care,
+                //because we receive that in a separate custom extract, and don't want to lose it
+                EpisodeOfCare existingEpisode = (EpisodeOfCare)csvHelper.retrieveResource(sourceEmisPatientGuid, ResourceType.EpisodeOfCare);
+                if (existingEpisode != null) {
+                    EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(existingEpisode);
+                    ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeOfCareBuilder);
+                    List<List_.ListEntryComponent> items = containedListBuilder.getContainedListItems();
+                    if (items != null) {
+                        csvHelper.cacheExistingRegistrationStatuses(patientGuidCell, items);
+                    }
+                }
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -98,8 +101,5 @@ public class PatientPreTransformer {
             return null;
         }
 
-        public CsvCurrentState getParserState() {
-            return parserState;
-        }
     }
 }

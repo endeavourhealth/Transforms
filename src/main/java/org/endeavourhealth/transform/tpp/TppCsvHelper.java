@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -62,7 +63,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> encounterAppointmentOrVisitMap = new ConcurrentHashMap<>();
-    private Map<Long, Map.Entry<Date, CsvCell>> medicalRecordStatusMap = new ConcurrentHashMap<>();
+    private Map<Long, List<MedicalRecordStatusCacheObject>> medicalRecordStatusMap = new ConcurrentHashMap<>();
     private StaffMemberCache staffMemberCache = new StaffMemberCache();
     private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
     private PatientResourceCache patientResourceCache = new PatientResourceCache();
@@ -353,44 +354,26 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return problemReadCodes.containsKey(problemGuid.getLong());
     }
 
-    public void cacheMedicalRecordStatus(CsvCell patientGuid, Date newStatusDate, CsvCell medicalRecordStatusCell) {
+    public void cacheMedicalRecordStatus(CsvCell patientGuid, CsvCell dateCell, CsvCell medicalRecordStatusCell) {
 
-        // Create the unique Id
-        //String uniquePatientId = createUniqueId(patientGuid, null);
-
-        // Check if we already have a status for this patient
         Long key = patientGuid.getLong();
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(key);
-
-        if (statusForPatient != null) {
-            Date existingDate = statusForPatient.getKey();
-            // Check if the new status has a data after the existing status
-            if (newStatusDate.after(existingDate)) {
-                // Overwrite the existing status the the new status
-                medicalRecordStatusMap.put(key, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
-            }
-        } else {
-            medicalRecordStatusMap.put(key, new AbstractMap.SimpleEntry(newStatusDate, medicalRecordStatusCell));
+        List<MedicalRecordStatusCacheObject> list = medicalRecordStatusMap.get(key);
+        if (list == null) {
+            list = new ArrayList<>();
+            medicalRecordStatusMap.put(key, list);
         }
+        list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
     }
 
-    public CsvCell getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
-        // Create the unique Id
-        //String uniquePatientId = createUniqueId(patientGuid, null);
-        // Find and remove the status entry
-        Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.remove(patientGuid.getLong());
-        // return the status
-        if (statusForPatient != null) {
-            return statusForPatient.getValue();
-        } else {
-            return null;
-        }
+    public List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
+        Long key = patientGuid.getLong();
+        return medicalRecordStatusMap.remove(key);
     }
 
     public void processRemainingRegistrationStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         for (Long patientId: medicalRecordStatusMap.keySet()) {
-            Map.Entry<Date, CsvCell> statusForPatient = medicalRecordStatusMap.get(patientId);
+            List<MedicalRecordStatusCacheObject> statusForPatient = medicalRecordStatusMap.get(patientId);
 
             EpisodeOfCare episodeOfCare = (EpisodeOfCare)retrieveResource("" + patientId, ResourceType.EpisodeOfCare);
             if (episodeOfCare == null) {
@@ -398,13 +381,20 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
 
             EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
-
-            CsvCell medicalRecordStatusCell = statusForPatient.getValue();
-            String medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
-
-            //record status is stored in a contained list, so we can maintain a history of it
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-            containedListBuilder.addCodeableConcept(medicalRecordStatus, medicalRecordStatusCell);
+
+            for (MedicalRecordStatusCacheObject status: statusForPatient) {
+
+                CsvCell statusCell = status.getStatusCell();
+                RegistrationStatus medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(statusCell);
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+
+                CsvCell dateCell = status.getDateCell();
+                if (!dateCell.isEmpty()) {
+                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+                }
+            }
 
             fhirResourceFiler.savePatientResource(null, false, episodeBuilder);
         }
@@ -1004,4 +994,5 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             AbstractCsvCallable.handleErrors(errors);
         }
     }
+
 }

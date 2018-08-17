@@ -302,6 +302,21 @@ public class PatientTransformer {
             episodeBuilder.setConfidential(true, confidential);
         }
 
+        //and carry over any registration statuses that we've received in our custom extract
+        List<List_.ListEntryComponent> statusList = csvHelper.getExistingRegistrationStatuses(patientGuid);
+        if (statusList != null) {
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+
+            for (List_.ListEntryComponent status: statusList) {
+                CodeableConcept codeableConcept = status.getFlag();
+                containedListBuilder.addCodeableConcept(codeableConcept);
+                if (status.hasDate()) {
+                    Date d = status.getDate();
+                    containedListBuilder.addDateToLastItem(d);
+                }
+            }
+        }
+
         //save both resources together, so the patient is defintiely saved before the episode
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
     }

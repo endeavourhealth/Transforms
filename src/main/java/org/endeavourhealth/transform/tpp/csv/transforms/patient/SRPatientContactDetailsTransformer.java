@@ -76,17 +76,42 @@ public class SRPatientContactDetailsTransformer {
         ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
 
         ContactPoint.ContactPointUse use = null;
+        ContactPoint.ContactPointSystem system = null;
 
         CsvCell contactTypeCell = parser.getContactType();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong() > 0) {
             TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell);
             if (mapping != null) {
-                try {
-                    use = ContactPoint.ContactPointUse.fromCode(mapping.getMappedTerm().toLowerCase());
-                } catch (Exception ex) {
-                    TransformWarnings.log(LOG, parser, "Unrecognized contact type {} in file {}",
-                            contactTypeCell.getString(), parser.getFilePath());
-                    return;
+                String term = mapping.getMappedTerm();
+                if (term.equalsIgnoreCase("Home")) {
+                    use = ContactPoint.ContactPointUse.HOME;
+                    system = ContactPoint.ContactPointSystem.PHONE;
+                } else if (term.equalsIgnoreCase("Work")) {
+                    use = ContactPoint.ContactPointUse.WORK;
+                    system = ContactPoint.ContactPointSystem.PHONE;
+                } else if (term.equalsIgnoreCase("Emergency Contact")) {
+                    use = ContactPoint.ContactPointUse.OLD;
+                    system = ContactPoint.ContactPointSystem.OTHER;
+                } else if (term.equalsIgnoreCase("Answering Machine")) {
+                    use = ContactPoint.ContactPointUse.OLD;
+                    system = ContactPoint.ContactPointSystem.OTHER;
+                } else if (term.equalsIgnoreCase("Pager")) {
+                    use = ContactPoint.ContactPointUse.WORK;
+                    system = ContactPoint.ContactPointSystem.PAGER;
+                } else if (term.equalsIgnoreCase("Mobile")) {
+                    use = ContactPoint.ContactPointUse.MOBILE;
+                    system = ContactPoint.ContactPointSystem.PHONE;
+                } else if (term.equalsIgnoreCase("Alternate")) {
+                    use = ContactPoint.ContactPointUse.OLD;
+                    system = ContactPoint.ContactPointSystem.PHONE;
+                } else if (term.equalsIgnoreCase("Temporary")) {
+                    use = ContactPoint.ContactPointUse.TEMP;
+                    system = ContactPoint.ContactPointSystem.PHONE;
+                } else if (term.equalsIgnoreCase("Skype")) {
+                    use = ContactPoint.ContactPointUse.HOME;
+                    system = ContactPoint.ContactPointSystem.EMAIL;
+                } else {
+                    TransformWarnings.log(LOG, parser, "Unable to convert contact type {} to ContactPointUse", term);
                 }
             }
         }
@@ -95,11 +120,14 @@ public class SRPatientContactDetailsTransformer {
         if (!contactNumberCell.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setId(rowIdCell.getString(), contactNumberCell);
+            contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
+
             if (use != null) {
                 contactPointBuilder.setUse(use, contactNumberCell);
             }
-            contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            if (system != null) {
+                contactPointBuilder.setSystem(system, contactNumberCell);
+            }
         }
         // boolean mapids = !patientBuilder.isIdMapped();
         // fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);

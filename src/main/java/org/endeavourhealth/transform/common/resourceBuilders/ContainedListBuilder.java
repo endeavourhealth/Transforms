@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -127,12 +126,12 @@ public class ContainedListBuilder {
         }
     }
 
-    public boolean addCodeableConcept(String text, CsvCell... sourceCells) {
+    public boolean addCodeableConcept(CodeableConcept codeableConcept, CsvCell... sourceCells) {
         DomainResource resource = parentBuilder.getResource();
         List_ list = getOrCreateContainedList();
 
         //avoid having duplicates, so check before we add
-        for (List_.ListEntryComponent entry: list.getEntry()) {
+        /*for (List_.ListEntryComponent entry: list.getEntry()) {
             if (entry.hasFlag()) {
                 CodeableConcept existingCodeableConcept = entry.getFlag();
                 String existingText = existingCodeableConcept.getText();
@@ -140,11 +139,9 @@ public class ContainedListBuilder {
                     return false;
                 }
             }
-        }
+        }*/
 
         List_.ListEntryComponent entry = list.addEntry();
-
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(text);
         entry.setFlag(codeableConcept);
 
         int listIndex = resource.getContained().indexOf(list);
@@ -168,4 +165,13 @@ public class ContainedListBuilder {
         parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].date", sourceCells);
     }
 
+    public List<List_.ListEntryComponent> getContainedListItems() {
+        DomainResource resource = parentBuilder.getResource();
+        List_ list = getContainedList();
+        if (list == null
+                || !list.hasEntry()) {
+            return null;
+        }
+        return list.getEntry();
+    }
 }

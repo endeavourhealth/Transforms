@@ -65,6 +65,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Map<String, ResourceType> parentObservationResourceTypes = new HashMap<>();
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
+    private Map<String, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
@@ -1291,5 +1292,15 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
             AbstractCsvCallable.handleErrors(errors);
         }
+    }
+
+    public void cacheExistingRegistrationStatuses(CsvCell patientGuidCell, List<List_.ListEntryComponent> items) {
+        String key = patientGuidCell.getString();
+        existingRegsitrationStatues.put(key, items);
+    }
+
+    public List<List_.ListEntryComponent> getExistingRegistrationStatuses(CsvCell patientGuidCell) {
+        String key = patientGuidCell.getString();
+        return existingRegsitrationStatues.get(key);
     }
 }

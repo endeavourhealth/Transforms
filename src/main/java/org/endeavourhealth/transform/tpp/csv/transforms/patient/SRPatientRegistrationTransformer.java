@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -10,7 +12,9 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.cache.MedicalRecordStatusCacheObject;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
+import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -89,13 +93,23 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
         }
 
-        CsvCell medicalRecordStatusCell = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
-        if (medicalRecordStatusCell != null && !medicalRecordStatusCell.isEmpty()) {
-            String medicalRecordStatus = convertMedicalRecordStatus(medicalRecordStatusCell.getInt());
-
-            //record status is stored in a contained list, so we can maintain a history of it
+        List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
+        if (statuses != null) {
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-            containedListBuilder.addCodeableConcept(medicalRecordStatus, medicalRecordStatusCell);
+
+            for (MedicalRecordStatusCacheObject status: statuses) {
+                CsvCell statusCell = status.getStatusCell();
+                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+
+                //record status is stored in a contained list, so we can maintain a history of it
+                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+
+                CsvCell dateCell = status.getDateCell();
+                if (!dateCell.isEmpty()) {
+                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+                }
+            }
         }
 
         CsvCell regTypeCell = parser.getRegistrationStatus();
@@ -152,8 +166,8 @@ public class SRPatientRegistrationTransformer {
 
     private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
 
-        //there is some SystmOne legacy data where patients have multiple reg types, generally GMS + one of the old
-        //IOS registrations. In these cases, carry over GMS.
+        //there is some SystmOne legacy data where patients have multiple reg types, generally GMS + the old
+        //IOS registrations (e.g. GMS,Contraception). In these cases, carry over GMS.
         List<RegistrationType> types = new ArrayList<>();
 
         // Main concern is whether patient is GMS, Private or temporary.
@@ -201,8 +215,10 @@ public class SRPatientRegistrationTransformer {
 
         if (types.size() == 1) {
             return types.get(0);
+        }
 
-        } else if (types.contains(RegistrationType.REGULAR_GMS)) {
+        //if we have multiple reg types, choese the most significant one
+        if (types.contains(RegistrationType.REGULAR_GMS)) {
             return RegistrationType.REGULAR_GMS;
 
         } else if (types.contains(RegistrationType.EMERGENCY)) {
@@ -226,18 +242,19 @@ public class SRPatientRegistrationTransformer {
         }
     }
 
-    public static String convertMedicalRecordStatus(Integer medicalRecordStatus) throws Exception {
+    public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
+        int medicalRecordStatus = statusCell.getInt().intValue();
         switch (medicalRecordStatus) {
-            case 0:
-                return "No medical records";
-            case 1:
-                return "Medical records are on the way";
-            case 2:
-                return "Medical records here";
-            case 3:
-                return "Medical records sent";
-            case 4:
-                return "Medical records need to be sent";
+            case 0: //"No medical records"
+                return RegistrationStatus.REGISTERED;
+            case 1: //"Medical records are on the way"
+                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
+            case 2: //"Medical records here"
+                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
+            case 3: //"Medical records sent"
+                return RegistrationStatus.DEDUCTION_RECORDS_SENT_BACK_TO_FHSA;
+            case 4: //"Medical records need to be sent"
+                return RegistrationStatus.DEDUCTION_RECORDS_RECEIVED_BY_FHSA;
             default:
                 throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
         }

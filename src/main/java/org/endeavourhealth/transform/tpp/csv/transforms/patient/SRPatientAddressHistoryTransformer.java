@@ -85,8 +85,31 @@ public class SRPatientAddressHistoryTransformer {
         }
 
         CsvCell addressTypeCell = parser.getAddressType();
-        Address.AddressUse addressUse = getAddressUse(addressTypeCell, dateToCell, parser, csvHelper);
-        addressBuilder.setUse(addressUse, addressTypeCell);
+        if (!addressTypeCell.isEmpty()) {
+            Address.AddressUse addressUse = null;
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
+            if (mapping != null) {
+                String term = mapping.getMappedTerm();
+                if (term.equalsIgnoreCase("Home")) {
+                    addressUse = Address.AddressUse.HOME;
+                } else if (term.equalsIgnoreCase("Temporary")) {
+                    addressUse = Address.AddressUse.TEMP;
+                } else if (term.equalsIgnoreCase("Official")) {
+                    addressUse = Address.AddressUse.TEMP;
+                } else if (term.equalsIgnoreCase("Correspondence only")) {
+                    addressUse = Address.AddressUse.TEMP;
+                } else {
+                    TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
+                }
+            }
+
+            //fall back to this in case the above fails
+            if (addressUse == null) {
+                addressUse = Address.AddressUse.HOME;
+            }
+
+            addressBuilder.setUse(addressUse, addressTypeCell);
+        }
 
         CsvCell nameOfBuildingCell = parser.getNameOfBuilding();
         if (!nameOfBuildingCell.isEmpty()) {
@@ -132,32 +155,6 @@ public class SRPatientAddressHistoryTransformer {
 
     }
 
-    private static Address.AddressUse getAddressUse(CsvCell addressTypeCell, CsvCell dateToCell,
-                                                    SRPatientAddressHistory parser, TppCsvHelper csvHelper) throws Exception {
-        Address.AddressUse addressUse = null;
-        try {
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
-            if (mapping != null) {
-
-                addressUse = Address.AddressUse.fromCode(mapping.getMappedTerm().toLowerCase());
-                if (addressUse != null) {
-                    return addressUse;
-                }
-            }
-        } catch (Exception ex) {
-            TransformWarnings.log(LOG, parser, "Unrecognized address type {} in file {}",
-                    addressTypeCell.getString(), parser.getFilePath());
-        } finally {
-            if (addressUse == null) {
-                if (dateToCell.isEmpty()) {
-                    addressUse = Address.AddressUse.HOME;
-                } else {
-                    addressUse = Address.AddressUse.OLD;
-                }
-            }
-        }
-        return addressUse;
-    }
 }
 
 

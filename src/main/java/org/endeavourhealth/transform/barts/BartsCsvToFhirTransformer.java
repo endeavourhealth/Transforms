@@ -164,16 +164,17 @@ public abstract class BartsCsvToFhirTransformer {
                 LOG.debug("Doing " + path);
 
                 //these are done and we don't need to reprocess them
-                if (path.endsWith("_55")
-                        || path.endsWith("_54")
-                        || path.endsWith("_53")
-                        || path.endsWith("_52")
-                        || path.endsWith("_51")
-                        || path.endsWith("_50")
-                        || path.endsWith("_49")
-                        || path.endsWith("_48")
-                        || path.endsWith("_47")
-                        || path.endsWith("_46")) {
+                String name = FilenameUtils.getBaseName(path);
+                if (name.endsWith("_55")
+                        || name.endsWith("_54")
+                        || name.endsWith("_53")
+                        || name.endsWith("_52")
+                        || name.endsWith("_51")
+                        || name.endsWith("_50")
+                        || name.endsWith("_49")
+                        || name.endsWith("_48")
+                        || name.endsWith("_47")
+                        || name.endsWith("_46")) {
                     continue;
                 }
 

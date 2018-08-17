@@ -147,28 +147,25 @@ public class StaffMemberCache {
 
     private static String getNationalIdTypeIdentifierSystem(String nationalIdType, TppCsvHelper csvHelper) throws Exception {
 
-        switch (nationalIdType.toUpperCase()) {
-            case "GMC":
-                return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
-            case "NMC":
+        if (nationalIdType.equalsIgnoreCase("GMC")) {
+            return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
+        } else if (nationalIdType.equalsIgnoreCase("NMC")) {
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
-            case "GDP ID": //general dental practitioner
+        } else if (nationalIdType.equalsIgnoreCase("GDP ID")) { //general dental practitioner
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GDP_NUMBER;
-            case "RPSGB": //royal pharmaceutical society of GB
+        } else if (nationalIdType.equalsIgnoreCase("RPSGB")) { //royal pharmaceutical society of GB
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_RPSGB_NUMBER;
-            case "GPhC": //general pharmaceutical council
+        } else if (nationalIdType.equalsIgnoreCase("GPhC")) { //general pharmaceutical council
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GPhC_NUMBER;
-            case "Pathology ID":
+        } else if (nationalIdType.equalsIgnoreCase("Pathology ID")) {
                 return null;
-            case "Local Person ID":
+        } else if (nationalIdType.equalsIgnoreCase("Local Person ID")) {
                 return null;
-            default:
-                TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
-                return null;
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
+            return null;
         }
     }
-
-
 
 
     public void ensurePractitionerIsTransformedForStaffProfileId(CsvCell staffProfileIdCell, TppCsvHelper csvHelper) throws Exception {
