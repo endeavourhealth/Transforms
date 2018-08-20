@@ -93,31 +93,58 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationEndDate(regEndDateCell.getDate(), regEndDateCell);
         }
 
-        List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
-        if (statuses != null) {
-            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-
-            for (MedicalRecordStatusCacheObject status: statuses) {
-                CsvCell statusCell = status.getStatusCell();
-                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-
-                //record status is stored in a contained list, so we can maintain a history of it
-                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-
-                CsvCell dateCell = status.getDateCell();
-                if (!dateCell.isEmpty()) {
-                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-                }
-            }
-        }
-
         CsvCell regTypeCell = parser.getRegistrationStatus();
         RegistrationType regType = null;
         if (!regTypeCell.isEmpty()) {
             regType = mapToFhirRegistrationType(regTypeCell);
             episodeBuilder.setRegistrationType(regType, regEndDateCell);
         }
+
+        ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+
+        //for GMS registrations we also may have
+        if (regType != null
+                && regType == RegistrationType.REGULAR_GMS) {
+            //TODO - only want to apply these to the right episode, not all of them!
+            List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
+            if (statuses != null) {
+
+                for (MedicalRecordStatusCacheObject status : statuses) {
+                    CsvCell statusCell = status.getStatusCell();
+                    RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
+
+                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+                    containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+
+                    CsvCell dateCell = status.getDateCell();
+                    if (!dateCell.isEmpty()) {
+                        containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+                    }
+                }
+            }
+
+        }
+
+        //if we have a temporary registration type, we can also work out the registration status from the reg type String too
+        if (regType != null
+                && regType == RegistrationType.TEMPORARY) {
+            RegistrationStatus regStatus = null;
+
+            String regTypeDesc = regTypeCell.getString();
+            if (regTypeDesc.contains("Temporary Resident < 16 days")) {
+                regStatus = RegistrationStatus.REGISTERED_TEMPORARY_SHORT_STAY;
+
+            } else if (regTypeDesc.contains("Temporary Resident 16 days to 3 months")) {
+                regStatus = RegistrationStatus.REGISTERED_TEMPORARY_LONG_STAY;
+            }
+
+            if (regStatus != null) {
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(regStatus);
+                containedListBuilder.addCodeableConcept(codeableConcept, regTypeCell);
+            }
+        }
+
+
 
         CsvCell orgIdCell = parser.getIDOrganisation();
         //LOG.debug("Doing episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " and org ID " + orgIdCell.getString());
@@ -245,18 +272,19 @@ public class SRPatientRegistrationTransformer {
     public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
         int medicalRecordStatus = statusCell.getInt().intValue();
         switch (medicalRecordStatus) {
-            case 0: //"No medical records"
-                return RegistrationStatus.REGISTERED;
-            case 1: //"Medical records are on the way"
-                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
-            case 2: //"Medical records here"
-                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
-            case 3: //"Medical records sent"
+            case 0:
                 return RegistrationStatus.DEDUCTION_RECORDS_SENT_BACK_TO_FHSA;
-            case 4: //"Medical records need to be sent"
+            case 1:
+                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
+            case 2:
+                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
+            case 3:
                 return RegistrationStatus.DEDUCTION_RECORDS_RECEIVED_BY_FHSA;
+            case 4:
+                return RegistrationStatus.DEDUCTION_RECORD_REQUESTED_BY_FHSA;
             default:
                 throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
         }
     }
+
 }

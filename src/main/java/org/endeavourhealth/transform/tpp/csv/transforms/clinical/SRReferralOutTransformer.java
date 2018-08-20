@@ -89,7 +89,7 @@ public class SRReferralOutTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
-        if (!staffMemberIdDoneBy.isEmpty()) {
+        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             if (referralRequestBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
