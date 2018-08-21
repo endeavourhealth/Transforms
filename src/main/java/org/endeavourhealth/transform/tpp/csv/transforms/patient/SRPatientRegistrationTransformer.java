@@ -273,15 +273,15 @@ public class SRPatientRegistrationTransformer {
         int medicalRecordStatus = statusCell.getInt().intValue();
         switch (medicalRecordStatus) {
             case 0:
-                return RegistrationStatus.DEDUCTION_RECORDS_SENT_BACK_TO_FHSA;
+                return RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA;
             case 1:
                 return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
             case 2:
                 return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
             case 3:
-                return RegistrationStatus.DEDUCTION_RECORDS_RECEIVED_BY_FHSA;
+                return RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA;
             case 4:
-                return RegistrationStatus.DEDUCTION_RECORD_REQUESTED_BY_FHSA;
+                return RegistrationStatus.DEDUCTED_RECORD_REQUESTED_BY_FHSA;
             default:
                 throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
         }
