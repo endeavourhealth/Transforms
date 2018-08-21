@@ -38,8 +38,13 @@ public class AddressConverter
 
     public static boolean hasPostcode(Address address, String postcode) {
         if (address.hasPostalCode()) {
+
+            //the ADT wrongly leave spaces in the postcode, so we need to remove them to compare
+            postcode = postcode.replace(" ", "");
+
             String s = address.getPostalCode();
             s = s.replace(" ", ""); //the ADT wrongly leave spaces in the postcode, so we need to remove them to compare
+
             if (s.equals(postcode)) {
                 return true;
             }

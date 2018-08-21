@@ -129,7 +129,7 @@ public class PPPHOTransformer {
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
-    private static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {
+    public static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {
         Patient patient = (Patient)patientBuilder.getResource();
         if (!patient.hasTelecom()) {
             return;

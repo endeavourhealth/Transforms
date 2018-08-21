@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.NameConverter;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,9 +89,6 @@ public class PPNAMTransformer {
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
 
-        //and remove any pre-existing name that was added by the ADT feed
-        removeExistingNameWithoutIdByValue(patientBuilder, titleCell, prefixCell, firstNameCell, middleNameCell, lastNameCell, suffixCell);
-
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
         nameBuilder.setUse(nameUse, nameTypeCell);
@@ -114,11 +112,75 @@ public class PPNAMTransformer {
             nameBuilder.setEndDate(d, endDate);
         }
 
+        //remove any pre-existing name that was added by the ADT feed
+        HumanName humanNameAdded = nameBuilder.getNameCreated();
+        removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
+
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
-    private static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, CsvCell titleCell, CsvCell prefixCell, CsvCell firstNameCell, CsvCell middleNameCell, CsvCell lastNameCell, CsvCell suffixCell) {
+    public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasName()) {
+            return;
+        }
+
+        List<HumanName> names = patient.getName();
+        for (int i=names.size()-1; i>=0; i--) { //iterate backwards so we can remove
+            HumanName name = names.get(i);
+
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (name.hasId()) {
+                continue;
+            }
+
+            boolean matches = true;
+
+            if (name.hasPrefix()) {
+                for (StringType prefix: name.getPrefix()) {
+                    if (!NameConverter.hasPrefix(check, prefix.toString())) {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (name.hasGiven()) {
+                for (StringType given: name.getGiven()) {
+                    if (!NameConverter.hasGivenName(check, given.toString())) {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (name.hasFamily()) {
+                for (StringType family: name.getFamily()) {
+                    if (!NameConverter.hasFamilyName(check, family.toString())) {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (name.hasSuffix()) {
+                for (StringType suffix: name.getSuffix()) {
+                    if (!NameConverter.hasSuffix(check, suffix.toString())) {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (matches) {
+                //if we make it here, it's a duplicate and should be removed
+                names.remove(i);
+            }
+        }
+    }
+
+    /*private static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, CsvCell titleCell, CsvCell prefixCell, CsvCell firstNameCell, CsvCell middleNameCell, CsvCell lastNameCell, CsvCell suffixCell) {
         Patient patient = (Patient)patientBuilder.getResource();
         if (!patient.hasName()) {
             return;
@@ -166,7 +228,7 @@ public class PPNAMTransformer {
             //if we make it here, it's a duplicate and should be removed
             names.remove(i);
         }
-    }
+    }*/
 
 
     private static HumanName.NameUse convertNameUse(String statusCode) {

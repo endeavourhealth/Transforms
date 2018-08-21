@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,9 +78,6 @@ public class PPADDTransformer {
         //we always fully re-create the address, so remove it from the patient
         AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
 
-        //and remove any instance of the address added by the ADT feed
-        removeExistingAddressWithoutIdByValue(patientBuilder, line1, line2, line3, line4, city, county, postcode);
-
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(addressIdCell.getString(), addressIdCell);
         addressBuilder.setUse(Address.AddressUse.HOME);
@@ -104,11 +102,67 @@ public class PPADDTransformer {
             addressBuilder.setEndDate(d, endDate);
         }
 
+        //remove any instance of the address added by the ADT feed
+        Address addressCreated = addressBuilder.getAddressCreated();
+        removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
+
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
-    private static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, CsvCell line1, CsvCell line2, CsvCell line3, CsvCell line4, CsvCell city, CsvCell county, CsvCell postcode) {
+    public static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, Address check) {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasAddress()) {
+            return;
+        }
+
+        List<Address> addresses = patient.getAddress();
+        for (int i=addresses.size()-1; i>=0; i--) {
+            Address address = addresses.get(i);
+
+            //if this one has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (address.hasId()) {
+                continue;
+            }
+
+            boolean matches = true;
+
+            if (address.hasLine()) {
+                for (StringType line: address.getLine()) {
+                    if (!AddressConverter.hasLine(check, line.toString())) {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (address.hasCity()) {
+                if (!AddressConverter.hasCity(check, address.getCity())) {
+                    matches = false;
+                }
+            }
+
+            if (address.hasDistrict()) {
+                if (!AddressConverter.hasDistrict(check, address.getDistrict())) {
+                    matches = false;
+                }
+            }
+
+            if (address.hasPostalCode()) {
+                String postcode = address.getPostalCode();
+                if (!AddressConverter.hasPostcode(check, postcode)) {
+                    matches = false;
+                }
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            if (matches) {
+                addresses.remove(i);
+            }
+        }
+    }
+
+    /*private static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, CsvCell line1, CsvCell line2, CsvCell line3, CsvCell line4, CsvCell city, CsvCell county, CsvCell postcode) {
         Patient patient = (Patient)patientBuilder.getResource();
         if (!patient.hasAddress()) {
             return;
@@ -161,6 +215,6 @@ public class PPADDTransformer {
             //if we make it here, it's a duplicate and should be removed
             addresses.remove(i);
         }
-    }
+    }*/
 
 }

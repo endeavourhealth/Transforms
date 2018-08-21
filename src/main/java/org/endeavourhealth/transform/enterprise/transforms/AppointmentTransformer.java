@@ -76,8 +76,9 @@ public class AppointmentTransformer extends AbstractTransformer {
             scheduleId = transformOnDemandAndMapId(scheduleReference, params);
 
         } else {
-            LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
-            //throw new TransformException();
+            //a bug was found that meant this happened. So if it happens again, something is wrong
+            throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            //LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
         startDate = fhir.getStart();

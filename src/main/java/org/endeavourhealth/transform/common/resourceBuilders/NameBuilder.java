@@ -222,4 +222,8 @@ public class NameBuilder {
 
         auditNameValue("period.end", sourceCells);
     }
+
+    public HumanName getNameCreated() {
+        return this.name;
+    }
 }

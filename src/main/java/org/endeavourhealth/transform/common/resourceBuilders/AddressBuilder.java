@@ -6,7 +6,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Period;
-import org.hl7.fhir.instance.model.StringType;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -193,7 +192,7 @@ public class AddressBuilder {
     /**
      * if we want to populate our builder with a full FHIR address and no audit info
      */
-    public void addAddressNoAudit(Address address) {
+    /*public void addAddressNoAudit(Address address) {
 
         Address.AddressUse use = address.getUse();
         setUse(use);
@@ -217,5 +216,9 @@ public class AddressBuilder {
         }
 
         updateAddressDisplay();
+    }*/
+
+    public Address getAddressCreated() {
+        return this.address;
     }
 }
