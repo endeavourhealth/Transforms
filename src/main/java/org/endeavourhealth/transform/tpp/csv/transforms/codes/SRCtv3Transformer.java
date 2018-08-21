@@ -6,7 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Looku
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.codes.SRCtv3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

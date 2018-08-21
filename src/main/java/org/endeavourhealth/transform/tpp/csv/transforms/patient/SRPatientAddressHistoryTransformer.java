@@ -5,7 +5,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientAddressHistory;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Reference;

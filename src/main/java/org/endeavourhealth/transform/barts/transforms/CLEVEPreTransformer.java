@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerClinicalEventMappingState;
@@ -11,7 +9,6 @@ import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappin
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -36,10 +33,6 @@ public class CLEVEPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             List<CleveRecord> pendingUpdates = new ArrayList<>();
             List<CleveRecord> pendingDeletes = new ArrayList<>();
@@ -50,26 +43,25 @@ public class CLEVEPreTransformer {
                         continue;
                     }
                     //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((CLEVE)parser, fhirResourceFiler, csvHelper, threadPool, pendingUpdates, pendingDeletes);
+                    processRecord((CLEVE)parser, fhirResourceFiler, csvHelper, pendingUpdates, pendingDeletes);
                 }
             }
 
             //make sure to run any pending ones left over
             if (!pendingUpdates.isEmpty()) {
-                runPending(pendingUpdates, false, csvHelper, threadPool);
+                runPending(pendingUpdates, false, csvHelper);
             }
             if (!pendingDeletes.isEmpty()) {
-                runPending(pendingDeletes, true, csvHelper, threadPool);
+                runPending(pendingDeletes, true, csvHelper);
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
 
-    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool, List<CleveRecord> pendingUpdates, List<CleveRecord> pendingDeletes) throws Exception {
+    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<CleveRecord> pendingUpdates, List<CleveRecord> pendingDeletes) throws Exception {
 
         //observations have bi-directional child-parent links. We can create the child-to-parent link when processing
         //the CLEVE file normally, but need to pre-cache the links in order to create the parent-to-child ones
@@ -94,38 +86,27 @@ public class CLEVEPreTransformer {
         if (activeCell.getIntAsBoolean()) {
             pendingUpdates.add(record);
             if (pendingUpdates.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-                runPending(pendingUpdates, false, csvHelper, threadPool);
+                runPending(pendingUpdates, false, csvHelper);
             }
 
         } else {
             pendingDeletes.add(record);
 
             if (pendingDeletes.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-                runPending(pendingDeletes, true, csvHelper, threadPool);
+                runPending(pendingDeletes, true, csvHelper);
             }
         }
     }
 
-    private static void runPending(List<CleveRecord> records, boolean isDelete, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    private static void runPending(List<CleveRecord> records, boolean isDelete, BartsCsvHelper csvHelper) throws Exception {
 
         List<CleveRecord> copy = new ArrayList<>(records);
         records.clear();
 
         PreTransformCallable callable = new PreTransformCallable(copy, isDelete, csvHelper);
-        List<ThreadPoolError> errors = threadPool.submit(callable);
-        handleErrors(errors);
+        csvHelper.submitToThreadPool(callable);
     }
 
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since they'll most-likely be the same
-        ThreadPoolError first = errors.get(0);
-        Throwable exception = first.getException();
-        throw new TransformException("", exception);
-    }
 
     //simple storage class to carry over everything we need from the CSV parser so we can use in the thread pool
     static class CleveRecord {

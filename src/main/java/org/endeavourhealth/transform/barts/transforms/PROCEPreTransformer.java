@@ -1,8 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.*;
@@ -20,10 +17,6 @@ public class PROCEPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
@@ -31,27 +24,24 @@ public class PROCEPreTransformer {
                         continue;
                     }
                     //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((PROCE)parser, fhirResourceFiler, csvHelper, threadPool);
+                    processRecord((PROCE)parser, fhirResourceFiler, csvHelper);
                 }
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
     }
 
-    public static void processRecord(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    public static void processRecord(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell procedureIdCell = parser.getProcedureID();
         CsvCell encounterIdCell = parser.getEncounterId();
 
 
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), procedureIdCell, encounterIdCell, csvHelper);
-        List<ThreadPoolError> errors = threadPool.submit(callable);
-        AbstractCsvCallable.handleErrors(errors);
-
+        csvHelper.submitToThreadPool(callable);
     }
 
 

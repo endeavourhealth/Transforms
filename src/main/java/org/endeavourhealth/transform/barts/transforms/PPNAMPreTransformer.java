@@ -1,8 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
 import org.endeavourhealth.transform.common.*;
@@ -20,10 +17,6 @@ public class PPNAMPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
@@ -33,16 +26,15 @@ public class PPNAMPreTransformer {
                     }
 
                     //no try/catch as failures here meant we should abort
-                    processRecord((PPNAM)parser, fhirResourceFiler, csvHelper, threadPool);
+                    processRecord((PPNAM)parser, fhirResourceFiler, csvHelper);
                 }
             }
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    public static void processRecord(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    public static void processRecord(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
@@ -56,8 +48,7 @@ public class PPNAMPreTransformer {
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         PPNAMPreTransformCallable callable = new PPNAMPreTransformCallable(parser.getCurrentState(), nameIdCell, personIdCell, csvHelper);
-        List<ThreadPoolError> errors = threadPool.submit(callable);
-        AbstractCsvCallable.handleErrors(errors);
+        csvHelper.submitToThreadPool(callable);
     }
 
 

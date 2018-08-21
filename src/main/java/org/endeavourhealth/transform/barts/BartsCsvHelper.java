@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.barts;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -14,6 +16,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
@@ -36,6 +39,7 @@ import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
@@ -76,6 +80,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
     private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
     private LocationResourceCache locationCache = new LocationResourceCache();
     private PatientResourceCache patientCache = new PatientResourceCache();
+    private ThreadPool utilityThreadPool = null;
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -902,5 +907,30 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         return personIdsToFilterOn.contains(personId);
+    }
+
+
+    public void submitToThreadPool(Callable callable) throws Exception {
+        if (this.utilityThreadPool == null) {
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000);
+        }
+
+        List<ThreadPoolError> errors = utilityThreadPool.submit(callable);
+        AbstractCsvCallable.handleErrors(errors);
+    }
+
+    public void waitUntilThreadPoolIsEmpty() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
+    public void stopThreadPool() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
+            AbstractCsvCallable.handleErrors(errors);
+        }
     }
 }

@@ -199,6 +199,9 @@ public abstract class BartsCsvToFhirTransformer {
             //potentially cached resources in the DB, so tidy them up now
             csvHelper.getEncounterCache().cleanUpResourceCache();
             csvHelper.getPatientCache().cleanUpResourceCache();
+
+            //and stop the thread pool
+            csvHelper.stopThreadPool();
         }
     }
 

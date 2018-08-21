@@ -1,14 +1,11 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
@@ -36,10 +33,6 @@ public class PPALIPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
@@ -49,16 +42,15 @@ public class PPALIPreTransformer {
                     }
 
                     //no try/catch as failures here meant we should abort
-                    processRecord((PPALI)parser, fhirResourceFiler, csvHelper, threadPool);
+                    processRecord((PPALI)parser, fhirResourceFiler, csvHelper);
                 }
             }
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    public static void processRecord(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    public static void processRecord(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
@@ -87,8 +79,7 @@ public class PPALIPreTransformer {
         }
 
         PPALIPreTransformCallable callable = new PPALIPreTransformCallable(parser.getCurrentState(), aliasIdCell, personIdCell, activeMrnCell, csvHelper, fhirResourceFiler);
-        List<ThreadPoolError> errors = threadPool.submit(callable);
-        AbstractCsvCallable.handleErrors(errors);
+        csvHelper.submitToThreadPool(callable);
     }
 
 

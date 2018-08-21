@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.AppointmentFlagsPojo;
 import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.ResourceType;

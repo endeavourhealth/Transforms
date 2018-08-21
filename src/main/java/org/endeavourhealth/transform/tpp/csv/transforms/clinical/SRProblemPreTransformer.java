@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRProblem;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientAddressHistoryTransformer;
 import org.slf4j.Logger;

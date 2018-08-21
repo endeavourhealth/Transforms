@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
@@ -22,10 +19,6 @@ public class ENCNTPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
-
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
@@ -33,12 +26,11 @@ public class ENCNTPreTransformer {
                         continue;
                     }
                     //no try/catch here, because any error means it's not safe to continue
-                    processRecord((ENCNT)parser, fhirResourceFiler, csvHelper, threadPool);
+                    processRecord((ENCNT)parser, fhirResourceFiler, csvHelper);
                 }
             }
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
     }
@@ -47,7 +39,7 @@ public class ENCNTPreTransformer {
      * this pre-transformer tries to match the Data Warehouse Encounters to the HL7 Receiver Encounters
      * which needs the MRN and VISIT ID
      */
-    public static void processRecord(ENCNT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    public static void processRecord(ENCNT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         //in-active (i.e. deleted) rows don't have anything else but the ID, so we can't do anything with them
         CsvCell activeCell = parser.getActiveIndicator();
@@ -63,8 +55,7 @@ public class ENCNTPreTransformer {
 
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
 
-        List<ThreadPoolError> errors = threadPool.submit(callable);
-        AbstractCsvCallable.handleErrors(errors);
+        csvHelper.submitToThreadPool(callable);
     }
 
 

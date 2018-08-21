@@ -15,7 +15,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;

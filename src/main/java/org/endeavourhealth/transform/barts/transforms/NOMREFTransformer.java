@@ -1,12 +1,9 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.NOMREF;
 import org.endeavourhealth.transform.common.*;
@@ -30,10 +27,6 @@ public class NOMREFTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        //we're just streaming content, row by row, into the DB, so use a threadpool to parallelise it
-        int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
-
         try {
             for (ParserI parser: parsers) {
 
@@ -41,18 +34,17 @@ public class NOMREFTransformer {
 
                     //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                     //to parse any record in this file it a critical error
-                    transform((NOMREF) parser, fhirResourceFiler, csvHelper, threadPool);
+                    transform((NOMREF) parser, fhirResourceFiler, csvHelper);
                 }
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            AbstractCsvCallable.handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
 
-    public static void transform(NOMREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, ThreadPool threadPool) throws Exception {
+    public static void transform(NOMREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
         CsvCell idCell = parser.getNomenclatureId();
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell mnemonicTextCell = parser.getMnemonicText();
@@ -103,8 +95,7 @@ public class NOMREFTransformer {
         }
 
         //spin the remainder of our work off to a small thread pool, so we can perform multiple snomed term lookups in parallel
-        List<ThreadPoolError> errors = threadPool.submit(new SaveNomenclatureCallable(parser.getCurrentState(), obj));
-        AbstractCsvCallable.handleErrors(errors);
+        csvHelper.submitToThreadPool(new SaveNomenclatureCallable(parser.getCurrentState(), obj));
     }
 
 

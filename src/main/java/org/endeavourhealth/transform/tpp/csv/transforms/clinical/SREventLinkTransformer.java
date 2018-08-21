@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.tpp.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SREventLink;
 import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTransformer;
 import org.hl7.fhir.instance.model.ResourceType;
