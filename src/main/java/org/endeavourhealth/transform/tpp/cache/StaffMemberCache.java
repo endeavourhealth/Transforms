@@ -157,6 +157,8 @@ public class StaffMemberCache {
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_RPSGB_NUMBER;
         } else if (nationalIdType.equalsIgnoreCase("GPhC")) { //general pharmaceutical council
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GPhC_NUMBER;
+        } else if (nationalIdType.equalsIgnoreCase("HPC")) { //general pharmaceutical council
+            return FhirIdentifierUri.IDENTIFIER_SYSTEM_HPC;
         } else if (nationalIdType.equalsIgnoreCase("Pathology ID")) {
                 return null;
         } else if (nationalIdType.equalsIgnoreCase("Local Person ID")) {
