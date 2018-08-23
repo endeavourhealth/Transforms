@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class SRProblemPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(SRPatientAddressHistoryTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRProblemPreTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -68,7 +68,7 @@ public class SRProblemPreTransformer {
                 csvHelper.saveInternalId(SRProblemTransformer.PROBLEM_ID_TO_CODE_ID, problemIdCell.getString(), codeIdCell.getString());
 
             } catch (Throwable t) {
-                LOG.error("", t);
+                LOG.error("Problem:" + problemIdCell.getString() + ":" + codeIdCell.getString(), t);
                 throw t;
             }
 
