@@ -47,14 +47,15 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell deleteData = parser.getRemovedData();
 
         if (deleteData != null && deleteData.getIntAsBoolean()) {
-            // get previously filed resource for deletion
-            if (referralOutId.isEmpty()) {
-                referralOutId = parser.getRowIdentifier();
-            }
-            ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
-            if (referralRequestBuilder != null && IdHelper.getPatientId(referralRequestBuilder.getResource()) != null) {
-                csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
-            }
+            //TODO verify behaviour
+//            // get previously filed resource for deletion
+//            if (referralOutId.isEmpty()) {
+//                referralOutId = parser.getRowIdentifier();
+//            }
+//            ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
+//            if (referralRequestBuilder != null && IdHelper.getPatientId(referralRequestBuilder.getResource()) != null) {
+//                csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
+//            }
             return;
         }
 
