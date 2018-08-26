@@ -52,7 +52,7 @@ public class SRReferralOutStatusDetailsTransformer {
                 referralOutId = parser.getRowIdentifier();
             }
             ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
-            if (referralRequestBuilder != null) {
+            if (referralRequestBuilder != null && ((ReferralRequest) referralRequestBuilder.getResource()).getPatient() != null) {
                 csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             }
             return;

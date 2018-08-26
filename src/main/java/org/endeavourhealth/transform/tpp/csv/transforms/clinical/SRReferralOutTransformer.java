@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.referral.SRReferralOut;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ReferralRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,7 @@ public class SRReferralOutTransformer {
         CsvCell deleteData = parser.getRemovedData();
         if (deleteData != null && deleteData.getIntAsBoolean()) {
             referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
-            if (referralRequestBuilder != null) {
+            if (referralRequestBuilder != null && ((ReferralRequest) referralRequestBuilder.getResource()).getPatient() != null) {
                 csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             }
             return;
