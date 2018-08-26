@@ -839,7 +839,12 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             }
 
             if (!validationErrors.isEmpty()) {
-                String msg = "Validation errors saving " + resource.getResourceType() + " " + resource.getId();
+                String msg = "";
+                if (deleting) {
+                    msg = "Validation errors deleting " + resource.getResourceType() + " " + resource.getId();
+                } else {
+                    msg = "Validation errors saving " + resource.getResourceType() + " " + resource.getId();
+                }
                 msg += "\n";
                 msg += String.join("\n", validationErrors);
                 throw new TransformException(msg);

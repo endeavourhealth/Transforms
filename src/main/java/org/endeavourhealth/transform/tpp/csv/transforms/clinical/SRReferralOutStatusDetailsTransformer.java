@@ -51,7 +51,7 @@ public class SRReferralOutStatusDetailsTransformer {
             if (referralOutId.isEmpty()) {
                 referralOutId = parser.getRowIdentifier();
             }
-            ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
+            ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
             if (referralRequestBuilder != null) {
                 csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             }

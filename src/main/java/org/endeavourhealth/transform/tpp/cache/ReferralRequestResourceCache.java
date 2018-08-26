@@ -72,4 +72,16 @@ public class ReferralRequestResourceCache {
         referralRequestBuildersById.remove(key);
         referralRequestsToDelete.put(key, referralRequestBuilder);
     }
+
+    public ReferralRequestBuilder getReferralBuilderFromMap(CsvCell referralOutIdCell) throws Exception {
+
+        Long key = referralOutIdCell.getLong();
+
+        //if we've already decided we need to delete it, return null
+        if (referralRequestsToDelete.containsKey(key)) {
+            return null;
+        }
+
+        return referralRequestBuildersById.get(key);
+    }
 }
