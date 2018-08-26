@@ -55,7 +55,7 @@ public class SRReferralOutTransformer {
         ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
 
         CsvCell deleteData = parser.getRemovedData();
-        if (deleteData != null && !deleteData.getIntAsBoolean()) {
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
             csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             return;
         }
