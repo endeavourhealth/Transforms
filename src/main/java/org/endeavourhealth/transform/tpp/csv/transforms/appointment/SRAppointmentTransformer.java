@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
@@ -71,6 +68,12 @@ public class SRAppointmentTransformer {
             Slot slot = (Slot) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Slot);
             if (slot != null) {
                 SlotBuilder slotBuilder = new SlotBuilder(slot);
+                String resourcePatientId = IdHelper.getPatientId(slotBuilder.getResource());
+                if (resourcePatientId == null) {
+                    TransformWarnings.log(LOG, parser, "No Patient resource for row: {},  file: {}",
+                            parser.getRowIdentifier().getString(), parser.getFilePath());
+                    return;
+                }
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder);
             }
             return;
