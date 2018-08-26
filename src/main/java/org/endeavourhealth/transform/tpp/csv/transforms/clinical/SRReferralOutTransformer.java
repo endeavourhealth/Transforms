@@ -57,11 +57,12 @@ public class SRReferralOutTransformer {
 
         CsvCell deleteData = parser.getRemovedData();
         if (deleteData != null && deleteData.getIntAsBoolean()) {
-            //TODO verify behaviour
-//            referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilderFromMap(referralOutId);
-//            if (referralRequestBuilder != null && IdHelper.getPatientId(referralRequestBuilder.getResource()) != null) {
-//                csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
-//            }
+            if (parser.getIDPatient().isEmpty()) {
+                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
+                        parser.getRowIdentifier().getString(), parser.getFilePath());
+                return;
+            }
+            csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             return;
         }
 
