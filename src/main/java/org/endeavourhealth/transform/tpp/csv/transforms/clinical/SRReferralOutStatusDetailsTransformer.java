@@ -48,6 +48,9 @@ public class SRReferralOutStatusDetailsTransformer {
 
         if (deleteData != null && deleteData.getIntAsBoolean()) {
             // get previously filed resource for deletion
+            if (referralOutId.isEmpty()) {
+                referralOutId = parser.getRowIdentifier();
+            }
             ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
             if (referralRequestBuilder != null) {
                 csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
