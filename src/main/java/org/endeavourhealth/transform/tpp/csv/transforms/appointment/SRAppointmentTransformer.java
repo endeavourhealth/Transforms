@@ -65,18 +65,13 @@ public class SRAppointmentTransformer {
                 AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, appointmentBuilder);
             }
-            Slot slot = (Slot) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Slot);
-            if (slot != null) {
-                SlotBuilder slotBuilder = new SlotBuilder(slot);
-                String resourcePatientId = IdHelper.getPatientId(slotBuilder.getResource());
-                if (resourcePatientId == null) {
-                    TransformWarnings.log(LOG, parser, "No Patient resource for row: {},  file: {}",
-                            parser.getRowIdentifier().getString(), parser.getFilePath());
-                    return;
-                }
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder);
-            }
-            return;
+            //TODO: Slot is not a Patient resource, confirm what to delete
+//            Slot slot = (Slot) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Slot);
+//            if (slot != null) {
+//                SlotBuilder slotBuilder = new SlotBuilder(slot);
+//                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder);
+//            }
+//            return;
         }
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
