@@ -80,10 +80,16 @@ public class SRPatientRelationshipTransformer {
             codeableConceptBuilder.setText(rel);
         }
 
-        CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
-        if (!relationshipWithNameCell.isEmpty()) {
-            HumanName humanName = NameConverter.convert(relationshipTypeCell.getString());
-            contactBuilder.addContactName(humanName, relationshipWithNameCell);
+        CsvCell IDRelationshipWithPatient = parser.getIDRelationshipWithPatient();
+        PatientBuilder relationPatient = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(IDRelationshipWithPatient,csvHelper);
+        if (relationPatient == null || relationPatient.getNames().isEmpty()) {            // Try to use complete name
+            CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
+            if (!relationshipWithNameCell.isEmpty()) {
+                HumanName humanName = NameConverter.convert(relationshipTypeCell.getString());
+                contactBuilder.addContactName(humanName, relationshipWithNameCell);
+            }
+        } else {
+            contactBuilder.addContactName(relationPatient.getNames().get(0));  //Use first name
         }
 
         AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
