@@ -22,7 +22,35 @@ public class SRImmunisation extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDVaccination",
+                    "IDImmunisationContent",
+                    "Dose",
+                    "Location",
+                    "Method",
+                    "DateExpiry",
+                    "ImmsReadCode",
+                    "ImmsSNOMEDCode",
+                    "VaccPart",
+                    "VaccBatchNumber",
+                    "VaccAreaCode",
+                    "VaccinationStatus",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -74,8 +102,7 @@ public class SRImmunisation extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
@@ -192,6 +219,10 @@ public class SRImmunisation extends AbstractCsvParser {
 
     public CsvCell getImmsReadCode() {
         return super.getCell("ImmsReadCode");
+    }
+
+    public CsvCell getImmsSNOMEDCode() {
+        return super.getCell("ImmsSNOMEDCode");
     }
 
     public CsvCell getVaccPart() {
