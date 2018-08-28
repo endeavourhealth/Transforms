@@ -180,40 +180,57 @@ public class SRReferralOutTransformer {
             }
         }
 
-        //code is Ctv3 so translate to Snomed
-        CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
-        if (!referralPrimaryDiagnosisCode.isEmpty()) {
+        CsvCell referralSNOMEDPrimaryDiagnosis = parser.getSNOMEDPrimaryDiagnosis();
+        if (!referralSNOMEDPrimaryDiagnosis.isEmpty() && !referralSNOMEDPrimaryDiagnosis.getString().equals("-1")) {
 
             //we may have retrieved the Resource from the DB, so clear out any existing codeable concept
             if (referralRequestBuilder.hasCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service)) {
                 referralRequestBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service, null);
             }
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(referralRequestBuilder, CodeableConceptBuilder.Tag.Referral_Request_Service);
-
-            // add Ctv3 coding
-            TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString(), parser);
-
-            if (ctv3Lookup != null) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCode.getString(), referralPrimaryDiagnosisCode);
-                String readV3Term = ctv3Lookup.getCtv3Text();
-                //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
-                if (Strings.isNullOrEmpty(readV3Term)) {
-                    codeableConceptBuilder.setCodingDisplay(readV3Term, referralPrimaryDiagnosisCode);
-                    codeableConceptBuilder.setText(readV3Term, referralPrimaryDiagnosisCode);
-                }
+            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(referralSNOMEDPrimaryDiagnosis.getString());
+            if (snomedCode != null) {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                codeableConceptBuilder.setText(snomedCode.getTerm());
             }
+        } else {
+            //code is Ctv3 so translate to Snomed
+            CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
+            if (!referralPrimaryDiagnosisCode.isEmpty()) {
 
-            // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
-            if (!referralPrimaryDiagnosisCode.getString().startsWith("Y")) {
-                // translate to Snomed
-                SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
-                if (snomedCode != null) {
+                //we may have retrieved the Resource from the DB, so clear out any existing codeable concept
+                if (referralRequestBuilder.hasCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service)) {
+                    referralRequestBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service, null);
+                }
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(referralRequestBuilder, CodeableConceptBuilder.Tag.Referral_Request_Service);
 
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                    codeableConceptBuilder.setText(snomedCode.getTerm());
+                // add Ctv3 coding
+                TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString(), parser);
+
+                if (ctv3Lookup != null) {
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+                    codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCode.getString(), referralPrimaryDiagnosisCode);
+                    String readV3Term = ctv3Lookup.getCtv3Text();
+                    //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
+                    if (Strings.isNullOrEmpty(readV3Term)) {
+                        codeableConceptBuilder.setCodingDisplay(readV3Term, referralPrimaryDiagnosisCode);
+                        codeableConceptBuilder.setText(readV3Term, referralPrimaryDiagnosisCode);
+                    }
+                }
+
+                // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
+                if (!referralPrimaryDiagnosisCode.getString().startsWith("Y")) {
+                    // translate to Snomed
+                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
+                    if (snomedCode != null) {
+
+                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                        codeableConceptBuilder.setText(snomedCode.getTerm());
+                    }
                 }
             }
         }

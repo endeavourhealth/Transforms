@@ -22,8 +22,34 @@ public class SRReferralOut extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_89)
-                || version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "TypeOfReferral",
+                    "Reason",
+                    "IDProfileReferrer",
+                    "ServiceOffered",
+                    "ReReferral",
+                    "Urgency",
+                    "PrimaryDiagnosis",
+                    "SNOMEDPrimaryDiagnosis",
+                    "RecipientID",
+                    "RecipientIDType",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -160,6 +186,10 @@ public class SRReferralOut extends AbstractCsvParser {
 
     public CsvCell getPrimaryDiagnosis() {
         return super.getCell("PrimaryDiagnosis");
+    }
+
+    public CsvCell getSNOMEDPrimaryDiagnosis() {
+        return super.getCell("SNOMEDPrimaryDiagnosis");
     }
 
     public CsvCell getRecipientID() {
