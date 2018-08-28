@@ -24,6 +24,7 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         if (version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",

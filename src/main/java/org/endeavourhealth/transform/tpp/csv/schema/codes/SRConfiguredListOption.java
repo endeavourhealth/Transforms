@@ -55,7 +55,8 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "CAMHSCode",
                     "MHSDSCode"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String[]{
                     "RowIdentifier",
                     "ConfiguredList",
