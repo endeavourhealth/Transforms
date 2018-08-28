@@ -47,7 +47,8 @@ public class SREvent extends AbstractCsvParser {
                     "IDBranch",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+                || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",

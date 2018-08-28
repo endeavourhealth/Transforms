@@ -44,7 +44,8 @@ public class SROrganisation extends AbstractCsvParser {
                     "IDTrust",
                     "IDCcg"
             };
-        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_87) ||
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_90) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_87) ||
                 version.equals(TppCsvToFhirTransformer.VERSION_89)){
             return new String[]{
                     "RowIdentifier",

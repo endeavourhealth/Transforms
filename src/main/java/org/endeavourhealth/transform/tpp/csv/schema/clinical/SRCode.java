@@ -76,7 +76,8 @@ public class SRCode extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
 
             return new String[]{
                     "RowIdentifier",
