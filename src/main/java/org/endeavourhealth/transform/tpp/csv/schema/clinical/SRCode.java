@@ -24,7 +24,36 @@ public class SRCode extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
 
-        if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "CTV3Code",
+                    "CTV3Text",
+                    "SNOMEDCode",
+                    "SNOMEDText",
+                    "NumericComparator",
+                    "IsNumeric",
+                    "NumericValue",
+                    "NumericUnit",
+                    "EpisodeType",
+                    "IDTemplate",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDReferralIn",
+                    "IDAppointment",
+                    "IDVisit",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
@@ -76,8 +105,7 @@ public class SRCode extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
 
             return new String[]{
                     "RowIdentifier",
@@ -166,17 +194,15 @@ public class SRCode extends AbstractCsvParser {
         return super.getCell("IDOrganisationDoneAt");
     }
 
-    public CsvCell getCTV3Code() {
-        return super.getCell("CTV3Code");
-    }
+    public CsvCell getCTV3Code() { return super.getCell("CTV3Code"); }
 
-    public CsvCell getCTV3Text() {
-        return super.getCell("CTV3Text");
-    }
+    public CsvCell getCTV3Text() { return super.getCell("CTV3Text"); }
 
-    public CsvCell getNumericComparator() {
-        return super.getCell("NumericComparator");
-    }
+    public CsvCell getSNOMEDCode() { return super.getCell("SNOMEDCode"); }
+
+    public CsvCell getSNOMEDText() { return super.getCell("SNOMEDText"); }
+
+    public CsvCell getNumericComparator() { return super.getCell("NumericComparator"); }
 
     public CsvCell getNumericValue() {
         return super.getCell("NumericValue");
