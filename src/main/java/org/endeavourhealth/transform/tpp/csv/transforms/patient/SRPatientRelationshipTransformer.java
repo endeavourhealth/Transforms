@@ -85,7 +85,7 @@ public class SRPatientRelationshipTransformer {
         if (relationPatient == null || relationPatient.getNames().isEmpty()) {            // Try to use complete name
             CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
             if (!relationshipWithNameCell.isEmpty()) {
-                HumanName humanName = NameConverter.convert(relationshipTypeCell.getString());
+                HumanName humanName = NameConverter.convert(relationshipWithNameCell.getString());
                 contactBuilder.addContactName(humanName, relationshipWithNameCell);
             }
         } else {
