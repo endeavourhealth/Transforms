@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.NameConverter;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -13,6 +14,7 @@ import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class SRPatientRelationshipTransformer {
@@ -85,7 +87,7 @@ public class SRPatientRelationshipTransformer {
         if (relationPatient == null || relationPatient.getNames().isEmpty()) {            // Try to use complete name
             CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
             if (!relationshipWithNameCell.isEmpty()) {
-                HumanName humanName = NameConverter.convert(relationshipWithNameCell.getString());
+                HumanName humanName = nameConverter(relationshipWithNameCell.getString());
                 contactBuilder.addContactName(humanName, relationshipWithNameCell);
             }
         } else {
@@ -161,5 +163,35 @@ public class SRPatientRelationshipTransformer {
         if (!endDateCell.isEmpty()) {
             contactBuilder.setEndDate(endDateCell.getDate(), endDateCell);
         }
+    }
+
+    private static HumanName nameConverter(String fullname) {
+        // NameConverter method assumes split by commas. These names are split by space.
+        String name = StringUtils.trimToNull(fullname);
+        if (Strings.isNullOrEmpty(name)) {
+            return null;
+        } else {
+            HumanName fhirName = new HumanName();
+            fhirName.setUse(HumanName.NameUse.USUAL);
+            fhirName.setText(name);
+            String[] tokens = name.split(" ");
+            // Take last part as surname.  Assume original TPP data has proper HumanNames
+            String surname = tokens[tokens.length - 1];
+            if (isTitle(tokens[0])) {
+                fhirName.addPrefix(tokens[0]);
+                for (int count=1; count < tokens.length-1; count++) {
+                    fhirName.addGiven(tokens[count]);
+                }
+            } else {
+                for (int count = 0; count < tokens.length - 1; count++) {
+                    fhirName.addGiven(tokens[count]);
+                }
+            }
+            return fhirName;
+        }
+    }
+    private static boolean isTitle(String t) {
+        String[] titles = {"Mr","Mrs","Ms","Miss","Dr"};
+        return Arrays.asList(titles).contains(t);
     }
 }
