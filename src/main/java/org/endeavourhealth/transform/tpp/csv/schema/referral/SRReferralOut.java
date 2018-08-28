@@ -22,7 +22,8 @@ public class SRReferralOut extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

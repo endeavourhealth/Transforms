@@ -35,6 +35,7 @@ public class SRStaffMember extends AbstractCsvParser {
                     "Obsolete"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",

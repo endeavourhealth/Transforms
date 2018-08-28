@@ -74,7 +74,8 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
                     "CcgOfResidence",
                     "IDOrganisationRegisteredAt"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String [] {
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
