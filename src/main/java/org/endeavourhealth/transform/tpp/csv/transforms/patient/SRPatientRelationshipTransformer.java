@@ -82,13 +82,15 @@ public class SRPatientRelationshipTransformer {
             codeableConceptBuilder.setText(rel);
         }
 
-        CsvCell IDRelationshipWithPatient = parser.getIDRelationshipWithPatient();
-        PatientBuilder relationPatient = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(IDRelationshipWithPatient,csvHelper);
+        CsvCell relationshipWithPatient = parser.getIDRelationshipWithPatient();
+        PatientBuilder relationPatient = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(relationshipWithPatient,csvHelper);
         if (relationPatient == null || relationPatient.getNames().isEmpty()) {            // Try to use complete name
             CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
             if (!relationshipWithNameCell.isEmpty()) {
                 HumanName humanName = nameConverter(relationshipWithNameCell.getString());
-                contactBuilder.addContactName(humanName, relationshipWithNameCell);
+                if (humanName != null) {
+                    contactBuilder.addContactName(humanName, relationshipWithNameCell);
+                }
             }
         } else {
             contactBuilder.addContactName(relationPatient.getNames().get(0));  //Use first name
@@ -177,6 +179,7 @@ public class SRPatientRelationshipTransformer {
             String[] tokens = name.split(" ");
             // Take last part as surname.  Assume original TPP data has proper HumanNames
             String surname = tokens[tokens.length - 1];
+            fhirName.addFamily(surname);
             if (isTitle(tokens[0])) {
                 fhirName.addPrefix(tokens[0]);
                 for (int count=1; count < tokens.length-1; count++) {
@@ -190,6 +193,7 @@ public class SRPatientRelationshipTransformer {
             return fhirName;
         }
     }
+
     private static boolean isTitle(String t) {
         String[] titles = {"Mr","Mrs","Ms","Miss","Dr"};
         return Arrays.asList(titles).contains(t);
