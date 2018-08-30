@@ -191,6 +191,9 @@ public class AEATTTransformer {
             encounterBuilder.addReason(reasonForVisit.getString(), reasonForVisit);
         }
 
+        //TODO - process parser.getDischargeDispositionCode()
+        //TODO - process parser.getAttendanceDisposalCode()
+
         // Retrieve or create EpisodeOfCare
         EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
         if (episodeOfCareBuilder != null) {

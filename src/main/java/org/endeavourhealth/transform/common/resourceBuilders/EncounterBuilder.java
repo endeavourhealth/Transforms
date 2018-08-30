@@ -538,4 +538,21 @@ public class EncounterBuilder extends ResourceBuilderBase
             return true;
         }
     }
+
+    public void setDischargeDisposition(String disposition, CsvCell... sourceCells) {
+
+        //ensure hospitalisation exists
+        Encounter.EncounterHospitalizationComponent hospitalization = null;
+        if (!this.encounter.hasHospitalization()) {
+            this.encounter.setHospitalization(new Encounter.EncounterHospitalizationComponent());
+        }
+        hospitalization = this.encounter.getHospitalization();
+
+        //set in codeable concept
+        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(disposition);
+        hospitalization.setDischargeDisposition(codeableConcept);
+
+        auditValue("hospitalization.dischargeDisposition.text", sourceCells);
+    }
+
 }
