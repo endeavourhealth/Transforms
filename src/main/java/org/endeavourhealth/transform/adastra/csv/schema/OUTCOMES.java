@@ -9,16 +9,18 @@ import java.util.UUID;
 public class OUTCOMES extends AbstractCsvParser {
 
     public OUTCOMES(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "CaseRef",
-                "OutcomeName"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(getExpectedCsvHeaders(version)),
                 AdastraCsvToFhirTransformer.DATE_FORMAT,
                 AdastraCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getExpectedCsvHeaders(version);
+    }
 
+    private static String[] getExpectedCsvHeaders(String version) {
         return new String[]{
                 "CaseRef",
                 "OutcomeName"
@@ -35,6 +37,11 @@ public class OUTCOMES extends AbstractCsvParser {
         return true;
     }
 
-    public CsvCell getCaseId() { return super.getCell("CaseRef"); }
-    public CsvCell getOutcomeName() { return super.getCell("OutcomeName"); }
+    public CsvCell getCaseId() {
+        return super.getCell("CaseRef");
+    }
+
+    public CsvCell getOutcomeName() {
+        return super.getCell("OutcomeName");
+    }
 }

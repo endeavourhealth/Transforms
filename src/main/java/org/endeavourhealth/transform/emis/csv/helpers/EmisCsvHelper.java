@@ -615,7 +615,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public List<CsvCell> findSessionPractionersToSave(CsvCell sessionCell) {
+    public List<CsvCell> findSessionPractitionersToSave(CsvCell sessionCell) {
 
         String sessionGuid = sessionCell.getString();
 
@@ -630,7 +630,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public List<CsvCell> findSessionPractionersToDelete(CsvCell sessionCell) {
+    public List<CsvCell> findSessionPractitionersToDelete(CsvCell sessionCell) {
 
         String sessionGuid = sessionCell.getString();
 
@@ -645,90 +645,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    /**
-     * called at the end of the transform. If the sessionPractitionerMap contains any entries that haven't been processed
-     * then we have changes to the staff in a previously saved FHIR Schedule, so we need to amend that Schedule
-     */
-    /*public void processRemainingSessionPractitioners(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Map.Entry<String, SessionPractitioners> entry : sessionPractitionerMap.entrySet()) {
-            if (!entry.getValue().isProcessedSession()) {
-                updateExistingScheduleWithNewPractitioners(entry.getKey(), entry.getValue(), fhirResourceFiler);
-            }
-        }
+    public void clearCachedSessionPractitioners() {
+        //set to null so any attempts to use it will cause a null pointer
+        sessionPractitionerMap = null;
     }
-
-    private void updateExistingScheduleWithNewPractitioners(String sessionGuid, SessionPractitioners practitioners, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        Schedule fhirSchedule = (Schedule)retrieveResource(sessionGuid, ResourceType.Schedule, fhirResourceFiler);
-        if (fhirSchedule == null) {
-            //if a session user record has been updated for a deleted schedule, we'll have a null here, so just safely ignore it
-            return;
-        }
-
-        //get the references from the existing schedule, removing them as we go
-        List<Reference> references = new ArrayList<>();
-
-        if (fhirSchedule.hasActor()) {
-            references.add(fhirSchedule.getActor());
-            fhirSchedule.setActor(null);
-        }
-        if (fhirSchedule.hasExtension()) {
-            List<Extension> extensions = fhirSchedule.getExtension();
-            for (int i=extensions.size()-1; i>=0; i--) {
-                Extension extension = extensions.get(i);
-                if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_ADDITIONAL_ACTOR)) {
-                    references.add((Reference)extension.getValue());
-                    extensions.remove(i);
-                }
-            }
-        }
-
-        ScheduleBuilder scheduleBuilder = new ScheduleBuilder(fhirSchedule);
-
-        //add any new practitioner references
-        for (String emisUserGuid: practitioners.getEmisUserGuidsToSave()) {
-
-            //we're updating an existing FHIR resource, so need to explicitly map the EMIS user GUID to an EDS ID
-            String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
-                    ResourceType.Practitioner,
-                    emisUserGuid);
-            Reference referenceToAdd = ReferenceHelper.createReference(ResourceType.Practitioner, globallyUniqueId);
-
-            if (!ReferenceHelper.contains(references, referenceToAdd)) {
-                references.add(referenceToAdd);
-            }
-        }
-
-        for (String emisUserGuid: practitioners.getEmisUserGuidsToDelete()) {
-
-            //we're updating an existing FHIR resource, so need to explicitly map the EMIS user GUID to an EDS ID
-            String globallyUniqueId = IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(),
-                    fhirResourceFiler.getSystemId(),
-                    ResourceType.Practitioner,
-                    emisUserGuid);
-
-            Reference referenceToDelete = ReferenceHelper.createReference(ResourceType.Practitioner, globallyUniqueId);
-            ReferenceHelper.remove(references, referenceToDelete);
-        }
-
-        //save the references back into the schedule, treating the first as the main practitioner
-        if (!references.isEmpty()) {
-            for ()
-
-            Reference first = references.get(0);
-            fhirSchedule.setActor(first);
-
-            //add any additional references as additional actors
-            for (int i = 1; i < references.size(); i++) {
-                Reference additional = references.get(i);
-                fhirSchedule.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.SCHEDULE_ADDITIONAL_ACTOR, additional));
-            }
-        }
-
-        fhirResourceFiler.saveAdminResource(null, false, scheduleBuilder);
-    }*/
 
     public void cacheOrganisationLocationMap(CsvCell locationCell, CsvCell orgCell, boolean mainLocation) {
 
@@ -1303,4 +1223,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String key = patientGuidCell.getString();
         return existingRegsitrationStatues.get(key);
     }
+
+
 }

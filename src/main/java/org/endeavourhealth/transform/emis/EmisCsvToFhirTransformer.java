@@ -441,18 +441,38 @@ public abstract class EmisCsvToFhirTransformer {
             AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applied Emis Admin Resource Cache");
         }
 
-        LOG.trace("Starting pre-transforms to cache data");
-
         //check the sharing agreement to see if it's been disabled
         SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
         ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
+        LOG.trace("Starting orgs, locations and user transforms");
+        OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler); //process any changes to Org-Location links without a change to the Location itself
+
+        //appointments
+        LOG.trace("Starting appointments transforms");
+        SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         if (processPatientData) {
+            SlotTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        }
+        //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
+        //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
+        //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
+        csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
+
+        //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process
+        //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then
+        //another extract to replace it
+        if (processPatientData) {
+
+            LOG.trace("Starting patient pre-transforms");
             PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
@@ -460,39 +480,18 @@ public abstract class EmisCsvToFhirTransformer {
             IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        }
-
-        //before getting onto the files that actually create FHIR resources, we need to
-        //work out what record numbers to process, if we're re-running a transform
-        //boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
-
-        LOG.trace("Starting admin transforms");
-
-        //run the transforms for non-patient resources
-        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-        //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process
-        //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then
-        //another extract to replace it
-        if (processPatientData) {
-
-            LOG.trace("Starting patient transforms");
 
             //note the order of these transforms is important, as consultations should be before obs etc.
+            LOG.trace("Starting patient transforms");
             PatientTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ConsultationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             IssueRecordTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DrugRecordTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            SlotTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+
             DiaryTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationReferralTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ProblemTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-            //if (!processingSpecificRecords) {
 
             //if we have any new Obs, Conditions, Medication etc. that reference pre-existing parent obs or problems,
             //then we need to retrieve the existing resources and update them
@@ -501,15 +500,8 @@ public abstract class EmisCsvToFhirTransformer {
             //process any new items linked to past consultations
             csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
-            //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-            //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
-            //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
-
             //process any changes to ethnicity or marital status, without a change to the Patient
             csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
-
-            //process any changes to Org-Location links without a change to the Location itself
-            csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler);
 
             //process any changes to Problems that didn't have an associated Observation change too
             csvHelper.processRemainingProblems(fhirResourceFiler);
@@ -520,7 +512,6 @@ public abstract class EmisCsvToFhirTransformer {
             //update any MedicationStatements to set the last issue date on them
             csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
         }
-
 
         //close down the utility thread pool
         csvHelper.stopThreadPool();

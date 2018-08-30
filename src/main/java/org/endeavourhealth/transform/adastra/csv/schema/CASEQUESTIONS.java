@@ -9,19 +9,18 @@ import java.util.UUID;
 public class CASEQUESTIONS extends AbstractCsvParser {
 
     public CASEQUESTIONS(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "CaseRef",
-                "QuestionSetName",
-                "Question",
-                "Answer",
-                "SortOrder"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(getExpectedCsvHeaders(version)),
                 AdastraCsvToFhirTransformer.DATE_FORMAT,
                 AdastraCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getExpectedCsvHeaders(version);
+    }
 
+    private static String[] getExpectedCsvHeaders(String version) {
         return new String[]{
                 "CaseRef",
                 "QuestionSetName",
@@ -41,9 +40,23 @@ public class CASEQUESTIONS extends AbstractCsvParser {
         return true;
     }
 
-    public CsvCell getCaseId() { return super.getCell("CaseRef"); }
-    public CsvCell getQuestionSetName() { return super.getCell("QuestionSetName"); }
-    public CsvCell getQuestion() { return super.getCell("Question"); }
-    public CsvCell getAnswer() { return super.getCell("Answer"); }
-    public CsvCell getSortOrder() {return super.getCell("SortOrder"); }
+    public CsvCell getCaseId() {
+        return super.getCell("CaseRef");
+    }
+
+    public CsvCell getQuestionSetName() {
+        return super.getCell("QuestionSetName");
+    }
+
+    public CsvCell getQuestion() {
+        return super.getCell("Question");
+    }
+
+    public CsvCell getAnswer() {
+        return super.getCell("Answer");
+    }
+
+    public CsvCell getSortOrder() {
+        return super.getCell("SortOrder");
+    }
 }

@@ -4,7 +4,6 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.zaxxer.hikari.HikariDataSource;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
@@ -20,31 +19,20 @@ import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUpdaterlDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
-import org.endeavourhealth.core.database.dal.subscriberTransform.HouseholdIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
-import org.endeavourhealth.transform.enterprise.json.LinkDistributorModel;
-import org.endeavourhealth.transform.enterprise.json.PatientPseudoDetails;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.hibernate.internal.SessionImpl;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.EntityManager;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class PatientTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
@@ -102,7 +90,6 @@ public class PatientTransformer extends AbstractTransformer {
         Date dateOfDeath = null;
         String postcode = null;
         String postcodePrefix = null;
-        Long householdId = null;
         String lsoaCode = null;
         String msoaCode = null;
         String ethnicCode = null;
@@ -148,8 +135,8 @@ public class PatientTransformer extends AbstractTransformer {
             postcode = fhirAddress.getPostalCode();
             postcodePrefix = findPostcodePrefix(postcode);
 
-            HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
-            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);
+            /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
+            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);*/
         }
 
         //if we've found a postcode, then get the LSOA etc. for it
@@ -237,7 +224,6 @@ public class PatientTransformer extends AbstractTransformer {
                     ageWeeks,
                     dateOfDeath,
                     postcodePrefix,
-                    householdId,
                     lsoaCode,
                     msoaCode,
                     ethnicCode,
@@ -255,7 +241,6 @@ public class PatientTransformer extends AbstractTransformer {
                         ageWeeks,
                         dateOfDeath,
                         postcodePrefix,
-                        householdId,
                         lsoaCode,
                         msoaCode,
                         ethnicCode,
@@ -276,7 +261,6 @@ public class PatientTransformer extends AbstractTransformer {
                     dateOfBirth,
                     dateOfDeath,
                     postcode,
-                    householdId,
                     lsoaCode,
                     msoaCode,
                     ethnicCode,
@@ -292,7 +276,6 @@ public class PatientTransformer extends AbstractTransformer {
                         dateOfBirth,
                         dateOfDeath,
                         postcode,
-                        householdId,
                         lsoaCode,
                         msoaCode,
                         ethnicCode,

@@ -8,7 +8,6 @@ import java.util.List;
 public class SessionPractitioners {
     private List<CsvCell> emisUserGuidsToSave = new ArrayList<>();
     private List<CsvCell> emisUserGuidsToDelete = new ArrayList<>();
-    //private boolean processedSession = false;
 
     public List<CsvCell> getEmisUserGuidsToSave() {
         return emisUserGuidsToSave;
@@ -26,11 +25,4 @@ public class SessionPractitioners {
         this.emisUserGuidsToDelete = emisUserGuidsToDelete;
     }
 
-        /*public boolean isProcessedSession() {
-            return processedSession;
-        }
-
-        public void setProcessedSession(boolean processedSession) {
-            this.processedSession = processedSession;
-        }*/
 }

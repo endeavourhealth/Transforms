@@ -9,21 +9,18 @@ import java.util.UUID;
 public class CASE extends AbstractCsvParser {
 
     public CASE(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "PatientRef",
-                "PriorityName",
-                "CaseRef",
-                "CaseNo",
-                "StartDateTime",
-                "EndDateTime",
-                "LocationName"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(getExpectedCsvHeaders(version)),
                 AdastraCsvToFhirTransformer.DATE_FORMAT,
                 AdastraCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getExpectedCsvHeaders(version);
+    }
 
+    private static String[] getExpectedCsvHeaders(String version) {
         return new String[]{
                 "PatientRef",
                 "PriorityName",
@@ -45,11 +42,31 @@ public class CASE extends AbstractCsvParser {
         return true;
     }
 
-    public CsvCell getPatientId() { return super.getCell("PatientRef"); }
-    public CsvCell getPriorityName() { return super.getCell("PriorityName"); }
-    public CsvCell getCaseId() { return super.getCell("CaseRef"); }
-    public CsvCell getCaseNo() { return super.getCell("CaseNo"); }
-    public CsvCell getStartDateTime() {return super.getCell("StartDateTime"); }
-    public CsvCell getEndDateTime() {return super.getCell("EndDateTime"); }
-    public CsvCell getLocationName () { return super.getCell("LocationName"); }
+    public CsvCell getPatientId() {
+        return super.getCell("PatientRef");
+    }
+
+    public CsvCell getPriorityName() {
+        return super.getCell("PriorityName");
+    }
+
+    public CsvCell getCaseId() {
+        return super.getCell("CaseRef");
+    }
+
+    public CsvCell getCaseNo() {
+        return super.getCell("CaseNo");
+    }
+
+    public CsvCell getStartDateTime() {
+        return super.getCell("StartDateTime");
+    }
+
+    public CsvCell getEndDateTime() {
+        return super.getCell("EndDateTime");
+    }
+
+    public CsvCell getLocationName() {
+        return super.getCell("LocationName");
+    }
 }

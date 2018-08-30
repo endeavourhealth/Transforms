@@ -9,20 +9,18 @@ import java.util.UUID;
 public class PRESCRIPTIONS extends AbstractCsvParser {
 
     public PRESCRIPTIONS(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "CaseRef",
-                "ConsultationRef",
-                "DrugName",
-                "Preparation",
-                "Dosage",
-                "Quantity"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(getExpectedCsvHeaders(version)),
                 AdastraCsvToFhirTransformer.DATE_FORMAT,
                 AdastraCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getExpectedCsvHeaders(version);
+    }
 
+    private static String[] getExpectedCsvHeaders(String version) {
         return new String[]{
                 "CaseRef",
                 "ConsultationRef",
@@ -43,10 +41,27 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
         return true;
     }
 
-    public CsvCell getCaseId() { return super.getCell("CaseRef"); }
-    public CsvCell getConsultationId() { return super.getCell("ConsultationRef"); }
-    public CsvCell getDrugName() {return super.getCell("DrugName"); }
-    public CsvCell getPreparation() {return super.getCell("Preparation"); }
-    public CsvCell getDosage() { return super.getCell("Dosage"); }
-    public CsvCell getQuanity() { return super.getCell("Quantity"); }
+    public CsvCell getCaseId() {
+        return super.getCell("CaseRef");
+    }
+
+    public CsvCell getConsultationId() {
+        return super.getCell("ConsultationRef");
+    }
+
+    public CsvCell getDrugName() {
+        return super.getCell("DrugName");
+    }
+
+    public CsvCell getPreparation() {
+        return super.getCell("Preparation");
+    }
+
+    public CsvCell getDosage() {
+        return super.getCell("Dosage");
+    }
+
+    public CsvCell getQuanity() {
+        return super.getCell("Quantity");
+    }
 }

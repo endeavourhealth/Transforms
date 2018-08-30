@@ -54,7 +54,7 @@ public class SessionTransformer {
 
             //we will also have received a "delete" for all the linked users to this session, which we don't
             //need to process because we're deleting the resource itself, so just get them passing in true to stop them being processed
-            csvHelper.findSessionPractionersToSave(sessionGuid);
+            csvHelper.findSessionPractitionersToSave(sessionGuid);
 
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), scheduleBuilder);
             return;
@@ -100,10 +100,10 @@ public class SessionTransformer {
         //to retrieve the existing instance of the schedule from the DB and carry over the users from that instance into our new one
         List<CsvCell> userGuidCells = retrieveExistingSessionUsers(sessionGuid, csvHelper, fhirResourceFiler);
 
-        List<CsvCell> newUsersToSave = csvHelper.findSessionPractionersToSave(sessionGuid);
+        List<CsvCell> newUsersToSave = csvHelper.findSessionPractitionersToSave(sessionGuid);
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);
 
-        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractionersToDelete(sessionGuid);
+        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractitionersToDelete(sessionGuid);
         CsvCell.removeAnyByValue(userGuidCells, newUsersToDelete);
 
         //not strictly necessary, since we're creating a NEW schedule resource (even if it's a delta), but good practice

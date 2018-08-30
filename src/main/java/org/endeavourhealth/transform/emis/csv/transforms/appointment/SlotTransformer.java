@@ -110,10 +110,10 @@ public class SlotTransformer {
         //if we get an update to an appointment, we don't get the practitioners again, so we need to retrieve the existing instance
         List<CsvCell> userGuidCells = retrieveExistingPractitioners(slotGuid, csvHelper, fhirResourceFiler);
 
-        List<CsvCell> newUsersToSave = csvHelper.findSessionPractionersToSave(sessionGuid);
+        List<CsvCell> newUsersToSave = csvHelper.findSessionPractitionersToSave(sessionGuid);
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);
 
-        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractionersToDelete(sessionGuid);
+        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractitionersToDelete(sessionGuid);
         CsvCell.removeAnyByValue(userGuidCells, newUsersToDelete);
 
         //apply the users to the FHIR resource
