@@ -351,18 +351,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         ReferenceList list = observationChildMap.get(parentObservationUniqueId);
         if (list == null) {
 
-            //desperately trying to cut memory usage, so drop the audit cell
-            list = new ReferenceListNoCsvCells();
-            //list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
 
             observationChildMap.put(parentObservationUniqueId, list);
         }
 
         String childObservationUniqueId = createUniqueId(patientGuid, observationGuid);
-
-        //desperately trying to cut memory usage, so drop the audit cell
-        list.add(resourceType, childObservationUniqueId);
-        //list.add(resourceType, childObservationUniqueId, observationGuid);
+        list.add(resourceType, childObservationUniqueId, observationGuid);
     }
 
 
@@ -1012,18 +1007,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            //desperately trying to cut memory usage, so drop the audit cell
-            list = new ReferenceListNoCsvCells();
-            //list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
+            list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
 
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
         String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
-
-        //desperately trying to cut memory usage, so drop the audit cell
-        list.add(resourceType, resourceLocalUniqueId);
-        //list.add(resourceType, resourceLocalUniqueId, consultationGuid);
+        list.add(resourceType, resourceLocalUniqueId, consultationGuid);
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
