@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.common.referenceLists;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 
 import java.util.List;
 
@@ -18,11 +19,21 @@ public abstract class ReferenceList {
     public abstract CsvCell[] getSourceCells(int index);
     protected abstract void addSourceCells(CsvCell... csvCells);
 
+    public synchronized final void add(Reference reference, CsvCell... csvCells) {
+        String referenceValue = reference.getReference();
+        add(referenceValue, csvCells);
+    }
+
+    public synchronized final void add(ResourceType resourceType, String id, CsvCell... csvCells) {
+        String referenceValue = ReferenceHelper.createResourceReference(resourceType, id);
+        add(referenceValue, csvCells);
+    }
+
     /**
      * these may be populated by multiple threads, so synchronise the fn
      */
-    public synchronized final void add(Reference reference, CsvCell... csvCells) {
-        String referenceValue = reference.getReference();
+    private synchronized final void add(String referenceValue, CsvCell... csvCells) {
+
         byte[] bytes = referenceValue.getBytes(CsvCell.CHARSET);
 
         int size = size();

@@ -350,15 +350,19 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String parentObservationUniqueId = createUniqueId(patientGuid, parentObservationGuid);
         ReferenceList list = observationChildMap.get(parentObservationUniqueId);
         if (list == null) {
-            //we know there will only be a single cell, so use this reference list class to save memory
-            list = new ReferenceListSingleCsvCells();
-            //list = new ReferenceList();
+
+            //desperately trying to cut memory usage, so drop the audit cell
+            list = new ReferenceListNoCsvCells();
+            //list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
+
             observationChildMap.put(parentObservationUniqueId, list);
         }
 
         String childObservationUniqueId = createUniqueId(patientGuid, observationGuid);
-        Reference reference = ReferenceHelper.createReference(resourceType, childObservationUniqueId);
-        list.add(reference, observationGuid);
+
+        //desperately trying to cut memory usage, so drop the audit cell
+        list.add(resourceType, childObservationUniqueId);
+        //list.add(resourceType, childObservationUniqueId, observationGuid);
     }
 
 
@@ -1008,15 +1012,18 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            //we know there will only be a single cell, so use this reference list class to save memory
-            list = new ReferenceListSingleCsvCells();
-            //list = new ReferenceList();
+            //desperately trying to cut memory usage, so drop the audit cell
+            list = new ReferenceListNoCsvCells();
+            //list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
+
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
         String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
-        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference, consultationGuid);
+
+        //desperately trying to cut memory usage, so drop the audit cell
+        list.add(resourceType, resourceLocalUniqueId);
+        //list.add(resourceType, resourceLocalUniqueId, consultationGuid);
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
