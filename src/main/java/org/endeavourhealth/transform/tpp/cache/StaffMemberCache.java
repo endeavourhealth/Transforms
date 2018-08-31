@@ -80,7 +80,7 @@ public class StaffMemberCache {
 
             EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, "" + profileId);
             if (adminCacheResource == null) {
-                LOG.warn("No admin cache record found for Practitioner " + profileId);
+                LOG.error("No admin cache record found for Practitioner " + profileId);
             }
 
             String json = adminCacheResource.getResourceData();
