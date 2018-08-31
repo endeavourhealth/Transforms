@@ -81,14 +81,14 @@ public class StaffMemberCache {
             EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, "" + profileId);
             if (adminCacheResource == null) {
                 LOG.error("No admin cache record found for Practitioner " + profileId);
+            } else {
+                String json = adminCacheResource.getResourceData();
+                Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(json);
+                ResourceFieldMappingAudit audit = adminCacheResource.getAudit();
+
+                PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner, audit);
+                fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
             }
-
-            String json = adminCacheResource.getResourceData();
-            Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(json);
-            ResourceFieldMappingAudit audit = adminCacheResource.getAudit();
-
-            PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner, audit);
-            fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
         }
 
         adminCacheFiler.close();
