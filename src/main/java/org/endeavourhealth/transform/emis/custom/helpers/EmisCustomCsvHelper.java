@@ -43,6 +43,11 @@ public class EmisCustomCsvHelper {
 
             EpisodeOfCareBuilder episodeBuilder = findEpisodeBuilder(patientKey, fhirResourceFiler.getServiceId());
 
+            //if the episode doesn't exist or was deleted, skip it
+            if (episodeBuilder == null) {
+                continue;
+            }
+
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
 
             //remove existing statuses, since each time we get this file, it's a complete replacement
