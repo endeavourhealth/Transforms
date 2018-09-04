@@ -2296,7 +2296,7 @@ public class ObservationTransformer {
 
         //find the original code our problem was coded with
         CsvCell patientGuid = parser.getPatientGuid();
-        String problemReadCode = csvHelper.findProblemObservationReadCode(patientGuid, problemGuid, fhirResourceFiler);
+        String problemReadCode = csvHelper.findProblemObservationReadCode(patientGuid, problemGuid);
         if (Strings.isNullOrEmpty(problemReadCode)) {
             return false;
         }
