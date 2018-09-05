@@ -214,7 +214,7 @@ public class SRReferralOutTransformer {
                     codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCode.getString(), referralPrimaryDiagnosisCode);
                     String readV3Term = ctv3Lookup.getCtv3Text();
                     //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
-                    if (Strings.isNullOrEmpty(readV3Term)) {
+                    if (!Strings.isNullOrEmpty(readV3Term)) {
                         codeableConceptBuilder.setCodingDisplay(readV3Term, referralPrimaryDiagnosisCode);
                         codeableConceptBuilder.setText(readV3Term, referralPrimaryDiagnosisCode);
                     }
