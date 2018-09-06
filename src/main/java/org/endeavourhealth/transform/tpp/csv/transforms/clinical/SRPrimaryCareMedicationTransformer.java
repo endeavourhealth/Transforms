@@ -251,7 +251,6 @@ public class SRPrimaryCareMedicationTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
         CsvCell dmdId = parser.getIDMultiLexDMD();
         CsvCell term = parser.getNameOfMedication();
         if (!dmdId.isEmpty()) {
