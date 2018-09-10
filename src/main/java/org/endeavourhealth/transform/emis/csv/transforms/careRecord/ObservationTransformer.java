@@ -1144,11 +1144,11 @@ public class ObservationTransformer {
 
         //assert that these cells are empty, as we don't stored them in this resource type
         assertValueEmpty(diagnosticReportBuilder, parser);
-        assertNumericUnitEmpty(diagnosticReportBuilder, parser);
         //in the Emis Left & Dead extracts have contained a number of records that are report headers (that transform into DiagnosticReport resources)
-        //but have weird values in the min and max range fields, but no value or unit. So continue to assert that there's
-        //no value or unit, but ignore non-empty range values
-        /*assertNumericRangeLowEmpty(diagnosticReportBuilder, parser);
+        //but have weird values in the min and max range fields, but no value. So continue to assert that there's
+        //no value, but ignore non-empty range values
+        /*assertNumericUnitEmpty(diagnosticReportBuilder, parser);
+        assertNumericRangeLowEmpty(diagnosticReportBuilder, parser);
         assertNumericRangeHighEmpty(diagnosticReportBuilder, parser);*/
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), diagnosticReportBuilder);
