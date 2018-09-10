@@ -116,6 +116,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
     }
 
+    public Reference createObservationReference(String observationGuid, String patientGuid) {
+        return ReferenceHelper.createReference(ResourceType.Observation, patientGuid + ":" + observationGuid);
+    }
+
     public Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
 
         //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
