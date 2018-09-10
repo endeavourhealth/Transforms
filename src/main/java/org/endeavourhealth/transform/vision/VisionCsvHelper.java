@@ -130,7 +130,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
-    public Reference createObservationReference(CsvCell observationGuid, CsvCell patientGuid) throws Exception {
+    public Reference createObservationReference(String observationGuid, String patientGuid) throws Exception {
         if (observationGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing observationGuid");
         }

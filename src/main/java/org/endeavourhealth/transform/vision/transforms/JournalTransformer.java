@@ -664,7 +664,8 @@ public class JournalTransformer {
         CsvCell snomedCode = parser.getSnomedCode();
         CsvCell term = parser.getRubric();
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
         if (!snomedCode.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
@@ -685,6 +686,9 @@ public class JournalTransformer {
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             observationBuilder.setClinician(reference, clinicianID);
         }
+
+        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
+        observationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
         Double value1 = null;
         String units1 = null;
@@ -714,26 +718,78 @@ public class JournalTransformer {
 
         String obsEntity = parser.getObservationEntity().getString();
 
+        boolean isBP = false;
+        ObservationBuilder diastolicObservationBuilder = null;
+        ObservationBuilder systolicObservationBuilder = null;
+
         //BP is a special case - create systolic and diastolic coded components
         if (!parser.getReadCode().isEmpty() && isBPCode (parser.getReadCode().getString()) && value1 != null && value2 != null) {
 
+            isBP = true;
+
+            // add the Systolic component to the main observation
             observationBuilder.addComponent();
             observationBuilder.setComponentValue(value1, parser.getValue1());
             observationBuilder.setComponentUnit(units1, parser.getValue1NumericUnit());
-            CodeableConceptBuilder comOneCodeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
+            CodeableConceptBuilder comOneCodeableConceptBuilder
+                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
             comOneCodeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             comOneCodeableConceptBuilder.setCodingCode("163030003");
             comOneCodeableConceptBuilder.setCodingDisplay("Systolic blood pressure reading");
             comOneCodeableConceptBuilder.setText("Systolic blood pressure reading");
 
+            // create a linked Systolic BP observation to the main parent observation
+            systolicObservationBuilder = new ObservationBuilder();
+            systolicObservationBuilder.setId(observationBuilder.getResource().getId().concat(":SYS"));
+            systolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
+            systolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
+            systolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
+            Reference clinicianReference = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
+            systolicObservationBuilder.setClinician(clinicianReference, clinicianID);
+            CodeableConceptBuilder codeableSystolicConceptBuilder
+                    = new CodeableConceptBuilder(systolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+            codeableSystolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableSystolicConceptBuilder.setCodingCode("163030003");
+            codeableSystolicConceptBuilder.setCodingDisplay("Systolic blood pressure reading");
+            codeableSystolicConceptBuilder.setText("Systolic blood pressure reading");
+            systolicObservationBuilder.setValueNumber(value1, parser.getValue1());
+            systolicObservationBuilder.setValueNumberUnits(units1, parser.getValue1NumericUnit());
+            systolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
+            Reference parentResource
+                    = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
+            systolicObservationBuilder.setParentResource(parentResource);
+
+            // add the Diastolic component to the main observation
             observationBuilder.addComponent();
             observationBuilder.setComponentValue(value2, parser.getValue2());
             observationBuilder.setComponentUnit(units2, parser.getValue2NumericUnit());
-            CodeableConceptBuilder comTwoCodeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
+            CodeableConceptBuilder comTwoCodeableConceptBuilder
+                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
             comTwoCodeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             comTwoCodeableConceptBuilder.setCodingCode("163031004");
             comTwoCodeableConceptBuilder.setCodingDisplay("Diastolic blood pressure reading");
             comTwoCodeableConceptBuilder.setText("Diastolic blood pressure reading");
+
+            // create a linked Diastolic BP observation to the main parent observation
+            diastolicObservationBuilder = new ObservationBuilder();
+            diastolicObservationBuilder.setId(observationBuilder.getResource().getId().concat(":DIA"));
+            diastolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
+            diastolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
+            diastolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
+            clinicianReference = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
+            diastolicObservationBuilder.setClinician(clinicianReference, clinicianID);
+            CodeableConceptBuilder codeableDistolicConceptBuilder
+                    = new CodeableConceptBuilder(diastolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+            codeableDistolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableDistolicConceptBuilder.setCodingCode("163031004");
+            codeableDistolicConceptBuilder.setCodingDisplay("Diastolic blood pressure reading");
+            codeableDistolicConceptBuilder.setText("Diastolic blood pressure reading");
+            diastolicObservationBuilder.setValueNumber(value2, parser.getValue2());
+            diastolicObservationBuilder.setValueNumberUnits(units2, parser.getValue2NumericUnit());
+            diastolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
+            parentResource
+                    = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
+            diastolicObservationBuilder.setParentResource(parentResource);
         }
         else {
             //otherwise, add in the 1st value if it exists
@@ -776,12 +832,9 @@ public class JournalTransformer {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
-        observationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
-
         CsvCell enteredByID = parser.getClinicianUserID();
         if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             observationBuilder.setRecordedBy(reference, enteredByID);
         }
@@ -793,7 +846,11 @@ public class JournalTransformer {
             observationBuilder.addDocumentIdentifier(fhirDocIdentifier, parser.getDocumentID());
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        if (isBP) {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder, systolicObservationBuilder, diastolicObservationBuilder);
+        } else {
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        }
     }
 
     private static void createOrDeleteFamilyMemberHistory(Journal parser,

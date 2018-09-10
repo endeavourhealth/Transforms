@@ -217,12 +217,12 @@ public class PatientTransformer {
 
         CsvCell regDate = parser.getDateOfRegistration();
         if (!regDate.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(regDate.getDate());
+            episodeBuilder.setRegistrationStartDate(regDate.getDate(),regDate);
         }
 
         CsvCell dedDate = parser.getDateOfDeactivation();
         if (!dedDate.isEmpty()) {
-            episodeBuilder.setRegistrationEndDate(dedDate.getDate());
+            episodeBuilder.setRegistrationEndDate(dedDate.getDate(),dedDate);
         }
 
         boolean active = dedDate.isEmpty() || dedDate.getDate().after(new Date());
