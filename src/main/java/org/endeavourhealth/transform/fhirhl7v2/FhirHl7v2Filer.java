@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.fhirhl7v2;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
@@ -478,6 +475,8 @@ public class FhirHl7v2Filer {
                 //there's a lot of weirdness in the HL7 data (e.g. email addresses showing as proper addresses)
                 //that would need to be investigated and coded for.
                 if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    tidyNhsNumbers((Patient)resource);
+
                     LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
                     fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
 
@@ -534,6 +533,20 @@ public class FhirHl7v2Filer {
         }
     }
 
+    /**
+     * the HL7 Receiver leaves spaces in NHS numbers, which nothing else does, so remove them before saving
+     */
+    private void tidyNhsNumbers(Patient patient) {
+        if (patient.hasIdentifier()) {
+            for (Identifier identifier: patient.getIdentifier()) {
+                if (identifier.getSystem().equals(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
+                    String value = identifier.getValue();
+                    value = value.replace(" ", "");
+                    identifier.setValue(value);
+                }
+            }
+        }
+    }
 
 
     private boolean hasBeenDeletedByDataWarehouseFeed(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
