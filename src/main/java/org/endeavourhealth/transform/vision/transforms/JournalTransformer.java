@@ -36,6 +36,8 @@ public class JournalTransformer {
 
     private static ResourceIdTransformDalI idMapRepository = DalProvider.factoryResourceIdTransformDal();
 
+    private static final String BP_ROOT_CODES = "246..;662L.;6623.";
+
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -722,8 +724,11 @@ public class JournalTransformer {
         ObservationBuilder diastolicObservationBuilder = null;
         ObservationBuilder systolicObservationBuilder = null;
 
-        //BP is a special case - create systolic and diastolic coded components
-        if (!parser.getReadCode().isEmpty() && isBPCode (parser.getReadCode().getString()) && value1 != null && value2 != null) {
+        //BP is a special case - create systolic and diastolic coded components.  Use 5 byte root BP read codes for Vision
+        CsvCell readCodeCell = parser.getReadCode();
+        if (!readCodeCell.isEmpty()
+                && BP_ROOT_CODES.contains(readCodeCell.getString().substring(0,5))
+                && value1 != null && value2 != null) {
 
             isBP = true;
 
