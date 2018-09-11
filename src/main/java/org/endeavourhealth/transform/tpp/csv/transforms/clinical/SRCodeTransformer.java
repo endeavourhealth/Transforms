@@ -190,7 +190,7 @@ public class SRCodeTransformer {
 
         CsvCell readSNOMEDCode = parser.getSNOMEDCode();
 
-        if (!readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
+        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
@@ -280,7 +280,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (!readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
+        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
@@ -382,7 +382,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (!readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
+        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
@@ -495,7 +495,7 @@ public class SRCodeTransformer {
         ObservationBuilder diastolicObservationBuilder = null;
 
         CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (!readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
+        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
@@ -696,7 +696,7 @@ public class SRCodeTransformer {
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
         CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (!readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
+        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);

@@ -133,7 +133,7 @@ public class SRImmunisationTransformer {
         }
 
         CsvCell readImmsSNOMEDCode = parser.getImmsSNOMEDCode();
-        if (!readImmsSNOMEDCode.isEmpty() && !readImmsSNOMEDCode.getString().equals("-1")) {
+        if (readImmsSNOMEDCode != null && !readImmsSNOMEDCode.isEmpty() && !readImmsSNOMEDCode.getString().equals("-1")) {
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readImmsSNOMEDCode.getString());
