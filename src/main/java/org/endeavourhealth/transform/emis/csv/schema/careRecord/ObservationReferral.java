@@ -40,11 +40,6 @@ public class ObservationReferral extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis referrals file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

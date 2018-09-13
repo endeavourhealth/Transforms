@@ -87,10 +87,6 @@ public class IssueRecord extends AbstractCsvParser {
         }
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis issue records file";
-    }
 
     @Override
     protected boolean isFileAudited() {

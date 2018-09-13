@@ -66,11 +66,6 @@ public class Diary extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis diary file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -52,11 +52,6 @@ public class PATIENT extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Patient file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

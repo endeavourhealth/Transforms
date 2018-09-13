@@ -146,10 +146,6 @@ public class SREventLink extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP file linking events to appointments and visits";
-    }
 
     @Override
     protected boolean isFileAudited() {

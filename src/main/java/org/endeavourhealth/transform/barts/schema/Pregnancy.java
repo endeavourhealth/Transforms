@@ -22,11 +22,6 @@ public class Pregnancy extends AbstractFixedParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "CDS Pregnancy file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

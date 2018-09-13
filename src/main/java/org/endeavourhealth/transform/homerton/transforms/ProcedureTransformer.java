@@ -169,6 +169,9 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
             codeableConceptBuilder.setText(term.getString());
         }
 
+        //TODO - check that this is right. In the Barts transform the procedure type was transformed like
+        //this but it was useless information as the procedure type was always "procedure". If this is the
+        //case then don't bother carrying this over, as we already know it's a procedure because of the resource type
         CsvCell procedureType = parser.getProcedureType();
         if (!procedureType.isEmpty()) {
 

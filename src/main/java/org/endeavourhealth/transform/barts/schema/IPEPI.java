@@ -106,11 +106,6 @@ public class IPEPI extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Inpatient Episode Event file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

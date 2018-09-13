@@ -103,11 +103,6 @@ public class SRRotaSlot extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Rota Slot file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

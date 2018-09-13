@@ -262,11 +262,6 @@ public class SRImmunisation extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Immunisations file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

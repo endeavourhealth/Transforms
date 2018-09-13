@@ -91,11 +91,6 @@ public class SRHospitalAlertIndicator extends AbstractCsvParser {
     }
 
 
-    //fix the string below to make it meaningful
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRHospitalAlertIndicator Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

@@ -70,11 +70,6 @@ public class Problem extends AbstractFixedParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "CDS Problem file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

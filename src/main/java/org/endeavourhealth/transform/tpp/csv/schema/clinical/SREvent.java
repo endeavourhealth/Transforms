@@ -98,7 +98,7 @@ public class SREvent extends AbstractCsvParser {
                     "IDBranch",
                     "IDOrganisationRegisteredAt"
             };
-        } else   if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
             return new String[]{
                     "RowIdentifier",
@@ -235,11 +235,6 @@ public class SREvent extends AbstractCsvParser {
 
     public CsvCell getRemovedData() {
         return super.getCell("RemovedData");
-    }
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Event Entry file ";
     }
 
     @Override

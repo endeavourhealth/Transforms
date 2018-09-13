@@ -256,10 +256,6 @@ public class SRCode extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Main Clinical Observation file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

@@ -55,11 +55,6 @@ public class BulkDiagnosis extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner 2.1 Bulk Diagnosis file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

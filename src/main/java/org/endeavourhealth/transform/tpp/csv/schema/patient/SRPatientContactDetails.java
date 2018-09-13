@@ -137,11 +137,6 @@ public class SRPatientContactDetails extends AbstractCsvParser {
     }
 
 
-   @Override
-    protected String getFileTypeDescription() {
-        return "TPP Patient Contact Details Entry file ";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

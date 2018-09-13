@@ -67,11 +67,6 @@ public class SRCtv3ToVersion2 extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Ctv3 Read Codes To Version2 Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

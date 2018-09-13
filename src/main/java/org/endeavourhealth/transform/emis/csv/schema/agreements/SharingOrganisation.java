@@ -24,11 +24,6 @@ public class SharingOrganisation extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis sharing agreements file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -4,11 +4,9 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
@@ -160,10 +158,11 @@ public class PROCETransformer {
         }
 
         // Procedure type (category) is a Cerner Millenium code so lookup
-        CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
+        //removing this, as it's always "Diagnosis", which we already know because it's the diagnosis transform
+        /*CsvCell procedureTypeCodeCell = parser.getProcedureTypeCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(procedureTypeCodeCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PROCEDURE_TYPE, procedureTypeCodeCell);
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PRINCIPAL_TYPE, procedureTypeCodeCell);
             if (codeRef == null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code {} for procedure type {} not found",
                         procedureTypeCodeCell.getLong(), parser.getProcedureTypeCode().getString());
@@ -172,7 +171,7 @@ public class PROCETransformer {
                 String codeDesc = codeRef.getCodeDispTxt();
                 procedureBuilder.setCategory(codeDesc, procedureTypeCodeCell);
             }
-        }
+        }*/
 
         // save resource
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);

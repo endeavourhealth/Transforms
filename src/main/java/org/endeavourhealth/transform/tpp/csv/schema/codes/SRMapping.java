@@ -42,11 +42,6 @@ public class SRMapping extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Mapping file providing textual descriptions of static list items referenced within the other extract files ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

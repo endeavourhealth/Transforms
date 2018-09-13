@@ -34,10 +34,6 @@ public class Slot extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis appointments file";
-    }
 
     @Override
     protected boolean isFileAudited() {

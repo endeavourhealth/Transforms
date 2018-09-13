@@ -41,14 +41,11 @@ public class CodeNHSAliasTable extends AbstractCsvParser {
     public CsvCell getCodeValueCode() {
         return super.getCell("CODE_VALUE");
     }
+
     public CsvCell getCodeValueNHSAlias() {
         return super.getCell("ALIAS");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Clinical code NHS alias reference file";
-    }
 
     @Override
     protected boolean isFileAudited() {

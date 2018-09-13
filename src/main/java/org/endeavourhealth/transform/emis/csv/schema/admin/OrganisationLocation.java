@@ -23,10 +23,6 @@ public class OrganisationLocation extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis organisation-location link file";
-    }
 
     @Override
     protected boolean isFileAudited() {

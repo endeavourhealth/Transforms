@@ -225,11 +225,6 @@ public class SRReferralOut extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP file containing outbound referrals";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

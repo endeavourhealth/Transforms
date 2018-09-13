@@ -77,11 +77,6 @@ public class SRStaffMemberProfileRole extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP staff member role reference file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

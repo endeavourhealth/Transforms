@@ -201,12 +201,6 @@ public class SRLetter extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Letters & comms Entry file ";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

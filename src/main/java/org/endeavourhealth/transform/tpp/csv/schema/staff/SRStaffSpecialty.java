@@ -119,10 +119,6 @@ public class SRStaffSpecialty extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Staff Specialty Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

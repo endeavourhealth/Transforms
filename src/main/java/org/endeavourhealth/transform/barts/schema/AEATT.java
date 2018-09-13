@@ -279,12 +279,6 @@ public class AEATT extends AbstractCsvParser {
         return super.getCell("ENCNTR_CREATE_PRSNL_ID");
     }
 
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner A&E Attendance file";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

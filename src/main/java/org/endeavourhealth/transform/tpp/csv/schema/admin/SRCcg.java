@@ -152,11 +152,6 @@ public class SRCcg extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRCcg Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

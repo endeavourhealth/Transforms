@@ -131,11 +131,6 @@ public class SRCarePlanDetail extends AbstractCsvParser {
     }
 
 
-    //fix the string below to make it meaningful
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRCarePlanDetail Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

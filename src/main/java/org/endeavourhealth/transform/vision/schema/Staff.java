@@ -36,35 +36,40 @@ public class Staff extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Vision staff file";
-    }
 
     @Override
     protected boolean isFileAudited() {
         return true;
     }
 
-    public CsvCell getUserID() {return super.getCell("ID");}
+    public CsvCell getUserID() {
+        return super.getCell("ID");
+    }
+
     public CsvCell getOrganisationID() {
         return super.getCell("SERVICE_ID");
     }
+
     public CsvCell getTitle() {
         return super.getCell("TITLE");
     }
+
     public CsvCell getSex() {
         return super.getCell("SEX");
     }
+
     public CsvCell getGivenName() {
         return super.getCell("FORENAME");
     }
+
     public CsvCell getSurname() {
         return super.getCell("SURNAME");
     }
+
     public CsvCell getGMPCode() {
         return super.getCell("GMP_CODE");
     }
+
     public CsvCell getJobCategoryCode() {
         return super.getCell("HCP_TYPE");
     }

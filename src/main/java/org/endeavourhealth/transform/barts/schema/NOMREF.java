@@ -72,10 +72,6 @@ public class NOMREF extends AbstractCsvParser {
         return getCell("CONCEPT_CKI_IDENT");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Nomenclature File";
-    }
 
     @Override
     protected boolean isFileAudited() {

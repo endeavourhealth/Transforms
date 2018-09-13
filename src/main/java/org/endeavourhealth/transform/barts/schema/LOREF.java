@@ -85,11 +85,6 @@ public class LOREF extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner location file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

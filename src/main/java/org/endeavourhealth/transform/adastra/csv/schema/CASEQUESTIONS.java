@@ -31,11 +31,6 @@ public class CASEQUESTIONS extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Case Questions file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

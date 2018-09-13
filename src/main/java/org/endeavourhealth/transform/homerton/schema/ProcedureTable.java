@@ -123,11 +123,6 @@ public class ProcedureTable extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Homerton Procedure file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

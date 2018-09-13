@@ -73,11 +73,6 @@ public class SRImmunisationContent extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP file containing static content of each immunisation type";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

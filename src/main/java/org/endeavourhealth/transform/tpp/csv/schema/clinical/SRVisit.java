@@ -148,10 +148,6 @@ public class SRVisit extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP home visit file";
-    }
 
     @Override
     protected boolean isFileAudited() {

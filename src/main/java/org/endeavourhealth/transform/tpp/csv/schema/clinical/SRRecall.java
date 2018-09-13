@@ -191,11 +191,6 @@ public class SRRecall extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Patient Recall Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

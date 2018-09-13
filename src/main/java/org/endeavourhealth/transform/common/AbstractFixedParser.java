@@ -68,7 +68,6 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         ensureFileAudited();
     }
 
-    protected abstract String getFileTypeDescription();
     protected abstract boolean isFileAudited();
     protected abstract boolean skipFirstRow();
 
@@ -314,7 +313,9 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
 
         List<String> headersList = getHeaders();
 
-        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, getFileTypeDescription(), headersList);
+        //String fileTypeDesc = getFileTypeDescription();
+        String fileTypeDesc = getClass().getSimpleName();
+        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, fileTypeDesc, headersList);
 
         boolean haveProcessedFileBefore = false;
 

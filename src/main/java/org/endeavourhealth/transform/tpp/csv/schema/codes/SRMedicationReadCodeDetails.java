@@ -73,10 +73,6 @@ public class SRMedicationReadCodeDetails extends AbstractCsvParser {
     }
 
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Medication Read Code Details Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

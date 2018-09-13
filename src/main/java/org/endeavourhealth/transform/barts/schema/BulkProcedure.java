@@ -23,7 +23,7 @@ public class BulkProcedure extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[] {
+        return new String[]{
                 "DOB",
                 "MRN",
                 "NHSNo",
@@ -52,10 +52,6 @@ public class BulkProcedure extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner 2.1 Bulk Procedures file";
-    }
 
     @Override
     protected boolean isFileAudited() {
@@ -65,12 +61,15 @@ public class BulkProcedure extends AbstractCsvParser {
     public CsvCell getDOB() throws TransformException {
         return super.getCell("DOB");
     }
+
     public CsvCell getLocalPatientId() {
         return super.getCell("MRN");
     }
+
     public CsvCell getNHSNo() {
         return super.getCell("NHSNo");
     }
+
     public CsvCell getConsultant() {
         return super.getCell("Consultant");
     }
@@ -82,6 +81,7 @@ public class BulkProcedure extends AbstractCsvParser {
     public CsvCell getAdmissionDateTime() {
         return super.getCell("AdmissionDateTime");
     }
+
     public CsvCell getAdmissionDateTimeAsCsvCell() {
         return super.getCell("AdmissionDateTime");
     }
@@ -89,6 +89,7 @@ public class BulkProcedure extends AbstractCsvParser {
     public CsvCell getDischargeDateTime() {
         return super.getCell("DischargeDateTime");
     }
+
     public CsvCell getDischargeDateTimeAsCsvCell() {
         return super.getCell("DischargeDateTime");
     }
@@ -96,9 +97,11 @@ public class BulkProcedure extends AbstractCsvParser {
     public CsvCell getProcedureText() {
         return super.getCell("ProcedureText");
     }
+
     public CsvCell getComment() {
         return super.getCell("Comment");
     }
+
     public CsvCell getProcedureCode() {
         return super.getCell("ProcedureCode");
     }
@@ -106,15 +109,19 @@ public class BulkProcedure extends AbstractCsvParser {
     public CsvCell getCreateDateTime() {
         return super.getCell("Create_DT_TM");
     }
+
     public CsvCell getUpdateDateTime() {
         return super.getCell("Update_DT_TM");
     }
+
     public CsvCell getUpdatedBy() {
         return super.getCell("UpdatedBy");
     }
+
     public CsvCell getEncounterId() {
         return super.getCell("EncounterId");
     }
+
     public CsvCell getFINNo() {
         return super.getCell("FINNo");
     }

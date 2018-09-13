@@ -270,11 +270,6 @@ public class SRMedia extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP file containing binary record attachments";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

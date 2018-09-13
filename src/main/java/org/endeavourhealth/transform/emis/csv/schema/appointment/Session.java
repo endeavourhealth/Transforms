@@ -31,10 +31,6 @@ public class Session extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis appointments session file";
-    }
 
     @Override
     protected boolean isFileAudited() {

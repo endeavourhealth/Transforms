@@ -60,11 +60,6 @@ public class PatientTable extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Homerton patient file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

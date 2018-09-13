@@ -53,11 +53,6 @@ public class Referral extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Vision referrals file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

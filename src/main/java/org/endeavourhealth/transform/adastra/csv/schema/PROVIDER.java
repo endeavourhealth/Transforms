@@ -34,11 +34,6 @@ public class PROVIDER extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Provider file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

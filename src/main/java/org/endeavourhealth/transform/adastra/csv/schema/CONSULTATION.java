@@ -41,11 +41,6 @@ public class CONSULTATION extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Consultation file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

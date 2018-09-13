@@ -150,11 +150,6 @@ public class SRTrust extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Trust file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

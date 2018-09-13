@@ -23,11 +23,6 @@ public class DrugCode extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis drug code reference file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

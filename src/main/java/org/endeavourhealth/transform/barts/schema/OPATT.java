@@ -169,10 +169,6 @@ public class OPATT extends AbstractCsvParser {
         return super.getCell("ENCNTR_UPDT_PRSNL_ID");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Outpatient Attendance file";
-    }
 
     @Override
     protected boolean isFileAudited() {

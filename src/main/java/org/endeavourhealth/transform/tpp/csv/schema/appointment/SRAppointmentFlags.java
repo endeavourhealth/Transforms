@@ -68,11 +68,6 @@ public class SRAppointmentFlags extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Appointment Flags file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

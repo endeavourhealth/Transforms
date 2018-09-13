@@ -248,11 +248,6 @@ public class SRPrimaryCareMedication extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Primary Care Medication Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

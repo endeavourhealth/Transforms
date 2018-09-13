@@ -28,10 +28,6 @@ public class UserInRole extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis staff file";
-    }
 
     @Override
     protected boolean isFileAudited() {

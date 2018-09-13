@@ -148,11 +148,6 @@ public class PPREL extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner person relationship file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

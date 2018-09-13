@@ -57,7 +57,7 @@ public class DIAGN extends AbstractCsvParser {
         return super.getCell("ENCNTR_SLICE_ID");
     }
 
-    public CsvCell getCDSSequence() {
+    public CsvCell getSequenceNumber() {
         return super.getCell("DIAGNOSIS_SEQ_NBR");
     }
 
@@ -87,11 +87,6 @@ public class DIAGN extends AbstractCsvParser {
 
     public CsvCell getProcedureCodeSequenceEntryOrder() {
         return super.getCell("DIAGNOSIS_ENTRY_SEQ_NBR");
-    }
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner diagnosis file";
     }
 
     @Override

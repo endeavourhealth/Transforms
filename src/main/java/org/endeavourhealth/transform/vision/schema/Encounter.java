@@ -50,24 +50,45 @@ public class Encounter extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Vision encounter file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }
 
-    public CsvCell getPatientID() { return super.getCell("PID"); }
-    public CsvCell getConsultationID() { return super.getCell("ID"); }
-    public CsvCell getOrganisationID() { return super.getCell("SERVICE_ID"); }
-    public CsvCell getEffectiveDate() {return super.getCell("DATE"); }
-    public CsvCell getEffectiveTime() {return super.getCell("TIME"); }
-    public CsvCell getClinicianUserID() { return super.getCell("HCP"); }
-    public CsvCell getConsultationSessionTypeCode() { return super.getCell("SESSION"); }
-    public CsvCell getConsultationLocationTypeCode() { return super.getCell("LOCATION"); }
-    public CsvCell getAction () { return super.getCell("ACTION"); }
+    public CsvCell getPatientID() {
+        return super.getCell("PID");
+    }
+
+    public CsvCell getConsultationID() {
+        return super.getCell("ID");
+    }
+
+    public CsvCell getOrganisationID() {
+        return super.getCell("SERVICE_ID");
+    }
+
+    public CsvCell getEffectiveDate() {
+        return super.getCell("DATE");
+    }
+
+    public CsvCell getEffectiveTime() {
+        return super.getCell("TIME");
+    }
+
+    public CsvCell getClinicianUserID() {
+        return super.getCell("HCP");
+    }
+
+    public CsvCell getConsultationSessionTypeCode() {
+        return super.getCell("SESSION");
+    }
+
+    public CsvCell getConsultationLocationTypeCode() {
+        return super.getCell("LOCATION");
+    }
+
+    public CsvCell getAction() {
+        return super.getCell("ACTION");
+    }
 
 //    public String getPatientID() {
 //        return super.getString("PID");

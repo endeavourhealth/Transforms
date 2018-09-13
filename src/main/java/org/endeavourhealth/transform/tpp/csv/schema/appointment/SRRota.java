@@ -118,10 +118,6 @@ public class SRRota extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Rota Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

@@ -101,79 +101,7 @@ public class PPALI extends AbstractCsvParser {
         return super.getCell("HEALTH_CARD_EXPIRY_DT_TM");
     }
 
-    /*public String getMillenniumPersonAliasId() {
-        return super.getString("#PERSON_ALIAS_ID");
-    }
 
-    public Date getExtractDateTime() throws TransformException {
-        return super.getDate("EXTRACT_DT_TM");
-    }
-
-    public String getActiveIndicator() {
-        return super.getString("ACTIVE_IND");
-    }
-
-    public boolean isActive() {
-        int val = super.getInt("ACTIVE_IND");
-        if (val == 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public String getMillenniumPersonIdentifier() {
-        return super.getString("PERSON_ID");
-    }
-
-    public Date getBeginEffectiveDate() throws TransformException {
-        return super.getDate("BEG_EFFECTIVE_DT_TM");
-    }
-
-    public Date getEndEffectiveDater() throws TransformException {
-        return super.getDate("END_EFFECTIVE_DT_TM");
-    }
-
-    public String getAlias() {
-        return super.getString("ALIAS_TXT");
-    }
-
-    public String getAliasTypeCode() {
-        return super.getString("PERSON_ALIAS_TYPE_CD");
-    }
-
-    public String getAliasPoolCode() {
-        return super.getString("ALIAS_POOL_CD");
-    }
-
-    public Date getAliasStatusCode() throws TransformException {
-        return super.getDate("PERSON_ALIAS_STATUS_CD");
-    }
-
-    public Date getHealthCardProvince() throws TransformException {
-        return super.getDate("HEALTH_CARD_PROVINCE");
-    }
-
-    public String getHealthCardVersion() {
-        return super.getString("HEALTH_CARD_VERSION");
-    }
-
-    public String getHealthCardType() {
-        return super.getString("HEALTH_CARD_TYPE");
-    }
-
-    public Date getHealthCardIssueDateTime() throws TransformException {
-        return super.getDate("HEALTH_CARD_ISSUE_DT_TM");
-    }
-
-    public Date getHealthCardExpiryDateTime() throws TransformException {
-        return super.getDate("HEALTH_CARD_EXPIRY_DT_TM");
-    }*/
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner person ID file";
-    }
 
     @Override
     protected boolean isFileAudited() {

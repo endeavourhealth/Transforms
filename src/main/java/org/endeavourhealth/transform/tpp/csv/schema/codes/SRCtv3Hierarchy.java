@@ -81,11 +81,6 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP CTV3 Hierarchy file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         //data from this file is used to populate a reference table, but it's not actually used
         //to look up content, so no need to audit it

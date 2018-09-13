@@ -28,11 +28,6 @@ public class PatientAudit extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis patient audit file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return false;
     }

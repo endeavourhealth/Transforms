@@ -83,11 +83,6 @@ public class Procedure extends AbstractFixedParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "CDB Procedure file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

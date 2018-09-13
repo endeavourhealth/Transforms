@@ -129,12 +129,6 @@ public class SRStaffMemberProfile extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP staff member profile file";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

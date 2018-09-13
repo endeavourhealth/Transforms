@@ -49,39 +49,64 @@ public class Practice extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Vision organisations file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }
 
-    public CsvCell getOrganisationID() {return super.getCell("ID"); }
-    public CsvCell getOrganisationName() { return super.getCell("NAME"); }
+    public CsvCell getOrganisationID() {
+        return super.getCell("ID");
+    }
+
+    public CsvCell getOrganisationName() {
+        return super.getCell("NAME");
+    }
+
     public CsvCell getIdentifier() {
         return super.getCell("IDENTIFIER");
     }
+
     public CsvCell getHA() {
         return super.getCell("HA");
     }
-    public CsvCell getAddressAll () { return super.getCell("ADDRESS"); }
-    public CsvCell getAddress1 () { return super.getCell("ADDRESS_1"); }
-    public CsvCell getAddress2 () { return super.getCell("ADDRESS_2"); }
-    public CsvCell getAddress3 () { return super.getCell("ADDRESS_3"); }
-    public CsvCell getAddress4 () { return super.getCell("ADDRESS_4"); }
-    public CsvCell getAddress5 () { return super.getCell("ADDRESS_5"); }
+
+    public CsvCell getAddressAll() {
+        return super.getCell("ADDRESS");
+    }
+
+    public CsvCell getAddress1() {
+        return super.getCell("ADDRESS_1");
+    }
+
+    public CsvCell getAddress2() {
+        return super.getCell("ADDRESS_2");
+    }
+
+    public CsvCell getAddress3() {
+        return super.getCell("ADDRESS_3");
+    }
+
+    public CsvCell getAddress4() {
+        return super.getCell("ADDRESS_4");
+    }
+
+    public CsvCell getAddress5() {
+        return super.getCell("ADDRESS_5");
+    }
+
     public CsvCell getPostCode() {
         return super.getCell("POSTCODE");
     }
+
     public CsvCell getPhone() {
         return super.getCell("PHONE");
     }
+
     public CsvCell getEmail() {
         return super.getCell("EMAIL");
     }
-    public CsvCell getFax () { return super.getCell("FAX");
+
+    public CsvCell getFax() {
+        return super.getCell("FAX");
     }
 
 //    public String getOrganisationID() {

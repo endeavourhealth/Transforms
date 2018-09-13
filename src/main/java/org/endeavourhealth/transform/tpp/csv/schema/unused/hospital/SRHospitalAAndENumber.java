@@ -111,12 +111,6 @@ public class SRHospitalAAndENumber extends AbstractCsvParser {
     }
 
 
-    //fix the string below to make it meaningful
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRHospitalAAndENumber Entry file ";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

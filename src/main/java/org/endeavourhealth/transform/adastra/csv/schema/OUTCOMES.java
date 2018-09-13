@@ -28,11 +28,6 @@ public class OUTCOMES extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Case Outcomes";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

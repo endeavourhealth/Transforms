@@ -182,52 +182,91 @@ public class EncounterTable extends AbstractCsvParser {
     public CsvCell getEncounterId() {
         return super.getCell("ENCNTR_ID");
     }
+
     public CsvCell getActiveInd() {
         return super.getCell("ACTIVE_IND");
     }
+
     public CsvCell getReasonForVisitText() {
         return super.getCell("REASON_FOR_VISIT");
     }
+
     public CsvCell getMillenniumPersonIdentifier() {
         return super.getCell("PERSON_ID");
     }
+
     public CsvCell getMillenniumFinancialNumberIdentifier() {
         return super.getCell("ENCNTR_FINANCIAL_ID");
     }
+
     public CsvCell getEncounterStatusMillenniumCode() {
         return super.getCell("ENCNTR_STATUS_CD");
     }
+
     public CsvCell getEncounterTypeMillenniumClassCode() {
         return super.getCell("ENCNTR_TYPE_CLASS_CD");
     }
+
     public CsvCell getActiveStatusDateTime() {
         return super.getCell("ACTIVE_STATUS_DT_TM");
     }
+
     public CsvCell getEncounterEndDateTime() {
         return super.getCell("ENCNTR_COMPLETE_DT_TM");
     }
+
     public CsvCell getEncounterCreatedDateTime() {
         return super.getCell("CREATE_DT_TM");
     }
-    public CsvCell getEncounterType() { return super.getCell("encntr_type"); }
-    public CsvCell getEncounterSpeciality() { return super.getCell("med_service"); }
-    public CsvCell getEncounterCategory() { return super.getCell("service_category"); }
 
-    public CsvCell getLocationID() { return super.getCell("LOCATION_CD"); }
-    public CsvCell getLocationName() { return super.getCell("location"); }
-    public CsvCell getLocationBuilding() { return super.getCell("loc_building"); }
-    public CsvCell getLocationNurseUnit() { return super.getCell("loc_nurse_unit"); }
-    public CsvCell getLocationRoom() { return super.getCell("loc_room"); }
-    public CsvCell getLocationBedCD() { return super.getCell("LOC_BED_CD"); }
-    public CsvCell getLocationRoomCD() { return super.getCell("LOC_ROOM_CD"); }
-    public CsvCell getLocationBuildingCD() { return super.getCell("LOC_BUILDING_CD"); }
-    public CsvCell getLocationNurseUnitCD() { return super.getCell("LOC_NURSE_UNIT_CD"); }
-
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner EncounterTable file";
+    public CsvCell getEncounterType() {
+        return super.getCell("encntr_type");
     }
+
+    public CsvCell getEncounterSpeciality() {
+        return super.getCell("med_service");
+    }
+
+    public CsvCell getEncounterCategory() {
+        return super.getCell("service_category");
+    }
+
+    public CsvCell getLocationID() {
+        return super.getCell("LOCATION_CD");
+    }
+
+    public CsvCell getLocationName() {
+        return super.getCell("location");
+    }
+
+    public CsvCell getLocationBuilding() {
+        return super.getCell("loc_building");
+    }
+
+    public CsvCell getLocationNurseUnit() {
+        return super.getCell("loc_nurse_unit");
+    }
+
+    public CsvCell getLocationRoom() {
+        return super.getCell("loc_room");
+    }
+
+    public CsvCell getLocationBedCD() {
+        return super.getCell("LOC_BED_CD");
+    }
+
+    public CsvCell getLocationRoomCD() {
+        return super.getCell("LOC_ROOM_CD");
+    }
+
+    public CsvCell getLocationBuildingCD() {
+        return super.getCell("LOC_BUILDING_CD");
+    }
+
+    public CsvCell getLocationNurseUnitCD() {
+        return super.getCell("LOC_NURSE_UNIT_CD");
+    }
+
 
     @Override
     protected boolean isFileAudited() {

@@ -183,11 +183,6 @@ public class SRPatient extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Patient Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

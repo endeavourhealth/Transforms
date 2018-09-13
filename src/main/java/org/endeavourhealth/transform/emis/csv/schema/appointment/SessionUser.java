@@ -23,11 +23,6 @@ public class SessionUser extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis session-user link file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

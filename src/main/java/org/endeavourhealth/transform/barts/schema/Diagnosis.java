@@ -78,11 +78,6 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "CDS Diagnosis file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -106,11 +106,6 @@ public class SRStaffSkillSet extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Staff Skill Set Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

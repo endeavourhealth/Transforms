@@ -170,13 +170,6 @@ public class SRHospitalWaitingList extends AbstractCsvParser {
         return super.getCell("IDOrganisation");
     }
 
-
-    //fix the string below to make it meaningful
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRHospitalWaitingList Entry file ";
-    }
-
     @Override
     protected boolean isFileAudited() {
         return true;

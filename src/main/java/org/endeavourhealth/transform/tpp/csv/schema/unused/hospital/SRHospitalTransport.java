@@ -106,11 +106,6 @@ public class SRHospitalTransport extends AbstractCsvParser {
     }
 
 
-    //fix the string below to make it meaningful
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP SRHospitalTransport Entry file ";
-    }
 
     @Override
     protected boolean isFileAudited() {

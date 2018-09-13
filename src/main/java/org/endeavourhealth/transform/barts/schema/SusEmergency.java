@@ -46,11 +46,6 @@ public class SusEmergency extends SusBaseParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "SUS Emergency file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

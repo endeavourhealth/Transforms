@@ -45,11 +45,6 @@ public class SusOutpatient extends SusBaseParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "SUS Outpatient file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

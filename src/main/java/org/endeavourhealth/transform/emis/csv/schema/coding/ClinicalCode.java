@@ -47,10 +47,6 @@ public class ClinicalCode extends AbstractCsvParser {
         }
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis clinical code reference file";
-    }
 
     @Override
     protected boolean isFileAudited() {

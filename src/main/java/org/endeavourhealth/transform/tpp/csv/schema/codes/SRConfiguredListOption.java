@@ -112,11 +112,6 @@ public class SRConfiguredListOption extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Configured List Option Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

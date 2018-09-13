@@ -337,11 +337,6 @@ public class FamilyHistory extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Barts family history file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -113,11 +113,6 @@ public class SRAppointmentRoom extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Appointment Room file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

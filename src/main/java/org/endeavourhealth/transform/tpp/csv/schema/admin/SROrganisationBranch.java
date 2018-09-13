@@ -137,11 +137,6 @@ public class SROrganisationBranch extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Organisation Branch Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

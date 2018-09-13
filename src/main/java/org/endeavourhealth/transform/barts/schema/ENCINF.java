@@ -62,11 +62,6 @@ public class ENCINF extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner encounter info file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

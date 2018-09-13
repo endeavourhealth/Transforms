@@ -219,11 +219,6 @@ public class SRPatientAddressHistory extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Patient Address History Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

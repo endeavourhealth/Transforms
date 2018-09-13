@@ -104,11 +104,6 @@ public class ProblemTable extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Homerton problems file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

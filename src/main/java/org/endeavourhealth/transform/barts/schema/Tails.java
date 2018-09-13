@@ -28,11 +28,6 @@ public class Tails extends AbstractFixedParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "SUS Tails file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

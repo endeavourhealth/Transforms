@@ -33,11 +33,6 @@ public class CASE extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Case file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

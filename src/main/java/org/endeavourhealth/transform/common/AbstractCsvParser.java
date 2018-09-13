@@ -175,7 +175,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         String[] headers = CsvHelper.getHeaderMapAsArray(this.csvReader);
         List<String> headersList = Arrays.asList(headers);
 
-        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, getFileTypeDescription(), headersList);
+        //String fileTypeDesc = getFileTypeDescription();
+        String fileTypeDesc = getClass().getSimpleName();
+        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, fileTypeDesc, headersList);
 
         boolean haveProcessedFileBefore = false;
 
@@ -279,91 +281,6 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
     }
 
-
-    /*private void ensureFileAudited() throws Exception {
-        if (this.fileAuditId != null) {
-            return;
-        }
-
-        String[] headers = CsvHelper.getHeaderMapAsArray(this.csvReader);
-        List<String> headersList = Arrays.asList(headers);
-
-        int fileTypeId = dal.findOrCreateFileTypeId(serviceId, getFileTypeDescription(), headersList);
-
-        Integer existingId = dal.findFileAudit(serviceId, systemId, exchangeId, fileTypeId, filePath);
-        if (existingId != null) {
-            this.fileAuditId = existingId.intValue();
-
-            //if we've already been through this file at some point, then we need to re-load the audit IDs
-            //for each of the cells in this file, so set this to true
-            this.haveProcessedFileBefore = true;
-
-        } else {
-            this.fileAuditId = dal.auditFile(serviceId, systemId, exchangeId, fileTypeId, filePath);
-        }
-    }
-
-    private void ensureRowAudited() throws Exception {
-
-        //ensure our array has enough capaticy
-        if (cellAuditIds == null
-                || csvRecordLineNumber >= cellAuditIds.length) {
-            growCellAuditIdsArray();
-        }
-
-        long rowAuditId = cellAuditIds[csvRecordLineNumber];
-
-        //because it's a 2D array of primatives, check for zero rather than null
-        //if (rowAuditIds != null) {
-        if (rowAuditId > 0) {
-            return;
-        }
-
-        //if we've done this file before, re-load the past audit
-        if (this.haveProcessedFileBefore) {
-            Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, csvRecordLineNumber);
-            if (existingId != null) {
-                rowAuditId = existingId.longValue();
-            }
-        }
-
-        //if we still don't have audits, create new ones
-        //because it's a 2D array of primatives, check for zero rather than null
-        if (rowAuditId == 0) {
-
-            Map<String, Integer> headers = csvReader.getHeaderMap();
-            String[] values = new String[headers.size()];
-
-            for (String header: headers.keySet()) {
-                Integer colIndex = headers.get(header);
-                String value = csvRecord.get(colIndex);
-                values[colIndex.intValue()] = value;
-            }
-
-            rowAuditId = dal.auditFileRow(serviceId, values, csvRecordLineNumber, fileAuditId);
-        }
-
-        cellAuditIds[csvRecordLineNumber] = rowAuditId;
-    }
-
-
-
-    private void growCellAuditIdsArray() {
-
-        //start at 10k in the array and grow by 50% each time
-        if (cellAuditIds == null) {
-            this.cellAuditIds = new long[10000];
-
-        } else {
-
-            int nextRowCount = (int)((double)cellAuditIds.length * 2d);
-
-            long[] tmp = new long[nextRowCount];
-            System.arraycopy(cellAuditIds, 0, tmp, 0, cellAuditIds.length);
-            this.cellAuditIds = tmp;
-        }
-    }*/
-
     public void close() throws IOException {
 
         //only log out we "completed" the file if we read any rows from it
@@ -435,7 +352,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     protected abstract String[] getCsvHeaders(String version);
 
-    protected abstract String getFileTypeDescription();
+    //just use class name
+    //protected abstract String getFileTypeDescription();
 
     protected abstract boolean isFileAudited();
 

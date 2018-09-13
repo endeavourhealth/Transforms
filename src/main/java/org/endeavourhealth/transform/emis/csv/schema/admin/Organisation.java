@@ -30,11 +30,6 @@ public class Organisation extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis organisations file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

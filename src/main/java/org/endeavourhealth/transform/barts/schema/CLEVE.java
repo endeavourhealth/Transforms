@@ -210,11 +210,6 @@ public class CLEVE extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner clinical events file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

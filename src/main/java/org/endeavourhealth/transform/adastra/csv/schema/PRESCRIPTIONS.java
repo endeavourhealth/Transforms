@@ -32,11 +32,6 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Prescriptions file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

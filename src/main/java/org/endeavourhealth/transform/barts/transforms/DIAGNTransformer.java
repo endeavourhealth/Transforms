@@ -4,11 +4,9 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
@@ -161,10 +159,11 @@ public class DIAGNTransformer {
         }
 
         // Diagnosis type (category) is a Cerner Millenium code so lookup
-        CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
+        //removing this, as it's always "Diagnosis", which we already know because it's the diagnosis transform
+        /*CsvCell diagnosisTypeCode = parser.getDiagnosisTypeCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(diagnosisTypeCode)) {
 
-            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.DIAGNOSIS_TYPE, diagnosisTypeCode);
+            CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PRINCIPAL_TYPE, diagnosisTypeCode);
             if (cernerCodeValueRef== null) {
                 TransformWarnings.log(LOG, parser, "SEVERE: cerner code for DiagnosisTypeCode {} not found", diagnosisTypeCode);
 
@@ -172,7 +171,18 @@ public class DIAGNTransformer {
                 String category = cernerCodeValueRef.getCodeDispTxt();
                 conditionBuilder.setCategory(category, diagnosisTypeCode);
             }
+        }*/
+
+        //the sequence number tells us whether it's a principal diagnoses or not
+        CsvCell sequenceNumberCell = parser.getSequenceNumber();
+        Integer sequenceNumber = sequenceNumberCell.getInt();
+        String category = null;
+        if (sequenceNumber.intValue() == 1) {
+            category = "Principal Diagnosis";
+        } else if (sequenceNumber.intValue() > 1) {
+            category = "Secondary Diagnosis";
         }
+        conditionBuilder.setCategory(category, sequenceNumberCell);
 
         CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();
         if (!diagnosisFreeText.isEmpty()) {

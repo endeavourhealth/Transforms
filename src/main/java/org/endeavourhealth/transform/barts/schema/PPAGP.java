@@ -72,11 +72,6 @@ public class PPAGP extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner registered GP file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

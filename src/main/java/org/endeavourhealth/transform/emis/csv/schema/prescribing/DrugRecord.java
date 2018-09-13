@@ -94,11 +94,6 @@ public class DrugRecord extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis drug record file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

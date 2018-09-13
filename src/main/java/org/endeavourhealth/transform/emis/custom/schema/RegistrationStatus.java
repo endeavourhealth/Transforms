@@ -63,11 +63,6 @@ public class RegistrationStatus extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Bespoke Emis registration status extract";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

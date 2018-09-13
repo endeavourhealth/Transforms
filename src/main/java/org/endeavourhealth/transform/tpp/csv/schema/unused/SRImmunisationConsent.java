@@ -160,11 +160,6 @@ public class SRImmunisationConsent extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP file recording immunisation consent and refusals";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

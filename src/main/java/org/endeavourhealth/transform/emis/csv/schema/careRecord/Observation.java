@@ -42,10 +42,6 @@ public class Observation extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis observations file";
-    }
 
     @Override
     protected boolean isFileAudited() {

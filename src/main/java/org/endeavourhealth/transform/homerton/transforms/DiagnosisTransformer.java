@@ -171,6 +171,9 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
             codeableConceptBuilder.setText(term.getString());
         }
 
+        //TODO - confirm that this is needed. In the Barts transform we had a similar type but it turned out to
+        //always be "diagnosis" which isn't especially useful given we know it's a diagnosis because it's in the diagnosis file
+        //and going into a Condition resource which is always for diagnoses
         CsvCell diagnosisType = parser.getDiagnosisType();
         if (!diagnosisType.isEmpty()) {
 

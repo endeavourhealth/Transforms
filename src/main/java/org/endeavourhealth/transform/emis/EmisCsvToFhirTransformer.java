@@ -282,7 +282,7 @@ public abstract class EmisCsvToFhirTransformer {
         possibleVersions.add(VERSION_5_1);
         possibleVersions.add(VERSION_5_0);
 
-        for (ExchangePayloadFile fileObj: files) {
+        for (ExchangePayloadFile fileObj : files) {
 
             //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
             AbstractCsvParser parser = createParserForFile(null, null, null, null, fileObj);
@@ -363,7 +363,7 @@ public abstract class EmisCsvToFhirTransformer {
 
     public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, List<ExchangePayloadFile> files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        for (ExchangePayloadFile fileObj: files) {
+        for (ExchangePayloadFile fileObj : files) {
 
             AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, fileObj);
             Class cls = parser.getClass();
@@ -430,7 +430,7 @@ public abstract class EmisCsvToFhirTransformer {
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                                                    fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
+                fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();

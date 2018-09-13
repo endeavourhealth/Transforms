@@ -56,10 +56,6 @@ public class Consultation extends AbstractCsvParser {
         }
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Emis consultations file";
-    }
 
     @Override
     protected boolean isFileAudited() {

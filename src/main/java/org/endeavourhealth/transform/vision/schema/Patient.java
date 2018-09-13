@@ -93,11 +93,6 @@ public class Patient extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Vision patient file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

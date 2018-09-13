@@ -29,10 +29,6 @@ public class CLINICALCODES extends AbstractCsvParser {
         };
     }
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Clinical Codes file";
-    }
 
     @Override
     protected boolean isFileAudited() {

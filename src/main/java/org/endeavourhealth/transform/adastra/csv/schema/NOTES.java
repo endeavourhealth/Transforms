@@ -32,11 +32,6 @@ public class NOTES extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Adastra Case Notes file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

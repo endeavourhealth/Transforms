@@ -57,28 +57,32 @@ public class CodeTable extends AbstractCsvParser {
     public CsvCell getCodeValueCode() {
         return super.getCell("CODE_VALUE");
     }
+
     public CsvCell getActiveInd() {
         return super.getCell("ACTIVE_IND");
     }
+
     public CsvCell getDate() {
         return super.getCell("UPDT_DT_TM");
     }
+
     public CsvCell getCodeMeaningTxt() {
         return super.getCell("CDF_MEANING");
     }
+
     public CsvCell getCodeDispTxt() {
         return super.getCell("DISPLAY");
     }
+
     public CsvCell getCodeDescTxt() {
         return super.getCell("DESCRIPTION");
     }
-    public CsvCell getCodeSetNbr() { return super.getCell("CODE_SET"); }
+
+    public CsvCell getCodeSetNbr() {
+        return super.getCell("CODE_SET");
+    }
     //public CsvCell getAliasNhsCdAlias() { return super.getCell("ALIAS_NHS_CD_ALIAS"); }   //TODO: requested from Homerton
 
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Clinical code reference file";
-    }
 
     @Override
     protected boolean isFileAudited() {

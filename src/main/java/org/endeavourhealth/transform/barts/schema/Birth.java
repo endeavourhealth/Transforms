@@ -23,11 +23,6 @@ public class Birth extends AbstractFixedParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "CDS Birth file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

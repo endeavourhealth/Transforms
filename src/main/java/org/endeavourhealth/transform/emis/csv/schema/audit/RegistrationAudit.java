@@ -26,11 +26,6 @@ public class RegistrationAudit extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis registration audit trail file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return false;
     }

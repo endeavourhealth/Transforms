@@ -44,9 +44,9 @@ public class SROrganisation extends AbstractCsvParser {
                     "IDTrust",
                     "IDCcg"
             };
-        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_90) ||
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90) ||
                 version.equals(TppCsvToFhirTransformer.VERSION_87) ||
-                version.equals(TppCsvToFhirTransformer.VERSION_89)){
+                version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
                     "Name",
@@ -66,24 +66,25 @@ public class SROrganisation extends AbstractCsvParser {
                     "IDCcg",
                     "RemovedData"
             };
-        } else {return new String[]{
-                "RowIdentifier",
-                "Name",
-                "ID",
-                "HouseName",
-                "HouseNumber",
-                "NameOfRoad",
-                "NameOfLocality",
-                "NameOfTown",
-                "NameOfCounty",
-                "FullPostCode",
-                "Telephone",
-                "SecondaryTelephone",
-                "Fax",
-                "MadeObsolete",
-                "IDTrust",
-                "IDCcg"
-        };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "Name",
+                    "ID",
+                    "HouseName",
+                    "HouseNumber",
+                    "NameOfRoad",
+                    "NameOfLocality",
+                    "NameOfTown",
+                    "NameOfCounty",
+                    "FullPostCode",
+                    "Telephone",
+                    "SecondaryTelephone",
+                    "Fax",
+                    "MadeObsolete",
+                    "IDTrust",
+                    "IDCcg"
+            };
 
         }
     }
@@ -155,13 +156,6 @@ public class SROrganisation extends AbstractCsvParser {
 
     public CsvCell getRemovedData() {
         return super.getCell("RemovedData");
-    }
-
-    ;
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "TPP Organisation Entry file ";
     }
 
     @Override

@@ -58,11 +58,6 @@ public class Problem extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Emis problems file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

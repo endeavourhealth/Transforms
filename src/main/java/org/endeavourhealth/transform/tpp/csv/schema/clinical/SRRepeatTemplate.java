@@ -219,11 +219,6 @@ public class SRRepeatTemplate extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP repeat medication file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -86,67 +86,6 @@ public class PPINF extends AbstractCsvParser {
         return super.getCell("VALUE_LONG_TEXT_ID");
     }
 
-    /*public String getMillenniumPersonInformationId() {
-        return super.getString("#PERSON_INFO_ID");
-    }
-
-    public Date getExtractDateTime() throws TransformException {
-        return super.getDate("EXTRACT_DT_TM");
-    }
-
-    public String getActiveIndicator() {
-        return super.getString("ACTIVE_IND");
-    }
-
-    public boolean isActive() {
-        int val = super.getInt("ACTIVE_IND");
-        if (val == 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public String getMillenniumPersonIdentifier() {
-        return super.getString("PERSON_ID");
-    }
-
-    public Date getBeginEffectiveDate() throws TransformException {
-        return super.getDate("BEG_EFFECTIVE_DT_TM");
-    }
-
-    public Date getEndEffectiveDater() throws TransformException {
-        return super.getDate("END_EFFECTIVE_DT_TM");
-    }
-
-    public String getInfoTypeCode() {
-        return super.getString("INFO_TYPE_CD");
-    }
-
-    public String getInfoSubTypeCode() {
-        return super.getString("INFO_SUB_TYPE_CD");
-    }
-
-    public String getValueMillenniumCode() {
-        return super.getString("VALUE_CD");
-    }
-
-    public Date getDateTimeValue() throws TransformException {
-        return super.getDate("VALUE_DT_TM");
-    }
-
-    public String getNumericValue() {
-        return super.getString("VALUE_NBR");
-    }
-
-    public String getValueLongTextMillenniumIdentifier() {
-        return super.getString("VALUE_LONG_TEXT_ID");
-    }*/
-
-    @Override
-    protected String getFileTypeDescription() {
-        return "Cerner patient information file";
-    }
 
     @Override
     protected boolean isFileAudited() {

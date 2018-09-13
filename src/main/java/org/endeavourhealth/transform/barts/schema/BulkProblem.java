@@ -62,11 +62,6 @@ public class BulkProblem extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Bulk 2.1 problems file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

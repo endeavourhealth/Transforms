@@ -70,11 +70,6 @@ public class CVREF extends AbstractCsvParser {
     }
 
     @Override
-    protected String getFileTypeDescription() {
-        return "Cerner Clinical code reference file";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

@@ -108,11 +108,6 @@ public class SRAddressBookEntry extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Address Book Entry Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

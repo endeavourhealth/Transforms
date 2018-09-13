@@ -149,11 +149,6 @@ public class SRDrugSensitivity extends AbstractCsvParser {
 
 
     @Override
-    protected String getFileTypeDescription() {
-        return "TPP Drug Sensitivity Entry file ";
-    }
-
-    @Override
     protected boolean isFileAudited() {
         return true;
     }

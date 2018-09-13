@@ -10,49 +10,74 @@ import java.util.UUID;
 
 public class SRRttStatus extends AbstractCsvParser {
 
- private static final Logger LOG = LoggerFactory.getLogger(SRRttStatus.class); 
+    private static final Logger LOG = LoggerFactory.getLogger(SRRttStatus.class);
 
-  public SRRttStatus(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-            super(serviceId, systemId, exchangeId, version, filePath,
-                    TppCsvToFhirTransformer.CSV_FORMAT,
-                    TppCsvToFhirTransformer.DATE_FORMAT,
-                    TppCsvToFhirTransformer.TIME_FORMAT,
-                    TppCsvToFhirTransformer.ENCODING);
-        }
-
-
-        @Override
-        protected String[] getCsvHeaders(String version) {
-            return new String[]{
-                      "RowIdentifier",
-                      "IDOrganisationVisibleTo",
-                      "DateEventRecorded",
-                      "IDProfileEnteredBy",
-                      "DateStatus",
-                      "RttStatus",
-                      "IDReferralIn",
-                      "IDPatient",
-                      "RemovedData"
-                    
-
-            };
-
-        }
- public CsvCell getRowIdentifier() { return super.getCell("RowIdentifier");}
- public CsvCell getIDOrganisationVisibleTo() { return super.getCell("IDOrganisationVisibleTo");}
- public CsvCell getDateEventRecorded() { return super.getCell("DateEventRecorded");}
- public CsvCell getIDProfileEnteredBy() { return super.getCell("IDProfileEnteredBy");}
- public CsvCell getDateStatus() { return super.getCell("DateStatus");}
- public CsvCell getRttStatus() { return super.getCell("RttStatus");}
- public CsvCell getIDReferralIn() { return super.getCell("IDReferralIn");}
- public CsvCell getIDPatient() { return super.getCell("IDPatient");}
- public CsvCell getRemovedData() { return super.getCell("RemovedData");}
+    public SRRttStatus(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+        super(serviceId, systemId, exchangeId, version, filePath,
+                TppCsvToFhirTransformer.CSV_FORMAT,
+                TppCsvToFhirTransformer.DATE_FORMAT,
+                TppCsvToFhirTransformer.TIME_FORMAT,
+                TppCsvToFhirTransformer.ENCODING);
+    }
 
 
- //fix the string below to make it meaningful
-     @Override
-protected String getFileTypeDescription() {return "TPP SRRttStatus Entry file ";}
+    @Override
+    protected String[] getCsvHeaders(String version) {
+        return new String[]{
+                "RowIdentifier",
+                "IDOrganisationVisibleTo",
+                "DateEventRecorded",
+                "IDProfileEnteredBy",
+                "DateStatus",
+                "RttStatus",
+                "IDReferralIn",
+                "IDPatient",
+                "RemovedData"
 
-     @Override
-protected boolean isFileAudited() {return true;}
-        }
+
+        };
+
+    }
+
+    public CsvCell getRowIdentifier() {
+        return super.getCell("RowIdentifier");
+    }
+
+    public CsvCell getIDOrganisationVisibleTo() {
+        return super.getCell("IDOrganisationVisibleTo");
+    }
+
+    public CsvCell getDateEventRecorded() {
+        return super.getCell("DateEventRecorded");
+    }
+
+    public CsvCell getIDProfileEnteredBy() {
+        return super.getCell("IDProfileEnteredBy");
+    }
+
+    public CsvCell getDateStatus() {
+        return super.getCell("DateStatus");
+    }
+
+    public CsvCell getRttStatus() {
+        return super.getCell("RttStatus");
+    }
+
+    public CsvCell getIDReferralIn() {
+        return super.getCell("IDReferralIn");
+    }
+
+    public CsvCell getIDPatient() {
+        return super.getCell("IDPatient");
+    }
+
+    public CsvCell getRemovedData() {
+        return super.getCell("RemovedData");
+    }
+
+
+    @Override
+    protected boolean isFileAudited() {
+        return true;
+    }
+}
