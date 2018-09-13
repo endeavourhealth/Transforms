@@ -983,6 +983,13 @@ public class JournalTransformer {
             codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            } else {
+                // lookup Snomed term for blank immunisation term
+                String snomedTerm = TerminologyService.lookupSnomedTerm(snomedCode.getString());
+                if (!Strings.isNullOrEmpty(snomedTerm)) {
+                    codeableConceptBuilder.setCodingDisplay(snomedTerm);
+                    codeableConceptBuilder.setText(snomedTerm);
+                }
             }
         }
 
@@ -997,10 +1004,6 @@ public class JournalTransformer {
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             immunizationBuilder.setPerformer(reference, clinicianID);
         }
-
-        //TODO:// analyse test data to set the following if present:
-        CsvCell immsSource = parser.getImmsSource();
-        CsvCell immsCompound = parser.getImmsCompound();
 
         CsvCell immsMethod = parser.getImmsMethod();
         CodeableConceptBuilder immsMethodCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Route);
@@ -1025,7 +1028,29 @@ public class JournalTransformer {
         }
 
         CsvCell associatedText = parser.getAssociatedText();
-        immunizationBuilder.setNote(associatedText.getString(), associatedText);
+        String associatedTextStr = associatedText.getString();
+
+        // 'In practice' for example - add to notes
+        CsvCell immsSource = parser.getImmsSource();
+        if (!immsSource.isEmpty()) {
+
+            associatedTextStr = "Source: "+immsSource.getString()+". "+associatedTextStr;
+            immunizationBuilder.setNote(associatedTextStr, associatedText, immsSource);
+        } else {
+
+            immunizationBuilder.setNote(associatedTextStr, associatedText);
+        }
+
+        // DTIPV for example - add to notes
+        CsvCell immsCompound = parser.getImmsCompound();
+        if (!immsCompound.isEmpty()) {
+
+            associatedTextStr = "Compound: "+immsCompound.getString()+". "+associatedTextStr;
+            immunizationBuilder.setNote(associatedTextStr, associatedText, immsCompound);
+        } else {
+
+            immunizationBuilder.setNote(associatedTextStr, associatedText);
+        }
 
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         immunizationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
