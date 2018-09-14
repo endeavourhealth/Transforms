@@ -758,7 +758,7 @@ public class JournalTransformer {
             codeableSystolicConceptBuilder.setCodingDisplay("Systolic blood pressure reading");
             codeableSystolicConceptBuilder.setText("Systolic blood pressure reading");
             systolicObservationBuilder.setValueNumber(value1, parser.getValue1());
-            systolicObservationBuilder.setValueNumberUnits(units1, parser.getValue1NumericUnit());
+            systolicObservationBuilder.setValueNumberUnits("mm Hg");
             systolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
             Reference parentResource
                     = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
@@ -790,7 +790,7 @@ public class JournalTransformer {
             codeableDistolicConceptBuilder.setCodingDisplay("Diastolic blood pressure reading");
             codeableDistolicConceptBuilder.setText("Diastolic blood pressure reading");
             diastolicObservationBuilder.setValueNumber(value2, parser.getValue2());
-            diastolicObservationBuilder.setValueNumberUnits(units2, parser.getValue2NumericUnit());
+            diastolicObservationBuilder.setValueNumberUnits("mm Hg");
             diastolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
             parentResource
                     = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
