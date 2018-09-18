@@ -1227,7 +1227,7 @@ public class JournalTransformer {
                 return "m";
             case "PULSE":
                 return "bpm";
-            case "CIGARETTES":
+            case "SMOKING":
                 return "per day";
             case "ALCOHOL":
                 return "per week";
