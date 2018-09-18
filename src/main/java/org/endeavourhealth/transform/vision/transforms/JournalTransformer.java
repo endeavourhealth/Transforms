@@ -749,8 +749,13 @@ public class JournalTransformer {
             systolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
             systolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
             systolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
-            Reference clinicianReference = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
-            systolicObservationBuilder.setClinician(clinicianReference, clinicianID);
+
+            if (!clinicianID.isEmpty()) {
+                Reference clinicianReferenceSys
+                        = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
+                systolicObservationBuilder.setClinician(clinicianReferenceSys, clinicianID);
+            }
+
             CodeableConceptBuilder codeableSystolicConceptBuilder
                     = new CodeableConceptBuilder(systolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
             codeableSystolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
@@ -781,8 +786,13 @@ public class JournalTransformer {
             diastolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
             diastolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
             diastolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
-            clinicianReference = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
-            diastolicObservationBuilder.setClinician(clinicianReference, clinicianID);
+
+            if (!clinicianID.isEmpty()) {
+                Reference clinicianReferenceDia
+                        = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
+                diastolicObservationBuilder.setClinician(clinicianReferenceDia, clinicianID);
+            }
+
             CodeableConceptBuilder codeableDistolicConceptBuilder
                     = new CodeableConceptBuilder(diastolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
             codeableDistolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
