@@ -49,6 +49,32 @@ public class SRReferralOut extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_91)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "TypeOfReferral",
+                    "Reason",
+                    "IDProfileReferrer",
+                    "ServiceOffered",
+                    "ReReferral",
+                    "Urgency",
+                    "PrimaryDiagnosis",
+                    "SNOMEDPrimaryDiagnosis",
+                    "RecipientID",
+                    "RecipientIDType",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "M101140ReasonForOutOfAreaReferralAdultAcuteMentalHealth",
+                    "IDOrganisationRegisteredAt"
+            };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",

@@ -37,7 +37,8 @@ public class SRStaffSkillSet extends AbstractCsvParser {
                     "IDOrganisation",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)
+                || version.equals(TppCsvToFhirTransformer.VERSION_91)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
