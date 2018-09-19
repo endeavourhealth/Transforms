@@ -49,15 +49,18 @@ public class PatientResourceCache {
     public void fileResources(FhirResourceFiler fhirResourceFiler) throws Exception {
         for (Long key: patientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = patientBuildersByRowId.get(key);
-            boolean mapIds = !patientBuilder.isIdMapped();
-            try {
-                fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder);
-            } catch (Exception ex) {
-                LOG.error("Error saving patient " + key);
-                Resource patient = patientBuilder.getResource();
-                String json = FhirSerializationHelper.serializeResource(patient);
-                LOG.error(json);
-                throw ex;
+
+            if (patientBuilder.hasManagingOrganisation()) {
+                boolean mapIds = !patientBuilder.isIdMapped();
+                try {
+                    fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder);
+                } catch (Exception ex) {
+                    LOG.error("Error saving patient " + key);
+                    Resource patient = patientBuilder.getResource();
+                    String json = FhirSerializationHelper.serializeResource(patient);
+                    LOG.error(json);
+                    throw ex;
+                }
             }
         }
 
