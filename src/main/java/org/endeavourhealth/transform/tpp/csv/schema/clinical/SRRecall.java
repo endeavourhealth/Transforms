@@ -45,7 +45,8 @@ public class SRRecall extends AbstractCsvParser {
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)
+                || version.equals(TppCsvToFhirTransformer.VERSION_91)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

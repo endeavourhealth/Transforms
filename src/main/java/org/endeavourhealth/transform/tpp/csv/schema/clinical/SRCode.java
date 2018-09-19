@@ -24,7 +24,35 @@ public class SRCode extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
 
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_91)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "CTV3Code",
+                    "CTV3Text",
+                    "SNOMEDCode",
+                    "SNOMEDText",
+                    "NumericComparator",
+                    "IsNumeric",
+                    "NumericValue",
+                    "NumericUnit",
+                    "EpisodeType",
+                    "IDTemplate",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDReferralIn",
+                    "IDAppointment",
+                    "IDVisit",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

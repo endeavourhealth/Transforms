@@ -55,7 +55,8 @@ public class SRRepeatTemplate extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_91)
+                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
