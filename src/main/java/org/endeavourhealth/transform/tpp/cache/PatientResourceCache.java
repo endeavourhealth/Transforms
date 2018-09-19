@@ -50,7 +50,7 @@ public class PatientResourceCache {
         for (Long key: patientBuildersByRowId.keySet()) {
             PatientBuilder patientBuilder = patientBuildersByRowId.get(key);
 
-            if (patientBuilder.hasManagingOrganisation()) {
+            if (patientBuilder.hasManagingOrganisation() && !patientBuilder.getResource().getId().equals("-1")) {
                 boolean mapIds = !patientBuilder.isIdMapped();
                 try {
                     fhirResourceFiler.savePatientResource(null, mapIds, patientBuilder);
