@@ -203,7 +203,8 @@ public class SRPatientRegistrationTransformer {
 
         for (String tok: toks) {
 
-            if (tok.equalsIgnoreCase("GMS")) {
+            if (tok.equalsIgnoreCase("GMS")
+            || tok.equalsIgnoreCase("Standard")) {
                 types.add(RegistrationType.REGULAR_GMS);
             } else if (tok.equalsIgnoreCase("IMMEDIATELY NECESSARY")
                     || tok.equalsIgnoreCase("Immediately Necessary Treatment")) {
