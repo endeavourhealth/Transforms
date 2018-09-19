@@ -22,7 +22,34 @@ public class SRImmunisation extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_91)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "IDVaccination",
+                    "IDImmunisationContent",
+                    "Dose",
+                    "Location",
+                    "Method",
+                    "DateExpiry",
+                    "ImmsReadCode",
+                    "ImmsSNOMEDCode",
+                    "VaccPart",
+                    "VaccBatchNumber",
+                    "VaccAreaCode",
+                    "VaccinationStatus",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -75,8 +102,7 @@ public class SRImmunisation extends AbstractCsvParser {
                     "IDPatient",
                     "IDOrganisation"
             };
-        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_91)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
