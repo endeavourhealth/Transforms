@@ -765,9 +765,10 @@ public class JournalTransformer {
             systolicObservationBuilder.setValueNumber(value1, parser.getValue1());
             systolicObservationBuilder.setValueNumberUnits("mm Hg");
             systolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
+
             Reference parentResource
-                    = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
-            systolicObservationBuilder.setParentResource(parentResource);
+                    = csvHelper.createObservationReference(observationID.getString(), patientID.getString());
+            systolicObservationBuilder.setParentResource(parentResource, observationID);
 
             // add the Diastolic component to the main observation
             observationBuilder.addComponent();
@@ -803,8 +804,8 @@ public class JournalTransformer {
             diastolicObservationBuilder.setValueNumberUnits("mm Hg");
             diastolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
             parentResource
-                    = csvHelper.createObservationReference(observationBuilder.getResource().getId(), patientID.getString());
-            diastolicObservationBuilder.setParentResource(parentResource);
+                    = csvHelper.createObservationReference(observationID.getString(), patientID.getString());
+            diastolicObservationBuilder.setParentResource(parentResource, observationID);
         }
         else {
             //otherwise, add in the 1st value if it exists
