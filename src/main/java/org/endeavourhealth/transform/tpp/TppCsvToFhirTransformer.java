@@ -152,6 +152,7 @@ public abstract class TppCsvToFhirTransformer {
         List<String> possibleVersions = new ArrayList<>();
         Map<String, List<String>> breadcrumbs = new HashMap<String, List<String>>();
 
+        possibleVersions.add(VERSION_91);
         possibleVersions.add(VERSION_90);
         possibleVersions.add(VERSION_TEST_PACK_3);
         possibleVersions.add(VERSION_TEST_PACK_2);
