@@ -105,13 +105,13 @@ public class PPATITransformer {
 
         CsvCell genderCell = parser.getGenderCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(genderCell)) {
-            CsvCell genderDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.GENDER, genderCell);
-            if (genderDescCell == null) {
+            CsvCell genderMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.GENDER, genderCell);
+            if (genderMeaningCell == null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner gender code {} not found", genderCell);
 
             } else {
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderDescCell.getString());
-                patientBuilder.setGender(gender, genderCell, genderDescCell);
+                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderMeaningCell.getString());
+                patientBuilder.setGender(gender, genderCell, genderMeaningCell);
             }
 
         } else {
