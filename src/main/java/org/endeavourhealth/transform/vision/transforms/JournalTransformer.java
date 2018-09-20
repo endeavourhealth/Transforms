@@ -729,7 +729,7 @@ public class JournalTransformer {
         CsvCell readCodeCell = parser.getReadCode();
         if (!readCodeCell.isEmpty()
                 && isBPParentCode(readCodeCell.getString())
-                && value1 != null && value2 != null) {
+                && (value1 != null && value1 > 0) && (value2 != null && value2 > 0)) {
 
             isBP = true;
 
