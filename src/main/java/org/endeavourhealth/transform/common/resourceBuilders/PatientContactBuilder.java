@@ -174,7 +174,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
         if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
             int index = contact.getRelationship().indexOf(codeableConcept);
-            return "relationship[" + index + "]";
+            return patientBuilder.getContactJsonPrefix(contact) + ".relationship[" + index + "]";
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");

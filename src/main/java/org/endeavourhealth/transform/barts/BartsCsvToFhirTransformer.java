@@ -190,7 +190,14 @@ public abstract class BartsCsvToFhirTransformer {
                         || name.endsWith("_33")
                         || name.endsWith("_32")
                         || name.endsWith("_31")
-                        || name.endsWith("_30")) {
+                        || name.endsWith("_30")
+                        || name.endsWith("_29")
+                        || name.endsWith("_28")
+                        || name.endsWith("_27")
+                        || name.endsWith("_26")
+                        || name.endsWith("_25")
+                        || name.endsWith("_24")
+                        || name.endsWith("_23")) {
                     continue;
                 }
 

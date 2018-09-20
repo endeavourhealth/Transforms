@@ -84,7 +84,7 @@ public class PPAGPTransformer {
                 patientBuilder.removeCareProvider(practitionerReference);
 
             } else {
-                patientBuilder.addCareProvider(practitionerReference);
+                patientBuilder.addCareProvider(practitionerReference, personnelId);
             }
         }
 
@@ -100,7 +100,7 @@ public class PPAGPTransformer {
                 patientBuilder.removeCareProvider(orgReference);
 
             } else {
-                patientBuilder.addCareProvider(orgReference);
+                patientBuilder.addCareProvider(orgReference, orgIdCell);
             }
         }
 

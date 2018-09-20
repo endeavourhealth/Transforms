@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPALI;
@@ -76,14 +76,12 @@ public class PPALITransformer {
 
         //work out the system for the alias
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
-
-        String aliasDesc = cernerCodeValueRef.getCodeMeaningTxt();
-        String aliasSystem = convertAliasCode(aliasDesc);
+        CsvCell aliasMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
+        String aliasSystem = convertAliasCode(aliasMeaningCell.getString());
 
         if (aliasSystem == null) {
-            TransformWarnings.log(LOG, parser, "Unknown alias system for {}", aliasDesc);
-            aliasSystem = "UNKNWON";
+            TransformWarnings.log(LOG, parser, "Unknown alias system for {}", aliasMeaningCell);
+            aliasSystem = "UNKNOWN";
         }
 
         //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
@@ -106,10 +104,10 @@ public class PPALITransformer {
         }
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-        identifierBuilder.setId(aliasIdCell.getString(), aliasCell);
+        identifierBuilder.setId(aliasIdCell.getString(), aliasIdCell);
         identifierBuilder.setUse(use);
         identifierBuilder.setValue(aliasCell.getString(), aliasCell);
-        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell);
+        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell, aliasMeaningCell);
 
         CsvCell startDateCell = parser.getBeginEffectiveDate();
         if (!startDateCell.isEmpty()) {

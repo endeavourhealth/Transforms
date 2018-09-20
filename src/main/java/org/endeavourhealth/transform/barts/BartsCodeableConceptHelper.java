@@ -16,6 +16,7 @@ public class BartsCodeableConceptHelper {
     public static final String DISP_TXT = "DispTxt";
     public static final String DESC_TXT = "DescTxt";
     public static final String MEANING_TXT = "MeanTxt";
+    public static final String ALIAS_TXT = "Alias";
 
 
     public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
@@ -50,22 +51,9 @@ public class BartsCodeableConceptHelper {
             return codeableConceptBuilder;
         }
 
-        String term = null;
-        if (elementToApply.equals(DESC_TXT)) {
-            term = cernerCodeValueRef.getCodeDescTxt();
-
-        } else if (elementToApply.equals(DISP_TXT)) {
-            term = cernerCodeValueRef.getCodeDispTxt();
-
-        } else if (elementToApply.equals(MEANING_TXT)) {
-            term = cernerCodeValueRef.getCodeMeaningTxt();
-
-        } else {
-            throw new IllegalArgumentException("Unknown audit element " + elementToApply);
-        }
-
         //create a CSV cell to audit where the term came from, using the Audit object on the code reference entity
-        CsvCell termCsvCell = createCsvCell(cernerCodeValueRef, elementToApply, term);
+        CsvCell termCsvCell = createCsvCell(cernerCodeValueRef, elementToApply);
+        String term = termCsvCell.getString();
         codeableConceptBuilder.setCodingDisplay(term, termCsvCell);
 
         //also set the term in the codeable concept text but with no audit, as we've already done it above
@@ -74,7 +62,24 @@ public class BartsCodeableConceptHelper {
         return codeableConceptBuilder;
     }
 
-    private static CsvCell createCsvCell(CernerCodeValueRef codeMap, String fieldName, Object value) {
+    private static CsvCell createCsvCell(CernerCodeValueRef codeMap, String fieldName) {
+
+        String value = null;
+        if (fieldName.equals(DESC_TXT)) {
+            value = codeMap.getCodeDescTxt();
+
+        } else if (fieldName.equals(DISP_TXT)) {
+            value = codeMap.getCodeDispTxt();
+
+        } else if (fieldName.equals(MEANING_TXT)) {
+            value = codeMap.getCodeMeaningTxt();
+
+        } else if (fieldName.equals(ALIAS_TXT)) {
+            value = codeMap.getAliasNhsCdAlias();
+
+        } else {
+            throw new IllegalArgumentException("Unknown audit element " + fieldName);
+        }
 
         ResourceFieldMappingAudit audit = codeMap.getAudit();
         //audit may be null if the coding file was processed before the audit was added
@@ -94,6 +99,44 @@ public class BartsCodeableConceptHelper {
             }
         }
 
-        return null;
+        return CsvCell.factoryDummyWrapper(value);
     }
+
+    public static CsvCell getCellDesc(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+        CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
+        if (mapping != null) {
+            return createCsvCell(mapping, DESC_TXT);
+        } else {
+            return null;
+        }
+    }
+
+    public static CsvCell getCellDisp(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+        CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
+        if (mapping != null) {
+            return createCsvCell(mapping, DISP_TXT);
+        } else {
+            return null;
+        }
+    }
+
+    public static CsvCell getCellMeaning(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+        CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
+        if (mapping != null) {
+            return createCsvCell(mapping, MEANING_TXT);
+        } else {
+            return null;
+        }
+    }
+
+    public static CsvCell getCellAlias(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+        CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
+        if (mapping != null) {
+            return createCsvCell(mapping, ALIAS_TXT);
+        } else {
+            return null;
+        }
+    }
+
+
 }

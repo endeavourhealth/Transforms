@@ -70,6 +70,7 @@ public class CVREFTransformer {
         auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), BartsCodeableConceptHelper.DISP_TXT);
         auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), BartsCodeableConceptHelper.DESC_TXT);
         auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), BartsCodeableConceptHelper.MEANING_TXT);
+        auditWrapper.auditValue(aliasNhsCdAlias.getRowAuditId(), aliasNhsCdAlias.getColIndex(), BartsCodeableConceptHelper.ALIAS_TXT);
 
         byte active = (byte) activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),

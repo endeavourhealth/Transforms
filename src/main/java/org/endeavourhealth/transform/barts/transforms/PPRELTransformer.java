@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPREL;
@@ -134,29 +134,29 @@ public class PPRELTransformer {
 
         if (!homePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, homePhone);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, homePhone);
             contactPointBuilder.setValue(homePhone.getString(), homePhone);
         }
 
         if (!mobilePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE, mobilePhone);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, mobilePhone);
             contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
         }
 
         if (!workPhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK, workPhone);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, workPhone);
             contactPointBuilder.setValue(workPhone.getString(), workPhone);
         }
 
         if (!emailAddress.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, emailAddress);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL, emailAddress);
             contactPointBuilder.setValue(emailAddress.getString(), emailAddress);
         }
 
@@ -176,21 +176,21 @@ public class PPRELTransformer {
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
-            String relationshipToPatientDesc = codeRef.getCodeDescTxt();
+            CsvCell relationshupToPatientDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
+            String relationshipToPatientDesc = relationshupToPatientDescCell.getString();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-            codeableConceptBuilder.setText(relationshipToPatientDesc);
+            codeableConceptBuilder.setText(relationshipToPatientDesc, relationshupToPatientDescCell);
         }
 
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipTypeCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
-            String relationshipTypeDesc = codeRef.getCodeDescTxt();
+            CsvCell relationshipTypeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
+            String relationshipTypeDesc = relationshipTypeDescCell.getString();
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-            codeableConceptBuilder.setText(relationshipTypeDesc);
+            codeableConceptBuilder.setText(relationshipTypeDesc, relationshipTypeDescCell);
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files

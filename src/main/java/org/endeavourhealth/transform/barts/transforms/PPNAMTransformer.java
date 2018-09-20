@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPNAM;
@@ -72,11 +72,11 @@ public class PPNAMTransformer {
         HumanName.NameUse nameUse = null;
 
         CsvCell nameTypeCell = parser.getNameTypeCode();
+        CsvCell codeMeaningCell = null;
         if (!BartsCsvHelper.isEmptyOrIsZero(nameTypeCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.NAME_USE, nameTypeCell);
-            String codeDesc = codeRef.getCodeMeaningTxt();
-            nameUse = convertNameUse(codeDesc);
+            codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
+            nameUse = convertNameUse(codeMeaningCell.getString());
         }
 
         CsvCell titleCell = parser.getTitle();
@@ -91,7 +91,7 @@ public class PPNAMTransformer {
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
-        nameBuilder.setUse(nameUse, nameTypeCell);
+        nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
         nameBuilder.addPrefix(titleCell.getString(), titleCell);
         nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
         nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);

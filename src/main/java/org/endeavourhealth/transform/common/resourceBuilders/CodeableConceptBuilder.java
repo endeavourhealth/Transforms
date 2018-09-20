@@ -147,27 +147,6 @@ public class CodeableConceptBuilder {
         addAudit("text", sourceCells);
     }
 
-    /**
-     * used when we want to populate the codeable concept from an existing one, with not audit information
-     */
-    public void addCodeableConceptNoAudit(CodeableConcept codeableConcept) {
-        if (codeableConcept.hasCoding()) {
-            for (Coding coding: codeableConcept.getCoding()) {
-                String system = coding.getSystem();
-                String code = coding.getCode();
-                String display = coding.getDisplay();
-
-                addCoding(system);
-                setCodingCode(code);
-                setCodingDisplay(display);
-            }
-        }
-
-        if (codeableConcept.hasText()) {
-            String text = codeableConcept.getText();
-            setText(text);
-        }
-    }
 
     public CodeableConcept getCodeableConcept() {
         return codeableConcept;

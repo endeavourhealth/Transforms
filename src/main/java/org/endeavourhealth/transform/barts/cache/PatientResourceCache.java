@@ -27,13 +27,17 @@ public class PatientResourceCache {
     //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
     private Set<Long> personIdsJustDeleted = new HashSet<>();
 
+
+
+    public PatientBuilder borrowPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
+        //if we've only got a number and not a CsvCell, then wrap in a dummy cell
+        CsvCell cell = CsvCell.factoryDummyWrapper("" + personId);
+        return borrowPatientBuilder(cell, csvHelper);
+    }
+
     public PatientBuilder borrowPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
 
         Long personId = personIdCell.getLong();
-        return borrowPatientBuilder(personId, csvHelper);
-    }
-
-    public PatientBuilder borrowPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
 
         //if we know we've deleted it, return null
         if (personIdsJustDeleted.contains(personId)) {
@@ -57,7 +61,7 @@ public class PatientResourceCache {
         if (patient == null) {
             //if the patient doesn't exist yet, create a new one
             patientBuilder = new PatientBuilder();
-            patientBuilder.setId(personId.toString());
+            patientBuilder.setId(personId.toString(), personIdCell);
 
         } else {
             patientBuilder = new PatientBuilder(patient);
@@ -76,7 +80,7 @@ public class PatientResourceCache {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-            identifierBuilder.setValue(personId.toString());
+            identifierBuilder.setValue(personId.toString(), personIdCell);
         }
 
         return patientBuilder;

@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
@@ -96,20 +96,20 @@ public class PPPHOTransformer {
         String phoneTypeDesc = null;
         if (!BartsCsvHelper.isEmptyOrIsZero(phoneTypeCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_TYPE, phoneTypeCell);
-            phoneTypeDesc = codeRef.getCodeMeaningTxt();
+            CsvCell phoneTypeDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
+            phoneTypeDesc = phoneTypeDescCell.getString();
             ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
-            contactPointBuilder.setUse(use, phoneTypeCell);
+            contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
         }
 
         CsvCell phoneMethodCell = parser.getContactMethodCode();
         if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.PHONE_METHOD, phoneMethodCell);
-            String phoneMethodDesc = codeRef.getCodeMeaningTxt();
+            CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
+            String phoneMethodDesc = phoneMethodDescCell.getString();
 
             ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
-            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell);
+            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
         }
 
         CsvCell startDate = parser.getBeginEffectiveDateTime();

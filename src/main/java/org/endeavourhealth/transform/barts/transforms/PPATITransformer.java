@@ -29,15 +29,15 @@ public class PPATITransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
 
                 //no try/catch as records in this file aren't independent and can't be re-processed on their own
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
 
-                createPatient((PPATI)parser, fhirResourceFiler, csvHelper);
+                createPatient((PPATI) parser, fhirResourceFiler, csvHelper);
             }
         }
     }
@@ -70,7 +70,7 @@ public class PPATITransformer {
         CsvCell nhsNumberCell = parser.getNhsNumber();
         if (!nhsNumberCell.isEmpty()) {
             String nhsNumber = nhsNumberCell.getString();
-            nhsNumber = nhsNumber.replace("-",""); //Cerner NHS numbers are tokenised with hyphens, so remove
+            nhsNumber = nhsNumber.replace("-", ""); //Cerner NHS numbers are tokenised with hyphens, so remove
 
             addOrUpdateIdentifier(patientBuilder, nhsNumber, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
         }
@@ -78,15 +78,13 @@ public class PPATITransformer {
         CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
         if (!BartsCsvHelper.isEmptyOrIsZero(nhsNumberStatusCell)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
-            if (codeRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for eventId {} not found",
-                        nhsNumberStatusCell.getLong(), parser.getNhsNumberStatus().getString());
-            } else {
+            CsvCell cernerDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
+            if (cernerDescCell == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for PPATI {} not found", nhsNumberStatusCell, millenniumPersonIdCell);
 
-                String cernerDesc = codeRef.getCodeDescTxt();
-                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDesc, parser);
-                patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
+            } else {
+                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDescCell.getString(), parser);
+                patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell, cernerDescCell);
             }
 
         } else {
@@ -107,17 +105,15 @@ public class PPATITransformer {
 
         CsvCell genderCell = parser.getGenderCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(genderCell)) {
-
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.GENDER, genderCell);
-            if (codeRef== null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for gender code {} not found",
-                        genderCell.getLong(), parser.getGenderCode().getString());
+            CsvCell genderDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.GENDER, genderCell);
+            if (genderDescCell == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner gender code {} not found", genderCell);
 
             } else {
-                String genderDesc = codeRef.getCodeMeaningTxt();
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderDesc);
-                patientBuilder.setGender(gender, genderCell);
+                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderDescCell.getString());
+                patientBuilder.setGender(gender, genderCell, genderDescCell);
             }
+
         } else {
             //if updating a record then clear the gender if the field is empty
             patientBuilder.setGender(null);
@@ -126,15 +122,13 @@ public class PPATITransformer {
         CsvCell maritalStatusCode = parser.getMaritalStatusCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.MARITAL_STATUS, maritalStatusCode);
-            if (codeRef == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for marital status {} not found",
-                        maritalStatusCode.getLong(), parser.getMaritalStatusCode().getString());
+            CsvCell maritalMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
+            if (maritalMeaningCell == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner marital status {} not found", maritalStatusCode);
 
             } else {
-                String codeDesc = codeRef.getCodeMeaningTxt();
-                MaritalStatus maritalStatus = convertMaritalStatus(codeDesc, parser);
-                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode);
+                MaritalStatus maritalStatus = convertMaritalStatus(maritalMeaningCell.getString(), parser);
+                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode, maritalMeaningCell);
             }
         } else {
             //if updating a record, make sure to clear the field in this case
@@ -144,16 +138,15 @@ public class PPATITransformer {
         CsvCell ethnicityCode = parser.getEthnicGroupCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
 
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.ETHNIC_GROUP, ethnicityCode);
-            if (codeRef == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for ethnicity {} not found",
-                        ethnicityCode.getLong(), parser.getEthnicGroupCode().getString());
+            CsvCell ehtnicityCell = BartsCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
+            if (ehtnicityCell == null) {
+                TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCode);
 
             } else {
-                String codeDesc = codeRef.getAliasNhsCdAlias();
-                EthnicCategory ethnicCategory = convertEthnicCategory(codeDesc);
-                patientBuilder.setEthnicity(ethnicCategory, ethnicityCode);
+                EthnicCategory ethnicCategory = convertEthnicCategory(ehtnicityCell.getString());
+                patientBuilder.setEthnicity(ethnicCategory, ethnicityCode, ehtnicityCell);
             }
+
         } else {
             //if this field is empty we should clear the value from the patient
             patientBuilder.setEthnicity(null);
@@ -210,7 +203,7 @@ public class PPATITransformer {
         Identifier existingIdentifier = null;
 
         List<Identifier> identifiersForSameSystem = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, system);
-        for (Identifier identifier: identifiersForSameSystem) {
+        for (Identifier identifier : identifiersForSameSystem) {
 
             //we get updates to PPATI when another field has changed (e.g. religion), so if the PPALI has
             //already replaced the identifier with one with an ID but our value is the same, then do nothing
@@ -280,13 +273,20 @@ public class PPATITransformer {
 
     private static MaritalStatus convertMaritalStatus(String statusCode, ParserI parser) throws Exception {
         switch (statusCode) {
-            case "DIVORCED": return MaritalStatus.DIVORCED;
-            case "MARRIED": return MaritalStatus.MARRIED;
-            case "LGL_SPRTN": return MaritalStatus.LEGALLY_SEPARATED;
-            case "SINGLE": return MaritalStatus.NEVER_MARRIED;
-            case "UNKNOWN": return null;
-            case "WIDOW": return MaritalStatus.WIDOWED;
-            case "LIFE_PTNR": return MaritalStatus.DOMESTIC_PARTNER;
+            case "DIVORCED":
+                return MaritalStatus.DIVORCED;
+            case "MARRIED":
+                return MaritalStatus.MARRIED;
+            case "LGL_SPRTN":
+                return MaritalStatus.LEGALLY_SEPARATED;
+            case "SINGLE":
+                return MaritalStatus.NEVER_MARRIED;
+            case "UNKNOWN":
+                return null;
+            case "WIDOW":
+                return MaritalStatus.WIDOWED;
+            case "LIFE_PTNR":
+                return MaritalStatus.DOMESTIC_PARTNER;
             default:
                 TransformWarnings.log(LOG, parser, "Unmapped marital status {}", statusCode);
                 return null;
