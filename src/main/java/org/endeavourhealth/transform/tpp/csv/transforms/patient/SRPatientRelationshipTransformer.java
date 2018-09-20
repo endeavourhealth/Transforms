@@ -14,6 +14,7 @@ import org.hl7.fhir.instance.model.HumanName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -177,6 +178,10 @@ public class SRPatientRelationshipTransformer {
             fhirName.setUse(HumanName.NameUse.USUAL);
             fhirName.setText(name);
             String[] tokens = name.split(" ");
+            ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
+            list.removeAll(Arrays.asList("", null));
+            tokens = new String[list.size()];
+            tokens = list.toArray(tokens);
             // Take last part as surname.  Assume original TPP data has proper HumanNames
             String surname = tokens[tokens.length - 1];
             fhirName.addFamily(surname);
