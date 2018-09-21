@@ -164,7 +164,8 @@ public class SRAppointmentTransformer {
 
     private static Appointment.AppointmentStatus convertAppointmentStatus(String status, SRAppointment parser) throws Exception {
 
-        if (status.toLowerCase().startsWith("did not attend")) {
+        if (status.toLowerCase().startsWith("did not attend")
+        || status.toLowerCase().trim().contains("no access visit")) {
             return Appointment.AppointmentStatus.NOSHOW;
         } else if (status.toLowerCase().startsWith("cancelled")) {
             return Appointment.AppointmentStatus.CANCELLED;
