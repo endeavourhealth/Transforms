@@ -433,6 +433,8 @@ public abstract class TppCsvToFhirTransformer {
             csvHelper.getAppointmentFlagCache().processRemainingFlags(csvHelper, fhirResourceFiler);
             SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
             LOG.trace("Starting clinical transforms");
             SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -440,6 +442,9 @@ public abstract class TppCsvToFhirTransformer {
             SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
             SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
