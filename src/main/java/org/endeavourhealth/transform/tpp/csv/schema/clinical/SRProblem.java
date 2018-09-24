@@ -22,8 +22,7 @@ public class SRProblem extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
                     "RowIdentifier",
@@ -46,6 +45,7 @@ public class SRProblem extends AbstractCsvParser {
                     "RemovedData"
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_91)
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)
                 || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
             return new String[]{
                     "RowIdentifier",
