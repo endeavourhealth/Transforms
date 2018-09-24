@@ -22,7 +22,7 @@ public class SRChildAtRisk extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_91)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
@@ -40,8 +40,21 @@ public class SRChildAtRisk extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else {
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
             return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateAdded",
+                    "IDProfileEnteredBy",
+                    "ChildProtectionPlan",
+                    "DateRemoved",
+                    "IDProfileRemovedBy",
+                    "RemovalReason",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else {return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
                     "DateAdded",
