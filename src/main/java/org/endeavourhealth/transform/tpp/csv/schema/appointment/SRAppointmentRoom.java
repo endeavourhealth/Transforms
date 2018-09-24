@@ -22,8 +22,7 @@ public class SRAppointmentRoom extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+        if  (version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
             return new String[]{
@@ -40,6 +39,21 @@ public class SRAppointmentRoom extends AbstractCsvParser {
                     "IDOrganisationBranch",
                     "IDLocation",
                     "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "Name",
+                    "DateCreated",
+                    "IDCreatedBy",
+                    "IDProfileCreatedBy",
+                    "DateDeleted",
+                    "IDDeletedBy",
+                    "IDProfileDeletedBy",
+                    "IdBranch",
+                    "IDOrganisationBranch",
+                    "IDLocation"
             };
         } else {
             return new String[]{
