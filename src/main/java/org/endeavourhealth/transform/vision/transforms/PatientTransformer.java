@@ -210,9 +210,12 @@ public class PatientTransformer {
         CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientID);
         if (fhirEthnicity != null) {
             String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
+            LOG.debug("Try to find Ethnicity for PatientId: "+patientID.getString()+", Ethnicity: "+fhirEthnicity.getText()+" and code: "+ethnicityCode);
             if (!Strings.isNullOrEmpty(ethnicityCode)) {
                 patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
+        } else {
+            LOG.debug("no cached ethnicity for PatientId: "+patientID.getString());
         }
 
         CsvCell regDate = parser.getDateOfRegistration();

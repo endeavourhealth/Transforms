@@ -161,7 +161,7 @@ public class JournalPreTransformer {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
-        if (readCode.startsWith("9S10") || readCode.startsWith("9i00")) {
+        if (readCode.startsWith("9S10") || readCode.startsWith("9i0")) {
             return EthnicCategory.WHITE_BRITISH;
         } else if (readCode.startsWith("9S11") || readCode.startsWith("9i10")) {
             return EthnicCategory.WHITE_IRISH;
