@@ -1,8 +1,7 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
@@ -208,14 +207,32 @@ public class PatientTransformer {
 
         //try and get Ethnicity from Journal pre-transformer
         CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientID);
-        if (fhirEthnicity != null) {
+
+        //it might be a delta transform without ethnicity in the Journal pre-transformer, so try and get existing ethnicity from DB
+        if (fhirEthnicity == null) {
+            org.hl7.fhir.instance.model.Patient existingPatient
+                    = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(patientID.getString(), ResourceType.Patient, fhirResourceFiler);
+            if (existingPatient != null) {
+
+                CodeableConcept oldEthnicity
+                        = (CodeableConcept) ExtensionConverter.findExtensionValue(existingPatient, FhirExtensionUri.PATIENT_ETHNICITY);
+                if (oldEthnicity != null) {
+
+                    String oldEthnicityCode
+                            = CodeableConceptHelper.findCodingCode(oldEthnicity, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+                    if (!Strings.isNullOrEmpty(oldEthnicityCode)) {
+                        EthnicCategory ethnicCategory = EthnicCategory.fromCode(oldEthnicityCode);
+                        patientBuilder.setEthnicity(ethnicCategory);
+                    }
+                }
+            }
+        } else {
+
+            //otherwise, set the new and latest ethnicity
             String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
-            LOG.debug("Try to find Ethnicity for PatientId: "+patientID.getString()+", Ethnicity: "+fhirEthnicity.getText()+" and code: "+ethnicityCode);
             if (!Strings.isNullOrEmpty(ethnicityCode)) {
                 patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
-        } else {
-            LOG.debug("no cached ethnicity for PatientId: "+patientID.getString());
         }
 
         CsvCell regDate = parser.getDateOfRegistration();

@@ -107,10 +107,9 @@ public class JournalPreTransformer {
             EthnicCategory ethnicCategory = findEthnicityCode(readCode);
             if (ethnicCategory != null) {
 
-                LOG.debug("PatientId: "+patientID.getString()+", Date: "+fhirDate.asStringValue()+", Ethnicity: "+ethnicCategory.getDescription());
                 csvHelper.cacheEthnicity(patientID, fhirDate, ethnicCategory);
             } else {
-                LOG.debug("Unmapped ethnic code: "+readCode+" for PatientID: "+patientID.getString());
+                LOG.warn("Unmapped ethnic code: "+readCode+" for PatientID: "+patientID.getString());
             }
         }
 
