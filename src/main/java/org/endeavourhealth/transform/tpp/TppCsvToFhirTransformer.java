@@ -428,6 +428,8 @@ public abstract class TppCsvToFhirTransformer {
             csvHelper.getPatientResourceCache().fileResources(fhirResourceFiler);
             csvHelper.processRemainingRegistrationStatuses(fhirResourceFiler);
 
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
             SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             csvHelper.getAppointmentFlagCache().processRemainingFlags(csvHelper, fhirResourceFiler);
