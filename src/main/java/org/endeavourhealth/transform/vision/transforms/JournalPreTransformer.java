@@ -12,6 +12,8 @@ import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
@@ -19,6 +21,8 @@ import java.util.Map;
 import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.*;
 
 public class JournalPreTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JournalPreTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -52,6 +56,9 @@ public class JournalPreTransformer {
         CsvCell observationID = parser.getObservationID();
         CsvCell patientID = parser.getPatientID();
         String readCode = parser.getReadCode().getString();
+        if (!Strings.isNullOrEmpty(readCode)) {
+            readCode = readCode.substring(0,5);
+        }
 
         //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
         if (resourceType != ResourceType.Condition) {
@@ -92,14 +99,18 @@ public class JournalPreTransformer {
         }
 
         //try to get Ethnicity from Journal
-        if (readCode.startsWith("9S")) {
+        if (readCode.startsWith("9S") || readCode.startsWith("9i")) {
             Date effectiveDate = parser.getEffectiveDateTime().getDate();
             String effectiveDatePrecision = "YMD";
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
             EthnicCategory ethnicCategory = findEthnicityCode(readCode);
             if (ethnicCategory != null) {
+
+                LOG.debug("PatientId: "+patientID.getString()+", Date: "+fhirDate.asStringValue()+", Ethnicity: "+ethnicCategory.getDescription());
                 csvHelper.cacheEthnicity(patientID, fhirDate, ethnicCategory);
+            } else {
+                LOG.debug("Unmapped ethnic code: "+readCode+" for PatientID: "+patientID.getString());
             }
         }
 
@@ -145,44 +156,44 @@ public class JournalPreTransformer {
         return null;
     }
 
-    //Vision use Ethnic groups so map from Read code
+    //Vision use Ethnic groups and 2001 census categories so map from Read code
     private static EthnicCategory findEthnicityCode(String readCode) {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
-        if (readCode.startsWith("9S10")) {
+        if (readCode.startsWith("9S10") || readCode.startsWith("9i00")) {
             return EthnicCategory.WHITE_BRITISH;
-        } else if (readCode.startsWith("9S11")) {
+        } else if (readCode.startsWith("9S11") || readCode.startsWith("9i10")) {
             return EthnicCategory.WHITE_IRISH;
-        } else if (readCode.startsWith("9S12")) {
+        } else if (readCode.startsWith("9S12") || readCode.startsWith("9i2")) {
             return EthnicCategory.OTHER_WHITE;
-        } else if (readCode.startsWith("9SB5")) {
+        } else if (readCode.startsWith("9SB5") || readCode.startsWith("9i3")) {
             return EthnicCategory.MIXED_CARIBBEAN;
-        } else if (readCode.startsWith("9SB6")) {
+        } else if (readCode.startsWith("9SB6") || readCode.startsWith("9i4")) {
             return EthnicCategory.MIXED_AFRICAN;
-        } else if (readCode.startsWith("9SB2")) {
+        } else if (readCode.startsWith("9SB2") || readCode.startsWith("9i5")) {
             return EthnicCategory.MIXED_ASIAN;
-        } else if (readCode.startsWith("9SB.")) {
+        } else if (readCode.startsWith("9SB.") || readCode.startsWith("9i6"))  {
             return EthnicCategory.OTHER_MIXED;
-        } else if (readCode.startsWith("9S6")) {
+        } else if (readCode.startsWith("9S6") || readCode.startsWith("9i7")) {
             return EthnicCategory.ASIAN_INDIAN;
-        } else if (readCode.startsWith("9S7")) {
+        } else if (readCode.startsWith("9S7") || readCode.startsWith("9i8")) {
             return EthnicCategory.ASIAN_PAKISTANI;
-        } else if (readCode.startsWith("9S8")) {
+        } else if (readCode.startsWith("9S8") || readCode.startsWith("9i9")) {
             return EthnicCategory.ASIAN_BANGLADESHI;
-        } else if (readCode.startsWith("9SH")) {
+        } else if (readCode.startsWith("9SH") || readCode.startsWith("9iA")) {
             return EthnicCategory.OTHER_ASIAN;
-        } else if (readCode.startsWith("9S2")) {
+        } else if (readCode.startsWith("9S2") || readCode.startsWith("9iB")) {
             return EthnicCategory.BLACK_CARIBBEAN;
-        } else if (readCode.startsWith("9S3")) {
+        } else if (readCode.startsWith("9S3") || readCode.startsWith("9iC")) {
             return EthnicCategory.BLACK_AFRICAN;
-        } else if (readCode.startsWith("9S4")) {
+        } else if (readCode.startsWith("9S4") || readCode.startsWith("9iD")) {
             return EthnicCategory.OTHER_BLACK;
-        } else if (readCode.startsWith("9S9")) {
+        } else if (readCode.startsWith("9S9") || readCode.startsWith("9iE")) {
             return EthnicCategory.CHINESE;
-        } else if (readCode.startsWith("9SJ")) {
+        } else if (readCode.startsWith("9SJ") || readCode.startsWith("9iF")) {
             return EthnicCategory.OTHER;
-        } else if (readCode.startsWith("9SE")) {
+        } else if (readCode.startsWith("9SE") || readCode.startsWith("9iG")) {
             return EthnicCategory.NOT_STATED;
         } else {
             return null;
