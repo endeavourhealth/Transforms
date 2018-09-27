@@ -46,6 +46,7 @@ public class CLEVETransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
+
     public static void createObservation(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell clinicalEventId = parser.getEventId();
@@ -176,7 +177,6 @@ public class CLEVETransformer {
                 codeableConceptBuilder.setCodingDisplay(term);
             }
         }
-
 
 
         if (isNumericResult(parser, csvHelper)) {
