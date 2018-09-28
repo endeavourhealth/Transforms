@@ -5,7 +5,6 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -158,7 +157,7 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
             csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
-            LOG.debug("Doing CLEVE bulks now");
+            /*LOG.debug("Doing CLEVE bulks now");
             for (ExchangePayloadFile bulk: cleveBulks) {
                 String path = bulk.getPath();
                 LOG.debug("Doing " + path);
@@ -205,6 +204,8 @@ public abstract class BartsCsvToFhirTransformer {
                         || name.endsWith("_18")
                         || name.endsWith("_17")
                         || name.endsWith("_16")
+                        || name.endsWith("_15")
+                        || name.endsWith("_14")
 
 
                         ) {
@@ -220,7 +221,7 @@ public abstract class BartsCsvToFhirTransformer {
 
                 csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
                 csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
-            }
+            }*/
 
             LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
             fhirResourceFiler.waitToFinish();
