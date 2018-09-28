@@ -143,7 +143,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 LOG.info(e.getMessage());
                 if (filePath.toUpperCase().contains("TPP")) {
                     LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
-                    ArrayList<String> headers = (ArrayList<String>) Arrays.asList(expectedHeaders);
+                    ArrayList<String> headers = new ArrayList(Arrays.asList(expectedHeaders));
                     if (headers.contains(REMOVED_DATA_HEADER)) {
                         headers.remove(REMOVED_DATA_HEADER);
                     } else {
