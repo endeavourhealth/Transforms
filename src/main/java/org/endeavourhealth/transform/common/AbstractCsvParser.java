@@ -137,6 +137,22 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             this.csvIterator = csvReader.iterator();
 
             String[] expectedHeaders = getCsvHeaders(version);
+            try {
+                CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
+            } catch (Exception e) {
+                LOG.info(e.getMessage());
+                if (filePath.toUpperCase().contains("TPP")) {
+                    LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
+                    ArrayList<String> headers = (ArrayList<String>) Arrays.asList(expectedHeaders);
+                    if (headers.contains(REMOVED_DATA_HEADER)) {
+                        headers.remove(REMOVED_DATA_HEADER);
+                    } else {
+                        headers.add(REMOVED_DATA_HEADER);
+                    }
+                    expectedHeaders = new String[headers.size()];
+                    expectedHeaders = headers.toArray(expectedHeaders);
+                }
+            }
             CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
 
             csvRecordLineNumber = 0;
