@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappin
 import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.tpp.TppCsvToFhirTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -337,14 +338,25 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
             if (filePath.toUpperCase().contains("TPP")) {
                 LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
-                ret = reTestForValidVersionsForTpp(possibleVersions);
+                ret = reTestForValidVersionsForTpp();
             }
         }
 
         return ret;
     }
 
-    private List<String> reTestForValidVersionsForTpp(List<String> possibleVersions) throws Exception {
+    private List<String> reTestForValidVersionsForTpp() throws Exception {
+
+        List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_91);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_90);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_TEST_PACK_3);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_TEST_PACK_2);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_89);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_88);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_87);
+        possibleVersions.add(TppCsvToFhirTransformer.VERSION_TEST_PACK);
+
         // Handle tpp files where only difference is we may or may not have the RemovedData column
         // All TPP transforms should include a null check anyway
         List<String> ret = new ArrayList<>();
