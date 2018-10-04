@@ -280,7 +280,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
-                                                      CsvCell resourceGuid,
+                                                      String resourceGuid,
                                                       ResourceType resourceType) {
 
         if (consultationGuid.isEmpty()) {
@@ -296,8 +296,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
-        String resourceLocalUniqueId = resourceGuid.getString();
-        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
+        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceGuid);
         list.add(resourceReference, consultationGuid);
     }
 

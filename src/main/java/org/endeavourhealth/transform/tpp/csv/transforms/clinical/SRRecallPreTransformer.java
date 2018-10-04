@@ -46,7 +46,7 @@ public class SRRecallPreTransformer {
 
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id, ResourceType.ProcedureRequest);
+            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id.getString(), ResourceType.ProcedureRequest);
         }
     }
 }

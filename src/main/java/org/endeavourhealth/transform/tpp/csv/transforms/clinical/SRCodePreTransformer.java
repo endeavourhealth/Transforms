@@ -52,7 +52,7 @@ public class SRCodePreTransformer {
         // code linked consultation / encounter Id
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, observationId, resourceType);
+            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, observationId.getString(), resourceType);
         }
 
         // ethnicity and marital status lookup

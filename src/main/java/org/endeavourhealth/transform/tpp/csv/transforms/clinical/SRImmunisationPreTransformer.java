@@ -45,7 +45,7 @@ public class SRImmunisationPreTransformer {
 
         CsvCell eventIdCell = parser.getIDEvent();
         if (!eventIdCell.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id, ResourceType.Immunization);
+            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id.getString(), ResourceType.Immunization);
         }
     }
 }

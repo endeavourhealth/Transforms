@@ -54,7 +54,7 @@ public class SRPrimaryCareMedicationPreTransformer {
 
             //create a medication statement for anything but repeats
             if (!isRepeatMedication.getBoolean()) {
-                csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id, ResourceType.MedicationStatement);
+                csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id.getString(), ResourceType.MedicationStatement);
             }
 
             //create medication order for acutes and repeats (i.e. not these types)
@@ -62,7 +62,7 @@ public class SRPrimaryCareMedicationPreTransformer {
                     && !isHospitalMedication.getBoolean()
                     && !isOtherMedication.getBoolean()) {
 
-                csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id, ResourceType.MedicationOrder);
+                csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id.getString(), ResourceType.MedicationOrder);
             }
         }
 

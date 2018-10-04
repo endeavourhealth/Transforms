@@ -45,7 +45,7 @@ public class SRReferralOutPreTransformer {
 
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id, ResourceType.ReferralRequest);
+            csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id.getString(), ResourceType.ReferralRequest);
         }
 
         //referral out has a unique field, where the recipient may be a practitioner at another service,

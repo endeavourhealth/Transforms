@@ -42,10 +42,11 @@ public class SRRepeatTemplatePreTransformer {
         }
 
         CsvCell id = parser.getRowIdentifier();
+        String localId = SRRepeatTemplateTransformer.REPEAT_TEMPLATE_ID_PREFIX + id.getString();
 
         CsvCell eventIdCell = parser.getIDEvent();
         if (!eventIdCell.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id, ResourceType.MedicationStatement);
+            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, localId, ResourceType.MedicationStatement);
         }
     }
 }

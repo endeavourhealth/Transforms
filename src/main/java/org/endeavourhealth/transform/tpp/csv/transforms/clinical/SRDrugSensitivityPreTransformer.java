@@ -45,7 +45,7 @@ public class SRDrugSensitivityPreTransformer {
 
         CsvCell eventIdCell = parser.getIDEvent();
         if (!eventIdCell.isEmpty()) {
-            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id, ResourceType.AllergyIntolerance);
+            csvHelper.cacheNewConsultationChildRelationship(eventIdCell, id.getString(), ResourceType.AllergyIntolerance);
         }
     }
 }
