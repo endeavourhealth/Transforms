@@ -11,4 +11,5 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     DateFormat getDateFormat();
     DateFormat getTimeFormat();
     DateFormat getDateTimeFormat();
+    void setAuditorCallback(CsvAuditorCallbackI auditorCallback);
 }

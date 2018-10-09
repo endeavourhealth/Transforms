@@ -60,6 +60,7 @@ public class ProcedureTransformer extends HomertonBasisTransformer {
             if (existingProcedure != null) {
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
                 //remember to pass in false since this procedure is already ID mapped
+                procedureBuilder.setDeletedAudit(activeCell);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
             }
 

@@ -53,6 +53,7 @@ public class LocationTransformer {
 
         CsvCell deleted = parser.getDeleted();
         if (deleted.getBoolean()) {
+            locationBuilder.setDeletedAudit(deleted);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
 
             //this resource exists in our admin resource cache, so we can populate the

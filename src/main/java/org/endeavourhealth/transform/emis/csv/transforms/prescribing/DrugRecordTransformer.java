@@ -56,8 +56,9 @@ public class DrugRecordTransformer {
         medicationStatementBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            medicationStatementBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
             return;
         }

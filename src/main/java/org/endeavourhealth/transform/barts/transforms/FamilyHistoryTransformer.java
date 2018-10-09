@@ -55,6 +55,7 @@ public class FamilyHistoryTransformer {
 
         CsvCell activeCell = parser.getActiveInd();
         if (!activeCell.getIntAsBoolean()) {
+            familyMemberHistoryBuilder.setDeletedAudit(activeCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
             return;
         }

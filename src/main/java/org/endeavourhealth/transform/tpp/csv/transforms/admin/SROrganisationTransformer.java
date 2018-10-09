@@ -76,6 +76,8 @@ public class SROrganisationTransformer {
         CsvCell obsoleteCell = parser.getMadeObsolete();
         if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
+
+            locationBuilder.setDeletedAudit(obsoleteCell);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -159,6 +161,8 @@ public class SROrganisationTransformer {
         if ((obsoleteCell != null && obsoleteCell.getBoolean())
                 || (deleted != null && deleted.getIntAsBoolean())) {
             adminCacheFiler.deleteAdminResourceFromCache(organizationBuilder);
+
+            organizationBuilder.setDeletedAudit(obsoleteCell, deleted);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }

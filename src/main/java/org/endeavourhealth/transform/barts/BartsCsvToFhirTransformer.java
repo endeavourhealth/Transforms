@@ -48,7 +48,7 @@ public abstract class BartsCsvToFhirTransformer {
         LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + serviceId);
 
         //separate out the bulk cleve files
-        List<ExchangePayloadFile> cleveBulks = new ArrayList<>();
+        /*List<ExchangePayloadFile> cleveBulks = new ArrayList<>();
         for (int i=files.size()-1; i>=0; i--) {
             ExchangePayloadFile f = files.get(i);
             if (f.getType().equals("CLEVE")) {
@@ -58,7 +58,7 @@ public abstract class BartsCsvToFhirTransformer {
                     cleveBulks.add(f);
                 }
             }
-        }
+        }*/
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
@@ -237,23 +237,6 @@ public abstract class BartsCsvToFhirTransformer {
         }
     }
 
-
-    /**
-     * most files should only exist once, so use this fn to create the parser
-     */
-    /*private static ParserI createParser(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, BartsCsvHelper csvHelper) throws Exception {
-        List<ParserI> list = createParsers(fileMap, parserMap, type, csvHelper);
-        if (list.isEmpty()) {
-            return null;
-
-        } else if (list.size() > 1) {
-            throw new TransformException("" + list.size() + " files found for type " + type);
-
-        } else {
-            return list.get(0);
-        }
-    }*/
-
     /**
      * lazily creates parsers for the given file type on any matching files
      */
@@ -266,6 +249,10 @@ public abstract class BartsCsvToFhirTransformer {
             if (files != null) {
                 for (String file: files) {
                     ParserI parser = createParser(file, type, csvHelper);
+
+                    //set our csv helper as the auditor callback, so we can selectively audit CLEVE records
+                    parser.setAuditorCallback(csvHelper);
+
                     ret.add(parser);
                 }
             }
@@ -303,82 +290,6 @@ public abstract class BartsCsvToFhirTransformer {
         }
     }
 
-    /*private static ParserI createParser(String file, String type, BartsCsvHelper csvHelper) throws Exception {
-
-        UUID serviceId = csvHelper.getServiceId();
-        UUID systemId = csvHelper.getSystemId();
-        UUID exchangeId = csvHelper.getExchangeId();
-        String version = csvHelper.getVersion();
-
-        if (type.equalsIgnoreCase("LOREF")) {
-            return new LOREF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PRSNLREF")) {
-            return new PRSNLREF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPATI")) {
-            return new PPATI(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPADD")) {
-            return new PPADD(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPALI")) {
-            return new PPALI(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPINF")) {
-            return new PPINF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPNAM")) {
-            return new PPNAM(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPPHO")) {
-            return new PPPHO(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPREL")) {
-            return new PPREL(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PPAGP")) {
-            return new PPAGP(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("ENCINF")) {
-            return new ENCINF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("ENCNT")) {
-            return new ENCNT(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("DIAGN")) {
-            return new DIAGN(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PROCE")) {
-            return new PROCE(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("CLEVE")) {
-            return new CLEVE(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PROB")) {
-            return new Problem(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("PROC")) {
-            return new Problem(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("DIAG")) {
-            return new Problem(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("SUSOPA")) {
-            return new SusOutpatient(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("SUSIP")) {
-            return new SusInpatient(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("SUSAEA")) {
-            return new SusEmergency(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("BULKPROBLEMS")) {
-            return new BulkProblem(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("BULKDIAGNOSES")) {
-            return new BulkDiagnosis(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("BULKPROCEDURES")) {
-            return new BulkProcedure(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("CVREF")) {
-            return new CVREF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("AEATT")) {
-            return new AEATT(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("OPATT")) {
-            return new OPATT(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("IPEPI")) {
-            return new IPEPI(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("IPWDS")) {
-            return new IPWDS(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("ORGREF")) {
-            return new ORGREF(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("FAMILYHISTORY")) {
-            return new FamilyHistory(serviceId, systemId, exchangeId, version, file);
-        } else if (type.equalsIgnoreCase("NOMREF")) {
-            return new NOMREF(serviceId, systemId, exchangeId, version, file);
-
-        } else {
-            throw new TransformException("Unknown file type [" + type + "]");
-        }
-    }*/
 
 
     private static Map<String, List<String>> hashFilesByType(List<ExchangePayloadFile> files, String exchangeDirectory) throws Exception {

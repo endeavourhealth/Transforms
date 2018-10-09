@@ -57,6 +57,7 @@ public class SRDrugSensitivityTransformer {
             AllergyIntolerance allergyIntolerance = (AllergyIntolerance)csvHelper.retrieveResource(rowId.getString(), ResourceType.AllergyIntolerance);
             if (allergyIntolerance != null) {
                 AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder(allergyIntolerance);
+                allergyIntoleranceBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, allergyIntoleranceBuilder);
             }
             return;

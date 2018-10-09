@@ -63,6 +63,7 @@ public class SRProblemTransformer {
                 if (trueResourceType != null) {
                     //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
                     //Condition as well as the other resource, in which case we need to DELETE the condition resource
+                    conditionBuilder.setDeletedAudit(deleteData);
                     csvHelper.getConditionResourceCache().returnToCacheForDelete(dummyCodeIdCell, conditionBuilder);
 
                 } else {

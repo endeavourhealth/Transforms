@@ -53,6 +53,7 @@ public class SRReferralOutStatusDetailsTransformer {
                 return;
             } else {
                 ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
+                referralRequestBuilder.setDeletedAudit(deleteData);
                 csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
             }
         }

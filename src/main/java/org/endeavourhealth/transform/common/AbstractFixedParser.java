@@ -45,7 +45,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     private Integer fileAuditId = null;
     private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
-
+    private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
 
     public AbstractFixedParser(UUID serviceId, UUID systemId, UUID exchangeId,
                                String version, String filePath, String dateFormat, String timeFormat) throws Exception {
@@ -63,9 +63,6 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         for (FixedParserField field: fields) {
             addFieldList(field);
         }
-
-        //create (or find if re-processing) an audit entry for this file
-        ensureFileAudited();
     }
 
     protected abstract boolean isFileAudited();
@@ -99,6 +96,11 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     @Override
     public DateFormat getDateTimeFormat() {
         return dateTimeFormat;
+    }
+
+    @Override
+    public void setAuditorCallback(CsvAuditorCallbackI auditorCallback) {
+        this.auditorCallback = auditorCallback;
     }
 
     private void open(String action) throws Exception {
@@ -138,6 +140,10 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         //we now only open the first set of parsers when starting a transform, so
         //need to check to open the subsequent ones
         if (br == null) {
+
+            //create (or find if re-processing) an audit entry for this file
+            ensureFileAudited();
+
             open("Starting");
         }
 
@@ -343,6 +349,12 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
                     LOG.trace("Auditing Line " + currentLineNumber + " of " + filePath);
                 }
 
+                //check if we want to audit this record
+                if (auditorCallback != null
+                        && !auditorCallback.shouldAuditRecord(this)) {
+                    continue;
+                }
+
                 String[] values = new String[headersList.size()];
 
                 for (int i=0; i<headersList.size(); i++) {
@@ -522,54 +534,4 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             return this.records.isEmpty();
         }
     }
-
-    /*class AuditRowTask implements Callable {
-
-        private int lineNumber;
-        private String[] values;
-        private boolean haveProcessedFileBefore;
-        private CsvCurrentState parserState;
-
-        public AuditRowTask(int lineNumber, String[] values, boolean haveProcessedFileBefore) {
-            this.lineNumber = lineNumber;
-            this.values = values;
-            this.haveProcessedFileBefore = haveProcessedFileBefore;
-        }
-
-
-        public CsvCurrentState getParserState() {
-            return new CsvCurrentState(filePath, lineNumber);
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-
-                long rowAuditId = -1;
-
-                //if we've done this file before, re-load the past audit
-                if (haveProcessedFileBefore) {
-                    Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, lineNumber);
-                    if (existingId != null) {
-                        rowAuditId = existingId.longValue();
-                    }
-                }
-
-                //if we still don't have an audit for this row, create a new one
-                if (rowAuditId == -1) {
-                    rowAuditId = dal.auditFileRow(serviceId, values, lineNumber, fileAuditId);
-                }
-
-                //use the callback function to set it in our array
-                setRowAuditId(lineNumber, rowAuditId);
-
-                return null;
-            } catch (Exception ex) {
-                LOG.error("Exception auditing row " + lineNumber, ex);
-                throw ex;
-            }
-        }
-
-    }*/
 }

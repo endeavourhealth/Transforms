@@ -87,6 +87,7 @@ public class SRPrimaryCareMedicationTransformer {
             MedicationStatement medicationStatement = (MedicationStatement) csvHelper.retrieveResource(medicationId.getString(), ResourceType.MedicationStatement);
             if (medicationStatement != null) {
                 MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder(medicationStatement);
+                medicationStatementBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, medicationStatementBuilder);
             }
             return;
@@ -199,6 +200,7 @@ public class SRPrimaryCareMedicationTransformer {
             MedicationOrder medicationOrder = (MedicationOrder) csvHelper.retrieveResource(medicationId.getString(), ResourceType.MedicationOrder);
             if (medicationOrder != null) {
                 MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder(medicationOrder);
+                medicationOrderBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, medicationOrderBuilder);
             }
             return;

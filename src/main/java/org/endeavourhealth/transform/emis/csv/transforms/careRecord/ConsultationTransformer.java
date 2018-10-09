@@ -60,7 +60,9 @@ public class ConsultationTransformer {
         encounterBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getDeleted().getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            encounterBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }

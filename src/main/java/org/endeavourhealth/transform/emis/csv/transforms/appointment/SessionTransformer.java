@@ -56,6 +56,7 @@ public class SessionTransformer {
             //need to process because we're deleting the resource itself, so just get them passing in true to stop them being processed
             csvHelper.findSessionPractitionersToSave(sessionGuid);
 
+            scheduleBuilder.setDeletedAudit(deleted);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), scheduleBuilder);
             return;
         }

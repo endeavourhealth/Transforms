@@ -51,6 +51,7 @@ public class SRChildAtRiskTransformer {
             Flag flag = (Flag)csvHelper.retrieveResource(rowId.getString(), ResourceType.Flag);
             if (flag != null) {
                 FlagBuilder flagBuilder = new FlagBuilder(flag);
+                flagBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, flagBuilder);
             }
             return;

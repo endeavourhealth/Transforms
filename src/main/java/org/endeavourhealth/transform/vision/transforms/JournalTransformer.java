@@ -195,7 +195,9 @@ public class JournalTransformer {
         medicationStatementBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            medicationStatementBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationStatementBuilder);
             return;
         }
@@ -296,7 +298,9 @@ public class JournalTransformer {
         medicationOrderBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            medicationOrderBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), medicationOrderBuilder);
             return;
         }
@@ -379,7 +383,9 @@ public class JournalTransformer {
         allergyIntoleranceBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            allergyIntoleranceBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
             return;
         }
@@ -470,7 +476,9 @@ public class JournalTransformer {
         procedureBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            procedureBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
             return;
         }
@@ -550,7 +558,9 @@ public class JournalTransformer {
 
         conditionBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            conditionBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
             return;
         }
@@ -652,7 +662,9 @@ public class JournalTransformer {
         observationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            observationBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
             return;
         }
@@ -884,7 +896,9 @@ public class JournalTransformer {
         familyMemberHistoryBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            familyMemberHistoryBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
             return;
         }
@@ -971,7 +985,9 @@ public class JournalTransformer {
         immunizationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            immunizationBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
             return;
         }

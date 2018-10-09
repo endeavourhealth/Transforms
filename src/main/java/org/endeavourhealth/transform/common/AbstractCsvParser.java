@@ -45,13 +45,15 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private int csvRecordLineNumber = -1;
     //private Set<Long> recordNumbersToProcess = null;
     private final static String REMOVED_DATA_HEADER ="RemovedData";
+    private Charset encoding = null;
 
     //audit data
     private Integer fileAuditId = null;
     private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
     private Map<String, Integer> cachedHeaderMap = null;
-    private Charset encoding = null;
+    private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
+
 
     public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
                              String version, String filePath, CSVFormat csvFormat,
@@ -116,6 +118,11 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     public String getVersion() {
         return version;
+    }
+
+    @Override
+    public void setAuditorCallback(CsvAuditorCallbackI auditorCallback) {
+        this.auditorCallback = auditorCallback;
     }
 
     private void open(String action) throws Exception {
@@ -226,6 +233,12 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                     LOG.trace("Auditing Line " + csvRecordLineNumber + " of " + filePath);
                 }
 
+                //check if we want to audit this record
+                if (auditorCallback != null
+                        && !auditorCallback.shouldAuditRecord(this)) {
+                    continue;
+                }
+
                 String[] values = new String[headerMap.size()];
 
                 for (String header : headerMap.keySet()) {
@@ -260,6 +273,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             handleErrors(errors);
         }
     }
+
 
     private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
         if (errors == null || errors.isEmpty()) {

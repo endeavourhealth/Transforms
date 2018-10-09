@@ -23,6 +23,8 @@ import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
 import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
 import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
+import org.endeavourhealth.transform.barts.schema.CLEVE;
+import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
@@ -42,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
+public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAuditorCallbackI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
@@ -932,5 +934,20 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI {
             List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
             AbstractCsvCallable.handleErrors(errors);
         }
+    }
+
+    /**
+     * used to selectively filter CSV records so that we don't audit every CLEVE record received, since we
+     * only process a relatively small number of them
+     */
+    @Override
+    public boolean shouldAuditRecord(ParserI parser) throws Exception {
+        if (parser instanceof CLEVE) {
+            CLEVE cleveParser = (CLEVE)parser;
+            return CLEVEPreTransformer.shouldTransformOrAuditRecord(cleveParser, this);
+        }
+
+        //audit every record of any other files
+        return true;
     }
 }

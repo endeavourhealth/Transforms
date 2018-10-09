@@ -59,7 +59,9 @@ public class ReferralTransformer {
         referralRequestBuilder.setPatient(patientReference, patientID);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            referralRequestBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
             return;
         }

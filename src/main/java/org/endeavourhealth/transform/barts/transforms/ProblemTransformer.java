@@ -75,6 +75,7 @@ public class ProblemTransformer {
         String status = statusCell.getString();
         if (status.equalsIgnoreCase("Canceled")) { //note the US spelling used
 
+            conditionBuilder.setDeletedAudit(statusCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
             return;
         }

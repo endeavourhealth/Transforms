@@ -43,6 +43,8 @@ public class SRRotaTransformer {
 
         CsvCell removedCell = parser.getRemovedData();
         if (removedCell != null && removedCell.getIntAsBoolean()) {
+
+            scheduleBuilder.setDeletedAudit(removedCell);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), scheduleBuilder);
             return;
         }

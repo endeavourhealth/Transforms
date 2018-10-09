@@ -73,6 +73,7 @@ public class SROrganisationBranchTransformer {
 
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
+            locationBuilder.setDeletedAudit(obsoleteCell, deleted);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }

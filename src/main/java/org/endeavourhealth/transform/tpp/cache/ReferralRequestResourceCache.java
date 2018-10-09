@@ -69,6 +69,7 @@ public class ReferralRequestResourceCache {
 
     public void addToDeletes(CsvCell referralOutId, ReferralRequestBuilder referralRequestBuilder) {
         Long key = referralOutId.getLong();
+
         referralRequestBuildersById.remove(key);
         referralRequestsToDelete.put(key, referralRequestBuilder);
     }

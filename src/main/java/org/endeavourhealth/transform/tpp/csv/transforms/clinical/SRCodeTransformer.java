@@ -149,6 +149,7 @@ public class SRCodeTransformer {
             AllergyIntolerance allergyIntolerance = (AllergyIntolerance) csvHelper.retrieveResource(rowId.getString(), ResourceType.AllergyIntolerance);
             if (allergyIntolerance != null) {
                 AllergyIntoleranceBuilder allergyIntoleranceBuilder = new AllergyIntoleranceBuilder(allergyIntolerance);
+                allergyIntoleranceBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, allergyIntoleranceBuilder);
             }
             return;
@@ -243,6 +244,7 @@ public class SRCodeTransformer {
             Procedure procedure = (Procedure) csvHelper.retrieveResource(rowId.getString(), ResourceType.Procedure);
             if (procedure != null) {
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
+                procedureBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
                 return;
             }
@@ -338,6 +340,7 @@ public class SRCodeTransformer {
         if (deleteData != null && deleteData.getIntAsBoolean()) {
 
             boolean mapIds = !conditionBuilder.isIdMapped();
+            conditionBuilder.setDeletedAudit(deleteData);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
 
             return;
@@ -453,6 +456,7 @@ public class SRCodeTransformer {
             Observation observation = (Observation) csvHelper.retrieveResource(rowId.getString(), ResourceType.Observation);
             if (observation != null) {
                 ObservationBuilder observationBuilder = new ObservationBuilder(observation);
+                observationBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
             }
             return;
@@ -653,6 +657,7 @@ public class SRCodeTransformer {
             FamilyMemberHistory familyMemberHistory = (FamilyMemberHistory) csvHelper.retrieveResource(rowId.getString(), ResourceType.FamilyMemberHistory);
             if (familyMemberHistory != null) {
                 FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder(familyMemberHistory);
+                familyMemberHistoryBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, familyMemberHistoryBuilder);
                 return;
             }

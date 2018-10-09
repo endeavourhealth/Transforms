@@ -63,6 +63,7 @@ public class SRRepeatTemplateTransformer {
             MedicationStatement medicationStatement = (MedicationStatement)csvHelper.retrieveResource(localId, ResourceType.MedicationStatement);
             if (medicationStatement != null) {
                 MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder(medicationStatement);
+                medicationStatementBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, medicationStatementBuilder);
             }
             return;
