@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class CLEVEPreTransformer {
@@ -28,6 +30,7 @@ public class CLEVEPreTransformer {
     private static CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
     private static CernerCodeValueRefDalI cernerDal = DalProvider.factoryCernerCodeValueRefDal();
     private static SnomedDalI snomedDal = DalProvider.factorySnomedDal();
+    private static Map<Long, CernerClinicalEventMap> cachedMappings = new HashMap<>(); //can't use concurrent hasmap, as that doesn't allow null values
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -107,6 +110,56 @@ public class CLEVEPreTransformer {
         csvHelper.submitToThreadPool(callable);
     }
 
+    public static boolean shouldTransformOrAuditRecord(CLEVE cleveParser, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell eventCdCell = cleveParser.getEventCode();
+        CsvCell eventClassCdCell = cleveParser.getEventCodeClass();
+        CsvCell eventResultTxtCell = cleveParser.getEventResultText();
+        CsvCell resultValueCell = cleveParser.getEventResultNumber();
+
+        if (eventCdCell.isEmpty()) {
+            return false;
+        }
+
+        String snomedConceptId = mapToSnomedCode(eventClassCdCell, resultValueCell, eventResultTxtCell, eventCdCell, csvHelper);
+
+        //if we can't map to Snomed, we won't create a FHIR resource, so skip auditing this record
+        if (Strings.isNullOrEmpty(snomedConceptId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static String mapToSnomedCode(CsvCell eventClassCdCell, CsvCell resultValueCell,
+                                         CsvCell eventResultTxtCell, CsvCell eventCdCell,
+                                         BartsCsvHelper csvHelper) throws Exception {
+
+        //currently, mapping only works for numerics
+        if (CLEVETransformer.isNumericResult(eventClassCdCell, resultValueCell, eventResultTxtCell, csvHelper)) {
+
+            //see if we've mapped this numeric to snomed
+            Long key = eventCdCell.getLong();
+            CernerClinicalEventMap mapping = null;
+            synchronized (cachedMappings) {
+                //slightly odd pattern because not all codes are mapped to snomed, so we'll have
+                //null mappings that we want to cache in the map, so we don't keep perfomring the same DB hit for ones that aren't mapped
+                if (cachedMappings.containsKey(key)) {
+                    mapping = cachedMappings.get(key);
+
+                } else {
+                    mapping = referenceDal.findMappingForCvrefCode(eventCdCell.getLong());
+                    cachedMappings.put(key, mapping);
+                }
+            }
+
+            if (mapping != null) {
+                return mapping.getSnomedConceptId();
+            }
+        }
+
+        return null;
+    }
 
     //simple storage class to carry over everything we need from the CSV parser so we can use in the thread pool
     static class CleveRecord {
@@ -233,20 +286,13 @@ public class CLEVEPreTransformer {
                         CsvCell encounterIdCell = record.getEncounterIdCell();
                         csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, eventIdCell, ResourceType.Observation);
 
-                        //map to Snomed if possible
-                        String snomedConceptId = null;
-
-                        //currently, mapping only works for numerics
                         CsvCell eventClassCdCell = record.getEventClassCdCell();
                         CsvCell resultValueCell = record.getResultValueCell();
                         CsvCell eventResultTxtCell = record.getEventResultTxtCell();
                         CsvCell eventCdCell = record.getEventCdCell();
-                        if (CLEVETransformer.isNumericResult(eventClassCdCell, resultValueCell, eventResultTxtCell, csvHelper)) {
-                            CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(eventCdCell.getLong());
-                            if (mapping != null) {
-                                snomedConceptId = mapping.getSnomedConceptId();
-                            }
-                        }
+
+                        //map to Snomed if possible
+                        String snomedConceptId = CLEVEPreTransformer.mapToSnomedCode(eventClassCdCell, resultValueCell, eventResultTxtCell, eventCdCell, csvHelper);
 
                         if (!Strings.isNullOrEmpty(snomedConceptId)) {
                             SnomedLookup snomedLookup = snomedDal.getSnomedLookup(snomedConceptId);

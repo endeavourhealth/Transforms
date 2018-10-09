@@ -74,6 +74,7 @@ public class SRCcgTransformer {
 
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
+            locationBuilder.setDeletedAudit(obsoleteCell);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
@@ -160,6 +161,7 @@ public class SRCcgTransformer {
 
             adminCacheFiler.deleteAdminResourceFromCache(organizationBuilder);
 
+            organizationBuilder.setDeletedAudit(obsoleteCell);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), organizationBuilder);
             return;
         }

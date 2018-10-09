@@ -34,7 +34,7 @@ public class EncounterResourceCache {
      * the ENCNT transformer deletes Encounters, and records that this has been done here,
      * so that the later transforms can check, since the deleted Encounter may not have reached the DB yet
      */
-    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
+    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, CsvCell triggeringCell) throws Exception {
 
         //null may end up passed in, so just ignore
         if (encounterBuilder == null) {
@@ -50,6 +50,7 @@ public class EncounterResourceCache {
         //encounterBuildersByEncounterId.removeFromCache(encounterId);
 
         boolean mapIds = !encounterBuilder.isIdMapped();
+        encounterBuilder.setDeletedAudit(triggeringCell);
         fhirResourceFiler.deletePatientResource(parserState, mapIds, encounterBuilder);
 
         //we create two FHIR Encounters for Cerner ENCNT records where an A&E attendance turns into
@@ -60,6 +61,7 @@ public class EncounterResourceCache {
             encounterIdsJustDeleted.add(duplicateEncounterId);
 
             boolean mapDuplicateEncounterIds = !duplicateEmergencyEncounterBuilder.isIdMapped();
+            duplicateEmergencyEncounterBuilder.setDeletedAudit(triggeringCell);
             fhirResourceFiler.deletePatientResource(parserState, mapDuplicateEncounterIds, duplicateEmergencyEncounterBuilder);
         }
     }
@@ -274,7 +276,10 @@ public class EncounterResourceCache {
             if (!existingEncounter.hasPeriod()
                     || !existingEncounter.getPeriod().hasStart()
                     || existingEncounter.getPeriod().getStart().before(cutoff)) {
-                fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(existingEncounter));
+                GenericBuilder builder = new GenericBuilder(existingEncounter);
+                //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                //builder.setDeletedAudit(...);
+                fhirResourceFiler.deletePatientResource(null, false, builder);
             }
         }
     }

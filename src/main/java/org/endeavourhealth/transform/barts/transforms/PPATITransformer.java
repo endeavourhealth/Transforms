@@ -57,6 +57,7 @@ public class PPATITransformer {
         //artificially create them)
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
+            patientBuilder.setDeletedAudit(activeCell);
             csvHelper.getPatientCache().deletePatient(patientBuilder, millenniumPersonIdCell, fhirResourceFiler, parser.getCurrentState());
             return;
         }

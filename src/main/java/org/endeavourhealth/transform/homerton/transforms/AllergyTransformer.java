@@ -63,6 +63,7 @@ public class AllergyTransformer extends HomertonBasisTransformer {
         String status = statusCell.getString();
         if (status.equalsIgnoreCase("Canceled")) { //note the US spelling used
 
+            allergyIntoleranceBuilder.setDeletedAudit(statusCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
             return;
         }

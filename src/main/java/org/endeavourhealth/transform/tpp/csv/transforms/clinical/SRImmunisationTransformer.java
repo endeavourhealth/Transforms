@@ -61,6 +61,7 @@ public class SRImmunisationTransformer {
             Immunization immunization = (Immunization) csvHelper.retrieveResource(rowId.getString(), ResourceType.Immunization);
             if (immunization != null) {
                 ImmunizationBuilder immunizationBuilder = new ImmunizationBuilder(immunization);
+                immunizationBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, immunizationBuilder);
             }
             return;

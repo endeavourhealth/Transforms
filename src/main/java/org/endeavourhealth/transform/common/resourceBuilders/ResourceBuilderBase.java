@@ -51,6 +51,15 @@ public abstract class ResourceBuilderBase {
         auditValue("id", sourceCells);
     }
 
+    /**
+     * when we delete a resource we use this fn to audit why we're deleting it. There isn't a "deleted"
+     * element in the JSON, so it's not quite consistent with the auditing of regular fields, but at
+     * least we have an audit of what caused it to be deleted
+     */
+    public void setDeletedAudit(CsvCell... sourceCells) {
+        auditValue("deleted", sourceCells);
+    }
+
     protected void auditStringExtension(Extension extension, CsvCell... sourceCells) {
         int index = getResource().getExtension().indexOf(extension);
         auditValue("extension[" + index + "].valueString", sourceCells);

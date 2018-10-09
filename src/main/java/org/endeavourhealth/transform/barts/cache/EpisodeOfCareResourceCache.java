@@ -646,7 +646,10 @@ public class EpisodeOfCareResourceCache {
 
             String json = wrapper.getResourceData();
             EpisodeOfCare existingEpisode = (EpisodeOfCare)FhirSerializationHelper.deserializeResource(json);
-            fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(existingEpisode));
+            GenericBuilder builder = new GenericBuilder(existingEpisode);
+            //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+            //builder.setDeletedAudit(...);
+            fhirResourceFiler.deletePatientResource(null, false, builder);
         }
     }
 }

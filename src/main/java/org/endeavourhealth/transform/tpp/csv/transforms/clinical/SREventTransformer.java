@@ -68,6 +68,7 @@ public class SREventTransformer {
             Encounter encounter = (Encounter)csvHelper.retrieveResource(eventId.getString(), ResourceType.Encounter);
             if (encounter != null) {
                 EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
+                encounterBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, encounterBuilder);
             }
             return;

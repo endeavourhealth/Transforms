@@ -58,6 +58,7 @@ public class DIAGNTransformer {
             if (existingCondition != null) {
                 ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
                 //remember to pass in false as this resource is already ID mapped
+                conditionBuilder.setDeletedAudit(activeCell);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
             }
             return;

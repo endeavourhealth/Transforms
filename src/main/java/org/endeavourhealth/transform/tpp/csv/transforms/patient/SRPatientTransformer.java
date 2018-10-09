@@ -58,6 +58,7 @@ public class SRPatientTransformer {
 
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
+            patientBuilder.setDeletedAudit(removeDataCell);
             csvHelper.getPatientResourceCache().addToPendingDeletes(rowIdCell, patientBuilder);
             return;
         }

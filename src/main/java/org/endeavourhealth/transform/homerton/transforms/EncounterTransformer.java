@@ -68,8 +68,7 @@ public class EncounterTransformer extends HomertonBasisTransformer {
         // if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
 
-            //boolean mapIds = !encounterBuilder.isIdMapped();
-            //fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, encounterBuilder);
+            encounterBuilder.setDeletedAudit(activeCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }

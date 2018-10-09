@@ -55,7 +55,9 @@ public class EncounterTransformer {
         encounterBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
+            encounterBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
             return;
         }

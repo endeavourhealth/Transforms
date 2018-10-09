@@ -403,8 +403,9 @@ public class ObservationTransformer {
             referralRequestBuilder.setPatient(patientReference, patientGuid);
         }
 
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            referralRequestBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
             return;
         }
@@ -633,8 +634,9 @@ public class ObservationTransformer {
         diagnosticOrderBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            diagnosticOrderBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), diagnosticOrderBuilder);
             return;
         }
@@ -783,8 +785,9 @@ public class ObservationTransformer {
         specimenBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            specimenBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), specimenBuilder);
             return;
         }
@@ -928,8 +931,9 @@ public class ObservationTransformer {
         allergyIntoleranceBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            allergyIntoleranceBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
             return;
         }
@@ -1060,8 +1064,9 @@ public class ObservationTransformer {
         diagnosticReportBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            diagnosticReportBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), diagnosticReportBuilder);
             return;
         }
@@ -1239,8 +1244,9 @@ public class ObservationTransformer {
         procedureBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            procedureBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
             return;
         }
@@ -1406,8 +1412,9 @@ public class ObservationTransformer {
         }
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            conditionBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
             return;
         }
@@ -1604,8 +1611,9 @@ public class ObservationTransformer {
         observationBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            observationBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
             return;
         }
@@ -1838,8 +1846,9 @@ public class ObservationTransformer {
         familyMemberHistoryBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            familyMemberHistoryBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
             return;
         }
@@ -1998,8 +2007,9 @@ public class ObservationTransformer {
         immunizationBuilder.setPatient(patientReference, patientGuid);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            immunizationBuilder.setDeletedAudit(deletedCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
             return;
         }

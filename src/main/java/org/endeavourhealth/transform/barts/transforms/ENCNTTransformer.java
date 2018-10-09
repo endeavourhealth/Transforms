@@ -62,7 +62,7 @@ public class ENCNTTransformer {
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
-            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, personIdCell, csvHelper, fhirResourceFiler, parser.getCurrentState());
+            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, personIdCell, csvHelper, fhirResourceFiler, parser.getCurrentState(), activeCell);
             return;
         }
 

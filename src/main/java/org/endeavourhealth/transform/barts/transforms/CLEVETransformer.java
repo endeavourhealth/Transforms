@@ -55,7 +55,7 @@ public class CLEVETransformer {
         if (!activeCell.getIntAsBoolean()) {
             //if non-active (i.e. deleted) then we don't get a personID, so need to retrieve the existing instance
             //of the resource in order to delete it
-            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler, activeCell);
             return;
         }
 
@@ -68,19 +68,24 @@ public class CLEVETransformer {
         Reference patientReference = csvHelper.createPatientReference(personId);
         observationBuilder.setPatient(patientReference, personId);
 
-        // check encounter data
-        CsvCell encounterIdCell = parser.getEncounterId();
-        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
-        observationBuilder.setEncounter(encounterReference, encounterIdCell);
-
         //there are lots of events that are still active but have a result text of DELETED
         CsvCell resultTextCell = parser.getEventResultText();
         if (!resultTextCell.isEmpty()
                 && resultTextCell.getString().equalsIgnoreCase("DELETED")) {
 
-            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+            deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler, resultTextCell);
             return;
         }
+
+        //now we've handled any deletes, check if we actually want to transform this record
+        if (!CLEVEPreTransformer.shouldTransformOrAuditRecord(parser, csvHelper)) {
+            return;
+        }
+
+        // check encounter data
+        CsvCell encounterIdCell = parser.getEncounterId();
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+        observationBuilder.setEncounter(encounterReference, encounterIdCell);
 
         CsvCell resultClassCode = parser.getEventResultStatusCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
@@ -100,7 +105,7 @@ public class CLEVETransformer {
                         || codeDesc.equals("? Unknown")) {
 
                     //we can't just return out, because we may be UPDATING an Observation, in which case we should delete it
-                    deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler);
+                    deleteObservation(clinicalEventId, parser, csvHelper, fhirResourceFiler, resultClassCode);
                     return;
                 }
             }
@@ -109,7 +114,6 @@ public class CLEVETransformer {
 
         //TODO we need to filter out any records that are not final
         observationBuilder.setStatus(Observation.ObservationStatus.FINAL);
-
 
         // Performer
         CsvCell clinicianId = parser.getEventPerformedPersonnelId();
@@ -435,11 +439,12 @@ public class CLEVETransformer {
         }
     }
 
-    private static void deleteObservation(CsvCell clinicalEventId, CLEVE parser, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private static void deleteObservation(CsvCell clinicalEventId, CLEVE parser, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCell triggeringCell) throws Exception {
         Observation existingResource = (Observation)csvHelper.retrieveResourceForLocalId(ResourceType.Observation, clinicalEventId);
         if (existingResource != null) {
             ObservationBuilder observationBuilder = new ObservationBuilder(existingResource);
             //remember to pass in false to not map IDs, since the resource is already ID mapped
+            observationBuilder.setDeletedAudit(triggeringCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, observationBuilder);
         }
     }

@@ -63,6 +63,7 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
 
+            conditionBuilder.setDeletedAudit(activeCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
             return;
         }

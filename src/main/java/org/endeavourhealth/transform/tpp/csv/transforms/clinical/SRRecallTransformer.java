@@ -53,6 +53,7 @@ public class SRRecallTransformer {
 
             if (procedureRequest != null) {
                 ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder(procedureRequest);
+                procedureRequestBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureRequestBuilder);
             }
             return;

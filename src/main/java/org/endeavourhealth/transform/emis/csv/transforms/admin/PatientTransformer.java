@@ -69,7 +69,7 @@ public class PatientTransformer {
         if (deleted.getBoolean()) {
             //Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
             //we need to manually delete all dependant resources
-            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), patientBuilder, episodeBuilder);
+            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), patientBuilder, episodeBuilder, deleted);
             return;
         }
 
@@ -540,7 +540,8 @@ public class PatientTransformer {
      */
     private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
                                                   CsvCurrentState currentState,
-                                                  PatientBuilder patientBuilder, EpisodeOfCareBuilder episodeBuilder) throws Exception {
+                                                  PatientBuilder patientBuilder, EpisodeOfCareBuilder episodeBuilder,
+                                                  CsvCell deletedCell) throws Exception {
 
         //find the discovery UUIDs for the patient and episode of care that we'll have previously saved to the DB
         Resource fhirPatient = patientBuilder.getResource();
@@ -583,12 +584,15 @@ public class PatientTransformer {
 
                     //wrap the resource in generic builder so we can save it
                     GenericBuilder genericBuilder = new GenericBuilder(resource);
+                    genericBuilder.setDeletedAudit(deletedCell);
                     fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
                 }
             }
         }
 
         //and delete the patient and episode
+        patientBuilder.setDeletedAudit(deletedCell);
+        episodeBuilder.setDeletedAudit(deletedCell);
         fhirResourceFiler.deletePatientResource(currentState, patientBuilder, episodeBuilder);
     }
 

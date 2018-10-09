@@ -53,6 +53,7 @@ public class SRVisitTransformer {
             Appointment appointment = (Appointment)csvHelper.retrieveResource(visitIdUnique, ResourceType.Encounter);
             if (appointment != null) {
                 AppointmentBuilder encounterBuilder = new AppointmentBuilder(appointment);
+                encounterBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, encounterBuilder);
             }
             return;
