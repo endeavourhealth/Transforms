@@ -88,34 +88,30 @@ public class SRPatientTransformer {
         CsvCell middleNamesCell = parser.getMiddleNames();
         CsvCell titleCell = parser.getTitle();
 
-        //We don't want a new *OFFICIAL* HumanName added for every local id. Test is
-        // does surname match and is first name in known given names.
-        boolean hasName = false;
+        //We don't want a new *OFFICIAL* HumanName added for every local id.
+        // Delete existing Official name and replace
         for (HumanName nom : patientBuilder.getNames()) {
-            if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)
-            && nom.getFamily().equals(surnameCell.getString())
-            && nom.getGiven().contains(firstNameCell.getString())) {
-                hasName = true;
+            if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
+                patientBuilder.getNames().remove(nom);
             }
         }
-        if (!hasName) {
-            NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-            nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
 
-            if (!titleCell.isEmpty()) {
-                nameBuilder.addPrefix(titleCell.getString(), titleCell);
-            }
-            if (!firstNameCell.isEmpty()) {
-                nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
-            }
-            if (!middleNamesCell.isEmpty()) {
-                nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
-            }
-            if (!surnameCell.isEmpty()) {
-                nameBuilder.addFamily(surnameCell.getString(), surnameCell);
-            }
-
+        if (!titleCell.isEmpty()) {
+            nameBuilder.addPrefix(titleCell.getString(), titleCell);
         }
+        if (!firstNameCell.isEmpty()) {
+            nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+        }
+        if (!middleNamesCell.isEmpty()) {
+            nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
+        }
+        if (!surnameCell.isEmpty()) {
+            nameBuilder.addFamily(surnameCell.getString(), surnameCell);
+        }
+
+
         CsvCell dobCell = parser.getDateBirth();
         if (!dobCell.isEmpty()) {
             patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
