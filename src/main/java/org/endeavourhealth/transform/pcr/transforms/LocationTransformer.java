@@ -1,11 +1,14 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Date;
 
 public class LocationTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LocationTransformer.class);
@@ -15,18 +18,19 @@ public class LocationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        Location fhir = (Location)resource;
+        Location fhir = (Location) resource;
 
         long id;
+        Long organisationId = params.getEnterpriseOrganisationId();
         String name = null;
-        String typeCode = null;
-        String typeDesc = null;
-        String postcode = null;
-        Long managingOrganisationId = null;
+        String typeTermId = null;
+        Long addressId = null;
+        boolean isActive = true;
+        Long parentLocationId = null;
 
         id = enterpriseId.longValue();
 
@@ -43,34 +47,33 @@ public class LocationTransformer extends AbstractTransformer {
             if (cc.hasCoding()) {
                 //we only ever use a single coding, so just get the first
                 Coding coding = cc.getCoding().get(0);
-                typeCode = coding.getCode();
-                typeDesc = coding.getDisplay();
-            }
+                if (StringUtils.isNumeric(coding.getCode())) {
+                    typeTermId = (coding.getCode());
 
-            if (Strings.isNullOrEmpty(typeDesc)) {
-                typeDesc = cc.getText();
+                }
             }
         }
 
         if (fhir.hasAddress()) {
             Address address = fhir.getAddress();
-            if (address.hasPostalCode()) {
-                postcode = address.getPostalCode();
+            if ((address.getId() != null) && (StringUtils.isNumeric(address.getId()))) {
+                addressId = Long.parseLong(address.getId());
             }
         }
 
-        if (fhir.hasManagingOrganization()) {
-            Reference reference = fhir.getManagingOrganization();
-            managingOrganisationId = transformOnDemandAndMapId(reference, params);
+        if (fhir.hasStatus()) {
+            isActive = (fhir.getStatus().equals(Location.LocationStatus.ACTIVE));
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.Location model = (org.endeavourhealth.transform.pcr.outputModels.Location)csvWriter;
+
+        org.endeavourhealth.transform.pcr.outputModels.Location model = (org.endeavourhealth.transform.pcr.outputModels.Location) csvWriter;
         model.writeUpsert(id,
-            name,
-            typeCode,
-            typeDesc,
-            postcode,
-            managingOrganisationId);
+                organisationId,
+                name,
+                typeTermId,
+                addressId,
+                isActive,
+                parentLocationId);
     }
 
 }

@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Date;
 
 public class Location extends AbstractPcrCsvWriter {
 
@@ -9,19 +12,21 @@ public class Location extends AbstractPcrCsvWriter {
     }
 
     public void writeUpsert(long id,
+                            long organisation_id,
                             String name,
-                            String typeCode,
-                            String typeDesc,
-                            String postcode,
-                            Long managingOrganisationId) throws Exception {
+                            String type_term_id,
+                            long addressId,
+                            boolean isActive,
+                            Long parentLocationId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
+                convertLong(organisation_id),
                 name,
-                typeCode,
-                typeDesc,
-                postcode,
-                convertLong(managingOrganisationId));
+                type_term_id,
+                convertLong(addressId),
+                convertBoolean(isActive),
+                convertLong(parentLocationId));
     }
 
     @Override
@@ -32,27 +37,29 @@ public class Location extends AbstractPcrCsvWriter {
 
     @Override
     public Class[] getColumnTypes() {
-        return new Class[] {
+        return new Class[]{
                 String.class,
                 Long.TYPE,
+                Long.TYPE,
                 String.class,
-                String.class,
-                String.class,
-                String.class,
+                Long.TYPE,
+                Long.TYPE,
+                boolean.class,
                 Long.class
         };
     }
 
     @Override
     public String[] getCsvHeaders() {
-        return new String[] {
+        return new String[]{
                 "save_mode",
                 "id",
+                "organisation_id",
                 "name",
-                "type_code",
-                "type_desc",
-                "postcode",
-                "managing_organization_id"
+                "type_term_id",
+                "address_id",
+                "is_active",
+                "parent_location_id"
         };
     }
 

@@ -89,3 +89,30 @@ jcs.auxiliary.DC.attributes.MaxKeySize=-1
 jcs.auxiliary.DC.attributes.MaxRecycleBinSize=5000
 jcs.auxiliary.DC.attributes.OptimizeAtRemoveCount=300000
 jcs.auxiliary.DC.attributes.ShutdownSpoolTimeLimit=60
+
+# MEMORY ONLY CACHE FOR EDS to PCR ID MAPPING
+jcs.region.PcrResourceMap=
+jcs.region.PcrResourceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
+jcs.region.PcrResourceMap.cacheattributes.MaxObjects=1000000
+jcs.region.PcrResourceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
+jcs.region.PcrResourceMap.cacheattributes.UseMemoryShrinker=true
+jcs.region.PcrResourceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
+jcs.region.PcrResourceMap.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.PcrResourceMap.cacheattributes.MaxSpoolPerRun=500
+jcs.region.PcrResourceMap.cacheattributes.DiskUsagePatternName=UPDATE
+jcs.region.PcrResourceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
+jcs.region.PcrResourceMap.elementattributes.IsEternal=false
+
+# MEMORY ONLY CACHE FOR Pcr Instance MAPPING
+jcs.region.PcrInstanceMap=
+jcs.region.PcrInstanceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
+jcs.region.PcrInstanceMap.cacheattributes.MaxObjects=100000
+jcs.region.PcrInstanceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
+jcs.region.PcrInstanceMap.cacheattributes.UseMemoryShrinker=true
+jcs.region.PcrInstanceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
+jcs.region.PcrInstanceMap.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.PcrInstanceMap.cacheattributes.MaxSpoolPerRun=500
+jcs.region.PcrInstanceMap.cacheattributes.DiskUsagePatternName=UPDATE
+jcs.region.PcrInstanceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
+jcs.region.PcrInstanceMap.elementattributes.IsEternal=false
+

@@ -70,7 +70,8 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
         OutputContainer data = new OutputContainer(pseudonymised);
-        PcrTransformParams params = new PcrTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
+        PcrTransformParams params = new PcrTransformParams(serviceId, systemId, protocolId, exchangeId, batchId,
+                configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);

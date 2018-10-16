@@ -8,6 +8,11 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
 public class PractitionerTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
@@ -16,28 +21,57 @@ public class PractitionerTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        Practitioner fhir = (Practitioner)resource;
+        Practitioner fhir = (Practitioner) resource;
 
-        long id;
-        long organizaationId;
         String name = null;
-        String roleCode = null;
-        String roleDesc = null;
+        String title = null;
+        String firstName = null;
+        String middleName = null;
+        String lastName = null;
+        String roleTermId = null;
+        String specialityTermId = null;
+        int genderTermId;
+        Date dateOfBirth;
+        boolean isActive;
+        long id;
+        long organizaationId = params.getEnterpriseOrganisationId();
+
 
         id = enterpriseId.longValue();
 
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
-            name = fhirName.getText();
-
-            //the Practitioners from the HL7 Receiver don't have their name set as the transform doesn't use
-            //the standard functions written to populate names, so we need to manually build the name from the elements
-            if (Strings.isNullOrEmpty(name)) {
-                name = createNameFromElements(fhirName);
+            // Some will be fully formed HumanName with first last etc. Some just name as text.
+            // Assume if family is populated we at least have a first name as well
+            if (fhirName.hasFamily()) {
+                List<StringType> nameList = fhirName.getFamily();
+                lastName = nameList.get(nameList.size() - 1).toString();
+                nameList = fhirName.getGiven();
+                firstName = nameList.get(0).toString();
+                if (nameList.size() > 1) {
+                    StringBuilder s = new StringBuilder();
+                    for (int j = 1; j < nameList.size(); j++) {
+                        s.append(nameList.get(j).toString() + " ");
+                    }
+                    middleName = s.toString();
+                }
+            } else {
+                name = fhirName.getText();
+                String[] tokens = name.split(" ");
+                ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
+                list.removeAll(Arrays.asList("", null));
+                tokens = new String[list.size()];
+                tokens = list.toArray(tokens);
+                // Take last part as surname.  Assume original TPP data has proper HumanNames
+                String surname = tokens[tokens.length - 1];
+                firstName = tokens[1];
+                for (int count = 1; count < tokens.length - 2; count++) {
+                    fhirName.addGiven(tokens[count]);
+                }
             }
         }
 
@@ -48,19 +82,18 @@ public class PractitionerTransformer extends AbstractTransformer {
             CodeableConcept cc = role.getRole();
             for (Coding coding : cc.getCoding()) {
                 if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
-                    roleCode = coding.getCode();
-                    roleDesc = coding.getDisplay();
+                    roleTermId = coding.getCode();
                 }
             }
 
-            //if not role value set option found, just get the free text of the role
-            if (Strings.isNullOrEmpty(roleDesc)) {
-                for (Coding coding : cc.getCoding()) {
-                    if (coding.hasDisplay()) {
-                        roleDesc = coding.getDisplay();
-                    }
-                }
-            }
+//            //if not role value set option found, just get the free text of the role
+//            if (Strings.isNullOrEmpty(roleDesc)) {
+//                for (Coding coding : cc.getCoding()) {
+//                    if (coding.hasDisplay()) {
+//                        roleDesc = coding.getDisplay();
+//                    }
+//                }
+//            }
 
             if (role.hasManagingOrganization()) {
                 Reference organisationReference = role.getManagingOrganization();
@@ -78,44 +111,27 @@ public class PractitionerTransformer extends AbstractTransformer {
 
         organizaationId = practitionerEnterpriseOrgId.longValue();
 
-        org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner)csvWriter;
-        model.writeUpsert(id,
-            organizaationId,
-            name,
-            roleCode,
-            roleDesc);
-    }
-
-    private static String createNameFromElements(HumanName name) {
-        String ret = "";
-
-        if (name.hasPrefix()) {
-            for (StringType s : name.getPrefix()) {
-                ret += s.getValueNotNull();
-                ret += " ";
-            }
-        }
-
-        if (name.hasGiven()) {
-            for (StringType s : name.getGiven()) {
-                ret += s.getValueNotNull();
-                ret += " ";
-            }
-        }
-
-        if (name.hasFamily()) {
-            for (StringType s : name.getFamily()) {
-                ret += s.getValueNotNull();
-                ret += " ";
-            }
-        }
-
-        ret = ret.trim();
-
-        if (Strings.isNullOrEmpty(ret)) {
-            return null;
+        isActive = fhir.getActive();
+        dateOfBirth = fhir.getBirthDate();
+        if (fhir.hasGender()) {
+            genderTermId = fhir.getGender().ordinal();
         } else {
-            return ret;
+            genderTermId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
+
+        org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
+        model.writeUpsert(id,
+                organizaationId,
+                title,
+                firstName,
+                middleName,
+                lastName,
+                genderTermId,
+                dateOfBirth,
+                isActive,
+                roleTermId,
+                specialityTermId);
     }
+
+
 }

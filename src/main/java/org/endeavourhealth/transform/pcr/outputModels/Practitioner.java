@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Date;
 
 public class Practitioner extends AbstractPcrCsvWriter {
 
@@ -16,17 +19,29 @@ public class Practitioner extends AbstractPcrCsvWriter {
 
 
     public void writeUpsert(long id,
-                            long organizaationId,
-                            String name,
-                            String roleCode,
-                            String roleDesc) throws Exception {
+                            long organisationId,
+                            String title,
+                            String firstName,
+                            String middleName,
+                            String lastName,
+                            int genderTermId,
+                            Date dateOfBirth,
+                            boolean isActive,
+                            String roleTermId,
+                            String specialtyTermId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organizaationId,
-                name,
-                roleCode,
-                roleDesc);
+                "" + convertLong(organisationId),
+                title,
+                firstName,
+                middleName,
+                lastName,
+                convertInt(genderTermId),
+                convertDate(dateOfBirth),
+                convertBoolean(isActive),
+                roleTermId,
+                specialtyTermId);
     }
 
     @Override
@@ -35,9 +50,15 @@ public class Practitioner extends AbstractPcrCsvWriter {
                 "save_mode",
                 "id",
                 "organization_id",
-                "name",
-                "role_code",
-                "role_desc"
+                "title",
+                "first_name",
+                "middle_name",
+                "last_name",
+                "gender_term_id",
+                "date_of_birth",
+                "is_active",
+                "role_term_id",
+                "speciality_term_id"
         };
     }
 
@@ -50,7 +71,13 @@ public class Practitioner extends AbstractPcrCsvWriter {
                 Long.TYPE,
                 String.class,
                 String.class,
-                String.class
+                String.class,
+                Long.TYPE,
+                Date.class,
+                boolean.class,
+                Long.TYPE,
+                Long.TYPE
+
         };
     }
 }
