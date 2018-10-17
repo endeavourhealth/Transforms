@@ -28,6 +28,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         long organisationId;
         Long practitionerId = null;
         Date startDate = null;
+        Date endDate = null;
         String type = null;
         String location = null;
 
@@ -42,6 +43,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         if (fhir.hasPlanningHorizon()) {
             Period period = fhir.getPlanningHorizon();
             startDate = period.getStart();
+            endDate = period.getEnd();
         }
 
         if (fhir.hasExtension()) {
@@ -61,7 +63,7 @@ public class ScheduleTransformer extends AbstractTransformer {
 
             //all known and expected data has just a single type, but add this check just in case
             if (fhir.getType().size() > 1) {
-                throw new TransformException("enterprise ScheduleTransformer doesn't support Schedules with multiple types");
+                throw new TransformException("PCR ScheduleTransformer doesn't support Schedules with multiple types");
             }
 
             for (CodeableConcept typeCodeableConcept: fhir.getType()) {
@@ -74,6 +76,7 @@ public class ScheduleTransformer extends AbstractTransformer {
             organisationId,
             practitionerId,
             startDate,
+            endDate,
             type,
             location);
     }

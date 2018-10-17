@@ -19,7 +19,8 @@ public class Schedule extends AbstractPcrCsvWriter {
     public void writeUpsert(long id,
                             long organisationId,
                             Long practitionerId,
-                            Date startDate,
+                            Date scheduleStart,
+                            Date scheduleEnd,
                             String type,
                             String location) throws Exception {
 
@@ -27,7 +28,8 @@ public class Schedule extends AbstractPcrCsvWriter {
                 "" + id,
                 "" + organisationId,
                 convertLong(practitionerId),
-                convertDate(startDate),
+                convertDate(scheduleStart),
+                convertDate(scheduleEnd),
                 type,
                 location);
     }
@@ -39,7 +41,8 @@ public class Schedule extends AbstractPcrCsvWriter {
                 "id",
                 "organization_id",
                 "practitioner_id",
-                "start_date",
+                "schedule_start",
+                "schedule_end",
                 "type",
                 "location"
         };
@@ -52,6 +55,7 @@ public class Schedule extends AbstractPcrCsvWriter {
                 Long.TYPE,
                 Long.TYPE,
                 Long.class,
+                Date.class,
                 Date.class,
                 String.class,
                 String.class
