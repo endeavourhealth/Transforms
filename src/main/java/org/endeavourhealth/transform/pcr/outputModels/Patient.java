@@ -6,12 +6,12 @@ import java.util.Date;
 
 public class Patient extends AbstractPcrCsvWriter {
 
-    private boolean pseduonymised = false;
+
 
     public Patient(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
 
-        this.pseduonymised = pseduonymised;
+
     }
 
     public void writeDelete(long id) throws Exception {
@@ -20,164 +20,92 @@ public class Patient extends AbstractPcrCsvWriter {
                 "" + id);
     }
 
-    public boolean isPseduonymised() {
-        return pseduonymised;
-    }
 
-
-    public void writeUpsertPseudonymised(long id,
+    public void writeUpsert(long id,
                             long organizationId,
-                            long personId,
-                            int patientGenderId,
-                            String pseudoId,
-                            Integer ageYears,
-                            Integer ageMonths,
-                            Integer ageWeeks,
+                            String nhsNumber,
+                            int nhsNumberVerificationTermId,
+                            Date dateOfBirth,
                             Date dateOfDeath,
-                            String postcodePrefix,
-                            String lsoaCode,
-                            String msoaCode,
-                             String ethnicCode,
-                             String wardCode,
-                             String localAuthorityCode,
-                             Long registeredPracticeId) throws Exception {
-
-        super.printRecord(OutputContainer.UPSERT,
-                        "" + id,
-                        "" + organizationId,
-                        "" + personId,
-                        "" + patientGenderId,
-                        pseudoId,
-                        convertInt(ageYears),
-                        convertInt(ageMonths),
-                        convertInt(ageWeeks),
-                        convertDate(dateOfDeath),
-                        postcodePrefix,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        convertLong(registeredPracticeId));
-    }
-
-
-    public void writeUpsertIdentifiable(long id,
-                                        long organizationId,
-                                        long personId,
-                                        int patientGenderId,
-                                        String nhsNumber,
-                                        Date dateOfBirth,
-                                        Date dateOfDeath,
-                                        String postcode,
-                                        String lsoaCode,
-                                        String msoaCode,
-                                        String ethnicCode,
-                                        String wardCode,
-                                        String localAuthorityCode,
-                                        Long registeredPracticeId) throws Exception {
+                            int patientGenderId,
+                            long usual_practitioner_id,
+                            String title,
+                            String firstName,
+                            String middleNames,
+                            String lastName,
+                            String previousLastName,
+                            long homeAddressId,
+                            String ethnicCode,
+                            long careProviderId,
+                            boolean isSpineSensitive) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + organizationId,
-                "" + personId,
-                "" + patientGenderId,
                 nhsNumber,
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
-                postcode,
-                lsoaCode,
-                msoaCode,
+                "" + patientGenderId,
+                convertLong(usual_practitioner_id),
+                title,
+                firstName,
+                middleNames,
+                lastName,
+                previousLastName,
+                convertLong(homeAddressId),
                 ethnicCode,
-                wardCode,
-                localAuthorityCode,
-                convertLong(registeredPracticeId));
+                convertLong(careProviderId),
+                convertBoolean(isSpineSensitive));
     }
 
     @Override
     public String[] getCsvHeaders() {
-        if (isPseduonymised()) {
-            return new String[] {
-                    "save_mode",
-                    "id",
-                    "organization_id",
-                    "person_id",
-                    "patient_gender_id",
-                    "pseudo_id",
-                    "age_years",
-                    "age_months",
-                    "age_weeks",
-                    "date_of_death",
-                    "postcode_prefix",
-                    "lsoa_code",
-                    "msoa_code",
-                    "ethnic_code",
-                    "ward_code",
-                    "local_authority_code",
-                    "registered_practice_organization_id"
-            };
-        } else {
-            return new String[]{
-                    "save_mode",
-                    "id",
-                    "organization_id",
-                    "person_id",
-                    "patient_gender_id",
-                    "nhs_number",
-                    "date_of_birth",
-                    "date_of_death",
-                    "postcode",
-                    "lsoa_code",
-                    "msoa_code",
-                    "ethnic_code",
-                    "ward_code",
-                    "local_authority_code",
-                    "registered_practice_organization_id"
-            };
-        }
+        return new String[]{
+                "save_mode",
+                "id",
+                "organisation_id",
+                "nhs_number",
+                "nhs_number_verification_term_id",
+                "date_of_birth",
+                "date_of_death",
+                "gender_term_id",
+                "usual_practitioner_id",
+                "title",
+                "first_name",
+                "middle_names",
+                "last_name",
+                "previous_last_name",
+                "home_address_id",
+                "ethnic_code",
+                "care_provider_id",
+                "is_spine_sensitive"
+        };
     }
+
 
     @Override
     public Class[] getColumnTypes() {
-        if (isPseduonymised()) {
-            return new Class[] {
-                    String.class,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Integer.TYPE,
-                    String.class,
-                    Integer.class,
-                    Integer.class,
-                    Integer.class,
-                    Date.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    Long.class
-            };
-        } else {
-            return new Class[] {
-                    String.class,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Integer.TYPE,
-                    String.class,
-                    Date.class,
-                    Date.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    Long.class
-            };
-        }
+        return new Class[]{
+                String.class,
+                Long.TYPE,
+                Long.TYPE,
+                String.class,
+                Integer.TYPE,
+                Date.class,
+                Date.class,
+                Integer.TYPE,
+                Long.TYPE,
+                String.class,
+                String.class,
+                String.class,
+                String.class,
+                String.class,
+                Long.class,
+                String.class,
+                Long.class,
+                boolean.class
+        };
     }
+
 
 }

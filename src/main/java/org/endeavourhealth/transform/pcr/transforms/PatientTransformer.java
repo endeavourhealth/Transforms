@@ -4,10 +4,12 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
@@ -38,10 +40,6 @@ import java.util.*;
 public class PatientTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
-    private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
-    private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";
-    //private static final String PSEUDO_SALT_RESOURCE = "Endeavour enterprise - East London.EncryptedSalt";
 
     private static final int BEST_ORG_SCORE = 10;
 
@@ -50,19 +48,17 @@ public class PatientTransformer extends AbstractTransformer {
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
     private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
-    //private static byte[] saltBytes = null;
-    //private static ResourceRepository resourceRepository = new ResourceRepository();
 
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        Patient fhirPatient = (Patient)resource;
+        Patient fhirPatient = (Patient) resource;
 
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
@@ -80,29 +76,28 @@ public class PatientTransformer extends AbstractTransformer {
 
         long id;
         long organizationId;
-        long personId;
-        int patientGenderId;
-        String pseudoId = null;
         String nhsNumber = null;
-        Integer ageYears = null;
-        Integer ageMonths = null;
-        Integer ageWeeks = null;
+        //TODO where does verification come from?
+        Integer nhsNumberVerificationTermId=null;
         Date dateOfBirth = null;
         Date dateOfDeath = null;
-        String postcode = null;
-        String postcodePrefix = null;
-        String lsoaCode = null;
-        String msoaCode = null;
+        int patientGenderId;
+        Long usual_practitioner_id=null;
+        String title = null;
+        String firstName = null;
+        String middleNames = null;
+        String lastName = null;
+        String previousLastName = null;
+        Long homeAddressId=null;
         String ethnicCode = null;
-        String wardCode = null;
-        String localAuthorityCode = null;
-        Long registeredPracticeId = null;
-        String targetSaltKeyName = null;
-        String targetSkid = null;
+        Long careProviderId=null;
+        boolean isSpineSensitive;
+
+
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
-        personId = enterprisePersonId.longValue();
+       // personId = enterprisePersonId.longValue();
 
         //Calendar cal = Calendar.getInstance();
 
@@ -110,6 +105,25 @@ public class PatientTransformer extends AbstractTransformer {
         /*cal.setTime(dob);
         int yearOfBirth = cal.get(Calendar.YEAR);
         model.setYearOfBirth(yearOfBirth);*/
+
+        // Assume we have first and last names
+        List<HumanName> names = fhirPatient.getName();
+        for (HumanName nom : names ) {
+            if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
+                lastName = nom.getFamily().toString();
+                firstName = nom.getGiven().get(0).toString();
+                if (nom.getGiven().size() > 1) {
+                    StringBuilder midnames = new StringBuilder();
+                    for (StringType namepart : nom.getGiven()) {
+                        midnames.append(namepart.toString());
+                        midnames.append(" ");
+                    }
+                }
+                if (!nom.getPrefix().isEmpty()) {
+                    title = nom.getPrefix().get(0).toString();
+                }
+            }
+        }
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();
@@ -120,7 +134,7 @@ public class PatientTransformer extends AbstractTransformer {
                 && fhirPatient.getDeceased() instanceof DateType) {
             //should always be a DATE TIME type, but a bug in the CSV->FHIR transform
             //means we've got data with a DATE type too
-            DateType d = (DateType)fhirPatient.getDeceased();
+            DateType d = (DateType) fhirPatient.getDeceased();
             dateOfDeath = d.getValue();
         }
 
@@ -133,41 +147,38 @@ public class PatientTransformer extends AbstractTransformer {
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
-            postcode = fhirAddress.getPostalCode();
-            postcodePrefix = findPostcodePrefix(postcode);
-
-            /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
-            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);*/
-        }
-
-        //if we've found a postcode, then get the LSOA etc. for it
-        if (!Strings.isNullOrEmpty(postcode)) {
-            PostcodeDalI postcodeDal = DalProvider.factoryPostcodeDal();
-            PostcodeLookup postcodeReference = postcodeDal.getPostcodeReference(postcode);
-            if (postcodeReference != null) {
-                lsoaCode = postcodeReference.getLsoaCode();
-                msoaCode = postcodeReference.getMsoaCode();
-                wardCode = postcodeReference.getWardCode();
-                localAuthorityCode = postcodeReference.getLocalAuthorityCode();
-                //townsendScore = postcodeReference.getTownsendScore();
+            if (StringUtils.isNumeric(fhirAddress.getId())) {
+                homeAddressId = Long.parseLong(fhirAddress.getId());
             }
         }
 
+
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
-            CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
+            CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
         }
 
+        Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
+        if (spineExtension != null) {
+            isSpineSensitive = true;
+            CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
+            String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
+            if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
+                nhsNumberVerificationTermId = Integer.parseInt(nhsNumberVerificationTerm);
+            }
+        } else {
+            isSpineSensitive = false;
+        }
         if (fhirPatient.hasCareProvider()) {
 
             Reference orgReference = findOrgReference(fhirPatient, params);
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->enterprise
                 try {
-                    registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                    careProviderId = super.findEnterpriseId(params, orgReference);
                 } catch (Throwable t) {
-                    LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
+                    LOG.error("Error finding ID for reference " + orgReference.getReference());
                     throw t;
                 }
             }
@@ -175,122 +186,42 @@ public class PatientTransformer extends AbstractTransformer {
 
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
-        boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
+        //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
-        org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient)csvWriter;
-        org.endeavourhealth.transform.pcr.outputModels.Person personWriter = params.getOutputContainer().getPersons();
-        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
+        org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient) csvWriter;
+//        org.endeavourhealth.transform.pcr.outputModels.Person personWriter = params.getOutputContainer().getPersons();
+//        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
-        if (patientWriter.isPseduonymised()) {
 
-            //if pseudonymised, all non-male/non-female genders should be treated as female
-            if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
-                    && fhirPatient.getGender() != Enumerations.AdministrativeGender.MALE) {
-                patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
-            }
 
-            pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
+        nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
-            List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
-            if (linkDistributorConfigs != null) {
-                for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
-                    targetSaltKeyName = ldConfig.getSaltKeyName();
-                    targetSkid = pseudonymiseUsingConfig(fhirPatient, ldConfig);
+        patientWriter.writeUpsert(id,
+                organizationId,
+                nhsNumber,
+                nhsNumberVerificationTermId,
+                dateOfBirth,
+                dateOfDeath,
+                patientGenderId,
+                usual_practitioner_id,
+                title,
+                firstName,
+                middleNames,
+                lastName,
+                previousLastName,
+                homeAddressId,
+                ethnicCode,
+                careProviderId,
+                isSpineSensitive);
 
-                    linkDistributorWriter.writeUpsert(pseudoId,
-                            targetSaltKeyName,
-                            targetSkid);
-                }
-            }
 
-            //only persist the pseudo ID if it's non-null
-            if (!Strings.isNullOrEmpty(pseudoId)) {
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
-            }
 
-            EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
-            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValues(id, dateOfBirth);
-            ageYears = ageValues[EnterpriseAge.UNIT_YEARS];
-            ageMonths = ageValues[EnterpriseAge.UNIT_MONTHS];
-            ageWeeks = ageValues[EnterpriseAge.UNIT_WEEKS];
-
-            patientWriter.writeUpsertPseudonymised(id,
-                    organizationId,
-                    personId,
-                    patientGenderId,
-                    pseudoId,
-                    ageYears,
-                    ageMonths,
-                    ageWeeks,
-                    dateOfDeath,
-                    postcodePrefix,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
-                    registeredPracticeId);
-
-            //if our patient record is the one that should define the person record, then write that too
-            if (shouldWritePersonRecord) {
-                personWriter.writeUpsertPseudonymised(personId,
-                        patientGenderId,
-                        pseudoId,
-                        ageYears,
-                        ageMonths,
-                        ageWeeks,
-                        dateOfDeath,
-                        postcodePrefix,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        registeredPracticeId);
-            }
-
-        } else {
-
-            nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-
-            patientWriter.writeUpsertIdentifiable(id,
-                    organizationId,
-                    personId,
-                    patientGenderId,
-                    nhsNumber,
-                    dateOfBirth,
-                    dateOfDeath,
-                    postcode,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
-                    registeredPracticeId);
-
-            //if our patient record is the one that should define the person record, then write that too
-            if (shouldWritePersonRecord) {
-                personWriter.writeUpsertIdentifiable(personId,
-                        patientGenderId,
-                        nhsNumber,
-                        dateOfBirth,
-                        dateOfDeath,
-                        postcode,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        registeredPracticeId);
-            }
-        }
     }
 
     private Reference findOrgReference(Patient fhirPatient, PcrTransformParams params) throws Exception {
 
         //find a direct org reference first
-        for (Reference reference: fhirPatient.getCareProvider()) {
+        for (Reference reference : fhirPatient.getCareProvider()) {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
 
             if (comps.getResourceType() == ResourceType.Organization) {
@@ -299,21 +230,21 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         //if no org reference, look for a practitioner one
-        for (Reference reference: fhirPatient.getCareProvider()) {
+        for (Reference reference : fhirPatient.getCareProvider()) {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps.getResourceType() == ResourceType.Practitioner) {
 
-                Practitioner practitioner = (Practitioner)super.findResource(reference, params);
+                Practitioner practitioner = (Practitioner) super.findResource(reference, params);
                 if (practitioner == null
                         || !practitioner.hasPractitionerRole()) {
                     continue;
                 }
 
-                for (Practitioner.PractitionerPractitionerRoleComponent role: practitioner.getPractitionerRole()) {
+                for (Practitioner.PractitionerPractitionerRoleComponent role : practitioner.getPractitionerRole()) {
 
                     //ignore any ended roles
                     if (role.hasPeriod()
-                        && !PeriodHelper.isActive(role.getPeriod())) {
+                            && !PeriodHelper.isActive(role.getPeriod())) {
                         continue;
                     }
 
@@ -345,9 +276,9 @@ public class PatientTransformer extends AbstractTransformer {
         Protocol protocol = libraryItem.getProtocol();
         Set<String> serviceIdsInProtocol = new HashSet<>();
 
-        for (ServiceContract serviceContract: protocol.getServiceContract()) {
+        for (ServiceContract serviceContract : protocol.getServiceContract()) {
             if (serviceContract.getType().equals(ServiceContractType.SUBSCRIBER)
-                && serviceContract.getActive() == ServiceContractActive.TRUE) {
+                    && serviceContract.getActive() == ServiceContractActive.TRUE) {
 
                 serviceIdsInProtocol.add(serviceContract.getService().getUuid());
             }
@@ -358,7 +289,7 @@ public class PatientTransformer extends AbstractTransformer {
         patientSearchesInProtocol.add(patientSearch);
 
         Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
-        for (String otherPatientId: allPatientIdMap.keySet()) {
+        for (String otherPatientId : allPatientIdMap.keySet()) {
 
             //skip the patient ID we've already retrieved
             if (otherPatientId.equals(patientId)) {
@@ -422,16 +353,16 @@ public class PatientTransformer extends AbstractTransformer {
     private static int getPatientSearchOrgScore(PatientSearch patientSearch) {
         String typeCode = patientSearch.getOrganisationTypeCode();
         if (Strings.isNullOrEmpty(typeCode)) {
-            return BEST_ORG_SCORE-4;
+            return BEST_ORG_SCORE - 4;
         }
 
         if (typeCode.equals(OrganisationType.GP_PRACTICE.getCode())) {
             return BEST_ORG_SCORE;
         } else if (typeCode.equals(OrganisationType.NHS_TRUST.getCode())
                 || typeCode.equals(OrganisationType.NHS_TRUST_SERVICE.getCode())) {
-            return BEST_ORG_SCORE-1;
+            return BEST_ORG_SCORE - 1;
         } else {
-            return BEST_ORG_SCORE-2;
+            return BEST_ORG_SCORE - 2;
         }
     }
 
@@ -459,107 +390,11 @@ public class PatientTransformer extends AbstractTransformer {
             return null;
         }
 
-        return postcode.substring(0, len-3);
+        return postcode.substring(0, len - 3);
     }
 
-    private static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
-        TreeMap<String, String> keys = new TreeMap<>();
 
-        List<ConfigParameter> parameters = config.getParameters();
 
-        for (ConfigParameter param : parameters) {
-            String fieldValue = null;
-            if (param.getFieldName().equals("date_of_birth")) {
-                if (fhirPatient.hasBirthDate()) {
-                    Date d = fhirPatient.getBirthDate();
-                    fieldValue = new SimpleDateFormat("dd-MM-yyyy").format(d);
-                }
-            }
-
-            if (param.getFieldName().equals("nhs_number")) {
-                fieldValue = IdentifierHelper.findNhsNumber(fhirPatient);
-            }
-
-            if (Strings.isNullOrEmpty(fieldValue)) {
-                // we always need a non null string for the psuedo ID
-                return null;
-            }
-
-            keys.put(param.getFieldLabel(), fieldValue);
-        }
-
-        return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
-    }
-
-    private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
-
-        String dob = null;
-        if (fhirPatient.hasBirthDate()) {
-            Date d = fhirPatient.getBirthDate();
-            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
-        }
-
-        if (Strings.isNullOrEmpty(dob)) {
-            //we always need DoB for the psuedo ID
-            return null;
-        }
-
-        TreeMap<String, String> keys = new TreeMap<>();
-        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
-
-        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-        if (!Strings.isNullOrEmpty(nhsNumber)) {
-            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
-
-        } else {
-
-            //if we don't have an NHS number, use the Emis patient number
-            String patientNumber = null;
-            if (fhirPatient.hasIdentifier()) {
-                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
-            }
-
-            if (!Strings.isNullOrEmpty(patientNumber)) {
-                keys.put(PSEUDO_KEY_PATIENT_NUMBER, patientNumber);
-
-            } else {
-                //if no NHS number or patient number
-                return null;
-            }
-        }
-
-        return applySaltToKeys(keys, encryptedSalt);
-    }
-
-    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(salt);
-        return crypto.GetDigest(keys);
-    }
-
-    private static byte[] getEncryptedSalt(String configName) throws Exception {
-
-        byte[] ret = saltCacheMap.get(configName);
-        if (ret == null) {
-
-            synchronized (saltCacheMap) {
-                ret = saltCacheMap.get(configName);
-                if (ret == null) {
-
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-                    JsonNode saltNode = config.get("salt");
-                    if (saltNode == null) {
-                        throw new Exception("No 'Salt' element found in enterprise config " + configName);
-                    }
-                    String base64Salt = saltNode.asText();
-
-                    ret = Base64.getDecoder().decode(base64Salt);
-                    saltCacheMap.put(configName, ret);
-                }
-            }
-        }
-        return ret;
-    }
 
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
 
