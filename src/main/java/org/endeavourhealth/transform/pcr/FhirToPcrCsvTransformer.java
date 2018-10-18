@@ -270,7 +270,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         tranformResources(ResourceType.Organization, resources, threadPool, params);
         tranformResources(ResourceType.Location, resources, threadPool, params);
         tranformResources(ResourceType.Practitioner, resources, threadPool, params);
-        tranformResources(ResourceType.Schedule, resources, threadPool, params);
+        //tranformResources(ResourceType.Schedule, resources, threadPool, params);
         boolean didPatient = tranformResources(ResourceType.Patient, resources, threadPool, params);
 
         //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
@@ -309,27 +309,27 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             params.setEnterprisePersonId(enterprisePersonId);
         }
 
-        tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
-        tranformResources(ResourceType.Appointment, resources, threadPool, params);
-        tranformResources(ResourceType.Encounter, resources, threadPool, params);
+        //tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.Appointment, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.Encounter, resources, threadPool, params); -NOT v1
         tranformResources(ResourceType.Condition, resources, threadPool, params);
-        tranformResources(ResourceType.Procedure, resources, threadPool, params);
-        tranformResources(ResourceType.ReferralRequest, resources, threadPool, params);
-        tranformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
-        tranformResources(ResourceType.Observation, resources, threadPool, params);
+        //tranformResources(ResourceType.Procedure, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.ReferralRequest, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.ProcedureRequest, resources, threadPool, params); -NOT v1
+        tranformResources(ResourceType.Observation, resources, threadPool, params);   //inc. Values
         tranformResources(ResourceType.MedicationStatement, resources, threadPool, params);
         tranformResources(ResourceType.MedicationOrder, resources, threadPool, params);
         tranformResources(ResourceType.Immunization, resources, threadPool, params);
-        tranformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
+        //tranformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);  -NOT v1
         tranformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
-        tranformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
-        tranformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
-        tranformResources(ResourceType.Specimen, resources, threadPool, params);
-        tranformResources(ResourceType.Flag, resources, threadPool, params);
+        //tranformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.DiagnosticReport, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.Specimen, resources, threadPool, params);  -NOT v1
+        //tranformResources(ResourceType.Flag, resources, threadPool, params);  -NOT v1
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
-        tranformResources(ResourceType.Slot, resources, threadPool, params);
+        //tranformResources(ResourceType.Slot, resources, threadPool, params);  -NOT v1
 
         //close the thread pool
         List<ThreadPoolError> errors = threadPool.waitAndStop();

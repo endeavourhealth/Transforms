@@ -32,26 +32,41 @@ public class OutputContainer {
 
     public OutputContainer(CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised) throws Exception {
 
+        //NOTE: file names match to database table names
+
         csvWriters = new ArrayList<>();
-        csvWriters.add(new Organisation("organization.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Organisation("organisation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Location("location.csv", csvFormat, dateFormat, timeFormat));
+
+        //TODO - need LocationContact
+
         csvWriters.add(new Practitioner("practitioner.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Schedule("schedule.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
+        //csvWriters.add(new Schedule("schedule.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
         csvWriters.add(new Patient("patient.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
-        csvWriters.add(new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new EncounterDetail("encounter_detail.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new EncounterRaw("encounter_raw.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Flag("flag.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat));
+
+        //TODO - need PatientAddress, PatientContact, PatientIdentifier
+
+        //TODO - need EventRelationship
+
+        //TODO - need Problem
+
+        //TODO - need Immunisation
+
+        //csvWriters.add(new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new EncounterDetail("encounter_detail.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new EncounterRaw("encounter_raw.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new Flag("flag.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new ReferralRequest("referral_request.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new ProcedureRequest("procedure_request.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Observation("observation.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ObservationValue("observation_value.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {

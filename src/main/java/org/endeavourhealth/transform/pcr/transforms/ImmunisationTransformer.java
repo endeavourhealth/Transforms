@@ -2,10 +2,9 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
+import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Observation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,27 +91,29 @@ public class ImmunisationTransformer extends AbstractTransformer {
             parentObservationId = findEnterpriseId(params, parentReference);
         }
 
-        Observation model = (Observation)csvWriter;
-        model.writeUpsert(id,
-                organisationId,
-                patientId,
-                personId,
-                encounterId,
-                practitionerId,
-                clinicalEffectiveDate,
-                datePrecisionId,
-                snomedConceptId,
-                resultValue,
-                resultValueUnits,
-                resultDate,
-                resultString,
-                resultConcptId,
-                originalCode,
-                isProblem,
-                originalTerm,
-                isReview,
-                problemEndDate,
-                parentObservationId);
+        //TODO - need to write to a new Immunization output model
+
+//        Observation model = (Observation)csvWriter;
+//        model.writeUpsert(id,
+//                organisationId,
+//                patientId,
+//                personId,
+//                encounterId,
+//                practitionerId,
+//                clinicalEffectiveDate,
+//                datePrecisionId,
+//                snomedConceptId,
+//                resultValue,
+//                resultValueUnits,
+//                resultDate,
+//                resultString,
+//                resultConcptId,
+//                originalCode,
+//                isProblem,
+//                originalTerm,
+//                isReview,
+//                problemEndDate,
+//                parentObservationId);
     }
 }
 
