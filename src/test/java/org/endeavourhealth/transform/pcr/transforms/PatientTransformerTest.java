@@ -63,7 +63,7 @@ public class PatientTransformerTest {
         org.endeavourhealth.transform.enterprise.transforms.PatientTransformer transformer = new PatientTransformer();
         //transformer.findResource();
         try {
-            transformer.transformResource(id,apt1, csvwriter, params);
+            //transformer.transformResource(id,apt1, csvwriter, params);
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
