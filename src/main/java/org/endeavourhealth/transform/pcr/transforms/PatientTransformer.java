@@ -224,8 +224,17 @@ public class PatientTransformer extends AbstractTransformer {
      //           ethnicCode,
                 careProviderId,
                 isSpineSensitive);
+
+        writePatientIdentifier(id, fhirPatient,csvWriter);
     }
 
+    private void writePatientIdentifier(long id, Patient patient, AbstractPcrCsvWriter csvWriter) throws Exception {
+        org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier patientWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier) csvWriter;
+        //TODO how do we get concept id and Identifier?
+        Integer uprn = null;
+        String identifier = null;
+        patientWriter.writeUpsert(id, Long.parseLong(patient.getId()), uprn,identifier);
+    }
     private void writeAddress(Address fhirAddress, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
         org.endeavourhealth.transform.pcr.outputModels.PatientAddress patientAddressWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientAddress) csvWriter;
         Period period = fhirAddress.getPeriod();
