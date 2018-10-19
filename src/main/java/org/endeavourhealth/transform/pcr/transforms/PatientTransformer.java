@@ -238,6 +238,17 @@ public class PatientTransformer extends AbstractTransformer {
                 startDate,
                 endDate
                 );
+        org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
+        List<StringType> addressList = fhirAddress.getLine();
+        String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,0);
+        String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,1);
+        String al3 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,2);
+        String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,3);
+        String postcode = fhirAddress.getPostalCode();
+        //TODO get uprn and 2 concept ids
+        addressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),al1,al2,al3,al4,postcode,
+                null,null,null);
+
     }
 
     private void writeContact(Patient.ContactComponent cc, long patientId, AbstractPcrCsvWriter csvWriter) {
