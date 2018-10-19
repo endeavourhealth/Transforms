@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 public class Problem extends AbstractPcrCsvWriter {
@@ -18,47 +17,23 @@ public class Problem extends AbstractPcrCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
                             long patientId,
-                            long personId,
-                            Long encounterId,
-                            Long practitionerId,
-                            Date clinicalEffectiveDate,
-                            Integer datePrecisionId,
-                            Long snomedConceptId,
-                            BigDecimal resultValue,
-                            String resultValueUnits,
-                            Date resultDate,
-                            String resultText,
-                            Long resultConceptId,
-                            String originalCode,
-                            boolean isProblem,
-                            String originalTerm,
-                            boolean isReview,
-                            Date problemEndDate,
-                            Long parentObservationId) throws Exception {
+                            long observationId,
+                            Integer typeConceptId,
+                            Integer significanceConceptId,
+                            Integer expectedDurationDays,
+                            Date lastReviewDate,
+                            Integer lastReviewPractitionerId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
                 "" + patientId,
-                "" + personId,
-                convertLong(encounterId),
-                convertLong(practitionerId),
-                convertDate(clinicalEffectiveDate),
-                convertInt(datePrecisionId),
-                convertLong(snomedConceptId),
-                convertBigDecimal(resultValue),
-                resultValueUnits,
-                convertDate(resultDate),
-                resultText,
-                convertLong(resultConceptId),
-                originalCode,
-                convertBoolean(isProblem),
-                originalTerm,
-                convertBoolean(isReview),
-                convertDate(problemEndDate),
-                convertLong(parentObservationId));
+                "" + observationId,
+                convertInt(typeConceptId),
+                convertInt(significanceConceptId),
+                convertInt(expectedDurationDays),
+                convertDate(lastReviewDate),
+                convertInt(lastReviewPractitionerId));
     }
 
 
@@ -67,25 +42,13 @@ public class Problem extends AbstractPcrCsvWriter {
         return new String[] {
                 "save_mode",
                 "id",
-                "organization_id",
                 "patient_id",
-                "person_id",
-                "encounter_id",
-                "practitioner_id",
-                "clinical_effective_date",
-                "date_precision_id",
-                "snomed_concept_id",
-                "result_value",
-                "result_value_units",
-                "result_date",
-                "result_text",
-                "result_concept_id",
-                "original_code",
-                "is_problem",
-                "original_term",
-                "is_review",
-                "problem_end_date",
-                "parent_observation_id"
+                "observation_id",
+                "type_concept_id",
+                "significance_concept_id",
+                "expected_duration_days",
+                "last_review_date",
+                "last_review_practitioner_id"
         };
     }
 
@@ -94,26 +57,24 @@ public class Problem extends AbstractPcrCsvWriter {
         return new Class[] {
                 String.class,
                 Long.TYPE,
-                Long.TYPE,
-                Long.TYPE,
-                Long.TYPE,
-                Long.class,
-                Long.class,
-                Date.class,
                 Integer.class,
-                Long.class,
-                BigDecimal.class,
-                String.class,
+                Long.TYPE,
+                Integer.class,
+                Integer.class,
+                Integer.class,
                 Date.class,
-                String.class,
-                Long.class,
-                String.class,
-                Boolean.TYPE,
-                String.class,
-                Boolean.TYPE,
-                Date.class,
-                Long.class,
+                Integer.class
         };
 
     }
 }
+
+
+//            id bigint NOT NULL,
+//            patient_id int NOT NULL,
+//            observation_id bigint NOT NULL,
+//            type_concept_id int COMMENT 'refers to information model for problem type (e.g. problem, issue, health admin)',
+//            significance_concept_id int COMMENT 'refers to information model to define the significance (e.g. minor, significant)',
+//            expected_duration_days int,
+//            last_review_date date,
+//            last_review_practitioner_id int,

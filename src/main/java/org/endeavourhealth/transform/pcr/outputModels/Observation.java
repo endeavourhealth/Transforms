@@ -48,18 +48,18 @@ public class Observation extends AbstractPcrCsvWriter {
                 convertDate(insertDate),
                 convertDate(enteredDate),
                 convertInt(enteredByPractitionerId),
-                convertLong(careActivityId),         //care activity Id, EncounterId?
-                convertInt(careActivityHeadingConceptId),  //needs IM mapping from what in FHR?
+                convertLong(careActivityId),
+                convertInt(careActivityHeadingConceptId),
                 "" + owningOrganisationId,
-                convertInt(statusConceptId),          //needs IM mapping from what in FHIR
-                convertBoolean(confidential),              //map from what?
+                convertInt(statusConceptId),
+                convertBoolean(confidential),
                 originalCode,
                 originalTerm,
-                convertInt(episodicityConceptId),   //needs IM mapping and tx from FHIR
-                convertLong(freeTextId),            //from where in FHIR?
-                convertInt(dataEntryPromptId),      //from where in FHIR?
-                convertInt(significanceConceptId),  //needs IM mapping and tx from FHIR
-                convertBoolean(isConsent));           //from where in FHIR?
+                convertInt(episodicityConceptId),
+                convertLong(freeTextId),
+                convertInt(dataEntryPromptId),
+                convertInt(significanceConceptId),
+                convertBoolean(isConsent));
     }
 
 
