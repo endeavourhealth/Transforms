@@ -23,7 +23,7 @@ public class PatientAddress extends AbstractPcrCsvWriter {
 
     public void writeUpsert(long id,
                             long patientId,
-                            int typeTermId,
+                            int typeConceptId,
                             int addressId,
                             Date startDate,
                             Date endDate) throws Exception {
@@ -31,7 +31,7 @@ public class PatientAddress extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + patientId,
-                "" + typeTermId,
+                "" + typeConceptId,
                 "" + addressId,
                 convertDate(startDate),
                 convertDate(endDate));
@@ -44,6 +44,7 @@ public class PatientAddress extends AbstractPcrCsvWriter {
                 "id",
                 "patient_id",
                 "addressId",
+                "type_concept_id",
                 "start_date",
                 "end_date"
         };

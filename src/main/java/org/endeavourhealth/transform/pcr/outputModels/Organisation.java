@@ -48,7 +48,7 @@ public class Organisation extends AbstractPcrCsvWriter {
                 "name",
                 "is_active",
                 "parent_organization_id",
-                "type_term_id",
+                "type_concept_id",
                 "main_location_id"
         };
     }
