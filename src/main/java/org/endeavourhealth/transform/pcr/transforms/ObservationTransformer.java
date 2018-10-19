@@ -72,6 +72,7 @@ public class ObservationTransformer extends AbstractTransformer {
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
         patientId = params.getEnterprisePatientId().intValue();
+        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
@@ -96,15 +97,15 @@ public class ObservationTransformer extends AbstractTransformer {
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
-            return;
-        }
-        snomedConceptId = codes.getSnomedConceptId();
-        //TODO: map to IM conceptId
-        //conceptId = ??
+        if (codes != null) {
 
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+            snomedConceptId = codes.getSnomedConceptId();
+            //TODO: map to IM conceptId
+            //conceptId = ??
+
+            originalCode = codes.getOriginalCode();
+            originalTerm = codes.getOriginalTerm();
+        }
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -169,13 +170,12 @@ public class ObservationTransformer extends AbstractTransformer {
             confidential = b.getValue();
         }
 
-        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
-        if (reviewExtension != null) {
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
 
-            StringType episodicityST = (StringType) reviewExtension.getValue();
-            String episodicity = episodicityST.getValue();  //TODO: map to IM concept
+            StringType episodicityType = (StringType) episodicityExtension.getValue();
+            String episodicity = episodicityType.getValue();  //TODO: map to IM concept
         }
-
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
         if (significanceExtension != null) {
@@ -230,6 +230,8 @@ public class ObservationTransformer extends AbstractTransformer {
                     referenceRangeId
             );
         }
+
+        //TODO - handle if this is a problem?
 
 
         //TODO - handle free text and linking

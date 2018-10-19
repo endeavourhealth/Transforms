@@ -27,76 +27,113 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         AllergyIntolerance fhir = (AllergyIntolerance)resource;
 
         long id;
-        long organisationId;
-        long patientId;
-        long personId;
+        long owningOrganisationId;
+        Integer patientId;
         Long encounterId = null;
-        Long practitionerId = null;
-        Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer effectivePractitionerId = null;
+        Date effectiveDate = null;
+        Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
-        String originalCode = null;
-        String originalTerm = null;
-        boolean isReview = false;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
+        patientId = params.getEnterprisePatientId().intValue();
+        //personId = params.getEnterprisePersonId().longValue();
 
-        if (fhir.hasExtension()) {
-            for (Extension extension: fhir.getExtension()) {
-                if (extension.getUrl().equals(FhirExtensionUri.ASSOCIATED_ENCOUNTER)) {
-                    Reference encounterReference = (Reference)extension.getValue();
-                    encounterId = findEnterpriseId(params, encounterReference);
-                }
-            }
+        Integer conceptId = null;
+        Integer substanceConceptId = null;
+        Date insertDate = new Date();
+        Date enteredDate = null;
+        Integer enteredByPractitionerId = null;
+        Long careActivityId = null;
+        Integer careActivityHeadingConceptId = null;
+        Integer statusConceptId = null;
+        boolean confidential = false;
+        boolean isConsent = false;
+
+        //TODO: - not currently supported in existing FHIR transforms
+        Integer manifestationConceptId = null;
+        Long manifestationFreeTextId = null;
+
+        Extension encounterExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ASSOCIATED_ENCOUNTER);
+        if (encounterExtension != null) {
+
+            Reference encounterReference = (Reference)encounterExtension.getValue();
+            encounterId = findEnterpriseId(params, encounterReference);
+
+            careActivityId = encounterId;            //TODO: check this is correct
         }
 
         //note that the "recorder" field is actually used to store the named clinician,
         //and the standard "recorded by" extension is used to store who physically entered it into the source software
         if (fhir.hasRecorder()) {
             Reference practitionerReference = fhir.getRecorder();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+        }
+
+        //recorded/entered date
+        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (enteredDateExtension != null) {
+
+            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            enteredDate = enteredDateTimeType.getValue();
+        }
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
         }
 
         if (fhir.hasOnset()) {
             DateTimeType dt = fhir.getOnsetElement();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            effectiveDate = dt.getValue();
+            effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
 
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
         if (codes == null) {
-            return;
-        }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
 
-        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
-        if (reviewExtension != null) {
-            BooleanType b = (BooleanType)reviewExtension.getValue();
-            if (b.getValue() != null) {
-                isReview = b.getValue();
-            }
+            snomedConceptId = codes.getSnomedConceptId();
+
+            //conceptId = ??  //TODO: map to IM conceptId
+
+            //substanceConceptId = ??  why two?, check in FHIR
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model = (org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance)csvWriter;
-        model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionId,
-            snomedConceptId,
-            originalCode,
-            originalTerm,
-            isReview);
+        //confidential
+        Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (confidentialExtension != null) {
+
+            BooleanType b = (BooleanType) confidentialExtension.getValue();
+            confidential = b.getValue();
+        }
+
+        org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model
+                = (org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance)csvWriter;
+        model.writeUpsert(
+                id,
+                patientId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecisionId,
+                effectivePractitionerId,
+                insertDate,
+                enteredDate,
+                enteredByPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                statusConceptId,
+                confidential,
+                substanceConceptId,
+                manifestationConceptId,
+                manifestationFreeTextId,
+                isConsent);
     }
-
 }
+
 

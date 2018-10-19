@@ -3,14 +3,15 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 public class ConditionTransformer extends AbstractTransformer {
@@ -29,19 +30,13 @@ public class ConditionTransformer extends AbstractTransformer {
         Condition fhir = (Condition)resource;
 
         long id;
-        long organisationId;
-        long patientId;
-        long personId;
+
+        long owningOrganisationId;
+        Integer patientId;
         Long encounterId = null;
-        Long practitionerId = null;
-        Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Date effectiveDate = null;
+        Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
-        BigDecimal resultValue = null;
-        String resultValueUnits = null;
-        Date resultDate = null;
-        String resultString = null;
-        Long resultConcptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
@@ -49,34 +44,62 @@ public class ConditionTransformer extends AbstractTransformer {
         Date problemEndDate = null;
         Long parentObservationId = null;
 
+        Long observationId = null;   //TODO - how derive this?
+
+        Integer conceptId = null;
+        Date insertDate = new Date();
+        Date enteredDate = null;
+        Integer effectivePractitionerId = null;
+        Long careActivityId = null;
+        Integer careActivityHeadingConceptId = null;
+        Integer statusConceptId = null;
+        boolean confidential = false;
+        Integer episodicityConceptId = null;
+        Long freeTextId = null;
+        Integer dataEntryPromptId = null;
+        Integer significanceConceptId = null;
+        boolean isConsent = false;
+        Integer expectedDurationDays = null;
+        Date lastReviewDate = null;
+        Integer enteredByPractitionerId = null;
+        Integer lastReviewPractitionerId = null;
+        Integer typeConceptId = null;
+
+
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
+        patientId = params.getEnterprisePatientId().intValue();
+        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
             encounterId = findEnterpriseId(params, encounterReference);
+
+            careActivityId = encounterId;   //TODO: check this is correct
         }
 
         if (fhir.hasAsserter()) {
             Reference practitionerReference = fhir.getAsserter();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
         }
 
         if (fhir.hasOnsetDateTimeType()) {
             DateTimeType dt = fhir.getOnsetDateTimeType();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            effectiveDate = dt.getValue();
+            effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
-            return;
+        if (codes != null) {
+
+            snomedConceptId = codes.getSnomedConceptId();
+            originalCode = codes.getOriginalCode();
+            originalTerm = codes.getOriginalTerm();
+
+            //TODO: map to IM conceptId
+            //conceptId = ??
         }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+
 
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
@@ -101,34 +124,106 @@ public class ConditionTransformer extends AbstractTransformer {
             }
         }
 
+        //recorded/entered date
+        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (enteredDateExtension != null) {
+
+            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            enteredDate = enteredDateTimeType.getValue();
+        }
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+        }
+
+        Extension problemLastReviewDateExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_LAST_REVIEWED);
+        if (problemLastReviewDateExtension != null) {
+
+            DateType problemLastReviewDateExtensionType = (DateType) problemLastReviewDateExtension.getValue();
+            lastReviewDate = problemLastReviewDateExtensionType.getValue();
+        }
+
+        //TODO - lastReviewPractitionerId
+
+        Extension problemExpectedDurationExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EXPECTED_DURATION);
+        if (problemExpectedDurationExtension != null) {
+
+            IntegerType problemExpectedDurationExtensionType = (IntegerType) problemExpectedDurationExtension.getValue();
+            expectedDurationDays = problemExpectedDurationExtensionType.getValue();
+        }
+
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
+
+            StringType episodicityType = (StringType) episodicityExtension.getValue();
+            String episodicity = episodicityType.getValue();  //TODO: map to IM concept
+        }
+
+        Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
+        if (significanceExtension != null) {
+
+            CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
+            ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
+
+            //significanceConceptId = ??  //TODO: map to IM concept
+        }
+
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
         }
 
-        //TODO - need to write to a new Problem output model, check is_problem = true
+        //TODO - typeConceptId
 
-//        Observation model = (Observation)csvWriter;
-//        model.writeUpsert(id,
-//                organisationId,
-//                patientId,
-//                personId,
-//                encounterId,
-//                practitionerId,
-//                clinicalEffectiveDate,
-//                datePrecisionId,
-//                snomedConceptId,
-//                resultValue,
-//                resultValueUnits,
-//                resultDate,
-//                resultString,
-//                resultConcptId,
-//                originalCode,
-//                isProblem,
-//                originalTerm,
-//                isReview,
-//                problemEndDate,
-//                parentObservationId);
+        //firstly, file as an observation
+        org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
+                = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
+        observationModel.writeUpsert(
+                id,
+                patientId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecisionId,
+                effectivePractitionerId,
+                insertDate,
+                enteredDate,
+                enteredByPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                statusConceptId,
+                confidential,
+                originalCode,
+                originalTerm,
+                episodicityConceptId,
+                freeTextId,
+                dataEntryPromptId,
+                significanceConceptId,
+                isConsent);
+
+        //then, if it is a problem, file into problem using id as observationId?
+        if (isProblem) {
+            Problem problemModel = (Problem)csvWriter;
+
+            problemModel.writeUpsert(
+                    id,
+                    patientId,
+                    observationId,    //TODO: how derive this?
+                    typeConceptId,
+                    significanceConceptId,
+                    expectedDurationDays,
+                    lastReviewDate,
+                    lastReviewPractitionerId
+            );
+        }
+
+        //TODO - handle free text and linking
     }
 }

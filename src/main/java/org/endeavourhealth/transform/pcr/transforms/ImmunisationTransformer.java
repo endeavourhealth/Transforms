@@ -113,7 +113,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
             //statusConceptId = ??    //TODO: map to IM concept
         }
 
-        //confidential?
+        //confidential
         Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
         if (confidentialExtension != null) {
 

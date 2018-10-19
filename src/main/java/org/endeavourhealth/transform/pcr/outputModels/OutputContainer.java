@@ -50,8 +50,6 @@ public class OutputContainer {
 
         //TODO - need EventRelationship
 
-        //TODO - need Problem
-
         //csvWriters.add(new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new Encounter("encounter.csv", csvFormat, dateFormat, timeFormat));
@@ -66,6 +64,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Problem("problem.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
     }
 
