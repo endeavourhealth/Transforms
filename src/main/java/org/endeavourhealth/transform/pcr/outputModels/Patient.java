@@ -35,7 +35,7 @@ public class Patient extends AbstractPcrCsvWriter {
                             String lastName,
                             String previousLastName,
                             long homeAddressId,
-                            String ethnicCode,
+     //TOODO in DB or not?                       String ethnicCode,
                             long careProviderId,
                             boolean isSpineSensitive) throws Exception {
 
@@ -53,7 +53,7 @@ public class Patient extends AbstractPcrCsvWriter {
                 lastName,
                 previousLastName,
                 convertLong(homeAddressId),
-                ethnicCode,
+    //            ethnicCode,
                 convertLong(careProviderId),
                 convertBoolean(isSpineSensitive));
     }
@@ -76,7 +76,7 @@ public class Patient extends AbstractPcrCsvWriter {
                 "last_name",
                 "previous_last_name",
                 "home_address_id",
-                "ethnic_code",
+     //           "ethnic_code",
                 "care_provider_id",
                 "is_spine_sensitive"
         };
@@ -101,7 +101,7 @@ public class Patient extends AbstractPcrCsvWriter {
                 String.class,
                 String.class,
                 Long.class,
-                String.class,
+    //            String.class,
                 Long.class,
                 boolean.class
         };

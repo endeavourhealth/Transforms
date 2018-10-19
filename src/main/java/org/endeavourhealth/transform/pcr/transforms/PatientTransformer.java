@@ -210,7 +210,8 @@ public class PatientTransformer extends AbstractTransformer {
                 lastName,
                 previousLastName,
                 homeAddressId,
-                ethnicCode,
+     //TODO - ethnic code in DB or not?
+     //           ethnicCode,
                 careProviderId,
                 isSpineSensitive);
 
