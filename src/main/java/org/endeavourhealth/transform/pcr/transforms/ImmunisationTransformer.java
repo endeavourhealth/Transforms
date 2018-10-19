@@ -5,11 +5,11 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.Immunisation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 public class ImmunisationTransformer extends AbstractTransformer {
@@ -28,92 +28,166 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Immunization fhir = (Immunization)resource;
 
         long id;
-        long organisationId;
-        long patientId;
-        long personId;
+        Integer owningOrganisationId;
+        Integer patientId;
+
         Long encounterId = null;
-        Long practitionerId = null;
-        Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer effectivePractitionerId = null;
+        Date effectiveDate = null;
+        Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
-        BigDecimal resultValue = null;
-        String resultValueUnits = null;
-        Date resultDate = null;
-        String resultString = null;
-        Long resultConcptId = null;
-        String originalCode = null;
-        boolean isProblem = false;
-        String originalTerm = null;
-        boolean isReview = false;
-        Date problemEndDate = null;
-        Long parentObservationId = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
+        patientId = params.getEnterprisePatientId().intValue();
+
+        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
+
+        Integer conceptId = null;
+        Date insertDate = new Date();
+        Date enteredDate = null;
+        Integer enteredByPractitionerId = null;
+        Long careActivityId = null;
+        Integer careActivityHeadingConceptId = null;
+        Integer statusConceptId = null;
+        boolean confidential = false;
+        String dose = null;
+        Integer bodyLocationConceptId = null;
+        Integer methodConceptId = null;
+        String batchNumber = null;
+        Date expiryDate = null;
+        Integer doseOrdinal = null;
+        Integer dosesRequired = null;
+        boolean isConsent = false;
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
             encounterId = findEnterpriseId(params, encounterReference);
+
+            careActivityId = encounterId;            //TODO: check this is correct
         }
 
         if (fhir.hasPerformer()) {
             Reference practitionerReference = fhir.getPerformer();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
         }
 
+        //effective date
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            effectiveDate = dt.getValue();
+            effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
-        if (codes == null) {
-            return;
-        }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+        //recorded/entered date
+        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (enteredDateExtension != null) {
 
-        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
-        if (reviewExtension != null) {
-            BooleanType b = (BooleanType)reviewExtension.getValue();
-            if (b.getValue() != null) {
-                isReview = b.getValue();
+            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            enteredDate = enteredDateTimeType.getValue();
+        }
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+        }
+
+        ObservationCodeHelper vaccineCode = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
+        if (vaccineCode != null) {
+
+            snomedConceptId = vaccineCode.getSnomedConceptId();
+            //TODO: map to IM conceptId
+            //conceptId = ??
+        }
+
+        //TODO: where get heading from?
+        //careActivityHeadingConceptId
+
+        //immunisation status
+        if (fhir.hasStatus()) {
+
+            String status = fhir.getStatus();
+            //statusConceptId = ??    //TODO: map to IM concept
+        }
+
+        //confidential?
+        Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (confidentialExtension != null) {
+
+            BooleanType b = (BooleanType) confidentialExtension.getValue();
+            confidential = b.getValue();
+        }
+
+        if (fhir.hasDoseQuantity()) {
+
+            SimpleQuantity qty = fhir.getDoseQuantity();
+            if (qty != null) {
+                dose = (qty.getValue().toString() + " " +qty.getUnit()).trim();
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+        ObservationCodeHelper bodyLocationCode = ObservationCodeHelper.extractCodeFields(fhir.getSite());
+        if (bodyLocationCode != null) {
+
+            String site = bodyLocationCode.getOriginalTerm();
+
+            //bodyLocationConceptId = ?? //TODO: map to IM concept
         }
 
-        //TODO - need to write to a new Immunization output model
+        ObservationCodeHelper methodCode = ObservationCodeHelper.extractCodeFields(fhir.getRoute());
+        if (methodCode != null) {
 
-//        Observation model = (Observation)csvWriter;
-//        model.writeUpsert(id,
-//                organisationId,
-//                patientId,
-//                personId,
-//                encounterId,
-//                practitionerId,
-//                clinicalEffectiveDate,
-//                datePrecisionId,
-//                snomedConceptId,
-//                resultValue,
-//                resultValueUnits,
-//                resultDate,
-//                resultString,
-//                resultConcptId,
-//                originalCode,
-//                isProblem,
-//                originalTerm,
-//                isReview,
-//                problemEndDate,
-//                parentObservationId);
+            String route = methodCode.getOriginalTerm();
+
+            //methodConceptId = ?? //TODO: map to IM concept
+        }
+
+        //lot/batch number
+        if (fhir.hasLotNumber()) {
+
+            batchNumber = fhir.getLotNumber();
+        }
+
+        //expiry date
+        if (fhir.hasExpirationDate()) {
+
+            expiryDate = fhir.getExpirationDate();
+        }
+
+        if (fhir.hasVaccinationProtocol()) {
+
+            Immunization.ImmunizationVaccinationProtocolComponent proto = fhir.getVaccinationProtocol().get(0);
+            doseOrdinal = proto.getDoseSequence();
+            dosesRequired = proto.getSeriesDoses();
+        }
+
+        Immunisation model = (Immunisation)csvWriter;
+        model.writeUpsert(
+                id,
+                patientId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecisionId,
+                effectivePractitionerId,
+                insertDate,
+                enteredDate,
+                enteredByPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                statusConceptId,
+                confidential,
+                dose,
+                bodyLocationConceptId,
+                methodConceptId,
+                batchNumber,
+                expiryDate,
+                doseOrdinal,
+                dosesRequired,
+                isConsent);
     }
 }
 

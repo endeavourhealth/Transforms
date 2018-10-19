@@ -1,10 +1,14 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.ObservationValue;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +41,7 @@ public class ObservationTransformer extends AbstractTransformer {
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
-        Integer conceptId = null;
+
         BigDecimal resultValue = null;
         String resultValueUnits = null;
         Date resultDate = null;
@@ -46,8 +50,8 @@ public class ObservationTransformer extends AbstractTransformer {
         String originalCode = null;
         String originalTerm = null;
 
-        //TODO - this lot need assigning for observation
-        Date insertDate = null;
+        Integer conceptId = null;
+        Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
         Long careActivityId = null;
@@ -71,7 +75,9 @@ public class ObservationTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);  //TODO - CareActivityId ?
+            encounterId = findEnterpriseId(params, encounterReference);
+
+            careActivityId = encounterId;            //TODO: check this is correct
         }
 
         if (fhir.hasPerformer()) {
@@ -107,6 +113,9 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultValue = quantity.getValue();
                 resultValueUnits = quantity.getUnit();
 
+                Quantity.QuantityComparator comparator = quantity.getComparator();
+                //operatorConceptId = ??  //TODO: map to IM conceptId
+
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType) value;
                 resultDate = dateTimeType.getValue();
@@ -118,33 +127,71 @@ public class ObservationTransformer extends AbstractTransformer {
             } else if (value instanceof CodeableConcept) {
                 CodeableConcept resultCodeableConcept = (CodeableConcept) value;
                 resultSnomedConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
-                //TODO: map to IM conceptId
-                //resultConceptId = ??
+
+                //resultConceptId = ??  //TODO: map to IM conceptId
 
             } else {
                 throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
 
+        //recorded/entered date
+        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (enteredDateExtension != null) {
 
-        //TODO - how deal with this problem data, from Condition?
-//        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
-//        if (reviewExtension != null) {
-//            BooleanType b = (BooleanType) reviewExtension.getValue();
-//            if (b.getValue() != null) {
-//                isReview = b.getValue();
-//            }
-//        }
-//
-//        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-//        if (parentExtension != null) {
-//            Reference parentReference = (Reference) parentExtension.getValue();
-//            parentObservationId = findEnterpriseId(params, parentReference);
-//        }
+            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            enteredDate = enteredDateTimeType.getValue();
+        }
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+        }
+
+        //TODO: where get heading from?
+        //careActivityHeadingConceptId
+
+        //immunisation status
+        if (fhir.hasStatus()) {
+
+            Observation.ObservationStatus status = fhir.getStatus();
+            //statusConceptId = ??    //TODO: map to IM concept
+        }
+
+        //confidential?
+        Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (confidentialExtension != null) {
+
+            BooleanType b = (BooleanType) confidentialExtension.getValue();
+            confidential = b.getValue();
+        }
+
+        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (reviewExtension != null) {
+
+            StringType episodicityST = (StringType) reviewExtension.getValue();
+            String episodicity = episodicityST.getValue();  //TODO: map to IM concept
+        }
+
+
+        Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
+        if (significanceExtension != null) {
+
+            CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
+            ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
+
+            //significanceConceptId = ??  //TODO: map to IM concept
+        }
+
+        //referenceRangeId = ??  //TODO: map to IM concept
 
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
                 = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
-        observationModel.writeUpsert(id,
+        observationModel.writeUpsert(
+                id,
                 patientId,
                 conceptId,
                 effectiveDate,
@@ -167,19 +214,25 @@ public class ObservationTransformer extends AbstractTransformer {
                 isConsent);
 
 
-        org.endeavourhealth.transform.pcr.outputModels.ObservationValue observationValueModel
-                = (org.endeavourhealth.transform.pcr.outputModels.ObservationValue) csvWriter;
+        //if the observation has a value then file that data
+        if (fhir.hasValue()) {
 
-        observationValueModel.writeUpsert(patientId,
-                id,
-                operatorConceptId,
-                resultValue,
-                resultValueUnits,
-                resultDate,
-                resultText,
-                resultConceptId,
-                referenceRangeId
-        );
+            ObservationValue observationValueModel = (ObservationValue) csvWriter;
+            observationValueModel.writeUpsert(
+                    patientId,
+                    id,
+                    operatorConceptId,
+                    resultValue,
+                    resultValueUnits,
+                    resultDate,
+                    resultText,
+                    resultConceptId,
+                    referenceRangeId
+            );
+        }
+
+
+        //TODO - handle free text and linking
     }
 }
 

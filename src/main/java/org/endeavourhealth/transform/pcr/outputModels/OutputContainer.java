@@ -45,13 +45,12 @@ public class OutputContainer {
         //csvWriters.add(new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
         csvWriters.add(new Patient("patient.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddress("patientAddress.csv", csvFormat, dateFormat, timeFormat));
-        //TODO - need PatientAddress, PatientContact, PatientIdentifier
+
+        //TODO - need PatientContact, PatientIdentifier
 
         //TODO - need EventRelationship
 
         //TODO - need Problem
-
-        //TODO - need Immunisation
 
         //csvWriters.add(new EpisodeOfCare("episode_of_care.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new Appointment("appointment.csv", csvFormat, dateFormat, timeFormat));
@@ -66,6 +65,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
     }
 
