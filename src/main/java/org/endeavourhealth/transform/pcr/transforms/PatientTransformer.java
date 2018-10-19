@@ -24,6 +24,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDal
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.ConfigParameter;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
@@ -149,6 +150,7 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirAddress != null) {
             if (StringUtils.isNumeric(fhirAddress.getId())) {
                 homeAddressId = Long.parseLong(fhirAddress.getId());
+                writeAddress(fhirAddress,Long.parseLong(fhirPatient.getId()),csvWriter);
             }
         }
 
@@ -214,11 +216,21 @@ public class PatientTransformer extends AbstractTransformer {
      //           ethnicCode,
                 careProviderId,
                 isSpineSensitive);
-
-
-
     }
 
+    private void writeAddress(Address fhirAddress, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
+        org.endeavourhealth.transform.pcr.outputModels.PatientAddress patientAddressWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientAddress) csvWriter;
+        Period period = fhirAddress.getPeriod();
+        Date startDate = period.getStart();
+        Date endDate = period.getEnd();
+        patientAddressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),
+                patientId,
+                Integer.parseInt(fhirAddress.getType().toCode()),
+                Integer.parseInt(fhirAddress.getId()),
+                startDate,
+                endDate
+                );
+    }
     private Reference findOrgReference(Patient fhirPatient, PcrTransformParams params) throws Exception {
 
         //find a direct org reference first

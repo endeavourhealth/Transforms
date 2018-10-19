@@ -43,8 +43,8 @@ public class OutputContainer {
         csvWriters.add(new Practitioner("practitioner.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new Schedule("schedule.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new Person("person.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
-        csvWriters.add(new Patient("patient.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
-
+        csvWriters.add(new Patient("patient.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientAddress("patientAddress.csv", csvFormat, dateFormat, timeFormat));
         //TODO - need PatientAddress, PatientContact, PatientIdentifier
 
         //TODO - need EventRelationship

@@ -8,7 +8,7 @@ public class Patient extends AbstractPcrCsvWriter {
 
 
 
-    public Patient(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat, boolean pseduonymised) throws Exception {
+    public Patient(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
 
 
