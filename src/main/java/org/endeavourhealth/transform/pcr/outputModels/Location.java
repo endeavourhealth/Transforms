@@ -56,7 +56,7 @@ public class Location extends AbstractPcrCsvWriter {
                 "id",
                 "organisation_id",
                 "name",
-                "type_term_id",
+                "type_concept_id",
                 "address_id",
                 "is_active",
                 "parent_location_id"
