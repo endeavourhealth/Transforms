@@ -45,7 +45,7 @@ public class AddressHelper {
 				.setUse(getUse(homeAddress.getUse()));
 	}
 
-	private static String getLine(List<StringType> lines, int lineNumber) {
+	public static String getLine(List<StringType> lines, int lineNumber) {
 		if (lines == null)
 			return "";
 
