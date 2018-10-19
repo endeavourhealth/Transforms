@@ -154,6 +154,14 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        if (fhirPatient.hasContact()) {
+            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
+            for (Patient.ContactComponent com : contactList) {
+               writeContact(com, id,csvWriter);
+               //TODO Need to map the telecom to IM Concept id
+                //TODO how do we get the contact's patient id?
+            }
+        }
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
@@ -230,6 +238,17 @@ public class PatientTransformer extends AbstractTransformer {
                 startDate,
                 endDate
                 );
+    }
+
+    private void writeContact(Patient.ContactComponent cc, long patientId, AbstractPcrCsvWriter csvWriter) {
+        org.endeavourhealth.transform.pcr.outputModels.PatientContact patientWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientContact) csvWriter;
+        List<ContactPoint> cpList = cc.getTelecom();
+        for (ContactPoint cp : cpList) {
+            String code = cp.getSystem().toCode();
+            //TODO Map to IM concept Id
+            //patientWriter.writeUpsert();
+        }
+
     }
     private Reference findOrgReference(Patient fhirPatient, PcrTransformParams params) throws Exception {
 
