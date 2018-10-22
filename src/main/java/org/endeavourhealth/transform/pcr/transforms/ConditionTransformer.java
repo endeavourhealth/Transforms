@@ -138,15 +138,27 @@ public class ConditionTransformer extends AbstractTransformer {
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
         }
 
-        Extension problemLastReviewDateExtension
+        //last review date and by which practitioner, a compound extension
+        Extension problemLastReviewedExtension
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_LAST_REVIEWED);
-        if (problemLastReviewDateExtension != null) {
+        if (problemLastReviewedExtension != null) {
 
-            DateType problemLastReviewDateExtensionType = (DateType) problemLastReviewDateExtension.getValue();
-            lastReviewDate = problemLastReviewDateExtensionType.getValue();
+            Extension problemLastReviewByExtension
+                    = ExtensionConverter.findExtension(problemLastReviewedExtension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__PERFORMER);
+            if (problemLastReviewByExtension != null) {
+
+                Reference lastReviewPractitionerReference = (Reference) problemLastReviewByExtension.getValue();
+                lastReviewPractitionerId = transformOnDemandAndMapId(lastReviewPractitionerReference, params).intValue();
+            }
+
+            Extension problemLastReviewedDateExtension
+                    = ExtensionConverter.findExtension(problemLastReviewedExtension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__DATE);
+            if (problemLastReviewedDateExtension != null) {
+
+                DateType problemLastReviewDateExtensionType = (DateType) problemLastReviewedDateExtension.getValue();
+                lastReviewDate = problemLastReviewDateExtensionType.getValue();
+            }
         }
-
-        //TODO - lastReviewPractitionerId
 
         Extension problemExpectedDurationExtension
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EXPECTED_DURATION);
@@ -176,9 +188,16 @@ public class ConditionTransformer extends AbstractTransformer {
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
+
+            //TODO:// EventRelationship
         }
 
-        //TODO - typeConceptId
+        CodeableConcept conditionCategory = fhir.getCategory();
+        if (conditionCategory != null) {
+
+            String categoryType = conditionCategory.getCoding().get(0).getCode();
+            //TODO - typeConceptId from this?
+        }
 
         //firstly, file as an observation
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
