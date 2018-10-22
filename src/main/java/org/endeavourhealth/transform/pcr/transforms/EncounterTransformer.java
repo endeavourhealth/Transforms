@@ -5,12 +5,9 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
-import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
-import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.EncounterDetail;
 import org.endeavourhealth.transform.pcr.outputModels.EncounterRaw;
@@ -38,125 +35,125 @@ public class EncounterTransformer extends AbstractTransformer {
 
         Encounter fhir = (Encounter)resource;
 
-        long id;
-        long organisationId;
-        long patientId;
-        long personId;
-        Long practitionerId = null;
-        Long appointmentId = null;
-        Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
-        Long snomedConceptId = null;
-        String originalCode = null;
-        String originalTerm = null;
-        Long episodeOfCareId = null;
-        Long serviceProviderOrganisationId = null;
-
-        id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
-
-        if (fhir.hasParticipant()) {
-
-            for (Encounter.EncounterParticipantComponent participantComponent: fhir.getParticipant()) {
-
-                boolean primary = false;
-                for (CodeableConcept codeableConcept: participantComponent.getType()) {
-                    for (Coding coding : codeableConcept.getCoding()) {
-                        String typeCode = coding.getCode();
-                        if (typeCode.equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode()) //used for GP
-                                || typeCode.equals(EncounterParticipantType.ATTENDER.getCode())) { //used for ADT
-                            primary = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (primary) {
-                    Reference practitionerReference = participantComponent.getIndividual();
-                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
-                }
-            }
-        }
-
-        if (fhir.hasAppointment()) {
-            Reference appointmentReference = fhir.getAppointment();
-            appointmentId = findEnterpriseId(params, appointmentReference);
-        }
-
-        if (fhir.hasPeriod()) {
-            Period period = fhir.getPeriod();
-            DateTimeType dt = period.getStartElement();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
-        }
-
-        //changing to use our information model to get the concept ID for the consultation type based on the textual term
-        originalTerm = findEncounterTypeTerm(fhir, params);
-        if (!Strings.isNullOrEmpty(originalTerm)) {
-            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            snomedConceptId = ret.getCode();
-        }
-
-        /*if (fhir.hasExtension()) {
-
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
-            if (extension != null) {
-                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-
-                snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
-
-                //add the raw original code and term, to assist in data checking and results display
-                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-                originalTerm = codeableConcept.getText();
-            }
-        }
-
-        //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
-        //and see if we can generate a snomed ID from the encounter fields
-        if (Strings.isNullOrEmpty(originalCode)) {
-
-            EncounterCode code = mapEncounterCode(fhir, params);
-            if (code != null) {
-                snomedConceptId = code.getCode();
-                originalTerm = code.getTerm();
-            }
-        }*/
-
-        if (fhir.hasEpisodeOfCare()) {
-            Reference episodeReference = fhir.getEpisodeOfCare().get(0);
-            episodeOfCareId = findEnterpriseId(params, episodeReference);
-        }
-
-        if (fhir.hasServiceProvider()) {
-            Reference orgReference = fhir.getServiceProvider();
-            serviceProviderOrganisationId = findEnterpriseId(params, orgReference);
-        }
-        if (serviceProviderOrganisationId == null) {
-            serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
-        }
-
-        org.endeavourhealth.transform.pcr.outputModels.Encounter model = (org.endeavourhealth.transform.pcr.outputModels.Encounter)csvWriter;
-        model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            practitionerId,
-            appointmentId,
-            clinicalEffectiveDate,
-            datePrecisionId,
-            snomedConceptId,
-            originalCode,
-            originalTerm,
-            episodeOfCareId,
-            serviceProviderOrganisationId);
-
-        //we also need to populate the two new encounter tables
-        tranformExtraEncounterTables(resource, params,
-                id, organisationId, patientId, personId, practitionerId,
-                episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
-                serviceProviderOrganisationId);
+//        long id;
+//        long organisationId;
+//        long patientId;
+//        long personId;
+//        Long practitionerId = null;
+//        Long appointmentId = null;
+//        Date clinicalEffectiveDate = null;
+//        Integer datePrecisionId = null;
+//        Long snomedConceptId = null;
+//        String originalCode = null;
+//        String originalTerm = null;
+//        Long episodeOfCareId = null;
+//        Long serviceProviderOrganisationId = null;
+//
+//        id = enterpriseId.longValue();
+//        organisationId = params.getEnterpriseOrganisationId().longValue();
+//        patientId = params.getEnterprisePatientId().longValue();
+//        personId = params.getEnterprisePersonId().longValue();
+//
+//        if (fhir.hasParticipant()) {
+//
+//            for (Encounter.EncounterParticipantComponent participantComponent: fhir.getParticipant()) {
+//
+//                boolean primary = false;
+//                for (CodeableConcept codeableConcept: participantComponent.getType()) {
+//                    for (Coding coding : codeableConcept.getCoding()) {
+//                        String typeCode = coding.getCode();
+//                        if (typeCode.equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode()) //used for GP
+//                                || typeCode.equals(EncounterParticipantType.ATTENDER.getCode())) { //used for ADT
+//                            primary = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                if (primary) {
+//                    Reference practitionerReference = participantComponent.getIndividual();
+//                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+//                }
+//            }
+//        }
+//
+//        if (fhir.hasAppointment()) {
+//            Reference appointmentReference = fhir.getAppointment();
+//            appointmentId = findEnterpriseId(params, appointmentReference);
+//        }
+//
+//        if (fhir.hasPeriod()) {
+//            Period period = fhir.getPeriod();
+//            DateTimeType dt = period.getStartElement();
+//            clinicalEffectiveDate = dt.getValue();
+//            datePrecisionId = convertDatePrecision(dt.getPrecision());
+//        }
+//
+//        //changing to use our information model to get the concept ID for the consultation type based on the textual term
+//        originalTerm = findEncounterTypeTerm(fhir, params);
+//        if (!Strings.isNullOrEmpty(originalTerm)) {
+//            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
+//            snomedConceptId = ret.getCode();
+//        }
+//
+//        /*if (fhir.hasExtension()) {
+//
+//            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+//            if (extension != null) {
+//                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+//
+//                snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+//
+//                //add the raw original code and term, to assist in data checking and results display
+//                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
+//                originalTerm = codeableConcept.getText();
+//            }
+//        }
+//
+//        //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
+//        //and see if we can generate a snomed ID from the encounter fields
+//        if (Strings.isNullOrEmpty(originalCode)) {
+//
+//            EncounterCode code = mapEncounterCode(fhir, params);
+//            if (code != null) {
+//                snomedConceptId = code.getCode();
+//                originalTerm = code.getTerm();
+//            }
+//        }*/
+//
+//        if (fhir.hasEpisodeOfCare()) {
+//            Reference episodeReference = fhir.getEpisodeOfCare().get(0);
+//            episodeOfCareId = findEnterpriseId(params, episodeReference);
+//        }
+//
+//        if (fhir.hasServiceProvider()) {
+//            Reference orgReference = fhir.getServiceProvider();
+//            serviceProviderOrganisationId = findEnterpriseId(params, orgReference);
+//        }
+//        if (serviceProviderOrganisationId == null) {
+//            serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
+//        }
+//
+//        org.endeavourhealth.transform.pcr.outputModels.Encounter model = (org.endeavourhealth.transform.pcr.outputModels.Encounter)csvWriter;
+//        model.writeUpsert(id,
+//            organisationId,
+//            patientId,
+//            personId,
+//            practitionerId,
+//            appointmentId,
+//            clinicalEffectiveDate,
+//            datePrecisionId,
+//            snomedConceptId,
+//            originalCode,
+//            originalTerm,
+//            episodeOfCareId,
+//            serviceProviderOrganisationId);
+//
+//        //we also need to populate the two new encounter tables
+//        tranformExtraEncounterTables(resource, params,
+//                id, organisationId, patientId, personId, practitionerId,
+//                episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
+//                serviceProviderOrganisationId);
     }
 
     private void tranformExtraEncounterTables(Resource resource, PcrTransformParams params,
@@ -166,88 +163,88 @@ public class EncounterTransformer extends AbstractTransformer {
 
         Encounter fhir = (Encounter)resource;
 
-        Long recordingPractitionerId = findRecordingPractitionerId(fhir, params);
-        Date recordingDate = findRecordingDate(fhir);
-        Long locationId = findLocationId(fhir, params);
-        Date endDate = findEndDate(fhir);
-        Integer durationMins = findDuration(clinicalEffectiveDate, endDate);
-        Long completionStatusConceptId = null; //leave these concepts as null for now, until we know the rules
-        Long healthcareServiceTypeConceptId = null;
-        Long interactionModeConceptId = null;
-        Long administrativeActionConceptId = null;
-        Long purposeConceptId = null;
-        Long dispositionConceptId = null;
-        Long siteOfCareTypeConceptId = null;
-        Long patientStatusConceptId = null;
-        String fhirAdtMessageCode = findAdtMessageCode(fhir);
-        String fhirClass = findClass(fhir);
-        String fhirType = findType(fhir);
-        String fhirStatus = findStatus(fhir);
-
-        Long fhirSnomedConceptId = null;
-        String fhirOriginalCode = null;
-        String fhirOriginalTerm = null;
-
-        CodeableConcept codeableConcept = findSourceCodeableConcept(fhir);
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
-        if (codes != null) {
-            //unlike Observations etc., we still DO want to send this record to our subscriber even if not coded
-            fhirSnomedConceptId = codes.getSnomedConceptId();
-            fhirOriginalCode = codes.getOriginalCode();
-            fhirOriginalTerm = codes.getOriginalTerm();
-        }
-
-        OutputContainer outputContainer = params.getOutputContainer();
-
-        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        completionStatusConceptId,
-                        healthcareServiceTypeConceptId,
-                        interactionModeConceptId,
-                        administrativeActionConceptId,
-                        purposeConceptId,
-                        dispositionConceptId,
-                        siteOfCareTypeConceptId,
-                        patientStatusConceptId);
-
-
-        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        fhirAdtMessageCode,
-                        fhirClass,
-                        fhirType,
-                        fhirStatus,
-                        fhirSnomedConceptId,
-                        fhirOriginalCode,
-                        fhirOriginalTerm);
+//        Long recordingPractitionerId = findRecordingPractitionerId(fhir, params);
+//        Date recordingDate = findRecordingDate(fhir);
+//        Long locationId = findLocationId(fhir, params);
+//        Date endDate = findEndDate(fhir);
+//        Integer durationMins = findDuration(clinicalEffectiveDate, endDate);
+//        Long completionStatusConceptId = null; //leave these concepts as null for now, until we know the rules
+//        Long healthcareServiceTypeConceptId = null;
+//        Long interactionModeConceptId = null;
+//        Long administrativeActionConceptId = null;
+//        Long purposeConceptId = null;
+//        Long dispositionConceptId = null;
+//        Long siteOfCareTypeConceptId = null;
+//        Long patientStatusConceptId = null;
+//        String fhirAdtMessageCode = findAdtMessageCode(fhir);
+//        String fhirClass = findClass(fhir);
+//        String fhirType = findType(fhir);
+//        String fhirStatus = findStatus(fhir);
+//
+//        Long fhirSnomedConceptId = null;
+//        String fhirOriginalCode = null;
+//        String fhirOriginalTerm = null;
+//
+//        CodeableConcept codeableConcept = findSourceCodeableConcept(fhir);
+//        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
+//        if (codes != null) {
+//            //unlike Observations etc., we still DO want to send this record to our subscriber even if not coded
+//            fhirSnomedConceptId = codes.getSnomedConceptId();
+//            fhirOriginalCode = codes.getOriginalCode();
+//            fhirOriginalTerm = codes.getOriginalTerm();
+//        }
+//
+//        OutputContainer outputContainer = params.getOutputContainer();
+//
+//        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
+//        encounterDetail.writeUpsert(id,
+//                        organisationId,
+//                        patientId,
+//                        personId,
+//                        practitionerId,
+//                        episodeOfCareId,
+//                        clinicalEffectiveDate,
+//                        datePrecisionId,
+//                        recordingPractitionerId,
+//                        recordingDate,
+//                        appointmentId,
+//                        serviceProviderOrganisationId,
+//                        locationId,
+//                        endDate,
+//                        durationMins,
+//                        completionStatusConceptId,
+//                        healthcareServiceTypeConceptId,
+//                        interactionModeConceptId,
+//                        administrativeActionConceptId,
+//                        purposeConceptId,
+//                        dispositionConceptId,
+//                        siteOfCareTypeConceptId,
+//                        patientStatusConceptId);
+//
+//
+//        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
+//        encounterRaw.writeUpsert(id,
+//                        organisationId,
+//                        patientId,
+//                        personId,
+//                        practitionerId,
+//                        episodeOfCareId,
+//                        clinicalEffectiveDate,
+//                        datePrecisionId,
+//                        recordingPractitionerId,
+//                        recordingDate,
+//                        appointmentId,
+//                        serviceProviderOrganisationId,
+//                        locationId,
+//                        endDate,
+//                        durationMins,
+//                        fhirAdtMessageCode,
+//                        fhirClass,
+//                        fhirType,
+//                        fhirStatus,
+//                        fhirSnomedConceptId,
+//                        fhirOriginalCode,
+//                        fhirOriginalTerm);
     }
 
     private Integer findDuration(Date startDate, Date endDate) {

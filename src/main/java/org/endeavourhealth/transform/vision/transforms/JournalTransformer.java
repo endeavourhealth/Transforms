@@ -219,6 +219,7 @@ public class JournalTransformer {
             medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
         } else {
             medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
+            medicationStatementBuilder.setCancellationDate(parser.getEndDate().getDate(), parser.getEndDate());
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);

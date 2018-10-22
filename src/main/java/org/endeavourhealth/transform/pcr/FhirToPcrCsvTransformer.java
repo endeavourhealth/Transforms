@@ -111,7 +111,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     private static Long findEnterpriseOrgId(UUID serviceId, PcrTransformParams params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
         Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString());
         if (enterpriseOrganisationId != null) {
             return enterpriseOrganisationId;
@@ -160,7 +160,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
             //we need to see if our organisation is mapped to another instance of the same place,
             //in which case we need to use the enterprise ID of that other instance
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
             UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
@@ -195,7 +195,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             LOG.info("<<<<<Reference map doesn't contain " + orgReferenceValue);*/
 
             //record the audit of us adding a new resource to the batch
-            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
+            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getConfigName());
             exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
 
             ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
@@ -295,18 +295,18 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             }
             params.setEnterprisePatientId(enterprisePatientId);
 
-            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
-
-            //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
-            //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
-            //return out without processing any of the remaining resources, since they're for a deleted patient.
-            if (Strings.isNullOrEmpty(discoveryPersonId)) {
-                return;
-            }
-
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-            params.setEnterprisePersonId(enterprisePersonId);
+//            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
+//
+//            //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
+//            //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
+//            //return out without processing any of the remaining resources, since they're for a deleted patient.
+//            if (Strings.isNullOrEmpty(discoveryPersonId)) {
+//                return;
+//            }
+//
+//            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getconfigName());
+//            Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+//            params.setEnterprisePersonId(enterprisePersonId);
         }
 
         //tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);  -NOT v1

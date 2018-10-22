@@ -65,11 +65,9 @@ public class ConditionTransformer extends AbstractTransformer {
         Integer lastReviewPractitionerId = null;
         Integer typeConceptId = null;
 
-
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
-        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
@@ -98,7 +96,7 @@ public class ConditionTransformer extends AbstractTransformer {
 
             //TODO: map to IM conceptId
             //conceptId = ??
-        }
+        } else return;
 
 
         //if it's a problem set the boolean to say so
@@ -215,7 +213,7 @@ public class ConditionTransformer extends AbstractTransformer {
             problemModel.writeUpsert(
                     id,
                     patientId,
-                    observationId,    //TODO: how derive this?
+                    observationId,    //TODO: how derive this - use same as id?
                     typeConceptId,
                     significanceConceptId,
                     expectedDurationDays,

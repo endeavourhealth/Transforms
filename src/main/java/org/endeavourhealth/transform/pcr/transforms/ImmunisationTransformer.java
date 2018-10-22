@@ -41,8 +41,6 @@ public class ImmunisationTransformer extends AbstractTransformer {
         owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
         patientId = params.getEnterprisePatientId().intValue();
 
-        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
-
         Integer conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
@@ -101,7 +99,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
             snomedConceptId = vaccineCode.getSnomedConceptId();
             //TODO: map to IM conceptId
             //conceptId = ??
-        }
+        } else return;
 
         //TODO: where get heading from?
         //careActivityHeadingConceptId
@@ -190,4 +188,3 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 isConsent);
     }
 }
-

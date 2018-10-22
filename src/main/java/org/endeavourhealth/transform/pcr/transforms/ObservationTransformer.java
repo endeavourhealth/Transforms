@@ -64,15 +64,12 @@ public class ObservationTransformer extends AbstractTransformer {
         Integer significanceConceptId = null;
         boolean isConsent = false;
         Integer resultConceptId = null;
-
-        //TODO - this lot need assigning for observation value
         Integer operatorConceptId = null;
         Long referenceRangeId = null;
 
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
         patientId = params.getEnterprisePatientId().intValue();
-        //personId = params.getEnterprisePersonId().longValue();   //TODO: track down source and remove for PCR
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
@@ -105,7 +102,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
-        }
+        } else return;
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -230,8 +227,6 @@ public class ObservationTransformer extends AbstractTransformer {
                     referenceRangeId
             );
         }
-
-        //TODO - handle if this is a problem?
 
 
         //TODO - handle free text and linking

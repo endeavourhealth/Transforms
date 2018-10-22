@@ -54,7 +54,7 @@ public abstract class AbstractTransformer {
                                    AbstractPcrCsvWriter csvWriter,
                                    PcrTransformParams params) throws Exception {
 
-        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform(), params);
+        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getConfigName(), resources, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resource : resources) {
 
@@ -134,9 +134,9 @@ public abstract class AbstractTransformer {
     }*/
 
     public static Long findEnterpriseId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
-        Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
+        Long ret = checkCacheForId(params.getConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
             ret = enterpriseIdDal.findEnterpriseId(resourceType, resourceId);
             //ret = idMappingRepository.getEnterpriseIdMappingId(enterpriseTableName, resourceType, resourceId);
         }
@@ -157,12 +157,12 @@ public abstract class AbstractTransformer {
     }
 
     public static Long findOrCreateEnterpriseId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
-        Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
+        Long ret = checkCacheForId(params.getConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
             ret = enterpriseIdDal.findOrCreateEnterpriseId(resourceType, resourceId);
 
-            addIdToCache(params.getEnterpriseConfigName(), resourceType, resourceId, ret);
+            addIdToCache(params.getConfigName(), resourceType, resourceId, ret);
         }
         return ret;
     }
@@ -319,10 +319,10 @@ public abstract class AbstractTransformer {
             return false;
         }
 
-        UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
+        UUID mappedResourceId = checkInstanceMapCache(params.getConfigName(), resourceType, resourceId);
         if (mappedResourceId == null) {
 
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
             mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
@@ -331,7 +331,7 @@ public abstract class AbstractTransformer {
                 mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
             }
 
-            addToInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId, mappedResourceId);
+            addToInstanceMapCache(params.getConfigName(), resourceType, resourceId, mappedResourceId);
         }
 
         //if the mapped ID is different to the resource ID then it's mapped to another instance
@@ -439,10 +439,10 @@ public abstract class AbstractTransformer {
                     && (resourceType == ResourceType.Organization
                     || resourceType == ResourceType.Practitioner)) {
 
-                UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
+                UUID mappedResourceId = checkInstanceMapCache(params.getConfigName(), resourceType, resourceId);
                 if (mappedResourceId == null) {
 
-                    EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+                    EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
                     mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
 
                     //if we've not got a mapping, then we need to create one from our resource data
@@ -458,7 +458,7 @@ public abstract class AbstractTransformer {
                         mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
                     }
 
-                    addToInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId, mappedResourceId);
+                    addToInstanceMapCache(params.getConfigName(), resourceType, resourceId, mappedResourceId);
                 }
 
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
@@ -500,7 +500,7 @@ public abstract class AbstractTransformer {
 
             //generate a new enterprise ID for our resource. So we have an audit of this, and can recover if we
             //kill the queue reader at this point, we also need to store our resource's ID in the exchange_batch_extra_resource table
-            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
+            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getConfigName());
             //LOG.info("Saving extra resource exchange " + params.getExchangeId() + " batch " + params.getBatchId() + " resource type " + resourceType + " id " + resourceId);
             exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
 

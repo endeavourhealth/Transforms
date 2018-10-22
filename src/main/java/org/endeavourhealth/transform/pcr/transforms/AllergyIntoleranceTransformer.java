@@ -38,7 +38,6 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
-        //personId = params.getEnterprisePersonId().longValue();
 
         Integer conceptId = null;
         Integer substanceConceptId = null;
@@ -102,7 +101,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             //conceptId = ??  //TODO: map to IM conceptId
 
             //substanceConceptId = ??  why two?, check in FHIR
-        }
+        } else return;
 
         //confidential
         Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);

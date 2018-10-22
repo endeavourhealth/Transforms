@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -30,13 +30,13 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         MedicationStatement fhir = (MedicationStatement)resource;
 
         long id;
-        long organisationId;
-        long patientId;
-        long personId;
+        long owningOrganisationId;
+        int patientId;
         Long encounterId = null;
-        Long practitionerId = null;
-        Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer effectivePractitionerId = null;
+        Date effectiveDate = null;
+        Integer effectiveDatePrecisionId = null;
+
         Long dmdId = null;
         Boolean isActive = null;
         Date cancellationDate = null;
@@ -44,36 +44,87 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         BigDecimal quantityValue = null;
         String quantityUnit = null;
         int authorisationTypeId;
-        String originalTerm = null;
+
+        Integer conceptId = null;
+        Date insertDate = new Date();
+        Date enteredDate = null;
+        Integer enteredByPractitionerId = null;
+        Long careActivityId = null;
+        Integer careActivityHeadingConceptId = null;
+        Integer statusConceptId = null;
+        boolean confidential = false;
+        Integer typeConceptId = null;
+        boolean isConsent = false;
+        Integer issues = null;
+        Integer issuesAuthorised = null;
+
+        Long patientInstructionsFreeTextId = null;
+        Long pharmacyInstructionsFreeTextId = null;
+        Date reviewDate = null;  //supported in FHIR?
+        Integer endReasonConceptId = null;
+        Long endReasonFreeTextId = null;
+        Long medicationAmountId = null;
+        Integer courseLengthPerIssueDays = null;
+
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
+        patientId = params.getEnterprisePatientId().intValue();
+        //personId = params.getEnterprisePersonId().longValue();
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
         }
 
         if (fhir.hasDateAssertedElement()) {
             DateTimeType dt = fhir.getDateAssertedElement();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            effectiveDate = dt.getValue();
+            effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
+        //recorded/entered date
+        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (enteredDateExtension != null) {
 
-        //add term too, for easy display of results
-        originalTerm = fhir.getMedicationCodeableConcept().getText();
-        //if we failed to find one, it's because of a change in how the CodeableConcept was generated, so find the term differently
-        if (Strings.isNullOrEmpty(originalTerm)) {
-            originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
+            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            enteredDate = enteredDateTimeType.getValue();
         }
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+        }
+
+        //encounter / care activity
+        Extension encounterExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ASSOCIATED_ENCOUNTER);
+        if (encounterExtension != null) {
+
+            Reference encounterReference = (Reference)encounterExtension.getValue();
+            encounterId = findEnterpriseId(params, encounterReference);
+
+            careActivityId = encounterId;            //TODO: check this is correct
+        }
+
+
+        CodeableConcept medicationCode = fhir.getMedicationCodeableConcept();
+        if (medicationCode != null) {
+
+            dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
+            //TODO: map dmdId to IM conceptId
+            //conceptId =??
+        } else return;
+
 
         if (fhir.hasStatus()) {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
-            isActive = Boolean.valueOf(fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
+            isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
+
+            //TODO:  map status to IM
+            //statusConceptId = ??
         }
 
         if (fhir.hasDosage()) {
@@ -96,53 +147,118 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             dose = new String(chars);
         }
 
-        MedicationAuthorisationType authorisationType = null;
-
-        if (fhir.hasExtension()) {
-            for (Extension extension: fhir.getExtension()) {
-
-                if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION)) {
-                    //this extension is a compound one, with one or two inner extensions, giving us the date and performer
-                    if (extension.hasExtension()) {
-                        for (Extension innerExtension: extension.getExtension()) {
-                            if (innerExtension.getValue() instanceof DateType) {
-                                DateType d = (DateType)innerExtension.getValue();
-                                cancellationDate = d.getValue();
-                            }
-                        }
+        Extension cancellationExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION);
+        if (cancellationExtension != null) {
+            if (cancellationExtension.hasExtension()) {
+                for (Extension innerExtension: cancellationExtension.getExtension()) {
+                    if (innerExtension.getValue() instanceof DateType) {
+                        DateType d = (DateType)innerExtension.getValue();
+                        cancellationDate = d.getValue();
                     }
-
-                } else if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_AUTHORISATION_QUANTITY)) {
-                    Quantity q = (Quantity)extension.getValue();
-                    quantityValue = q.getValue();
-                    quantityUnit = q.getUnit();
-
-                } else if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE)) {
-                    Coding c = (Coding)extension.getValue();
-                    authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
                 }
             }
         }
 
-        authorisationTypeId = authorisationType.ordinal();
+        //quantity
+        Extension authorisedQtyExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_QUANTITY);
+        if (authorisedQtyExtension != null) {
 
-        org.endeavourhealth.transform.pcr.outputModels.MedicationStatement model = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement)csvWriter;
-        model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionId,
-            dmdId,
-            isActive,
-            cancellationDate,
-            dose,
-            quantityValue,
-            quantityUnit,
-            authorisationTypeId,
-            originalTerm);
+            Quantity q = (Quantity)authorisedQtyExtension.getValue();
+            quantityValue = q.getValue();
+            quantityUnit = q.getUnit();
+        }
+
+        //auth type, i.e. acute, repeat
+        Extension authorisationTypeExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE);
+        if (authorisationTypeExtension != null) {
+
+            Coding c = (Coding)authorisationTypeExtension.getValue();
+            MedicationAuthorisationType authorisationType
+                    = authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
+
+            authorisationTypeId = authorisationType.ordinal();
+
+            //TODO: map authorisationTypeId to IM conceptId
+            //typeConceptId = ??
+        }
+
+        //issues authorised
+        Extension numberOfIssuesAuthorisedExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ALLOWED);
+        if (numberOfIssuesAuthorisedExtension != null) {
+
+            IntegerType issuesAllowedType = (IntegerType)numberOfIssuesAuthorisedExtension.getValue();
+            issuesAuthorised = issuesAllowedType.getValue();
+        }
+
+        //issues issued
+        Extension numberOfIssuesExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ISSUED);
+        if (numberOfIssuesExtension != null) {
+
+            IntegerType issuesIssuedType = (IntegerType)numberOfIssuesExtension.getValue();
+            issues = issuesIssuedType.getValue();
+        }
+
+        //confidential?
+        Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (confidentialExtension != null) {
+
+            BooleanType b = (BooleanType) confidentialExtension.getValue();
+            confidential = b.getValue();
+        }
+
+        org.endeavourhealth.transform.pcr.outputModels.MedicationStatement model
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement)csvWriter;
+
+        model.writeUpsert(
+                id,
+                patientId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecisionId,
+                effectivePractitionerId,
+                insertDate,
+                enteredDate,
+                enteredByPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                statusConceptId,
+                confidential,
+                typeConceptId,
+                medicationAmountId,                 //SEE TODO NOTE BELOW
+                issuesAuthorised,
+                reviewDate,                         //not available in FHIR
+                courseLengthPerIssueDays,         //medicationOrder - courseDuration
+                patientInstructionsFreeTextId,
+                pharmacyInstructionsFreeTextId,
+                isActive,
+                cancellationDate,
+                endReasonConceptId,         //not available
+                endReasonFreeTextId,        //not available
+                issues,
+                isConsent);
+
+
+        //TODO - handle free text and linking
+
+
+        //TODO: medication amount link - REVIEW LINKAGE INLINE WITH OBSERVATION_VALUE, I.E
+        // medication_id stored in medication_amount table instead of medication_amount_id stored in medication_statement table?
+        org.endeavourhealth.transform.pcr.outputModels.MedicationAmount medicationAmountModel
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationAmount) csvWriter;
+
+        medicationAmountModel.writeUpsert(
+                id,         //TODO:// consider renaming to medication_id and linking that way around
+                patientId,
+                dose,
+                quantityValue,
+                quantityUnit);
+
     }
 }
 

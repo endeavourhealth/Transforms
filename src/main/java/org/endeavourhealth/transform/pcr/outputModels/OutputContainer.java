@@ -63,6 +63,10 @@ public class OutputContainer {
         csvWriters.add(new ObservationValue("observation_value.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new MedicationAmount("medication_amount.csv", csvFormat, dateFormat, timeFormat));
+
+        //TODO: - need free text table links
+
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Problem("problem.csv", csvFormat, dateFormat, timeFormat));

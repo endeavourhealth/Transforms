@@ -16,7 +16,7 @@ public class PcrTransformParams {
     private final UUID protocolId;
     private final UUID exchangeId;
     private final UUID batchId;
-    private final String enterpriseConfigName;
+    private final String configName;
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> allResources;
     private final Set<String> resourcesTransformed;
@@ -25,10 +25,9 @@ public class PcrTransformParams {
     private int batchSize;
     private Long enterpriseOrganisationId = null;
     private Long enterprisePatientId = null;
-    private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public PcrTransformParams(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+    public PcrTransformParams(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String configName,
                               OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody,
                               boolean useInstanceMapping) {
         this.serviceId = serviceId;
@@ -36,7 +35,7 @@ public class PcrTransformParams {
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.enterpriseConfigName = enterpriseConfigName;
+        this.configName = configName;
         this.outputContainer = outputContainer;
         this.allResources = allResources;
         this.exchangeBody = exchangeBody;
@@ -70,8 +69,8 @@ public class PcrTransformParams {
         return batchId;
     }
 
-    public String getEnterpriseConfigName() {
-        return enterpriseConfigName;
+    public String getConfigName() {
+        return configName;
     }
 
     public OutputContainer getOutputContainer() {
@@ -112,16 +111,16 @@ public class PcrTransformParams {
         this.enterprisePatientId = enterprisePatientId;
     }
 
-    public Long getEnterprisePersonId() {
-        return enterprisePersonId;
-    }
-
-    public void setEnterprisePersonId(Long enterprisePersonId) {
-        if (this.enterprisePersonId != null) {
-            throw new IllegalArgumentException("Cannot change the enterprisePersonId once set");
-        }
-        this.enterprisePersonId = enterprisePersonId;
-    }
+//    public Long getEnterprisePersonId() {
+//        return enterprisePersonId;
+//    }
+//
+//    public void setEnterprisePersonId(Long enterprisePersonId) {
+//        if (this.enterprisePersonId != null) {
+//            throw new IllegalArgumentException("Cannot change the enterprisePersonId once set");
+//        }
+//        this.enterprisePersonId = enterprisePersonId;
+//    }
 
     public boolean hasResourceBeenTransformedAddIfNot(Reference reference) {
         //we have to use the Strings as the Reference class doesn't have hashCode or equals functions implmented
