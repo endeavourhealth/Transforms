@@ -72,7 +72,7 @@ public class PatientTransformer extends AbstractTransformer {
         Date dateOfBirth = null;
         Date dateOfDeath = null;
         int patientGenderId;
-        Long usual_practitioner_id=null;
+        Long usualPractitionerId=null;
         String title = null;
         String firstName = null;
         String middleNames = null;
@@ -202,7 +202,8 @@ public class PatientTransformer extends AbstractTransformer {
                 dateOfBirth,
                 dateOfDeath,
                 patientGenderId,
-                usual_practitioner_id,
+                usualPractitionerId,
+                careProviderId,
                 title,
                 firstName,
                 middleNames,

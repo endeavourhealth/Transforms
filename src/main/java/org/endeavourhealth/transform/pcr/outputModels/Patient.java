@@ -28,15 +28,15 @@ public class Patient extends AbstractPcrCsvWriter {
                             Date dateOfBirth,
                             Date dateOfDeath,
                             int genderConceptId,
-                            long usual_practitioner_id,
+                            long usualPractitionerId,
+                            long careProviderId,
                             String title,
                             String firstName,
                             String middleNames,
                             String lastName,
                             String previousLastName,
                             long homeAddressId,
-     //TOODO in DB or not?                       String ethnicCode,
-                            long careProviderId,
+     //TODO in DB or not?                       String ethnicCode,
                             boolean isSpineSensitive) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
@@ -46,7 +46,8 @@ public class Patient extends AbstractPcrCsvWriter {
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
                 "" + genderConceptId,
-                convertLong(usual_practitioner_id),
+                convertLong(usualPractitionerId),
+                convertLong(careProviderId),
                 title,
                 firstName,
                 middleNames,
@@ -54,7 +55,6 @@ public class Patient extends AbstractPcrCsvWriter {
                 previousLastName,
                 convertLong(homeAddressId),
     //            ethnicCode,
-                convertLong(careProviderId),
                 convertBoolean(isSpineSensitive));
     }
 
@@ -70,6 +70,7 @@ public class Patient extends AbstractPcrCsvWriter {
                 "date_of_death",
                 "gender_concept_id",
                 "usual_practitioner_id",
+                "care_provider",
                 "title",
                 "first_name",
                 "middle_names",
@@ -77,7 +78,6 @@ public class Patient extends AbstractPcrCsvWriter {
                 "previous_last_name",
                 "home_address_id",
      //           "ethnic_code",
-                "care_provider_id",
                 "is_spine_sensitive"
         };
     }
@@ -94,6 +94,7 @@ public class Patient extends AbstractPcrCsvWriter {
                 Date.class,
                 Date.class,
                 Integer.TYPE,
+                Long.TYPE,
                 Long.TYPE,
                 String.class,
                 String.class,
