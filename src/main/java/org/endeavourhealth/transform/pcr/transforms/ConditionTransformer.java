@@ -44,7 +44,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Date problemEndDate = null;
         Long parentObservationId = null;
 
-        Long observationId = null;   //TODO - how derive this?
+        Long observationId = null;
 
         Integer conceptId = null;
         Date insertDate = new Date();
@@ -52,7 +52,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Integer effectivePractitionerId = null;
         Long careActivityId = null;
         Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;
+        Integer statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
         Integer episodicityConceptId = null;
         Long freeTextId = null;
@@ -138,15 +138,27 @@ public class ConditionTransformer extends AbstractTransformer {
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
         }
 
-        Extension problemLastReviewDateExtension
+        //last review date and by which practitioner, a compound extension
+        Extension problemLastReviewedExtension
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_LAST_REVIEWED);
-        if (problemLastReviewDateExtension != null) {
+        if (problemLastReviewedExtension != null) {
 
-            DateType problemLastReviewDateExtensionType = (DateType) problemLastReviewDateExtension.getValue();
-            lastReviewDate = problemLastReviewDateExtensionType.getValue();
+            Extension problemLastReviewByExtension
+                    = ExtensionConverter.findExtension(problemLastReviewedExtension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__PERFORMER);
+            if (problemLastReviewByExtension != null) {
+
+                Reference lastReviewPractitionerReference = (Reference) problemLastReviewByExtension.getValue();
+                lastReviewPractitionerId = transformOnDemandAndMapId(lastReviewPractitionerReference, params).intValue();
+            }
+
+            Extension problemLastReviewedDateExtension
+                    = ExtensionConverter.findExtension(problemLastReviewedExtension, FhirExtensionUri._PROBLEM_LAST_REVIEWED__DATE);
+            if (problemLastReviewedDateExtension != null) {
+
+                DateType problemLastReviewDateExtensionType = (DateType) problemLastReviewedDateExtension.getValue();
+                lastReviewDate = problemLastReviewDateExtensionType.getValue();
+            }
         }
-
-        //TODO - lastReviewPractitionerId
 
         Extension problemExpectedDurationExtension
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EXPECTED_DURATION);
@@ -160,7 +172,9 @@ public class ConditionTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            String episodicity = episodicityType.getValue();  //TODO: map to IM concept
+            String episodicity = episodicityType.getValue();
+
+            //episodicityConceptId = ??  //TODO: map to IM concept
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
@@ -176,9 +190,16 @@ public class ConditionTransformer extends AbstractTransformer {
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
+
+            //TODO:// EventRelationship
         }
 
-        //TODO - typeConceptId
+        CodeableConcept conditionCategory = fhir.getCategory();
+        if (conditionCategory != null) {
+
+            String categoryType = conditionCategory.getCoding().get(0).getCode();
+            //TODO - typeConceptId from this?
+        }
 
         //firstly, file as an observation
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
@@ -207,13 +228,15 @@ public class ConditionTransformer extends AbstractTransformer {
                 isConsent);
 
         //then, if it is a problem, file into problem using id as observationId?
-        if (isProblem) {
-            Problem problemModel = (Problem)csvWriter;
+        observationId = id;
 
+        if (isProblem) {
+
+            Problem problemModel = (Problem)csvWriter;
             problemModel.writeUpsert(
-                    id,
+                    id,                     //same as Observation Id as Condition Id splits into Observation and Problem
                     patientId,
-                    observationId,    //TODO: how derive this - use same as id?
+                    observationId,
                     typeConceptId,
                     significanceConceptId,
                     expectedDurationDays,
