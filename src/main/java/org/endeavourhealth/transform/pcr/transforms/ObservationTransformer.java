@@ -152,7 +152,7 @@ public class ObservationTransformer extends AbstractTransformer {
         //TODO: where get heading from?
         //careActivityHeadingConceptId
 
-        //immunisation status
+        //observation status
         if (fhir.hasStatus()) {
 
             Observation.ObservationStatus status = fhir.getStatus();

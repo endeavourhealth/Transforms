@@ -44,7 +44,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Date problemEndDate = null;
         Long parentObservationId = null;
 
-        Long observationId = null;   //TODO - how derive this?
+        Long observationId = null;
 
         Integer conceptId = null;
         Date insertDate = new Date();
@@ -52,7 +52,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Integer effectivePractitionerId = null;
         Long careActivityId = null;
         Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;
+        Integer statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
         Integer episodicityConceptId = null;
         Long freeTextId = null;
@@ -172,7 +172,9 @@ public class ConditionTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            String episodicity = episodicityType.getValue();  //TODO: map to IM concept
+            String episodicity = episodicityType.getValue();
+
+            //episodicityConceptId = ??  //TODO: map to IM concept
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
@@ -226,13 +228,15 @@ public class ConditionTransformer extends AbstractTransformer {
                 isConsent);
 
         //then, if it is a problem, file into problem using id as observationId?
-        if (isProblem) {
-            Problem problemModel = (Problem)csvWriter;
+        observationId = id;
 
+        if (isProblem) {
+
+            Problem problemModel = (Problem)csvWriter;
             problemModel.writeUpsert(
-                    id,
+                    id,                     //same as Observation Id as Condition Id splits into Observation and Problem
                     patientId,
-                    observationId,    //TODO: how derive this - use same as id?
+                    observationId,
                     typeConceptId,
                     significanceConceptId,
                     expectedDurationDays,

@@ -111,6 +111,13 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             confidential = b.getValue();
         }
 
+        //allergy status
+        if (fhir.hasStatus()) {
+
+            AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
+            //statusConceptId = ??    //TODO: map to IM concept
+        }
+
         org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model
                 = (org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance)csvWriter;
         model.writeUpsert(
