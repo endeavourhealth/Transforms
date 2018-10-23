@@ -212,7 +212,6 @@ public class PatientTransformer extends AbstractTransformer {
                 homeAddressId,
      //TODO - ethnic code in DB or not?
      //           ethnicCode,
-                careProviderId,
                 isSpineSensitive);
 
         writePatientIdentifier(id, fhirPatient,csvWriter);
