@@ -69,7 +69,7 @@ public class OrganizationTransformer extends AbstractTransformer {
             CodeableConcept cc = fhir.getType();
             for (Coding coding: cc.getCoding()) {
                 if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
-                    typeCode =    IMClient.getConceptId("OrganizationType",coding.getCode());
+                    typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE",coding.getCode());
                 }
             }
         }
