@@ -122,7 +122,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
-            statusConceptId = IMClient.getConceptId("MedicationStatement.MedicationOrderStatus",fhirStatus.toCode());
+            statusConceptId = IMClient.getConceptId("MedicationStatementStatus",fhirStatus.toCode());
         }
 
         if (fhir.hasDosage()) {

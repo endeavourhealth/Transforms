@@ -160,7 +160,7 @@ public class ObservationTransformer extends AbstractTransformer {
         if (fhir.hasStatus()) {
 
             Observation.ObservationStatus status = fhir.getStatus();
-            statusConceptId = IMClient.getConceptId("Observation.ObservationStatus",status.toCode());
+            statusConceptId = IMClient.getConceptId("ObservationStatus",status.toCode());
         }
 
         //confidential?

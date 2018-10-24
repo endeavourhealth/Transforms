@@ -153,7 +153,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             MedicationOrder.MedicationOrderStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationOrder.MedicationOrderStatus.ACTIVE);
-            statusConceptId = IMClient.getConceptId("MedicationOrder.MedicationOrderStatus",fhirStatus.toCode());
+            statusConceptId = IMClient.getConceptId("MedicationOrderStatus",fhirStatus.toCode());
         }
 
         //estimated cost
