@@ -47,10 +47,10 @@ public class CodeableConceptBuilder {
 
 
     public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, Tag tag) {
-        this(parentBuilder, tag, null);
+        this(parentBuilder, tag, false);
     }
 
-    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, Tag tag, CodeableConcept codeableConcept) {
+    public CodeableConceptBuilder(HasCodeableConceptI parentBuilder, Tag tag, boolean useExisting) {
 
         if (parentBuilder == null) {
             throw new IllegalArgumentException("Null parentBuilder in CodeableConceptBuilder constructor");
@@ -60,12 +60,8 @@ public class CodeableConceptBuilder {
         }
 
         this.parentBuilder = parentBuilder;
-        this.codeableConcept = codeableConcept;
         this.tag = tag;
-
-        if (this.codeableConcept == null) {
-            this.codeableConcept = parentBuilder.createNewCodeableConcept(tag);
-        }
+        this.codeableConcept = parentBuilder.createNewCodeableConcept(tag, useExisting);
     }
 
     public static void removeExistingCodeableConcept(HasCodeableConceptI parentBuilder, Tag tag, CodeableConcept codeableConcept) {
@@ -152,5 +148,33 @@ public class CodeableConceptBuilder {
         return codeableConcept;
     }
 
+    /**
+     * replaces any instance of the "text" field with the new term
+     */
+    public void replaceText(String newTerm, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(newTerm)) {
+            return;
+        }
 
+        String toReplace = codeableConcept.getText();
+
+        //update the codings
+        if (codeableConcept.hasCoding()) {
+            for (Coding coding: codeableConcept.getCoding()) {
+                String codingDisplay = coding.getDisplay();
+
+                //only update codings that have the same text as the "text" element, so we don't accidentally
+                //update official Snomed terms or anything similar
+                if ((codingDisplay == null && toReplace == null)
+                        || (codingDisplay != null && toReplace != null && codingDisplay.equals(toReplace))) {
+
+                    coding.setDisplay(newTerm);
+                    addCodingAudit(coding, "display", sourceCells);
+                }
+            }
+        }
+
+        //finally update the text element
+        setText(newTerm, sourceCells);
+    }
 }

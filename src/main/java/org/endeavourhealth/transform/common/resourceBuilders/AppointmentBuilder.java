@@ -116,14 +116,18 @@ public class AppointmentBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Appointment_Dna_Reason_Code) {
 
             Extension extension = ExtensionConverter.findOrCreateExtension(this.appointment, FhirExtensionUri.APPOINTMENT_DNA_REASON_CODE);
             CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
             if (codeableConcept != null) {
-                throw new IllegalArgumentException("Trying to add new DNA code to Appointment when it already has one");
+                if (useExisting) {
+                    return codeableConcept;
+                } else {
+                    throw new IllegalArgumentException("Trying to add new DNA code to Appointment when it already has one");
+                }
             }
             codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);

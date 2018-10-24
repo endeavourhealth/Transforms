@@ -254,11 +254,15 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         //depending on the tag, we may be setting the main codeable concept or the one in the last component added
         if (tag == CodeableConceptBuilder.Tag.Observation_Main_Code) {
             if (this.observation.hasCode()) {
-                throw new IllegalArgumentException("Trying to add code to Observation when it already has one");
+                if (useExisting) {
+                    return observation.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add code to Observation when it already has one");
+                }
             }
 
             this.observation.setCode(new CodeableConcept());
@@ -267,7 +271,11 @@ public class ObservationBuilder extends ResourceBuilderBase
         } else if (tag == CodeableConceptBuilder.Tag.Observation_Component_Code) {
             Observation.ObservationComponentComponent component = getLastComponent();
             if (component.hasCode()) {
-                throw new IllegalArgumentException("Trying to add code to Observation Component when it already has one");
+                if (useExisting) {
+                    return component.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add code to Observation Component when it already has one");
+                }
             }
             component.setCode(new CodeableConcept());
             return component.getCode();
@@ -275,7 +283,11 @@ public class ObservationBuilder extends ResourceBuilderBase
         } else if (tag == CodeableConceptBuilder.Tag.Observation_Range_Meaning) {
             Observation.ObservationReferenceRangeComponent rangeComponent = findOrCreateReferenceRangeElement();
             if (rangeComponent.hasMeaning()) {
-                throw new IllegalArgumentException("Trying to set meaning on Observation when already set");
+                if (useExisting) {
+                    return rangeComponent.getMeaning();
+                } else {
+                    throw new IllegalArgumentException("Trying to set meaning on Observation when already set");
+                }
             }
             CodeableConcept codeableConcept = new CodeableConcept();
             rangeComponent.setMeaning(codeableConcept);

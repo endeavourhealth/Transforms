@@ -112,16 +112,20 @@ public class ProcedureRequestBuilder extends ResourceBuilderBase
     }*/
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Procedure_Request_Main_Code) {
             if (this.procedureRequest.hasCode()) {
-                throw new IllegalArgumentException("Trying to add code to ProcedureRequest when it already has one");
-            } else {
-                CodeableConcept codeableConcept = new CodeableConcept();
-                this.procedureRequest.setCode(codeableConcept);
-                return codeableConcept;
+                if (useExisting) {
+                    return procedureRequest.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add code to ProcedureRequest when it already has one");
+                }
             }
+
+            CodeableConcept codeableConcept = new CodeableConcept();
+            this.procedureRequest.setCode(codeableConcept);
+            return codeableConcept;
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");

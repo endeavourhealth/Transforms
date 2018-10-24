@@ -390,21 +390,30 @@ public class EncounterBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Encounter_Source) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SOURCE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Specialty) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_SPECIALTY);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
 
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Treatment_Function) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_TREATMENT_FUNCTION);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;
@@ -417,6 +426,9 @@ public class EncounterBuilder extends ResourceBuilderBase
 
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Location_Type) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
             CodeableConcept codeableConcept = new CodeableConcept();
             extension.setValue(codeableConcept);
             return codeableConcept;

@@ -160,8 +160,13 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
+            if (contact.hasRelationship()
+                    && useExisting) {
+                return contact.getRelationship().get(0);
+            }
+
             CodeableConcept codeableConcept = contact.addRelationship();
             return codeableConcept;
 

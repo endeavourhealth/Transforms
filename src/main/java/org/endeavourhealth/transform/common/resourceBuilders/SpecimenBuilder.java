@@ -98,11 +98,15 @@ public class SpecimenBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Specimen_Main_Code) {
             if (this.specimen.hasType()) {
-                throw new IllegalArgumentException("Trying to add new type to Specimen that already has one");
+                if (useExisting) {
+                    return specimen.getType();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new type to Specimen that already has one");
+                }
             }
             this.specimen.setType(new CodeableConcept());
             return this.specimen.getType();

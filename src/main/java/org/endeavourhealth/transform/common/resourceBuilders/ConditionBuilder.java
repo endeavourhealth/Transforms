@@ -258,10 +258,14 @@ public class ConditionBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Condition_Main_Code) {
             if (this.condition.hasCode()) {
-                throw new IllegalArgumentException("Trying to add new code to Condition that already has one");
+                if (useExisting) {
+                    return condition.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to Condition that already has one");
+                }
             }
             this.condition.setCode(new CodeableConcept());
             return this.condition.getCode();

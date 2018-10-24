@@ -120,12 +120,16 @@ public class DiagnosticOrderBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code) {
             DiagnosticOrder.DiagnosticOrderItemComponent item = getOrderItemElement();
             if (item.hasCode()) {
-                throw new IllegalArgumentException("Trying to add new code to DiagnosticOrder item when it already has one");
+                if (useExisting) {
+                    return item.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to DiagnosticOrder item when it already has one");
+                }
             }
             item.setCode(new CodeableConcept());
             return item.getCode();

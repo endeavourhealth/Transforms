@@ -31,6 +31,10 @@ public class EmisCustomCsvHelper {
 
     public void saveRegistrationStatues(FhirResourceFiler fhirResourceFiler) throws Exception {
 
+        if (regStatusCache.isEmpty()) {
+            return;
+        }
+
         LOG.debug("Saving reg statuses for " + regStatusCache.size() + " patients");
 
         for (String patientKey: regStatusCache.keySet()) {

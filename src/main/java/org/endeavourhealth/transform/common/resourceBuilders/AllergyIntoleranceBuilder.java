@@ -134,11 +134,15 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code) {
 
             if (this.allergyIntolerance.hasSubstance()) {
-                throw new IllegalArgumentException("Trying to add new code to AllergyIntolerance that already has one");
+                if (useExisting) {
+                    return allergyIntolerance.getSubstance();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to AllergyIntolerance that already has one");
+                }
             }
             this.allergyIntolerance.setSubstance(new CodeableConcept());
             return this.allergyIntolerance.getSubstance();

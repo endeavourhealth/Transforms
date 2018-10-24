@@ -301,16 +301,25 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
             Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(true);
+            if (communicationComponent.hasLanguage()) {
+                if (useExisting) {
+                    return communicationComponent.getLanguage();
+                }
+            }
             communicationComponent.setLanguage(new CodeableConcept());
             return communicationComponent.getLanguage();
 
         } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             if (extension.hasValue()) {
-                ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+                if (useExisting) {
+                    return (CodeableConcept)extension.getValue();
+                } else {
+                    ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+                }
             }
             CodeableConcept ret = new CodeableConcept();
             extension.setValue(ret);

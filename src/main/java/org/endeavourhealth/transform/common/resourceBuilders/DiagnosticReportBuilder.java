@@ -124,11 +124,15 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code) {
             if (this.diagnosticReport.hasCode()) {
-                throw new IllegalArgumentException("Trying to add new code to DiagnosticReport when it already has one");
+                if (useExisting) {
+                    return diagnosticReport.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to DiagnosticReport when it already has one");
+                }
             }
             this.diagnosticReport.setCode(new CodeableConcept());
             return this.diagnosticReport.getCode();

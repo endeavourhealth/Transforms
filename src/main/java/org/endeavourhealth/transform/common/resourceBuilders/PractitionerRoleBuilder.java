@@ -149,16 +149,25 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Practitioner_Role) {
             if (role.hasRole()) {
-                throw new IllegalArgumentException("Trying to set role on Practitioner Role when it already has one");
+                if (useExisting) {
+                    return role.getRole();
+                } else {
+                    throw new IllegalArgumentException("Trying to set role on Practitioner Role when it already has one");
+                }
             }
             CodeableConcept codeableConcept = new CodeableConcept();
             role.setRole(codeableConcept);
             return codeableConcept;
 
         } else if (tag == CodeableConceptBuilder.Tag.Practitioner_Specialty) {
+            if (role.hasSpecialty()
+                    && useExisting) {
+                return role.getSpecialty().get(0);
+            }
+
             return role.addSpecialty();
 
         } else {

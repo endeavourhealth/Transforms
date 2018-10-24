@@ -121,13 +121,17 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Family_Member_History_Main_Code) {
 
             FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = findOrCreateCondition();
             if (condition.hasCode()) {
-                throw new IllegalArgumentException("Trying to add new code to FamilyMemberHistory when it already has one");
+                if (useExisting) {
+                    return condition.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to FamilyMemberHistory when it already has one");
+                }
             }
             CodeableConcept codeableConcept = new CodeableConcept();
             condition.setCode(codeableConcept);
@@ -170,7 +174,7 @@ public class FamilyMemberHistoryBuilder extends ResourceBuilderBase
         if (condition.hasOnset()) {
             Type type = condition.getOnset();
             if (type instanceof Period) {
-                period = (Period)type;
+                period = (Period) type;
 
             } else {
                 throw new RuntimeException("Cannot set end date because onset object is already set to a " + type.getClass());

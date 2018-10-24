@@ -165,12 +165,16 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code) {
 
             if (this.medicationStatement.hasMedication()) {
-                throw new IllegalArgumentException("Trying to add new code to MedicationStatement when it already has one");
+                if (useExisting) {
+                    return (CodeableConcept)medicationStatement.getMedication();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to MedicationStatement when it already has one");
+                }
             }
             this.medicationStatement.setMedication(new CodeableConcept());
             return (CodeableConcept) this.medicationStatement.getMedication();

@@ -189,11 +189,15 @@ public class ImmunizationBuilder extends ResourceBuilderBase
     }
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Immunization_Main_Code) {
             if (this.immunization.hasVaccineCode()) {
-                throw new IllegalArgumentException("Trying to add new Vaccine code to Immunization when it already has one");
+                if (useExisting) {
+                    return immunization.getVaccineCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new Vaccine code to Immunization when it already has one");
+                }
             }
 
             CodeableConcept codeableConcept = new CodeableConcept();
@@ -202,7 +206,11 @@ public class ImmunizationBuilder extends ResourceBuilderBase
 
         } else if (tag == CodeableConceptBuilder.Tag.Immunization_Site) {
             if (this.immunization.hasSite()) {
-                throw new IllegalArgumentException("Trying to add a new Site code to Immunization when it already has one");
+                if (useExisting) {
+                    return immunization.getSite();
+                } else {
+                    throw new IllegalArgumentException("Trying to add a new Site code to Immunization when it already has one");
+                }
             }
 
             CodeableConcept codeableConcept = new CodeableConcept();
@@ -211,7 +219,11 @@ public class ImmunizationBuilder extends ResourceBuilderBase
 
         } else if (tag == CodeableConceptBuilder.Tag.Immunization_Route) {
             if (this.immunization.hasRoute()) {
-                throw new IllegalArgumentException("Trying to add a new Route code to Immunization when it already has one");
+                if (useExisting) {
+                    return immunization.getRoute();
+                } else {
+                    throw new IllegalArgumentException("Trying to add a new Route code to Immunization when it already has one");
+                }
             }
 
             CodeableConcept codeableConcept = new CodeableConcept();

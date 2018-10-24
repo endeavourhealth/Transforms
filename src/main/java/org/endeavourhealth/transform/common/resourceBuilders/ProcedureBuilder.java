@@ -114,10 +114,14 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Procedure_Main_Code) {
             if (this.procedure.hasCode()) {
-                throw new IllegalArgumentException("Trying to add code to Procedure that already has one");
+                if (useExisting) {
+                    return procedure.getCode();
+                } else {
+                    throw new IllegalArgumentException("Trying to add code to Procedure that already has one");
+                }
             }
             this.procedure.setCode(new CodeableConcept());
             return this.procedure.getCode();

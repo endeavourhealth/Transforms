@@ -146,13 +146,17 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
 
 
     @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag) {
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
 
         if (tag == CodeableConceptBuilder.Tag.Medication_Order_Drug_Code) {
 
             try {
                 if (this.medicationOrder.hasMedicationCodeableConcept()) {
-                    throw new IllegalArgumentException("Trying to add new medication to MedicationOrder when it already has one");
+                    if (useExisting) {
+                        return medicationOrder.getMedicationCodeableConcept();
+                    } else {
+                        throw new IllegalArgumentException("Trying to add new medication to MedicationOrder when it already has one");
+                    }
                 }
 
                 CodeableConcept codeableConcept = new CodeableConcept();
