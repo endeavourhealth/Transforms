@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.swagger.models.Contact;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -17,6 +18,8 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -68,26 +71,25 @@ public class PatientTransformer extends AbstractTransformer {
         long organizationId;
         String nhsNumber = null;
         //TODO where does verification come from?
-        Integer nhsNumberVerificationTermId=null;
+        Integer nhsNumberVerificationTermId = null;
         Date dateOfBirth = null;
         Date dateOfDeath = null;
         int patientGenderId;
-        Long usualPractitionerId=null;
+        Long usualPractitionerId = null;
         String title = null;
         String firstName = null;
         String middleNames = null;
         String lastName = null;
         String previousLastName = null;
-        Long homeAddressId=null;
+        Long homeAddressId = null;
         String ethnicCode = null;
-        Long careProviderId=null;
+        Long careProviderId = null;
         boolean isSpineSensitive;
-
 
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
-       // personId = enterprisePersonId.longValue();
+        // personId = enterprisePersonId.longValue();
 
         //Calendar cal = Calendar.getInstance();
 
@@ -98,7 +100,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         // Assume we have first and last names
         List<HumanName> names = fhirPatient.getName();
-        for (HumanName nom : names ) {
+        for (HumanName nom : names) {
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
                 lastName = nom.getFamily().toString();
                 firstName = nom.getGiven().get(0).toString();
@@ -108,6 +110,7 @@ public class PatientTransformer extends AbstractTransformer {
                         midnames.append(namepart.toString());
                         midnames.append(" ");
                     }
+                    middleNames = midnames.toString();
                 }
                 if (!nom.getPrefix().isEmpty()) {
                     title = nom.getPrefix().get(0).toString();
@@ -139,18 +142,17 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirAddress != null) {
             if (StringUtils.isNumeric(fhirAddress.getId())) {
                 homeAddressId = Long.parseLong(fhirAddress.getId());
-                writeAddress(fhirAddress,Long.parseLong(fhirPatient.getId()),csvWriter);
+                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), csvWriter);
             }
         }
 
         if (fhirPatient.hasContact()) {
             List<Patient.ContactComponent> contactList = fhirPatient.getContact();
             for (Patient.ContactComponent com : contactList) {
-               writeContact(com, id,csvWriter);
-               //TODO Need to map the telecom to IM Concept id
-                //TODO how do we get the contact's patient id?
+                writeContact(com, Long.parseLong(fhirPatient.getId()), csvWriter);
             }
         }
+
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
@@ -192,7 +194,6 @@ public class PatientTransformer extends AbstractTransformer {
 //        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
 
-
         nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
         patientWriter.writeUpsert(id,
@@ -210,26 +211,22 @@ public class PatientTransformer extends AbstractTransformer {
                 lastName,
                 previousLastName,
                 homeAddressId,
-     //TODO - ethnic code in DB or not?
-     //           ethnicCode,
+                //TODO - ethnic code in DB or not?
+                //           ethnicCode,
                 isSpineSensitive);
-
-        writePatientIdentifier(id, fhirPatient,csvWriter);
+        writePatientIdentifier(id, fhirPatient, csvWriter);
     }
 
     private void writePatientIdentifier(long id, Patient patient, AbstractPcrCsvWriter csvWriter) throws Exception {
-        org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier patientWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier) csvWriter;
-        Integer uprn = null;
+        org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier patientIdWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier) csvWriter;
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
-            String system = thisId.getSystem();
-            //TODO convert system String to urpn value when available
             String identifier = thisId.getValue();
-            patientWriter.writeUpsert(id, Long.parseLong(patient.getId()), uprn,identifier);
-
+            Long conceptId = IMClient.getConceptId("ContactPoint.ContactPointUse", thisId.getSystem());
+            patientIdWriter.writeUpsert(id, Long.parseLong(patient.getId()), conceptId, identifier);
         }
-        //TODO convert system into uprn via IM.
-         }
+    }
+
     private void writeAddress(Address fhirAddress, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
         org.endeavourhealth.transform.pcr.outputModels.PatientAddress patientAddressWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientAddress) csvWriter;
         Period period = fhirAddress.getPeriod();
@@ -241,30 +238,33 @@ public class PatientTransformer extends AbstractTransformer {
                 Integer.parseInt(fhirAddress.getId()),
                 startDate,
                 endDate
-                );
+        );
         org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
         List<StringType> addressList = fhirAddress.getLine();
-        String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,0);
-        String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,1);
-        String al3 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,2);
-        String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList,3);
+        String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
+        String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
+        String al3 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 2);
+        String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
         String postcode = fhirAddress.getPostalCode();
-        //TODO get uprn and 2 concept ids
-        addressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),al1,al2,al3,al4,postcode,
-                null,null,null);
+        //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
+
+        IMClient.getConceptId("Address.AddressUse", fhirAddress.getType().toCode());
+        addressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()), al1, al2, al3, al4, postcode,
+                null, null, null);
 
     }
 
-    private void writeContact(Patient.ContactComponent cc, long patientId, AbstractPcrCsvWriter csvWriter) {
-        org.endeavourhealth.transform.pcr.outputModels.PatientContact patientWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientContact) csvWriter;
+    private void writeContact(Patient.ContactComponent cc, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
+        org.endeavourhealth.transform.pcr.outputModels.PatientContact contactWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientContact) csvWriter;
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
-            String code = cp.getSystem().toCode();
-            //TODO Map to IM concept Id
-            //patientWriter.writeUpsert();
+            String code = cp.getUse().toCode();
+            Long type = IMClient.getConceptId("ContactPoint.ContactPointSystem", code);
+            contactWriter.writeUpsert(Long.parseLong(cp.getId()), patientId, type, code);
         }
 
     }
+
     private Reference findOrgReference(Patient fhirPatient, PcrTransformParams params) throws Exception {
 
         //find a direct org reference first
@@ -439,8 +439,6 @@ public class PatientTransformer extends AbstractTransformer {
 
         return postcode.substring(0, len - 3);
     }
-
-
 
 
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {

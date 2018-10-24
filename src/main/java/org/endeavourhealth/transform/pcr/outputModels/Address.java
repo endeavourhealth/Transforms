@@ -20,15 +20,15 @@ public class Address extends AbstractPcrCsvWriter {
                 "" + id);
     }
 
-
+    //TODO where do we get the OS identifier and approximation qualifier?
     public void writeUpsert(long id,
                             String addressLine1,
                             String addressLine2,
                             String addressLine3,
                             String addressLine4,
                             String postcode,
-                            Long uprn,
-                            Long approximation_concept_id,
+                            Long uprn, //OS identifier for a property or place
+                            Long approximation_concept_id, //Approximation qualifier for the UPRN
                             Long property_type_concept_id ) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,

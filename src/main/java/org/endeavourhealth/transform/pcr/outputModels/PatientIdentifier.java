@@ -23,7 +23,7 @@ public class PatientIdentifier extends AbstractPcrCsvWriter {
 
     public void writeUpsert(long id,
                             long patientId,
-                            int conceptId,
+                            long conceptId,
                             String identifier) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
@@ -51,7 +51,7 @@ public class PatientIdentifier extends AbstractPcrCsvWriter {
                 String.class,
                 Long.TYPE,
                 Long.TYPE,
-                Integer.TYPE,
+                Long.TYPE,
                 String.class
         };
     }

@@ -19,7 +19,7 @@ public class Organisation extends AbstractPcrCsvWriter {
                             String systemId,
                             String odsCode,
                             String name,
-                            String typeCode,
+                            long typeCode,
                             boolean isActive,
                             String mainLocationId,
                             Long parentOrganisationId) throws Exception {
@@ -32,7 +32,7 @@ public class Organisation extends AbstractPcrCsvWriter {
                 name,
                 convertBoolean(isActive),
                 convertLong(parentOrganisationId),
-                typeCode,
+                convertLong(typeCode),
                 mainLocationId
                 );
     }
@@ -62,7 +62,7 @@ public class Organisation extends AbstractPcrCsvWriter {
                 String.class,
                 String.class,
                 String.class,
-                String.class,
+                Long.class,
                 Long.class
         };
     }

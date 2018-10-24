@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -27,7 +29,7 @@ public class LocationTransformer extends AbstractTransformer {
         long id;
         Long organisationId = params.getEnterpriseOrganisationId();
         String name = null;
-        String typeTermId = null;
+        Long typeTermId = null;
         Long addressId = null;
         boolean isActive = true;
         Long parentLocationId = null;
@@ -48,8 +50,7 @@ public class LocationTransformer extends AbstractTransformer {
                 //we only ever use a single coding, so just get the first
                 Coding coding = cc.getCoding().get(0);
                 if (StringUtils.isNumeric(coding.getCode())) {
-                    typeTermId = (coding.getCode());
-
+                    typeTermId = IMClient.getConceptId("ServiceDeliveryLocationRoleType",coding.getCode());
                 }
             }
         }

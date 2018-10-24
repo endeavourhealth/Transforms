@@ -14,7 +14,7 @@ public class Location extends AbstractPcrCsvWriter {
     public void writeUpsert(long id,
                             long organisation_id,
                             String name,
-                            String type_term_id,
+                            Long type_term_id,
                             long addressId,
                             boolean isActive,
                             Long parentLocationId) throws Exception {
@@ -23,7 +23,7 @@ public class Location extends AbstractPcrCsvWriter {
                 "" + id,
                 convertLong(organisation_id),
                 name,
-                type_term_id,
+                convertLong(type_term_id),
                 convertLong(addressId),
                 convertBoolean(isActive),
                 convertLong(parentLocationId));
@@ -41,7 +41,7 @@ public class Location extends AbstractPcrCsvWriter {
                 String.class,
                 Long.TYPE,
                 Long.TYPE,
-                String.class,
+                Long.class,
                 Long.TYPE,
                 Long.TYPE,
                 boolean.class,
