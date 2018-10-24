@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -39,14 +41,14 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
 
-        Integer conceptId = null;
+        Long conceptId = null;
         Integer substanceConceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;
+        Long careActivityHeadingConceptId = null;
+        Long statusConceptId = null;
         boolean confidential = false;
         boolean isConsent = false;
 
@@ -97,8 +99,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (codes == null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-
-            //conceptId = ??  //TODO: map to IM conceptId
+            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
 
             //substanceConceptId = ??  why two?, check in FHIR
         } else return;

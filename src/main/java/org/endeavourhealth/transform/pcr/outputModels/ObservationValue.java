@@ -19,23 +19,23 @@ public class ObservationValue extends AbstractPcrCsvWriter {
 
     public void writeUpsert(Integer patientId,
                             long observationId,
-                            Integer operatorConceptId,
+                            long operatorConceptId,
                             BigDecimal resultValue,
                             String resultValueUnits,
                             Date resultDate,
                             String resultText,
-                            Integer resultConceptId,
+                            long resultConceptId,
                             long referenceRangeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + patientId,
                 "" + observationId,
-                convertInt(operatorConceptId),
+                convertLong(operatorConceptId),
                 convertBigDecimal(resultValue),
                 resultValueUnits,
                 convertDate(resultDate),
                 resultText,
-                convertInt(resultConceptId),
+                convertLong(resultConceptId),
                 convertLong(referenceRangeId));
     }
 
@@ -60,14 +60,14 @@ public class ObservationValue extends AbstractPcrCsvWriter {
     public Class[] getColumnTypes() {
         return new Class[] {
                 String.class,
-                Integer.class,
+                Long.class,
                 Long.TYPE,
                 Integer.class,
                 BigDecimal.class,
                 String.class,
                 Date.class,
                 String.class,
-                Integer.class,
+                Long.class,
                 Long.TYPE
         };
 

@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -50,21 +52,21 @@ public class ObservationTransformer extends AbstractTransformer {
         String originalCode = null;
         String originalTerm = null;
 
-        Integer conceptId = null;
+        Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;
+        Long careActivityHeadingConceptId = null;
+        Long statusConceptId = null;
         boolean confidential = false;
-        Integer episodicityConceptId = null;
+        Long episodicityConceptId = null;
         Long freeTextId = null;
         Integer dataEntryPromptId = null;
-        Integer significanceConceptId = null;
+        Long significanceConceptId = null;
         boolean isConsent = false;
-        Integer resultConceptId = null;
-        Integer operatorConceptId = null;
+        Long resultConceptId = null;
+        Long operatorConceptId = null;
         Long referenceRangeId = null;
 
         id = enterpriseId.longValue();
@@ -97,8 +99,7 @@ public class ObservationTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-            //TODO: map to IM conceptId
-            //conceptId = ??
+            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
@@ -125,8 +126,7 @@ public class ObservationTransformer extends AbstractTransformer {
             } else if (value instanceof CodeableConcept) {
                 CodeableConcept resultCodeableConcept = (CodeableConcept) value;
                 resultSnomedConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
-
-                //resultConceptId = ??  //TODO: map to IM conceptId
+                resultConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), resultSnomedConceptId.toString());
 
             } else {
                 throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
@@ -180,7 +180,7 @@ public class ObservationTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            //significanceConceptId = ??  //TODO: map to IM concept
+            significanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
         }
 
         //referenceRangeId = ??  //TODO: map to IM concept

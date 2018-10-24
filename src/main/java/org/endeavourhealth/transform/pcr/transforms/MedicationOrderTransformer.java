@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -46,18 +48,18 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         BigDecimal estimatedCost = null;
         Long medicationStatementId = null;
 
-        Integer conceptId = null;
+        Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = null;
         boolean confidential = false;
         boolean isConsent = false;
         boolean isActive = false;
-        Integer typeConceptId = null;
+        Long typeConceptId = null;
         Integer authorisationTypeId = null;
-        Integer statusConceptId = null;
+        Long statusConceptId = null;
         Long medicationAmountId = null;
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;
@@ -107,8 +109,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         if (medicationCode != null) {
 
             dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
-            //TODO: map dmdId to IM conceptId
-            //conceptId =??
+            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
+
         } else return;
 
 
@@ -205,7 +207,11 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             confidential = b.getValue();
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder)csvWriter;
+        //unique enterprise_id values allow linkage to medication_amount table id and preserve uniqueness
+        medicationAmountId = id;
+
+        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder)csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
@@ -234,13 +240,11 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         //TODO - handle free text and linking
 
-        //TODO: medication amount link - REVIEW LINKAGE INLINE WITH OBSERVATION_VALUE, I.E
-        // medication_id stored in medication_amount table instead of medication_amount_id stored in medication_statement table?
         org.endeavourhealth.transform.pcr.outputModels.MedicationAmount medicationAmountModel
                 = (org.endeavourhealth.transform.pcr.outputModels.MedicationAmount) csvWriter;
 
         medicationAmountModel.writeUpsert(
-                id,         //TODO:// consider renaming to medication_id and linking that way around
+                id,
                 patientId,
                 dose,
                 quantityValue,

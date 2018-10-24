@@ -19,8 +19,8 @@ public class Problem extends AbstractPcrCsvWriter {
     public void writeUpsert(long id,
                             long patientId,
                             long observationId,
-                            Integer typeConceptId,
-                            Integer significanceConceptId,
+                            long typeConceptId,
+                            long significanceConceptId,
                             Integer expectedDurationDays,
                             Date lastReviewDate,
                             Integer lastReviewPractitionerId) throws Exception {
@@ -29,8 +29,8 @@ public class Problem extends AbstractPcrCsvWriter {
                 "" + id,
                 "" + patientId,
                 "" + observationId,
-                convertInt(typeConceptId),
-                convertInt(significanceConceptId),
+                convertLong(typeConceptId),
+                convertLong(significanceConceptId),
                 convertInt(expectedDurationDays),
                 convertDate(lastReviewDate),
                 convertInt(lastReviewPractitionerId));
@@ -69,12 +69,11 @@ public class Problem extends AbstractPcrCsvWriter {
     }
 }
 
-
 //            id bigint NOT NULL,
 //            patient_id int NOT NULL,
 //            observation_id bigint NOT NULL,
-//            type_concept_id int COMMENT 'refers to information model for problem type (e.g. problem, issue, health admin)',
-//            significance_concept_id int COMMENT 'refers to information model to define the significance (e.g. minor, significant)',
+//            type_concept_id bigint COMMENT 'refers to information model for problem type (e.g. problem, issue, health admin)',
+//            significance_concept_id bigint COMMENT 'refers to information model to define the significance (e.g. minor, significant)',
 //            expected_duration_days int,
 //            last_review_date date,
-//            last_review_practitioner_id int,
+//            last_review_practitioner_id int

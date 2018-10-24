@@ -4,6 +4,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -46,24 +48,24 @@ public class ConditionTransformer extends AbstractTransformer {
 
         Long observationId = null;
 
-        Integer conceptId = null;
+        Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer effectivePractitionerId = null;
         Long careActivityId = null;
         Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;  //not available in FHIR
+        Long statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
-        Integer episodicityConceptId = null;
+        Long episodicityConceptId = null;
         Long freeTextId = null;
         Integer dataEntryPromptId = null;
-        Integer significanceConceptId = null;
+        Long significanceConceptId = null;
         boolean isConsent = false;
         Integer expectedDurationDays = null;
         Date lastReviewDate = null;
         Integer enteredByPractitionerId = null;
         Integer lastReviewPractitionerId = null;
-        Integer typeConceptId = null;
+        Long typeConceptId = null;
 
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
@@ -91,11 +93,11 @@ public class ConditionTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
+            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
 
-            //TODO: map to IM conceptId
-            //conceptId = ??
         } else return;
 
 
@@ -183,7 +185,7 @@ public class ConditionTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            //significanceConceptId = ??  //TODO: map to IM concept
+            significanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
         }
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
@@ -227,14 +229,15 @@ public class ConditionTransformer extends AbstractTransformer {
                 significanceConceptId,
                 isConsent);
 
-        //then, if it is a problem, file into problem using id as observationId?
-        observationId = id;
 
+        observationId = id;  //id same as Observation Id as Condition Id splits into Observation and Problem tables
+
+        //if it is a problem, file into problem table using id as observationId.
         if (isProblem) {
 
             Problem problemModel = (Problem)csvWriter;
             problemModel.writeUpsert(
-                    id,                     //same as Observation Id as Condition Id splits into Observation and Problem
+                    id,
                     patientId,
                     observationId,
                     typeConceptId,
