@@ -74,6 +74,7 @@ public class ObservationTransformer extends AbstractTransformer {
         patientId = params.getEnterprisePatientId().intValue();
 
         if (fhir.hasEncounter()) {
+
             Reference encounterReference = fhir.getEncounter();
             encounterId = findEnterpriseId(params, encounterReference);
 
@@ -81,6 +82,7 @@ public class ObservationTransformer extends AbstractTransformer {
         }
 
         if (fhir.hasPerformer()) {
+
             for (Reference reference : fhir.getPerformer()) {
                 ResourceType resourceType = ReferenceHelper.getResourceType(reference);
                 if (resourceType == ResourceType.Practitioner) {
@@ -90,6 +92,7 @@ public class ObservationTransformer extends AbstractTransformer {
         }
 
         if (fhir.hasEffectiveDateTimeType()) {
+
             DateTimeType dt = fhir.getEffectiveDateTimeType();
             effectiveDate = dt.getValue();
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
@@ -106,6 +109,7 @@ public class ObservationTransformer extends AbstractTransformer {
         } else return;
 
         if (fhir.hasValue()) {
+
             Type value = fhir.getValue();
             if (value instanceof Quantity) {
                 Quantity quantity = (Quantity) value;
@@ -113,7 +117,7 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultValueUnits = quantity.getUnit();
 
                 Quantity.QuantityComparator comparator = quantity.getComparator();
-                //operatorConceptId = ??  //TODO: map to IM conceptId
+                operatorConceptId = IMClient.getConceptId("Quantity.QuantityComparator", comparator.toCode());
 
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType) value;
@@ -156,7 +160,7 @@ public class ObservationTransformer extends AbstractTransformer {
         if (fhir.hasStatus()) {
 
             Observation.ObservationStatus status = fhir.getStatus();
-            //statusConceptId = ??    //TODO: map to IM concept
+            statusConceptId = IMClient.getConceptId("Observation.ObservationStatus",status.toCode());
         }
 
         //confidential?
@@ -171,7 +175,8 @@ public class ObservationTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            String episodicity = episodicityType.getValue();  //TODO: map to IM concept
+            episodicityConceptId
+                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY", episodicityType.getValue());
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
@@ -183,7 +188,7 @@ public class ObservationTransformer extends AbstractTransformer {
             significanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
         }
 
-        //referenceRangeId = ??  //TODO: map to IM concept
+        //referenceRangeId = ??  //TODO: map to IM concept (not set in FHIR)
 
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
                 = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;

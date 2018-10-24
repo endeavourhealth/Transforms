@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -41,18 +43,19 @@ public class ImmunisationTransformer extends AbstractTransformer {
         owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
         patientId = params.getEnterprisePatientId().intValue();
 
-        Integer conceptId = null;
+        Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
         Long careActivityId = null;
         Integer careActivityHeadingConceptId = null;
-        Integer statusConceptId = null;
+        Long statusConceptId = null;
         boolean confidential = false;
         String dose = null;
-        Integer bodyLocationConceptId = null;
-        Integer methodConceptId = null;
+        Long bodyLocationConceptId = null;
+        Long methodConceptId = null;
         String batchNumber = null;
+        String manufacturer = null;
         Date expiryDate = null;
         Integer doseOrdinal = null;
         Integer dosesRequired = null;
@@ -97,8 +100,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         if (vaccineCode != null) {
 
             snomedConceptId = vaccineCode.getSnomedConceptId();
-            //TODO: map to IM conceptId
-            //conceptId = ??
+            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
         } else return;
 
         //TODO: where get heading from?
@@ -108,7 +110,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         if (fhir.hasStatus()) {
 
             String status = fhir.getStatus();
-            //statusConceptId = ??    //TODO: map to IM concept
+            statusConceptId = IMClient.getConceptId("Immunization.status",status);
         }
 
         //confidential
@@ -131,22 +133,26 @@ public class ImmunisationTransformer extends AbstractTransformer {
         if (bodyLocationCode != null) {
 
             String site = bodyLocationCode.getOriginalTerm();
-
-            //bodyLocationConceptId = ?? //TODO: map to IM concept
+            bodyLocationConceptId = IMClient.getConceptId("Immunization.site",site);
         }
 
         ObservationCodeHelper methodCode = ObservationCodeHelper.extractCodeFields(fhir.getRoute());
         if (methodCode != null) {
 
             String route = methodCode.getOriginalTerm();
-
-            //methodConceptId = ?? //TODO: map to IM concept
+            methodConceptId = IMClient.getConceptId("Immunization.route",route);
         }
 
         //lot/batch number
         if (fhir.hasLotNumber()) {
 
             batchNumber = fhir.getLotNumber();
+        }
+
+        //manufacturer (not currently set in FHIR)
+        if (fhir.hasManufacturer()) {
+
+            manufacturer = fhir.getManufacturer().getDisplay();
         }
 
         //expiry date
@@ -183,6 +189,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 methodConceptId,
                 batchNumber,
                 expiryDate,
+                manufacturer,
                 doseOrdinal,
                 dosesRequired,
                 isConsent);

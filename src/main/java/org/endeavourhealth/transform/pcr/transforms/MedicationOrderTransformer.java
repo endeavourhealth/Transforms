@@ -34,7 +34,6 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         long id;
         long owningOrganisationId;
         Integer patientId;
-        long personId;
         Long encounterId = null;
         Integer effectivePractitionerId = null;
         Date effectiveDate = null;
@@ -58,7 +57,6 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         boolean isConsent = false;
         boolean isActive = false;
         Long typeConceptId = null;
-        Integer authorisationTypeId = null;
         Long statusConceptId = null;
         Long medicationAmountId = null;
         Long patientInstructionsFreeTextId = null;
@@ -67,7 +65,6 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
-        //personId = params.getEnterprisePersonId().longValue();
 
         if (fhir.hasPrescriber()) {
 
@@ -153,11 +150,10 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         }
 
         if (fhir.hasStatus()) {
+
             MedicationOrder.MedicationOrderStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationOrder.MedicationOrderStatus.ACTIVE);
-
-            //TODO:  map status to IM
-            //statusConceptId = ??
+            statusConceptId = IMClient.getConceptId("MedicationOrder.MedicationOrderStatus",fhirStatus.toCode());
         }
 
         //estimated cost
@@ -190,13 +186,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         if (authorisationTypeExtension != null) {
 
             Coding c = (Coding)authorisationTypeExtension.getValue();
-            MedicationAuthorisationType authorisationType
-                    = authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
-
-            authorisationTypeId = authorisationType.ordinal();
-
-            //TODO: map authorisationTypeId to IM conceptId
-            //typeConceptId = ??
+            MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
+            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType",authorisationType.getCode());
         }
 
         //confidential?

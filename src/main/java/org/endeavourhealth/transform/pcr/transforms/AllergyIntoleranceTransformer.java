@@ -42,7 +42,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         patientId = params.getEnterprisePatientId().intValue();
 
         Long conceptId = null;
-        Integer substanceConceptId = null;
+        Long substanceConceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
         Integer enteredByPractitionerId = null;
@@ -52,7 +52,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         boolean confidential = false;
         boolean isConsent = false;
 
-        //TODO: - not currently supported in existing FHIR transforms
+        //TODO: - manifestation not currently supported in existing FHIR transforms
         Integer manifestationConceptId = null;
         Long manifestationFreeTextId = null;
 
@@ -68,6 +68,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         //note that the "recorder" field is actually used to store the named clinician,
         //and the standard "recorded by" extension is used to store who physically entered it into the source software
         if (fhir.hasRecorder()) {
+
             Reference practitionerReference = fhir.getRecorder();
             effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
         }
@@ -89,19 +90,19 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         }
 
         if (fhir.hasOnset()) {
+
             DateTimeType dt = fhir.getOnsetElement();
             effectiveDate = dt.getValue();
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
-
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
         if (codes == null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
 
-            //substanceConceptId = ??  why two?, check in FHIR
+            conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
 
         //confidential
@@ -116,7 +117,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (fhir.hasStatus()) {
 
             AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
-            //statusConceptId = ??    //TODO: map to IM concept
+            statusConceptId = IMClient.getConceptId("AllergyIntolerance.AllergyIntoleranceStatus",status.toCode());
         }
 
         org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model

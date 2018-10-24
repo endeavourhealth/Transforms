@@ -45,7 +45,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String dose = null;
         BigDecimal quantityValue = null;
         String quantityUnit = null;
-        int authorisationTypeId;
 
         Long conceptId = null;
         Date insertDate = new Date();
@@ -62,7 +61,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;
-        Date reviewDate = null;  //supported in FHIR?
+        Date reviewDate = null;  //not supported in FHIR?
         Long endReasonConceptId = null;
         Long endReasonFreeTextId = null;
         Long medicationAmountId = null;
@@ -71,7 +70,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         id = enterpriseId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
-        //personId = params.getEnterprisePersonId().longValue();
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
@@ -121,12 +119,10 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
 
         if (fhir.hasStatus()) {
+
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
-
-            //getConceptId("MedicationStatementStatus.Authorised");
-            //TODO:  map status to IM
-            //statusConceptId = ??
+            statusConceptId = IMClient.getConceptId("MedicationStatement.MedicationOrderStatus",fhirStatus.toCode());
         }
 
         if (fhir.hasDosage()) {
@@ -179,11 +175,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             Coding c = (Coding)authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
-
-            authorisationTypeId = authorisationType.ordinal();
-
-            //TODO: map authorisationTypeId to IM conceptId
-            //typeConceptId = ??
+            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType",authorisationType.getCode());
         }
 
         //issues authorised
