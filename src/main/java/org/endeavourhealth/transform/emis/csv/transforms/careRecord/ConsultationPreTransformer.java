@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 public class ConsultationPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ConsultationPreTransformer.class);
@@ -57,22 +56,21 @@ public class ConsultationPreTransformer {
         csvHelper.submitToThreadPool(task);
     }
 
-    static class LookupTask implements Callable {
+    static class LookupTask extends AbstractCsvCallable {
 
         private String encounterSourceId;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
-        private CsvCurrentState parserState;
 
         public LookupTask(String encounterSourceId,
                           FhirResourceFiler fhirResourceFiler,
                           EmisCsvHelper csvHelper,
                           CsvCurrentState parserState) {
+            super(parserState);
 
             this.encounterSourceId = encounterSourceId;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
-            this.parserState = parserState;
         }
 
         @Override
@@ -101,10 +99,6 @@ public class ConsultationPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminRes
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
@@ -155,7 +154,6 @@ public class EmisAdminCacheFiler {
 
         private List<EmisAdminResourceCache> list;
         private boolean delete;
-        private CsvCurrentState parserState;
 
         public SaveAdminTask(List<EmisAdminResourceCache> list, boolean delete) {
             this.list = list;

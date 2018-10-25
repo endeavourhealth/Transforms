@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 public class ProblemPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProblemPreTransformer.class);
@@ -63,25 +62,24 @@ public class ProblemPreTransformer {
         csvHelper.submitToThreadPool(task);
     }
 
-    static class LookupTask implements Callable {
+    static class LookupTask extends AbstractCsvCallable {
 
         private CsvCell patientGuid;
         private CsvCell observationGuid;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
-        private CsvCurrentState parserState;
 
         public LookupTask(CsvCell patientGuid,
                           CsvCell observationGuid,
                           FhirResourceFiler fhirResourceFiler,
                           EmisCsvHelper csvHelper,
                           CsvCurrentState parserState) {
+            super(parserState);
 
             this.patientGuid = patientGuid;
             this.observationGuid = observationGuid;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
-            this.parserState = parserState;
         }
 
         @Override
@@ -126,10 +124,6 @@ public class ProblemPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

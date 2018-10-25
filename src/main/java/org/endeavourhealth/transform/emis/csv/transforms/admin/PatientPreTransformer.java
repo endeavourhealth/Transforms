@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -17,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 public class PatientPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientPreTransformer.class);
@@ -52,20 +48,23 @@ public class PatientPreTransformer {
                                     String version) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
+        CsvCurrentState state = parser.getCurrentState();
 
-        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(patientGuidCell, fhirResourceFiler, csvHelper);
+        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(state, patientGuidCell, fhirResourceFiler, csvHelper);
         csvHelper.submitToThreadPool(task);
     }
 
-    static class PreCreateEdsPatientIdTask implements Callable {
+    static class PreCreateEdsPatientIdTask extends AbstractCsvCallable {
 
         private CsvCell patientGuidCell;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
 
-        public PreCreateEdsPatientIdTask(CsvCell patientGuidCell,
+        public PreCreateEdsPatientIdTask(CsvCurrentState state,
+                                         CsvCell patientGuidCell,
                                          FhirResourceFiler fhirResourceFiler,
                                          EmisCsvHelper csvHelper) {
+            super(state);
 
             this.patientGuidCell = patientGuidCell;
             this.fhirResourceFiler = fhirResourceFiler;
