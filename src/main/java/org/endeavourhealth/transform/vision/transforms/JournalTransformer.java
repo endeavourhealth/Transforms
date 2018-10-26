@@ -420,7 +420,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
@@ -519,7 +519,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
@@ -615,7 +615,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
@@ -733,7 +733,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
@@ -979,7 +979,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
@@ -1086,7 +1086,7 @@ public class JournalTransformer {
         //add in original Read2 coding
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString(), readCodeCell);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
             if (!term.isEmpty()) {
                 codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             }
