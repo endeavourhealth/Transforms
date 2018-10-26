@@ -224,14 +224,29 @@ public class JournalTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+
         CsvCell dmdId = parser.getDrugDMDCode();
-        if (!dmdId.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
-        }
+        CsvCell readCodeCell = parser.getReadCode();
         CsvCell term = parser.getRubric();
+
+        if (!dmdId.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        //add in original Read2 coding
+        if (!readCodeCell.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
             codeableConceptBuilder.setText(term.getString(), term);
         }
 
@@ -320,14 +335,30 @@ public class JournalTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+
         CsvCell dmdId = parser.getDrugDMDCode();
-        if (!dmdId.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
-        }
+        CsvCell readCodeCell = parser.getReadCode();
         CsvCell term = parser.getRubric();
+
+        if (!dmdId.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
+        //add in original Read2 coding
+        if (!readCodeCell.isEmpty()) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
+            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
+            if (!term.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            }
+        }
+
         if (!term.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setText(term.getString(), term);
         }
 
         CsvCell quantity = parser.getValue1();
