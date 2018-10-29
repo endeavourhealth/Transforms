@@ -12,10 +12,11 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -29,7 +30,6 @@ public abstract class AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractTransformer.class);
     private static final ParserPool PARSER_POOL = new ParserPool();
 
-    //private static final EnterpriseIdMapRepository idMappingRepository = new EnterpriseIdMapRepository();
     private static JCS idCache = null;
     private static JCS instanceCache = null;
     private static final ReentrantLock onDemandLock = new ReentrantLock();
@@ -54,19 +54,19 @@ public abstract class AbstractTransformer {
                                    AbstractPcrCsvWriter csvWriter,
                                    PcrTransformParams params) throws Exception {
 
-        Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getConfigName(), resources, shouldAlwaysTransform(), params);
+        Map<ResourceWrapper, Long> pcrIds = mapIds(params.getConfigName(), resources, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resource : resources) {
 
             try {
-                Long enterpriseId = enterpriseIds.get(resource);
-                if (enterpriseId == null) {
+                Long pcrId = pcrIds.get(resource);
+                if (pcrId == null) {
 
                     /*f (resource.getResourceType().equals("Organisation")) {
-                        LOG.trace("NOT transforming Organisation " + resource.getResourceId() + " as no enterprise ID");
+                        LOG.trace("NOT transforming Organisation " + resource.getResourceId() + " as no PCR ID");
                     }*/
 
-                    //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
+                    //if we've got a null PCR ID, then it means the ID mapper doesn't want us to do anything
                     //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already transformed)
                     continue;
                 }
@@ -80,11 +80,11 @@ public abstract class AbstractTransformer {
                 if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
 
                     if (resource.isDeleted()) {
-                        transformResourceDelete(enterpriseId, csvWriter, params);
+                        transformResourceDelete(pcrId, csvWriter, params);
 
                     } else {
                         Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
-                        transformResource(enterpriseId, fhir, csvWriter, params);
+                        transformResource(pcrId, fhir, csvWriter, params);
                     }
                 }
 
@@ -98,16 +98,16 @@ public abstract class AbstractTransformer {
     //or only transformed if something refers to it (e.g. orgs and practitioners)
     public abstract boolean shouldAlwaysTransform();
 
-    protected abstract void transformResource(Long enterpriseId,
+    protected abstract void transformResource(Long pcrId,
                                               Resource resource,
                                               AbstractPcrCsvWriter csvWriter,
                                               PcrTransformParams params) throws Exception;
 
-    protected void transformResourceDelete(Long enterpriseId,
+    protected void transformResourceDelete(Long pcrId,
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
 
-        csvWriter.writeDelete(enterpriseId.longValue());
+        csvWriter.writeDelete(pcrId.longValue());
     }
 
     protected static Integer convertDatePrecision(TemporalPrecisionEnum precision) throws Exception {
@@ -136,40 +136,34 @@ public abstract class AbstractTransformer {
     public static Long findEnterpriseId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
-            ret = enterpriseIdDal.findEnterpriseId(resourceType, resourceId);
+            PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
+            ret = pcrIdDal.findPcrId(resourceType, resourceId);
             //ret = idMappingRepository.getEnterpriseIdMappingId(enterpriseTableName, resourceType, resourceId);
         }
         return ret;
     }
 
-    /*protected static Long findOrCreateEnterpriseId(PcrTransformParams params, ResourceWrapper resource) throws Exception {
-        String resourceType = resource.getResourceType();
-        String resourceId = resource.getResourceId().toString();
-        return findOrCreateEnterpriseId(params, resourceType, resourceId);
-    }*/
-
-    protected static Long findOrCreateEnterpriseId(PcrTransformParams params, Reference reference) throws Exception {
+       protected static Long findOrCreatePcrId(PcrTransformParams params, Reference reference) throws Exception {
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
         String resourceType = comps.getResourceType().toString();
         String resourceId = comps.getId();
-        return findOrCreateEnterpriseId(params, resourceType, resourceId);
+        return findOrCreatePcrId(params, resourceType, resourceId);
     }
 
-    public static Long findOrCreateEnterpriseId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
+    public static Long findOrCreatePcrId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
-            ret = enterpriseIdDal.findOrCreateEnterpriseId(resourceType, resourceId);
+            PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
+            ret = pcrIdDal.findOrCreatePcrId(resourceType, resourceId);
 
             addIdToCache(params.getConfigName(), resourceType, resourceId, ret);
         }
         return ret;
     }
 
-    private static String createCacheKey(String enterpriseConfigName, String resourceType, String resourceId) {
+    private static String createCacheKey(String pcrConfigName, String resourceType, String resourceId) {
         StringBuilder sb = new StringBuilder();
-        sb.append(enterpriseConfigName);
+        sb.append(pcrConfigName);
         sb.append(":");
         sb.append(resourceType);
         sb.append("/");
@@ -177,33 +171,18 @@ public abstract class AbstractTransformer {
         return sb.toString();
     }
 
-    private static Long checkCacheForId(String enterpriseConfigName, String resourceType, String resourceId) throws Exception {
-        return (Long) idCache.get(createCacheKey(enterpriseConfigName, resourceType, resourceId));
+    private static Long checkCacheForId(String pcrConfigName, String resourceType, String resourceId) throws Exception {
+        return (Long) idCache.get(createCacheKey(pcrConfigName, resourceType, resourceId));
     }
 
-    private static void addIdToCache(String enterpriseConfigName, String resourceType, String resourceId, Long toCache) throws Exception {
+    private static void addIdToCache(String pcrConfigName, String resourceType, String resourceId, Long toCache) throws Exception {
         if (toCache == null) {
             return;
         }
-        idCache.put(createCacheKey(enterpriseConfigName, resourceType, resourceId), toCache);
+        idCache.put(createCacheKey(pcrConfigName, resourceType, resourceId), toCache);
     }
 
-    /*public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
-        String json = resourceByExchangeBatch.getResourceData();
-        return deserialiseResouce(json);
-    }
 
-    public static Resource deserialiseResouce(String json) throws Exception {
-        try {
-            return PARSER_POOL.parse(json);
-
-        } catch (Exception ex) {
-            LOG.error("Error deserialising resource", ex);
-            LOG.error(json);
-            throw ex;
-        }
-
-    }*/
 
     protected static Resource findResource(Reference reference,
                                            PcrTransformParams params) throws Exception {
@@ -228,30 +207,13 @@ public abstract class AbstractTransformer {
         }
     }
 
-    /*protected static Long mapId(String enterpriseConfigName, ResourceByExchangeBatch resource, boolean createIfNotFound) throws Exception {
 
-        if (resource.getIsDeleted()) {
-            //if it's a delete, then don't bother creating a new enterprise ID if we've never previously sent it
-            //to enterprise, since there's no point just sending a delete
-            return findEnterpriseId(enterpriseConfigName, resource);
-
-        } else {
-
-            if (createIfNotFound) {
-                return findOrCreateEnterpriseId(enterpriseConfigName, resource);
-
-            } else {
-                return findEnterpriseId(enterpriseConfigName, resource);
-            }
-        }
-    }*/
-
-    private static Map<ResourceWrapper, Long> mapIds(String enterpriseConfigName, List<ResourceWrapper> resources, boolean createIfNotFound, PcrTransformParams params) throws Exception {
+    private static Map<ResourceWrapper, Long> mapIds(String pcrConfigName, List<ResourceWrapper> resources, boolean createIfNotFound, PcrTransformParams params) throws Exception {
 
         Map<ResourceWrapper, Long> ret = new HashMap<>();
 
         //first, try to find existing IDs for our resources in our memory cache
-        findEnterpriseIdsInCache(enterpriseConfigName, resources, ret);
+        findEnterpriseIdsInCache(pcrConfigName, resources, ret);
 
         List<ResourceWrapper> resourcesToFindOnDb = new ArrayList<>();
         List<ResourceWrapper> resourcesToFindOrCreateOnDb = new ArrayList<>();
@@ -283,25 +245,25 @@ public abstract class AbstractTransformer {
 
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findEnterpriseIds(resourcesToFindOnDb, ret);
+            PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(pcrConfigName);
+            pcrIdDal.findPcrIds(resourcesToFindOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource : resourcesToFindOnDb) {
-                Long enterpriseId = ret.get(resource);
-                addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
+                Long pcrId = ret.get(resource);
+                addIdToCache(pcrConfigName, resource.getResourceType(), resource.getResourceId().toString(), pcrId);
             }
         }
 
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findOrCreateEnterpriseIds(resourcesToFindOrCreateOnDb, ret);
+            PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(pcrConfigName);
+            pcrIdDal.findOrCreatePcrIds(resourcesToFindOrCreateOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource : resourcesToFindOrCreateOnDb) {
-                Long enterpriseId = ret.get(resource);
-                addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), enterpriseId);
+                Long pcrId = ret.get(resource);
+                addIdToCache(pcrConfigName, resource.getResourceType(), resource.getResourceId().toString(), pcrId);
             }
         }
 
@@ -400,10 +362,10 @@ public abstract class AbstractTransformer {
         }
     }
 
-    private static void findEnterpriseIdsInCache(String enterpriseConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
+    private static void findEnterpriseIdsInCache(String pcrConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
 
         for (ResourceWrapper resource : resources) {
-            Long cachedId = checkCacheForId(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString());
+            Long cachedId = checkCacheForId(pcrConfigName, resource.getResourceType(), resource.getResourceId().toString());
             if (cachedId != null) {
                 ids.put(resource, cachedId);
             }
@@ -434,7 +396,7 @@ public abstract class AbstractTransformer {
             onDemandLock.lock();
 
             //see if this resource is mapped to another instance of the same concept (e.g. organisation),
-            //in which case we want to use the enterprise ID for that OTHER instance
+            //in which case we want to use the PCR ID for that OTHER instance
             if (params.isUseInstanceMapping()
                     && (resourceType == ResourceType.Organization
                     || resourceType == ResourceType.Practitioner)) {
@@ -442,8 +404,8 @@ public abstract class AbstractTransformer {
                 UUID mappedResourceId = checkInstanceMapCache(params.getConfigName(), resourceType, resourceId);
                 if (mappedResourceId == null) {
 
-                    EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
-                    mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
+                    PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
+                    mappedResourceId = pcrIdDal.findInstanceMappedId(resourceType, resourceId);
 
                     //if we've not got a mapping, then we need to create one from our resource data
                     if (mappedResourceId == null) {
@@ -455,33 +417,33 @@ public abstract class AbstractTransformer {
                         }
 
                         String mappingValue = findInstanceMappingValue(fhirResource, params);
-                        mappedResourceId = enterpriseIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+                        mappedResourceId = pcrIdDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
                     }
 
                     addToInstanceMapCache(params.getConfigName(), resourceType, resourceId, mappedResourceId);
                 }
 
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
-                //other resource, as it will already have been done, so we can just return it's enterprise ID
+                //other resource, as it will already have been done, so we can just return it's PCR ID
                 if (!mappedResourceId.equals(resourceId)) {
-                    Long mappedInstanceEnterpriseId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
-                    if (mappedInstanceEnterpriseId == null) {
+                    Long mappedInstancePcrId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                    if (mappedInstancePcrId == null) {
                         //if we've just started processing the first exchange for an org that's taking over the
                         //instance map, there's a chance we'll catch it mid-way through taking over, in which
                         //case we should just give a second and try again, throwing an error if we fail
                         Thread.sleep(1000);
-                        mappedInstanceEnterpriseId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
-                        if (mappedInstanceEnterpriseId == null) {
-                            throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
+                        mappedInstancePcrId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                        if (mappedInstancePcrId == null) {
+                            throw new TransformException("Failed to find PCR ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
                     }
-                    return mappedInstanceEnterpriseId;
+                    return mappedInstancePcrId;
                 }
             }
 
             if (params.hasResourceBeenTransformedAddIfNot(reference)) {
                 //if we've already transformed the resource, which could happen because the transform is multi-threaded,
-                //then have another look for the enterprise ID as it must exist
+                //then have another look for the PCR ID as it must exist
                 return findEnterpriseId(params, reference);
             }
 
@@ -498,66 +460,36 @@ public abstract class AbstractTransformer {
                 throw new TransformException("No transformer found for resource " + reference.getReference());
             }
 
-            //generate a new enterprise ID for our resource. So we have an audit of this, and can recover if we
+            //generate a new PCR ID for our resource. So we have an audit of this, and can recover if we
             //kill the queue reader at this point, we also need to store our resource's ID in the exchange_batch_extra_resource table
             ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getConfigName());
             //LOG.info("Saving extra resource exchange " + params.getExchangeId() + " batch " + params.getBatchId() + " resource type " + resourceType + " id " + resourceId);
             exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
 
             //then generate the new ID
-            Long enterpriseId = findOrCreateEnterpriseId(params, resourceType.toString(), fhir.getId());
+            Long pcrId = findOrCreatePcrId(params, resourceType.toString(), fhir.getId());
 
             //and transform the resource
             AbstractPcrCsvWriter csvWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-            transformer.transformResource(enterpriseId, fhir, csvWriter, params);
+            transformer.transformResource(pcrId, fhir, csvWriter, params);
 
-            return enterpriseId;
+            return pcrId;
 
         } finally {
             onDemandLock.unlock();
         }
     }
 
-    private static UUID checkInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
-        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
+    private static UUID checkInstanceMapCache(String pcrConfigName, ResourceType resourceType, UUID resourceId) {
+        Object key = createCacheKey(pcrConfigName, resourceType.toString(), resourceId.toString());
         return (UUID) instanceCache.get(key);
     }
 
-    private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
-        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
+    private static void addToInstanceMapCache(String pcrConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
+        Object key = createCacheKey(pcrConfigName, resourceType.toString(), resourceId.toString());
         instanceCache.put(key, mappedResourceId);
     }
 
 
 
-    /*protected Long transformOnDemandAndMapId(Reference reference,
-                                             PcrTransformParams params) throws Exception {
-
-        Long enterpriseId = null;
-
-        if (!params.hasResourceBeenTransformedAddIfNot(reference)) {
-
-            Resource fhir = findResource(reference, params);
-            if (fhir == null) {
-                //if the target resource doesn't exist, or has been deleted, just return null as we can't use it
-                return null;
-            }
-
-            enterpriseId = findOrCreateEnterpriseId(params, reference);
-
-            ResourceType resourceType = fhir.getResourceType();
-            AbstractTransformer transformer = FhirToPcrCsvTransformer.createTransformerForResourceType(resourceType);
-            if (transformer == null) {
-                throw new TransformException("No transformer found for resource " + reference.getReference());
-            }
-
-            AbstractPcrCsvWriter csvWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-            transformer.transform(enterpriseId, fhir, csvWriter, params);
-
-        } else {
-            enterpriseId = findEnterpriseId(params, reference);
-        }
-
-        return enterpriseId;
-    }*/
 }

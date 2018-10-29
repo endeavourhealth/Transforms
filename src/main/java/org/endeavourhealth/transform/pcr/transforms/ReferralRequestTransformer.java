@@ -17,7 +17,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {

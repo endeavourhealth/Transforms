@@ -20,7 +20,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {
@@ -37,7 +37,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         boolean isActive = true;
         Long parentOrganisationId = null;
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
 
         //LOG.trace("Transforming Organisation " + fhir.getId() + " as enterprise ID " + id);
 

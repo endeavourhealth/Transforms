@@ -17,7 +17,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {
@@ -32,7 +32,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         String type = null;
         String location = null;
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
 
         if (fhir.hasActor()) {

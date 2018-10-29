@@ -178,7 +178,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         }
 
         //generate (or find) an enterprise ID for our organization
-        enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        enterpriseOrganisationId = AbstractTransformer.findOrCreatePcrId(params, resourceType.toString(), resourceId.toString());
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time

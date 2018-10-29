@@ -19,7 +19,7 @@ public class LocationTransformer extends AbstractTransformer {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                                      Resource resource,
                                      AbstractPcrCsvWriter csvWriter,
                                      PcrTransformParams params) throws Exception {
@@ -34,7 +34,7 @@ public class LocationTransformer extends AbstractTransformer {
         boolean isActive = true;
         Long parentLocationId = null;
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
 
 
         if (fhir.hasName()) {

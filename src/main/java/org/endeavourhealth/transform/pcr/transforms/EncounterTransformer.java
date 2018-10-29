@@ -28,7 +28,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {
@@ -705,20 +705,20 @@ public class EncounterTransformer extends AbstractTransformer {
     }*/
 
     @Override
-    protected void transformResourceDelete(Long enterpriseId,
+    protected void transformResourceDelete(Long pcrId,
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
 
         //we need to override this function as we also need to send the delete to the other two encounter tables
-        super.transformResourceDelete(enterpriseId, csvWriter, params);
+        super.transformResourceDelete(pcrId, csvWriter, params);
 
         OutputContainer outputContainer = params.getOutputContainer();
 
         EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeDelete(enterpriseId);
+        encounterRaw.writeDelete(pcrId);
 
         EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeDelete(enterpriseId);
+        encounterDetail.writeDelete(pcrId);
 
     }
 

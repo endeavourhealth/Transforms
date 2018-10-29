@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.pcr.transforms;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import io.swagger.models.Contact;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -16,15 +15,14 @@ import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
+import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +44,7 @@ public class PatientTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                                      Resource resource,
                                      AbstractPcrCsvWriter csvWriter,
                                      PcrTransformParams params) throws Exception {
@@ -63,9 +61,6 @@ public class PatientTransformer extends AbstractTransformer {
             PatientLinkPair pair = patientLinkDal.updatePersonId(params.getServiceId(), fhirPatient);
             discoveryPersonId = pair.getNewPersonId();
         }
-
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
-        Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
         long id;
         long organizationId;
@@ -87,23 +82,18 @@ public class PatientTransformer extends AbstractTransformer {
         boolean isSpineSensitive;
 
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
-        // personId = enterprisePersonId.longValue();
 
-        //Calendar cal = Calendar.getInstance();
 
         dateOfBirth = fhirPatient.getBirthDate();
-        /*cal.setTime(dob);
-        int yearOfBirth = cal.get(Calendar.YEAR);
-        model.setYearOfBirth(yearOfBirth);*/
 
-        // Assume we have first and last names
         List<HumanName> names = fhirPatient.getName();
         for (HumanName nom : names) {
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
-                lastName = nom.getFamily().toString();
-                firstName = nom.getGiven().get(0).toString();
+
+                if (nom.getFamily() != null) {lastName = nom.getFamily().toString();}
+                if (nom.getGiven() != null) {firstName = nom.getGiven().get(0).toString();}
                 if (nom.getGiven().size() > 1) {
                     StringBuilder midnames = new StringBuilder();
                     for (StringType namepart : nom.getGiven()) {
@@ -232,6 +222,12 @@ public class PatientTransformer extends AbstractTransformer {
         Period period = fhirAddress.getPeriod();
         Date startDate = period.getStart();
         Date endDate = period.getEnd();
+        long longId;
+
+        RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
+
+        longId = idMap.getId();
+
         patientAddressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),
                 patientId,
                 Integer.parseInt(fhirAddress.getType().toCode()),
@@ -249,7 +245,7 @@ public class PatientTransformer extends AbstractTransformer {
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
 
         IMClient.getConceptId("Address.AddressUse", fhirAddress.getType().toCode());
-        addressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()), al1, al2, al3, al4, postcode,
+        addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
                 null, null, null);
 
     }

@@ -24,7 +24,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {
@@ -67,7 +67,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Long medicationAmountId = null;
         Integer courseLengthPerIssueDays = null;
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
 

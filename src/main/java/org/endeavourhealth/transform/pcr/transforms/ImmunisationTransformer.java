@@ -22,7 +22,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                           Resource resource,
                           AbstractPcrCsvWriter csvWriter,
                           PcrTransformParams params) throws Exception {
@@ -39,7 +39,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
         patientId = params.getEnterprisePatientId().intValue();
 

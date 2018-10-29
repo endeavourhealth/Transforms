@@ -20,7 +20,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
+    protected void transformResource(Long pcrId,
                                      Resource resource,
                                      AbstractPcrCsvWriter csvWriter,
                                      PcrTransformParams params) throws Exception {
@@ -41,7 +41,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         long organizaationId = params.getEnterpriseOrganisationId();
 
 
-        id = enterpriseId.longValue();
+        id = pcrId.longValue();
 
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
