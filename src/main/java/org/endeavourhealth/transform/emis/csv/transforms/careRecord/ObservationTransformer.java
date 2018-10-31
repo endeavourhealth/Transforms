@@ -6,10 +6,7 @@ import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.terminology.Read2;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -106,11 +103,11 @@ public class ObservationTransformer {
     /**
      * finds out what resource type an EMIS observation was previously saved as
      */
-    private static Set<ResourceType> findOriginalTargetResourceTypes(FhirResourceFiler fhirResourceFiler, Observation parser) throws Exception {
-        return findOriginalTargetResourceTypes(fhirResourceFiler, parser.getPatientGuid(), parser.getObservationGuid());
+    private static Set<ResourceType> findOriginalTargetResourceTypes(HasServiceSystemAndExchangeIdI hasServiceId, Observation parser) throws Exception {
+        return findOriginalTargetResourceTypes(hasServiceId, parser.getPatientGuid(), parser.getObservationGuid());
     }
 
-    public static Set<ResourceType> findOriginalTargetResourceTypes(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
+    public static Set<ResourceType> findOriginalTargetResourceTypes(HasServiceSystemAndExchangeIdI hasServiceId, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Procedure);
@@ -127,7 +124,7 @@ public class ObservationTransformer {
         Set<ResourceType> ret = new HashSet<>();
         
         for (ResourceType resourceType: potentialResourceTypes) {
-            if (wasSavedAsResourceType(fhirResourceFiler, patientGuid, observationGuid, resourceType)) {
+            if (wasSavedAsResourceType(hasServiceId, patientGuid, observationGuid, resourceType)) {
                 ret.add(resourceType);
             }
         }
@@ -135,9 +132,9 @@ public class ObservationTransformer {
         return ret;
     }
 
-    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell patientGuid, CsvCell observationGuid, ResourceType resourceType) throws Exception {
+    private static boolean wasSavedAsResourceType(HasServiceSystemAndExchangeIdI hasServiceId, CsvCell patientGuid, CsvCell observationGuid, ResourceType resourceType) throws Exception {
         String sourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
-        UUID uuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, sourceId);
+        UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
         return uuid != null;
     }
     
