@@ -209,7 +209,7 @@ public class PatientTransformer extends AbstractTransformer {
             }
 
             EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
-            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValues(id, dateOfBirth);
+            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValuesAndUpdateTable(id, dateOfBirth, dateOfDeath);
             ageYears = ageValues[EnterpriseAge.UNIT_YEARS];
             ageMonths = ageValues[EnterpriseAge.UNIT_MONTHS];
             ageWeeks = ageValues[EnterpriseAge.UNIT_WEEKS];
