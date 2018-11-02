@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.emis;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -21,9 +22,14 @@ import java.util.UUID;
 public class EmisCustomCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomCsvToFhirTransformer.class);
 
-    public static final String DATE_FORMAT = "dd/MM/yyyy";
-    public static final String TIME_FORMAT = "hh:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.TDF.withHeader();
+    private static final String DATE_FORMAT = "dd/MM/yyyy";
+    private static final String TIME_FORMAT = "hh:mm:ss";
+    private static final CSVFormat CSV_FORMAT = CSVFormat.TDF
+                                                .withHeader()
+                                                .withEscape((Character)null)
+                                                .withQuote((Character)null)
+                                                .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this;
+
 
     public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
                                  TransformError transformError, List<UUID> batchIds) throws Exception {
