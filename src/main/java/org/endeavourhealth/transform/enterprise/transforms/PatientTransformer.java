@@ -529,6 +529,45 @@ public class PatientTransformer extends AbstractTransformer {
 
         return applySaltToKeys(keys, encryptedSalt);
     }
+    /*private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
+
+        String dob = null;
+        if (fhirPatient.hasBirthDate()) {
+            Date d = fhirPatient.getBirthDate();
+            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
+        }
+
+        if (Strings.isNullOrEmpty(dob)) {
+            //we always need DoB for the psuedo ID
+            return null;
+        }
+
+        TreeMap<String, String> keys = new TreeMap<>();
+        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
+
+        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
+        if (!Strings.isNullOrEmpty(nhsNumber)) {
+            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
+
+        } else {
+
+            //if we don't have an NHS number, use the Emis patient number
+            String patientNumber = null;
+            if (fhirPatient.hasIdentifier()) {
+                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+            }
+
+            if (!Strings.isNullOrEmpty(patientNumber)) {
+                keys.put(PSEUDO_KEY_PATIENT_NUMBER, patientNumber);
+
+            } else {
+                //if no NHS number or patient number
+                return null;
+            }
+        }
+
+        return applySaltToKeys(keys, encryptedSalt);
+    }*/
 
     private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
         Crypto crypto = new Crypto();
