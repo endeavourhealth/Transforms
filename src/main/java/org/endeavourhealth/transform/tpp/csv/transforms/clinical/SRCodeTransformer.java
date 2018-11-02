@@ -204,8 +204,6 @@ public class SRCodeTransformer {
 
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
 
-                // add Ctv3 coding
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
                 codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
                 CsvCell readV3Term = parser.getCTV3Text();
                 codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
@@ -217,6 +215,10 @@ public class SRCodeTransformer {
                     if (snomedCode != null) {
                         addSnomedToBuilder(codeableConceptBuilder, snomedCode, null);
                     }
+                    // add Ctv3 coding
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+                } else {
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
                 }
             }
         }
