@@ -53,18 +53,21 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-        boolean pseudonymised = config.get("pseudonymised").asBoolean();
+
+        boolean pseudonymised = config.has("pseudonymisation");
+        //boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
-        boolean useInstanceMapping = false;
+        //this has been on for a year, so turn on permanently
+        boolean useInstanceMapping = true;
+        /*boolean useInstanceMapping = false;
         if (config.has("instance_mapping")) {
             useInstanceMapping = config.get("instance_mapping").asBoolean();
-        }
-        //int batchSize = findTransformBatchSize(configName);
+        }*/
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);

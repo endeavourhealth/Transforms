@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.enterprise.json;
 public class ConfigParameter {
     private String fieldName = null;
     private String fieldLabel = null;
+    private String format = null;
+    private Boolean mandatory = null;
 
     public ConfigParameter() {}
 
@@ -25,5 +27,21 @@ public class ConfigParameter {
 
     public void setFieldLabel(String fieldLabel) {
         this.fieldLabel = fieldLabel;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    public Boolean getMandatory() {
+        return mandatory;
+    }
+
+    public void setMandatory(Boolean mandatory) {
+        this.mandatory = mandatory;
     }
 }

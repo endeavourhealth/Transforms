@@ -13,9 +13,9 @@ public class LinkDistributor extends AbstractEnterpriseCsvWriter {
                      String targetSkid) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
-                "" + sourceSkid,
-                "" + targetSaltKeyName,
-                "" + targetSkid);
+                sourceSkid,
+                targetSaltKeyName,
+                targetSkid);
     }
 
     @Override
