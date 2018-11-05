@@ -122,7 +122,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
-            statusConceptId = IMClient.getConceptId("MedicationStatementStatus",fhirStatus.toCode());
+            statusConceptId = IMClient.getConceptId("MedicationStatementStatus." + fhirStatus.toCode());
         }
 
         if (fhir.hasDosage()) {
@@ -175,7 +175,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             Coding c = (Coding)authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
-            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType",authorisationType.getCode());
+            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType." + authorisationType.getCode());
         }
 
         //issues authorised

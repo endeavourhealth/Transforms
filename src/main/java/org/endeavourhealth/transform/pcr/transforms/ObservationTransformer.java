@@ -117,7 +117,7 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultValueUnits = quantity.getUnit();
 
                 Quantity.QuantityComparator comparator = quantity.getComparator();
-                operatorConceptId = IMClient.getConceptId("Quantity.QuantityComparator", comparator.toCode());
+                operatorConceptId = IMClient.getOrCreateConceptId("Quantity.QuantityComparator." + comparator.toCode());
 
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType) value;
@@ -158,9 +158,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
         //observation status
         if (fhir.hasStatus()) {
-
-            Observation.ObservationStatus status = fhir.getStatus();
-            statusConceptId = IMClient.getConceptId("ObservationStatus",status.toCode());
+            statusConceptId = IMClient.getOrCreateConceptId("ObservationStatus." +fhir.getStatus().toCode());
         }
 
         //confidential?
@@ -176,7 +174,8 @@ public class ObservationTransformer extends AbstractTransformer {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
             episodicityConceptId
-                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY", episodicityType.getValue());
+                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            //TODO do we know how extension uri is mapped?
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
@@ -185,7 +184,8 @@ public class ObservationTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            significanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+            significanceConceptId =  IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+            //TODO not sure how we model these codeschemes yet
         }
 
         //referenceRangeId = ??  //TODO: map to IM concept (not set in FHIR)

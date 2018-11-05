@@ -109,8 +109,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         //immunisation status
         if (fhir.hasStatus()) {
 
-            String status = fhir.getStatus();
-            statusConceptId = IMClient.getConceptId("Immunization.status",status);
+            statusConceptId = IMClient.getOrCreateConceptId("Immunization.status." + fhir.getStatus());
         }
 
         //confidential
@@ -132,15 +131,13 @@ public class ImmunisationTransformer extends AbstractTransformer {
         ObservationCodeHelper bodyLocationCode = ObservationCodeHelper.extractCodeFields(fhir.getSite());
         if (bodyLocationCode != null) {
 
-            String site = bodyLocationCode.getOriginalTerm();
-            bodyLocationConceptId = IMClient.getConceptId("Immunization.site",site);
+            bodyLocationConceptId = IMClient.getOrCreateConceptId("Immunization.site." + bodyLocationCode.getOriginalCode());
         }
 
         ObservationCodeHelper methodCode = ObservationCodeHelper.extractCodeFields(fhir.getRoute());
         if (methodCode != null) {
 
-            String route = methodCode.getOriginalTerm();
-            methodConceptId = IMClient.getConceptId("Immunization.route",route);
+            methodConceptId = IMClient.getOrCreateConceptId("Immunization.route." + methodCode.getOriginalCode());
         }
 
         //lot/batch number

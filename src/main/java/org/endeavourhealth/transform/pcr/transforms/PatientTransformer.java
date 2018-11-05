@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
@@ -77,7 +76,7 @@ public class PatientTransformer extends AbstractTransformer {
         String lastName = null;
         String previousLastName = null;
         Long homeAddressId = null;
-        String ethnicCode = null;
+       // String ethnicCode = null;
         Long careProviderId = null;
         boolean isSpineSensitive;
 
@@ -144,11 +143,11 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
 
-        Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
-        if (ethnicityExtension != null) {
-            CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
-            ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
-        }
+//        Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
+//        if (ethnicityExtension != null) {
+//            CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
+//            ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+//        }
 
         Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
         if (spineExtension != null) {
@@ -158,6 +157,7 @@ public class PatientTransformer extends AbstractTransformer {
             if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
                 nhsNumberVerificationTermId = Integer.parseInt(nhsNumberVerificationTerm);
             }
+            //TODO map verification status to IM
         } else {
             isSpineSensitive = false;
         }
@@ -212,7 +212,7 @@ public class PatientTransformer extends AbstractTransformer {
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
             String identifier = thisId.getValue();
-            Long conceptId = IMClient.getConceptId("ContactPoint.ContactPointUse", thisId.getSystem());
+            Long conceptId = IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
             patientIdWriter.writeUpsert(id, Long.parseLong(patient.getId()), conceptId, identifier);
         }
     }
@@ -244,7 +244,7 @@ public class PatientTransformer extends AbstractTransformer {
         String postcode = fhirAddress.getPostalCode();
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
 
-        IMClient.getConceptId("Address.AddressUse", fhirAddress.getType().toCode());
+        //IMClient.getConceptId("Address.AddressUse");
         addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
                 null, null, null);
 
@@ -255,7 +255,7 @@ public class PatientTransformer extends AbstractTransformer {
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
             String code = cp.getUse().toCode();
-            Long type = IMClient.getConceptId("ContactPoint.ContactPointSystem", code);
+            Long type = IMClient.getOrCreateConceptId("ContactPoint.ContactPointSystem."+ cp.getUse().toCode());
             contactWriter.writeUpsert(Long.parseLong(cp.getId()), patientId, type, code);
         }
 

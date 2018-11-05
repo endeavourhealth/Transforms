@@ -40,7 +40,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().intValue();
-
+        String codeSystem = null;
         Long conceptId = null;
         Long substanceConceptId = null;
         Date insertDate = new Date();
@@ -97,11 +97,11 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
-        if (codes == null) {
+        if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
             substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
-
+            codeSystem = codes.getSystem();
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
 
@@ -115,9 +115,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
         //allergy status
         if (fhir.hasStatus()) {
-
             AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
-            statusConceptId = IMClient.getConceptId("AllergyIntoleranceStatus",status.toCode());
+            statusConceptId = IMClient.getOrCreateConceptId("AllergyIntoleranceStatus." + status.toCode());
         }
 
         org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model
@@ -136,6 +135,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 statusConceptId,
+                codeSystem,
                 confidential,
                 substanceConceptId,
                 manifestationConceptId,

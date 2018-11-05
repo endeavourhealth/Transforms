@@ -14,6 +14,7 @@ public class ObservationCodeHelper {
     private Long snomedConceptId = null;
     private String originalCode = null;
     private String originalTerm = null;
+    private String system = null;
 
     public Long getSnomedConceptId() {
         return snomedConceptId;
@@ -39,6 +40,10 @@ public class ObservationCodeHelper {
         this.originalTerm = originalTerm;
     }
 
+    public String getSystem() {return system;}
+
+    public void setSystem(String system) {this.system = system;}
+
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {
 
         if (codeableConcept == null) {
@@ -60,6 +65,9 @@ public class ObservationCodeHelper {
                 && originalCoding.hasDisplay()) {
 
             ret.setOriginalTerm(originalCoding.getDisplay());
+        }
+        if (originalCoding.hasSystem()) {
+            ret.setSystem(originalCoding.getSystem());
         }
 
         //if we don't have a Snomed code and our original code is a Cerner code, then don't send to the subscriber

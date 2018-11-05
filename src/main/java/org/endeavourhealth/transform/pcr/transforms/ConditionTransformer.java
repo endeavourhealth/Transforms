@@ -175,7 +175,8 @@ public class ConditionTransformer extends AbstractTransformer {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
             episodicityConceptId
-                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY", episodicityType.getValue());
+                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            //TODO do we know how these URIs are mapped yet in IM?
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
@@ -199,7 +200,7 @@ public class ConditionTransformer extends AbstractTransformer {
         if (conditionCategory != null) {
 
             String categoryType = conditionCategory.getCoding().get(0).getCode();
-            typeConceptId = IMClient.getConceptId("Condition.category", categoryType);
+            typeConceptId = IMClient.getOrCreateConceptId("Condition.category." + categoryType);
         }
 
         //firstly, file as an observation

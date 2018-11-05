@@ -153,7 +153,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             MedicationOrder.MedicationOrderStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationOrder.MedicationOrderStatus.ACTIVE);
-            statusConceptId = IMClient.getConceptId("MedicationOrderStatus",fhirStatus.toCode());
+            statusConceptId = IMClient.getConceptId("MedicationOrderStatus");
         }
 
         //estimated cost
@@ -187,7 +187,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             Coding c = (Coding)authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
-            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType",authorisationType.getCode());
+            typeConceptId = IMClient.getOrCreateConceptId("MedicationAuthorisationType." + authorisationType.getCode());
         }
 
         //confidential?

@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.Organisation;
@@ -69,7 +68,8 @@ public class OrganizationTransformer extends AbstractTransformer {
             CodeableConcept cc = fhir.getType();
             for (Coding coding: cc.getCoding()) {
                 if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
-                    typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE",coding.getCode());
+                    typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE");
+                    //TODO review this - Uri mappings not firm yet
                 }
             }
         }
