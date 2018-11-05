@@ -37,14 +37,13 @@ import java.util.*;
 public class PatientTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
+    /*private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
     private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
-    private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";
-    //private static final String PSEUDO_SALT_RESOURCE = "Endeavour Enterprise - East London.EncryptedSalt";
+    private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";*/
 
     private static final int BEST_ORG_SCORE = 10;
 
-    private static Map<String, byte[]> saltCacheMap = new HashMap<>();
+    private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
     private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -188,10 +187,19 @@ public class PatientTransformer extends AbstractTransformer {
                 patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }
 
-            pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
+            LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
+            pseudoId = pseudonymiseUsingConfig(fhirPatient, mainPseudoSalt);
+            //pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
 
-            List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
-            if (linkDistributorConfigs != null) {
+            if (pseudoId != null) {
+
+                //only persist the pseudo ID if it's non-null
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
+
+                //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
+                //can only be done if we've successfully generated a main pseudo ID
+                List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
                 for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
                     targetSaltKeyName = ldConfig.getSaltKeyName();
                     targetSkid = pseudonymiseUsingConfig(fhirPatient, ldConfig);
@@ -200,12 +208,6 @@ public class PatientTransformer extends AbstractTransformer {
                             targetSaltKeyName,
                             targetSkid);
                 }
-            }
-
-            //only persist the pseudo ID if it's non-null
-            if (!Strings.isNullOrEmpty(pseudoId)) {
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
             }
 
             EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
@@ -285,6 +287,8 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
     }
+
+
 
     private Reference findOrgReference(Patient fhirPatient, EnterpriseTransformParams params) throws Exception {
 
@@ -461,74 +465,101 @@ public class PatientTransformer extends AbstractTransformer {
         return postcode.substring(0, len-3);
     }
 
-    private static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
+    public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
         TreeMap<String, String> keys = new TreeMap<>();
 
         List<ConfigParameter> parameters = config.getParameters();
 
         for (ConfigParameter param : parameters) {
+
+            String fieldName = param.getFieldName();
+            String fieldFormat = param.getFormat();
             String fieldValue = null;
-            if (param.getFieldName().equals("date_of_birth")) {
+
+            if (fieldName.equals("date_of_birth")) {
                 if (fhirPatient.hasBirthDate()) {
                     Date d = fhirPatient.getBirthDate();
-                    fieldValue = new SimpleDateFormat("dd-MM-yyyy").format(d);
+                    fieldValue = formatPseudoDate(d, fieldFormat);
                 }
-            }
+            } else if (fieldName.equals("nhs_number")) {
 
-            if (param.getFieldName().equals("nhs_number")) {
-                fieldValue = IdentifierHelper.findNhsNumber(fhirPatient);
+                String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient); //this will be in nnnnnnnnnn format
+                if (!Strings.isNullOrEmpty(nhsNumber)) {
+                    fieldValue = formatPseudoNhsNumber(nhsNumber, fieldFormat);
+                }
+
+            } else {
+                throw new Exception("Unsupported field name [" + fieldName + "]");
             }
 
             if (Strings.isNullOrEmpty(fieldValue)) {
                 // we always need a non null string for the psuedo ID
+                continue;
+            }
+
+            //if this element is mandatory, then fail if our field is empty
+            Boolean mandatory = param.getMandatory();
+            if (mandatory != null
+                    && mandatory.booleanValue()
+                    && Strings.isNullOrEmpty(fieldValue)) {
                 return null;
             }
 
-            keys.put(param.getFieldLabel(), fieldValue);
+            String fieldLabel = param.getFieldLabel();
+            keys.put(fieldLabel, fieldValue);
+        }
+
+        //if not keys, then we can't generate a pseudo ID
+        if (keys.isEmpty()) {
+            return null;
         }
 
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
-    private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
+    private static String formatPseudoNhsNumber(String nhsNumber, String fieldFormat) throws Exception {
 
-        String dob = null;
-        if (fhirPatient.hasBirthDate()) {
-            Date d = fhirPatient.getBirthDate();
-            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
+        //if no explicit format provided, assume one
+        if (Strings.isNullOrEmpty(fieldFormat)) {
+            fieldFormat = "nnnnnnnnnn";
         }
 
-        if (Strings.isNullOrEmpty(dob)) {
-            //we always need DoB for the psuedo ID
-            return null;
-        }
+        StringBuilder sb = new StringBuilder();
 
-        TreeMap<String, String> keys = new TreeMap<>();
-        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
+        int pos = 0;
+        char[] chars = nhsNumber.toCharArray();
 
-        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-        if (!Strings.isNullOrEmpty(nhsNumber)) {
-            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
+        char[] formatChars = fieldFormat.toCharArray();
+        for (int i=0; i<formatChars.length; i++) {
+            char formatChar = formatChars[i];
+            if (formatChar == 'n') {
+                if (pos < chars.length) {
+                    char c = chars[pos];
+                    sb.append(c);
+                    pos ++;
+                }
 
-        } else {
-
-            //if we don't have an NHS number, use the Emis patient number
-            String patientNumber = null;
-            if (fhirPatient.hasIdentifier()) {
-                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
-            }
-
-            if (!Strings.isNullOrEmpty(patientNumber)) {
-                keys.put(PSEUDO_KEY_PATIENT_NUMBER, patientNumber);
+            } else if (Character.isAlphabetic(formatChar)) {
+                throw new Exception("Unsupported character " + formatChar + " in NHS number format [" + fieldFormat + "]");
 
             } else {
-                //if no NHS number or patient number
-                return null;
+                sb.append(formatChar);
             }
         }
 
-        return applySaltToKeys(keys, encryptedSalt);
+        return sb.toString();
     }
+
+    private static String formatPseudoDate(Date d, String fieldFormat) {
+
+        //if no explicit format provided, assume one
+        if (Strings.isNullOrEmpty(fieldFormat)) {
+            fieldFormat = "dd-MM-yyyy";
+        }
+
+        return new SimpleDateFormat(fieldFormat).format(d);
+    }
+
     /*private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
 
         String dob = null;
@@ -567,12 +598,6 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         return applySaltToKeys(keys, encryptedSalt);
-    }*/
-
-    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(salt);
-        return crypto.GetDigest(keys);
     }
 
     private static byte[] getEncryptedSalt(String configName) throws Exception {
@@ -599,38 +624,53 @@ public class PatientTransformer extends AbstractTransformer {
         return ret;
     }
 
+    */
+
+    private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
+
+        LinkDistributorConfig ret = mainPseudoCacheMap.get(configName);
+        if (ret == null) {
+            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+            JsonNode saltNode = config.get("pseudonymisation");
+
+            String json = convertJsonNodeToString(saltNode);
+            ret = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
+
+            mainPseudoCacheMap.put(configName, ret);
+        }
+        return ret;
+    }
+
+    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
+        Crypto crypto = new Crypto();
+        crypto.SetEncryptedSalt(salt);
+        return crypto.GetDigest(keys);
+    }
+
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
 
         List<LinkDistributorConfig> ret = linkDistributorCacheMap.get(configName);
         if (ret == null) {
-            synchronized (linkDistributorCacheMap) {
-                ret = linkDistributorCacheMap.get(configName);
-                if (ret == null) {
 
-                    ret = new ArrayList<>();
+            ret = new ArrayList<>();
 
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-                    JsonNode linkDistributorsNode = config.get("linkedDistributors");
+            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+            JsonNode linkDistributorsNode = config.get("linkedDistributors");
 
-                    if (linkDistributorsNode == null) {
-                        return null;
-                    }
-                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+            if (linkDistributorsNode != null) {
+                String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
+                LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
 
-                    for (LinkDistributorConfig l : arr) {
-                        ret.add(l);
-                    }
-
-                    if (ret == null) {
-                        return null;
-                    }
-                    linkDistributorCacheMap.put(configName, ret);
+                for (LinkDistributorConfig l : arr) {
+                    ret.add(l);
                 }
             }
+
+            linkDistributorCacheMap.put(configName, ret);
         }
         return ret;
     }
+
 
     private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
         try {
