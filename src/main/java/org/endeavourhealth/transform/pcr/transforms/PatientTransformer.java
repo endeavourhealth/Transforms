@@ -65,10 +65,10 @@ public class PatientTransformer extends AbstractTransformer {
         long organizationId;
         String nhsNumber = null;
         //TODO where does verification come from?
-        Integer nhsNumberVerificationTermId = null;
+        Long nhsNumberVerificationTermId = null;
         Date dateOfBirth = null;
         Date dateOfDeath = null;
-        int patientGenderId;
+        Long patientGenderId = null;
         Long usualPractitionerId = null;
         String title = null;
         String firstName = null;
@@ -121,10 +121,11 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         if (fhirPatient.hasGender()) {
-            patientGenderId = fhirPatient.getGender().ordinal();
+            patientGenderId = IMClient.getOrCreateConceptId("Patient.Gender." + fhirPatient.getGender());
 
         } else {
-            patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
+            //TODO not clear how to map unknown to IM.
+            //patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
@@ -155,9 +156,9 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
             String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
             if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
-                nhsNumberVerificationTermId = Integer.parseInt(nhsNumberVerificationTerm);
+                nhsNumberVerificationTermId = IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
             }
-            //TODO map verification status to IM
+
         } else {
             isSpineSensitive = false;
         }

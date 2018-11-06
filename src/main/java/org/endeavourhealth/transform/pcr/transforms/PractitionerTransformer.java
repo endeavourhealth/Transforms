@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -12,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
 public class PractitionerTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
@@ -34,11 +32,12 @@ public class PractitionerTransformer extends AbstractTransformer {
         String lastName = null;
         String roleTermId = null;
         String specialityTermId = null;
+        Long typeConceptId = null;
         int genderTermId;
         Date dateOfBirth;
         boolean isActive;
         long id;
-        long organizaationId = params.getEnterpriseOrganisationId();
+        long organisationId = params.getEnterpriseOrganisationId();
 
 
         id = pcrId.longValue();
@@ -109,7 +108,7 @@ public class PractitionerTransformer extends AbstractTransformer {
             practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
         }
 
-        organizaationId = practitionerEnterpriseOrgId.longValue();
+        organisationId = practitionerEnterpriseOrgId.longValue();
 
         isActive = fhir.getActive();
         dateOfBirth = fhir.getBirthDate();
@@ -121,7 +120,7 @@ public class PractitionerTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
         model.writeUpsert(id,
-                organizaationId,
+                organisationId,
                 title,
                 firstName,
                 middleName,
@@ -131,6 +130,15 @@ public class PractitionerTransformer extends AbstractTransformer {
                 isActive,
                 roleTermId,
                 specialityTermId);
+
+//        List<Identifier> identifiers = fhir.getIdentifier();
+//
+//        typeConceptId = IMClient.getOrCreateConceptId("");
+//TODO smartcard etc identifiers  -how are they set up?
+        //TODO work out which identifier to select
+        org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier idWriter = (org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier) csvWriter;
+       idWriter.writeUpsert(id,id,typeConceptId,"");
+
     }
 
 
