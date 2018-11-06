@@ -243,10 +243,9 @@ public class PatientTransformer extends AbstractTransformer {
         String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
         String postcode = fhirAddress.getPostalCode();
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
-
-        //IMClient.getConceptId("Address.AddressUse");
+        Long propertyTypeId = IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
         addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
-                null, null, null);
+                null, null, propertyTypeId);
 
     }
 
