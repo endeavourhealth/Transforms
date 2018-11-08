@@ -90,6 +90,14 @@ public abstract class AbstractCsvWriter {
         }
     }
 
+    protected String convertDouble(Double d) {
+        if (d == null) {
+            return null;
+        } else {
+            return d.toString();
+        }
+    }
+
     protected String convertBigDecimal(BigDecimal d) {
         if (d == null) {
             return null;
@@ -113,6 +121,14 @@ public abstract class AbstractCsvWriter {
             return "TRUE";
         } else {
             return "FALSE";
+        }
+    }
+
+    protected String convertBytes(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        } else {
+            return new String(bytes);
         }
     }
 

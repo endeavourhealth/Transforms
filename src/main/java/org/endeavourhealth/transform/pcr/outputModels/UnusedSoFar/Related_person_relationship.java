@@ -1,14 +1,16 @@
-package org.endeavourhealth.transform.pcr.outputModels;
+package org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar;
 
 import org.apache.commons.csv.CSVFormat;
- 
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+
 import java.util.Date;
  
-public class Care_episode_additional_practitioner extends AbstractPcrCsvWriter {
+public class Related_person_relationship extends AbstractPcrCsvWriter {
  
  
  
-  public Care_episode_additional_practitioner(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public Related_person_relationship(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -19,13 +21,13 @@ public class Care_episode_additional_practitioner extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Integer patient_id,
-                    Long care_episode_id,
-Integer practitioner_id
+                    Long related_person_id,
+Long type_concept_id
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertInt(patient_id),
-                    convertLong(care_episode_id),
-convertInt(practitioner_id)
+                    convertLong(related_person_id),
+convertLong(type_concept_id)
        );
 }
 @Override
@@ -33,8 +35,8 @@ public String[] getCsvHeaders() {
    return new String[]{ 
             "save_mode",
                        "patient_id",
-                       "care_episode_id",
-                     "practitioner_id"
+                       "related_person_id",
+                     "type_concept_id"
     }; 
 } 
 @Override 
@@ -42,7 +44,7 @@ public Class[] getColumnTypes() {
     return new Class[]{ 
                     Integer.class,
                     Long.class,
-                    Integer.class
+                    Long.class
     }; 
 }
 }

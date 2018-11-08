@@ -1,14 +1,16 @@
-package org.endeavourhealth.transform.pcr.outputModels;
+package org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar;
 
 import org.apache.commons.csv.CSVFormat;
- 
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+
 import java.util.Date;
  
-public class Procedure_request extends AbstractPcrCsvWriter {
+public class Referral extends AbstractPcrCsvWriter {
  
  
  
-  public Procedure_request(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public Referral(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -29,9 +31,14 @@ public class Procedure_request extends AbstractPcrCsvWriter {
                     Integer owning_organisation_id,
                     Long status_concept_id,
                     Boolean is_confidential,
+                    String ubrn,
                     Long priority_concept_id,
+                    Integer sender_organisation_id,
                     Integer recipient_organisation_id,
-                    String request_identifier,
+                    Long mode_concept_id,
+                    Long source_concept_id,
+                    Long service_requested_concept_id,
+                    Long reason_for_referral_free_text_id,
 Boolean is_consent
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
@@ -46,9 +53,14 @@ Boolean is_consent
                     convertInt(owning_organisation_id),
                     convertLong(status_concept_id),
                     convertBoolean(is_confidential),
+                    ubrn,
                     convertLong(priority_concept_id),
+                    convertInt(sender_organisation_id),
                     convertInt(recipient_organisation_id),
-                    request_identifier,
+                    convertLong(mode_concept_id),
+                    convertLong(source_concept_id),
+                    convertLong(service_requested_concept_id),
+                    convertLong(reason_for_referral_free_text_id),
 convertBoolean(is_consent)
        );
 }
@@ -67,9 +79,14 @@ public String[] getCsvHeaders() {
                        "owning_organisation_id",
                        "status_concept_id",
                        "is_confidential",
+                       "ubrn",
                        "priority_concept_id",
+                       "sender_organisation_id",
                        "recipient_organisation_id",
-                       "request_identifier",
+                       "mode_concept_id",
+                       "source_concept_id",
+                       "service_requested_concept_id",
+                       "reason_for_referral_free_text_id",
                      "is_consent"
     }; 
 } 
@@ -87,9 +104,14 @@ public Class[] getColumnTypes() {
                     Integer.class,
                     Long.class,
                     Boolean.class,
+                    String.class,
                     Long.class,
                     Integer.class,
-                    String.class,
+                    Integer.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
                     Boolean.class
     }; 
 }

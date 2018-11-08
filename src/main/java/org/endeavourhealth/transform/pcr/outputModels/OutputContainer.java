@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.*;
+import org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar.Flag;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -203,7 +204,7 @@ public class OutputContainer {
         return findCsvWriter(EncounterRaw.class);
     }
 
-    public Flag getFlags() {
+    public org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar.Flag getFlags() {
         return findCsvWriter(Flag.class);
     }
 

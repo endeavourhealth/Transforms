@@ -1,7 +1,9 @@
-package org.endeavourhealth.transform.pcr.outputModels;
+package org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar;
 
 import org.apache.commons.csv.CSVFormat;
- 
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+
 import java.util.Date;
  
 public class Procedure_device extends AbstractPcrCsvWriter {

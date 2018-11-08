@@ -1,14 +1,16 @@
-package org.endeavourhealth.transform.pcr.outputModels;
+package org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar;
 
 import org.apache.commons.csv.CSVFormat;
- 
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+
 import java.util.Date;
  
-public class Hospital_discharge extends AbstractPcrCsvWriter {
+public class Hospital_admission extends AbstractPcrCsvWriter {
  
  
  
-  public Hospital_discharge(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public Hospital_admission(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -20,7 +22,7 @@ public class Hospital_discharge extends AbstractPcrCsvWriter {
 }
     public void writeUpsert(Long id,
                     Integer patient_id,
-                    Integer care_episode_id,
+                    Long care_episode_id,
                     Date effective_date,
                     Integer effective_date_precision,
                     Integer effective_practitioner_id,
@@ -30,13 +32,14 @@ public class Hospital_discharge extends AbstractPcrCsvWriter {
                     Boolean is_confidential,
                     Long reason_concept_id,
                     Long free_text_id,
+                    Long purpose_concept_id,
                     Integer location_id,
 Boolean is_consent
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
                     convertInt(patient_id),
-                    convertInt(care_episode_id),
+                    convertLong(care_episode_id),
                     convertDate(effective_date),
                     convertInt(effective_date_precision),
                     convertInt(effective_practitioner_id),
@@ -46,6 +49,7 @@ Boolean is_consent
                     convertBoolean(is_confidential),
                     convertLong(reason_concept_id),
                     convertLong(free_text_id),
+                    convertLong(purpose_concept_id),
                     convertInt(location_id),
 convertBoolean(is_consent)
        );
@@ -66,6 +70,7 @@ public String[] getCsvHeaders() {
                        "is_confidential",
                        "reason_concept_id",
                        "free_text_id",
+                       "purpose_concept_id",
                        "location_id",
                      "is_consent"
     }; 
@@ -75,7 +80,7 @@ public Class[] getColumnTypes() {
     return new Class[]{ 
                     Long.class,
                     Integer.class,
-                    Integer.class,
+                    Long.class,
                     Date.class,
                     Integer.class,
                     Integer.class,
@@ -83,6 +88,7 @@ public Class[] getColumnTypes() {
                     Integer.class,
                     Long.class,
                     Boolean.class,
+                    Long.class,
                     Long.class,
                     Long.class,
                     Integer.class,
