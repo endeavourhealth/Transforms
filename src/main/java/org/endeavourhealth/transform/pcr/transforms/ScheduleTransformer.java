@@ -71,7 +71,7 @@ public class ScheduleTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.Schedule model = (org.endeavourhealth.transform.pcr.outputModels.Schedule)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Schedule model = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Schedule)csvWriter;
         model.writeUpsert(id,
             organisationId,
             practitionerId,

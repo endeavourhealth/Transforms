@@ -119,8 +119,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             statusConceptId = IMClient.getOrCreateConceptId("AllergyIntoleranceStatus." + status.toCode());
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance model
-                = (org.endeavourhealth.transform.pcr.outputModels.AllergyIntolerance)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.AllergyIntolerance model
+                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.AllergyIntolerance)csvWriter;
         model.writeUpsert(
                 id,
                 patientId,

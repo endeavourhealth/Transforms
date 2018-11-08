@@ -7,7 +7,7 @@ import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Immunisation;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Immunisation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

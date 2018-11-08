@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.PractitionerIdentifier;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,7 @@ public class PractitionerTransformer extends AbstractTransformer {
             genderTermId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Practitioner) csvWriter;
         model.writeUpsert(id,
                 organisationId,
                 title,
@@ -136,7 +137,7 @@ public class PractitionerTransformer extends AbstractTransformer {
 //        typeConceptId = IMClient.getOrCreateConceptId("");
 //TODO smartcard etc identifiers  -how are they set up?
         //TODO work out which identifier to select
-        org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier idWriter = (org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier) csvWriter;
+        PractitionerIdentifier idWriter = (PractitionerIdentifier) csvWriter;
        idWriter.writeUpsert(id,id,typeConceptId,"");
 
     }

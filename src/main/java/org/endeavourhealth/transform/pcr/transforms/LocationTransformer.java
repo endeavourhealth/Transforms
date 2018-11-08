@@ -59,7 +59,7 @@ public class LocationTransformer extends AbstractTransformer {
             Address address = fhir.getAddress();
             if ((address.getId() != null) && (StringUtils.isNumeric(address.getId()))) {
                 addressId = Long.parseLong(address.getId());
-                org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
+                org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address) csvWriter;
                 List<StringType> addressList = address.getLine();
                 String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
                 String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
@@ -79,7 +79,7 @@ public class LocationTransformer extends AbstractTransformer {
         }
 
 
-        org.endeavourhealth.transform.pcr.outputModels.Location model = (org.endeavourhealth.transform.pcr.outputModels.Location) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Location model = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Location) csvWriter;
         model.writeUpsert(id,
                 organisationId,
                 name,

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.*;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -14,8 +15,8 @@ import java.util.zip.ZipOutputStream;
 
 public class OutputContainer {
 
-    static final String UPSERT = "Upsert";
-    static final String DELETE = "Delete";
+    public static final String UPSERT = "Upsert";
+    public static final String DELETE = "Delete";
 
     private static final String DATE_FORMAT = "yyyy-MM-dd";
     private static final String TIME_FORMAT = "hh:mm:ss";
@@ -182,8 +183,8 @@ public class OutputContainer {
         return findCsvWriter(Patient.class);
     }
 
-    public EpisodeOfCare getEpisodesOfCare() {
-        return findCsvWriter(EpisodeOfCare.class);
+    public CareEpisode getEpisodesOfCare() {
+        return findCsvWriter(CareEpisode.class);
     }
 
     public Appointment getAppointments() {

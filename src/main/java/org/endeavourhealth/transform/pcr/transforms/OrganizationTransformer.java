@@ -7,7 +7,7 @@ import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Organisation;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Organisation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

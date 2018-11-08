@@ -9,7 +9,8 @@ import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Problem;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Observation;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class ConditionTransformer extends AbstractTransformer {
 
         long id;
 
-        long owningOrganisationId;
+        Long owningOrganisationId;
         Integer patientId;
         Long encounterId = null;
         Date effectiveDate = null;
@@ -53,7 +54,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Date enteredDate = null;
         Integer effectivePractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
         Long episodicityConceptId = null;
@@ -204,8 +205,8 @@ public class ConditionTransformer extends AbstractTransformer {
         }
 
         //firstly, file as an observation
-        org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
-                = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
+        Observation observationModel
+                = (Observation) csvWriter;
         observationModel.writeUpsert(
                 id,
                 patientId,
@@ -213,13 +214,9 @@ public class ConditionTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
-                insertDate,
-                enteredDate,
-                enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
-                statusConceptId,
                 confidential,
                 originalCode,
                 originalTerm,

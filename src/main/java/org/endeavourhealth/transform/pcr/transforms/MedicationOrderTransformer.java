@@ -9,6 +9,7 @@ import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationAmount;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -201,8 +202,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         //unique enterprise_id values allow linkage to medication_amount table id and preserve uniqueness
         medicationAmountId = id;
 
-        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
-                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationOrder model
+                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationOrder)csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
@@ -231,8 +232,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         //TODO - handle free text and linking
 
-        org.endeavourhealth.transform.pcr.outputModels.MedicationAmount medicationAmountModel
-                = (org.endeavourhealth.transform.pcr.outputModels.MedicationAmount) csvWriter;
+        MedicationAmount medicationAmountModel
+                = (MedicationAmount) csvWriter;
 
         medicationAmountModel.writeUpsert(
                 id,

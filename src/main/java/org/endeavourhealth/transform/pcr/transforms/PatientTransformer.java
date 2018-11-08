@@ -20,6 +20,9 @@ import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.PatientAddress;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.PatientContact;
+import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.PatientIdentifier;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -180,7 +183,7 @@ public class PatientTransformer extends AbstractTransformer {
         //true if our patient record is at a GP practice.
         //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
-        org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Patient) csvWriter;
 //        org.endeavourhealth.transform.pcr.outputModels.Person personWriter = params.getOutputContainer().getPersons();
 //        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
@@ -209,7 +212,7 @@ public class PatientTransformer extends AbstractTransformer {
     }
 
     private void writePatientIdentifier(long id, Patient patient, AbstractPcrCsvWriter csvWriter) throws Exception {
-        org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier patientIdWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier) csvWriter;
+        PatientIdentifier patientIdWriter = (PatientIdentifier) csvWriter;
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
             String identifier = thisId.getValue();
@@ -219,7 +222,7 @@ public class PatientTransformer extends AbstractTransformer {
     }
 
     private void writeAddress(Address fhirAddress, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
-        org.endeavourhealth.transform.pcr.outputModels.PatientAddress patientAddressWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientAddress) csvWriter;
+        PatientAddress patientAddressWriter = (PatientAddress) csvWriter;
         Period period = fhirAddress.getPeriod();
         Date startDate = period.getStart();
         Date endDate = period.getEnd();
@@ -236,7 +239,7 @@ public class PatientTransformer extends AbstractTransformer {
                 startDate,
                 endDate
         );
-        org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address) csvWriter;
         List<StringType> addressList = fhirAddress.getLine();
         String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
         String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
@@ -251,7 +254,7 @@ public class PatientTransformer extends AbstractTransformer {
     }
 
     private void writeContact(Patient.ContactComponent cc, long patientId, AbstractPcrCsvWriter csvWriter) throws Exception {
-        org.endeavourhealth.transform.pcr.outputModels.PatientContact contactWriter = (org.endeavourhealth.transform.pcr.outputModels.PatientContact) csvWriter;
+        PatientContact contactWriter = (PatientContact) csvWriter;
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
             String code = cp.getUse().toCode();

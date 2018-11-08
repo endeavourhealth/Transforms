@@ -1,70 +1,72 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
-
+ 
+import java.util.Date;
+ 
 public class Organisation extends AbstractPcrCsvWriter {
-
-    public Organisation(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+ 
+ 
+ 
+  public Organisation(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
+ 
+ 
     }
-
-    public void writeDelete(long id) throws Exception {
-
+ 
+ public void writeDelete(long id) throws Exception {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
-    }
-
-    public void writeUpsert(long id,
-                            String serviceId,
-                            String systemId,
-                            String odsCode,
-                            String name,
-                            long typeCode,
-                            boolean isActive,
-                            String mainLocationId,
-                            Long parentOrganisationId) throws Exception {
-
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
-                serviceId,
-                systemId,
-                odsCode,
-                name,
-                convertBoolean(isActive),
-                convertLong(parentOrganisationId),
-                convertLong(typeCode),
-                mainLocationId
-                );
-    }
-
-    @Override
-    public String[] getCsvHeaders() {
-        return new String[]{
-                "save_mode",
-                "id",
-                "service_id",
-                "system_id",
-                "ods_code",
-                "name",
-                "is_active",
-                "parent_organization_id",
-                "type_concept_id",
-                "main_location_id"
-        };
-    }
-
-    @Override
-    public Class[] getColumnTypes() {
-        return new Class[]{
-                String.class,
-                Long.TYPE,
-                String.class,
-                String.class,
-                String.class,
-                String.class,
-                Long.class,
-                Long.class
-        };
-    }
-
+}
+    public void writeUpsert(Integer id,
+                    Integer service_id,
+                    Integer system_id,
+                    String ods_code,
+                    String name,
+                    Boolean is_active,
+                    Integer parent_organisation_id,
+                    Long type_concept_id,
+Integer main_location_id
+                    ) throws Exception {
+    super.printRecord(OutputContainer.UPSERT,
+                    convertInt(id),
+                    convertInt(service_id),
+                    convertInt(system_id),
+                    ods_code,
+                    name,
+                    convertBoolean(is_active),
+                    convertInt(parent_organisation_id),
+                    convertLong(type_concept_id),
+convertInt(main_location_id)
+       );
+}
+@Override
+public String[] getCsvHeaders() {
+   return new String[]{ 
+            "save_mode",
+                       "id",
+                       "service_id",
+                       "system_id",
+                       "ods_code",
+                       "name",
+                       "is_active",
+                       "parent_organisation_id",
+                       "type_concept_id",
+                     "main_location_id"
+    }; 
+} 
+@Override 
+public Class[] getColumnTypes() { 
+    return new Class[]{ 
+                    Integer.class,
+                    Integer.class,
+                    Integer.class,
+                    String.class,
+                    String.class,
+                    Boolean.class,
+                    Integer.class,
+                    Long.class,
+                    Integer.class
+    }; 
+}
 }
