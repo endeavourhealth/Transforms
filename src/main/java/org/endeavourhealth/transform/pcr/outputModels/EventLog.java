@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Event_log extends AbstractPcrCsvWriter {
+public class EventLog extends AbstractPcrCsvWriter {
  
  
  
-  public Event_log(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public EventLog(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  

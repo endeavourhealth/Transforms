@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Pcr_db_map extends AbstractPcrCsvWriter {
+public class MedicationAmount extends AbstractPcrCsvWriter {
  
  
  
-  public Pcr_db_map(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public MedicationAmount(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -18,14 +18,18 @@ public class Pcr_db_map extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    String discoveryDb,
-String discoverySchema
+    public void writeUpsert(Long id,
+                    Integer patient_id,
+                    String dose,
+                    Double quantity_value,
+String quantity_units
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    discoveryDb,
-discoverySchema
+                    convertLong(id),
+                    convertInt(patient_id),
+                    dose,
+                    convertDouble(quantity_value),
+quantity_units
        );
 }
 @Override
@@ -33,15 +37,19 @@ public String[] getCsvHeaders() {
    return new String[]{ 
             "save_mode",
                        "id",
-                       "discoveryDb",
-                     "discoverySchema"
+                       "patient_id",
+                       "dose",
+                       "quantity_value",
+                     "quantity_units"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
+                    Long.class,
                     Integer.class,
                     String.class,
+                    Double.class,
                     String.class
     }; 
 }

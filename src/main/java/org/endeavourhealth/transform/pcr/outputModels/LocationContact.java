@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Practitioner_contact extends AbstractPcrCsvWriter {
+public class LocationContact extends AbstractPcrCsvWriter {
  
  
  
-  public Practitioner_contact(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public LocationContact(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -19,13 +19,13 @@ public class Practitioner_contact extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Integer id,
-                    Integer practitioner_id,
+                    Integer location_id,
                     Long type_concept_id,
 String value
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertInt(id),
-                    convertInt(practitioner_id),
+                    convertInt(location_id),
                     convertLong(type_concept_id),
 value
        );
@@ -35,7 +35,7 @@ public String[] getCsvHeaders() {
    return new String[]{ 
             "save_mode",
                        "id",
-                       "practitioner_id",
+                       "location_id",
                        "type_concept_id",
                      "value"
     }; 

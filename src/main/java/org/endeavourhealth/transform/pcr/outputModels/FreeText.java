@@ -1,14 +1,16 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+
 import java.util.Date;
  
-public class Medication_amount extends AbstractPcrCsvWriter {
+public class FreeText extends AbstractPcrCsvWriter {
  
  
  
-  public Medication_amount(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public FreeText(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -20,16 +22,12 @@ public class Medication_amount extends AbstractPcrCsvWriter {
 }
     public void writeUpsert(Long id,
                     Integer patient_id,
-                    String dose,
-                    Double quantity_value,
-String quantity_units
+String free_text
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
                     convertInt(patient_id),
-                    dose,
-                    convertDouble(quantity_value),
-quantity_units
+free_text
        );
 }
 @Override
@@ -38,9 +36,7 @@ public String[] getCsvHeaders() {
             "save_mode",
                        "id",
                        "patient_id",
-                       "dose",
-                       "quantity_value",
-                     "quantity_units"
+                     "free_text"
     }; 
 } 
 @Override 
@@ -48,8 +44,6 @@ public Class[] getColumnTypes() {
     return new Class[]{ 
                     Long.class,
                     Integer.class,
-                    String.class,
-                    Double.class,
                     String.class
     }; 
 }

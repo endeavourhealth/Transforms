@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Patient_address extends AbstractPcrCsvWriter {
+public class PractitionerContact extends AbstractPcrCsvWriter {
  
  
  
-  public Patient_address(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public PractitionerContact(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -19,19 +19,15 @@ public class Patient_address extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Integer id,
-                    Integer patient_id,
+                    Integer practitioner_id,
                     Long type_concept_id,
-                    Integer address_id,
-                    Date start_date,
-Date end_date
+String value
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertInt(id),
-                    convertInt(patient_id),
+                    convertInt(practitioner_id),
                     convertLong(type_concept_id),
-                    convertInt(address_id),
-                    convertDate(start_date),
-convertDate(end_date)
+value
        );
 }
 @Override
@@ -39,11 +35,9 @@ public String[] getCsvHeaders() {
    return new String[]{ 
             "save_mode",
                        "id",
-                       "patient_id",
+                       "practitioner_id",
                        "type_concept_id",
-                       "address_id",
-                       "start_date",
-                     "end_date"
+                     "value"
     }; 
 } 
 @Override 
@@ -52,9 +46,7 @@ public Class[] getColumnTypes() {
                     Integer.class,
                     Integer.class,
                     Long.class,
-                    Integer.class,
-                    Date.class,
-                    Date.class
+                    String.class
     }; 
 }
 }

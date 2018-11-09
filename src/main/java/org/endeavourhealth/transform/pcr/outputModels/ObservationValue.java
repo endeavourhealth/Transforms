@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Observation_value extends AbstractPcrCsvWriter {
+public class ObservationValue extends AbstractPcrCsvWriter {
  
  
  
-  public Observation_value(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public ObservationValue(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  

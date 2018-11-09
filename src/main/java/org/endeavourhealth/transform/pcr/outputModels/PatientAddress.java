@@ -4,11 +4,11 @@ import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
  
-public class Location_contact extends AbstractPcrCsvWriter {
+public class PatientAddress extends AbstractPcrCsvWriter {
  
  
  
-  public Location_contact(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+  public PatientAddress(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
  
  
@@ -19,15 +19,19 @@ public class Location_contact extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Integer id,
-                    Integer location_id,
+                    Integer patient_id,
                     Long type_concept_id,
-String value
+                    Integer address_id,
+                    Date start_date,
+Date end_date
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertInt(id),
-                    convertInt(location_id),
+                    convertInt(patient_id),
                     convertLong(type_concept_id),
-value
+                    convertInt(address_id),
+                    convertDate(start_date),
+convertDate(end_date)
        );
 }
 @Override
@@ -35,9 +39,11 @@ public String[] getCsvHeaders() {
    return new String[]{ 
             "save_mode",
                        "id",
-                       "location_id",
+                       "patient_id",
                        "type_concept_id",
-                     "value"
+                       "address_id",
+                       "start_date",
+                     "end_date"
     }; 
 } 
 @Override 
@@ -46,7 +52,9 @@ public Class[] getColumnTypes() {
                     Integer.class,
                     Integer.class,
                     Long.class,
-                    String.class
+                    Integer.class,
+                    Date.class,
+                    Date.class
     }; 
 }
 }
