@@ -228,7 +228,7 @@ public class ObservationTransformer extends AbstractTransformer {
                     referenceRangeId
             );
         }
-
+        //TODO is this where we get allergy data from?
 
         //TODO - handle free text and linking
     }

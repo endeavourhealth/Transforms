@@ -1,17 +1,22 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
-import org.endeavourhealth.transform.pcr.PcrTransformParams;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
+import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
@@ -112,6 +117,21 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             BooleanType b = (BooleanType) confidentialExtension.getValue();
             confidential = b.getValue();
         }
+        StringBuilder manifestText  = new StringBuilder();
+        if (fhir.hasReaction()) {
+           List<AllergyIntolerance.AllergyIntoleranceReactionComponent> reactions = fhir.getReaction();
+           for (AllergyIntolerance.AllergyIntoleranceReactionComponent reaction : reactions) {
+               List<CodeableConcept> manifestCodes = reaction.getManifestation();
+               manifestText.append(reaction.getDescription());
+
+           }
+            if (StringUtils.isNotEmpty(manifestText)) {
+                PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
+                manifestationFreeTextId  = pcrIdDal.createPcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
+                FhirToPcrHelper.freeTextWriter(manifestationFreeTextId, patientId, manifestText.toString(),csvWriter);
+            }
+        }
+
 
         //allergy status
         if (fhir.hasStatus()) {

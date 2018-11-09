@@ -155,7 +155,6 @@ public abstract class AbstractTransformer {
         if (ret == null) {
             PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
             ret = pcrIdDal.findOrCreatePcrId(resourceType, resourceId);
-
             addIdToCache(params.getConfigName(), resourceType, resourceId, ret);
         }
         return ret;

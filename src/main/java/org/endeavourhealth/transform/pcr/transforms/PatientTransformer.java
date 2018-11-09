@@ -67,7 +67,6 @@ public class PatientTransformer extends AbstractTransformer {
         long id;
         long organizationId;
         String nhsNumber = null;
-        //TODO where does verification come from?
         Long nhsNumberVerificationTermId = null;
         Date dateOfBirth = null;
         Date dateOfDeath = null;
