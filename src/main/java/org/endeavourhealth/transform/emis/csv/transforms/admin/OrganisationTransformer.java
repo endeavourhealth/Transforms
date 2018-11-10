@@ -139,7 +139,9 @@ public class OrganisationTransformer {
             //or "Community" which don't map to any official NHS organisation type
             if (csvOrganisationType.equalsIgnoreCase("General Practice")
                 || csvOrganisationType.equalsIgnoreCase("General Practice Surgery")
-                || csvOrganisationType.equalsIgnoreCase("Main Surgery")) {
+                || csvOrganisationType.equalsIgnoreCase("Main Surgery")
+                || csvOrganisationType.equalsIgnoreCase("GP Contract")
+                || csvOrganisationType.equalsIgnoreCase("GP Surgery")) {
                 return OrganisationType.GP_PRACTICE;
 
             } else if (csvOrganisationType.equalsIgnoreCase("CCG")) {
