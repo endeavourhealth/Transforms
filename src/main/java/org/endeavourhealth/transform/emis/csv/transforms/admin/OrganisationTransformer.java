@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
@@ -111,6 +112,7 @@ public class OrganisationTransformer {
             } else {
                 //if the org type from the CSV can't be mapped to one of the value set, store as a freetext type
                 organizationBuilder.setTypeFreeText(organisationType.getString(), organisationType);
+                TransformWarnings.log(LOG, parser, "Error mapping Emis org type {}", organisationType);
             }
         }
 
