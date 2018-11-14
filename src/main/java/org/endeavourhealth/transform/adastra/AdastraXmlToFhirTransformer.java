@@ -65,6 +65,8 @@ public abstract class AdastraXmlToFhirTransformer {
             }
         }
 
+        //adding this so the transform completes properly (if ever used)
+        processor.waitToFinish();
     }
 
     private static void checkMessageForIssues(AdastraCaseDataExport caseReport) throws TransformException {

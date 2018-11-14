@@ -222,15 +222,25 @@ public class SRCode extends AbstractCsvParser {
         return super.getCell("IDOrganisationDoneAt");
     }
 
-    public CsvCell getCTV3Code() { return super.getCell("CTV3Code"); }
+    public CsvCell getCTV3Code() {
+        return super.getCell("CTV3Code");
+    }
 
-    public CsvCell getCTV3Text() { return super.getCell("CTV3Text"); }
+    public CsvCell getCTV3Text() {
+        return super.getCell("CTV3Text");
+    }
 
-    public CsvCell getSNOMEDCode() { return super.getCell("SNOMEDCode"); }
+    public CsvCell getSNOMEDCode() {
+        return super.getCell("SNOMEDCode");
+    }
 
-    public CsvCell getSNOMEDText() { return super.getCell("SNOMEDText"); }
+    public CsvCell getSNOMEDText() {
+        return super.getCell("SNOMEDText");
+    }
 
-    public CsvCell getNumericComparator() { return super.getCell("NumericComparator"); }
+    public CsvCell getNumericComparator() {
+        return super.getCell("NumericComparator");
+    }
 
     public CsvCell getNumericValue() {
         return super.getCell("NumericValue");

@@ -2,13 +2,9 @@ package org.endeavourhealth.transform.common;
 
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
-import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
@@ -46,13 +42,12 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private final UUID serviceId;
     private final UUID systemId;
     private final FhirStorageService storageService;
-    private final ExchangeBatchDalI exchangeBatchRepository;
     private final TransformError transformError;
     private final List<UUID> batchIdsCreated;
 
     //batch IDs
     private ReentrantLock batchIdLock = new ReentrantLock();
-    private ExchangeBatch adminBatchId = null;
+    private ExchangeBatch adminBatch = null;
     private Map<UUID, ExchangeBatch> patientBatchIdMap = new ConcurrentHashMap<>();
     private Map<String, UUID> sourcePatientIdMap = new ConcurrentHashMap<>();
 
@@ -66,8 +61,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private ThreadPool threadPoolFiler = null;
 
     //counts
-    private Map<ExchangeBatch, AtomicInteger> countResourcesSaved = new ConcurrentHashMap<>();
-    private Map<ExchangeBatch, AtomicInteger> countResourcesDeleted = new ConcurrentHashMap<>();
+    private Map<UUID, AtomicInteger> countResourcesTrySaved = new ConcurrentHashMap<>();
+    private Map<UUID, AtomicInteger> countResourcesTryDeleted = new ConcurrentHashMap<>();
+    private Map<UUID, AtomicInteger> countResourcesActuallySaved = new ConcurrentHashMap<>();
+    private Map<UUID, AtomicInteger> countResourcesActuallyDeleted = new ConcurrentHashMap<>();
 
     //error handling
     private Throwable lastExceptionRecorded;
@@ -78,7 +75,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.storageService = new FhirStorageService(serviceId, systemId);
-        this.exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
         this.transformError = transformError;
         this.batchIdsCreated = batchIdsCreated;
 
@@ -146,35 +142,32 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 throw new PatientResourceException(resource, expectingPatientResource);
             }
 
-            /*String resourceType = resource.getResourceType().toString();
-            resourceTypes.put(resourceType, resourceType);*/
-
             //increment our counters for auditing
             if (isDelete) {
-                countResourcesDeleted.get(exchangeBatch).incrementAndGet();
+                countResourcesTryDeleted.get(exchangeBatch.getBatchId()).incrementAndGet();
             } else {
-                countResourcesSaved.get(exchangeBatch).incrementAndGet();
+                countResourcesTrySaved.get(exchangeBatch.getBatchId()).incrementAndGet();
             }
         }
 
         //if we want to map IDs then put in the ID mapping queue, otherwise go straight to the filing queue
         if (mapIds) {
-            addToIdMappingQueue(parserState, isDelete, exchangeBatch.getBatchId(), resourceBuilders);
+            addToIdMappingQueue(parserState, isDelete, exchangeBatch, resourceBuilders);
 
         } else {
-            addToFilingQueue(parserState, isDelete, exchangeBatch.getBatchId(), resourceBuilders);
+            addToFilingQueue(parserState, isDelete, exchangeBatch, resourceBuilders);
         }
     }
 
     private void addToIdMappingQueue(CsvCurrentState parserState, boolean isDelete,
-                                     UUID batchId, ResourceBuilderBase[] resourceBuilders) throws Exception {
+                                     ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
         //lock since this may be called from multiple threads and array lists aren't thread safe for adding
         try {
             mapIdTaskLock.lock();
 
             for (ResourceBuilderBase builder : resourceBuilders) {
-                ResourceJob job = new ResourceJob(parserState, isDelete, batchId, builder);
+                ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
                 nextMapIdTask.addJob(job);
             }
 
@@ -205,10 +198,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     }
 
     private void addToFilingQueue(CsvCurrentState parserState, boolean isDelete,
-                                  UUID batchId, ResourceBuilderBase[] resourceBuilders) throws Exception {
+                                  ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
         for (ResourceBuilderBase builder: resourceBuilders) {
-            ResourceJob job = new ResourceJob(parserState, isDelete, batchId, builder);
+            ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
             addToFilingQueue(job);
         }
     }
@@ -276,20 +269,20 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
 
     private ExchangeBatch getAdminBatch() throws Exception {
-        if (adminBatchId == null) {
+        if (adminBatch == null) {
 
             try {
                 batchIdLock.lock();
 
                 //make sure to check if it's still null, as another thread may have created the ID while we were waiting to batchIdLock
-                if (adminBatchId == null) {
-                    adminBatchId = createAndSaveExchangeBatch(null);
+                if (adminBatch == null) {
+                    adminBatch = createAndSaveExchangeBatch(null);
                 }
             } finally {
                 batchIdLock.unlock();
             }
         }
-        return adminBatchId;
+        return adminBatch;
     }
 
     private ExchangeBatch getPatientBatch(boolean mapIds, ResourceBuilderBase... resourceBuilders) throws Exception {
@@ -385,13 +378,19 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private ExchangeBatch createAndSaveExchangeBatch(UUID edsPatientId) throws Exception {
 
         ExchangeBatch exchangeBatch = createExchangeBatch(exchangeId, edsPatientId);
-        exchangeBatchRepository.save(exchangeBatch);
+
+        //done from inside the fhirStorageService now, when saving resources
+        //exchangeBatchRepository.save(exchangeBatch);
 
         UUID batchId = exchangeBatch.getBatchId();
-        batchIdsCreated.add(batchId);
 
-        countResourcesDeleted.put(exchangeBatch, new AtomicInteger());
-        countResourcesSaved.put(exchangeBatch, new AtomicInteger());
+        //done at the end of the transform now
+        //batchIdsCreated.add(batchId);
+
+        countResourcesTryDeleted.put(batchId, new AtomicInteger());
+        countResourcesTrySaved.put(batchId, new AtomicInteger());
+        countResourcesActuallyDeleted.put(batchId, new AtomicInteger());
+        countResourcesActuallySaved.put(batchId, new AtomicInteger());
 
         return exchangeBatch;
     }
@@ -428,8 +427,29 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         errors = threadPoolFiler.waitAndStop();
         handleErrors(errors);
 
+        //work out which exchange batches have been used and delete ones that didn't result in any changes
+        if (adminBatch != null) {
+            checkIfBatchUsed(adminBatch);
+        }
+        for (ExchangeBatch exchangeBatch : patientBatchIdMap.values()) {
+            checkIfBatchUsed(exchangeBatch);
+        }
+
         //log out counts of what we processed
         logResults();
+    }
+
+    private void checkIfBatchUsed(ExchangeBatch exchangeBatch) throws Exception {
+
+        UUID batchId = exchangeBatch.getBatchId();
+        int actuallySaved = countResourcesActuallySaved.get(batchId).get();
+        int actuallyDeleted = countResourcesActuallyDeleted.get(batchId).get();
+
+        if (actuallySaved > 0 || actuallyDeleted > 0) {
+            //if we did use the batch, then add to the list so the calling pipeline knows
+            //to send on to the protocol queue
+            batchIdsCreated.add(batchId);
+        }
     }
 
     /**
@@ -496,75 +516,51 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         }
     }
 
-    /*private void saveResourceTypesUsed() {
-
-        ResourceRepository resourceRepository = new ResourceRepository();
-
-        Iterator<String> it = resourceTypes.keySet().iterator();
-        while (it.hasNext()) {
-            String resourceType = it.next();
-            ResourceTypesUsed resourceTypesUsed = new ResourceTypesUsed();
-            resourceTypesUsed.setServiceId(serviceId);
-            resourceTypesUsed.setSystemId(systemId);
-            resourceTypesUsed.setResourceType(resourceType);
-
-            resourceRepository.save(resourceTypesUsed);
-        }
-    }*/
-
 
     private void logResults() throws Exception {
 
-        int adminSaved = 0;
-        int adminDeleted = 0;
-        if (adminBatchId != null) {
-            adminSaved += countResourcesSaved.get(adminBatchId).get();
-            adminDeleted += countResourcesDeleted.get(adminBatchId).get();
+        //no point doing the below if we've turned off info logging
+        if (!LOG.isInfoEnabled()) {
+            return;
         }
 
-        int patientSaved = 0;
-        int patientDeleted = 0;
+        int adminTrySaved = 0;
+        int adminTryDeleted = 0;
+        int adminActuallySaved = 0;
+        int adminActuallyDeleted = 0;
+        if (adminBatch != null) {
+            UUID batchId = adminBatch.getBatchId();
+            adminTrySaved += countResourcesTrySaved.get(batchId).get();
+            adminTryDeleted += countResourcesTryDeleted.get(batchId).get();
+            adminActuallySaved += countResourcesActuallySaved.get(batchId).get();
+            adminActuallyDeleted += countResourcesActuallyDeleted.get(batchId).get();
+        }
+
+        int patientTrySaved = 0;
+        int patientTryDeleted = 0;
+        int patientActuallySaved = 0;
+        int patientActuallyDeleted = 0;
         int patientCount = patientBatchIdMap.size();
 
         for (ExchangeBatch exchangeBatch : patientBatchIdMap.values()) {
-            patientSaved += countResourcesSaved.get(exchangeBatch).get();
-            patientDeleted += countResourcesDeleted.get(exchangeBatch).get();
+            UUID batchId = exchangeBatch.getBatchId();
+            patientTrySaved += countResourcesTrySaved.get(batchId).get();
+            patientTryDeleted += countResourcesTryDeleted.get(batchId).get();
+            patientActuallySaved += countResourcesActuallySaved.get(batchId).get();
+            patientActuallyDeleted += countResourcesActuallyDeleted.get(batchId).get();
         }
 
         long durationMillis = System.currentTimeMillis() - creationTime;
         long durationSeconds = durationMillis / 1000L;
         long durationMinutes = durationSeconds / 60L;
 
-        LOG.info("Resource filing completed in " + durationMinutes + " min: admin resources [saved " + adminSaved + ", deleted " + adminDeleted + "]"
-                + ", patient resources [saved " + patientSaved + ", deleted " + patientDeleted + " over " + patientCount + " patients]");
-
-        //adding a slack alert so we proactively know when a practie has been deleted
-        //note the numbers are just arbitrary, because I'm not aware of any GP practice of less than 2000 patients
-        if (patientCount > 2000
-                && patientDeleted > 1000000) {
-
-            ServiceDalI serviceDal = DalProvider.factoryServiceDal();
-            Service service = serviceDal.getById(serviceId);
-            String msg = "" + patientDeleted + " resources deleted over "
-                       + patientCount + " patients in exchange "
-                       + exchangeId + " for " + service.getName() + " " + service.getId();
-
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
-        }
+        LOG.info("Resource filing completed in " + durationMinutes + " min:"
+                + " admin resources ["
+                + " saved " + adminActuallySaved + "/" + adminTrySaved + ", deleted " + adminActuallyDeleted + "/" + adminTryDeleted + "]"
+                + ", patient resources ["
+                + " saved " + patientActuallySaved + "/" + patientTrySaved + ", deleted " + patientActuallyDeleted + "/" + patientTryDeleted + " over " + patientCount + " patients]");
     }
 
-    /*private List<UUID> getAllBatchIds() {
-        List<UUID> batchIds = new ArrayList<>();
-        if (adminBatchId != null) {
-            batchIds.add(adminBatchId);
-        }
-        Iterator<UUID> it = patientBatchIdMap.values().iterator();
-        while (it.hasNext()) {
-            UUID batchId = it.next();
-            batchIds.add(batchId);
-        }
-        return batchIds;
-    }*/
 
     public static boolean isPatientResource(Resource resource) {
         return isPatientResource(resource.getResourceType());
@@ -660,14 +656,14 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     class ResourceJob {
         private CsvCurrentState parserState = null;
         private boolean isDelete = false;
-        private UUID batchId = null;
+        private ExchangeBatch exchangeBatch = null;
         private ResourceBuilderBase resourceBuilder = null;
         private boolean isDefinitelyNewResource = false;
 
-        ResourceJob(CsvCurrentState parserState, boolean isDelete, UUID batchId, ResourceBuilderBase resourceBuilder) {
+        ResourceJob(CsvCurrentState parserState, boolean isDelete, ExchangeBatch exchangeBatch, ResourceBuilderBase resourceBuilder) {
             this.parserState = parserState;
             this.isDelete = isDelete;
-            this.batchId = batchId;
+            this.exchangeBatch = exchangeBatch;
             this.resourceBuilder = resourceBuilder;
         }
 
@@ -679,14 +675,13 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return isDelete;
         }
 
-        public UUID getBatchId() {
-            return batchId;
+        public ExchangeBatch getExchangeBatch() {
+            return exchangeBatch;
         }
 
         public ResourceBuilderBase getResourceBuilder() {
             return resourceBuilder;
         }
-
 
         public boolean isDefinitelyNewResource() {
             return isDefinitelyNewResource;
@@ -878,19 +873,15 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         public Object call() throws Exception {
 
             try {
-                Map<Resource, UUID> hmResourcesAndBatches = new HashMap<>();
+
+                Map<Resource, ExchangeBatch> hmResourcesAndBatches = new HashMap<>();
                 Set<Resource> definitelyNewResources = new HashSet<>();
                 Map<String, ResourceFieldMappingAudit> hmAuditsByResourceId = new HashMap<>();
 
                 for (ResourceJob job: jobs) {
-                    /*if (job == null) {
-                        LOG.info("JOB IS NULL");
-                        for (int i=0; i<jobs.size(); i++) {
-                            LOG.info("at " + i + " = " + jobs.get(i));
-                        }
-                        LOG.error("NULL JOB FOUND", new Exception());
-                    }*/
-                    UUID batchId = job.getBatchId();
+
+                    //save the exchange batch if it needs saving
+                    ExchangeBatch exchangeBatch = job.getExchangeBatch();
                     ResourceBuilderBase builder = job.getResourceBuilder();
                     Resource resource = builder.getResource();
 
@@ -904,7 +895,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                         throw new FilingAndMappingException("Exception applying external reference mappings to " + resource.getResourceType() + " " + resource.getId(), job.getParserState(), ex);
                     }
 
-                    hmResourcesAndBatches.put(resource, batchId);
+                    hmResourcesAndBatches.put(resource, exchangeBatch);
 
                     ResourceFieldMappingAudit audit = builder.getAuditWrapper();
                     String resourceId = resource.getId();
@@ -914,7 +905,6 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                         definitelyNewResources.add(resource);
                     }
                 }
-
 
                 //save or delete the resource
                 List<ResourceWrapper> wrappersUpdated = null;
@@ -930,7 +920,15 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 for (ResourceWrapper wrapper: wrappersUpdated) {
                     ResourceFieldMappingAudit audit = hmAuditsByResourceId.get(wrapper.getResourceId().toString());
                     hmAuditsToSave.put(wrapper, audit);
+
+                    //record that we've actually saved an updated/new resource
+                    if (isDelete) {
+                        countResourcesActuallyDeleted.get(wrapper.getExchangeBatchId()).incrementAndGet();
+                    } else {
+                        countResourcesActuallySaved.get(wrapper.getExchangeBatchId()).incrementAndGet();
+                    }
                 }
+
                 dal.saveResourceMappings(hmAuditsToSave);
 
             } catch (Exception ex) {

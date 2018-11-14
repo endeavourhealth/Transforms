@@ -76,7 +76,6 @@ public class SRCodePreTransformer {
             if (maritalStatus != null) {
                 csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus);
             }
-
         }
 
 
