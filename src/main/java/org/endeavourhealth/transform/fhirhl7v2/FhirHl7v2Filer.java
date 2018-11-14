@@ -50,28 +50,28 @@ public class FhirHl7v2Filer {
         //need to handle the parameters object being null since we're not receiving it yet in AIMES
         try {
             Parameters parameters = findParameters(bundle);
+
+            //see if there's any special work we need to do for merging/moving
+            String adtMessageType = findAdtMessageType(bundle);
+            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
+            if (adtMessageType.equals(ADT_A34)) {
+                LOG.debug("Processing A34");
+                performA34PatientMerge(bundle, fhirResourceFiler);
+
+            } else if (adtMessageType.equals(ADT_A35)) {
+                LOG.debug("Processing A35");
+                performA35EpisodeMerge(bundle, fhirResourceFiler);
+
+            } else if (adtMessageType.equals(ADT_A44)) {
+                LOG.debug("Processing A44");
+                performA44EpisodeMove(bundle, fhirResourceFiler);
+
+            } else {
+                //nothing special
+            }
+
         } catch (TransformException ex) {
-            //if we get an exception, there are no parameter, so just return out
-            return;
-        }
-
-        //see if there's any special work we need to do for merging/moving
-        String adtMessageType = findAdtMessageType(bundle);
-        LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
-        if (adtMessageType.equals(ADT_A34)) {
-            LOG.debug("Processing A34");
-            performA34PatientMerge(bundle, fhirResourceFiler);
-
-        } else if (adtMessageType.equals(ADT_A35)) {
-            LOG.debug("Processing A35");
-            performA35EpisodeMerge(bundle, fhirResourceFiler);
-
-        } else if (adtMessageType.equals(ADT_A44)) {
-            LOG.debug("Processing A44");
-            performA44EpisodeMove(bundle, fhirResourceFiler);
-
-        } else {
-            //nothing special
+            //if we get an exception, there are no parameter, so nothing special to do
         }
 
         fhirResourceFiler.waitToFinish();
