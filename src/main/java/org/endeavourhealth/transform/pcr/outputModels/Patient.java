@@ -18,40 +18,44 @@ public class Patient extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer organisation_id,
-                    String nhs_number,
-                    Long nhs_number_verification_concept_id,
-                    Date date_of_birth,
-                    Date date_of_death,
-                    Long gender_concept_id,
-                    Integer usual_practitioner_id,
-                    Integer care_provider_id,
+    public void writeUpsert(Long id,
+                    Long organisationId,
+                    String nhsNumber,
+                    Long nhsNumberVerificationConceptId,
+                    Date dateOfBirth,
+                    Date dateOfDeath,
+                    Long genderConceptId,
+                    Long usualPractitionerId,
+                    Long careProviderId,
+                    Long enteredByPractitionerId,
                     String title,
-                    String first_name,
-                    String middle_names,
-                    String last_name,
-                    String previous_last_name,
-                    Integer home_address_id,
-Boolean is_spine_sensitive
+                    String firstName,
+                    String middleNames,
+                    String lastName,
+                    String previousLastName,
+                    Long homeAddressId,
+                    Boolean isSpineSensitive,
+char ethnicCode
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(organisation_id),
-                    nhs_number,
-                    convertLong(nhs_number_verification_concept_id),
-                    convertDate(date_of_birth),
-                    convertDate(date_of_death),
-                    convertLong(gender_concept_id),
-                    convertInt(usual_practitioner_id),
-                    convertInt(care_provider_id),
+                    convertLong(id),
+                    convertLong(organisationId),
+                    nhsNumber,
+                    convertLong(nhsNumberVerificationConceptId),
+                    convertDate(dateOfBirth),
+                    convertDate(dateOfDeath),
+                    convertLong(genderConceptId),
+                    convertLong(usualPractitionerId),
+                    convertLong(careProviderId),
+                    convertLong(enteredByPractitionerId),
                     title,
-                    first_name,
-                    middle_names,
-                    last_name,
-                    previous_last_name,
-                    convertInt(home_address_id),
-convertBoolean(is_spine_sensitive)
+                    firstName,
+                    middleNames,
+                    lastName,
+                    previousLastName,
+                    convertLong(homeAddressId),
+                    convertBoolean(isSpineSensitive),
+                    String.valueOf(ethnicCode)
        );
 }
 @Override
@@ -67,34 +71,38 @@ public String[] getCsvHeaders() {
                        "gender_concept_id",
                        "usual_practitioner_id",
                        "care_provider_id",
+                       "entered_by_practitioner_id",
                        "title",
                        "first_name",
                        "middle_names",
                        "last_name",
                        "previous_last_name",
                        "home_address_id",
-                     "is_spine_sensitive"
+                       "is_spine_sensitive",
+                     "ethnic_code"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
                     String.class,
                     Long.class,
                     Date.class,
                     Date.class,
                     Long.class,
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
                     String.class,
                     String.class,
                     String.class,
                     String.class,
                     String.class,
-                    Integer.class,
-                    Boolean.class
+                    Long.class,
+                    Boolean.class,
+                    char.class
     }; 
 }
 }

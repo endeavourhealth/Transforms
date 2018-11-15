@@ -18,20 +18,22 @@ public class CareEpisodeStatus extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer patient_id,
-                    Integer owning_organisation_id,
-                    Integer care_episode_id,
-                    Date start_time,
-                    Date end_time,
-Long care_episode_status_concept_id
+    public void writeUpsert(Long patientId,
+                    Long owningOrganisationId,
+                    Long enteredByPractitionerId,
+                    Long careEpisodeId,
+                    Date startTime,
+                    Date endTime,
+Long careEpisodeStatusConceptId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(patient_id),
-                    convertInt(owning_organisation_id),
-                    convertInt(care_episode_id),
-                    convertDate(start_time),
-                    convertDate(end_time),
-convertLong(care_episode_status_concept_id)
+                    convertLong(patientId),
+                    convertLong(owningOrganisationId),
+                    convertLong(enteredByPractitionerId),
+                    convertLong(careEpisodeId),
+                    convertDate(startTime),
+                    convertDate(endTime),
+                    convertLong(careEpisodeStatusConceptId)
        );
 }
 @Override
@@ -40,6 +42,7 @@ public String[] getCsvHeaders() {
             "save_mode",
                        "patient_id",
                        "owning_organisation_id",
+                       "entered_by_practitioner_id",
                        "care_episode_id",
                        "start_time",
                        "end_time",
@@ -49,9 +52,10 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
                     Date.class,
                     Date.class,
                     Long.class

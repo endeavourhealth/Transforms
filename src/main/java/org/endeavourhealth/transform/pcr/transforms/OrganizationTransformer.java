@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
@@ -7,7 +8,7 @@ import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Organisation;
+import org.endeavourhealth.transform.pcr.outputModels.Organisation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         String odsCode = null;
         String name = null;
         Long typeCode = null;
-        String mainLocationId = null;
+        Long mainLocationId = null;
         boolean isActive = true;
         Long parentOrganisationId = null;
 
@@ -89,7 +90,9 @@ public class OrganizationTransformer extends AbstractTransformer {
                     }
 
                     if (location != null) {
-                        mainLocationId = location.getId();
+                        if (StringUtils.isNumeric(location.getId())) {
+                            mainLocationId = Long.parseLong((location.getId()));
+                        }
                     }
                 }
             }
@@ -101,10 +104,11 @@ public class OrganizationTransformer extends AbstractTransformer {
             systemId,
             odsCode,
             name,
-            typeCode,
             isActive,
-            mainLocationId,
-            parentOrganisationId);
+            parentOrganisationId,
+            typeCode,
+            mainLocationId
+            );
     }
 
 }

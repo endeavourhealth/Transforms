@@ -5,14 +5,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.*;
-import org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar.Flag;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+//import org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar.Flag;
 
 public class OutputContainer {
 
@@ -69,7 +69,7 @@ public class OutputContainer {
 
         //TODO: - need free text table links
 
-        csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Allergy("allergy.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Problem("problem.csv", csvFormat, dateFormat, timeFormat));
         //csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
@@ -172,13 +172,13 @@ public class OutputContainer {
         return findCsvWriter(Practitioner.class);
     }
 
-    public Schedule getSchedules() {
-        return findCsvWriter(Schedule.class);
-    }
+  //  public Schedule getSchedules() {
+  //     return findCsvWriter(Schedule.class);
+  //  }
 
-    public Person getPersons() {
-        return findCsvWriter(Person.class);
-    }
+ //   public Person getPersons() {
+   //     return findCsvWriter(Person.class);
+  //  }
 
     public Patient getPatients() {
         return findCsvWriter(Patient.class);
@@ -187,34 +187,34 @@ public class OutputContainer {
     public CareEpisode getEpisodesOfCare() {
         return findCsvWriter(CareEpisode.class);
     }
+//TODO  appointments not in this build
+//    public Appointment getAppointments() {
+//        return findCsvWriter(Appointment.class);
+//    }
 
-    public Appointment getAppointments() {
-        return findCsvWriter(Appointment.class);
-    }
+//    public Encounter getEncounters() {
+//        return findCsvWriter(Encounter.class);
+//    }
+//TODO what's decision on how Encounters work?
+//    public EncounterDetail getEncounterDetails() {
+//        return findCsvWriter(EncounterDetail.class);
+//    }
+//
+//    public EncounterRaw getEncounterRaws() {
+//        return findCsvWriter(EncounterRaw.class);
+//    }
 
-    public Encounter getEncounters() {
-        return findCsvWriter(Encounter.class);
-    }
+//    public org.endeavourhealth.transform.pcr.outputModels.Flag getFlags() {
+//        return findCsvWriter(Flag.class);
+//    }
 
-    public EncounterDetail getEncounterDetails() {
-        return findCsvWriter(EncounterDetail.class);
-    }
+  //  public ReferralRequest getReferralRequests() {
+ //       return findCsvWriter(ReferralRequest.class);
+  //  }
 
-    public EncounterRaw getEncounterRaws() {
-        return findCsvWriter(EncounterRaw.class);
-    }
-
-    public org.endeavourhealth.transform.pcr.outputModels.UnusedSoFar.Flag getFlags() {
-        return findCsvWriter(Flag.class);
-    }
-
-    public ReferralRequest getReferralRequests() {
-        return findCsvWriter(ReferralRequest.class);
-    }
-
-    public ProcedureRequest getProcedureRequests() {
-        return findCsvWriter(ProcedureRequest.class);
-    }
+//    public ProcedureRequest getProcedureRequests() {
+//        return findCsvWriter(ProcedureRequest.class);
+//    }
 
     public Observation getObservations() {
         return findCsvWriter(Observation.class);
@@ -228,11 +228,11 @@ public class OutputContainer {
         return findCsvWriter(MedicationOrder.class);
     }
 
-    public AllergyIntolerance getAllergyIntolerances() {
-        return findCsvWriter(AllergyIntolerance.class);
+    public Allergy getAllergyIntolerances() {
+        return findCsvWriter(Allergy.class);
     }
 
-    public LinkDistributor getLinkDistributors() {
-        return findCsvWriter(LinkDistributor.class);
-    }
+//    public LinkDistributor getLinkDistributors() {
+//        return findCsvWriter(LinkDistributor.class);
+//    }
 }

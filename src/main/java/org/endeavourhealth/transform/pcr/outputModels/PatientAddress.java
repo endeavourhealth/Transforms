@@ -18,20 +18,22 @@ public class PatientAddress extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer patient_id,
-                    Long type_concept_id,
-                    Integer address_id,
-                    Date start_date,
-Date end_date
+    public void writeUpsert(Long id,
+                    Long patientId,
+                    Long typeConceptId,
+                    Long addressId,
+                    Date startDate,
+                    Date endDate,
+Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(patient_id),
-                    convertLong(type_concept_id),
-                    convertInt(address_id),
-                    convertDate(start_date),
-convertDate(end_date)
+                    convertLong(id),
+                    convertLong(patientId),
+                    convertLong(typeConceptId),
+                    convertLong(addressId),
+                    convertDate(startDate),
+                    convertDate(endDate),
+                    convertLong(enteredByPractitionerId)
        );
 }
 @Override
@@ -43,18 +45,20 @@ public String[] getCsvHeaders() {
                        "type_concept_id",
                        "address_id",
                        "start_date",
-                     "end_date"
+                       "end_date",
+                     "entered_by_practitioner_id"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
                     Long.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
+                    Long.class,
                     Date.class,
-                    Date.class
+                    Date.class,
+                    Long.class
     }; 
 }
 }

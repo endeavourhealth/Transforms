@@ -18,30 +18,32 @@ public class Practitioner extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer organisation_id,
+    public void writeUpsert(Long id,
+                    Long organisationId,
                     String title,
-                    String first_name,
-                    String middle_names,
-                    String last_name,
-                    Long gender_concept_id,
-                    Date date_of_birth,
-                    Boolean is_active,
-                    Long role_concept_id,
-Long speciality_concept_id
+                    String firstName,
+                    String middleNames,
+                    String lastName,
+                    Long genderConceptId,
+                    Date dateOfBirth,
+                    Boolean isActive,
+                    Long roleConceptId,
+                    Long specialityConceptId,
+Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(organisation_id),
+                    convertLong(id),
+                    convertLong(organisationId),
                     title,
-                    first_name,
-                    middle_names,
-                    last_name,
-                    convertLong(gender_concept_id),
-                    convertDate(date_of_birth),
-                    convertBoolean(is_active),
-                    convertLong(role_concept_id),
-convertLong(speciality_concept_id)
+                    firstName,
+                    middleNames,
+                    lastName,
+                    convertLong(genderConceptId),
+                    convertDate(dateOfBirth),
+                    convertBoolean(isActive),
+                    convertLong(roleConceptId),
+                    convertLong(specialityConceptId),
+                    convertLong(enteredByPractitionerId)
        );
 }
 @Override
@@ -58,14 +60,15 @@ public String[] getCsvHeaders() {
                        "date_of_birth",
                        "is_active",
                        "role_concept_id",
-                     "speciality_concept_id"
+                       "speciality_concept_id",
+                     "entered_by_practitioner_id"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
                     String.class,
                     String.class,
                     String.class,
@@ -73,6 +76,7 @@ public Class[] getColumnTypes() {
                     Long.class,
                     Date.class,
                     Boolean.class,
+                    Long.class,
                     Long.class,
                     Long.class
     }; 

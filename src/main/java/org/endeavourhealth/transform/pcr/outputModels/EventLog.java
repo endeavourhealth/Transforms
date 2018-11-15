@@ -19,23 +19,23 @@ public class EventLog extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Long id,
-                    Integer organisation_id,
-                    Date entry_date,
-                    Integer entry_practitioner_id,
-                    Integer device_id,
-                    Integer entry_mode,
-                    String table_name,
-Long item_id
+                    Long organisationId,
+                    Date entryDate,
+                    Long enteredByPractitionerId,
+                    Long deviceId,
+                    Integer entryMode,
+                    Integer tableId,
+Long itemId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
-                    convertInt(organisation_id),
-                    convertDate(entry_date),
-                    convertInt(entry_practitioner_id),
-                    convertInt(device_id),
-                    convertInt(entry_mode),
-                    table_name,
-convertLong(item_id)
+                    convertLong(organisationId),
+                    convertDate(entryDate),
+                    convertLong(enteredByPractitionerId),
+                    convertLong(deviceId),
+                    convertInt(entryMode),
+                    convertInt(tableId),
+                    convertLong(itemId)
        );
 }
 @Override
@@ -45,10 +45,10 @@ public String[] getCsvHeaders() {
                        "id",
                        "organisation_id",
                        "entry_date",
-                       "entry_practitioner_id",
+                       "entered_by_practitioner_id",
                        "device_id",
                        "entry_mode",
-                       "table_name",
+                       "table_id",
                      "item_id"
     }; 
 } 
@@ -56,12 +56,12 @@ public String[] getCsvHeaders() {
 public Class[] getColumnTypes() { 
     return new Class[]{ 
                     Long.class,
-                    Integer.class,
+                    Long.class,
                     Date.class,
+                    Long.class,
+                    Long.class,
                     Integer.class,
                     Integer.class,
-                    Integer.class,
-                    String.class,
                     Long.class
     }; 
 }

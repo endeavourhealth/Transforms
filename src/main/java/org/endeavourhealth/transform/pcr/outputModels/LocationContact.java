@@ -18,16 +18,18 @@ public class LocationContact extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer location_id,
-                    Long type_concept_id,
-String value
+    public void writeUpsert(Long id,
+                    Long locationId,
+                    Long typeConceptId,
+                    String value,
+Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(location_id),
-                    convertLong(type_concept_id),
-value
+                    convertLong(id),
+                    convertLong(locationId),
+                    convertLong(typeConceptId),
+                    value,
+                    convertLong(enteredByPractitionerId)
        );
 }
 @Override
@@ -37,16 +39,18 @@ public String[] getCsvHeaders() {
                        "id",
                        "location_id",
                        "type_concept_id",
-                     "value"
+                       "value",
+                     "entered_by_practitioner_id"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
                     Long.class,
-                    String.class
+                    Long.class,
+                    Long.class,
+                    String.class,
+                    Long.class
     }; 
 }
 }

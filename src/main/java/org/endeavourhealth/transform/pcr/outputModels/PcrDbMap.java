@@ -18,14 +18,14 @@ public class PcrDbMap extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
+    public void writeUpsert(Long id,
                     String discoveryDb,
 String discoverySchema
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
+                    convertLong(id),
                     discoveryDb,
-discoverySchema
+                    discoverySchema
        );
 }
 @Override
@@ -40,7 +40,7 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
+                    Long.class,
                     String.class,
                     String.class
     }; 

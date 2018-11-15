@@ -9,8 +9,8 @@ import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Observation;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Problem;
+import org.endeavourhealth.transform.pcr.outputModels.Observation;
+import org.endeavourhealth.transform.pcr.outputModels.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class ConditionTransformer extends AbstractTransformer {
         long id;
 
         Long owningOrganisationId;
-        Integer patientId;
+        Long patientId;
         Long encounterId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
@@ -43,6 +43,8 @@ public class ConditionTransformer extends AbstractTransformer {
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
+        Integer originalCodeScheme= null;
+        Integer originalSystem = null;
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
@@ -52,25 +54,25 @@ public class ConditionTransformer extends AbstractTransformer {
         Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
         Long episodicityConceptId = null;
         Long freeTextId = null;
-        Integer dataEntryPromptId = null;
+        Long dataEntryPromptId = null;
         Long significanceConceptId = null;
         boolean isConsent = false;
         Integer expectedDurationDays = null;
         Date lastReviewDate = null;
-        Integer enteredByPractitionerId = null;
-        Integer lastReviewPractitionerId = null;
+        Long enteredByPractitionerId = null;
+        Long lastReviewPractitionerId = null;
         Long typeConceptId = null;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        patientId = params.getEnterprisePatientId();
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
@@ -81,7 +83,7 @@ public class ConditionTransformer extends AbstractTransformer {
 
         if (fhir.hasAsserter()) {
             Reference practitionerReference = fhir.getAsserter();
-            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasOnsetDateTimeType()) {
@@ -138,7 +140,7 @@ public class ConditionTransformer extends AbstractTransformer {
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         //last review date and by which practitioner, a compound extension
@@ -151,7 +153,7 @@ public class ConditionTransformer extends AbstractTransformer {
             if (problemLastReviewByExtension != null) {
 
                 Reference lastReviewPractitionerReference = (Reference) problemLastReviewByExtension.getValue();
-                lastReviewPractitionerId = transformOnDemandAndMapId(lastReviewPractitionerReference, params).intValue();
+                lastReviewPractitionerId = transformOnDemandAndMapId(lastReviewPractitionerReference, params);
             }
 
             Extension problemLastReviewedDateExtension
@@ -214,12 +216,15 @@ public class ConditionTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
+                enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 confidential,
                 originalCode,
                 originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 episodicityConceptId,
                 freeTextId,
                 dataEntryPromptId,
@@ -241,7 +246,8 @@ public class ConditionTransformer extends AbstractTransformer {
                     significanceConceptId,
                     expectedDurationDays,
                     lastReviewDate,
-                    lastReviewPractitionerId
+                    lastReviewPractitionerId,
+                    enteredByPractitionerId
             );
         }
 

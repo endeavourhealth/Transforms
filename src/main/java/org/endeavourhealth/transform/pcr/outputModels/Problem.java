@@ -19,23 +19,25 @@ public class Problem extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Long id,
-                    Integer patient_id,
-                    Long observation_id,
-                    Long type_concept_id,
-                    Long significance_concept_id,
-                    Integer expected_duration_days,
-                    Date last_review_date,
-Integer last_review_practitioner_id
+                    Long patientId,
+                    Long observationId,
+                    Long typeConceptId,
+                    Long significanceConceptId,
+                    Integer expectedDurationDays,
+                    Date lastReviewDate,
+                    Long lastReviewPractitionerId,
+Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
-                    convertInt(patient_id),
-                    convertLong(observation_id),
-                    convertLong(type_concept_id),
-                    convertLong(significance_concept_id),
-                    convertInt(expected_duration_days),
-                    convertDate(last_review_date),
-convertInt(last_review_practitioner_id)
+                    convertLong(patientId),
+                    convertLong(observationId),
+                    convertLong(typeConceptId),
+                    convertLong(significanceConceptId),
+                    convertInt(expectedDurationDays),
+                    convertDate(lastReviewDate),
+                    convertLong(lastReviewPractitionerId),
+                    convertLong(enteredByPractitionerId)
        );
 }
 @Override
@@ -49,20 +51,22 @@ public String[] getCsvHeaders() {
                        "significance_concept_id",
                        "expected_duration_days",
                        "last_review_date",
-                     "last_review_practitioner_id"
+                       "last_review_practitioner_id",
+                     "entered_by_practitioner_id"
     }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
                     Long.class,
-                    Integer.class,
                     Long.class,
                     Long.class,
                     Long.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
                     Date.class,
-                    Integer.class
+                    Long.class,
+                    Long.class
     }; 
 }
 }

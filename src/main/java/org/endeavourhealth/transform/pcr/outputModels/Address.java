@@ -18,26 +18,26 @@ public class Address extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    String address_line_1,
-                    String address_line_2,
-                    String address_line_3,
-                    String address_line_4,
+    public void writeUpsert(Long id,
+                    String addressLine1,
+                    String addressLine2,
+                    String addressLine3,
+                    String addressLine4,
                     String postcode,
                     Long uprn,
-                    Long approximation_concept_id,
-Long property_type_concept_id
+                    Long approximationConceptId,
+Long propertyTypeConceptId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    address_line_1,
-                    address_line_2,
-                    address_line_3,
-                    address_line_4,
+                    convertLong(id),
+                    addressLine1,
+                    addressLine2,
+                    addressLine3,
+                    addressLine4,
                     postcode,
                     convertLong(uprn),
-                    convertLong(approximation_concept_id),
-convertLong(property_type_concept_id)
+                    convertLong(approximationConceptId),
+                    convertLong(propertyTypeConceptId)
        );
 }
 @Override
@@ -58,7 +58,7 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
+                    Long.class,
                     String.class,
                     String.class,
                     String.class,

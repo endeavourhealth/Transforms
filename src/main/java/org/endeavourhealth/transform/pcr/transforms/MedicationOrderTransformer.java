@@ -9,7 +9,7 @@ import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationAmount;
+import org.endeavourhealth.transform.pcr.outputModels.MedicationAmount;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +34,9 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         long id;
         long owningOrganisationId;
-        Integer patientId;
+        Long patientId;
         Long encounterId = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
 
@@ -44,14 +44,14 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         String dose = null;
         BigDecimal quantityValue = null;
         String quantityUnit = null;
-        Integer durationDays = null;
+        Long durationDays = null;
         BigDecimal estimatedCost = null;
         Long medicationStatementId = null;
 
         Long conceptId = null;
-        Date insertDate = new Date();
-        Date enteredDate = null;
-        Integer enteredByPractitionerId = null;
+//        Date insertDate = new Date();
+//        Date enteredDate = null;
+        Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = null;
         boolean confidential = false;
@@ -62,31 +62,35 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Long medicationAmountId = null;
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;
+        String originalCode =null;
+        String originalTerm = null;
+        Integer originalCodeScheme = null;
+        Integer originalSystem = null;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        patientId = params.getEnterprisePatientId();
 
         if (fhir.hasPrescriber()) {
 
             Reference practitionerReference = fhir.getPrescriber();
-            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        //recorded/entered date
-        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-        if (enteredDateExtension != null) {
-
-            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
-            enteredDate = enteredDateTimeType.getValue();
-        }
+//        //recorded/entered date
+//        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+//        if (enteredDateExtension != null) {
+//
+//            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+//            enteredDate = enteredDateTimeType.getValue();
+//        }
 
         //recorded/entered by
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         //encounter / care activity
@@ -144,8 +148,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                     if (!duration.getUnit().equalsIgnoreCase("days")) {
                         throw new TransformException("Unsupported medication order duration type [" + duration.getUnit() + "] for " + fhir.getId());
                     }
-                    int days = duration.getValue().intValue();
-                    durationDays = Integer.valueOf(days);
+                    durationDays = duration.getValue().longValue();
                 }
             }
         }
@@ -202,8 +205,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         //unique enterprise_id values allow linkage to medication_amount table id and preserve uniqueness
         medicationAmountId = id;
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationOrder model
-                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationOrder)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder)csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
@@ -211,14 +214,16 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
-                insertDate,
-                enteredDate,
                 enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 statusConceptId,
                 confidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 typeConceptId,
                 medicationStatementId,
                 medicationAmountId,
@@ -240,6 +245,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 patientId,
                 dose,
                 quantityValue,
-                quantityUnit);
+                quantityUnit,
+                enteredByPractitionerId);
     }
 }

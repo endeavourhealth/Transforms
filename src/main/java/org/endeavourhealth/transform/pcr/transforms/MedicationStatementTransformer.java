@@ -9,7 +9,7 @@ import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationAmount;
+import org.endeavourhealth.transform.pcr.outputModels.MedicationAmount;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +34,9 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         long id;
         long owningOrganisationId;
-        int patientId;
+        long patientId;
         Long encounterId = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
 
@@ -50,9 +50,9 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
-        Integer enteredByPractitionerId = null;
+        Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;
         boolean confidential = false;
         Long typeConceptId = null;
@@ -67,6 +67,10 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Long endReasonFreeTextId = null;
         Long medicationAmountId = null;
         Integer courseLengthPerIssueDays = null;
+        String originalCode = null;
+        String originalTerm = null;
+        Integer originalCodeScheme = null;
+        Integer originalSystem = null;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
@@ -74,7 +78,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
-            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         if (fhir.hasDateAssertedElement()) {
@@ -96,7 +100,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         //encounter / care activity
@@ -208,8 +212,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         //unique enterprise_id values allow linkage to medication_amount table id and preserve uniqueness
         medicationAmountId = id;
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationStatement model
-                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.MedicationStatement)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.MedicationStatement model
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement)csvWriter;
 
         model.writeUpsert(
                 id,
@@ -218,14 +222,16 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
-                insertDate,
-                enteredDate,
                 enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 statusConceptId,
                 confidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 typeConceptId,
                 medicationAmountId,
                 issuesAuthorised,
@@ -251,7 +257,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 patientId,
                 dose,
                 quantityValue,
-                quantityUnit);
+                quantityUnit,
+                enteredByPractitionerId);
 
     }
 }

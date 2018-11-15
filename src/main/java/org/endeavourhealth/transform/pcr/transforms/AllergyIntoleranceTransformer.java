@@ -35,30 +35,34 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
         long id;
         long owningOrganisationId;
-        Integer patientId;
+        Long patientId;
         Long encounterId = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        patientId = params.getEnterprisePatientId();
         String codeSystem = null;
         Long conceptId = null;
         Long substanceConceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
-        Integer enteredByPractitionerId = null;
+        Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;
-        boolean confidential = false;
+        boolean isConfidential = false;
         boolean isConsent = false;
+        String originalCode=null;
+        String originalTerm=null;
+        Integer originalCodeScheme=null;
+        Integer originalSystem=null;
 
         //TODO: - manifestation not currently supported in existing FHIR transforms
-        Integer manifestationConceptId = null;
+        Long manifestationConceptId = null;
         Long manifestationFreeTextId = null;
 
         Extension encounterExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ASSOCIATED_ENCOUNTER);
@@ -75,7 +79,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (fhir.hasRecorder()) {
 
             Reference practitionerReference = fhir.getRecorder();
-            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         //recorded/entered date
@@ -91,7 +95,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         if (fhir.hasOnset()) {
@@ -115,7 +119,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (confidentialExtension != null) {
 
             BooleanType b = (BooleanType) confidentialExtension.getValue();
-            confidential = b.getValue();
+            isConfidential = b.getValue();
         }
         StringBuilder manifestText  = new StringBuilder();
         if (fhir.hasReaction()) {
@@ -128,7 +132,10 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             if (StringUtils.isNotEmpty(manifestText)) {
                 PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
                 manifestationFreeTextId  = pcrIdDal.createPcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
-                FhirToPcrHelper.freeTextWriter(manifestationFreeTextId, patientId, manifestText.toString(),csvWriter);
+                FhirToPcrHelper.freeTextWriter(manifestationFreeTextId,
+                        patientId,
+                       manifestText.toString(), enteredByPractitionerId ,
+                        csvWriter);
             }
         }
 
@@ -139,8 +146,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             statusConceptId = IMClient.getOrCreateConceptId("AllergyIntoleranceStatus." + status.toCode());
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.AllergyIntolerance model
-                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.AllergyIntolerance)csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.Allergy model
+                = (org.endeavourhealth.transform.pcr.outputModels.Allergy)csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
@@ -148,19 +155,20 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
-                insertDate,
-                enteredDate,
-                enteredByPractitionerId,
+                enteredByPractitionerId ,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 statusConceptId,
-                codeSystem,
-                confidential,
+                isConfidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 substanceConceptId,
                 manifestationConceptId,
                 manifestationFreeTextId,
-                isConsent);
+               isConsent);
     }
 }
 

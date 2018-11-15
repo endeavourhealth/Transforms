@@ -357,26 +357,26 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             return data.getLocations();
         } else if (resourceType == ResourceType.Practitioner) {
             return data.getPractitioners();
-        } else if (resourceType == ResourceType.Schedule) {
-            return data.getSchedules();
+//        } else if (resourceType == ResourceType.Schedule) {
+//            return data.getSchedules();
         } else if (resourceType == ResourceType.Patient) {
             return data.getPatients();
         } else if (resourceType == ResourceType.EpisodeOfCare) {
             return data.getEpisodesOfCare();
-        } else if (resourceType == ResourceType.Appointment) {
-            return data.getAppointments();
-        } else if (resourceType == ResourceType.Encounter) {
-            return data.getEncounters();
-        } else if (resourceType == ResourceType.Flag) {
-            return data.getFlags();
+//        } else if (resourceType == ResourceType.Appointment) {
+//            return data.getAppointments();
+//        } else if (resourceType == ResourceType.Encounter) {
+//            return data.getEncounters();
+//        } else if (resourceType == ResourceType.Flag) {
+//            return data.getFlags();
         } else if (resourceType == ResourceType.Condition) {
             return data.getObservations();
         } else if (resourceType == ResourceType.Procedure) {
             return data.getObservations();
-        } else if (resourceType == ResourceType.ReferralRequest) {
-            return data.getReferralRequests();
-        } else if (resourceType == ResourceType.ProcedureRequest) {
-            return data.getProcedureRequests();
+//        } else if (resourceType == ResourceType.ReferralRequest) {
+//            return data.getReferralRequests();
+//        } else if (resourceType == ResourceType.ProcedureRequest) {
+//            return data.getProcedureRequests();
         } else if (resourceType == ResourceType.Observation) {
             return data.getObservations();
         } else if (resourceType == ResourceType.MedicationStatement) {
@@ -410,8 +410,8 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             return new LocationTransformer();
         } else if (resourceType == ResourceType.Practitioner) {
             return new PractitionerTransformer();
-        } else if (resourceType == ResourceType.Schedule) {
-            return new ScheduleTransformer();
+//        } else if (resourceType == ResourceType.Schedule) {
+//            return new ScheduleTransformer();
         } else if (resourceType == ResourceType.Patient) {
             return new PatientTransformer();
         } else if (resourceType == ResourceType.EpisodeOfCare) {

@@ -7,7 +7,7 @@ import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Immunisation;
+import org.endeavourhealth.transform.pcr.outputModels.Immunisation;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,25 +30,25 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Immunization fhir = (Immunization)resource;
 
         long id;
-        Integer owningOrganisationId;
-        Integer patientId;
+        Long owningOrganisationId;
+        Long patientId;
 
         Long encounterId = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().intValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        owningOrganisationId = params.getEnterpriseOrganisationId();
+        patientId = params.getEnterprisePatientId();
 
         Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
-        Integer enteredByPractitionerId = null;
+        Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Integer careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;
         boolean confidential = false;
         String dose = null;
@@ -60,6 +60,10 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Integer doseOrdinal = null;
         Integer dosesRequired = null;
         boolean isConsent = false;
+        String originalCode = null;
+        String originalTerm = null;
+        Integer originalCodeScheme = null;
+        Integer originalSystem = null;
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
@@ -70,7 +74,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
         if (fhir.hasPerformer()) {
             Reference practitionerReference = fhir.getPerformer();
-            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params).intValue();
+            effectivePractitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
         //effective date
@@ -93,7 +97,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         ObservationCodeHelper vaccineCode = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
@@ -173,14 +177,16 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
-                insertDate,
-                enteredDate,
                 enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 statusConceptId,
                 confidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 dose,
                 bodyLocationConceptId,
                 methodConceptId,

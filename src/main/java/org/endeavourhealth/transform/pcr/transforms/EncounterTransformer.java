@@ -9,9 +9,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.EncounterDetail;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.EncounterRaw;
-import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -709,16 +706,16 @@ public class EncounterTransformer extends AbstractTransformer {
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
 
-        //we need to override this function as we also need to send the delete to the other two encounter tables
-        super.transformResourceDelete(pcrId, csvWriter, params);
-
-        OutputContainer outputContainer = params.getOutputContainer();
-
-        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeDelete(pcrId);
-
-        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeDelete(pcrId);
+//        //we need to override this function as we also need to send the delete to the other two encounter tables
+//        super.transformResourceDelete(pcrId, csvWriter, params);
+//
+//        OutputContainer outputContainer = params.getOutputContainer();
+//
+//        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
+//        encounterRaw.writeDelete(pcrId);
+//
+//        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
+//        encounterDetail.writeDelete(pcrId);
 
     }
 

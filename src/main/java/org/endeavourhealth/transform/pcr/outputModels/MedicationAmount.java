@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
-import java.util.Date;
+
+import java.math.BigDecimal;
  
 public class MedicationAmount extends AbstractPcrCsvWriter {
  
@@ -19,38 +19,42 @@ public class MedicationAmount extends AbstractPcrCsvWriter {
                 "" + id);
 }
     public void writeUpsert(Long id,
-                    Integer patient_id,
+                    Long patientId,
                     String dose,
-                    Double quantity_value,
-String quantity_units
+                    BigDecimal quantityValue,
+                    String quantityUnits,
+                    Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
-                    convertInt(patient_id),
+                    convertLong(patientId),
                     dose,
-                    convertDouble(quantity_value),
-quantity_units
+                    convertBigDecimal(quantityValue),
+                    quantityUnits,
+                    convertLong(enteredByPractitionerId)
        );
 }
 @Override
 public String[] getCsvHeaders() {
-   return new String[]{ 
-            "save_mode",
-                       "id",
-                       "patient_id",
-                       "dose",
-                       "quantity_value",
-                     "quantity_units"
-    }; 
+   return new String[]{
+           "save_mode",
+           "id",
+           "patient_id",
+           "dose",
+           "quantity_value",
+           "quantity_units",
+           "entered_by_practitioner_id"
+   };
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
                     Long.class,
-                    Integer.class,
+                    Long.class,
                     String.class,
-                    Double.class,
-                    String.class
+                    BigDecimal.class,
+                    String.class,
+                    Long.class
     }; 
 }
 }

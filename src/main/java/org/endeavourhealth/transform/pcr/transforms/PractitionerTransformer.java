@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.PractitionerIdentifier;
+import org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +34,15 @@ public class PractitionerTransformer extends AbstractTransformer {
         String firstName = null;
         String middleName = null;
         String lastName = null;
-        String roleTermId = null;
-        String specialityTermId = null;
+        Long roleTermId = null;
+        Long specialityTermId = null;
         Long typeConceptId = null;
-        int genderTermId;
+        long genderTermId;
         Date dateOfBirth;
         boolean isActive;
         long id;
         long organisationId = params.getEnterpriseOrganisationId();
-
+        Long enteredByPractitionerId = null;
 
         id = pcrId.longValue();
 
@@ -82,7 +85,8 @@ public class PractitionerTransformer extends AbstractTransformer {
             CodeableConcept cc = role.getRole();
             for (Coding coding : cc.getCoding()) {
                 if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
-                    roleTermId = coding.getCode();
+                    String thiscode = coding.getCode();
+                    roleTermId = IMClient.getConceptId(thiscode);
                 }
             }
 
@@ -119,7 +123,15 @@ public class PractitionerTransformer extends AbstractTransformer {
             genderTermId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Practitioner) csvWriter;
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
+        }
+
+        org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
         model.writeUpsert(id,
                 organisationId,
                 title,
@@ -130,7 +142,8 @@ public class PractitionerTransformer extends AbstractTransformer {
                 dateOfBirth,
                 isActive,
                 roleTermId,
-                specialityTermId);
+                specialityTermId,
+                enteredByPractitionerId);
 
 //        List<Identifier> identifiers = fhir.getIdentifier();
 //
@@ -138,7 +151,10 @@ public class PractitionerTransformer extends AbstractTransformer {
 //TODO smartcard etc identifiers  -how are they set up?
         //TODO work out which identifier to select
         PractitionerIdentifier idWriter = (PractitionerIdentifier) csvWriter;
-       idWriter.writeUpsert(id,id,typeConceptId,"");
+       idWriter.writeUpsert(id,
+               typeConceptId,
+               "",
+               enteredByPractitionerId);
 
     }
 

@@ -8,6 +8,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 import static org.endeavourhealth.im.client.IMClient.getOrCreateConceptId;
@@ -33,6 +34,8 @@ public class LocationTransformer extends AbstractTransformer {
         Long addressId = null;
         boolean isActive = true;
         Long parentLocationId = null;
+        Date startDate = null;
+        Date endDate = null;
 
         id = pcrId.longValue();
 
@@ -59,7 +62,7 @@ public class LocationTransformer extends AbstractTransformer {
             Address address = fhir.getAddress();
             if ((address.getId() != null) && (StringUtils.isNumeric(address.getId()))) {
                 addressId = Long.parseLong(address.getId());
-                org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Address) csvWriter;
+                org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
                 List<StringType> addressList = address.getLine();
                 String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
                 String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
@@ -71,6 +74,16 @@ public class LocationTransformer extends AbstractTransformer {
                 Long propertyTypeId = IMClient.getOrCreateConceptId("Address.AddressUse." + address.getUse().toCode());
                 addressWriter.writeUpsert(addressId, al1, al2, al3, al4, postcode,
                         null, null, propertyTypeId);
+
+                if (address.hasPeriod()) {
+                    Period period = address.getPeriod();
+                    if (period.hasStart()) {
+                        startDate = period.getStart();
+                    }
+                    if (period.hasEnd()) {
+                        endDate = period.getEnd();
+                    }
+                }
             }
         }
 
@@ -79,12 +92,14 @@ public class LocationTransformer extends AbstractTransformer {
         }
 
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Location model = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Location) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.Location model = (org.endeavourhealth.transform.pcr.outputModels.Location) csvWriter;
         model.writeUpsert(id,
                 organisationId,
                 name,
                 typeTermId,
                 addressId,
+                startDate,
+                endDate,
                 isActive,
                 parentLocationId);
     }

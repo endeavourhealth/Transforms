@@ -10,7 +10,7 @@ import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.ObservationValue;
+import org.endeavourhealth.transform.pcr.outputModels.ObservationValue;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +36,10 @@ public class ObservationTransformer extends AbstractTransformer {
 
         long id;
         Long owningOrganisationId;
-        Integer patientId;
+        Long patientId;
 
         Long encounterId = null;
-        Integer effectivePractitionerId = null;
+        Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = null;
@@ -51,18 +51,21 @@ public class ObservationTransformer extends AbstractTransformer {
         Long resultSnomedConceptId = null;
         String originalCode = null;
         String originalTerm = null;
+        Integer originalCodeScheme = null;
+        //TODO find original code scheme
+        Integer originalSystem;
 
         Long conceptId = null;
         Date insertDate = new Date();
         Date enteredDate = null;
-        Integer enteredByPractitionerId = null;
+        Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = null;
         Long statusConceptId = null;
         boolean confidential = false;
         Long episodicityConceptId = null;
         Long freeTextId = null;
-        Integer dataEntryPromptId = null;
+        Long dataEntryPromptId = null;
         Long significanceConceptId = null;
         boolean isConsent = false;
         Long resultConceptId = null;
@@ -71,7 +74,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
         id = pcrId.longValue();
         owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        patientId = params.getEnterprisePatientId();
 
         if (fhir.hasEncounter()) {
 
@@ -86,7 +89,7 @@ public class ObservationTransformer extends AbstractTransformer {
             for (Reference reference : fhir.getPerformer()) {
                 ResourceType resourceType = ReferenceHelper.getResourceType(reference);
                 if (resourceType == ResourceType.Practitioner) {
-                    effectivePractitionerId = transformOnDemandAndMapId(reference, params).intValue();
+                    effectivePractitionerId = transformOnDemandAndMapId(reference, params);
                 }
             }
         }
@@ -106,6 +109,8 @@ public class ObservationTransformer extends AbstractTransformer {
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
+            String sys =  codes.getSystem();
+            originalSystem = IMClient.getConceptId(sys).intValue();
         } else return;
 
         if (fhir.hasValue()) {
@@ -150,7 +155,7 @@ public class ObservationTransformer extends AbstractTransformer {
         if (enteredByPractitionerExtension != null) {
 
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
-            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params).intValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
         //TODO: where get heading from?
@@ -190,8 +195,8 @@ public class ObservationTransformer extends AbstractTransformer {
 
         //referenceRangeId = ??  //TODO: map to IM concept (not set in FHIR)
 
-        org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Observation observationModel
-                = (org.endeavourhealth.transform.pcr.outputModels.OutputModelsFromEnterprise.Observation) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
+                = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
         observationModel.writeUpsert(
                 id,
                 patientId,
@@ -199,12 +204,15 @@ public class ObservationTransformer extends AbstractTransformer {
                 effectiveDate,
                 effectiveDatePrecisionId,
                 effectivePractitionerId,
+                enteredByPractitionerId,
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
                 confidential,
                 originalCode,
                 originalTerm,
+                originalCodeScheme,
+                originalSystem,
                 episodicityConceptId,
                 freeTextId,
                 dataEntryPromptId,
@@ -220,6 +228,7 @@ public class ObservationTransformer extends AbstractTransformer {
                     patientId,
                     id,
                     operatorConceptId,
+                    enteredByPractitionerId,
                     resultValue,
                     resultValueUnits,
                     resultDate,

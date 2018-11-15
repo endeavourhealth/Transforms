@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
+
+import java.math.BigDecimal;
 import java.util.Date;
  
 public class ObservationValue extends AbstractPcrCsvWriter {
@@ -18,26 +19,28 @@ public class ObservationValue extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer patient_id,
-                    Long observation_id,
-                    Long operator_concept_id,
-                    Double result_value,
-                    String result_value_units,
-                    Date result_date,
-                    String result_text,
-                    Long result_concept_id,
-Long reference_range_id
+    public void writeUpsert(Long patientId,
+                    Long observationId,
+                    Long operatorConceptId,
+                    Long enteredByPractitionerId,
+                    BigDecimal resultValue,
+                    String resultValueUnits,
+                    Date resultDate,
+                    String resultText,
+                    Long resultConceptId,
+Long referenceRangeId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(patient_id),
-                    convertLong(observation_id),
-                    convertLong(operator_concept_id),
-                    convertDouble(result_value),
-                    result_value_units,
-                    convertDate(result_date),
-                    result_text,
-                    convertLong(result_concept_id),
-convertLong(reference_range_id)
+                    convertLong(patientId),
+                    convertLong(observationId),
+                    convertLong(operatorConceptId),
+                    convertLong(enteredByPractitionerId),
+                    convertBigDecimal(resultValue),
+                    resultValueUnits,
+                    convertDate(resultDate),
+                    resultText,
+                    convertLong(resultConceptId),
+                    convertLong(referenceRangeId)
        );
 }
 @Override
@@ -47,6 +50,7 @@ public String[] getCsvHeaders() {
                        "patient_id",
                        "observation_id",
                        "operator_concept_id",
+                       "entered_by_practitioner_id",
                        "result_value",
                        "result_value_units",
                        "result_date",
@@ -58,10 +62,11 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
                     Long.class,
                     Long.class,
-                    Double.class,
+                    Long.class,
+                    Long.class,
+                    BigDecimal.class,
                     String.class,
                     Date.class,
                     String.class,

@@ -18,26 +18,26 @@ public class Organisation extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer service_id,
-                    Integer system_id,
-                    String ods_code,
+    public void writeUpsert(Long id,
+                    String serviceId,
+                    String systemId,
+                    String odsCode,
                     String name,
-                    Boolean is_active,
-                    Integer parent_organisation_id,
-                    Long type_concept_id,
-Integer main_location_id
+                    Boolean isActive,
+                    Long parentOrganisationId,
+                    Long typeConceptId,
+Long mainLocationId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(service_id),
-                    convertInt(system_id),
-                    ods_code,
+                    convertLong(id),
+                    serviceId,
+                    systemId,
+                    odsCode,
                     name,
-                    convertBoolean(is_active),
-                    convertInt(parent_organisation_id),
-                    convertLong(type_concept_id),
-convertInt(main_location_id)
+                    convertBoolean(isActive),
+                    convertLong(parentOrganisationId),
+                    convertLong(typeConceptId),
+                    convertLong(mainLocationId)
        );
 }
 @Override
@@ -58,15 +58,15 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    String.class,
+                    String.class,
                     String.class,
                     String.class,
                     Boolean.class,
-                    Integer.class,
                     Long.class,
-                    Integer.class
+                    Long.class,
+                    Long.class
     }; 
 }
 }

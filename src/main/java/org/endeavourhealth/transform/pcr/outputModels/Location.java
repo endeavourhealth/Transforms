@@ -18,26 +18,26 @@ public class Location extends AbstractPcrCsvWriter {
         super.printRecord(OutputContainer.DELETE,
                 "" + id);
 }
-    public void writeUpsert(Integer id,
-                    Integer organisation_id,
+    public void writeUpsert(Long id,
+                    Long organisationId,
                     String name,
-                    Long type_concept_id,
-                    Integer address_id,
-                    Date start_date,
-                    Date end_date,
-                    Boolean is_active,
-Integer parent_location_id
+                    Long typeConceptId,
+                    Long addressId,
+                    Date startDate,
+                    Date endDate,
+                    Boolean isActive,
+Long parentLocationId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
-                    convertInt(id),
-                    convertInt(organisation_id),
+                    convertLong(id),
+                    convertLong(organisationId),
                     name,
-                    convertLong(type_concept_id),
-                    convertInt(address_id),
-                    convertDate(start_date),
-                    convertDate(end_date),
-                    convertBoolean(is_active),
-convertInt(parent_location_id)
+                    convertLong(typeConceptId),
+                    convertLong(addressId),
+                    convertDate(startDate),
+                    convertDate(endDate),
+                    convertBoolean(isActive),
+                    convertLong(parentLocationId)
        );
 }
 @Override
@@ -58,15 +58,15 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
-                    Integer.class,
-                    Integer.class,
+                    Long.class,
+                    Long.class,
                     String.class,
                     Long.class,
-                    Integer.class,
+                    Long.class,
                     Date.class,
                     Date.class,
                     Boolean.class,
-                    Integer.class
+                    Long.class
     }; 
 }
 }
