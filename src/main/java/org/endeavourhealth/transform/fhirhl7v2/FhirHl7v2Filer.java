@@ -3,13 +3,10 @@ package org.endeavourhealth.transform.fhirhl7v2;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
-import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.fhirStorage.FhirStorageService;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -47,41 +44,43 @@ public class FhirHl7v2Filer {
         saveAdminResources(fhirResourceFiler, bundle);
         savePatientResources(fhirResourceFiler, bundle);
 
-        fhirResourceFiler.waitToFinish();
+        //ensure everything is saved before we try and do any of the merging stuff
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //need to handle the parameters object being null since we're not receiving it yet in AIMES
         try {
             Parameters parameters = findParameters(bundle);
+
+            //see if there's any special work we need to do for merging/moving
+            String adtMessageType = findAdtMessageType(bundle);
+            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
+            if (adtMessageType.equals(ADT_A34)) {
+                LOG.debug("Processing A34");
+                performA34PatientMerge(bundle, fhirResourceFiler);
+
+            } else if (adtMessageType.equals(ADT_A35)) {
+                LOG.debug("Processing A35");
+                performA35EpisodeMerge(bundle, fhirResourceFiler);
+
+            } else if (adtMessageType.equals(ADT_A44)) {
+                LOG.debug("Processing A44");
+                performA44EpisodeMove(bundle, fhirResourceFiler);
+
+            } else {
+                //nothing special
+            }
+
         } catch (TransformException ex) {
-            //if we get an exception, there are no parameter, so just return out
-            return;
+            //if we get an exception, there are no parameter, so nothing special to do
         }
 
-        //see if there's any special work we need to do for merging/moving
-        String adtMessageType = findAdtMessageType(bundle);
-        LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
-        if (adtMessageType.equals(ADT_A34)) {
-            LOG.debug("Processing A34");
-            performA34PatientMerge(exchangeId, serviceId, systemId, batchIds, bundle);
-
-        } else if (adtMessageType.equals(ADT_A35)) {
-            LOG.debug("Processing A35");
-            performA35EpisodeMerge(exchangeId, serviceId, systemId, batchIds, bundle);
-
-        } else if (adtMessageType.equals(ADT_A44)) {
-            LOG.debug("Processing A44");
-            performA44EpisodeMove(exchangeId, serviceId, systemId, batchIds, bundle);
-
-        } else {
-            //nothing special
-        }
+        fhirResourceFiler.waitToFinish();
     }
 
-
-
-
-    //A44 messages move an entire episode and all its dependant data from one patient to another
-    private void performA44EpisodeMove(UUID exchangeId, UUID serviceId, UUID systemId, List<UUID> batchIds, Bundle bundle) throws Exception {
+    /**
+     * A44 messages move an entire episode and all its dependant data from one patient to another
+     */
+    private void performA44EpisodeMove(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
         Parameters parameters = findParameters(bundle);
 
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
@@ -106,12 +105,7 @@ public class FhirHl7v2Filer {
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId.toString());
         idMappings.put(minorPatientReference, majorPatientReference);
 
-        UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
-        UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
-
-        FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
-
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(minorPatientId));
 
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
@@ -135,21 +129,22 @@ public class FhirHl7v2Filer {
             Resource fhirAmended = ParserPool.getInstance().parse(json);
             IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
 
-            storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
+            fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirAmended));
 
             //finally delete the resource from the old patient
-            storageService.exchangeBatchDelete(exchangeId, minorBatchId, fhirOriginal);
+            fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
 
             LOG.debug("Moved " + resourceType + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
 
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, originalIdMappings);
-
+        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), originalIdMappings);
     }
 
-    //A35 messages merge the contents of one episode (minor) into another one (major) for the same patient
-    private void performA35EpisodeMerge(UUID exchangeId, UUID serviceId, UUID systemId, List<UUID> batchIds, Bundle bundle) throws Exception {
+    /**
+     * A35 messages merge the contents of one episode (minor) into another one (major) for the same patient
+     */
+    private void performA35EpisodeMerge(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
         Parameters parameters = findParameters(bundle);
 
         String patientId = findParameterValue(parameters, "PatientUuid");
@@ -162,11 +157,7 @@ public class FhirHl7v2Filer {
         String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorEpisodeOfCareId);
         String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorEpisodeOfCareId);
 
-        UUID batchId = findOrCreateBatchId(exchangeId, batchIds, patientId);
-
-        FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
-
-        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(patientId));
+        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(patientId));
 
         for (ResourceWrapper patientResource: patientResources) {
 
@@ -180,7 +171,7 @@ public class FhirHl7v2Filer {
                 //we want to delete the old episode of care
                 EpisodeOfCare episodeOfCare = (EpisodeOfCare)ParserPool.getInstance().parse(json);
                 if (episodeOfCare.getId().equals(minorEpisodeOfCareId)) {
-                    storageService.exchangeBatchDelete(exchangeId, batchId, episodeOfCare);
+                    fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(episodeOfCare));
                     LOG.debug("Deleting episode " + episodeOfCare.getId());
                 }
 
@@ -199,7 +190,7 @@ public class FhirHl7v2Filer {
                 }
 
                 if (changed) {
-                    storageService.exchangeBatchUpdate(exchangeId, batchId, encounter, false);
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(encounter));
                     LOG.debug("Moved Encounter " + encounter.getId() + " to point at " + majorEpisodeReference);
                 }
 
@@ -212,11 +203,13 @@ public class FhirHl7v2Filer {
         }
 
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, majorEpisodeReference, minorEpisodeReference);
+        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), majorEpisodeReference, minorEpisodeReference);
     }
 
-    //A34 messages merge all content from one patient (minor patient) to another (the major patient)
-    private void performA34PatientMerge(UUID exchangeId, UUID serviceId, UUID systemId, List<UUID> batchIds, Bundle bundle) throws Exception {
+    /**
+     * A34 messages merge all content from one patient (minor patient) to another (the major patient)
+     */
+    private void performA34PatientMerge(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         Parameters parameters = findParameters(bundle);
 
@@ -238,12 +231,7 @@ public class FhirHl7v2Filer {
             LOG.debug(key + " -> " + value);
         }
 
-        UUID majorBatchId = findOrCreateBatchId(exchangeId, batchIds, majorPatientId);
-        UUID minorBatchId = findOrCreateBatchId(exchangeId, batchIds, minorPatientId);
-
-        FhirStorageService storageService = new FhirStorageService(serviceId, systemId);
-
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(minorPatientId));
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
         /*for (ResourceWrapper minorPatientResource: minorPatientResources) {
@@ -270,7 +258,7 @@ public class FhirHl7v2Filer {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
                     IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
-                    storageService.exchangeBatchUpdate(exchangeId, majorBatchId, fhirAmended, true);
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirAmended));
 
                 } catch (Exception ex) {
                     throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + fhirOriginal.getId() + " and now has " + fhirAmended.getId(), ex);
@@ -278,13 +266,13 @@ public class FhirHl7v2Filer {
             }
 
             //finally delete the resource from the old patient - do the delete AFTER, so any failure on the insert happens before we do the delete
-            storageService.exchangeBatchDelete(exchangeId, minorBatchId, fhirOriginal);
+            fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
 
             LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
 
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(serviceId, idMappings);
+        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), idMappings);
     }
 
     //returns a map of old Ids to new, formatted as FHIR references (e.g. Patient/<guid>)
@@ -368,30 +356,6 @@ public class FhirHl7v2Filer {
         return ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
     }
 
-    private UUID findOrCreateBatchId(UUID exchangeId, List<UUID> batchIds, String patientId) throws Exception {
-
-        //look for a batch ID that already exists for this exchange
-        ExchangeBatchDalI exchangeBatchRepository = DalProvider.factoryExchangeBatchDal();
-        List<ExchangeBatch> batches = exchangeBatchRepository.retrieveForExchangeId(exchangeId);
-        for (ExchangeBatch batch: batches) {
-            UUID batchPatientUuid = batch.getEdsPatientId();
-            if (batchPatientUuid != null
-                    && batchPatientUuid.toString().equals(patientId)) {
-                return batch.getBatchId();
-            }
-        }
-
-        //if we've not got an existing batch for this exchange and patient, then generate a new one
-        UUID edsPatientId = UUID.fromString(patientId);
-        ExchangeBatch exchangeBatch = FhirResourceFiler.createExchangeBatch(exchangeId, edsPatientId);
-        exchangeBatchRepository.save(exchangeBatch);
-
-        //make sure to add to the list of batch IDs created
-        UUID batchId = exchangeBatch.getBatchId();
-        batchIds.add(batchId);
-
-        return batchId;
-    }
 
     private static Parameters findParameters(Bundle bundle) throws Exception {
         for (Bundle.BundleEntryComponent entry: bundle.getEntry()) {
@@ -599,61 +563,6 @@ public class FhirHl7v2Filer {
         return true;
     }
 
-    /*private void saveAdminResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
-        List<Resource> adminResources = bundle
-                .getEntry()
-                .stream()
-                .map(t -> t.getResource())
-                .filter(t -> !FhirResourceFiler.isPatientResource(t))
-                .filter(t -> t.getResourceType() != ResourceType.MessageHeader)
-                .filter(t -> t.getResourceType() != ResourceType.Parameters)
-                .collect(Collectors.toList());
-
-        GenericBuilder[] builders = new GenericBuilder[adminResources.size()];
-        for (int i=0; i<adminResources.size(); i++) {
-            Resource resource = adminResources.get(i);
-            GenericBuilder builder = new GenericBuilder(resource);
-            builders[i] = builder;
-        }
-
-        fhirResourceFiler.saveAdminResource(null, false, builders);
-    }
-
-    private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
-        List<Resource> patientResources = bundle
-                .getEntry()
-                .stream()
-                .map(t -> t.getResource())
-                .filter(t -> FhirResourceFiler.isPatientResource(t))
-                .collect(Collectors.toList());
-
-        for (Resource resource: patientResources) {
-
-            //if the resource is an Encounter, then it may be an UPDATE to an existing one, so we need to make
-            //sure that we don't lose any data in the old instance by just overwriting it
-            if (resource instanceof Encounter) {
-                Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
-                resource = updateEncounter(oldEncounter, (Encounter)resource);
-            } else if (resource instanceof Patient) {
-                // Do not update Patient resources which have previously been updated by the DW feed (contains Cerner person id)
-                Patient oldPatient = (Patient)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
-                if (oldPatient != null) {
-                    PatientBuilder patientBuilder = new PatientBuilder(oldPatient);
-                    List<Identifier> identifiersForSameSystem = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-                    for (Identifier identifier: identifiersForSameSystem) {
-                        if (identifier.hasId()) {
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            GenericBuilder builder = new GenericBuilder(resource);
-
-            //and save the resource
-            fhirResourceFiler.savePatientResource(null, false, builder);
-        }
-    }*/
 
     private Resource updateDwEncounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
 

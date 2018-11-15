@@ -32,7 +32,7 @@ public class SRCodeTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRCodeTransformer.class);
 
     private static final String SYSTOLIC = "2469.";
-    private static final String DIASTOLIC = "246A.";
+    public static final String DIASTOLIC = "246A.";
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -189,39 +189,12 @@ public class SRCodeTransformer {
         // these are non drug allergies
         allergyIntoleranceBuilder.setCategory(AllergyIntolerance.AllergyIntoleranceCategory.OTHER);
 
-        CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-
-        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
-            if (snomedCode != null) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
-                addSnomedToBuilder(codeableConceptBuilder, snomedCode, parser.getSNOMEDText());
-            }
-        } else {
-
-            CsvCell readV3Code = parser.getCTV3Code();
-            if (!readV3Code.isEmpty()) {
-
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
-
-                codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
-                CsvCell readV3Term = parser.getCTV3Text();
-                codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
-                codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
-
-                // translate to Snomed if code does not start with "Y" as they are local TPP codes
-                if (!readV3Code.getString().startsWith("Y")) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-                    if (snomedCode != null) {
-                        addSnomedToBuilder(codeableConceptBuilder, snomedCode, null);
-                    }
-                    // add Ctv3 coding
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                } else {
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
-                }
-            }
-        }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
+        CsvCell snomedCodeCell = parser.getSNOMEDCode();
+        CsvCell snomedDescCell = parser.getSNOMEDText();
+        CsvCell ctv3CodeCell = parser.getCTV3Code();
+        CsvCell ctv3DescCell = parser.getCTV3Text();
+        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -231,6 +204,62 @@ public class SRCodeTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
+    }
+
+    private static void addCodeableConcept(CodeableConceptBuilder codeableConceptBuilder, CsvCell snomedCodeCell, CsvCell snomedDescCell, CsvCell ctv3CodeCell, CsvCell ctv3DescCell) throws Exception {
+
+        boolean addedSnomed = false;
+
+        if (snomedCodeCell != null //might be null in older versions
+                && !snomedCodeCell.isEmpty()
+                && snomedCodeCell.getString().equals("-1")) {
+
+            SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(snomedCodeCell.getString());
+            if (snomedCode != null) {
+                addSnomedToCodeableConcept(codeableConceptBuilder, snomedCode);
+                addedSnomed = true;
+            }
+        }
+
+        if (!ctv3CodeCell.isEmpty()) {
+            String code = ctv3CodeCell.getString();
+            if (!code.startsWith("Y")) {
+
+                //only add the snomed translation if not already added snomed
+                if (!addedSnomed) {
+                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(code);
+                    if (snomedCode != null) {
+                        addSnomedToCodeableConcept(codeableConceptBuilder, snomedCode);
+                    }
+                }
+
+                // add Ctv3 coding
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+
+            } else {
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
+            }
+
+            codeableConceptBuilder.setCodingCode(code, ctv3CodeCell);
+            codeableConceptBuilder.setCodingDisplay(ctv3DescCell.getString(), ctv3DescCell);
+        }
+
+        //set the text from one of the text cells, perferring Snomed is present
+        if (snomedDescCell != null
+                && !snomedDescCell.isEmpty()) {
+
+            codeableConceptBuilder.setText(snomedDescCell.getString(), snomedDescCell);
+
+        } else {
+            codeableConceptBuilder.setText(ctv3DescCell.getString(), ctv3DescCell);
+        }
+    }
+
+
+    private static void addSnomedToCodeableConcept(CodeableConceptBuilder codeableConceptBuilder, SnomedCode snomedCode) {
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
     }
 
     private static void createOrDeleteProcedure(SRCode parser,
@@ -283,36 +312,12 @@ public class SRCodeTransformer {
             procedureBuilder.setPerformed(dateTimeType, effectiveDate);
         }
 
-        CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
-            if (snomedCode != null) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
-                addSnomedToBuilder(codeableConceptBuilder, snomedCode, parser.getSNOMEDText());
-            }
-        } else {
-
-            CsvCell readV3Code = parser.getCTV3Code();
-            if (!readV3Code.isEmpty()) {
-
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
-
-                // add Ctv3 coding
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
-                CsvCell readV3Term = parser.getCTV3Text();
-                codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
-                codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
-
-                // translate to Snomed if code does not start with "Y" as they are local TPP codes
-                if (!readV3Code.getString().startsWith("Y")) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-                    if (snomedCode != null) {
-                        addSnomedToBuilder(codeableConceptBuilder, snomedCode, null);
-                    }
-                }
-            }
-        }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+        CsvCell snomedCodeCell = parser.getSNOMEDCode();
+        CsvCell snomedDescCell = parser.getSNOMEDText();
+        CsvCell ctv3CodeCell = parser.getCTV3Code();
+        CsvCell ctv3DescCell = parser.getCTV3Text();
+        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -386,37 +391,12 @@ public class SRCodeTransformer {
             conditionBuilder.setOnset(dateTimeType, effectiveDate);
         }
 
-        CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
-            if (snomedCode != null) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-                addSnomedToBuilder(codeableConceptBuilder, snomedCode, parser.getSNOMEDText());
-            }
-        } else {
-
-            CsvCell readV3Code = parser.getCTV3Code();
-            if (!readV3Code.isEmpty()) {
-                // In case we have cached data remove any potentially existing code.
-                conditionBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-
-                // add Ctv3 coding
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
-                CsvCell readV3Term = parser.getCTV3Text();
-                codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
-                codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
-
-                // translate to Snomed if code does not start with "Y" as they are local TPP codes
-                if (!readV3Code.getString().startsWith("Y")) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-                    if (snomedCode != null) {
-                        addSnomedToBuilder(codeableConceptBuilder, snomedCode, null);
-                    }
-                }
-            }
-        }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+        CsvCell snomedCodeCell = parser.getSNOMEDCode();
+        CsvCell snomedDescCell = parser.getSNOMEDText();
+        CsvCell ctv3CodeCell = parser.getCTV3Code();
+        CsvCell ctv3DescCell = parser.getCTV3Text();
+        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
@@ -497,10 +477,20 @@ public class SRCodeTransformer {
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        CsvCell snomedCodeCell = parser.getSNOMEDCode();
+        CsvCell snomedDescCell = parser.getSNOMEDText();
+        CsvCell ctv3CodeCell = parser.getCTV3Code();
+        CsvCell ctv3DescCell = parser.getCTV3Text();
+        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+
+
         ObservationBuilder systolicObservationBuilder = null;
         ObservationBuilder diastolicObservationBuilder = null;
 
-        CsvCell readSNOMEDCode = parser.getSNOMEDCode();
+        //TODO - rewrite the below to work - the aim is to have an Observation for the systolic and diastolic
+        //with a third Observation containing both values that the first two link to. The below does not do this.
+        /*CsvCell readSNOMEDCode = parser.getSNOMEDCode();
         if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
             SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
             if (snomedCode != null) {
@@ -590,7 +580,7 @@ public class SRCodeTransformer {
                     }
                 }
             }
-        }
+        }*/
 
         CsvCell numericValue = parser.getNumericValue();
         CsvCell isNumericCell = parser.getIsNumeric();
@@ -702,36 +692,12 @@ public class SRCodeTransformer {
         //so just use the generic family member term
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
-        CsvCell readSNOMEDCode = parser.getSNOMEDCode();
-        if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readSNOMEDCode.getString());
-            if (snomedCode != null) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
-                addSnomedToBuilder(codeableConceptBuilder, snomedCode, parser.getSNOMEDText());
-            }
-        } else {
-            CsvCell readV3Code = parser.getCTV3Code();
-            if (!readV3Code.isEmpty()) {
-
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
-
-                // add Ctv3 coding
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
-                CsvCell readV3Term = parser.getCTV3Text();
-                if (!readV3Term.isEmpty() && !Strings.isNullOrEmpty(readV3Term.getString())) {
-                    codeableConceptBuilder.setCodingDisplay(readV3Term.getString(), readV3Term);
-                    codeableConceptBuilder.setText(readV3Term.getString(), readV3Term);
-                }
-                // translate to Snomed if code does not start with "Y" as they are local TPP codes
-                if (!readV3Code.isEmpty() && !Strings.isNullOrEmpty(readV3Code.getString()) && !readV3Code.getString().startsWith("Y")) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-                    if (snomedCode != null) {
-                        addSnomedToBuilder(codeableConceptBuilder, snomedCode, null);
-                    }
-                }
-            }
-        }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
+        CsvCell snomedCodeCell = parser.getSNOMEDCode();
+        CsvCell snomedDescCell = parser.getSNOMEDText();
+        CsvCell ctv3CodeCell = parser.getCTV3Code();
+        CsvCell ctv3DescCell = parser.getCTV3Text();
+        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -830,15 +796,4 @@ public class SRCodeTransformer {
         return uuid != null;
     }
 
-    private static void addSnomedToBuilder(CodeableConceptBuilder codeableConceptBuilder, SnomedCode snomedCode, CsvCell readSNOMEDText) {
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-        codeableConceptBuilder.setText(snomedCode.getTerm());
-
-        if (readSNOMEDText != null && !readSNOMEDText.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(readSNOMEDText.getString(), readSNOMEDText);
-            codeableConceptBuilder.setText(readSNOMEDText.getString(), readSNOMEDText);
-        }
-    }
 }

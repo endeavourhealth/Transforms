@@ -143,6 +143,7 @@ public class OrganisationTransformer {
                 || csvOrganisationType.equalsIgnoreCase("General Practice Surgery")
                 || csvOrganisationType.equalsIgnoreCase("Main Surgery")
                 || csvOrganisationType.equalsIgnoreCase("GP Contract")
+                || csvOrganisationType.equalsIgnoreCase("GP Practice")
                 || csvOrganisationType.equalsIgnoreCase("GP Surgery")) {
                 return OrganisationType.GP_PRACTICE;
 
