@@ -102,6 +102,8 @@ public abstract class EmisCsvToFhirTransformer {
         Map<String, String> map = new HashMap<>();
 
         //this list of guids and dates is based off the live Emis extracts, giving the most recent bulk date for each organisation
+        //only practices where the extract started before the move to AWS and where the extract was disabled and re-bulked need to be in here.
+        //Practices disabled and re-bulked since the move to AWS are handled differently.
         map.put("{DD31E915-7076-46CF-99CD-8378AB588B69}", "20/07/2017");
         map.put("{87A8851C-3DA4-4BE0-869C-3BF6BA7C0612}", "15/10/2017");
         map.put("{612DCB3A-5BE6-4D50-909B-F0F20565F9FC}", "09/08/2017");
@@ -245,8 +247,8 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("{B22018CF-2B52-4A1A-9F6A-CEA13276DB2E}", "19/10/2017");
         map.put("{0DF8CFC7-5DE6-4DDB-846A-7F28A2740A00}", "02/12/2017");
         map.put("{50F439E5-DB18-43A0-9F25-825957013A07}", "11/01/2018"); //DR PI ABIOLA (CDB 5681);F84631
-        map.put("{00A3BA25-21C6-42DE-82AA-55FF0D85A6C3}", "02/01/2018"); //NOT FIXED YET - MARKET STREET HEALTH GROUP (CDB 381);F84004
-        map.put("{77B59D29-0FD9-4737-964F-5DBA49D94AB6}", "02/01/2018"); //NOT FIXED YET - Star Lane Medical Centre (CDB 40);F84017
+        map.put("{00A3BA25-21C6-42DE-82AA-55FF0D85A6C3}", "31/10/2018"); //NOT FIXED YET - MARKET STREET HEALTH GROUP (CDB 381);F84004
+        map.put("{77B59D29-0FD9-4737-964F-5DBA49D94AB6}", "31/10/2018"); //Star Lane Medical Centre (CDB 40);F84017
         map.put("{91239362-A105-4DEA-8E8E-239C3BCEDFD2}", "11/01/2018"); //BEECHWOOD MEDICAL CENTRE (CDB 5661);F84038
         map.put("{53A113F5-6E3B-410F-A473-53E38A79335B}", "01/06/2018"); //ELFT Community RWKGY CDB 25362
 
