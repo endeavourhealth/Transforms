@@ -65,8 +65,18 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
     }
 
+
     protected abstract boolean isFileAudited();
     protected abstract boolean skipFirstRow();
+
+    @Override
+    public List<String> getColumnHeaders() {
+        List<String> ret = new ArrayList<>();
+        for (String header: fieldList.keySet()) {
+            ret.add(header);
+        }
+        return ret;
+    }
 
     @Override
     public UUID getServiceId() {
@@ -176,14 +186,6 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         field.setColumnIndex(size);
 
         fieldList.put(field.getName(), field);
-    }
-
-    protected List<String> getHeaders() {
-        List<String> ret = new ArrayList<>();
-        for (String header: fieldList.keySet()) {
-            ret.add(header);
-        }
-        return ret;
     }
 
     public String getString(String column) {
@@ -317,7 +319,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         //start reading the file
         open("Auditing");
 
-        List<String> headersList = getHeaders();
+        List<String> headersList = getColumnHeaders();
 
         //String fileTypeDesc = getFileTypeDescription();
         String fileTypeDesc = getClass().getSimpleName();
@@ -437,6 +439,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return ret;
     }
 
+    @Override
     public CsvCell getCell(String column) {
 
         FixedParserField field = fieldList.get(column);
