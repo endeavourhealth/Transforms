@@ -129,6 +129,10 @@ public class SessionTransformer {
 
             List<Reference> edsReferences = ScheduleHelper.getAllActors(fhirScheduleOld);
 
+            //due to past oddness in this transform, we have existing Schedules with the practitioner references duplicated,
+            //which causes the below function to throw an exception, since it doesn't handle duplicates. So filter out any duplicates first.
+            ReferenceHelper.removeDuplicates(edsReferences);
+
             //the existing resource will have been through the mapping process, so we need to reverse-lookup the source EMIS user GUIDs from the EDS UUIDs
             List<Reference> rawReferences = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, edsReferences);
 

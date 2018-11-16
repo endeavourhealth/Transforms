@@ -291,6 +291,10 @@ public class IdHelper {
         }
     }
 
+    /**
+     * converts a list of Discovery references back to their source reference values.
+     * NOTE: This will throw an exception if the list passed in contains any duplicates
+     */
     public static List<Reference> convertEdsReferencesToLocallyUniqueReferences(HasServiceSystemAndExchangeIdI serviceSystemAndExchangeIdI, List<Reference> edsReferences) throws Exception {
         List<Reference> ret = new ArrayList<>();
 
