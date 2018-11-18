@@ -459,7 +459,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     }
 
     public long getSourceFileRecordIdForCurrentRow() {
-        if (isFileAudited()) {
+        if (fileAuditId != null) {
             return cellAuditIds[currentLineNumber];
 
         } else {

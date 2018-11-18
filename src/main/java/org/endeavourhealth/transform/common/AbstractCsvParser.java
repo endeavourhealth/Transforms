@@ -629,7 +629,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     }
 
     public long getSourceFileRecordIdForCurrentRow() {
-        if (isFileAudited()) {
+        if (fileAuditId != null) {
             return cellAuditIds[csvRecordLineNumber];
 
         } else {
