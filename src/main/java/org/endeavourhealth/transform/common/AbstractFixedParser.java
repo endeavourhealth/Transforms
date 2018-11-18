@@ -78,6 +78,10 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return ret;
     }
 
+    public List<FixedParserField> getFieldList() {
+        return getFieldList(version);
+    }
+
     @Override
     public UUID getServiceId() {
         return serviceId;
