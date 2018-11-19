@@ -10,7 +10,6 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -122,18 +121,18 @@ public abstract class AbstractTransformer {
         return findEnterpriseId(params, resourceType, resourceId);
     }*/
 
-    protected static Long findEnterpriseId(PcrTransformParams params, Reference reference) throws Exception {
+    protected static Long findPcrId(PcrTransformParams params, Reference reference) throws Exception {
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
         String resourceType = comps.getResourceType().toString();
         String resourceId = comps.getId();
-        return findEnterpriseId(params, resourceType, resourceId);
+        return findPcrId(params, resourceType, resourceId);
     }
 
     /*protected static Long findEnterpriseId(PcrTransformParams params, ResourceWrapper resource) throws Exception {
         return findEnterpriseId(params, resource.getResourceType(), resource.getResourceId().toString());
     }*/
 
-    public static Long findEnterpriseId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
+    public static Long findPcrId(PcrTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getConfigName(), resourceType, resourceId);
         if (ret == null) {
             PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
@@ -212,7 +211,7 @@ public abstract class AbstractTransformer {
         Map<ResourceWrapper, Long> ret = new HashMap<>();
 
         //first, try to find existing IDs for our resources in our memory cache
-        findEnterpriseIdsInCache(pcrConfigName, resources, ret);
+        findPcrIdsInCache(pcrConfigName, resources, ret);
 
         List<ResourceWrapper> resourcesToFindOnDb = new ArrayList<>();
         List<ResourceWrapper> resourcesToFindOrCreateOnDb = new ArrayList<>();
@@ -283,7 +282,9 @@ public abstract class AbstractTransformer {
         UUID mappedResourceId = checkInstanceMapCache(params.getConfigName(), resourceType, resourceId);
         if (mappedResourceId == null) {
 
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
+            //EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
+            PcrIdDalI instanceMapper = DalProvider.factoryPcrIdDal(params.getConfigName());
+
             mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
@@ -361,7 +362,7 @@ public abstract class AbstractTransformer {
         }
     }
 
-    private static void findEnterpriseIdsInCache(String pcrConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
+    private static void findPcrIdsInCache(String pcrConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, Long> ids) throws Exception {
 
         for (ResourceWrapper resource : resources) {
             Long cachedId = checkCacheForId(pcrConfigName, resource.getResourceType(), resource.getResourceId().toString());
@@ -380,9 +381,9 @@ public abstract class AbstractTransformer {
 
         //if we've already got an ID for this resource we must have previously transformed it
         //so we don't need to forcibly transform it now
-        Long existingEnterpriseId = findEnterpriseId(params, reference);
-        if (existingEnterpriseId != null) {
-            return existingEnterpriseId;
+        Long existingPcrId = findPcrId(params, reference);
+        if (existingPcrId != null) {
+            return existingPcrId;
         }
 
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
@@ -425,13 +426,13 @@ public abstract class AbstractTransformer {
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
                 //other resource, as it will already have been done, so we can just return it's PCR ID
                 if (!mappedResourceId.equals(resourceId)) {
-                    Long mappedInstancePcrId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                    Long mappedInstancePcrId = findPcrId(params, resourceType.toString(), mappedResourceId.toString());
                     if (mappedInstancePcrId == null) {
                         //if we've just started processing the first exchange for an org that's taking over the
                         //instance map, there's a chance we'll catch it mid-way through taking over, in which
                         //case we should just give a second and try again, throwing an error if we fail
                         Thread.sleep(1000);
-                        mappedInstancePcrId = findEnterpriseId(params, resourceType.toString(), mappedResourceId.toString());
+                        mappedInstancePcrId = findPcrId(params, resourceType.toString(), mappedResourceId.toString());
                         if (mappedInstancePcrId == null) {
                             throw new TransformException("Failed to find PCR ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
@@ -443,7 +444,7 @@ public abstract class AbstractTransformer {
             if (params.hasResourceBeenTransformedAddIfNot(reference)) {
                 //if we've already transformed the resource, which could happen because the transform is multi-threaded,
                 //then have another look for the PCR ID as it must exist
-                return findEnterpriseId(params, reference);
+                return findPcrId(params, reference);
             }
 
             //if we've got here, we actually want to transform the referred to resource, so retrieve from the DB

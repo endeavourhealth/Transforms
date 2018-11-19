@@ -71,12 +71,12 @@ public class ConditionTransformer extends AbstractTransformer {
         Long typeConceptId = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId();
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId();
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;   //TODO: check this is correct
         }
@@ -194,7 +194,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = findPcrId(params, parentReference);
 
             //TODO:// EventRelationship
         }

@@ -73,13 +73,13 @@ public class ObservationTransformer extends AbstractTransformer {
         Long referenceRangeId = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId();
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId();
 
         if (fhir.hasEncounter()) {
 
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
         }

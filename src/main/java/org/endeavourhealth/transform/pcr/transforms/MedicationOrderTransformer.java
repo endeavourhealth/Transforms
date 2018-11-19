@@ -68,8 +68,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Integer originalSystem = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId();
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId();
 
         if (fhir.hasPrescriber()) {
 
@@ -96,7 +96,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         //encounter / care activity
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
         }
@@ -175,7 +175,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         if (medicationStatementReferenceExtension != null) {
 
             Reference medicationStatementReference = (Reference) medicationStatementReferenceExtension.getValue();
-            medicationStatementId = findEnterpriseId(params, medicationStatementReference);
+            medicationStatementId = findPcrId(params, medicationStatementReference);
 
             //the test pack contains medication orders (i.e. issueRecords) that point to medication statements (i.e. drugRecords)
             //that don't exist, so log it out and just skip this bad record

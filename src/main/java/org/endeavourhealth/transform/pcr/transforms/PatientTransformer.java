@@ -86,7 +86,7 @@ public class PatientTransformer extends AbstractTransformer {
 
 
         id = pcrId.longValue();
-        organizationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getPcrOrganisationId().longValue();
 
 
         dateOfBirth = fhirPatient.getBirthDate();
@@ -183,7 +183,7 @@ public class PatientTransformer extends AbstractTransformer {
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->enterprise
                 try {
-                    careProviderId = super.findEnterpriseId(params, orgReference);
+                    careProviderId = super.findPcrId(params, orgReference);
                 } catch (Throwable t) {
                     LOG.error("Error finding ID for reference " + orgReference.getReference());
                     throw t;

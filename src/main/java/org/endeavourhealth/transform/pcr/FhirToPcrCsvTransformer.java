@@ -73,12 +73,12 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         PcrTransformParams params = new PcrTransformParams(serviceId, systemId, protocolId, exchangeId, batchId,
                 configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
-        Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
-        params.setEnterpriseOrganisationId(enterpriseOrgId);
+        Long pcrOrgId = findEnterpriseOrgId(serviceId, params, resources);
+        params.setPcrOrganisationId(pcrOrgId);
         params.setBatchSize(batchSize);
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
-        if (enterpriseOrgId == null) {
+        if (pcrOrgId == null) {
             return null;
         }
 
@@ -285,15 +285,15 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
         String discoveryPatientId = findPatientId(resources);
         if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-            Long enterprisePatientId = AbstractTransformer.findEnterpriseId(params, ResourceType.Patient.toString(), discoveryPatientId);
-            if (enterprisePatientId == null) {
+            Long pcrPatientId = AbstractTransformer.findPcrId(params, ResourceType.Patient.toString(), discoveryPatientId);
+            if (pcrPatientId == null) {
                 //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
                 //care where we don't have patients. If we're in this situation, then don't send over the data.
                 LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
                 return;
                 //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
             }
-            params.setEnterprisePatientId(enterprisePatientId);
+            params.setPcrPatientId(pcrPatientId);
 
 //            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
 //

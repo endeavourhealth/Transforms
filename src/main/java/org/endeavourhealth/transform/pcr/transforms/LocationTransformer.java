@@ -28,7 +28,7 @@ public class LocationTransformer extends AbstractTransformer {
         Location fhir = (Location) resource;
 
         long id;
-        Long organisationId = params.getEnterpriseOrganisationId();
+        Long organisationId = params.getPcrOrganisationId();
         String name = null;
         Long typeTermId = null;
         Long addressId = null;

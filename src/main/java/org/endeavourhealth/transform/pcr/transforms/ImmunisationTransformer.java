@@ -40,8 +40,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Long snomedConceptId = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId();
-        patientId = params.getEnterprisePatientId();
+        owningOrganisationId = params.getPcrOrganisationId();
+        patientId = params.getPcrPatientId();
 
         Long conceptId = null;
         Date insertDate = new Date();
@@ -67,7 +67,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
         }

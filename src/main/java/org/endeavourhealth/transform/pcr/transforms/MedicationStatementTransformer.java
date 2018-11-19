@@ -73,8 +73,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Integer originalSystem = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().intValue();
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId().intValue();
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
@@ -108,7 +108,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         if (encounterExtension != null) {
 
             Reference encounterReference = (Reference)encounterExtension.getValue();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
         }
