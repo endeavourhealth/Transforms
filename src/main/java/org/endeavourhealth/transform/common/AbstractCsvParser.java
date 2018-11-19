@@ -171,6 +171,16 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
     }
 
+    @Override
+    public List<String> getColumnHeaders() {
+        List<String> ret = new ArrayList<>();
+        String[] expectedHeaders = getCsvHeaders(version);
+        for (String s: expectedHeaders) {
+            ret.add(s);
+        }
+        return ret;
+    }
+
     /**
      * when we open this file, this function is called to ensure the content is fully audited. If not, it will use
      * a thread pool to iterate through the file and ensure every row is audited
@@ -585,7 +595,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.recordNumbersToProcess = recordNumbersToProcess;
     }*/
 
-
+    @Override
     public CsvCell getCell(String column) {
         String value = null;
         try {
@@ -619,7 +629,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     }
 
     public long getSourceFileRecordIdForCurrentRow() {
-        if (isFileAudited()) {
+        if (fileAuditId != null) {
             return cellAuditIds[csvRecordLineNumber];
 
         } else {
