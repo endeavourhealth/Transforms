@@ -5,7 +5,7 @@
 
     <groupId>org.endeavourhealth.common</groupId>
     <artifactId>transforms</artifactId>
-    <version>1.1103-SNAPSHOT</version>
+    <version>1.1104-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -14,7 +14,7 @@
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
-        <eds-core.version>1.296-SNAPSHOT</eds-core.version>
+        <eds-core.version>1.297-SNAPSHOT</eds-core.version>
         <eds-fhir.version>1.78-SNAPSHOT</eds-fhir.version>
         <eds-utility.version>1.35-SNAPSHOT</eds-utility.version>
         <eds-cache.version>1.1-SNAPSHOT</eds-cache.version>
