@@ -242,7 +242,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
 
-        longId = idMap.getId();
+        longId = idMap.getPcrId();
 
         patientAddressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),
                 patientId,
