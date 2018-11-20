@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
-
+ 
+import java.util.Date;
 import java.math.BigDecimal;
  
 public class MedicationAmount extends AbstractPcrCsvWriter {
@@ -23,7 +24,7 @@ public class MedicationAmount extends AbstractPcrCsvWriter {
                     String dose,
                     BigDecimal quantityValue,
                     String quantityUnits,
-                    Long enteredByPractitionerId
+Long enteredByPractitionerId
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
                     convertLong(id),
@@ -36,19 +37,20 @@ public class MedicationAmount extends AbstractPcrCsvWriter {
 }
 @Override
 public String[] getCsvHeaders() {
-   return new String[]{
-           "save_mode",
-           "id",
-           "patient_id",
-           "dose",
-           "quantity_value",
-           "quantity_units",
-           "entered_by_practitioner_id"
-   };
+   return new String[]{ 
+            "save_mode",
+                       "id",
+                       "patient_id",
+                       "dose",
+                       "quantity_value",
+                       "quantity_units",
+                     "entered_by_practitioner_id"
+    }; 
 } 
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
+                    String.class,
                     Long.class,
                     Long.class,
                     String.class,

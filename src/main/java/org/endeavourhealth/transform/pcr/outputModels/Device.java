@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.pcr.outputModels;
 import org.apache.commons.csv.CSVFormat;
  
 import java.util.Date;
+import java.math.BigDecimal;
  
 public class Device extends AbstractPcrCsvWriter {
  
@@ -61,6 +62,7 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
+                    String.class,
                     Long.class,
                     Long.class,
                     Long.class,

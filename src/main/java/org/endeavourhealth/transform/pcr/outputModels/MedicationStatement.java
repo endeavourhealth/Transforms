@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
+
 import java.util.Date;
  
 public class MedicationStatement extends AbstractPcrCsvWriter {
@@ -118,6 +118,7 @@ public String[] getCsvHeaders() {
 @Override 
 public Class[] getColumnTypes() { 
     return new Class[]{ 
+                    String.class,
                     Long.class,
                     Long.class,
                     Long.class,
@@ -136,16 +137,16 @@ public Class[] getColumnTypes() {
                     Integer.class,
                     Long.class,
                     Long.class,
-                    Long.class,
+                    Integer.class,
                     Date.class,
-                    Long.class,
+                    Integer.class,
                     Long.class,
                     Long.class,
                     Boolean.class,
                     Date.class,
                     Long.class,
                     Long.class,
-                    Long.class,
+                    Integer.class,
                     Boolean.class
     }; 
 }
