@@ -451,9 +451,17 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
     }
 
-    private static String getFieldValue(String line, FixedParserField field, int offset) {
+    private String getFieldValue(String line, FixedParserField field, int offset) {
         int start = field.getFieldPosition() - offset;
-        int end = (field.getFieldPosition() - offset) + field.getFieldlength();
+        int end = start + field.getFieldlength();
+
+        //if the last field is empty, some files don't pad it out with whitespace (e.g. Barts SUS Outpatient file)
+        //so we need to handle this safely and just extract up to the end of the line.
+        if (end > line.length()
+                && field.getColumnIndex() + 1 == fieldList.size()) {
+            end = line.length();
+        }
+
         String ret = line.substring(start, end);
         ret = ret.trim();
         return ret;
