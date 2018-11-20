@@ -11,8 +11,8 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -73,12 +73,12 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         PcrTransformParams params = new PcrTransformParams(serviceId, systemId, protocolId, exchangeId, batchId,
                 configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
-        Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
-        params.setEnterpriseOrganisationId(enterpriseOrgId);
+        Long pcrOrgId = findPcrOrgId(serviceId, params, resources);
+        params.setPcrOrganisationId(pcrOrgId);
         params.setBatchSize(batchSize);
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
-        if (enterpriseOrgId == null) {
+        if (pcrOrgId == null) {
             return null;
         }
 
@@ -108,13 +108,14 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         return i.intValue();
     }*/
 
-    private static Long findEnterpriseOrgId(UUID serviceId, PcrTransformParams params, List<ResourceWrapper> resources) throws Exception {
+    private static Long findPcrOrgId(UUID serviceId, PcrTransformParams params, List<ResourceWrapper> resources) throws Exception {
 
-        //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
-        Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString());
-        if (enterpriseOrganisationId != null) {
-            return enterpriseOrganisationId;
+        //if we've previously transformed for our ODS code, then we'll have a mapping to the PCR ID for that ODS code
+        PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
+
+        Long pcrOrganisationId =  pcrIdDal.findPcrOrganisationId(serviceId.toString());
+        if (pcrOrganisationId != null) {
+            return pcrOrganisationId;
         }
 
         //if this is our first time transforming for our org, then we need to find the FHIR resource
@@ -125,7 +126,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         ResourceWrapper resourceByService = resourceRepository.getFirstResourceByService(serviceId, ResourceType.Patient);
         if (resourceByService == null) {
             //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
-            //non-patient metadata, but no patient data. If this happens, then don't send anything to enterprise, as
+            //non-patient metadata, but no patient data. If this happens, then don't send anything to pcr, as
             //it'll all be sorted out when they do send patient data.
             return null;
             //throw new TransformException("Cannot find a Patient resource for service " + serviceId + " and system " + systemId);
@@ -159,8 +160,10 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         if (params.isUseInstanceMapping()) {
 
             //we need to see if our organisation is mapped to another instance of the same place,
-            //in which case we need to use the enterprise ID of that other instance
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getConfigName());
+            //in which case we need to use the PCR ID of that other instance
+
+            PcrIdDalI instanceMapper = DalProvider.factoryPcrIdDal(params.getConfigName());
+
             UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
@@ -177,12 +180,12 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        //generate (or find) an enterprise ID for our organization
-        enterpriseOrganisationId = AbstractTransformer.findOrCreatePcrId(params, resourceType.toString(), resourceId.toString());
-        //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
+        //generate (or find) an PCR ID for our organization
+        pcrOrganisationId = AbstractTransformer.findOrCreatePcrId(params, resourceType.toString(), resourceId.toString());
+        LOG.info("Created pcr org ID: " + pcrOrganisationId);
 
-        //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
-        enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
+        //and store the organization's pcr ID in a separate table so we don't have to repeat all this next time
+        pcrIdDal.savePcrOrganisationId(serviceId.toString(), pcrOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
@@ -209,12 +212,12 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             map.put(orgReferenceValue, resourceWrapper);
         }
 
-        return enterpriseOrganisationId;
+        return pcrOrganisationId;
     }
 
     /**
      * all resources in a batch are for the same patient (or no patient at all), so rather than looking
-     * up the enterprise patient ID for each resource, we can do it once at the start. To do that
+     * up the PCR patient ID for each resource, we can do it once at the start. To do that
      * we need the Discovery patient ID from one of the resources.
      */
     private static String findPatientId(List<ResourceWrapper> resourceWrappers) throws Exception {
@@ -285,15 +288,15 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
         String discoveryPatientId = findPatientId(resources);
         if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-            Long enterprisePatientId = AbstractTransformer.findEnterpriseId(params, ResourceType.Patient.toString(), discoveryPatientId);
-            if (enterprisePatientId == null) {
+            Long pcrPatientId = AbstractTransformer.findPcrId(params, ResourceType.Patient.toString(), discoveryPatientId);
+            if (pcrPatientId == null) {
                 //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
                 //care where we don't have patients. If we're in this situation, then don't send over the data.
                 LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
                 return;
                 //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
             }
-            params.setEnterprisePatientId(enterprisePatientId);
+            params.setPcrPatientId(pcrPatientId);
 
 //            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
 //

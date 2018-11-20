@@ -23,8 +23,8 @@ public class PcrTransformParams {
     private final boolean useInstanceMapping;
 
     private int batchSize;
-    private Long enterpriseOrganisationId = null;
-    private Long enterprisePatientId = null;
+    private Long pcrOrganisationId = null;
+    private Long pcrPatientId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public PcrTransformParams(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String configName,
@@ -89,38 +89,27 @@ public class PcrTransformParams {
         this.batchSize = batchSize;
     }
 
-    public Long getEnterpriseOrganisationId() {
-        return enterpriseOrganisationId;
+    public Long getPcrOrganisationId() {
+        return pcrOrganisationId;
     }
 
-    public void setEnterpriseOrganisationId(Long enterpriseOrganisationId) {
-        if (this.enterpriseOrganisationId != null) {
-            throw new IllegalArgumentException("Cannot change the enterpriseOrganisationId once set");
+    public void setPcrOrganisationId(Long pcrOrganisationId) {
+        if (this.pcrOrganisationId != null) {
+            throw new IllegalArgumentException("Cannot change the pcrOrganisationId once set");
         }
-        this.enterpriseOrganisationId = enterpriseOrganisationId;
+        this.pcrOrganisationId = pcrOrganisationId;
     }
 
-    public Long getEnterprisePatientId() {
-        return enterprisePatientId;
+    public Long getPcrPatientId() {
+        return pcrPatientId;
     }
 
-    public void setEnterprisePatientId(Long enterprisePatientId) {
-        if (this.enterprisePatientId != null) {
-            throw new IllegalArgumentException("Cannot change the enterprisePatientId once set");
+    public void setPcrPatientId(Long pcrPatientId) {
+        if (this.pcrPatientId != null) {
+            throw new IllegalArgumentException("Cannot change the setPcrPatientId once set");
         }
-        this.enterprisePatientId = enterprisePatientId;
+        this.pcrPatientId = pcrPatientId;
     }
-
-//    public Long getEnterprisePersonId() {
-//        return enterprisePersonId;
-//    }
-//
-//    public void setEnterprisePersonId(Long enterprisePersonId) {
-//        if (this.enterprisePersonId != null) {
-//            throw new IllegalArgumentException("Cannot change the enterprisePersonId once set");
-//        }
-//        this.enterprisePersonId = enterprisePersonId;
-//    }
 
     public boolean hasResourceBeenTransformedAddIfNot(Reference reference) {
         //we have to use the Strings as the Reference class doesn't have hashCode or equals functions implmented

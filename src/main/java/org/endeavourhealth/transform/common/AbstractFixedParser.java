@@ -59,8 +59,24 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         this.timeFormat = new SimpleDateFormat(timeFormat);
         this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
 
+        //work out the fields and validate they make sense
+        Set<String> fieldSet = new HashSet<>();
+        int lastEndPos = 0;
+
         List<FixedParserField> fields = getFieldList(version);
         for (FixedParserField field: fields) {
+
+            String fieldName = field.getName();
+            if (fieldSet.contains(fieldName)) {
+                throw new Exception("Duplicate name " + fieldName + " in " + getClass().getName());
+            }
+            fieldSet.add(fieldName);
+
+            int newEndPos = field.getFieldPosition() + field.getFieldlength();
+            if (newEndPos <= lastEndPos) {
+                throw new Exception("Field " + fieldName + " starts before end of previous field");
+            }
+
             addFieldList(field);
         }
     }
@@ -192,7 +208,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         fieldList.put(field.getName(), field);
     }
 
-    public String getString(String column) {
+    protected String getString(String column) {
         FixedParserField field = fieldList.get(column);
         if (field != null) {
             return getFieldValue(this.curentLine, field, fieldPositionAdjuster);
@@ -201,7 +217,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
     }
 
-    public Integer getInt(String column) {
+    protected Integer getInt(String column) {
         String s = getString(column);
         if (s == null || s.length() == 0) {
             return null;
@@ -209,7 +225,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return Integer.valueOf(s);
     }
 
-    public Date getDateTime(String column) throws TransformException {
+    protected Date getDateTime(String column) throws TransformException {
         Date ret = null;
         String dt = getString(column);
         if (dt != null && dt.length() > 0) {
@@ -222,7 +238,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return ret;
     }
 
-    public Date getDate(String column) throws TransformException {
+    protected Date getDate(String column) throws TransformException {
         String dt = getString(column);
         return parseDate(dt);
     }
@@ -254,7 +270,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return ret;
     }*/
 
-    public Date getTime(String column) throws TransformException {
+    protected Date getTime(String column) throws TransformException {
         Date ret = null;
         String dt = getString(column);
         if (dt != null && dt.length() > 0) {
@@ -267,7 +283,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return ret;
     }
 
-    public Date getDateTime(String dateColumn, String timeColumn) throws TransformException {
+    protected Date getDateTime(String dateColumn, String timeColumn) throws TransformException {
         Date d = getDate(dateColumn);
         Date t = getTime(timeColumn);
         if (d == null) {
@@ -281,7 +297,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
     }
 
-    public Long getLong(String column) {
+    protected Long getLong(String column) {
         String s = getString(column);
         if (s == null) {
             return null;

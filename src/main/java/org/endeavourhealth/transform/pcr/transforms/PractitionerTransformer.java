@@ -41,7 +41,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         Date dateOfBirth;
         boolean isActive;
         long id;
-        long organisationId = params.getEnterpriseOrganisationId();
+        long organisationId = params.getPcrOrganisationId();
         Long enteredByPractitionerId = null;
 
         id = pcrId.longValue();
@@ -78,7 +78,7 @@ public class PractitionerTransformer extends AbstractTransformer {
             }
         }
 
-        Long practitionerEnterpriseOrgId = null;
+        Long practitionerPcrOrgId = null;
         //LOG.trace("Transforming practitioner " + fhir.getId() + " with " + fhir.getPractitionerRole().size() + " roles and enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
         for (Practitioner.PractitionerPractitionerRoleComponent role : fhir.getPractitionerRole()) {
 
@@ -101,19 +101,19 @@ public class PractitionerTransformer extends AbstractTransformer {
 
             if (role.hasManagingOrganization()) {
                 Reference organisationReference = role.getManagingOrganization();
-                practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
+                practitionerPcrOrgId = transformOnDemandAndMapId(organisationReference, params);
             }
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
 
         //if we failed to find a proper organisation ID for the practitioner, assign it to the
         //organisation we're doing the transform for
-        if (practitionerEnterpriseOrgId == null) {
+        if (practitionerPcrOrgId == null) {
             //LOG.trace("No role, so setting to the enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
-            practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
+            practitionerPcrOrgId = params.getPcrOrganisationId();
         }
 
-        organisationId = practitionerEnterpriseOrgId.longValue();
+        organisationId = practitionerPcrOrgId.longValue();
 
         isActive = fhir.getActive();
         dateOfBirth = fhir.getBirthDate();

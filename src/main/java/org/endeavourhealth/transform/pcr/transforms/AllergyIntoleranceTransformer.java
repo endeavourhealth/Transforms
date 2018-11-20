@@ -43,8 +43,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Long snomedConceptId = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId();
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId();
         String codeSystem = null;
         Long conceptId = null;
         Long substanceConceptId = null;
@@ -69,7 +69,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (encounterExtension != null) {
 
             Reference encounterReference = (Reference)encounterExtension.getValue();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
         }

@@ -252,8 +252,8 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         }
 
         // secondary piagnoses ?
-        LOG.debug("Secondary diagnosis list=" + parser.getICDSecondaryDiagnosisList());
-        LOG.debug("Secondary diagnosis count=" + parser.getICDSecondaryDiagnosisCount());
+        /*LOG.debug("Secondary diagnosis list=" + parser.getICDSecondaryDiagnosisList());
+        LOG.debug("Secondary diagnosis count=" + parser.getICDSecondaryDiagnosisCount());*/
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
             if (codeDuplicateCountList.containsKey(parser.getICDSecondaryDiagnosis(i))) {
                 currCodeDuplicateCount = codeDuplicateCountList.get(parser.getICDSecondaryDiagnosis(i));
@@ -370,8 +370,8 @@ Data line is of type Inpatient
         }
 
         // secondary procedures
-        LOG.debug("Secondary procedure list=" + parser.getOPCSecondaryProcedureList());
-        LOG.debug("Secondary procedure count=" + parser.getOPCSecondaryProcedureCodeCount());
+        /*LOG.debug("Secondary procedure list=" + parser.getOPCSecondaryProcedureList());
+        LOG.debug("Secondary procedure count=" + parser.getOPCSecondaryProcedureCodeCount());*/
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
             if (codeDuplicateCountList.containsKey(parser.getOPCSecondaryProcedureCode(i))) {
                 currCodeDuplicateCount = codeDuplicateCountList.get(parser.getOPCSecondaryProcedureCode(i));
