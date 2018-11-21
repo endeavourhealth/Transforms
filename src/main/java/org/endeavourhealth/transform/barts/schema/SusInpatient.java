@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +13,9 @@ import java.util.UUID;
 
 public class SusInpatient extends SusBaseParser {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatient.class);
-    public static final String DATE_FORMAT = "yyyyMMdd";
-    public static final String TIME_FORMAT = "hhmmss";
 
     public SusInpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, DATE_FORMAT, TIME_FORMAT);
+        super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
 
     public Date getAdmissionDate() throws TransformException {
