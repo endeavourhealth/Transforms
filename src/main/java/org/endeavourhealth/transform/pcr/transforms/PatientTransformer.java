@@ -192,7 +192,7 @@ public class PatientTransformer extends AbstractTransformer {
                 }
             }
         }
-
+        writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, csvWriter);
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
         //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
@@ -222,7 +222,7 @@ public class PatientTransformer extends AbstractTransformer {
                 homeAddressId,
                 isSpineSensitive,
                 ethnicCode);
-        writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, csvWriter);
+
     }
 
     private void writePatientIdentifier(long id, Patient patient, Long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
