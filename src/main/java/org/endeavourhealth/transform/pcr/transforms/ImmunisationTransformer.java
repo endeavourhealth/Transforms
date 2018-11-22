@@ -2,8 +2,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -104,7 +103,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
         if (vaccineCode != null) {
 
             snomedConceptId = vaccineCode.getSnomedConceptId();
-            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
         } else return;
 
         //TODO: where get heading from?
@@ -113,7 +113,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
         //immunisation status
         if (fhir.hasStatus()) {
 
-            statusConceptId = IMClient.getOrCreateConceptId("Immunization.status." + fhir.getStatus());
+            statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getOrCreateConceptId("Immunization.status." + fhir.getStatus());
         }
 
         //confidential
@@ -135,13 +136,15 @@ public class ImmunisationTransformer extends AbstractTransformer {
         ObservationCodeHelper bodyLocationCode = ObservationCodeHelper.extractCodeFields(fhir.getSite());
         if (bodyLocationCode != null) {
 
-            bodyLocationConceptId = IMClient.getOrCreateConceptId("Immunization.site." + bodyLocationCode.getOriginalCode());
+            bodyLocationConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getOrCreateConceptId("Immunization.site." + bodyLocationCode.getOriginalCode());
         }
 
         ObservationCodeHelper methodCode = ObservationCodeHelper.extractCodeFields(fhir.getRoute());
         if (methodCode != null) {
 
-            methodConceptId = IMClient.getOrCreateConceptId("Immunization.route." + methodCode.getOriginalCode());
+            methodConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getOrCreateConceptId("Immunization.route." + methodCode.getOriginalCode());
         }
 
         //lot/batch number
