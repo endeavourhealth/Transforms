@@ -66,7 +66,8 @@ public class ObservationCodeHelper {
 
             ret.setOriginalTerm(originalCoding.getDisplay());
         }
-        if (originalCoding.hasSystem()) {
+        if (originalCoding != null
+                && originalCoding.hasSystem()) {
             ret.setSystem(originalCoding.getSystem());
         }
 
