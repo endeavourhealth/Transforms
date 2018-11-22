@@ -11,10 +11,6 @@ import java.util.UUID;
 public class AEATT extends AbstractCsvParser {
     private static final Logger LOG = LoggerFactory.getLogger(AEATT.class);
 
-    //public static final String DATE_FORMAT = "dd/mm/yyyy";
-    //public static final String TIME_FORMAT = "hh:mm:ss";
-    //public static final String DATE_TIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT;
-
     public AEATT(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,

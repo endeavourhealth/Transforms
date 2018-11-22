@@ -23,19 +23,19 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     public Long getDiagnosisId() {
-        return Long.parseLong(super.getString("DiagnosisId").trim().split("\\.")[0]);
+        return Long.parseLong(super.getString("diagnosis_id").trim().split("\\.")[0]);
     }
 
     public Date getUpdateDateTime() throws TransformException {
-        return super.getDateTime("Update_DT_TM");
+        return super.getDateTime("updt_dt_tm");
     }
 
     public String getActiveIndicator() {
-        return super.getString("ActiveIndicator");
+        return super.getString("active_ind");
     }
 
     public boolean isActive() {
-        int val = super.getInt("ActiveIndicator");
+        int val = super.getInt("active_ind");
         if (val == 1) {
             return true;
         } else {
@@ -44,37 +44,43 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     public Long getPersonId() {
-        return Long.parseLong(super.getString("PersonId").trim().split("\\.")[0]);
+        return Long.parseLong(super.getString("person_id").trim().split("\\.")[0]);
     }
 
     public Long getEncounterId() {
-        return Long.parseLong(super.getString("EncounterId").trim().split("\\.")[0]);
+        return Long.parseLong(super.getString("encntr_id").trim().split("\\.")[0]);
     }
+
     public String getLocalPatientId() {
         return super.getString("MRN").trim();
     }
+
     public String getFINNbr() {
-        return super.getString("FINNbr").trim();
+        return super.getString("fin").trim();
     }
+
     public String getDiagnosis() {
-        return super.getString("Diagnosis").trim();
+        return super.getString("diagnosis").trim();
     }
 
     public Date getDiagnosisDate() throws TransformException {
-        return super.getDate("DiagnosisDate");
+        return super.getDate("diag_dt");
     }
+
     public String getDiagnosisDateAsString() throws TransformException {
-        return super.getString("DiagnosisDate");
+        return super.getString("diag_dt");
     }
 
     public String getDiagnosisCode() {
-        return super.getString("DiagnosisCode").trim();
+        return super.getString("diag_code").trim();
     }
+
     public String getVocabulary() {
-        return super.getString("Vocabulary").trim();
+        return super.getString("vocab").trim();
     }
+
     public String getSecondaryDescription() {
-        return super.getString("SecondaryDescription").trim();
+        return super.getString("secondary_descriptions").trim();
     }
 
     @Override
@@ -88,6 +94,40 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     @Override
+    protected List<FixedParserField> getFieldList(String version) {
+
+        List<FixedParserField> ret = new ArrayList<>();
+
+        ret.add(new FixedParserField("diagnosis_id", 1, 14));
+        ret.add(new FixedParserField("updt_dttm", 16, 20));
+        ret.add(new FixedParserField("active_ind", 37, 11));
+        ret.add(new FixedParserField("person_id", 49, 14));
+        ret.add(new FixedParserField("encntr_id", 64, 14));
+        ret.add(new FixedParserField("MRN", 79, 20));
+        ret.add(new FixedParserField("fin", 100, 20));
+        ret.add(new FixedParserField("diagnosis", 121, 150));
+        ret.add(new FixedParserField("qualifier", 272, 20));
+        ret.add(new FixedParserField("confirmation", 293, 20));
+        ret.add(new FixedParserField("diag_dt", 314, 11));
+        ret.add(new FixedParserField("classification", 326, 20));
+        ret.add(new FixedParserField("clin_service", 347, 30));
+        ret.add(new FixedParserField("diag_type", 378, 20));
+        ret.add(new FixedParserField("rank", 399, 20));
+        ret.add(new FixedParserField("diag_prnsl", 420, 50));
+        ret.add(new FixedParserField("severity_class", 471, 20));
+        ret.add(new FixedParserField("severity", 492, 20));
+        ret.add(new FixedParserField("certainty", 513, 20));
+        ret.add(new FixedParserField("probability", 534, 14));
+        ret.add(new FixedParserField("org_name", 549, 100));
+        ret.add(new FixedParserField("diag_code", 650, 20));
+        ret.add(new FixedParserField("vocab", 671, 20));
+        ret.add(new FixedParserField("axis", 692, 20));
+        ret.add(new FixedParserField("secondary_descriptions", 713, 500));
+
+        return ret;
+    }
+
+    /*@Override
     protected List<FixedParserField> getFieldList(String version) {
 
         List<FixedParserField> ret = new ArrayList<>();
@@ -106,6 +146,6 @@ public class Diagnosis extends AbstractFixedParser {
         ret.add(new FixedParserField("SecondaryDescription",    713, 500));
         
         return ret;
-    }
+    }*/
 
 }
