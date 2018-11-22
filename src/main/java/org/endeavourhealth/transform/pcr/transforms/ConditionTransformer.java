@@ -4,8 +4,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -96,7 +95,8 @@ public class ConditionTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            //TODO conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
@@ -177,8 +177,8 @@ public class ConditionTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            episodicityConceptId
-                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+             //TODO       = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how these URIs are mapped yet in IM?
         }
 
@@ -188,7 +188,8 @@ public class ConditionTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            significanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+            significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+              //TODO      IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
         }
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
@@ -203,7 +204,9 @@ public class ConditionTransformer extends AbstractTransformer {
         if (conditionCategory != null) {
 
             String categoryType = conditionCategory.getCoding().get(0).getCode();
-            typeConceptId = IMClient.getOrCreateConceptId("Condition.category." + categoryType);
+            typeConceptId =
+                    FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getOrCreateConceptId("Condition.category." + categoryType);
         }
 
         //firstly, file as an observation

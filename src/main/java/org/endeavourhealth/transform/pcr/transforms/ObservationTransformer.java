@@ -5,8 +5,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -105,12 +104,14 @@ public class ObservationTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
             String sys =  codes.getSystem();
-            originalSystem = IMClient.getConceptId(sys).intValue();
+            originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getConceptId(sys).intValue();
         } else return;
 
         if (fhir.hasValue()) {
@@ -122,7 +123,8 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultValueUnits = quantity.getUnit();
 
                 Quantity.QuantityComparator comparator = quantity.getComparator();
-                operatorConceptId = IMClient.getOrCreateConceptId("Quantity.QuantityComparator." + comparator.toCode());
+                operatorConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                        //TODO IMClient.getOrCreateConceptId("Quantity.QuantityComparator." + comparator.toCode());
 
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType) value;
@@ -135,7 +137,8 @@ public class ObservationTransformer extends AbstractTransformer {
             } else if (value instanceof CodeableConcept) {
                 CodeableConcept resultCodeableConcept = (CodeableConcept) value;
                 resultSnomedConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
-                resultConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), resultSnomedConceptId.toString());
+                resultConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                        //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), resultSnomedConceptId.toString());
 
             } else {
                 throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
@@ -163,7 +166,8 @@ public class ObservationTransformer extends AbstractTransformer {
 
         //observation status
         if (fhir.hasStatus()) {
-            statusConceptId = IMClient.getOrCreateConceptId("ObservationStatus." +fhir.getStatus().toCode());
+            statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getOrCreateConceptId("Observation." +fhir.getStatus().toCode());
         }
 
         //confidential?
@@ -178,8 +182,8 @@ public class ObservationTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            episodicityConceptId
-                    = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                   //TODO  = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how extension uri is mapped?
         }
 
@@ -189,7 +193,8 @@ public class ObservationTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            significanceConceptId =  IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+            significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                     //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
             //TODO not sure how we model these codeschemes yet
         }
 

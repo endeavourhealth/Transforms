@@ -5,8 +5,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
@@ -109,7 +108,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-            substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+           //TODO substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+            substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             codeSystem = codes.getSystem();
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
@@ -143,7 +143,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         //allergy status
         if (fhir.hasStatus()) {
             AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
-            statusConceptId = IMClient.getOrCreateConceptId("AllergyIntoleranceStatus." + status.toCode());
+            //TODO statusConceptId = IMClient.getOrCreateConceptId("Allergy.Status" + status.toCode());
+            statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         }
 
         org.endeavourhealth.transform.pcr.outputModels.Allergy model

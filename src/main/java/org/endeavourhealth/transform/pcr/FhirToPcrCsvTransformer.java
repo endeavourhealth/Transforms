@@ -34,10 +34,12 @@ import java.util.concurrent.Callable;
 
 public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
+    public static final long IM_PLACE_HOLDER = -1;
+
     private static final Logger LOG = LoggerFactory.getLogger(FhirToPcrCsvTransformer.class);
 
     private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
-    //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
+        //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
 

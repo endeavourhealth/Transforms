@@ -5,8 +5,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.CodeScheme;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.MedicationAmount;
@@ -118,7 +117,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         if (medicationCode != null) {
 
             dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
-            conceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
+            conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
 
         } else return;
 
@@ -127,7 +127,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
-            statusConceptId = IMClient.getConceptId("MedicationStatementStatus." + fhirStatus.toCode());
+            statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        //TODO IMClient.getConceptId("MedicationStatementStatus." + fhirStatus.toCode());
         }
 
         if (fhir.hasDosage()) {
@@ -180,7 +181,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             Coding c = (Coding)authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
-            typeConceptId = IMClient.getConceptId("MedicationAuthorisationType." + authorisationType.getCode());
+            typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getConceptId("MedicationAuthorisationType." + authorisationType.getCode());
         }
 
         //issues authorised
