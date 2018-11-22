@@ -27,9 +27,9 @@ public class ObservationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long pcrId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
         Observation fhir = (Observation) resource;
 
@@ -52,7 +52,7 @@ public class ObservationTransformer extends AbstractTransformer {
         String originalTerm = null;
         Integer originalCodeScheme = null;
         //TODO find original code scheme
-        Integer originalSystem;
+        Integer originalSystem = null;
 
         Long conceptId = null;
         Date insertDate = new Date();
@@ -100,19 +100,24 @@ public class ObservationTransformer extends AbstractTransformer {
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes != null) {
+        if (fhir.hasCode()) {
+            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+            if (codes != null) {
 
-            snomedConceptId = codes.getSnomedConceptId();
-            conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+                snomedConceptId = codes.getSnomedConceptId();
+                conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
 
-            originalCode = codes.getOriginalCode();
-            originalTerm = codes.getOriginalTerm();
-            String sys =  codes.getSystem();
-            originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //TODO IMClient.getConceptId(sys).intValue();
-        } else return;
+                originalCode = codes.getOriginalCode();
+                originalTerm = codes.getOriginalTerm();
+                String sys = codes.getSystem();
+                originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                //TODO IMClient.getConceptId(sys).intValue();
+            }
+        } else {
+            LOG.warn("Fhir Observation record has no fhir code" + id);
+            return;
+        }
 
         if (fhir.hasValue()) {
 
@@ -124,7 +129,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
                 Quantity.QuantityComparator comparator = quantity.getComparator();
                 operatorConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                        //TODO IMClient.getOrCreateConceptId("Quantity.QuantityComparator." + comparator.toCode());
+                //TODO IMClient.getOrCreateConceptId("Quantity.QuantityComparator." + comparator.toCode());
 
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType) value;
@@ -138,7 +143,7 @@ public class ObservationTransformer extends AbstractTransformer {
                 CodeableConcept resultCodeableConcept = (CodeableConcept) value;
                 resultSnomedConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
                 resultConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                        //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), resultSnomedConceptId.toString());
+                //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), resultSnomedConceptId.toString());
 
             } else {
                 throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
@@ -149,7 +154,7 @@ public class ObservationTransformer extends AbstractTransformer {
         Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
         if (enteredDateExtension != null) {
 
-            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            DateTimeType enteredDateTimeType = (DateTimeType) enteredDateExtension.getValue();
             enteredDate = enteredDateTimeType.getValue();
         }
 
@@ -157,7 +162,7 @@ public class ObservationTransformer extends AbstractTransformer {
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
-            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
@@ -167,7 +172,7 @@ public class ObservationTransformer extends AbstractTransformer {
         //observation status
         if (fhir.hasStatus()) {
             statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getOrCreateConceptId("Observation." +fhir.getStatus().toCode());
+            //TODO IMClient.getOrCreateConceptId("Observation." +fhir.getStatus().toCode());
         }
 
         //confidential?
@@ -183,18 +188,18 @@ public class ObservationTransformer extends AbstractTransformer {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
             episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                   //TODO  = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            //TODO  = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how extension uri is mapped?
         }
 
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
         if (significanceExtension != null) {
 
-            CodeableConcept codeableConcept = (CodeableConcept)significanceExtension.getValue();
+            CodeableConcept codeableConcept = (CodeableConcept) significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
             significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                     //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+            //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
             //TODO not sure how we model these codeschemes yet
         }
 
