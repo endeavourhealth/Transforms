@@ -142,24 +142,6 @@ public class PatientTransformer extends AbstractTransformer {
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
-        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
-        if (fhirAddress != null) {
-            if (StringUtils.isNumeric(fhirAddress.getId())) {
-                homeAddressId = Long.parseLong(fhirAddress.getId());
-                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, csvWriter);
-            } else {
-                LOG.debug("Non-numeric address Id " + fhirAddress.getId() + ". Patient:" + id);
-            }
-        } else {
-            LOG.debug("Address is null for " + id);
-        }
-
-        if (fhirPatient.hasContact()) {
-            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
-            for (Patient.ContactComponent com : contactList) {
-                writeContact(com, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId,csvWriter);
-            }
-        }
 
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
@@ -236,6 +218,33 @@ public class PatientTransformer extends AbstractTransformer {
                 FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
         writePatientIdentifier(id, fhirPatient,enteredByPractitionerId,patientIdentifierWriter );
 
+        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
+        if (fhirAddress != null) {
+            if (StringUtils.isNumeric(fhirAddress.getId())) {
+                homeAddressId = Long.parseLong(fhirAddress.getId());
+                String addressFileName = filename.replace("Patient","PatientAddress");
+
+                PatientAddress patientAddressWriter = new PatientAddress(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                        FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+
+                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, csvWriter);
+            } else {
+                LOG.debug("Non-numeric address Id " + fhirAddress.getId() + ". Patient:" + id);
+            }
+        } else {
+            LOG.debug("Address is null for " + id);
+        }
+
+        if (fhirPatient.hasContact()) {
+            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
+            String contactFileName = filename.replace("Patient","PatientContact");
+
+            for (Patient.ContactComponent com : contactList) {
+                PatientContact patientContactWriter = new PatientContact(contactFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                        FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+                writeContact(com, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId,patientContactWriter);
+            }
+        }
 
     }
 

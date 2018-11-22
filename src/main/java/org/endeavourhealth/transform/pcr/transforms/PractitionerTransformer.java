@@ -151,8 +151,11 @@ public class PractitionerTransformer extends AbstractTransformer {
 //        typeConceptId = IMClient.getOrCreateConceptId("");
 //TODO smartcard etc identifiers  -how are they set up?
         //TODO work out which identifier to select
-        PractitionerIdentifier idWriter = (PractitionerIdentifier) csvWriter;
-       idWriter.writeUpsert(id,
+        String filename = model.getFileName();
+        String idFileName = filename.replace("Practitioner","PractitionerIdentifier");
+        PractitionerIdentifier practitionerIdentifierWriter = new PractitionerIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+       practitionerIdentifierWriter.writeUpsert(id,
                typeConceptId,
                "",
                enteredByPractitionerId);
