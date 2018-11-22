@@ -214,7 +214,6 @@ public class PatientTransformer extends AbstractTransformer {
 
         String filename = patientWriter.getFileName();
         String idFileName = filename.replace("patient","patientIdentifier");
-        LOG.info("RAB>>>>>>>>>>>>   Filename is " + filename);
         PatientIdentifier patientIdentifierWriter = new PatientIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                 FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
         writePatientIdentifier(id, fhirPatient,enteredByPractitionerId,patientIdentifierWriter );
