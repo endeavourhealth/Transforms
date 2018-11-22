@@ -152,7 +152,7 @@ public class PractitionerTransformer extends AbstractTransformer {
 //TODO smartcard etc identifiers  -how are they set up?
         //TODO work out which identifier to select
         String filename = model.getFileName();
-        String idFileName = filename.replace("Practitioner","PractitionerIdentifier");
+        String idFileName = filename.replace("practitioner","practitionerIdentifier");
         PractitionerIdentifier practitionerIdentifierWriter = new PractitionerIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                 FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
        practitionerIdentifierWriter.writeUpsert(id,

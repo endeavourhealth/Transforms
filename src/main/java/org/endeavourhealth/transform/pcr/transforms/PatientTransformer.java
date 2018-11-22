@@ -213,7 +213,7 @@ public class PatientTransformer extends AbstractTransformer {
                 ethnicCode);
 
         String filename = patientWriter.getFileName();
-        String idFileName = filename.replace("Patient","PatientIdentifier");
+        String idFileName = filename.replace("patient","patientIdentifier");
         LOG.info("RAB>>>>>>>>>>>>   Filename is " + filename);
         PatientIdentifier patientIdentifierWriter = new PatientIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                 FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
@@ -223,7 +223,7 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirAddress != null) {
             if (StringUtils.isNumeric(fhirAddress.getId())) {
                 homeAddressId = Long.parseLong(fhirAddress.getId());
-                String addressFileName = filename.replace("Patient","PatientAddress");
+                String addressFileName = filename.replace("patient","patientAddress");
 
                 PatientAddress patientAddressWriter = new PatientAddress(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                         FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
@@ -238,7 +238,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasContact()) {
             List<Patient.ContactComponent> contactList = fhirPatient.getContact();
-            String contactFileName = filename.replace("Patient","PatientContact");
+            String contactFileName = filename.replace("patient","patientContact");
 
             for (Patient.ContactComponent com : contactList) {
                 PatientContact patientContactWriter = new PatientContact(contactFileName,FhirToPcrCsvTransformer.CSV_FORMAT,

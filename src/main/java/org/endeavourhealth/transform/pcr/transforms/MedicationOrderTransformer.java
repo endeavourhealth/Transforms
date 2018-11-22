@@ -240,10 +240,12 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         //TODO - handle free text and linking
 
-        MedicationAmount medicationAmountModel
-                = (MedicationAmount) csvWriter;
+        String filename = model.getFileName();
+        String idFileName = filename.replace("medicationOrder","medicationAmount");
+        MedicationAmount writer = new MedicationAmount(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
 
-        medicationAmountModel.writeUpsert(
+        writer.writeUpsert(
                 id,
                 patientId,
                 dose,
