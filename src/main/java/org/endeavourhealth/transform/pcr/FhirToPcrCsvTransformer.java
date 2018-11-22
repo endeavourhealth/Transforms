@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.pcr;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -35,6 +36,9 @@ import java.util.concurrent.Callable;
 public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
     public static final long IM_PLACE_HOLDER = -1;
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    public static final String DATE_FORMAT = "dd MMM yyyy";
+    public static final String TIME_FORMAT = "HH:mm:ss";
 
     private static final Logger LOG = LoggerFactory.getLogger(FhirToPcrCsvTransformer.class);
 

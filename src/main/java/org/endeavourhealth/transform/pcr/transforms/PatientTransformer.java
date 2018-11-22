@@ -147,7 +147,11 @@ public class PatientTransformer extends AbstractTransformer {
             if (StringUtils.isNumeric(fhirAddress.getId())) {
                 homeAddressId = Long.parseLong(fhirAddress.getId());
                 writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, csvWriter);
+            } else {
+                LOG.debug("Non-numeric address Id " + fhirAddress.getId() + ". Patient:" + id);
             }
+        } else {
+            LOG.debug("Address is null for " + id);
         }
 
         if (fhirPatient.hasContact()) {
@@ -192,12 +196,15 @@ public class PatientTransformer extends AbstractTransformer {
                 }
             }
         }
-        writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, csvWriter);
+
+       // AbstractPcrCsvWriter patientIdWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(PatientIdentifier, params)
+      //  writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, );
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
         //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
         org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient) csvWriter;
+
 //        org.endeavourhealth.transform.pcr.outputModels.Person personWriter = params.getOutputContainer().getPersons();
 //        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
@@ -222,6 +229,13 @@ public class PatientTransformer extends AbstractTransformer {
                 homeAddressId,
                 isSpineSensitive,
                 ethnicCode);
+
+        String filename = patientWriter.getFileName();
+        String idFileName = filename.replace("Patient","PatientIdentifier");
+        PatientIdentifier patientIdentifierWriter = new PatientIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+        writePatientIdentifier(id, fhirPatient,enteredByPractitionerId,patientIdentifierWriter );
+
 
     }
 
