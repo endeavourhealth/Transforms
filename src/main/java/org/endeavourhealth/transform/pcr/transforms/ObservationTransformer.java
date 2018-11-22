@@ -100,7 +100,7 @@ public class ObservationTransformer extends AbstractTransformer {
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        if (fhir.hasCode()) {
+        if ((fhir.hasCode()) && (fhir.getCode()!=null)) {
             ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
             if (codes != null) {
 
