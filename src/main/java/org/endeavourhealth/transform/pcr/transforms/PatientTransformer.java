@@ -246,7 +246,7 @@ public class PatientTransformer extends AbstractTransformer {
             String identifier = thisId.getValue();
             Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                     //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
-            patientIdWriter.writeUpsert(id, Long.parseLong(patient.getId()), conceptId, identifier,enteredByPractitionerId);
+            patientIdWriter.writeUpsert(null, id, conceptId, identifier,enteredByPractitionerId);
         }
     }
 
