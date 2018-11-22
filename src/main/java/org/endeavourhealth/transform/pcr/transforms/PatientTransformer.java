@@ -17,7 +17,7 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
 import org.endeavourhealth.core.xml.QueryDocument.*;
-import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -127,7 +127,8 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         if (fhirPatient.hasGender()) {
-            patientGenderId = IMClient.getOrCreateConceptId("Patient.Gender." + fhirPatient.getGender());
+            patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getOrCreateConceptId("Patient.Gender." + fhirPatient.getGender());
 
         } else {
             //TODO not clear how to map unknown to IM.
@@ -171,7 +172,8 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
             String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
             if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
-                nhsNumberVerificationTermId = IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
+                nhsNumberVerificationTermId =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                //TODO IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
             }
 
         } else {
@@ -228,7 +230,8 @@ public class PatientTransformer extends AbstractTransformer {
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
             String identifier = thisId.getValue();
-            Long conceptId = IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
+            Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
             patientIdWriter.writeUpsert(id, Long.parseLong(patient.getId()), conceptId, identifier,enteredByPractitionerId);
         }
     }
@@ -260,7 +263,8 @@ public class PatientTransformer extends AbstractTransformer {
         String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
         String postcode = fhirAddress.getPostalCode();
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
-        Long propertyTypeId = IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
+        Long propertyTypeId =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                //TODO IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
         addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
                 null, null, propertyTypeId);
 
@@ -271,7 +275,8 @@ public class PatientTransformer extends AbstractTransformer {
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
             String code = cp.getUse().toCode();
-            Long type = IMClient.getOrCreateConceptId("ContactPoint.ContactPointSystem."+ cp.getUse().toCode());
+            Long type =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointSystem."+ cp.getUse().toCode());
             contactWriter.writeUpsert(Long.parseLong(cp.getId()), patientId, type, code,enteredByPractitionerId);
         }
 

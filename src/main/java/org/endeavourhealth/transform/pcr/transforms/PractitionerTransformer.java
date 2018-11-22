@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.PractitionerIdentifier;
@@ -86,7 +86,8 @@ public class PractitionerTransformer extends AbstractTransformer {
             for (Coding coding : cc.getCoding()) {
                 if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
                     String thiscode = coding.getCode();
-                    roleTermId = IMClient.getConceptId(thiscode);
+                    roleTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                    //TODO IMClient.getConceptId(thiscode);
                 }
             }
 
