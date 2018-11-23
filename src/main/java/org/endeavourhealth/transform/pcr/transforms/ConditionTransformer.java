@@ -239,9 +239,11 @@ public class ConditionTransformer extends AbstractTransformer {
 
         //if it is a problem, file into problem table using id as observationId.
         if (isProblem) {
-
-            Problem problemModel = (Problem)csvWriter;
-            problemModel.writeUpsert(
+            String filename = observationModel.getFileName();
+            String idFileName = filename.replace("observation","problem");
+            Problem model = new Problem(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                    FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+            model.writeUpsert(
                     id,
                     patientId,
                     observationId,
