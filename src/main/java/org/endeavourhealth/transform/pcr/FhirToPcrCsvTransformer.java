@@ -393,7 +393,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         } else if (resourceType == ResourceType.MedicationOrder) {
             return data.getMedicationOrders();
         } else if (resourceType == ResourceType.Immunization) {
-            return data.getObservations();
+            return data.getImmunisations();
         } else if (resourceType == ResourceType.FamilyMemberHistory) {
             return data.getObservations();
         } else if (resourceType == ResourceType.AllergyIntolerance) {

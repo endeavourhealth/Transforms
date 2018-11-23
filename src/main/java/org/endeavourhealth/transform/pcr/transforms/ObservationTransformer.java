@@ -235,7 +235,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
 
             String filename = observationModel.getFileName();
-            String idFileName = filename.replace("observation","observationValue");
+            String idFileName = filename.replace("observation","observation_value");
             ObservationValue observationValueModel = new ObservationValue(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                     FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
             observationValueModel.writeUpsert(

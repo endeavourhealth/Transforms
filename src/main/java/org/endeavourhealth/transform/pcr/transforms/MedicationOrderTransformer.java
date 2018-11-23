@@ -241,7 +241,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         //TODO - handle free text and linking
 
         String filename = model.getFileName();
-        String idFileName = filename.replace("medicationOrder","medicationAmount");
+        String idFileName = filename.replace("medicationOrder","medication_amount");
         MedicationAmount writer = new MedicationAmount(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
                 FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
 

@@ -164,6 +164,8 @@ public class OutputContainer {
         return findCsvWriter(Organisation.class);
     }
 
+    public Immunisation getImmunisations() { return findCsvWriter(Immunisation.class);}
+
     public Location getLocations() {
         return findCsvWriter(Location.class);
     }

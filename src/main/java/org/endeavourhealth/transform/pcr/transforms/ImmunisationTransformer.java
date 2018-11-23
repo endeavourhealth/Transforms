@@ -172,7 +172,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
             dosesRequired = proto.getSeriesDoses();
         }
 
-        Immunisation model = (Immunisation)csvWriter;
+        Immunisation model = (Immunisation) csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
