@@ -52,7 +52,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 //        Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Long careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = -1L;
         boolean confidential = false;
         boolean isConsent = false;
         boolean isActive = false;

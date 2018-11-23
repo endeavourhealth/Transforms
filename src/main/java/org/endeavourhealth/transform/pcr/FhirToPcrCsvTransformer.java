@@ -380,8 +380,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 //            return data.getFlags();
         } else if (resourceType == ResourceType.Condition) {
             return data.getObservations();
-        } else if (resourceType == ResourceType.Procedure) {
-            return data.getObservations();
+//            return data.getObservations();
 //        } else if (resourceType == ResourceType.ReferralRequest) {
 //            return data.getReferralRequests();
 //        } else if (resourceType == ResourceType.ProcedureRequest) {
@@ -394,16 +393,16 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             return data.getMedicationOrders();
         } else if (resourceType == ResourceType.Immunization) {
             return data.getImmunisations();
-        } else if (resourceType == ResourceType.FamilyMemberHistory) {
-            return data.getObservations();
+//        } else if (resourceType == ResourceType.FamilyMemberHistory) {
+//            return data.getObservations();
         } else if (resourceType == ResourceType.AllergyIntolerance) {
             return data.getAllergyIntolerances();
-        } else if (resourceType == ResourceType.DiagnosticOrder) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.DiagnosticReport) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.Specimen) {
-            return data.getObservations();
+//        } else if (resourceType == ResourceType.DiagnosticOrder) {
+//            return data.getObservations();
+//        } else if (resourceType == ResourceType.DiagnosticReport) {
+//            return data.getObservations();
+//        } else if (resourceType == ResourceType.Specimen) {
+//            return data.getObservations();
         } else if (resourceType == ResourceType.Slot) {
             //slots are handled in the appointment transformer, so have no dedicated one
             return null;

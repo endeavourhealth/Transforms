@@ -55,7 +55,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Date enteredDate = null;
         Long effectivePractitionerId = null;
         Long careActivityId = null;
-        Long careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = null;  //not available in FHIR
         boolean confidential = false;
         Long episodicityConceptId = null;

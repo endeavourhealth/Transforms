@@ -47,7 +47,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Long careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = null;
         boolean confidential = false;
         String dose = null;

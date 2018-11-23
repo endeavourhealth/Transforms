@@ -167,7 +167,8 @@ public class ObservationTransformer extends AbstractTransformer {
         }
 
         //TODO: where get heading from?
-        //careActivityHeadingConceptId
+        careActivityHeadingConceptId = -1L;
+
 
         //observation status
         if (fhir.hasStatus()) {
