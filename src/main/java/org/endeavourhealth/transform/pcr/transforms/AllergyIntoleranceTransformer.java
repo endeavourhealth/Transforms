@@ -131,7 +131,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
            }
             if (StringUtils.isNotEmpty(manifestText)) {
                 PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
-                manifestationFreeTextId  = pcrIdDal.createPcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
+                manifestationFreeTextId  = pcrIdDal.findOrCreatePcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
                 String filename = csvWriter.getFileName();
                 String idFileName = filename.replace("allergy","freetext");
                 FreeText textWriter = new FreeText(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
