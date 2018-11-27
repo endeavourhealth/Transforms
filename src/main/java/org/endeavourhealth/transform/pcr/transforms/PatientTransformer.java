@@ -65,6 +65,7 @@ public class PatientTransformer extends AbstractTransformer {
             discoveryPersonId = pair.getNewPersonId();
         }
 
+        LOG.trace("Transforming patient:" + discoveryPersonId);
         long id;
         long organizationId;
         String nhsNumber = null;
@@ -193,6 +194,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
+        LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
         patientWriter.writeUpsert(id,
                 organizationId,
                 nhsNumber,
