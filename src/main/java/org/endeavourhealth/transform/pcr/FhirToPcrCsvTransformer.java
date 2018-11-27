@@ -472,6 +472,9 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                                          ThreadPool threadPool,
                                          PcrTransformParams params) throws Exception {
 
+        if (resourceType.name().equalsIgnoreCase("patient")) {
+            LOG.info("Processing patients count : " + resources.size());
+        }
         //find all the ones we want to transform
         List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
         HashSet<ResourceWrapper> hsResourcesToTransform = new HashSet<>();
@@ -483,10 +486,14 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
+
         if (resourcesToTransform.isEmpty()) {
+            LOG.info("resource type " + resourceType.name() + " has no records after trimming");
             return false;
         }
-
+        if (resourceType.name().equalsIgnoreCase("patient")) {
+            LOG.info("Processing patients count after trim : " + resources.size());
+        }
         //remove all the resources we're going to, so we can check for ones we missed at the end
         //removeAll is really slow, so changing to be faster
         //resources.removeAll(resourcesToTransform);
