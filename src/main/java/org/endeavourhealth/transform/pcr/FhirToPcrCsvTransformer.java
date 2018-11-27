@@ -502,7 +502,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         if (transformer != null) {
 
             AbstractPcrCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
-
+            int count=0;
             //transform in batches
             List<ResourceWrapper> batch = new ArrayList<>();
             for (ResourceWrapper resource: resourcesToTransform) {
@@ -512,13 +512,17 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                 if (batch.size() >= params.getBatchSize()) {
                     addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
                     batch = new ArrayList<>();
+                    count  = count +batch.size();
+                    LOG.info("Writing type" + resourceType.name() + ". Id:" + resource.getResourceId());
                 }
             }
 
             //don't forget to do any in the last batch
             if (!batch.isEmpty()) {
                 addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
+                count = count + batch.size();
             }
+            LOG.info("Added " + count + " records for ResourceType:" + resourceType.name());
         }
 
         return true;
