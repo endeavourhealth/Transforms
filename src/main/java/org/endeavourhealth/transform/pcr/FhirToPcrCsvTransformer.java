@@ -66,6 +66,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
+        LOG.trace("Transform batch size is " + batchSize);
         boolean useInstanceMapping = false;
         if (config.has("instance_mapping")) {
             useInstanceMapping = config.get("instance_mapping").asBoolean();
@@ -85,6 +86,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
         if (pcrOrgId == null) {
+            LOG.info("Returning as PCR org id is null");
             return null;
         }
 
@@ -134,6 +136,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
             //non-patient metadata, but no patient data. If this happens, then don't send anything to pcr, as
             //it'll all be sorted out when they do send patient data.
+            LOG.info("Returning as resourceByService is null");
             return null;
             //throw new TransformException("Cannot find a Patient resource for service " + serviceId + " and system " + systemId);
         }
