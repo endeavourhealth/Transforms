@@ -50,10 +50,10 @@ public class SRImmunisationContentTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(name.getRowAuditId(), name.getColIndex(), NAME);
-        auditWrapper.auditValue(content.getRowAuditId(), content.getColIndex(), CONTENT);
-        auditWrapper.auditValue(dateDeleted.getRowAuditId(), dateDeleted.getColIndex(), DATE_DELETED);
+        auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(name.getPublishedFileId(), name.getRecordNumber(), name.getColIndex(), NAME);
+        auditWrapper.auditValue(content.getPublishedFileId(), content.getRecordNumber(), content.getColIndex(), CONTENT);
+        auditWrapper.auditValue(dateDeleted.getPublishedFileId(), dateDeleted.getRecordNumber(), dateDeleted.getColIndex(), DATE_DELETED);
 
         TppImmunisationContent mapping = new TppImmunisationContent(rowId.getLong(),
                 name.getString(),

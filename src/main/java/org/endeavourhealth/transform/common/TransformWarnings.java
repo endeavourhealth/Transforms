@@ -17,7 +17,8 @@ public class TransformWarnings {
     public static void log(Logger logger, HasServiceSystemAndExchangeIdI impl, String warningText, Object... parameters) throws Exception {
 
         //get the current source file record ID fromthe parser, which will return -1 if the file isn't audited and we have no ID
-        Long sourceFileRecordIdObj = null;
+        Integer publishedFileId = null;
+        Integer recordNumber = null;
 
         //convert the object parameters to Strings using toString() unless it's a CsvCell in which case we can't use the toString()
         String[] stringParameters = new String[parameters.length];
@@ -28,25 +29,26 @@ public class TransformWarnings {
                 stringParameters[i] = cell.getString();
 
                 //link the warning back to the record the CSV cell came from
-                if (sourceFileRecordIdObj == null
-                        && cell.getRowAuditId() > -1) {
-                    sourceFileRecordIdObj = new Long(cell.getRowAuditId());
+                if (publishedFileId == null
+                        && cell.getPublishedFileId() > 0) {
+                    publishedFileId = new Integer(cell.getPublishedFileId());
+                    recordNumber = new Integer(cell.getRecordNumber());
                 }
             } else {
                 stringParameters[i] = parameter.toString();
             }
         }
 
-        log(logger, impl.getServiceId(), impl.getSystemId(), impl.getExchangeId(), sourceFileRecordIdObj, warningText, stringParameters);
+        log(logger, impl.getServiceId(), impl.getSystemId(), impl.getExchangeId(), publishedFileId, recordNumber, warningText, stringParameters);
     }
 
-    public static void log(Logger logger, UUID serviceId, UUID systemId, UUID exchangeId, Long sourceFileRecordId, String warningText, String... parameters) throws Exception {
+    public static void log(Logger logger, UUID serviceId, UUID systemId, UUID exchangeId, Integer publishedFileId, Integer recordNumber, String warningText, String... parameters) throws Exception {
 
         //write to passed in logger
         logger.warn(warningText, (Object[])parameters);
 
         //record in the DB
-        dal.recordWarning(serviceId, systemId, exchangeId, sourceFileRecordId, warningText, parameters);
+        dal.recordWarning(serviceId, systemId, exchangeId, publishedFileId, recordNumber, warningText, parameters);
 
         //substitute the parameters into the warning String
         for (String parameter: parameters) {

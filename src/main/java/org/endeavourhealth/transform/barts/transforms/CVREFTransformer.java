@@ -65,12 +65,12 @@ public class CVREFTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), BartsCodeableConceptHelper.CODE_VALUE);
-        auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), BartsCodeableConceptHelper.CODE_SET_NBR);
-        auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), BartsCodeableConceptHelper.DISP_TXT);
-        auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), BartsCodeableConceptHelper.DESC_TXT);
-        auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), BartsCodeableConceptHelper.MEANING_TXT);
-        auditWrapper.auditValue(aliasNhsCdAlias.getRowAuditId(), aliasNhsCdAlias.getColIndex(), BartsCodeableConceptHelper.ALIAS_TXT);
+        auditWrapper.auditValue(codeValueCode.getPublishedFileId(), codeValueCode.getRecordNumber(), codeValueCode.getColIndex(), BartsCodeableConceptHelper.CODE_VALUE);
+        auditWrapper.auditValue(codeSetNbr.getPublishedFileId(), codeSetNbr.getRecordNumber(), codeSetNbr.getColIndex(), BartsCodeableConceptHelper.CODE_SET_NBR);
+        auditWrapper.auditValue(codeDispTxt.getPublishedFileId(), codeDispTxt.getRecordNumber(), codeDispTxt.getColIndex(), BartsCodeableConceptHelper.DISP_TXT);
+        auditWrapper.auditValue(codeDescTxt.getPublishedFileId(), codeDescTxt.getRecordNumber(), codeDescTxt.getColIndex(), BartsCodeableConceptHelper.DESC_TXT);
+        auditWrapper.auditValue(codeMeaningTxt.getPublishedFileId(), codeMeaningTxt.getRecordNumber(), codeMeaningTxt.getColIndex(), BartsCodeableConceptHelper.MEANING_TXT);
+        auditWrapper.auditValue(aliasNhsCdAlias.getPublishedFileId(), aliasNhsCdAlias.getRecordNumber(), aliasNhsCdAlias.getColIndex(), BartsCodeableConceptHelper.ALIAS_TXT);
 
         byte active = (byte) activeInd.getInt().intValue();
         CernerCodeValueRef mapping = new CernerCodeValueRef(codeValueCode.getString(),

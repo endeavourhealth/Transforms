@@ -6,6 +6,9 @@ public class FixedParserField {
     private int fieldlength;
     private int columnIndex;
 
+    /**
+     * note: position is one-based, so first character on a row is position ONE
+     */
     public FixedParserField(String name, int pos, int length) {
         this.name = name;
         this.fieldPosition = pos;

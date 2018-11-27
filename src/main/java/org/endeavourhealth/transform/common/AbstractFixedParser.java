@@ -2,12 +2,8 @@ package org.endeavourhealth.transform.common;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.database.dal.audit.models.PublishedFileColumn;
+import org.endeavourhealth.core.database.dal.audit.models.PublishedFileType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
@@ -20,12 +16,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractFixedParser.class);
-
-    private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -39,13 +32,14 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     private BufferedReader br;
     private int currentLineNumber;
     private LinkedHashMap<String, FixedParserField> fieldList = new LinkedHashMap<String, FixedParserField>();
-    private int fieldPositionAdjuster = 1; // Assumes first field is defined as starting in position 1
+    //private int fieldPositionAdjuster = 1; // Assumes first field is defined as starting in position 1
+    //private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
 
     //audit data
     private Integer fileAuditId = null;
-    private long[] cellAuditIds = new long[10000]; //default to 10k audits
+    //private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
-    private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
+    //private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
 
     public AbstractFixedParser(UUID serviceId, UUID systemId, UUID exchangeId,
                                String version, String filePath, String dateFormat, String timeFormat) throws Exception {
@@ -128,10 +122,10 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return dateTimeFormat;
     }
 
-    @Override
+    /*@Override
     public void setAuditorCallback(CsvAuditorCallbackI auditorCallback) {
         this.auditorCallback = auditorCallback;
-    }
+    }*/
 
     private void open(String action) throws Exception {
 
@@ -196,9 +190,9 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     protected abstract List<FixedParserField> getFieldList(String version);
 
     private void addFieldList(FixedParserField field) {
+
         if (field.getFieldPosition() == 0) {
-            // Calculate field position adjuster - first field can be configured from position 1 or zero but String.subString() starts at position 0
-            fieldPositionAdjuster = 0;
+            throw new RuntimeException("Field position is one-based integer, so first column should start at position ONE");
         }
 
         //set the column index on the field
@@ -211,7 +205,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
     protected String getString(String column) {
         FixedParserField field = fieldList.get(column);
         if (field != null) {
-            return getFieldValue(this.curentLine, field, fieldPositionAdjuster);
+            return getFieldValue(this.curentLine, field);
         } else {
             return null;
         }
@@ -336,6 +330,38 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             return;
         }
 
+        PublishedFileType publishedFileType = new PublishedFileType();
+        publishedFileType.setFileType(getClass().getSimpleName());
+
+        for (FixedParserField field: getFieldList()) {
+            PublishedFileColumn publishedFileColumn = new PublishedFileColumn();
+            publishedFileColumn.setColumnName(field.getName());
+            publishedFileColumn.setFixedColumnStart(field.getFieldPosition());
+            publishedFileColumn.setFixedColumnLength(field.getFieldlength());
+            publishedFileType.getColumns().add(publishedFileColumn);
+        }
+
+        this.fileAuditId = PublishedFileAuditHelper.auditPublishedFileRecord(this, skipFirstRow(), publishedFileType);
+    }
+
+    /*private void ensureFileAudited() throws Exception {
+
+        //if this file doesn't need auditing, just return out
+        if (!isFileAudited()) {
+            return;
+        }
+
+        //to work out the Emis CSV version, we create parsers but don't use them to process any records, so
+        //detect this by the null service ID and just return out
+        if (this.serviceId == null) {
+            return;
+        }
+
+        //if we've already audited this file, then just return out
+        if (this.fileAuditId != null) {
+            return;
+        }
+
         //start reading the file
         open("Auditing");
 
@@ -424,16 +450,17 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         AuditRowTask callable = (AuditRowTask) first.getCallable();
         Throwable exception = first.getException();
         throw new TransformException("", exception);
-    }
+    }*/
 
     /**
      * callback function when the thread tasks have found/created an audit ID for a row,
      * purposely synchronized so that there's no loss when the array is grown
      */
-    private synchronized void setRowAuditId(int lineNumber, long rowAuditId) {
+    /*@Override
+    public synchronized void setRowAuditId(int recordNumber, Long rowAuditId) {
 
         //we only start the array at 10k entries, so grow if necessary by 150% each time
-        if (lineNumber >= cellAuditIds.length) {
+        if (recordNumber >= cellAuditIds.length) {
 
             int nextRowCount = (int)((double)cellAuditIds.length * 1.5d);
 
@@ -442,17 +469,17 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             this.cellAuditIds = tmp;
         }
 
-        cellAuditIds[lineNumber] = rowAuditId;
+        cellAuditIds[recordNumber] = rowAuditId;
 
         if (numLines == null) {
-            numLines = new Integer(lineNumber);
+            numLines = new Integer(recordNumber);
         } else {
-            numLines = new Integer(Math.max(lineNumber, numLines.intValue()));
+            numLines = new Integer(Math.max(recordNumber, numLines.intValue()));
         }
-    }
+    }*/
 
-    private String getFieldValue(String line, FixedParserField field, int offset) {
-        int start = field.getFieldPosition() - offset;
+    private String getFieldValue(String line, FixedParserField field) {
+        int start = field.getFieldPosition() - 1; //field position is one-based, so minus one to get index
         int end = start + field.getFieldlength();
 
         //if the last field is empty, some files don't pad it out with whitespace (e.g. Barts SUS Outpatient file)
@@ -474,15 +501,20 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         if (field == null) {
             throw new IllegalArgumentException("No such field as [" + field + "]");
         }
-        String value = getFieldValue(this.curentLine, field, fieldPositionAdjuster);
+        String value = getFieldValue(this.curentLine, field);
 
-        long rowAuditId = getSourceFileRecordIdForCurrentRow();
+        //long rowAuditId = getSourceFileRecordIdForCurrentRow();
         int colIndex = field.getColumnIndex();
 
-        return new CsvCell(rowAuditId, colIndex, value, this);
+        if (fileAuditId != null) {
+            return new CsvCell(fileAuditId.intValue(), currentLineNumber, colIndex, value, this);
+        } else {
+            return new CsvCell(-1, -1, colIndex, value, this);
+        }
+        //return new CsvCell(rowAuditId, colIndex, value, this);
     }
 
-    public long getSourceFileRecordIdForCurrentRow() {
+    /*public long getSourceFileRecordIdForCurrentRow() {
         if (fileAuditId != null) {
             return cellAuditIds[currentLineNumber];
 
@@ -490,9 +522,9 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             //if the file isn't audited, return -1, so it's compatible with CsvCell which uses a primative long
             return -1;
         }
-    }
+    }*/
 
-    class AuditRowTask implements Callable {
+    /*class AuditRowTask implements Callable {
 
         private boolean haveProcessedFileBefore = false;
         private List<SourceFileRecord> records = new ArrayList<>();
@@ -564,5 +596,5 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         public boolean isEmpty() {
             return this.records.isEmpty();
         }
-    }
+    }*/
 }

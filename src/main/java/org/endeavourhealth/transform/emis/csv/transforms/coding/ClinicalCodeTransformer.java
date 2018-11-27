@@ -99,10 +99,10 @@ public abstract class ClinicalCodeTransformer {
         }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-        auditWrapper.auditValue(emisCode.getRowAuditId(), emisCode.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_CODE);
-        auditWrapper.auditValue(emisTerm.getRowAuditId(), emisTerm.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_TERM);
-        auditWrapper.auditValue(snomedConceptId.getRowAuditId(), snomedConceptId.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID);
-        auditWrapper.auditValue(snomedDescriptionId.getRowAuditId(), snomedDescriptionId.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID);
+        auditWrapper.auditValue(emisCode.getPublishedFileId(), emisCode.getRecordNumber(), emisCode.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_CODE);
+        auditWrapper.auditValue(emisTerm.getPublishedFileId(), emisTerm.getRecordNumber(), emisTerm.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_TERM);
+        auditWrapper.auditValue(snomedConceptId.getPublishedFileId(), snomedConceptId.getRecordNumber(), snomedConceptId.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID);
+        auditWrapper.auditValue(snomedDescriptionId.getPublishedFileId(), snomedDescriptionId.getRecordNumber(), snomedDescriptionId.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID);
         mapping.setAudit(auditWrapper);
 
         mappingsToSave.add(mapping);

@@ -152,13 +152,15 @@ public abstract class ResourceBuilderBase {
             //of -1, so ignore them too
             if (csvCell == null
                     || csvCell.isEmpty()
-                    || csvCell.getRowAuditId() == -1) {
+                    || (csvCell.getPublishedFileId() <= 0 && csvCell.getOldStyleAuditId() == null)) {
                 continue;
             }
 
-            long rowAuditId = csvCell.getRowAuditId();
-            int colIndex = csvCell.getColIndex();
-            auditWrapper.auditValue(rowAuditId, colIndex, jsonField);
+            if (csvCell.getPublishedFileId() > 0) {
+                auditWrapper.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
+            } else {
+                auditWrapper.auditValueOldStyle(csvCell.getOldStyleAuditId(), csvCell.getColIndex(), jsonField);
+            }
         }
     }
 

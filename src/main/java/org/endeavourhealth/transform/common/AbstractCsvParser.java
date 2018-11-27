@@ -4,13 +4,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.common.utility.ThreadPool;
-import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.csv.CsvHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.SourceFileRecord;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.database.dal.audit.models.PublishedFileColumn;
+import org.endeavourhealth.core.database.dal.audit.models.PublishedFileType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +18,6 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
@@ -37,22 +32,22 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
     private final DateFormat dateTimeFormat;
-    private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
+    //private final SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
 
     private CSVParser csvReader = null;
     private Iterator<CSVRecord> csvIterator = null;
     private CSVRecord csvRecord = null;
     private int csvRecordLineNumber = -1;
     //private Set<Long> recordNumbersToProcess = null;
-    private final static String REMOVED_DATA_HEADER ="RemovedData";
+    private final static String REMOVED_DATA_HEADER = "RemovedData";
     private Charset encoding = null;
 
     //audit data
     private Integer fileAuditId = null;
-    private long[] cellAuditIds = new long[10000]; //default to 10k audits
+    //private long[] cellAuditIds = new long[10000]; //default to 10k audits
     private Integer numLines = null; //only set if we audit the file
     private Map<String, Integer> cachedHeaderMap = null;
-    private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
+    //private CsvAuditorCallbackI auditorCallback = null; //allows selective auditing of records
 
 
     public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
@@ -120,10 +115,10 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return version;
     }
 
-    @Override
+    /*@Override
     public void setAuditorCallback(CsvAuditorCallbackI auditorCallback) {
         this.auditorCallback = auditorCallback;
-    }
+    }*/
 
     private void open(String action) throws Exception {
 
@@ -158,9 +153,10 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                     }
                     expectedHeaders = new String[headers.size()];
                     expectedHeaders = headers.toArray(expectedHeaders);
+
+                    CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
                 }
             }
-            CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
 
             csvRecordLineNumber = 0;
 
@@ -186,6 +182,47 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
      * a thread pool to iterate through the file and ensure every row is audited
      */
     private void ensureFileAudited() throws Exception {
+
+        //if this file doesn't need auditing, just return out
+        if (!isFileAudited()) {
+            return;
+        }
+
+        //to work out the Emis CSV version, we create parsers but don't use them to process any records, so
+        //detect this by the null service ID and just return out
+        if (this.serviceId == null) {
+            return;
+        }
+
+        //if we've already audited this file, then just return out
+        if (this.fileAuditId != null) {
+            return;
+        }
+
+        //work out if first row is headers or not
+        //if the header array in the CSV format is empty, then it means the CSV parser interprets the first
+        //record as headers. If it's non-empty, then it means we've had to tell it, so the first row isn't headers
+        String[] header = csvFormat.getHeader();
+        if (header == null) {
+            throw new Exception("Unexpected null header in CSV file");
+        }
+        boolean firstRecordContainsHeaders = header.length == 0;
+
+        PublishedFileType publishedFileType = new PublishedFileType();
+        publishedFileType.setFileType(getClass().getSimpleName());
+        publishedFileType.setVariableColumnDelimiter(csvFormat.getDelimiter());
+        publishedFileType.setVariableColumnEscape(csvFormat.getEscapeCharacter());
+        publishedFileType.setVariableColumnQuote(csvFormat.getQuoteCharacter());
+
+        for (String col: getColumnHeaders()) {
+            PublishedFileColumn publishedFileColumn = new PublishedFileColumn();
+            publishedFileColumn.setColumnName(col);
+            publishedFileType.getColumns().add(publishedFileColumn);
+        }
+
+        this.fileAuditId = PublishedFileAuditHelper.auditPublishedFileRecord(this, firstRecordContainsHeaders, publishedFileType);
+    }
+    /*private void ensureFileAudited() throws Exception {
 
         //if this file doesn't need auditing, just return out
         if (!isFileAudited()) {
@@ -295,16 +332,17 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         AuditRowTask callable = (AuditRowTask) first.getCallable();
         Throwable exception = first.getException();
         throw new TransformException("", exception);
-    }
+    }*/
 
     /**
      * callback function when the thread tasks have found/created an audit ID for a row,
      * purposely synchronized so that there's no loss when the array is grown
      */
-    private synchronized void setRowAuditId(int lineNumber, long rowAuditId) {
+    /*@Override
+    public synchronized void setRowAuditId(int recordNumber, Long rowAuditId) {
 
         //we only start the array at 10k entries, so grow if necessary by 150% each time
-        if (lineNumber >= cellAuditIds.length) {
+        if (recordNumber >= cellAuditIds.length) {
 
             int nextRowCount = (int) ((double) cellAuditIds.length * 1.5d);
 
@@ -313,14 +351,14 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             this.cellAuditIds = tmp;
         }
 
-        cellAuditIds[lineNumber] = rowAuditId;
+        cellAuditIds[recordNumber] = rowAuditId;
 
         if (numLines == null) {
-            numLines = new Integer(lineNumber);
+            numLines = new Integer(recordNumber);
         } else {
-            numLines = new Integer(Math.max(lineNumber, numLines.intValue()));
+            numLines = new Integer(Math.max(recordNumber, numLines.intValue()));
         }
-    }
+    }*/
 
     public void close() throws IOException {
 
@@ -610,12 +648,16 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             value = value.replace("\\u00a0", " ").trim(); // replace nbsp with normal space.
         }
 
-        long rowAuditId = getSourceFileRecordIdForCurrentRow();
+        //long rowAuditId = getSourceFileRecordIdForCurrentRow();
 
         Integer colIndexObj = getCsvReaderHeaderMap().get(column);
         int colIndex = colIndexObj.intValue();
 
-        return new CsvCell(rowAuditId, colIndex, value, this);
+        if (fileAuditId == null) {
+            return new CsvCell(-1, -1, colIndex, value, this);
+        } else {
+            return new CsvCell(fileAuditId.intValue(), getCurrentLineNumber(), colIndex, value, this);
+        }
     }
 
     public Map<String, Integer> getCsvReaderHeaderMap() {
@@ -628,7 +670,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return cachedHeaderMap;
     }
 
-    public long getSourceFileRecordIdForCurrentRow() {
+    /*public long getSourceFileRecordIdForCurrentRow() {
         if (fileAuditId != null) {
             return cellAuditIds[csvRecordLineNumber];
 
@@ -636,11 +678,10 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             //if the file isn't audited, return -1, so it's compatible with CsvCell which uses a primative long
             return -1;
         }
-    }
+    }*/
 
 
-
-    class AuditRowTask implements Callable {
+    /*class AuditRowTask implements Callable {
 
         private boolean haveProcessedFileBefore = false;
         private List<SourceFileRecord> records = new ArrayList<>();
@@ -712,54 +753,6 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         public boolean isEmpty() {
             return this.records.isEmpty();
         }
-    }
-    /*class AuditRowTask implements Callable {
-
-        private int lineNumber;
-        private String[] values;
-        private boolean haveProcessedFileBefore;
-        private CsvCurrentState parserState;
-
-        public AuditRowTask(int lineNumber, String[] values, boolean haveProcessedFileBefore) {
-            this.lineNumber = lineNumber;
-            this.values = values;
-            this.haveProcessedFileBefore = haveProcessedFileBefore;
-        }
-
-
-        public CsvCurrentState getParserState() {
-            return new CsvCurrentState(filePath, lineNumber);
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-
-                long rowAuditId = -1;
-
-                //if we've done this file before, re-load the past audit
-                if (haveProcessedFileBefore) {
-                    Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, lineNumber);
-                    if (existingId != null) {
-                        rowAuditId = existingId.longValue();
-                    }
-                }
-
-                //if we still don't have an audit for this row, create a new one
-                if (rowAuditId == -1) {
-                    rowAuditId = dal.auditFileRow(serviceId, values, lineNumber, fileAuditId);
-                }
-
-                //use the callback function to set it in our array
-                setRowAuditId(lineNumber, rowAuditId);
-
-                return null;
-            } catch (Exception ex) {
-                LOG.error("Exception auditing row " + lineNumber, ex);
-                throw ex;
-            }
-        }
-
     }*/
+
 }

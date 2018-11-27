@@ -69,9 +69,9 @@ public class SRCtv3Transformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(ctv3Code.getRowAuditId(), ctv3Code.getColIndex(), CTV3_CODE);
-        auditWrapper.auditValue(ctv3Text.getRowAuditId(), ctv3Text.getColIndex(), CTV3_TEXT);
+        auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(ctv3Code.getPublishedFileId(), ctv3Code.getRecordNumber(), ctv3Code.getColIndex(), CTV3_CODE);
+        auditWrapper.auditValue(ctv3Text.getPublishedFileId(), ctv3Text.getRecordNumber(), ctv3Text.getColIndex(), CTV3_TEXT);
 
         TppCtv3Lookup lookup = new TppCtv3Lookup(rowId.getLong(), ctv3Code.getString(), ctv3Text.getString(), auditWrapper);
 

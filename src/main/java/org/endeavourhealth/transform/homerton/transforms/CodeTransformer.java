@@ -69,13 +69,13 @@ public class CodeTransformer {
         }
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-        auditWrapper.auditValue(codeValueCode.getRowAuditId(), codeValueCode.getColIndex(), CODE_VALUE);
-        auditWrapper.auditValue(codeSetNbr.getRowAuditId(), codeSetNbr.getColIndex(), CODE_SET_NBR);
-        auditWrapper.auditValue(codeDispTxt.getRowAuditId(), codeDispTxt.getColIndex(), DISP_TXT);
-        auditWrapper.auditValue(codeDescTxt.getRowAuditId(), codeDescTxt.getColIndex(), DESC_TXT);
-        auditWrapper.auditValue(codeMeaningTxt.getRowAuditId(), codeMeaningTxt.getColIndex(), MEANING_TXT);
+        auditWrapper.auditValue(codeValueCode.getPublishedFileId(), codeValueCode.getRecordNumber(), codeValueCode.getColIndex(), CODE_VALUE);
+        auditWrapper.auditValue(codeSetNbr.getPublishedFileId(), codeSetNbr.getRecordNumber(), codeSetNbr.getColIndex(), CODE_SET_NBR);
+        auditWrapper.auditValue(codeDispTxt.getPublishedFileId(), codeDispTxt.getRecordNumber(), codeDispTxt.getColIndex(), DISP_TXT);
+        auditWrapper.auditValue(codeDescTxt.getPublishedFileId(), codeDescTxt.getRecordNumber(), codeDescTxt.getColIndex(), DESC_TXT);
+        auditWrapper.auditValue(codeMeaningTxt.getPublishedFileId(), codeMeaningTxt.getRecordNumber(), codeMeaningTxt.getColIndex(), MEANING_TXT);
         if (aliasNhsCdAliasCell != null) {
-            auditWrapper.auditValue(aliasNhsCdAliasCell.getRowAuditId(), aliasNhsCdAliasCell.getColIndex(), CODE_NHS_ALIAS);
+            auditWrapper.auditValue(aliasNhsCdAliasCell.getPublishedFileId(), aliasNhsCdAliasCell.getRecordNumber(), aliasNhsCdAliasCell.getColIndex(), CODE_NHS_ALIAS);
         }
 
         byte active = (byte)activeInd.getInt().intValue();

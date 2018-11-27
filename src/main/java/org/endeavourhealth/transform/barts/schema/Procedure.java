@@ -86,7 +86,7 @@ public class Procedure extends AbstractFixedParser {
     }
 
     public Long getEncounterId() {
-        return Long.parseLong(super.getString("EncounterID").split("\\.")[0]);
+        return Long.parseLong(super.getString("Encntr_Id").split("\\.")[0]);
     }
 
     public String getFINNo() {

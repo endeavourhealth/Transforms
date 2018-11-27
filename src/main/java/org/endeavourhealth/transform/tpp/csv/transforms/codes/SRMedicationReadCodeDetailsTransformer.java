@@ -51,10 +51,10 @@ public class SRMedicationReadCodeDetailsTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(multiLexProductId.getRowAuditId(), multiLexProductId.getColIndex(), MULTILEX_PRODUCT_ID);
-        auditWrapper.auditValue(ctv3ReadCode.getRowAuditId(), ctv3ReadCode.getColIndex(), CTV3_READ_CODE);
-        auditWrapper.auditValue(ctv3ReadTerm.getRowAuditId(), ctv3ReadTerm.getColIndex(), CTV3_READ_TERM);
+        auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(multiLexProductId.getPublishedFileId(), multiLexProductId.getRecordNumber(), multiLexProductId.getColIndex(), MULTILEX_PRODUCT_ID);
+        auditWrapper.auditValue(ctv3ReadCode.getPublishedFileId(), ctv3ReadCode.getRecordNumber(), ctv3ReadCode.getColIndex(), CTV3_READ_CODE);
+        auditWrapper.auditValue(ctv3ReadTerm.getPublishedFileId(), ctv3ReadTerm.getRecordNumber(), ctv3ReadTerm.getColIndex(), CTV3_READ_TERM);
 
         TppMultiLexToCtv3Map mapping = new TppMultiLexToCtv3Map(rowId.getLong(),
                 multiLexProductId.getLong(),

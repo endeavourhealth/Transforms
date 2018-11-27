@@ -8,11 +8,12 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     boolean nextRecord() throws Exception;
     CsvCurrentState getCurrentState();
     String getFilePath();
-    long getSourceFileRecordIdForCurrentRow();
+    //long getSourceFileRecordIdForCurrentRow();
     DateFormat getDateFormat();
     DateFormat getTimeFormat();
     DateFormat getDateTimeFormat();
-    void setAuditorCallback(CsvAuditorCallbackI auditorCallback);
+    //void setAuditorCallback(CsvAuditorCallbackI auditorCallback);
     List<String> getColumnHeaders();
     CsvCell getCell(String column);
+    //void setRowAuditId(int recordNumber, Long rowAuditId);
 }

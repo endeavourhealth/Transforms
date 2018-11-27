@@ -58,9 +58,9 @@ public class SRConfiguredListOptionTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(configListId.getRowAuditId(), configListId.getColIndex(), CONFIG_LIST_ID);
-        auditWrapper.auditValue(listOption.getRowAuditId(), listOption.getColIndex(), LIST_OPTION);
+        auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(configListId.getPublishedFileId(), configListId.getRecordNumber(), configListId.getColIndex(), CONFIG_LIST_ID);
+        auditWrapper.auditValue(listOption.getPublishedFileId(), listOption.getRecordNumber(), listOption.getColIndex(), LIST_OPTION);
 
         TppConfigListOption tppConfigListOption = new TppConfigListOption(rowId.getLong(),
                                     configListId.getLong(),
