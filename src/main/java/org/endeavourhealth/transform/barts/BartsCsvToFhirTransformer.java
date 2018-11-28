@@ -255,7 +255,7 @@ public abstract class BartsCsvToFhirTransformer {
                     ParserI parser = createParser(file, type, csvHelper);
 
                     //set our csv helper as the auditor callback, so we can selectively audit CLEVE records
-                    parser.setAuditorCallback(csvHelper);
+                    //parser.setAuditorCallback(csvHelper);
 
                     ret.add(parser);
                 }

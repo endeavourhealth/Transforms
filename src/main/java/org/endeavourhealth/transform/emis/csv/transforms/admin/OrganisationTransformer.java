@@ -144,20 +144,77 @@ public class OrganisationTransformer {
                 || csvOrganisationType.equalsIgnoreCase("Main Surgery")
                 || csvOrganisationType.equalsIgnoreCase("GP Contract")
                 || csvOrganisationType.equalsIgnoreCase("GP Practice")
-                || csvOrganisationType.equalsIgnoreCase("GP Surgery")) {
+                || csvOrganisationType.equalsIgnoreCase("GP Surgery")
+                || csvOrganisationType.equalsIgnoreCase("G.P.Surgery")
+            ) {
                 return OrganisationType.GP_PRACTICE;
 
             } else if (csvOrganisationType.equalsIgnoreCase("CCG")) {
                 return OrganisationType.CCG;
 
             } else if (csvOrganisationType.equalsIgnoreCase("PCT Site")
-                    || csvOrganisationType.equalsIgnoreCase("Primary Care Trust")) {
+                    || csvOrganisationType.equalsIgnoreCase("Primary Care Trust")
+                    || csvOrganisationType.equalsIgnoreCase("PCT")
+            ) {
                 return OrganisationType.PCT;
 
-            } else if (csvOrganisationType.equalsIgnoreCase("Hospital")
-                    || csvOrganisationType.equalsIgnoreCase("NHS Trust Site")
+            } else if (csvOrganisationType.equalsIgnoreCase("NHS Trust Site")
                     || csvOrganisationType.equalsIgnoreCase("NHS Trust")) {
                 return OrganisationType.NHS_TRUST;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Community")
+                    || csvOrganisationType.equalsIgnoreCase("Community Unit")
+                    || csvOrganisationType.equalsIgnoreCase("Community Health Clinic")
+                    || csvOrganisationType.equalsIgnoreCase("Community Clinic")) {
+                return OrganisationType.COMMUNITY;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Hospice")) {
+                return OrganisationType.HOSPICE;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Hospital")
+                    || csvOrganisationType.equalsIgnoreCase("Hospitals")
+                    || csvOrganisationType.equalsIgnoreCase("Hospitals Trust")) {
+                return OrganisationType.HOSPITAL;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Clinic")
+                    || csvOrganisationType.equalsIgnoreCase("Centre")
+                    || csvOrganisationType.equalsIgnoreCase("Surgery or Clinic")
+                    || csvOrganisationType.equalsIgnoreCase("Health Centres")
+                    || csvOrganisationType.equalsIgnoreCase("Clinic NHS")) {
+                return OrganisationType.CLINIC;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Strategic Health Authority")) {
+                return OrganisationType.STRATEGIC_HEALTH_AUTHORITY;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Health Board")) {
+                return OrganisationType.WELSH_LOCAL_HEALTH_BOARD;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Health Authority")
+                    || csvOrganisationType.equalsIgnoreCase("Health Authority (trading)")) {
+                return OrganisationType.HEALTH_AUTHORITY;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Primary Care Centre")
+                    || csvOrganisationType.equalsIgnoreCase("Primary Care Organisation")) {
+                return OrganisationType.PRIMARY_CARE_ORGANISATION;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Branch Surgery")) {
+                return OrganisationType.GP_BRANCH_SURGERY;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Clinic Private")
+                    || csvOrganisationType.equalsIgnoreCase("Private Clinic")) {
+                return OrganisationType.PRIVATE_CLINIC;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Hospital Department")) {
+                return OrganisationType.HOSPITAL_DEPARTMENT;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Out of Hours, Non Practice")) {
+                return OrganisationType.OUT_OF_HOURS;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Community Mental Health team")) {
+                return OrganisationType.COMMUNITY_MENTAL_HEALTH_TEAM;
+
+            } else if (csvOrganisationType.equalsIgnoreCase("Nursing Home")) {
+                return OrganisationType.NURSING_HOME;
 
             } else {
                 return null;

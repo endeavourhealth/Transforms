@@ -48,8 +48,8 @@ public class OriginalTermsTransformer {
 
         //this file has GUIDs in the normal style, but the regular Emis data has them with brackets, so
         //we need to create new cell objects with the adjusted content
-        CsvCell adjustedPatientGuidCell = new CsvCell(patientGuidCell.getRowAuditId(), patientGuidCell.getColIndex(), "{" + patientGuidCell.getString() + "}", parser);
-        CsvCell adjustedObservationGuidCell = new CsvCell(observationGuidCell.getRowAuditId(), observationGuidCell.getColIndex(), "{" + observationGuidCell.getString() + "}", parser);
+        CsvCell adjustedPatientGuidCell = new CsvCell(patientGuidCell.getPublishedFileId(), patientGuidCell.getRecordNumber(), patientGuidCell.getColIndex(), "{" + patientGuidCell.getString() + "}", parser);
+        CsvCell adjustedObservationGuidCell = new CsvCell(observationGuidCell.getPublishedFileId(), observationGuidCell.getRecordNumber(), observationGuidCell.getColIndex(), "{" + observationGuidCell.getString() + "}", parser);
 
         //work out what FHIR resource type the original record was saved as
         Set<ResourceType> resourceTypes = ObservationTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, adjustedPatientGuidCell, adjustedObservationGuidCell);

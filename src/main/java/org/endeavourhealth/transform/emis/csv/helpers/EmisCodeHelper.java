@@ -14,7 +14,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class EmisCodeHelper {
 
@@ -40,7 +39,7 @@ public class EmisCodeHelper {
         return applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
     }
 
-    private static CodeableConceptBuilder applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, CodeableConceptBuilder.Tag tag, CsvCell... additionalSourceCells) {
+    private static CodeableConceptBuilder applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, CodeableConceptBuilder.Tag tag, CsvCell... additionalSourceCells) throws Exception {
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
 
@@ -107,7 +106,7 @@ public class EmisCodeHelper {
         }
     }
 
-    private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) {
+    private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
 
         String readCode = removeSynonymAndPadRead2Code(codeMap);
         String readTerm = codeMap.getReadTerm();
@@ -141,7 +140,7 @@ public class EmisCodeHelper {
         codeableConceptBuilder.setText(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
     }
 
-    private static void applyMedicationCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) {
+    private static void applyMedicationCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
 
         Long dmdId = codeMap.getSnomedConceptId();
         String drugName = codeMap.getSnomedTerm();
@@ -159,24 +158,29 @@ public class EmisCodeHelper {
         }
     }
 
-    private static CsvCell[] createCsvCell(EmisCsvCodeMap codeMap, String fieldName, Object value, CsvCell... additionalSourceCells) {
+    private static CsvCell[] createCsvCell(EmisCsvCodeMap codeMap, String fieldName, Object value, CsvCell... additionalSourceCells) throws Exception {
 
         List<CsvCell> list = new ArrayList<>(Arrays.asList(additionalSourceCells));
 
         ResourceFieldMappingAudit audit = codeMap.getAudit();
         //audit may be null if the coding file was processed before the audit was added
         if (audit != null) {
-            Map<Long, ResourceFieldMappingAudit.ResourceFieldMappingAuditRow> auditMap = audit.getAudits();
-            for (Long key : auditMap.keySet()) {
-                ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit = auditMap.get(key);
+            for (ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit: audit.getAudits()) {
                 for (ResourceFieldMappingAudit.ResourceFieldMappingAuditCol colAudit : rowAudit.getCols()) {
                     String field = colAudit.getField();
                     if (field.equals(fieldName)) {
                         int colIndex = colAudit.getCol();
-                        long rowAuditId = rowAudit.getAuditId();
-
-                        CsvCell cell = new CsvCell(rowAuditId, colIndex, value.toString(), null);
-                        list.add(cell);
+                        int publishedFileId = rowAudit.getFileId();
+                        if (publishedFileId > 0) {
+                            CsvCell cell = new CsvCell(publishedFileId, rowAudit.getRecord(), colIndex, value.toString(), null);
+                            list.add(cell);
+                        } else if (rowAudit.getOldStyleAuditId() != null) {
+                            //temporary, until all audits are converted over to new style
+                            CsvCell cell = CsvCell.factoryOldStyleAudit(rowAudit.getOldStyleAuditId(), colIndex, value.toString(), null);
+                            list.add(cell);
+                        } else {
+                            throw new Exception("No published record ID in audit for EmisCsvCodeMap " + codeMap.getCodeId());
+                        }
                     }
                 }
             }

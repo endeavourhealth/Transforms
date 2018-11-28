@@ -82,7 +82,6 @@ public class OutputContainer {
 
         //return as base64 encoded string
         return baos.toByteArray();
-
     }
     
     private static void writeColumnClassMappings(AbstractEnterpriseCsvWriter csvWriter, ObjectNode columnClassMappingJson) throws Exception {

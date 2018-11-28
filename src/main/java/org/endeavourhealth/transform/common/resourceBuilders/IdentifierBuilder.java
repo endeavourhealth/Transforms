@@ -204,7 +204,11 @@ public class IdentifierBuilder {
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell: sourceCells) {
             if (csvCell != null) {
-                audit.auditValue(csvCell.getRowAuditId(), csvCell.getColIndex(), jsonField);
+                if (csvCell.getOldStyleAuditId() != null) {
+                    audit.auditValueOldStyle(csvCell.getOldStyleAuditId(), csvCell.getColIndex(), jsonField);
+                } else {
+                    audit.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
+                }
             }
         }
     }

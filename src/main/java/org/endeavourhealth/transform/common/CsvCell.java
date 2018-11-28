@@ -22,13 +22,15 @@ public class CsvCell {
     //private String value;
 
     private int colIndex;
-    private long rowAuditId;
+    //private long rowAuditId;
+    private int publishedFileId;
+    private int recordNumber;
     private ParserI parentParser;
-    /*private DateFormat dateFormat;
-    private DateFormat timeFormat;*/
+    private Long oldStyleAuditId; //temporary until all audits are converted over to new-style
 
-    public CsvCell(long rowAuditId, int colIndex, String value, ParserI parentParser) {
-        this.rowAuditId = rowAuditId;
+    public CsvCell(int publishedFileId, int recordNumber, int colIndex, String value, ParserI parentParser) {
+        this.publishedFileId = publishedFileId;
+        this.recordNumber = recordNumber;
         this.colIndex = colIndex;
         this.parentParser = parentParser;
 
@@ -39,15 +41,29 @@ public class CsvCell {
     }
 
     public static CsvCell factoryDummyWrapper(String value) {
-        return new CsvCell(-1, -1, value, null);
+        return new CsvCell(-1, -1, -1, value, null);
+    }
+
+    public static CsvCell factoryOldStyleAudit(Long oldStyleAuditId, int colIndex, String value, ParserI parentParser) {
+        CsvCell ret = new CsvCell(-1, -1, colIndex, value, parentParser);
+        ret.oldStyleAuditId = oldStyleAuditId;
+        return ret;
     }
 
     public int getColIndex() {
         return colIndex;
     }
 
-    public long getRowAuditId() {
-        return rowAuditId;
+    public int getPublishedFileId() {
+        return publishedFileId;
+    }
+
+    public int getRecordNumber() {
+        return recordNumber;
+    }
+
+    public Long getOldStyleAuditId() {
+        return oldStyleAuditId;
     }
 
     public boolean isEmpty() {
@@ -163,7 +179,7 @@ public class CsvCell {
      * for logging purposes. To get the value as a String, just use getString()
      */
     public String toString() {
-        return "Value [" + getString() + "] RowAuditId " + rowAuditId + " ColIndex " + colIndex;
+        return "Value [" + getString() + "] PublishedFileId " + publishedFileId + " Record " + recordNumber + " ColIndex " + colIndex;
     }
 
     public static Date getDateTimeFromTwoCells(CsvCell dateCell, CsvCell timeCell) throws TransformException {

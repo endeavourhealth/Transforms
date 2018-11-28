@@ -74,9 +74,9 @@ public class DrugCodeTransformer {
         //we need to generate the audit of the source cells to FHIR so we can apply it when we create resources
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
         if (!dmdId.isEmpty()) {
-            auditWrapper.auditValue(dmdId.getRowAuditId(), dmdId.getColIndex(), EmisCodeHelper.AUDIT_DRUG_CODE);
+            auditWrapper.auditValue(dmdId.getPublishedFileId(), dmdId.getRecordNumber(), dmdId.getColIndex(), EmisCodeHelper.AUDIT_DRUG_CODE);
         }
-        auditWrapper.auditValue(term.getRowAuditId(), term.getColIndex(), EmisCodeHelper.AUDIT_DRUG_TERM);
+        auditWrapper.auditValue(term.getPublishedFileId(), term.getRecordNumber(), term.getColIndex(), EmisCodeHelper.AUDIT_DRUG_TERM);
         mapping.setAudit(auditWrapper);
 
         mappingsToSave.add(mapping);

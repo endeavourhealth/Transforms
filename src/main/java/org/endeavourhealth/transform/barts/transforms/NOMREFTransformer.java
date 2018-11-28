@@ -67,19 +67,19 @@ public class NOMREFTransformer {
 
         if (!mnemonicTextCell.isEmpty()) {
             obj.setMnemonicText(mnemonicTextCell.getString());
-            auditWrapper.auditValue(mnemonicTextCell.getRowAuditId(), mnemonicTextCell.getColIndex(), AUDIT_MNEMONIC_TEXT);
+            auditWrapper.auditValue(mnemonicTextCell.getPublishedFileId(), mnemonicTextCell.getRecordNumber(), mnemonicTextCell.getColIndex(), AUDIT_MNEMONIC_TEXT);
         }
         if (!valueTextCell.isEmpty()) {
             obj.setValueText(valueTextCell.getString());
-            auditWrapper.auditValue(valueTextCell.getRowAuditId(), valueTextCell.getColIndex(), AUDIT_VALUE_TEXT);
+            auditWrapper.auditValue(valueTextCell.getPublishedFileId(), valueTextCell.getRecordNumber(), valueTextCell.getColIndex(), AUDIT_VALUE_TEXT);
         }
         if (!displayTextCell.isEmpty()) {
             obj.setDisplayText(displayTextCell.getString());
-            auditWrapper.auditValue(displayTextCell.getRowAuditId(), displayTextCell.getColIndex(), AUDIT_DISPLAY_TEXT);
+            auditWrapper.auditValue(displayTextCell.getPublishedFileId(), displayTextCell.getRecordNumber(), displayTextCell.getColIndex(), AUDIT_DISPLAY_TEXT);
         }
         if (!descriptionTextCell.isEmpty()) {
             obj.setDescriptionText(descriptionTextCell.getString());
-            auditWrapper.auditValue(descriptionTextCell.getRowAuditId(), descriptionTextCell.getColIndex(), AUDIT_DESCRIPTION_TEXT);
+            auditWrapper.auditValue(descriptionTextCell.getPublishedFileId(), descriptionTextCell.getRecordNumber(), descriptionTextCell.getColIndex(), AUDIT_DESCRIPTION_TEXT);
         }
         if (!typeCell.isEmpty()) {
             obj.setNomenclatureTypeCode(typeCell.getLong());
@@ -91,7 +91,7 @@ public class NOMREFTransformer {
         }
         if (!conceptIdentifierCell.isEmpty()) {
             obj.setConceptIdentifier(conceptIdentifierCell.getString());
-            auditWrapper.auditValue(conceptIdentifierCell.getRowAuditId(), conceptIdentifierCell.getColIndex(), AUDIT_CONCEPT_IDENTIFIER);
+            auditWrapper.auditValue(conceptIdentifierCell.getPublishedFileId(), conceptIdentifierCell.getRecordNumber(), conceptIdentifierCell.getColIndex(), AUDIT_CONCEPT_IDENTIFIER);
         }
 
         //spin the remainder of our work off to a small thread pool, so we can perform multiple snomed term lookups in parallel

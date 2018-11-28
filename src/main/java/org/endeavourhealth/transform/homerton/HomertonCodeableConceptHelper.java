@@ -7,8 +7,6 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 
-import java.util.Map;
-
 public class HomertonCodeableConceptHelper {
 
     public static final String AUDIT_ELEMENT_CODE_DESC = "Description";
@@ -68,21 +66,25 @@ public class HomertonCodeableConceptHelper {
         return codeableConceptBuilder;
     }
 
-    private static CsvCell createCsvCell(CernerCodeValueRef codeMap, String fieldName, Object value) {
+    private static CsvCell createCsvCell(CernerCodeValueRef codeMap, String fieldName, Object value) throws Exception {
 
         ResourceFieldMappingAudit audit = codeMap.getAudit();
         //audit may be null if the coding file was processed before the audit was added
         if (audit != null) {
-            Map<Long, ResourceFieldMappingAudit.ResourceFieldMappingAuditRow> auditMap = audit.getAudits();
-            for (Long key : auditMap.keySet()) {
-                ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit = auditMap.get(key);
+            for (ResourceFieldMappingAudit.ResourceFieldMappingAuditRow rowAudit: audit.getAudits()) {
                 for (ResourceFieldMappingAudit.ResourceFieldMappingAuditCol colAudit : rowAudit.getCols()) {
                     String field = colAudit.getField();
                     if (field.equals(fieldName)) {
                         int colIndex = colAudit.getCol();
-                        long rowAuditId = rowAudit.getAuditId();
-
-                        return new CsvCell(rowAuditId, colIndex, value.toString(), null);
+                        int publishedFileId = rowAudit.getFileId();
+                        if (publishedFileId > 0) {
+                            return new CsvCell(publishedFileId, rowAudit.getRecord(), colIndex, value.toString(), null);
+                        } else if (rowAudit.getOldStyleAuditId() != null) {
+                            //temproary, until all audits are converted over to new style
+                            return CsvCell.factoryOldStyleAudit(rowAudit.getOldStyleAuditId(), colIndex, value.toString(), null);
+                        } else {
+                            throw new Exception("No published record ID in audit for CernerCodeValueRef " + codeMap.getCodeValueCd());
+                        }
                     }
                 }
             }

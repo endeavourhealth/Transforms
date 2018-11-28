@@ -48,9 +48,9 @@ public class SRMappingTransformer {
 
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
 
-        auditWrapper.auditValue(rowId.getRowAuditId(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(groupId.getRowAuditId(), groupId.getColIndex(), GROUP_ID);
-        auditWrapper.auditValue(mappedTerm.getRowAuditId(), mappedTerm.getColIndex(), MAPPED_TERM);
+        auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
+        auditWrapper.auditValue(groupId.getPublishedFileId(), groupId.getRecordNumber(), groupId.getColIndex(), GROUP_ID);
+        auditWrapper.auditValue(mappedTerm.getPublishedFileId(), mappedTerm.getRecordNumber(), mappedTerm.getColIndex(), MAPPED_TERM);
 
         TppMappingRef mapping = new TppMappingRef(rowId.getLong(),
                                     groupId.getLong(),
