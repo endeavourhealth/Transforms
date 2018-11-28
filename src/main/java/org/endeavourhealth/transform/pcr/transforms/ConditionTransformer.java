@@ -209,8 +209,9 @@ public class ConditionTransformer extends AbstractTransformer {
         }
 
         //firstly, file as an observation
-        Observation observationModel
-                = (Observation) csvWriter;
+        OutputContainer data = params.getOutputContainer();
+        Observation observationModel = data.getObservations();
+
         observationModel.writeUpsert(
                 id,
                 patientId,
@@ -239,7 +240,6 @@ public class ConditionTransformer extends AbstractTransformer {
         //if it is a problem, file into problem table using id as observationId.
         if (isProblem) {
 
-            OutputContainer data = params.getOutputContainer();
             Problem model = data.getProblems();
             model.writeUpsert(
                     id,
