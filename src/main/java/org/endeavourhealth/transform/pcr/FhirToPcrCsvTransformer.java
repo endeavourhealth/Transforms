@@ -476,16 +476,19 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                                          PcrTransformParams params) throws Exception {
 
         if (resourceType.name().equalsIgnoreCase("patient")) {
-            LOG.info("Processing patients count : " + resources.size());
+            LOG.info("Looking for patients count : " + resources.size());
         }
         //find all the ones we want to transform
         List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
         HashSet<ResourceWrapper> hsResourcesToTransform = new HashSet<>();
 
         for (ResourceWrapper resource: resources) {
-            if (resource.getResourceType().equals(resourceType.toString())) {
+            if (resource.getResourceType().equalsIgnoreCase(resourceType.toString())) {
                 resourcesToTransform.add(resource);
                 hsResourcesToTransform.add(resource);
+            }
+            if (resource.getResourceType().equalsIgnoreCase("patient")) {
+                LOG.info("Patient " + resource.getResourceId() + " found when looking for " + resourceType.toString());
             }
         }
 
