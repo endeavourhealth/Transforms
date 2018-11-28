@@ -25,11 +25,11 @@ public class MedicationOrderTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long pcrId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        MedicationOrder fhir = (MedicationOrder)resource;
+        MedicationOrder fhir = (MedicationOrder) resource;
 
         long id;
         long owningOrganisationId;
@@ -61,7 +61,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Long medicationAmountId = null;
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;
-        String originalCode =null;
+        String originalCode = null;
         String originalTerm = null;
         Integer originalCodeScheme = null;
         Integer originalSystem = null;
@@ -88,7 +88,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
-            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
@@ -111,7 +111,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
             dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
+            //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
 
         } else return;
 
@@ -127,7 +127,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             //one of the Emis test packs includes the unicode \u0001 character in the dose. This should be handled
             //during the inbound transform, but the data is already in the DB now, so needs handling here
             char[] chars = dose.toCharArray();
-            for (int i=0; i<chars.length; i++) {
+            for (int i = 0; i < chars.length; i++) {
                 char c = chars[i];
                 if (c == 1) {
                     chars[i] = '?'; //just replace with ?
@@ -166,7 +166,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_ORDER_ESTIMATED_COST);
         if (estimatedCost != null) {
 
-            DecimalType d = (DecimalType)estimatedCostExtension.getValue();
+            DecimalType d = (DecimalType) estimatedCostExtension.getValue();
             estimatedCost = d.getValue();
         }
 
@@ -190,11 +190,11 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE);
         if (authorisationTypeExtension != null) {
 
-            Coding c = (Coding)authorisationTypeExtension.getValue();
+            Coding c = (Coding) authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
             //TODO -  not in IM yet?
             typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getOrCreateConceptId("MedicationAuthorisationType." + authorisationType.getCode());
+            //TODO IMClient.getOrCreateConceptId("MedicationAuthorisationType." + authorisationType.getCode());
         }
 
         //confidential?
@@ -209,7 +209,20 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         medicationAmountId = id;
 
         org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
-                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder)csvWriter;
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder) csvWriter;
+        String filename = model.getFileName();
+        String idFileName = filename.replace("medication_order", "medication_amount");
+        MedicationAmount amountWriter = new MedicationAmount(idFileName, FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT, FhirToPcrCsvTransformer.TIME_FORMAT);
+
+        amountWriter.writeUpsert(
+                id,
+                patientId,
+                dose,
+                quantityValue,
+                quantityUnit,
+                enteredByPractitionerId);
+
         model.writeUpsert(
                 id,
                 patientId,
@@ -240,17 +253,5 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         //TODO - handle free text and linking
 
-        String filename = model.getFileName();
-        String idFileName = filename.replace("medicationOrder","medication_amount");
-        MedicationAmount writer = new MedicationAmount(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-
-        writer.writeUpsert(
-                id,
-                patientId,
-                dose,
-                quantityValue,
-                quantityUnit,
-                enteredByPractitionerId);
     }
 }

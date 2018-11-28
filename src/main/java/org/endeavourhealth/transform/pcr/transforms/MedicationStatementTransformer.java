@@ -216,6 +216,19 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.pcr.outputModels.MedicationStatement model
                 = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement)csvWriter;
+        String filename = model.getFileName();
+        String idFileName = filename.replace("medication_statement","medication_amount");
+        MedicationAmount medicationAmountModel = new MedicationAmount(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+
+        // Write amount first
+        medicationAmountModel.writeUpsert(
+                id,
+                patientId,
+                dose,
+                quantityValue,
+                quantityUnit,
+                enteredByPractitionerId);
 
         model.writeUpsert(
                 id,
@@ -251,19 +264,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         //TODO - handle free text and linking
 
-        String filename = model.getFileName();
-        String idFileName = filename.replace("medication_statement","medication_amount");
-        MedicationAmount medicationAmountModel = new MedicationAmount(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
 
-
-        medicationAmountModel.writeUpsert(
-                id,
-                patientId,
-                dose,
-                quantityValue,
-                quantityUnit,
-                enteredByPractitionerId);
 
     }
 }
