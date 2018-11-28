@@ -233,7 +233,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
         //if the observation has a value then file that data
         if (fhir.hasValue()) {
-            LOG.debug("Observation id " + id + " has value " + resultValue.toString());
+            LOG.debug("Observation id " + id + " has value ");
             String filename = observationModel.getFileName();
             String idFileName = filename.replace("observation","observation_value");
             ObservationValue observationValueModel = new ObservationValue(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
