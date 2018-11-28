@@ -65,7 +65,7 @@ public class ObservationTransformer extends AbstractTransformer {
         boolean confidential = false;
         Long episodicityConceptId = null;
         Long freeTextId = null;
-        Long dataEntryPromptId = null;
+        Long dataEntryPromptId = FhirToPcrCsvTransformer.DATA_ENTRY_PLACE_HOLDER;
         Long significanceConceptId = null;
         boolean isConsent = false;
         Long resultConceptId = null;

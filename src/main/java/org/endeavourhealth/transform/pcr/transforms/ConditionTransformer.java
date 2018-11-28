@@ -7,8 +7,8 @@ import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
-import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Problem;
+import org.endeavourhealth.transform.pcr.outputModels.Observation;
+import org.endeavourhealth.transform.pcr.outputModels.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,20 +209,50 @@ public class ConditionTransformer extends AbstractTransformer {
         }
 
         //firstly, file as an observation
-        Problem problemModel
-                = (Problem) csvWriter;
-        problemModel.writeUpsert(
+        Observation observationModel
+                = (Observation) csvWriter;
+        observationModel.writeUpsert(
                 id,
                 patientId,
-                parentObservationId,
-                typeConceptId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecisionId,
+                effectivePractitionerId,
+                enteredByPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                confidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
+                episodicityConceptId,
+                freeTextId,
+                dataEntryPromptId,
                 significanceConceptId,
-                expectedDurationDays,
-                lastReviewDate,
-                lastReviewPractitionerId,
-                enteredByPractitionerId);
+                isConsent);
 
 
+        observationId = id;  //id same as Observation Id as Condition Id splits into Observation and Problem tables
+
+        //if it is a problem, file into problem table using id as observationId.
+        if (isProblem) {
+
+            OutputContainer data = params.getOutputContainer();
+            Problem model = data.getProblems();
+            model.writeUpsert(
+                    id,
+                    patientId,
+                    observationId,
+                    typeConceptId,
+                    significanceConceptId,
+                    expectedDurationDays,
+                    lastReviewDate,
+                    lastReviewPractitionerId,
+                    enteredByPractitionerId
+            );
+        }
 
         //TODO - handle free text and linking
     }
