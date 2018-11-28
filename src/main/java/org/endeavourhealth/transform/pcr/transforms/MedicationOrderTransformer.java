@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.MedicationAmount;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,20 +209,19 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         //unique enterprise_id values allow linkage to medication_amount table id and preserve uniqueness
         medicationAmountId = id;
 
-        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
-                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder) csvWriter;
-        String filename = model.getFileName();
-        String idFileName = filename.replace("medication_order", "medication_amount");
-        MedicationAmount amountWriter = new MedicationAmount(idFileName, FhirToPcrCsvTransformer.CSV_FORMAT,
-                FhirToPcrCsvTransformer.DATE_FORMAT, FhirToPcrCsvTransformer.TIME_FORMAT);
+        OutputContainer data = params.getOutputContainer();
+        MedicationAmount medicationAmountModel = data.getMedicationAmounts();
 
-        amountWriter.writeUpsert(
+        medicationAmountModel.writeUpsert(
                 id,
                 patientId,
                 dose,
                 quantityValue,
                 quantityUnit,
                 enteredByPractitionerId);
+
+        org.endeavourhealth.transform.pcr.outputModels.MedicationOrder model
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationOrder) csvWriter;
 
         model.writeUpsert(
                 id,

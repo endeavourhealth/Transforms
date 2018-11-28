@@ -8,7 +8,6 @@ import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.Observation;
 import org.endeavourhealth.transform.pcr.outputModels.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -210,51 +209,20 @@ public class ConditionTransformer extends AbstractTransformer {
         }
 
         //firstly, file as an observation
-        Observation observationModel
-                = (Observation) csvWriter;
-        observationModel.writeUpsert(
+        Problem problemModel
+                = (Problem) csvWriter;
+        problemModel.writeUpsert(
                 id,
                 patientId,
-                conceptId,
-                effectiveDate,
-                effectiveDatePrecisionId,
-                effectivePractitionerId,
-                enteredByPractitionerId,
-                careActivityId,
-                careActivityHeadingConceptId,
-                owningOrganisationId,
-                confidential,
-                originalCode,
-                originalTerm,
-                originalCodeScheme,
-                originalSystem,
-                episodicityConceptId,
-                freeTextId,
-                dataEntryPromptId,
+                parentObservationId,
+                typeConceptId,
                 significanceConceptId,
-                isConsent);
+                expectedDurationDays,
+                lastReviewDate,
+                lastReviewPractitionerId,
+                enteredByPractitionerId);
 
 
-        observationId = id;  //id same as Observation Id as Condition Id splits into Observation and Problem tables
-
-        //if it is a problem, file into problem table using id as observationId.
-        if (isProblem) {
-            String filename = observationModel.getFileName();
-            String idFileName = filename.replace("observation","problem");
-            Problem model = new Problem(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                    FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-            model.writeUpsert(
-                    id,
-                    patientId,
-                    observationId,
-                    typeConceptId,
-                    significanceConceptId,
-                    expectedDurationDays,
-                    lastReviewDate,
-                    lastReviewPractitionerId,
-                    enteredByPractitionerId
-            );
-        }
 
         //TODO - handle free text and linking
     }

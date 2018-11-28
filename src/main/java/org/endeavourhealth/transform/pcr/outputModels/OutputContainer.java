@@ -222,6 +222,10 @@ public class OutputContainer {
         return findCsvWriter(Observation.class);
     }
 
+    public ObservationValue getObservationValues() {
+        return findCsvWriter(ObservationValue.class);
+    }
+
     public MedicationStatement getMedicationStatements() {
         return findCsvWriter(MedicationStatement.class);
     }
@@ -230,6 +234,22 @@ public class OutputContainer {
         return findCsvWriter(MedicationOrder.class);
     }
 
+    public MedicationAmount getMedicationAmounts() {
+        return findCsvWriter(MedicationAmount.class);
+    }
+
+    public Problem getProblems() {
+        return findCsvWriter(Problem.class);
+    }
+    public PatientAddress getPatientAddresses() {
+        return findCsvWriter(PatientAddress.class);
+    }
+    public PatientIdentifier getPatientIdentifiers() {
+        return findCsvWriter(PatientIdentifier.class);
+    }
+    public PatientContact getPatientContacts() {
+        return findCsvWriter(PatientContact.class);
+    }
     public Allergy getAllergyIntolerances() {
         return findCsvWriter(Allergy.class);
     }

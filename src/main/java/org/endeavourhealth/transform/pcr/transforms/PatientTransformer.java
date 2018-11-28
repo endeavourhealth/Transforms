@@ -20,10 +20,10 @@ import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
-import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.endeavourhealth.transform.pcr.outputModels.PatientAddress;
-import org.endeavourhealth.transform.pcr.outputModels.PatientContact;
-import org.endeavourhealth.transform.pcr.outputModels.PatientIdentifier;
+import org.endeavourhealth.transform.pcr.outputModels.*;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -96,8 +96,12 @@ public class PatientTransformer extends AbstractTransformer {
         for (HumanName nom : names) {
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
 
-                if (nom.getFamily() != null) {lastName = nom.getFamily().toString();}
-                if (nom.getGiven() != null) {firstName = nom.getGiven().get(0).toString();}
+                if (nom.getFamily() != null) {
+                    lastName = nom.getFamily().toString();
+                }
+                if (nom.getGiven() != null) {
+                    firstName = nom.getGiven().get(0).toString();
+                }
                 if (nom.getGiven().size() > 1) {
                     StringBuilder midnames = new StringBuilder();
                     for (StringType namepart : nom.getGiven()) {
@@ -111,7 +115,6 @@ public class PatientTransformer extends AbstractTransformer {
                 }
             }
         }
-
 
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
@@ -139,17 +142,15 @@ public class PatientTransformer extends AbstractTransformer {
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
-            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
-
-
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             String ethnic = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
-          //  ethnicCode = (Character) IMClient.getConceptId(ethnic);
+            //  ethnicCode = (Character) IMClient.getConceptId(ethnic);
             //TODO how do we map ethnic code?
         }
 
@@ -159,7 +160,7 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
             String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
             if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
-                nhsNumberVerificationTermId =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                nhsNumberVerificationTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                 //TODO IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
             }
 
@@ -167,7 +168,6 @@ public class PatientTransformer extends AbstractTransformer {
             isSpineSensitive = false;
         }
         if (fhirPatient.hasCareProvider()) {
-
             Reference orgReference = findOrgReference(fhirPatient, params);
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->enterprise
@@ -180,8 +180,8 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-       // AbstractPcrCsvWriter patientIdWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(PatientIdentifier, params)
-      //  writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, );
+        // AbstractPcrCsvWriter patientIdWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(PatientIdentifier, params)
+        //  writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, );
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
         //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
@@ -214,22 +214,16 @@ public class PatientTransformer extends AbstractTransformer {
                 isSpineSensitive,
                 ethnicCode);
 
-        String filename = patientWriter.getFileName();
-        String idFileName = filename.replace("patient","patient_identifier");
-        PatientIdentifier patientIdentifierWriter = new PatientIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-        writePatientIdentifier(id, fhirPatient,enteredByPractitionerId,patientIdentifierWriter );
+        OutputContainer data = params.getOutputContainer();
+        PatientIdentifier patientIdentifierModel = data.getPatientIdentifiers();
+        writePatientIdentifier(id, fhirPatient, enteredByPractitionerId, patientIdentifierModel);
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
             if (StringUtils.isNumeric(fhirAddress.getId())) {
                 homeAddressId = Long.parseLong(fhirAddress.getId());
-                String addressFileName = filename.replace("patient","patient_address");
-
-                PatientAddress patientAddressWriter = new PatientAddress(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                        FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-
-                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, csvWriter);
+                PatientAddress patientAddressWriter = data.getPatientAddresses();
+                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, patientAddressWriter);
             } else {
                 LOG.debug("Non-numeric address Id " + fhirAddress.getId() + ". Patient:" + id);
             }
@@ -239,12 +233,9 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasContact()) {
             List<Patient.ContactComponent> contactList = fhirPatient.getContact();
-            String contactFileName = filename.replace("patient","patient_contact");
-
             for (Patient.ContactComponent com : contactList) {
-                PatientContact patientContactWriter = new PatientContact(contactFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                        FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-                writeContact(com, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId,patientContactWriter);
+                PatientContact patientContactWriter = data.getPatientContacts();
+                writeContact(com, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, patientContactWriter);
             }
         }
 
@@ -256,8 +247,8 @@ public class PatientTransformer extends AbstractTransformer {
         for (Identifier thisId : idList) {
             String identifier = thisId.getValue();
             Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
-            patientIdWriter.writeUpsert(null, id, conceptId, identifier,enteredByPractitionerId);
+            //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
+            patientIdWriter.writeUpsert(null, id, conceptId, identifier, enteredByPractitionerId);
         }
     }
 
@@ -288,21 +279,21 @@ public class PatientTransformer extends AbstractTransformer {
         String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
         String postcode = fhirAddress.getPostalCode();
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
-        Long propertyTypeId =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                //TODO IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
+        Long propertyTypeId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        //TODO IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
         addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
                 null, null, propertyTypeId);
 
     }
 
-    private void writeContact(Patient.ContactComponent cc, long patientId, long enteredByPractitionerId,AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writeContact(Patient.ContactComponent cc, long patientId, long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
         PatientContact contactWriter = (PatientContact) csvWriter;
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
             String code = cp.getUse().toCode();
-            Long type =FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            Long type = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointSystem."+ cp.getUse().toCode());
-            contactWriter.writeUpsert(Long.parseLong(cp.getId()), patientId, type, code,enteredByPractitionerId);
+            contactWriter.writeUpsert(Long.parseLong(cp.getId()), patientId, type, code, enteredByPractitionerId);
         }
 
     }

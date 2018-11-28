@@ -382,7 +382,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 //        } else if (resourceType == ResourceType.Flag) {
 //            return data.getFlags();
         } else if (resourceType == ResourceType.Condition) {
-            return data.getObservations();
+            return data.getProblems();
 //            return data.getObservations();
 //        } else if (resourceType == ResourceType.ReferralRequest) {
 //            return data.getReferralRequests();

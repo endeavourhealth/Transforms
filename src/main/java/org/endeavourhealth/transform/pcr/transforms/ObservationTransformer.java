@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.ObservationValue;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,6 +209,26 @@ public class ObservationTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
                 = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
+        //if the observation has a value then file that data before the Observation due to sql foreign keys
+        if (fhir.hasValue()) {
+            LOG.debug("Observation id " + id + " has value ");
+            OutputContainer data = params.getOutputContainer();
+            ObservationValue observationValueModel = data.getObservationValues();
+            observationValueModel.writeUpsert(
+                    patientId,
+                    id,
+                    operatorConceptId,
+                    enteredByPractitionerId,
+                    resultValue,
+                    resultValueUnits,
+                    resultDate,
+                    resultText,
+                    resultConceptId,
+                    referenceRangeId
+            );
+        } else {
+            LOG.debug("Observation id " + id + " has no value assigned.");
+        }
         observationModel.writeUpsert(
                 id,
                 patientId,
@@ -231,28 +252,7 @@ public class ObservationTransformer extends AbstractTransformer {
                 isConsent);
 
 
-        //if the observation has a value then file that data
-        if (fhir.hasValue()) {
-            LOG.debug("Observation id " + id + " has value ");
-            String filename = observationModel.getFileName();
-            String idFileName = filename.replace("observation","observation_value");
-            ObservationValue observationValueModel = new ObservationValue(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                    FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-            observationValueModel.writeUpsert(
-                    patientId,
-                    id,
-                    operatorConceptId,
-                    enteredByPractitionerId,
-                    resultValue,
-                    resultValueUnits,
-                    resultDate,
-                    resultText,
-                    resultConceptId,
-                    referenceRangeId
-            );
-        } else {
-            LOG.debug("Observation id " + id + " has no value assigned.");
-        }
+
         //TODO is this where we get allergy data from?
 
         //TODO - handle free text and linking
