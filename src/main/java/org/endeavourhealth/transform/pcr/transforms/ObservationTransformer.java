@@ -209,26 +209,6 @@ public class ObservationTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.pcr.outputModels.Observation observationModel
                 = (org.endeavourhealth.transform.pcr.outputModels.Observation) csvWriter;
-        //if the observation has a value then file that data before the Observation due to sql foreign keys
-        if (fhir.hasValue()) {
-            LOG.debug("Observation id " + id + " has value ");
-            OutputContainer data = params.getOutputContainer();
-            ObservationValue observationValueModel = data.getObservationValues();
-            observationValueModel.writeUpsert(
-                    patientId,
-                    id,
-                    operatorConceptId,
-                    enteredByPractitionerId,
-                    resultValue,
-                    resultValueUnits,
-                    resultDate,
-                    resultText,
-                    resultConceptId,
-                    referenceRangeId
-            );
-        } else {
-            LOG.debug("Observation id " + id + " has no value assigned.");
-        }
         observationModel.writeUpsert(
                 id,
                 patientId,
@@ -250,6 +230,27 @@ public class ObservationTransformer extends AbstractTransformer {
                 dataEntryPromptId,
                 significanceConceptId,
                 isConsent);
+
+        //if the observation has a value then file that data before the Observation due to sql foreign keys
+        if (fhir.hasValue()) {
+            LOG.debug("Observation id " + id + " has value ");
+            OutputContainer data = params.getOutputContainer();
+            ObservationValue observationValueModel = data.getObservationValues();
+            observationValueModel.writeUpsert(
+                    patientId,
+                    id,
+                    operatorConceptId,
+                    enteredByPractitionerId,
+                    resultValue,
+                    resultValueUnits,
+                    resultDate,
+                    resultText,
+                    resultConceptId,
+                    referenceRangeId
+            );
+        } else {
+            LOG.debug("Observation id " + id + " has no value assigned.");
+        }
 
 
 
