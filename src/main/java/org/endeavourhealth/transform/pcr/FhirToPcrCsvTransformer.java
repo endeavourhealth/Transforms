@@ -62,6 +62,14 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
         boolean pseudonymised = config.get("pseudonymised").asBoolean();
+        //TODO remove debugging for Rob
+        for (ResourceWrapper rw : resources) {
+            if (rw.getResourceType().equalsIgnoreCase("Patient")) {
+                LOG.info("Incoming patient : " + rw.getPatientId().toString());
+            } else if (rw.getResourceType().equalsIgnoreCase("Observation")) {
+                LOG.info("Observation" + rw.getPatientId());
+            }
+        }
 
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
