@@ -45,7 +45,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(FhirToPcrCsvTransformer.class);
 
     private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
-        //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
+    //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
 
@@ -131,7 +131,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //if we've previously transformed for our ODS code, then we'll have a mapping to the PCR ID for that ODS code
         PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
 
-        Long pcrOrganisationId =  pcrIdDal.findPcrOrganisationId(serviceId.toString());
+        Long pcrOrganisationId = pcrIdDal.findPcrOrganisationId(serviceId.toString());
         if (pcrOrganisationId != null) {
             return pcrOrganisationId;
         }
@@ -157,7 +157,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //if the first patient has been deleted, then we need to look at its history to find the JSON from when it wasn't deleted
         if (Strings.isNullOrEmpty(json)) {
             List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceByService.getResourceType(), resourceByService.getResourceId());
-            for (ResourceWrapper historyItem: history) {
+            for (ResourceWrapper historyItem : history) {
                 json = historyItem.getResourceData();
                 if (!Strings.isNullOrEmpty(json)) {
                     break;
@@ -165,7 +165,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        Patient patient = (Patient)FhirResourceHelper.deserialiseResouce(json);
+        Patient patient = (Patient) FhirResourceHelper.deserialiseResouce(json);
         if (!patient.hasManagingOrganization()) {
             throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
         }
@@ -241,7 +241,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
      */
     private static String findPatientId(List<ResourceWrapper> resourceWrappers) throws Exception {
 
-        for (ResourceWrapper resourceWrapper: resourceWrappers) {
+        for (ResourceWrapper resourceWrapper : resourceWrappers) {
             if (resourceWrapper.isDeleted()) {
                 continue;
             }
@@ -281,7 +281,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     private static void tranformResources(List<ResourceWrapper> resources,
                                           PcrTransformParams params) throws Exception {
 
-        int threads = Math.min(10, resources.size()/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
+        int threads = Math.min(10, resources.size() / 10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
         threads = Math.max(threads, 1); //make sure we have a min of 1
 
         ThreadPool threadPool = new ThreadPool(threads, 1000);
@@ -360,7 +360,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //if there's anything left in the list, then we've missed a resource type
         if (!resources.isEmpty()) {
             Set<String> resourceTypesMissed = new HashSet<>();
-            for (ResourceWrapper resource: resources) {
+            for (ResourceWrapper resource : resources) {
                 String resourceType = resource.getResourceType();
                 resourceTypesMissed.add(resourceType);
             }
@@ -481,39 +481,26 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     }
 
     private static boolean tranformResources(ResourceType resourceType,
-                                         List<ResourceWrapper> resources,
-                                         ThreadPool threadPool,
-                                         PcrTransformParams params) throws Exception {
+                                             List<ResourceWrapper> resources,
+                                             ThreadPool threadPool,
+                                             PcrTransformParams params) throws Exception {
 
-        if (resourceType.name().equalsIgnoreCase("patient")) {
-            LOG.info("Looking for patients count : " + resources.size());
-        }
+
         //find all the ones we want to transform
         List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
         HashSet<ResourceWrapper> hsResourcesToTransform = new HashSet<>();
 
-        for (ResourceWrapper resource: resources) {
+        for (ResourceWrapper resource : resources) {
             if (resource.getResourceType().equalsIgnoreCase(resourceType.toString())) {
                 resourcesToTransform.add(resource);
                 hsResourcesToTransform.add(resource);
             }
-            if (resource.getResourceType().equalsIgnoreCase("patient")) {
-                LOG.info("Patient " + resource.getResourceId() + " found when looking for " + resourceType.toString());
-            }
         }
 
-
-        if (resourcesToTransform.isEmpty()) {
-            LOG.info("resource type " + resourceType.name() + " has no records after trimming");
-            return false;
-        }
-        if (resourceType.name().equalsIgnoreCase("patient")) {
-            LOG.info("Processing patients count after trim : " + resources.size());
-        }
         //remove all the resources we're going to, so we can check for ones we missed at the end
         //removeAll is really slow, so changing to be faster
         //resources.removeAll(resourcesToTransform);
-        for (int i=resources.size()-1; i>=0; i--) {
+        for (int i = resources.size() - 1; i >= 0; i--) {
             ResourceWrapper r = resources.get(i);
             if (hsResourcesToTransform.contains(r)) {
                 resources.remove(i);
@@ -525,18 +512,17 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         if (transformer != null) {
 
             AbstractPcrCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
-            int count=0;
+            int count = 0;
             //transform in batches
             List<ResourceWrapper> batch = new ArrayList<>();
-            for (ResourceWrapper resource: resourcesToTransform) {
+            for (ResourceWrapper resource : resourcesToTransform) {
 
                 batch.add(resource);
 
                 if (batch.size() >= params.getBatchSize()) {
                     addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
                     batch = new ArrayList<>();
-                    count  = count +batch.size();
-                    LOG.info("Writing type" + resourceType.name() + ". Id:" + resource.getResourceId());
+                    count = count + batch.size();
                 }
             }
 
@@ -545,7 +531,6 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                 addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
                 count = count + batch.size();
             }
-            LOG.info("Added " + count + " records for ResourceType:" + resourceType.name());
         }
 
         return true;
@@ -558,9 +543,9 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                                              PcrTransformParams params) throws Exception {
 
         TransformResourceCallable callable = new TransformResourceCallable(transformer,
-                                                                        resources,
-                                                                        csvWriter,
-                                                                        params);
+                resources,
+                csvWriter,
+                params);
         List<ThreadPoolError> errors = threadPool.submit(callable);
         handleErrors(errors);
     }
@@ -576,9 +561,9 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //the cause may be an Exception or Error so we need to explicitly
         //cast to the right type to throw it without changing the method signature
         if (cause instanceof Exception) {
-            throw (Exception)cause;
+            throw (Exception) cause;
         } else if (cause instanceof Error) {
-            throw (Error)cause;
+            throw (Error) cause;
         }
     }
 
@@ -627,7 +612,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
         Map<String, ResourceWrapper> ret = new HashMap<>();
 
-        for (ResourceWrapper resource: allResources) {
+        for (ResourceWrapper resource : allResources) {
 
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
             String resourceId = resource.getResourceId().toString();
