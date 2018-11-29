@@ -219,6 +219,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         OutputContainer data = params.getOutputContainer();
         MedicationAmount medicationAmountModel = data.getMedicationAmounts();
         // Write amount first
+        LOG.info("Does model have filename:" + medicationAmountModel.getFileName());
         medicationAmountModel.writeUpsert(
                 id,
                 patientId,
