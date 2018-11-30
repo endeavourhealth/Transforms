@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
@@ -188,8 +190,8 @@ public class ObservationTransformer extends AbstractTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //TODO  = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+           // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+           episodicityConceptId  = IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how extension uri is mapped?
         }
 
@@ -199,8 +201,8 @@ public class ObservationTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) significanceExtension.getValue();
             ProblemSignificance fhirSignificance = ProblemSignificance.fromCodeableConcept(codeableConcept);
 
-            significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
+          //  significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+           IMClient.getConceptId(CodeScheme.SNOMED.getValue(),fhirSignificance.getCode());
             //TODO not sure how we model these codeschemes yet
         }
 
@@ -246,13 +248,9 @@ public class ObservationTransformer extends AbstractTransformer {
                     resultConceptId,
                     referenceRangeId
             );
-        } else {
-            LOG.debug("Observation id " + id + " has no value assigned.");
         }
 
 
-
-        //TODO is this where we get allergy data from?
 
         //TODO - handle free text and linking
     }

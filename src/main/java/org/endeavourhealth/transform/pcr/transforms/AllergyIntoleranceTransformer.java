@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
+import static java.lang.Math.toIntExact;
+
 public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AllergyIntoleranceTransformer.class);
@@ -112,6 +114,9 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
            // substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //codeSystem = codes.getSystem();
+            originalCode = snomedConceptId.toString();
+            originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
+            //originalSystem =
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
 
@@ -122,6 +127,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             BooleanType b = (BooleanType) confidentialExtension.getValue();
             isConfidential = b.getValue();
         }
+        OutputContainer data = params.getOutputContainer();
         StringBuilder manifestText  = new StringBuilder();
         if (fhir.hasReaction()) {
            List<AllergyIntolerance.AllergyIntoleranceReactionComponent> reactions = fhir.getReaction();
@@ -134,11 +140,17 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
                 PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
                 manifestationFreeTextId  = pcrIdDal.findOrCreatePcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
 
-                OutputContainer data = params.getOutputContainer();
+
 
                 FreeText textWriter =data.getFreeText();
                 textWriter.writeUpsert(manifestationFreeTextId,patientId,enteredByPractitionerId,manifestText.toString());
                 }
+        }
+        if (fhir.hasNote()) {
+            if (fhir.getNote().hasText()) {
+                FreeText textWriter =data.getFreeText();
+                textWriter.writeUpsert(null,patientId,enteredByPractitionerId,fhir.getNote().getText());
+            }
         }
 
 
