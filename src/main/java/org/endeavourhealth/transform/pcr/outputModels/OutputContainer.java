@@ -68,7 +68,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationAmount("medication_amount.csv", csvFormat, dateFormat, timeFormat));
 
         //TODO: - need free text table links
-
+        csvWriters.add(new FreeText("free_text.csv",csvFormat,dateFormat,timeFormat));
         csvWriters.add(new Allergy("allergy.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Problem("problem.csv", csvFormat, dateFormat, timeFormat));
@@ -173,6 +173,8 @@ public class OutputContainer {
     public Practitioner getPractitioners() {
         return findCsvWriter(Practitioner.class);
     }
+
+    public FreeText getFreeText() { return findCsvWriter(FreeText.class);}
 
   //  public Schedule getSchedules() {
   //     return findCsvWriter(Schedule.class);

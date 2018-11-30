@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.FreeText;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,10 +133,10 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             if (StringUtils.isNotEmpty(manifestText)) {
                 PcrIdDalI pcrIdDal = DalProvider.factoryPcrIdDal(params.getConfigName());
                 manifestationFreeTextId  = pcrIdDal.findOrCreatePcrFreeTextId(resource.getId(),ResourceType.AllergyIntolerance.toString());
-                String filename = csvWriter.getFileName();
-                String idFileName = filename.replace("allergy","freetext");
-                FreeText textWriter = new FreeText(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                        FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
+
+                OutputContainer data = params.getOutputContainer();
+
+                FreeText textWriter =data.getFreeText();
                 textWriter.writeUpsert(manifestationFreeTextId,patientId,enteredByPractitionerId,manifestText.toString());
                 }
         }
