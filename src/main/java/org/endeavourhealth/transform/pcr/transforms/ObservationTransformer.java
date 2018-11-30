@@ -48,29 +48,29 @@ public class ObservationTransformer extends AbstractTransformer {
         String resultValueUnits = null;
         Date resultDate = null;
         String resultText = null;
-        Long resultSnomedConceptId = null;
+        Long resultSnomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         String originalCode = null;
         String originalTerm = null;
         Integer originalCodeScheme = null;
         //TODO find original code scheme
         Integer originalSystem = null;
 
-        Long conceptId = null;
+        Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Date insertDate = new Date();
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Long careActivityHeadingConceptId = null;
+        Long careActivityHeadingConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long statusConceptId = null;
         boolean confidential = false;
-        Long episodicityConceptId = null;
+        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long freeTextId = null;
         Long dataEntryPromptId = FhirToPcrCsvTransformer.DATA_ENTRY_PLACE_HOLDER;
-        Long significanceConceptId = null;
+        Long significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean isConsent = false;
-        Long resultConceptId = null;
-        Long operatorConceptId = null;
-        Long referenceRangeId = null;
+        Long resultConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long operatorConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long referenceRangeId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getPcrOrganisationId().longValue();

@@ -48,7 +48,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         BigDecimal estimatedCost = null;
         Long medicationStatementId = null;
 
-        Long conceptId = null;
+        Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 //        Date insertDate = new Date();
 //        Date enteredDate = null;
         Long enteredByPractitionerId = null;
@@ -57,8 +57,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         boolean confidential = false;
         boolean isConsent = false;
         boolean isActive = false;
-        Long typeConceptId = null;
-        Long statusConceptId = null;
+        Long typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long medicationAmountId = null;
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;

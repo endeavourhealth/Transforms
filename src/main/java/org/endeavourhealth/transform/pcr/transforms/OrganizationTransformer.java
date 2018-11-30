@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.Organisation;
@@ -32,7 +33,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         String systemId =  params.getSystemId().toString();
         String odsCode = null;
         String name = null;
-        Long typeCode = null;
+        Long typeCode = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long mainLocationId = null;
         boolean isActive = true;
         Long parentOrganisationId = null;

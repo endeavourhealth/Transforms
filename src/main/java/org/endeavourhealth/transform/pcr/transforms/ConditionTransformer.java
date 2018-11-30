@@ -37,7 +37,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Long encounterId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
-        Long snomedConceptId = null;
+        Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
@@ -49,24 +49,24 @@ public class ConditionTransformer extends AbstractTransformer {
 
         Long observationId = null;
 
-        Long conceptId = null;
+        Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Date insertDate = new Date();
         Date enteredDate = null;
         Long effectivePractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = -1L;
-        Long statusConceptId = null;  //not available in FHIR
+        Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;  //not available in FHIR
         boolean confidential = false;
-        Long episodicityConceptId = null;
+        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long freeTextId = null;
-        Long dataEntryPromptId = null;
-        Long significanceConceptId = null;
+        Long dataEntryPromptId = FhirToPcrCsvTransformer.DATA_ENTRY_PLACE_HOLDER;
+        Long significanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean isConsent = false;
         Integer expectedDurationDays = null;
         Date lastReviewDate = null;
         Long enteredByPractitionerId = null;
         Long lastReviewPractitionerId = null;
-        Long typeConceptId = null;
+        Long typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getPcrOrganisationId().longValue();

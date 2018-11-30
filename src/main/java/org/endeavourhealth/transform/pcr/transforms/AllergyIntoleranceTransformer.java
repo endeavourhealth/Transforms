@@ -39,20 +39,20 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
-        Long snomedConceptId = null;
+        Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
         String codeSystem = null;
-        Long conceptId = null;
-        Long substanceConceptId = null;
+        Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Date insertDate = new Date();
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = -1L;
-        Long statusConceptId = null;
+        Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean isConfidential = false;
         boolean isConsent = false;
         String originalCode=null;

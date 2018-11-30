@@ -72,7 +72,7 @@ public class PatientTransformer extends AbstractTransformer {
         Long nhsNumberVerificationTermId = null;
         Date dateOfBirth = null;
         Date dateOfDeath = null;
-        Long patientGenderId = null;
+        Long patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long usualPractitionerId = null;
         Long enteredByPractitionerId = null;
         String title = null;

@@ -52,10 +52,10 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
-        Long careActivityHeadingConceptId = -1L;
-        Long statusConceptId = null;
+        Long careActivityHeadingConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean confidential = false;
-        Long typeConceptId = null;
+        Long typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean isConsent = false;
         Integer issues = null;
         Integer issuesAuthorised = null;
@@ -63,7 +63,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Long patientInstructionsFreeTextId = null;
         Long pharmacyInstructionsFreeTextId = null;
         Date reviewDate = null;  //not supported in FHIR?
-        Long endReasonConceptId = null;
+        Long endReasonConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long endReasonFreeTextId = null;
         Long medicationAmountId = null;
         Integer courseLengthPerIssueDays = null;

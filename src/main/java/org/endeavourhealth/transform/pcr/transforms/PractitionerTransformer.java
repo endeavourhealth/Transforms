@@ -36,7 +36,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         String lastName = null;
         Long roleTermId = null;
         Long specialityTermId = null;
-        Long typeConceptId = null;
+        Long typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         long genderTermId;
         Date dateOfBirth;
         boolean isActive;

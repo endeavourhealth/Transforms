@@ -36,23 +36,23 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Long effectivePractitionerId = null;
         Date effectiveDate = null;
         Integer effectiveDatePrecisionId = null;
-        Long snomedConceptId = null;
+        Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
         owningOrganisationId = params.getPcrOrganisationId();
         patientId = params.getPcrPatientId();
 
-        Long conceptId = null;
+        Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Date insertDate = new Date();
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = -1L;
-        Long statusConceptId = null;
+        Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean confidential = false;
         String dose = null;
-        Long bodyLocationConceptId = null;
-        Long methodConceptId = null;
+        Long bodyLocationConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Long methodConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         String batchNumber = null;
         String manufacturer = null;
         Date expiryDate = null;
