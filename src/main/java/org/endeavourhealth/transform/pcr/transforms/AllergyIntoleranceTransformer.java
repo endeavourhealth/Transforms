@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
@@ -45,12 +47,10 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         id = pcrId.longValue();
         owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
-        String codeSystem = null;
+      //  String codeSystem = null;
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-        Date insertDate = new Date();
-        Date enteredDate = null;
-        Long enteredByPractitionerId = null;
+             Long enteredByPractitionerId = null;
         Long careActivityId = null;
         Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
@@ -83,12 +83,12 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         }
 
         //recorded/entered date
-        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-        if (enteredDateExtension != null) {
-
-            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
-            enteredDate = enteredDateTimeType.getValue();
-        }
+//        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+//        if (enteredDateExtension != null) {
+//
+//            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+//            enteredDate = enteredDateTimeType.getValue();
+//        }
 
         //recorded/entered by
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
@@ -109,9 +109,9 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         if (codes != null) {
 
             snomedConceptId = codes.getSnomedConceptId();
-           //TODO substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
-            substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            codeSystem = codes.getSystem();
+            substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
+           // substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //codeSystem = codes.getSystem();
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
 
@@ -145,8 +145,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         //allergy status
         if (fhir.hasStatus()) {
             AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
-            //TODO statusConceptId = IMClient.getOrCreateConceptId("Allergy.Status" + status.toCode());
-            statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            statusConceptId = IMClient.getOrCreateConceptId("Allergy.Status" + status.toCode());
+            //statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         }
 
         org.endeavourhealth.transform.pcr.outputModels.Allergy model

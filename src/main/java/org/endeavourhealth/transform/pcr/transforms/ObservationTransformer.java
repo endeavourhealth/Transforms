@@ -116,7 +116,6 @@ public class ObservationTransformer extends AbstractTransformer {
                 //TODO IMClient.getConceptId(sys).intValue();
             }
         } else {
-            LOG.warn("Fhir Observation record has no fhir code" + id);
             return;
         }
 
@@ -233,7 +232,6 @@ public class ObservationTransformer extends AbstractTransformer {
 
         //if the observation has a value then file that data before the Observation due to sql foreign keys
         if (fhir.hasValue()) {
-            LOG.debug("Observation id " + id + " has value ");
             OutputContainer data = params.getOutputContainer();
             ObservationValue observationValueModel = data.getObservationValues();
             observationValueModel.writeUpsert(
