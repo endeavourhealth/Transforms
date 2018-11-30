@@ -898,8 +898,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                     hmResourcesAndBatches.put(resource, exchangeBatch);
 
                     ResourceFieldMappingAudit audit = builder.getAuditWrapper();
-                    String resourceId = resource.getId();
-                    hmAuditsByResourceId.put(resourceId, audit);
+                    if (!audit.isEmpty()) {
+                        String resourceId = resource.getId();
+                        hmAuditsByResourceId.put(resourceId, audit);
+                    }
 
                     if (job.isDefinitelyNewResource()) {
                         definitelyNewResources.add(resource);
@@ -919,7 +921,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 Map<ResourceWrapper, ResourceFieldMappingAudit> hmAuditsToSave = new HashMap<>();
                 for (ResourceWrapper wrapper: wrappersUpdated) {
                     ResourceFieldMappingAudit audit = hmAuditsByResourceId.get(wrapper.getResourceId().toString());
-                    hmAuditsToSave.put(wrapper, audit);
+                    if (audit != null) {
+                        hmAuditsToSave.put(wrapper, audit);
+                    }
 
                     //record that we've actually saved an updated/new resource
                     if (isDelete) {
