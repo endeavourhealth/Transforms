@@ -452,6 +452,15 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         throw new TransformException("", exception);
     }*/
 
+    public Integer getNumLines() {
+        return numLines;
+    }
+
+    @Override
+    public void setNumLines(Integer numLines) {
+        this.numLines = numLines;
+    }
+
     /**
      * callback function when the thread tasks have found/created an audit ID for a row,
      * purposely synchronized so that there's no loss when the array is grown
@@ -477,6 +486,8 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             numLines = new Integer(Math.max(recordNumber, numLines.intValue()));
         }
     }*/
+
+
 
     private String getFieldValue(String line, FixedParserField field) {
         int start = field.getFieldPosition() - 1; //field position is one-based, so minus one to get index

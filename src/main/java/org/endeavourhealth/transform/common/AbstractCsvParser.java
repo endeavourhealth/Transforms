@@ -546,6 +546,11 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return numLines;
     }
 
+    @Override
+    public void setNumLines(Integer numLines) {
+        this.numLines = numLines;
+    }
+
     /**
      * moves to the next row in the CSV file, returning false if there is no new row
      */
