@@ -105,7 +105,9 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
             snomedConceptId = vaccineCode.getSnomedConceptId();
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            originalCodeScheme = FhirToPcrHelper.getCodingScheme(vaccineCode.getSystem());
+            if (vaccineCode.getSystem()!=null) {
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(vaccineCode.getSystem());
+            }
             //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
         } else return;
 

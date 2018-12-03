@@ -84,7 +84,7 @@ public class PractitionerTransformer extends AbstractTransformer {
 
             CodeableConcept cc = role.getRole();
             for (Coding coding : cc.getCoding()) {
-                if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
+                if (coding.getSystem()!= null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
                     String thiscode = coding.getCode();
                     roleTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                     //TODO IMClient.getConceptId(thiscode);

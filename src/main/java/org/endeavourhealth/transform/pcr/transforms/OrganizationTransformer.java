@@ -69,7 +69,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         if (fhir.hasType()) {
             CodeableConcept cc = fhir.getType();
             for (Coding coding: cc.getCoding()) {
-                if (coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
+                if (coding.getSystem()!=null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
                     typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE");
                     //TODO review this - Uri mappings not firm yet
                 }
