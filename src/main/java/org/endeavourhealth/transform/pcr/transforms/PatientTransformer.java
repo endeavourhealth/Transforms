@@ -132,6 +132,15 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasGender()) {
             patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            if (fhirPatient.getGender().toCode().equals(Enumerations.AdministrativeGender.MALE)) {
+                patientGenderId=0L;
+            } else if (fhirPatient.getGender().toCode().equals(Enumerations.AdministrativeGender.FEMALE)) {
+                patientGenderId =1L;
+            }  else if (fhirPatient.getGender().toCode().equals(Enumerations.AdministrativeGender.OTHER)) {
+                patientGenderId=2L;
+            } else {
+                patientGenderId=3l; //Unknown
+            }
             //TODO IMClient.getOrCreateConceptId("Patient.Gender." + fhirPatient.getGender());
 
         } else {
