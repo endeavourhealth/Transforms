@@ -785,6 +785,13 @@ public class JournalTransformer {
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         observationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
+        CsvCell enteredByID = parser.getClinicianUserID();
+        if (!enteredByID.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+            Reference reference = csvHelper.createPractitionerReference(cleanUserId);
+            observationBuilder.setRecordedBy(reference, enteredByID);
+        }
+
         Double value1 = null;
         String units1 = null;
         Double value2 = null;
@@ -848,6 +855,12 @@ public class JournalTransformer {
                 systolicObservationBuilder.setClinician(clinicianReferenceSys, clinicianID);
             }
 
+            if (!enteredByID.isEmpty()) {
+                String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+                Reference reference = csvHelper.createPractitionerReference(cleanUserId);
+                systolicObservationBuilder.setRecordedBy(reference, enteredByID);
+            }
+
             CodeableConceptBuilder codeableSystolicConceptBuilder
                     = new CodeableConceptBuilder(systolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
             codeableSystolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
@@ -884,6 +897,12 @@ public class JournalTransformer {
                 Reference clinicianReferenceDia
                         = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
                 diastolicObservationBuilder.setClinician(clinicianReferenceDia, clinicianID);
+            }
+
+            if (!enteredByID.isEmpty()) {
+                String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+                Reference reference = csvHelper.createPractitionerReference(cleanUserId);
+                diastolicObservationBuilder.setRecordedBy(reference, enteredByID);
             }
 
             CodeableConceptBuilder codeableDistolicConceptBuilder
@@ -938,13 +957,6 @@ public class JournalTransformer {
         String consultationID = extractEncounterLinkID(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
-        }
-
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
-            Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            observationBuilder.setRecordedBy(reference, enteredByID);
         }
 
         String documentId = getDocumentId(parser);
