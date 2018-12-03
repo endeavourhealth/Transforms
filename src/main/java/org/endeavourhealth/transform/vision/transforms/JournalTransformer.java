@@ -866,7 +866,11 @@ public class JournalTransformer {
             codeableSystolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             codeableSystolicConceptBuilder.setCodingCode("163030003");
             codeableSystolicConceptBuilder.setCodingDisplay("Systolic blood pressure reading");
+            codeableSystolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
+            codeableSystolicConceptBuilder.setCodingCode("2469.");
+            codeableSystolicConceptBuilder.setCodingDisplay("O/E - Systolic BP reading");
             codeableSystolicConceptBuilder.setText("Systolic blood pressure reading");
+
             systolicObservationBuilder.setValueNumber(value1, parser.getValue1());
             systolicObservationBuilder.setValueNumberUnits("mm Hg");
             systolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
@@ -910,7 +914,11 @@ public class JournalTransformer {
             codeableDistolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             codeableDistolicConceptBuilder.setCodingCode("163031004");
             codeableDistolicConceptBuilder.setCodingDisplay("Diastolic blood pressure reading");
+            codeableDistolicConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
+            codeableDistolicConceptBuilder.setCodingCode("246A.");
+            codeableDistolicConceptBuilder.setCodingDisplay("O/E - Diastolic BP reading");
             codeableDistolicConceptBuilder.setText("Diastolic blood pressure reading");
+
             diastolicObservationBuilder.setValueNumber(value2, parser.getValue2());
             diastolicObservationBuilder.setValueNumberUnits("mm Hg");
             diastolicObservationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
