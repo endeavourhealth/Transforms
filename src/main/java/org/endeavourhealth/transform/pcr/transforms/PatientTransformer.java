@@ -65,7 +65,6 @@ public class PatientTransformer extends AbstractTransformer {
             discoveryPersonId = pair.getNewPersonId();
         }
 
-        LOG.trace("Transforming patient:" + discoveryPersonId);
         long id;
         long organizationId;
         String nhsNumber = null;
@@ -132,7 +131,6 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasGender()) {
             //patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            LOG.info("Gender : " + fhirPatient.getGender().toCode());
             if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.MALE)) {
                 patientGenderId=0L;
             } else if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.FEMALE)) {
