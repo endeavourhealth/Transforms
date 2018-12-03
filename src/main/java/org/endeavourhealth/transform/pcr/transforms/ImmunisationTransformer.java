@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -104,6 +105,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
             snomedConceptId = vaccineCode.getSnomedConceptId();
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            originalCodeScheme = FhirToPcrHelper.getCodingScheme(vaccineCode.getSystem());
             //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
         } else return;
 

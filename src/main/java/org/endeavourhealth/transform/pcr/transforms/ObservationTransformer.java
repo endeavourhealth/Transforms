@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -113,8 +114,8 @@ public class ObservationTransformer extends AbstractTransformer {
 
                 originalCode = codes.getOriginalCode();
                 originalTerm = codes.getOriginalTerm();
-                String sys = codes.getSystem();
-                originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+                //originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                 //TODO IMClient.getConceptId(sys).intValue();
             }
         } else {

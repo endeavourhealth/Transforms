@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.CodeScheme;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -19,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
-
-import static java.lang.Math.toIntExact;
 
 public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
@@ -115,7 +114,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
            // substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //codeSystem = codes.getSystem();
             originalCode = snomedConceptId.toString();
-            originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
+           // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
+            originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
             //originalSystem =
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
