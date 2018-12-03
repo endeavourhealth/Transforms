@@ -115,7 +115,9 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             //codeSystem = codes.getSystem();
             originalCode = snomedConceptId.toString();
            // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
-            originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            if (codes.getSystem()!=null) {
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            }
             //originalSystem =
             conceptId = substanceConceptId;  //TODO: why two?, check in FHIR as only substance set
         } else return;
