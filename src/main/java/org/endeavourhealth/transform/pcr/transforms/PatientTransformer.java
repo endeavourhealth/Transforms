@@ -131,7 +131,8 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         if (fhirPatient.hasGender()) {
-            patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            LOG.info("Gender : " + fhirPatient.getGender().toCode());
             if (fhirPatient.getGender().toCode().equals(Enumerations.AdministrativeGender.MALE)) {
                 patientGenderId=0L;
             } else if (fhirPatient.getGender().toCode().equals(Enumerations.AdministrativeGender.FEMALE)) {
