@@ -113,6 +113,9 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             substanceConceptId = IMClient.getConceptId(CodeScheme.SNOMED.getValue(), snomedConceptId.toString());
            // substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //codeSystem = codes.getSystem();
+            if (codes.getOriginalTerm()!=null) {
+                originalTerm= codes.getOriginalTerm();
+            }
             originalCode = snomedConceptId.toString();
            // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
             if (codes.getSystem()!=null) {

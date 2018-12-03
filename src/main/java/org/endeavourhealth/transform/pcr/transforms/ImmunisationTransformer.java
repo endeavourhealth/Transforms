@@ -102,7 +102,12 @@ public class ImmunisationTransformer extends AbstractTransformer {
 
         ObservationCodeHelper vaccineCode = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
         if (vaccineCode != null) {
-
+            if (vaccineCode.getOriginalTerm()!=null) {
+                originalTerm = vaccineCode.getOriginalTerm();
+            }
+            if (vaccineCode.getOriginalCode()!=null) {
+                originalCode = vaccineCode.getOriginalCode();
+            }
             snomedConceptId = vaccineCode.getSnomedConceptId();
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             if (vaccineCode.getSystem()!=null) {
