@@ -114,6 +114,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
                 originalCode = codes.getOriginalCode();
                 originalTerm = codes.getOriginalTerm();
+                LOG.debug("Codes :" + originalCode + ":" + originalTerm);
                 originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
                 //originalSystem = (int) FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                 //TODO IMClient.getConceptId(sys).intValue();
