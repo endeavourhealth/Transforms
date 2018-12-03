@@ -16,4 +16,5 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     List<String> getColumnHeaders();
     CsvCell getCell(String column);
     //void setRowAuditId(int recordNumber, Long rowAuditId);
+    void setNumLines(Integer numLines);
 }

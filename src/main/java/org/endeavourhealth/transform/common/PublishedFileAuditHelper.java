@@ -133,6 +133,9 @@ public class PublishedFileAuditHelper {
                 handleErrors(errors);
             }
 
+            //set this on our parser
+            parser.setNumLines(new Integer(recordNumber));
+
         } finally {
             inputStream.close();
 
