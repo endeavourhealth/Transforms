@@ -200,7 +200,7 @@ public class ConditionTransformer extends AbstractTransformer {
         }
 
         CodeableConcept conditionCategory = fhir.getCategory();
-        if (conditionCategory != null) {
+        if (conditionCategory != null && !conditionCategory.isEmpty()) {
 
             String categoryType = conditionCategory.getCoding().get(0).getCode();
             typeConceptId =

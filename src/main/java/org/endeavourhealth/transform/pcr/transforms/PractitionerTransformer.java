@@ -54,8 +54,8 @@ public class PractitionerTransformer extends AbstractTransformer {
                 List<StringType> nameList = fhirName.getFamily();
                 lastName = nameList.get(nameList.size() - 1).toString();
                 nameList = fhirName.getGiven();
-                firstName = nameList.get(0).toString();
                 if (nameList.size() > 1) {
+                    firstName = nameList.get(0).toString();
                     StringBuilder s = new StringBuilder();
                     for (int j = 1; j < nameList.size(); j++) {
                         s.append(nameList.get(j).toString() + " ");
