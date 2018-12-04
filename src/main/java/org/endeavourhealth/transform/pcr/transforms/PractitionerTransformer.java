@@ -79,7 +79,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         }
 
         Long practitionerPcrOrgId = null;
-        //LOG.trace("Transforming practitioner " + fhir.getId() + " with " + fhir.getPractitionerRole().size() + " roles and enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
+        LOG.trace("Transforming practitioner " + fhir.getId() + " with " + fhir.getPractitionerRole().size() + " roles ");
         for (Practitioner.PractitionerPractitionerRoleComponent role : fhir.getPractitionerRole()) {
 
             CodeableConcept cc = role.getRole();
@@ -131,7 +131,7 @@ public class PractitionerTransformer extends AbstractTransformer {
             Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
-
+        LOG.info("Writing practitioner " + id);
         org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
         model.writeUpsert(id,
                 organisationId,
