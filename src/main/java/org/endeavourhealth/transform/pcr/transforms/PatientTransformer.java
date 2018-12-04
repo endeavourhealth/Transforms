@@ -202,7 +202,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
-        LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
+     //   LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
         patientWriter.writeUpsert(id,
                 organizationId,
                 nhsNumber,
