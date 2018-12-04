@@ -253,10 +253,12 @@ public class PatientTransformer extends AbstractTransformer {
         PatientIdentifier patientIdWriter = (PatientIdentifier) csvWriter;
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
-            String identifier = thisId.getValue();
-            Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
-            patientIdWriter.writeUpsert(null, id, conceptId, identifier, enteredByPractitionerId);
+            if (!thisId.getValue().isEmpty()) {
+                String identifier = thisId.getValue();
+                Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+                //TODO IMClient.getOrCreateConceptId("ContactPoint.ContactPointUse." + thisId.getUse().toCode());
+                patientIdWriter.writeUpsert(null, id, conceptId, identifier, enteredByPractitionerId);
+            }
         }
     }
 
