@@ -239,15 +239,15 @@ public class PatientTransformer extends AbstractTransformer {
             LOG.debug("Address is null for " + id);
         }
 
-        if (fhirPatient.hasContact()) {
-            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
-            for (Patient.ContactComponent com : contactList) {
-                if (com != null && !com.isEmpty()) {
-                    PatientContact patientContactWriter = data.getPatientContacts();
-                    writeContact(com, id, enteredByPractitionerId, patientContactWriter);
-                }
-            }
-        }
+//        if (fhirPatient.hasContact()) {
+//            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
+//            for (Patient.ContactComponent com : contactList) {
+//                if (com != null && !com.isEmpty()) {
+//                    PatientContact patientContactWriter = data.getPatientContacts();
+//                    writeContact(com, id, enteredByPractitionerId, patientContactWriter);
+//                }
+//            }
+//        }
 
     }
 
