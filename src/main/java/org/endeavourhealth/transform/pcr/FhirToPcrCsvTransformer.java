@@ -423,8 +423,9 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             return new LocationTransformer();
         } else if (resourceType == ResourceType.Practitioner) {
             return new PractitionerTransformer();
-//        } else if (resourceType == ResourceType.Schedule) {
-//            return new ScheduleTransformer();
+        } else if (resourceType == ResourceType.Schedule) {
+            return null;
+            //return new ScheduleTransformer();
         } else if (resourceType == ResourceType.Patient) {
             return new PatientTransformer();
         } else if (resourceType == ResourceType.EpisodeOfCare) {
