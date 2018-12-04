@@ -3,9 +3,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -65,16 +63,16 @@ public class OrganizationTransformer extends AbstractTransformer {
             Reference partOfReference = fhir.getPartOf();
             parentOrganisationId = transformOnDemandAndMapId(partOfReference, params);
         }
-
-        if (fhir.hasType()) {
-            CodeableConcept cc = fhir.getType();
-            for (Coding coding: cc.getCoding()) {
-                if (coding.getSystem()!=null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
-                    typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE");
-                    //TODO review this - Uri mappings not firm yet
-                }
-            }
-        }
+//TODO restore
+//        if (fhir.hasType()) {
+//            CodeableConcept cc = fhir.getType();
+//            for (Coding coding: cc.getCoding()) {
+//                if (coding.getSystem()!=null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE)) {
+//                    typeCode =    IMClient.getConceptId("FhirValueSetUri.VALUE_SET_ORGANISATION_TYPE");
+//                    //TODO review this - Uri mappings not firm yet
+//                }
+//            }
+//        }
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {

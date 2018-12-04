@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-import static org.endeavourhealth.im.client.IMClient.getOrCreateConceptId;
-
 public class LocationTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LocationTransformer.class);
 
@@ -46,17 +44,17 @@ public class LocationTransformer extends AbstractTransformer {
             //name can't be null in the DB, so just use an empty string
             name = "";
         }
-
-        if (fhir.hasType()) {
-            CodeableConcept cc = fhir.getType();
-            if (cc.hasCoding()) {
-                //we only ever use a single coding, so just get the first
-                Coding coding = cc.getCoding().get(0);
-                if (StringUtils.isNumeric(coding.getCode())) {
-                    typeTermId = getOrCreateConceptId("ServiceDeliveryLocationRoleType." + coding.getCode());
-                }
-            }
-        }
+//TODO restore
+//        if (fhir.hasType()) {
+//            CodeableConcept cc = fhir.getType();
+//            if (cc.hasCoding()) {
+//                //we only ever use a single coding, so just get the first
+//                Coding coding = cc.getCoding().get(0);
+//                if (StringUtils.isNumeric(coding.getCode())) {
+//                    typeTermId = getOrCreateConceptId("ServiceDeliveryLocationRoleType." + coding.getCode());
+//                }
+//            }
+//        }
 
         if (fhir.hasAddress()) {
             Address address = fhir.getAddress();
