@@ -243,7 +243,7 @@ public class PatientTransformer extends AbstractTransformer {
             List<Patient.ContactComponent> contactList = fhirPatient.getContact();
             for (Patient.ContactComponent com : contactList) {
                 PatientContact patientContactWriter = data.getPatientContacts();
-                writeContact(com, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, patientContactWriter);
+                writeContact(com, id, enteredByPractitionerId, patientContactWriter);
             }
         }
 
