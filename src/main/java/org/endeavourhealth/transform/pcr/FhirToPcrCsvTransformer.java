@@ -364,31 +364,37 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     public static AbstractPcrCsvWriter findCsvWriterForResourceType(ResourceType resourceType, PcrTransformParams params) throws Exception {
 
         OutputContainer data = params.getOutputContainer();
-
+//TODO some of these will need reactivating for phase 2
         if (resourceType == ResourceType.Organization) {
             return data.getOrganisations();
         } else if (resourceType == ResourceType.Location) {
             return data.getLocations();
         } else if (resourceType == ResourceType.Practitioner) {
             return data.getPractitioners();
-//        } else if (resourceType == ResourceType.Schedule) {
+        } else if (resourceType == ResourceType.Schedule) {
+            return null;
 //            return data.getSchedules();
         } else if (resourceType == ResourceType.Patient) {
             return data.getPatients();
         } else if (resourceType == ResourceType.EpisodeOfCare) {
             return data.getEpisodesOfCare();
-//        } else if (resourceType == ResourceType.Appointment) {
+        } else if (resourceType == ResourceType.Appointment) {
+            return null;
 //            return data.getAppointments();
-//        } else if (resourceType == ResourceType.Encounter) {
+        } else if (resourceType == ResourceType.Encounter) {
+            return null;
 //            return data.getEncounters();
-//        } else if (resourceType == ResourceType.Flag) {
+        } else if (resourceType == ResourceType.Flag) {
+            return null;
 //            return data.getFlags();
         } else if (resourceType == ResourceType.Condition) {
             return data.getProblems();
 //            return data.getObservations();
-//        } else if (resourceType == ResourceType.ReferralRequest) {
+        } else if (resourceType == ResourceType.ReferralRequest) {
+            return null;
 //            return data.getReferralRequests();
-//        } else if (resourceType == ResourceType.ProcedureRequest) {
+        } else if (resourceType == ResourceType.ProcedureRequest) {
+            return null;
 //            return data.getProcedureRequests();
         } else if (resourceType == ResourceType.Observation) {
             return data.getObservations();
@@ -398,15 +404,19 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             return data.getMedicationOrders();
         } else if (resourceType == ResourceType.Immunization) {
             return data.getImmunisations();
-//        } else if (resourceType == ResourceType.FamilyMemberHistory) {
+        } else if (resourceType == ResourceType.FamilyMemberHistory) {
+            return null;
 //            return data.getObservations();
         } else if (resourceType == ResourceType.AllergyIntolerance) {
             return data.getAllergyIntolerances();
-//        } else if (resourceType == ResourceType.DiagnosticOrder) {
+        } else if (resourceType == ResourceType.DiagnosticOrder) {
+            return null;
 //            return data.getObservations();
-//        } else if (resourceType == ResourceType.DiagnosticReport) {
+        } else if (resourceType == ResourceType.DiagnosticReport) {
+            return null;
 //            return data.getObservations();
-//        } else if (resourceType == ResourceType.Specimen) {
+        } else if (resourceType == ResourceType.Specimen) {
+            return null;
 //            return data.getObservations();
         } else if (resourceType == ResourceType.Slot) {
             //slots are handled in the appointment transformer, so have no dedicated one
