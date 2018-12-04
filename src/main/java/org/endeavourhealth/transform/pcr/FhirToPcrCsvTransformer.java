@@ -61,7 +61,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-        boolean pseudonymised = config.get("pseudonymised").asBoolean();
+        //boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
@@ -78,7 +78,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
-        OutputContainer data = new OutputContainer(pseudonymised);
+        OutputContainer data = new OutputContainer(false);
         PcrTransformParams params = new PcrTransformParams(serviceId, systemId, protocolId, exchangeId, batchId,
                 configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
