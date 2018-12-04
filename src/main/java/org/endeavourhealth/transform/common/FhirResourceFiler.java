@@ -950,7 +950,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                         //if one of our jobs has a null parser state, then it's not a CSV-record level error
                         //so null the list so it gets treated as a fatal error
                         parserStates = null;
-                    } else {
+
+                    } else if (parserStates != null) {
                         sb.append(parserState.toString());
                         parserStates.add(parserState);
                     }
