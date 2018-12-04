@@ -62,20 +62,23 @@ public class PractitionerTransformer extends AbstractTransformer {
                     }
                     middleName = s.toString();
                 }
-            } else {
+            } else if (fhirName.hasText() && !fhirName.getText().isEmpty()){
                 name = fhirName.getText();
                 String[] tokens = name.split(" ");
-                ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
-                list.removeAll(Arrays.asList("", null));
-                tokens = new String[list.size()];
-                tokens = list.toArray(tokens);
-                // Take last part as surname.  Assume original TPP data has proper HumanNames
-                String surname = tokens[tokens.length - 1];
-                firstName = tokens[1];
-                for (int count = 1; count < tokens.length - 2; count++) {
-                    fhirName.addGiven(tokens[count]);
+                if (tokens.length>0) {
+                    ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
+                    list.removeAll(Arrays.asList("", null));
+                    tokens = new String[list.size()];
+                    tokens = list.toArray(tokens);
+                    // Take last part as surname.  Assume original TPP data has proper HumanNames
+                    String surname = tokens[tokens.length - 1];
+                    firstName = tokens[1];
+                    for (int count = 1; count < tokens.length - 2; count++) {
+                        fhirName.addGiven(tokens[count]);
+                    }
                 }
             }
+
         }
 
         Long practitionerPcrOrgId = null;
