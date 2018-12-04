@@ -72,9 +72,11 @@ public class PractitionerTransformer extends AbstractTransformer {
                     tokens = list.toArray(tokens);
                     // Take last part as surname.  Assume original TPP data has proper HumanNames
                     String surname = tokens[tokens.length - 1];
-                    firstName = tokens[1];
-                    for (int count = 1; count < tokens.length - 2; count++) {
-                        fhirName.addGiven(tokens[count]);
+                    if (tokens.length>1) {
+                        firstName = tokens[1];
+                        for (int count = 1; count < tokens.length - 2; count++) {
+                            fhirName.addGiven(tokens[count]);
+                        }
                     }
                 }
             }
