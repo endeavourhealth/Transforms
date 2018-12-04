@@ -284,7 +284,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         tranformResources(ResourceType.Organization, resources, threadPool, params);
         tranformResources(ResourceType.Location, resources, threadPool, params);
         tranformResources(ResourceType.Practitioner, resources, threadPool, params);
-        //tranformResources(ResourceType.Schedule, resources, threadPool, params);
+        tranformResources(ResourceType.Schedule, resources, threadPool, params);
         boolean didPatient = tranformResources(ResourceType.Patient, resources, threadPool, params);
 
         //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
