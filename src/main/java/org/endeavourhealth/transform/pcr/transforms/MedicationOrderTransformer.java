@@ -6,6 +6,8 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
+import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.MedicationAmount;
@@ -107,13 +109,18 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
+
         CodeableConcept medicationCode = fhir.getMedicationCodeableConcept();
         if (medicationCode != null) {
-
+            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(medicationCode);
             dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
-
+            originalCode = codes.getOriginalCode();
+            originalTerm =  codes.getOriginalTerm();
+            if (codes.getSystem()!=null) {
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            }
         } else return;
 
 

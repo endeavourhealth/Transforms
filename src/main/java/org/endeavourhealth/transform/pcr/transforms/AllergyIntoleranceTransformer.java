@@ -116,7 +116,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             if (codes.getOriginalTerm()!=null) {
                 originalTerm= codes.getOriginalTerm();
             }
-            originalCode = snomedConceptId.toString();
+            originalCode = codes.getOriginalCode();
            // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
             if (codes.getSystem()!=null) {
                 originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
