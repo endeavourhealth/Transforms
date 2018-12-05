@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.pcr;
 
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.EventLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -12,6 +15,7 @@ import java.util.Date;
  */
 public class FhirToPcrHelper {
 
+    private static final Logger LOG = LoggerFactory.getLogger(FhirToPcrHelper.class);
 
     public static void freeTextWriter(long textId, long patientId, String freeText, long enteredByPractitionerId,
                                       AbstractPcrCsvWriter csvWriter) throws Exception {
@@ -209,18 +213,24 @@ public class FhirToPcrHelper {
         int ret = 99;
         //String system = getDomainName(scheme);
 
-          if (scheme.equals("http://read.info/ctv2")) {
-              ret = 0;
-          } else if (scheme.equals("http://read.info/ctv3")) {
-              ret = 1;
-          }else if (scheme.equals("http://snomed.info/sct")) {
-              ret = 2;
-          } else if (scheme.contains("hl7.org")) {
-                ret = 6;
-        }
-        //case ICD-10 =3
-        // case OPCS-4 = 4
-        //case millenium = 5
+
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_READ2)) { ret = 0;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) { ret = 1;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CTV3)) { ret = 2;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) { ret = 3;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMISSNOMED)) { ret = 4;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMISPREPARATION)) { ret = 5;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) { ret = 6;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID)) { ret = 7;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE)) { ret = 8;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_ICD10)) { ret = 9;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_OPCS4)) { ret = 10;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) { ret = 11;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE)) { ret = 12;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID)) { ret = 13;}
+        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID)) { ret = 14;}
+
+        LOG.info("Unknown code scheme:" + scheme);
         return ret;
     }
 

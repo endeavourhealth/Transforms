@@ -62,6 +62,8 @@ public class OrganizationTransformer extends AbstractTransformer {
         if (fhir.hasPartOf()) {
             Reference partOfReference = fhir.getPartOf();
             parentOrganisationId = transformOnDemandAndMapId(partOfReference, params);
+        } else {
+            parentOrganisationId = 0L;
         }
 //TODO restore
 //        if (fhir.hasType()) {
