@@ -11,10 +11,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
 public class PractitionerTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
@@ -62,34 +61,18 @@ public class PractitionerTransformer extends AbstractTransformer {
                     }
                     middleName = s.toString();
                 }
-            } else if (fhirName.hasText() && !fhirName.getText().isEmpty()){
-                name = fhirName.getText();
-                String[] tokens = name.split(" ");
-                if (tokens.length>0) {
-                    ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
-                    list.removeAll(Arrays.asList("", null));
-                    tokens = new String[list.size()];
-                    tokens = list.toArray(tokens);
-                    // Take last part as surname.  Assume original TPP data has proper HumanNames
-                    String surname = tokens[tokens.length - 1];
-                    if (tokens.length>1) {
-                        firstName = tokens[1];
-                        for (int count = 1; count < tokens.length - 2; count++) {
-                            fhirName.addGiven(tokens[count]);
-                        }
-                    }
-                }
+            } else if (fhirName.hasText() && !fhirName.getText().isEmpty()) {
+               lastName = fhirName.getText(); // Don't try to parse out. Too many possibilities
             }
-
-        }
+       }
 
         Long practitionerPcrOrgId = null;
-        LOG.trace("Transforming practitioner " + fhir.getId() + " with " + fhir.getPractitionerRole().size() + " roles ");
+        //LOG.trace("Transforming practitioner " + fhir.getId() + " with " + fhir.getPractitionerRole().size() + " roles ");
         for (Practitioner.PractitionerPractitionerRoleComponent role : fhir.getPractitionerRole()) {
 
             CodeableConcept cc = role.getRole();
             for (Coding coding : cc.getCoding()) {
-                if (coding.getSystem()!= null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
+                if (coding.getSystem() != null && coding.getSystem().equals(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES)) {
                     String thiscode = coding.getCode();
                     roleTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                     //TODO IMClient.getConceptId(thiscode);
@@ -133,10 +116,10 @@ public class PractitionerTransformer extends AbstractTransformer {
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
-            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
-        LOG.info("Writing practitioner " + id);
+        //LOG.info("Writing practitioner " + id);
         org.endeavourhealth.transform.pcr.outputModels.Practitioner model = (org.endeavourhealth.transform.pcr.outputModels.Practitioner) csvWriter;
         model.writeUpsert(id,
                 organisationId,
@@ -157,13 +140,13 @@ public class PractitionerTransformer extends AbstractTransformer {
 //TODO smartcard etc identifiers  -how are they set up?
         //TODO work out which identifier to select
         String filename = model.getFileName();
-        String idFileName = filename.replace("practitioner","practitionerIdentifier");
-        PractitionerIdentifier practitionerIdentifierWriter = new PractitionerIdentifier(idFileName,FhirToPcrCsvTransformer.CSV_FORMAT,
-                FhirToPcrCsvTransformer.DATE_FORMAT ,FhirToPcrCsvTransformer.TIME_FORMAT);
-       practitionerIdentifierWriter.writeUpsert(id,
-               typeConceptId,
-               "",
-               enteredByPractitionerId);
+        String idFileName = filename.replace("practitioner", "practitionerIdentifier");
+        PractitionerIdentifier practitionerIdentifierWriter = new PractitionerIdentifier(idFileName, FhirToPcrCsvTransformer.CSV_FORMAT,
+                FhirToPcrCsvTransformer.DATE_FORMAT, FhirToPcrCsvTransformer.TIME_FORMAT);
+        practitionerIdentifierWriter.writeUpsert(id,
+                typeConceptId,
+                "",
+                enteredByPractitionerId);
 
     }
 

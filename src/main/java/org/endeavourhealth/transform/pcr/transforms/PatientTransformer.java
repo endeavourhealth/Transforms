@@ -97,20 +97,25 @@ public class PatientTransformer extends AbstractTransformer {
 
                 if (nom.getFamily() != null) {
                     lastName = nom.getFamily().toString();
-                }
-                if (nom.getGiven() != null) {
-                    firstName = nom.getGiven().get(0).toString();
-                }
-                if (nom.getGiven().size() > 1) {
-                    StringBuilder midnames = new StringBuilder();
-                    for (StringType namepart : nom.getGiven()) {
-                        midnames.append(namepart.toString());
-                        midnames.append(" ");
+
+                    if (nom.getGiven() != null) {
+                        firstName = nom.getGiven().get(0).toString();
                     }
-                    middleNames = midnames.toString();
-                }
-                if (!nom.getPrefix().isEmpty()) {
-                    title = nom.getPrefix().get(0).toString();
+                    if (nom.getGiven().size() > 1) {
+                        StringBuilder midnames = new StringBuilder();
+                        for (StringType namepart : nom.getGiven()) {
+                            midnames.append(namepart.toString());
+                            midnames.append(" ");
+                        }
+                        middleNames = midnames.toString();
+                    }
+                    if (!nom.getPrefix().isEmpty()) {
+                        title = nom.getPrefix().get(0).toString();
+                    }
+                } else {
+                    if (nom.getText() != null && !nom.getText().isEmpty()) {
+                        lastName = nom.getText();
+                    }
                 }
             }
         }
