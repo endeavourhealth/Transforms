@@ -343,7 +343,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
-        //tranformResources(ResourceType.Slot, resources, threadPool, params);  -NOT v1
+        tranformResources(ResourceType.Slot, resources, threadPool, params);
 
         //close the thread pool
         List<ThreadPoolError> errors = threadPool.waitAndStop();
