@@ -107,8 +107,8 @@ public class ObservationCodeHelper {
 
             //a Snomed coding should never be picked up as an "original" term,
             //so something has gone wrong
-            throw new TransformException("Original coding has system " + system);
-
+           // throw new TransformException("Original coding has system " + system);
+            return "SNOMED_" + originalCoding.getCode();
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3)) {
             return "CTV3_" + originalCoding.getCode();
 
