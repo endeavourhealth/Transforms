@@ -27,11 +27,11 @@ public class MedicationStatementTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long pcrId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        MedicationStatement fhir = (MedicationStatement)resource;
+        MedicationStatement fhir = (MedicationStatement) resource;
 
         long id;
         long owningOrganisationId;
@@ -92,7 +92,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
         if (enteredDateExtension != null) {
 
-            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+            DateTimeType enteredDateTimeType = (DateTimeType) enteredDateExtension.getValue();
             enteredDate = enteredDateTimeType.getValue();
         }
 
@@ -100,7 +100,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
 
-            Reference enteredByPractitionerReference = (Reference)enteredByPractitionerExtension.getValue();
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
 
@@ -108,7 +108,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Extension encounterExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ASSOCIATED_ENCOUNTER);
         if (encounterExtension != null) {
 
-            Reference encounterReference = (Reference)encounterExtension.getValue();
+            Reference encounterReference = (Reference) encounterExtension.getValue();
             encounterId = findPcrId(params, encounterReference);
 
             careActivityId = encounterId;            //TODO: check this is correct
@@ -120,12 +120,18 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
             //dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
+            //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
             ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(medicationCode);
-            originalCode = codes.getSnomedConceptId().toString();
-            originalTerm =  codes.getOriginalTerm();
-            if (codes.getSystem()!=null) {
-                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            if (codes != null) {
+                if (codes.getSnomedConceptId() != null) {
+                    originalCode = codes.getSnomedConceptId().toString();
+                }
+                if (codes.getOriginalTerm() != null) {
+                    originalTerm = codes.getOriginalTerm();
+                }
+                if (codes.getSystem() != null) {
+                    originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+                }
             }
 
         } else return;
@@ -136,7 +142,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = (fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
             statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-        //TODO IMClient.getConceptId("MedicationStatementStatus." + fhirStatus.toCode());
+            //TODO IMClient.getConceptId("MedicationStatementStatus." + fhirStatus.toCode());
         }
 
         if (fhir.hasDosage()) {
@@ -150,7 +156,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             //one of the Emis test packs includes the unicode \u0001 character in the dose. This should be handled
             //during the inbound transform, but the data is already in the DB now, so needs handling here
             char[] chars = dose.toCharArray();
-            for (int i=0; i<chars.length; i++) {
+            for (int i = 0; i < chars.length; i++) {
                 char c = chars[i];
                 if (c == 1) {
                     chars[i] = '?'; //just replace with ?
@@ -163,9 +169,9 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION);
         if (cancellationExtension != null) {
             if (cancellationExtension.hasExtension()) {
-                for (Extension innerExtension: cancellationExtension.getExtension()) {
+                for (Extension innerExtension : cancellationExtension.getExtension()) {
                     if (innerExtension.getValue() instanceof DateType) {
-                        DateType d = (DateType)innerExtension.getValue();
+                        DateType d = (DateType) innerExtension.getValue();
                         cancellationDate = d.getValue();
                     }
                 }
@@ -177,7 +183,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_QUANTITY);
         if (authorisedQtyExtension != null) {
 
-            Quantity q = (Quantity)authorisedQtyExtension.getValue();
+            Quantity q = (Quantity) authorisedQtyExtension.getValue();
             quantityValue = q.getValue();
             quantityUnit = q.getUnit();
         }
@@ -187,10 +193,10 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE);
         if (authorisationTypeExtension != null) {
 
-            Coding c = (Coding)authorisationTypeExtension.getValue();
+            Coding c = (Coding) authorisationTypeExtension.getValue();
             MedicationAuthorisationType authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
             typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                    //TODO IMClient.getConceptId("MedicationAuthorisationType." + authorisationType.getCode());
+            //TODO IMClient.getConceptId("MedicationAuthorisationType." + authorisationType.getCode());
         }
 
         //issues authorised
@@ -198,7 +204,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ALLOWED);
         if (numberOfIssuesAuthorisedExtension != null) {
 
-            IntegerType issuesAllowedType = (IntegerType)numberOfIssuesAuthorisedExtension.getValue();
+            IntegerType issuesAllowedType = (IntegerType) numberOfIssuesAuthorisedExtension.getValue();
             issuesAuthorised = issuesAllowedType.getValue();
         }
 
@@ -207,7 +213,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 = ExtensionConverter.findExtension(fhir, FhirExtensionUri.MEDICATION_AUTHORISATION_NUMBER_OF_REPEATS_ISSUED);
         if (numberOfIssuesExtension != null) {
 
-            IntegerType issuesIssuedType = (IntegerType)numberOfIssuesExtension.getValue();
+            IntegerType issuesIssuedType = (IntegerType) numberOfIssuesExtension.getValue();
             issues = issuesIssuedType.getValue();
         }
 
@@ -235,7 +241,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
                 quantityUnit,
                 enteredByPractitionerId);
         org.endeavourhealth.transform.pcr.outputModels.MedicationStatement model
-                = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement)csvWriter;
+                = (org.endeavourhealth.transform.pcr.outputModels.MedicationStatement) csvWriter;
         model.writeUpsert(
                 id,
                 patientId,
@@ -269,7 +275,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
 
         //TODO - handle free text and linking
-
 
 
     }
