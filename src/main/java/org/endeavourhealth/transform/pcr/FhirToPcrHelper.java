@@ -209,36 +209,69 @@ public class FhirToPcrHelper {
         return tabNumber;
     }
 
-    public static int getCodingScheme(String scheme) throws Exception {
-        int ret = 99;
+    public static int getCodingScheme(String inScheme) throws Exception {
+        int ret = 999999;
         //String system = getDomainName(scheme);
+        String scheme = inScheme.trim();
+        switch (scheme) {
+            case FhirCodeUri.CODE_SYSTEM_READ2:
+                ret = 0;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_SNOMED_CT:
+                ret = 1;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_CTV3:
+                ret = 2;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_TPP_CTV3:
+                ret = 3;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_EMISSNOMED:
+                ret = 4;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_EMISPREPARATION:
+                ret = 5;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_EMIS_CODE:
+                ret = 6;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID:
+                ret = 7;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE:
+                ret = 8;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_ICD10:
+                ret = 9;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_OPCS4:
+                ret = 10;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID:
+                ret = 11;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_UK_ED_CODE:
+                ret = 12;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID:
+                ret = 13;
+                break;
+            case FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID:
+                ret = 14;
+                break;
+            default:
+                LOG.info("Unknown code scheme:" + scheme);
+                break;
+        }
 
+            return ret;
+        }
 
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_READ2)) { ret = 0;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) { ret = 1;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CTV3)) { ret = 2;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) { ret = 3;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMISSNOMED)) { ret = 4;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMISPREPARATION)) { ret = 5;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) { ret = 6;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID)) { ret = 7;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_HL7V2_MESSAGE_TYPE)) { ret = 8;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_ICD10)) { ret = 9;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_OPCS4)) { ret = 10;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) { ret = 11;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE)) { ret = 12;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID)) { ret = 13;}
-        if (scheme.equals(FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID)) { ret = 14;}
+        private static String getDomainName (String url) throws URISyntaxException {
+            URI uri = new URI(url);
+            return uri.getHost();
+        }
 
-        LOG.info("Unknown code scheme:" + scheme);
-        return ret;
     }
-
-    private static String getDomainName(String url) throws URISyntaxException {
-        URI uri = new URI(url);
-        return uri.getHost();
-    }
-
-}
 
 
