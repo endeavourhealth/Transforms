@@ -115,14 +115,16 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             //dmdId = CodeableConceptHelper.findSnomedConceptId(medicationCode);
             conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //TODO IMClient.getConceptId(CodeScheme.SNOMED.getValue(), dmdId.toString());
-            if (codes != null && codes.getSnomedConceptId() != null) {
-                originalCode = codes.getSnomedConceptId().toString();
-            }
-            if (codes != null && !codes.getOriginalTerm().isEmpty()) {
-                originalTerm = codes.getOriginalTerm();
-            }
-            if (codes.getSystem()!=null) {
-                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            if (codes != null) {
+                if (codes.getSnomedConceptId() != null) {
+                    originalCode = codes.getSnomedConceptId().toString();
+                }
+                if (!codes.getOriginalTerm().isEmpty()) {
+                    originalTerm = codes.getOriginalTerm();
+                }
+                if (codes.getSystem() != null) {
+                    originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+                }
             }
         } else return;
 
