@@ -18,6 +18,7 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.*;
@@ -164,6 +165,8 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             String ethnic = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
             //  ethnicCode = (Character) IMClient.getConceptId(ethnic);
+            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
+            ethnicCode =  codes.getOriginalCode().charAt(0);
             //TODO how do we map ethnic code?
         }
 
