@@ -166,7 +166,9 @@ public class PatientTransformer extends AbstractTransformer {
             String ethnic = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
             //  ethnicCode = (Character) IMClient.getConceptId(ethnic);
             ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
-            ethnicCode =  codes.getOriginalCode().charAt(0);
+            if (codes != null && !codes.getOriginalCode().isEmpty()) {
+                ethnicCode = codes.getOriginalCode().charAt(0);
+            }
             //TODO how do we map ethnic code?
         }
 
