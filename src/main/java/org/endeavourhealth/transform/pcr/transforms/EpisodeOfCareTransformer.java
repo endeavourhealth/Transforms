@@ -30,7 +30,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         long organisationId;
         long patientId;
         Integer registrationTypeId = null;
-        Integer registrationStatusId = null;
+        Integer registrationStatusId = 0;
         Integer gpRegistrationStatusSubConceptId=null;
         Integer effectiveDatePrecision = null;
         Long effectivePractitionerId = null;
