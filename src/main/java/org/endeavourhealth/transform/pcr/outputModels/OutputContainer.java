@@ -67,6 +67,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationAmount("medication_amount.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Address("address.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new GpRegistrationStatus("gp_registration.csv",csvFormat,dateFormat,timeFormat));
 
         //TODO: - need free text table links
         csvWriters.add(new FreeText("free_text.csv", csvFormat, dateFormat, timeFormat));
@@ -260,6 +261,8 @@ public class OutputContainer {
     public PatientContact getPatientContacts() {return findCsvWriter(PatientContact.class); }
 
     public Address getAddresses() {return  findCsvWriter((Address.class));}
+
+    public GpRegistrationStatus getGpRegistration() { return findCsvWriter(GpRegistrationStatus.class);}
 
 
     public Allergy getAllergyIntolerances() {

@@ -1,9 +1,8 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
+
 import java.util.Date;
-import java.math.BigDecimal;
  
 public class GpRegistrationStatus extends AbstractPcrCsvWriter {
  
@@ -27,9 +26,9 @@ public class GpRegistrationStatus extends AbstractPcrCsvWriter {
                     Long effectivePractitionerId,
                     Long enteredByPractitionerId,
                     Date endDate,
-                    Long gpRegistrationTypeConceptId,
-                    Long gpRegistrationStatusConceptId,
-                    Long gpRegistrationStatusSubConceptId,
+                    Integer gpRegistrationTypeConceptId,
+                    Integer gpRegistrationStatusConceptId,
+                    Integer gpRegistrationStatusSubConceptId,
 Boolean isCurrent
                     ) throws Exception {
     super.printRecord(OutputContainer.UPSERT,
@@ -41,9 +40,9 @@ Boolean isCurrent
                     convertLong(effectivePractitionerId),
                     convertLong(enteredByPractitionerId),
                     convertDate(endDate),
-                    convertLong(gpRegistrationTypeConceptId),
-                    convertLong(gpRegistrationStatusConceptId),
-                    convertLong(gpRegistrationStatusSubConceptId),
+                    convertInt(gpRegistrationTypeConceptId),
+                    convertInt(gpRegistrationStatusConceptId),
+                    convertInt(gpRegistrationStatusSubConceptId),
                     convertBoolean(isCurrent)
        );
 }
@@ -77,9 +76,9 @@ public Class[] getColumnTypes() {
                     Long.class,
                     Long.class,
                     Date.class,
-                    Long.class,
-                    Long.class,
-                    Long.class,
+                    Integer.class,
+                    Integer.class,
+                    Integer.class,
                     Boolean.class
     }; 
 }

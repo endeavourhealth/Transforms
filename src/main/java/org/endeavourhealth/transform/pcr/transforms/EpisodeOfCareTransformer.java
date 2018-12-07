@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         long patientId;
         Integer registrationTypeId = null;
         Integer registrationStatusId = null;
+        Integer gpRegistrationStatusSubConceptId=null;
         Integer effectiveDatePrecision = null;
         Long effectivePractitionerId = null;
         Long enteredByPractitionerId = null;
@@ -42,6 +44,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         Long locationId=null;
         Long referralRequestId=null;
         Boolean isConsent=false;
+        Boolean isCurrent=false;
         Long latestCareEpisodeStatusId=null;
 
         id = pcrId.longValue();
@@ -67,6 +70,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         if (fhirEpisode.getStatus() != null) {
             if (fhirEpisode.getStatus().equals(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE)) {
                 registrationStatusId = 2;
+                isCurrent=true;
             }
         }
 
@@ -76,9 +80,13 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         }
         if (period.hasEnd()) {
             dateRegisteredEnd = period.getEnd();
+        } else {
+            isCurrent=true;
         }
 
-        org.endeavourhealth.transform.pcr.outputModels.CareEpisode model = (org.endeavourhealth.transform.pcr.outputModels.CareEpisode) csvWriter;
+
+        OutputContainer data = params.getOutputContainer();
+        org.endeavourhealth.transform.pcr.outputModels.GpRegistrationStatus model = data.getGpRegistration();
         model.writeUpsert(id,
                 patientId,
                 organisationId,
@@ -87,17 +95,32 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
                 effectivePractitionerId,
                 enteredByPractitionerId,
                 dateRegisteredEnd,
-                encounterLinkId,
-                registrationStatusId,
-                specialityConceptId,
-                adminConceptId,
-                reasonConceptId,
                 registrationTypeId,
-                locationId,
-                referralRequestId,
-                isConsent,
-                latestCareEpisodeStatusId
+                registrationStatusId,
+                gpRegistrationStatusSubConceptId,
+                isCurrent
         );
+
+//        org.endeavourhealth.transform.pcr.outputModels.CareEpisode model = (org.endeavourhealth.transform.pcr.outputModels.CareEpisode) csvWriter;
+//        model.writeUpsert(id,
+//                patientId,
+//                organisationId,
+//                dateRegistered,
+//                effectiveDatePrecision,
+//                effectivePractitionerId,
+//                enteredByPractitionerId,
+//                dateRegisteredEnd,
+//                encounterLinkId,
+//                registrationStatusId,
+//                specialityConceptId,
+//                adminConceptId,
+//                reasonConceptId,
+//                registrationTypeId,
+//                locationId,
+//                referralRequestId,
+//                isConsent,
+//                latestCareEpisodeStatusId
+//        );
     }
 }
 
