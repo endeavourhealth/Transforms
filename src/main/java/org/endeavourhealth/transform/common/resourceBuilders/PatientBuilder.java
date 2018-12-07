@@ -243,7 +243,6 @@ public class PatientBuilder extends ResourceBuilderBase
         } else {
             CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirEthnicity);
             Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, codeableConcept);
-
             auditCodeableConceptExtension(extension, sourceCells);
         }
     }

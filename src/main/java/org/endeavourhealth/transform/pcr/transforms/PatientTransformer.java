@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
@@ -18,7 +17,6 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
-import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.*;
@@ -163,11 +161,9 @@ public class PatientTransformer extends AbstractTransformer {
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
-            String ethnic = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
-            //  ethnicCode = (Character) IMClient.getConceptId(ethnic);
-            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
-            if (codes != null && !codes.getOriginalCode().isEmpty()) {
-                ethnicCode = codes.getOriginalCode().charAt(0);
+            List<Coding> codes = codeableConcept.getCoding();
+            if (codes != null && !codes.isEmpty()) {
+                ethnicCode = codes.get(0).getCode().charAt(0);
             }
             //TODO how do we map ethnic code?
         }
