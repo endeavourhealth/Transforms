@@ -1,11 +1,15 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Date;
 
 public class EpisodeOfCareTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareTransformer.class);
@@ -15,102 +19,85 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long pcrId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        EpisodeOfCare fhirEpisode = (EpisodeOfCare)resource;
+        EpisodeOfCare fhirEpisode = (EpisodeOfCare) resource;
 
-//        long id;
-//        long organisationId;
-//        long patientId;
-//        long personId;
-//        Integer registrationTypeId = null;
-//        Integer registrationStatusId = null;
-//        Date dateRegistered = null;
-//        Date dateRegisteredEnd = null;
-//        Long usualGpPractitionerId = null;
-//        //Long managingOrganisationId = null;
-//
-//        id = enterpriseId.longValue();
-//        organisationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
-//
-//        if (fhirEpisode.hasCareManager()) {
-//            Reference practitionerReference = fhirEpisode.getCareManager();
-//            usualGpPractitionerId = transformOnDemandAndMapId(practitionerReference, params);
-//        }
-//
-//        //registration type has moved to the EpisodeOfCare resource, although there will be some old instances (for now)
-//        //where the extension is on the Patient resource
-//        Extension regTypeExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
-//        if (regTypeExtension == null) {
-//            //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
-//            Patient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
-//            if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
-//                regTypeExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
-//            }
-//        }
-//
-//        if (regTypeExtension != null) {
-//            Coding coding = (Coding)regTypeExtension.getValue();
-//            RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
-//            registrationTypeId = new Integer(fhirRegistrationType.ordinal());
-//        }
-//
-//        //reg status is stored in a contained list with an extension giving the internal reference to it
-//        Extension regStatusExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
-//        if (regStatusExtension != null) {
-//            Reference idReference = (Reference)regStatusExtension.getValue();
-//            String idReferenceValue = idReference.getReference();
-//            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
-//
-//            for (Resource containedResource: fhirEpisode.getContained()) {
-//                if (containedResource.getId().equals(idReferenceValue)) {
-//                    List_ list = (List_)containedResource;
-//
-//                    //status is on the most recent entry
-//                    List<List_.ListEntryComponent> entries = list.getEntry();
-//                    List_.ListEntryComponent entry = entries.get(entries.size()-1);
-//                    if (entry.hasFlag()) {
-//                        CodeableConcept codeableConcept = entry.getFlag();
-//                        String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
-//                        RegistrationStatus status = RegistrationStatus.fromCode(code);
-//                        registrationStatusId = new Integer(status.ordinal());
-//                    }
-//
-//                    break;
-//                }
-//            }
-//        }
-//
-//        /*if (fhirEpisode.hasManagingOrganization()) {
-//            Reference orgReference = fhirEpisode.getManagingOrganization();
-//            managingOrganisationId = findEnterpriseId(data.getOrganisations(), orgReference);
-//            if (managingOrganisationId == null) {
-//                managingOrganisationId = transformOnDemand(orgReference, data, otherResources, enterpriseOrganisationId, enterprisePatientId, enterprisePersonId, configName);
-//            }
-//        }*/
-//
-//        Period period = fhirEpisode.getPeriod();
-//        if (period.hasStart()) {
-//            dateRegistered = period.getStart();
-//        }
-//        if (period.hasEnd()) {
-//            dateRegisteredEnd = period.getEnd();
-//        }
-//
-//        org.endeavourhealth.transform.pcr.outputModels.EpisodeOfCare model = (org.endeavourhealth.transform.pcr.outputModels.EpisodeOfCare)csvWriter;
-//        model.writeUpsert(id,
-//            organisationId,
-//            patientId,
-//            personId,
-//            registrationTypeId,
-//            registrationStatusId,
-//            dateRegistered,
-//            dateRegisteredEnd,
-//            usualGpPractitionerId);
+        long id;
+        long organisationId;
+        long patientId;
+        Integer registrationTypeId = null;
+        Integer registrationStatusId = null;
+        Integer effectiveDatePrecision = null;
+        Long effectivePractitionerId = null;
+        Long enteredByPractitionerId = null;
+        Date dateRegistered = null;
+        Date dateRegisteredEnd = null;
+        Long specialityConceptId = null;
+        Long adminConceptId = null;
+        Long reasonConceptId = null;
+        String encounterLinkId = null; //Should this be a Long?
+        Long locationId=null;
+        Long referralRequestId=null;
+        Boolean isConsent=false;
+        Long latestCareEpisodeStatusId=null;
+
+        id = pcrId.longValue();
+        organisationId = params.getPcrOrganisationId().longValue();
+        patientId = params.getPcrPatientId().longValue();
+
+        Extension regTypeExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
+        if (regTypeExtension == null) {
+            //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
+            Patient fhirPatient = (Patient) findResource(fhirEpisode.getPatient(), params);
+            if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
+                regTypeExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
+            }
+        }
+
+        if (regTypeExtension != null) {
+            Coding coding = (Coding) regTypeExtension.getValue();
+            RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
+            registrationTypeId = new Integer(fhirRegistrationType.ordinal());
+        }
+
+        //TODO More detail? We only care about active for phase 1
+        if (fhirEpisode.getStatus() != null) {
+            if (fhirEpisode.getStatus().equals(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE)) {
+                registrationStatusId = 2;
+            }
+        }
+
+        Period period = fhirEpisode.getPeriod();
+        if (period.hasStart()) {
+            dateRegistered = period.getStart();
+        }
+        if (period.hasEnd()) {
+            dateRegisteredEnd = period.getEnd();
+        }
+
+        org.endeavourhealth.transform.pcr.outputModels.CareEpisode model = (org.endeavourhealth.transform.pcr.outputModels.CareEpisode) csvWriter;
+        model.writeUpsert(id,
+                patientId,
+                organisationId,
+                dateRegistered,
+                effectiveDatePrecision,
+                effectivePractitionerId,
+                enteredByPractitionerId,
+                dateRegisteredEnd,
+                encounterLinkId,
+                registrationStatusId,
+                specialityConceptId,
+                adminConceptId,
+                reasonConceptId,
+                registrationTypeId,
+                locationId,
+                referralRequestId,
+                isConsent,
+                latestCareEpisodeStatusId
+        );
     }
 }
 

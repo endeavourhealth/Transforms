@@ -24,7 +24,7 @@ public class OutputContainer {
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String COLUMN_CLASS_MAPPINGS = "ColumnClassMappings.json";
-    
+
     private final List<AbstractPcrCsvWriter> csvWriters;
 
 
@@ -66,9 +66,10 @@ public class OutputContainer {
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationAmount("medication_amount.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Address("address.csv", csvFormat, dateFormat, timeFormat));
 
         //TODO: - need free text table links
-        csvWriters.add(new FreeText("free_text.csv",csvFormat,dateFormat,timeFormat));
+        csvWriters.add(new FreeText("free_text.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Allergy("allergy.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Immunisation("immunisation.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Problem("problem.csv", csvFormat, dateFormat, timeFormat));
@@ -80,11 +81,11 @@ public class OutputContainer {
         //may as well zip the data, since it will compress well
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(baos);
-        
+
         //the first entry is a json file giving us the target class names for each column
         ObjectNode columnClassMappingJson = new ObjectNode(JsonNodeFactory.instance);
 
-        for (AbstractPcrCsvWriter csvWriter: csvWriters) {
+        for (AbstractPcrCsvWriter csvWriter : csvWriters) {
             writeColumnClassMappings(csvWriter, columnClassMappingJson);
         }
 
@@ -92,9 +93,9 @@ public class OutputContainer {
         zos.putNextEntry(new ZipEntry(COLUMN_CLASS_MAPPINGS));
         zos.write(jsonStr.getBytes());
         zos.flush();
-        
+
         //then write the CSV files
-        for (AbstractPcrCsvWriter csvWriter: csvWriters) {
+        for (AbstractPcrCsvWriter csvWriter : csvWriters) {
             writeZipEntry(csvWriter, zos);
         }
 
@@ -105,7 +106,7 @@ public class OutputContainer {
         return baos.toByteArray();
 
     }
-    
+
     private static void writeColumnClassMappings(AbstractPcrCsvWriter csvWriter, ObjectNode columnClassMappingJson) throws Exception {
 
         //we only write CSV files with rows, so don't bother writing their column mappings either
@@ -124,7 +125,7 @@ public class OutputContainer {
 
         ObjectNode jsonObject = columnClassMappingJson.putObject(fileName);
 
-        for (int i=0; i<columnNames.length; i++) {
+        for (int i = 0; i < columnNames.length; i++) {
             String columnName = columnNames[i];
             Class cls = classes[i];
             jsonObject.put(columnName, cls.getName());
@@ -152,9 +153,9 @@ public class OutputContainer {
 
     @SuppressWarnings("unchecked")
     public <T extends AbstractPcrCsvWriter> T findCsvWriter(Class<T> cls) {
-        for (AbstractPcrCsvWriter csvWriter: csvWriters) {
+        for (AbstractPcrCsvWriter csvWriter : csvWriters) {
             if (csvWriter.getClass() == cls) {
-                return (T)csvWriter;
+                return (T) csvWriter;
             }
         }
         return null;
@@ -164,7 +165,9 @@ public class OutputContainer {
         return findCsvWriter(Organisation.class);
     }
 
-    public Immunisation getImmunisations() { return findCsvWriter(Immunisation.class);}
+    public Immunisation getImmunisations() {
+        return findCsvWriter(Immunisation.class);
+    }
 
     public Location getLocations() {
         return findCsvWriter(Location.class);
@@ -174,15 +177,17 @@ public class OutputContainer {
         return findCsvWriter(Practitioner.class);
     }
 
-    public FreeText getFreeText() { return findCsvWriter(FreeText.class);}
+    public FreeText getFreeText() {
+        return findCsvWriter(FreeText.class);
+    }
 
-  //  public Schedule getSchedules() {
-  //     return findCsvWriter(Schedule.class);
-  //  }
+    //  public Schedule getSchedules() {
+    //     return findCsvWriter(Schedule.class);
+    //  }
 
- //   public Person getPersons() {
-   //     return findCsvWriter(Person.class);
-  //  }
+    //   public Person getPersons() {
+    //     return findCsvWriter(Person.class);
+    //  }
 
     public Patient getPatients() {
         return findCsvWriter(Patient.class);
@@ -212,9 +217,9 @@ public class OutputContainer {
 //        return findCsvWriter(Flag.class);
 //    }
 
-  //  public ReferralRequest getReferralRequests() {
- //       return findCsvWriter(ReferralRequest.class);
-  //  }
+    //  public ReferralRequest getReferralRequests() {
+    //       return findCsvWriter(ReferralRequest.class);
+    //  }
 
 //    public ProcedureRequest getProcedureRequests() {
 //        return findCsvWriter(ProcedureRequest.class);
@@ -243,15 +248,20 @@ public class OutputContainer {
     public Problem getProblems() {
         return findCsvWriter(Problem.class);
     }
+
     public PatientAddress getPatientAddresses() {
         return findCsvWriter(PatientAddress.class);
     }
+
     public PatientIdentifier getPatientIdentifiers() {
         return findCsvWriter(PatientIdentifier.class);
     }
-    public PatientContact getPatientContacts() {
-        return findCsvWriter(PatientContact.class);
-    }
+
+    public PatientContact getPatientContacts() {return findCsvWriter(PatientContact.class); }
+
+    public Address getAddresses() {return  findCsvWriter((Address.class));}
+
+
     public Allergy getAllergyIntolerances() {
         return findCsvWriter(Allergy.class);
     }

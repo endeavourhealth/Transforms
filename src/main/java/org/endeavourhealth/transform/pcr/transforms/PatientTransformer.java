@@ -97,15 +97,15 @@ public class PatientTransformer extends AbstractTransformer {
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
 
                 if (nom.getFamily() != null) {
-                    lastName = nom.getFamily().toString();
+                    lastName = removeParen(nom.getFamily().toString());
 
                     if (nom.getGiven() != null) {
                         firstName = nom.getGiven().get(0).toString();
                     }
                     if (nom.getGiven().size() > 1) {
                         StringBuilder midnames = new StringBuilder();
-                        for (StringType namepart : nom.getGiven()) {
-                            midnames.append(namepart.toString());
+                        for (int i=1; i<nom.getGiven().size(); i++) {
+                            midnames.append(nom.getGiven().get(i).toString());
                             midnames.append(" ");
                         }
                         middleNames = midnames.toString();
@@ -115,7 +115,7 @@ public class PatientTransformer extends AbstractTransformer {
                     }
                 } else {
                     if (nom.getText() != null && !nom.getText().isEmpty()) {
-                        lastName = nom.getText();
+                        lastName = removeParen(nom.getText());
                     }
                 }
             }
@@ -138,13 +138,13 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirPatient.hasGender()) {
             //patientGenderId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.MALE)) {
-                patientGenderId=0L;
+                patientGenderId = 0L;
             } else if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.FEMALE)) {
-                patientGenderId =1L;
-            }  else if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.OTHER)) {
-                patientGenderId=2L;
+                patientGenderId = 1L;
+            } else if (fhirPatient.getGender().equals(Enumerations.AdministrativeGender.OTHER)) {
+                patientGenderId = 2L;
             } else {
-                patientGenderId=3l; //Unknown
+                patientGenderId = 3l; //Unknown
             }
             //TODO IMClient.getOrCreateConceptId("Patient.Gender." + fhirPatient.getGender());
 
@@ -198,21 +198,12 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-        // AbstractPcrCsvWriter patientIdWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(PatientIdentifier, params)
-        //  writePatientIdentifier(id, fhirPatient,enteredByPractitionerId, );
-        //check if our patient demographics also should be used as the person demographics. This is typically
-        //true if our patient record is at a GP practice.
-        //boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
         org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient) csvWriter;
 
-//        org.endeavourhealth.transform.pcr.outputModels.Person personWriter = params.getOutputContainer().getPersons();
-//        LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
-
-
         nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
-     //   LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
+        //   LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
         patientWriter.writeUpsert(id,
                 organizationId,
                 nhsNumber,
@@ -238,13 +229,8 @@ public class PatientTransformer extends AbstractTransformer {
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
-            if (StringUtils.isNumeric(fhirAddress.getId())) {
-                homeAddressId = Long.parseLong(fhirAddress.getId());
-                PatientAddress patientAddressWriter = data.getPatientAddresses();
-                writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, patientAddressWriter);
-            } else {
-                LOG.debug("Non-numeric address Id " + fhirAddress.getId() + ". Patient:" + id);
-            }
+            PatientAddress patientAddressWriter = data.getPatientAddresses();
+            writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, params, patientAddressWriter);
         } else {
             LOG.debug("Address is null for " + id);
         }
@@ -274,26 +260,26 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-    private void writeAddress(Address fhirAddress, long patientId, long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
-        PatientAddress patientAddressWriter = (PatientAddress) csvWriter;
+    private void writeAddress(Address fhirAddress, long patientId, long enteredByPractitionerId, PcrTransformParams params,AbstractPcrCsvWriter csvWriter) throws Exception {
+        OutputContainer outputContainer = params.getOutputContainer();
+        PatientAddress patientAddressWriter = outputContainer.getPatientAddresses();
         Period period = fhirAddress.getPeriod();
         Date startDate = period.getStart();
         Date endDate = period.getEnd();
-        long longId;
 
         RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
 
-        longId = idMap.getPcrId();
+        long longId = idMap.getPcrId();  // link patient address to address table
 
-        patientAddressWriter.writeUpsert(Long.parseLong(fhirAddress.getId()),
+        patientAddressWriter.writeUpsert(null,
                 patientId,
                 Long.parseLong(fhirAddress.getType().toCode()),
-                Long.parseLong(fhirAddress.getId()),
+                longId,
                 startDate,
                 endDate,
                 enteredByPractitionerId
         );
-        org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
+        org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = outputContainer.getAddresses();
         List<StringType> addressList = fhirAddress.getLine();
         String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
         String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
@@ -539,7 +525,11 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-
+private static String removeParen(String in) {
+    String ret = in.replace("[", "");
+    ret = in.replace("]", "");
+    return ret;
+}
 
     /*private static byte[] getEncryptedSalt() throws Exception {
         if (saltBytes == null) {

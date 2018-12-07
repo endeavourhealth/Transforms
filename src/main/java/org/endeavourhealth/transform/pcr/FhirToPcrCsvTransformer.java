@@ -323,7 +323,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 //            params.setEnterprisePersonId(enterprisePersonId);
         }
 
-        //tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);  -NOT v1
+        tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
         //tranformResources(ResourceType.Appointment, resources, threadPool, params);  -NOT v1
         //tranformResources(ResourceType.Encounter, resources, threadPool, params); -NOT v1
         tranformResources(ResourceType.Condition, resources, threadPool, params);
