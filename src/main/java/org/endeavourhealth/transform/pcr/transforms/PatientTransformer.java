@@ -227,7 +227,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasAddress() && fhirPatient.getAddress() != null) {
             for (Address address : fhirPatient.getAddress()) {
-                if (address.hasUse() && address.getUse()!=null) {
+                if (address.hasUse() && address.getUse()!=null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
                     if (address.getUse().equals(Address.AddressUse.HOME)) {
                         LOG.debug("Patient has a HOME address");
                         fhirAddress = address;
@@ -237,7 +237,7 @@ public class PatientTransformer extends AbstractTransformer {
             //If no home address try a temporary address
             if (fhirAddress == null) {
                 for (Address address : fhirPatient.getAddress()) {
-                    if (address.hasUse() && address.getUse()!=null) {
+                    if (address.hasUse() && address.getUse()!=null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
                         if (address.getUse().equals(Address.AddressUse.TEMP)) {
                             LOG.debug("Patient has a TEMP address");
                             fhirAddress = address;
@@ -254,7 +254,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirAddress != null ) {
                 String fhirAdId = fhirAddress.getId();
-                addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirAdId);
+                addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirPatient.getId());
                 LOG.debug("Address id for patient is " + addressId);
 
                 PatientAddress patientAddressWriter = data.getPatientAddresses();
