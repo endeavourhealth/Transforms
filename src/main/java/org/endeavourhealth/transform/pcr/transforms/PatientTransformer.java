@@ -226,8 +226,8 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirAddress != null ) {
             if (fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
                 String fhirAdId = fhirAddress.getId();
-                Reference adRef = ReferenceHelper.createReference(ResourceType.Location, fhirAdId);
                 addressId = findOrCreatePcrId(params, ResourceType.Location.name(), fhirAdId);
+                LOG.debug("Address id for patient is " + addressId);
             }
             PatientAddress patientAddressWriter = data.getPatientAddresses();
             writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
