@@ -252,7 +252,7 @@ public class PatientTransformer extends AbstractTransformer {
 
 
 
-        if (fhirAddress != null && fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
+        if (fhirAddress != null ) {
                 String fhirAdId = fhirAddress.getId();
                 addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirAdId);
                 LOG.debug("Address id for patient is " + addressId);
