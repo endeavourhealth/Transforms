@@ -223,14 +223,14 @@ public class PatientTransformer extends AbstractTransformer {
         writePatientIdentifier(id, fhirPatient, enteredByPractitionerId, patientIdentifierModel);
         Long addressId = null;
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
-        if (fhirAddress != null ) {
-            if (fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
+        if (fhirAddress != null && fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
                 String fhirAdId = fhirAddress.getId();
                 addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirAdId);
                 LOG.debug("Address id for patient is " + addressId);
-            }
-            PatientAddress patientAddressWriter = data.getPatientAddresses();
-            writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
+
+                PatientAddress patientAddressWriter = data.getPatientAddresses();
+                writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
+
         } else {
             LOG.debug("Address is null for " + id);
         }
