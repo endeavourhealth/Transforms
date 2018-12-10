@@ -253,7 +253,7 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-    private void writeAddress(Address fhirAddress, long patientId, long enteredByPractitionerId, PcrTransformParams params,AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writeAddress(Address fhirAddress, Long patientId, Long enteredByPractitionerId, PcrTransformParams params,AbstractPcrCsvWriter csvWriter) throws Exception {
         OutputContainer outputContainer = params.getOutputContainer();
         PatientAddress patientAddressWriter = outputContainer.getPatientAddresses();
         Period period = fhirAddress.getPeriod();
@@ -262,7 +262,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
 
-        long longId = idMap.getPcrId();  // link patient address to address table
+        Long longId = idMap.getPcrId();  // link patient address to address table
 
         patientAddressWriter.writeUpsert(null,
                 patientId,
