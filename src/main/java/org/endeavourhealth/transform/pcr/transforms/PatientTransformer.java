@@ -154,6 +154,7 @@ public class PatientTransformer extends AbstractTransformer {
             Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
+        if (enteredByPractitionerId == null) { enteredByPractitionerId = -1L;}
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
