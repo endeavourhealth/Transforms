@@ -222,7 +222,31 @@ public class PatientTransformer extends AbstractTransformer {
         PatientIdentifier patientIdentifierModel = data.getPatientIdentifiers();
         writePatientIdentifier(id, fhirPatient, enteredByPractitionerId, patientIdentifierModel);
         Long addressId = null;
-        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
+        Address fhirAddress = null;
+        // AddressHelper.findHomeAddress(fhirPatient);
+
+        if (fhirPatient.hasAddress() && fhirPatient.getAddress() != null) {
+            for (Address address : fhirPatient.getAddress()) {
+                if (address.hasUse() && address.getUse()!=null) {
+                    if (address.getUse().equals(Address.AddressUse.HOME)) {
+                        fhirAddress = address;
+                    }
+                }
+            }
+            //If no home address try a temporary address
+            if (fhirAddress == null) {
+                for (Address address : fhirPatient.getAddress()) {
+                    if (address.hasUse() && address.getUse()!=null) {
+                        if (address.getUse().equals(Address.AddressUse.TEMP)) {
+                            fhirAddress = address;
+                        }
+                    }
+                }
+            }
+        }
+
+
+
         if (fhirAddress != null && fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
                 String fhirAdId = fhirAddress.getId();
                 addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirAdId);
