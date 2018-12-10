@@ -260,6 +260,12 @@ public class PatientTransformer extends AbstractTransformer {
         Period period = fhirAddress.getPeriod();
         Date startDate = period.getStart();
         Date endDate = period.getEnd();
+        Long addressType;
+        if (fhirAddress.getType() != null && StringUtils.isNumeric(fhirAddress.getType().toCode())) {
+            addressType = Long.parseLong(fhirAddress.getType().toCode());
+        } else {
+            addressType = -1L;
+        }
 
         RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
 
@@ -267,7 +273,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         patientAddressWriter.writeUpsert(null,
                 patientId,
-                Long.parseLong(fhirAddress.getType().toCode()),
+                addressType,
                 longId,
                 startDate,
                 endDate,
