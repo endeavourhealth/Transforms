@@ -229,6 +229,7 @@ public class PatientTransformer extends AbstractTransformer {
             for (Address address : fhirPatient.getAddress()) {
                 if (address.hasUse() && address.getUse()!=null) {
                     if (address.getUse().equals(Address.AddressUse.HOME)) {
+                        LOG.debug("Patient has a HOME address");
                         fhirAddress = address;
                     }
                 }
@@ -238,10 +239,14 @@ public class PatientTransformer extends AbstractTransformer {
                 for (Address address : fhirPatient.getAddress()) {
                     if (address.hasUse() && address.getUse()!=null) {
                         if (address.getUse().equals(Address.AddressUse.TEMP)) {
+                            LOG.debug("Patient has a TEMP address");
                             fhirAddress = address;
                         }
                     }
                 }
+            }
+            if (fhirAddress == null) {
+                fhirAddress = fhirPatient.getAddress().get(0);
             }
         }
 
