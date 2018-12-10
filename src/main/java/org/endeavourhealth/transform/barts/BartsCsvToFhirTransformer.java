@@ -89,8 +89,6 @@ public abstract class BartsCsvToFhirTransformer {
             PRSNLREFTransformer.transform(createParsers(fileMap, parserMap, "PRSNLREF", csvHelper, true), fhirResourceFiler, csvHelper);
 
             //patient PRE transformers - to cache stuff fast
-
-            //don't re-run these pre-transforms for the PP... bulk files. They've all been run without error, so skip it to save time
             PPALIPreTransformer.transform(createParsers(fileMap, parserMap, "PPALI", csvHelper, false), fhirResourceFiler, csvHelper); //this must be FIRST
             PPADDPreTransformer.transform(createParsers(fileMap, parserMap, "PPADD", csvHelper, false), fhirResourceFiler, csvHelper);
             PPNAMPreTransformer.transform(createParsers(fileMap, parserMap, "PPNAM", csvHelper, false), fhirResourceFiler, csvHelper);

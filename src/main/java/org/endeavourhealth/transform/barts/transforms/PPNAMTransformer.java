@@ -112,7 +112,7 @@ public class PPNAMTransformer {
             nameBuilder.setEndDate(d, endDate);
         }
 
-        //remove any pre-existing name that was added by the ADT feed
+        //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();
         removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
 

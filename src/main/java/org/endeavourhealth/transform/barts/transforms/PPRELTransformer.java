@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,8 +194,26 @@ public class PPRELTransformer {
             codeableConceptBuilder.setText(relationshipTypeDesc, relationshipTypeDescCell);
         }
 
+        //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT
+        //feed populated relationships. In place of that, just validate that there are no relationships without IDs
+        //in case the ADT feed is ever updated to add them - this will highlight that we need to remove duplciates here
+        checkForRelationshipsWithoutIds(patientBuilder);
+
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+    }
+
+    private static void checkForRelationshipsWithoutIds(PatientBuilder patientBuilder) throws Exception {
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasContact()) {
+            return;
+        }
+
+        for (Patient.ContactComponent contact: patient.getContact()) {
+            if (!contact.hasId()) {
+                throw new Exception("Patient " + patient.getId() + " has a relationship without an ID (does ADT feed now populate relationships?)");
+            }
+        }
     }
 
 

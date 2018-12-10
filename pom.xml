@@ -16,7 +16,7 @@
 
         <eds-core.version>1.314-SNAPSHOT</eds-core.version>
         <eds-fhir.version>1.79-SNAPSHOT</eds-fhir.version>
-        <eds-utility.version>1.36-SNAPSHOT</eds-utility.version>
+        <eds-utility.version>1.37-SNAPSHOT</eds-utility.version>
         <eds-cache.version>1.2-SNAPSHOT</eds-cache.version>
         <eds-im.version>1.4-SNAPSHOT</eds-im.version>
 
