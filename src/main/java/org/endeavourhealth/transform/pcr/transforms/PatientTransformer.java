@@ -9,13 +9,11 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
-import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
@@ -23,7 +21,6 @@ import org.endeavourhealth.transform.pcr.outputModels.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Practitioner;
-import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,7 +223,7 @@ public class PatientTransformer extends AbstractTransformer {
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
             PatientAddress patientAddressWriter = data.getPatientAddresses();
-            writeAddress(fhirAddress, Long.parseLong(fhirPatient.getId()), enteredByPractitionerId, params, patientAddressWriter);
+            writeAddress(fhirAddress, id, enteredByPractitionerId, params, patientAddressWriter);
         } else {
             LOG.debug("Address is null for " + id);
         }
@@ -342,97 +339,7 @@ public class PatientTransformer extends AbstractTransformer {
         return null;
     }
 
-    private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
 
-        //check if OUR patient record is an active one at a GP practice, in which case it definitely should define the person record
-        String patientId = fhirPatient.getId();
-        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientId));
-
-        if (patientSearch != null //if we get null back, then we'll have deleted the patient, so just skip the ID
-                && isActive(patientSearch)
-                && getPatientSearchOrgScore(patientSearch) == BEST_ORG_SCORE) {
-            return true;
-        }
-
-        //if we fail the above check, we need to know what other services are in our protocol, so we can see
-        //which service has the most relevant data for the person record
-        LibraryItem libraryItem = LibraryRepositoryHelper.getLibraryItemUsingCache(protocolId);
-        Protocol protocol = libraryItem.getProtocol();
-        Set<String> serviceIdsInProtocol = new HashSet<>();
-
-        for (ServiceContract serviceContract : protocol.getServiceContract()) {
-            if (serviceContract.getType().equals(ServiceContractType.SUBSCRIBER)
-                    && serviceContract.getActive() == ServiceContractActive.TRUE) {
-
-                serviceIdsInProtocol.add(serviceContract.getService().getUuid());
-            }
-        }
-
-        //get the other patient IDs for our person record
-        List<PatientSearch> patientSearchesInProtocol = new ArrayList<>();
-        patientSearchesInProtocol.add(patientSearch);
-
-        Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
-        for (String otherPatientId : allPatientIdMap.keySet()) {
-
-            //skip the patient ID we've already retrieved
-            if (otherPatientId.equals(patientId)) {
-                continue;
-            }
-
-            PatientSearch otherPatientSearch = patientSearchDal.searchByPatientId(UUID.fromString(otherPatientId));
-
-            //if we get null back, then we'll have deleted the patient, so just skip the ID
-            if (otherPatientSearch == null) {
-                LOG.error("Failed to get patient search record for patient ID " + otherPatientId);
-                continue;
-            }
-
-            //if this patient search record isn't in our protocol, skip it
-            String otherPatientSearchService = otherPatientSearch.getServiceId().toString();
-            if (!serviceIdsInProtocol.contains(otherPatientSearchService)) {
-                continue;
-            }
-
-            patientSearchesInProtocol.add(otherPatientSearch);
-        }
-
-        //sort the patient searches so active GP ones are first
-        patientSearchesInProtocol.sort((o1, o2) -> {
-
-            //active records always supersede inactive ones
-            boolean o1Active = isActive(o1);
-            boolean o2Active = isActive(o2);
-            if (o1Active && !o2Active) {
-                return -1;
-            } else if (!o1Active && o2Active) {
-                return 1;
-            } else {
-                //if they both have the same active state, then check the org type. We want
-                //GP practices first, then hospital records, then everything else
-                int o1OrgScore = getPatientSearchOrgScore(o1);
-                int o2OrgScore = getPatientSearchOrgScore(o2);
-                if (o1OrgScore > o2OrgScore) {
-                    return -1;
-                } else if (o1OrgScore < o2OrgScore) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }
-        });
-
-        //check if the best patient search record matches our patient ID. If it does, then our patient
-        //should be the one that is used to define the person table.
-        PatientSearch bestPatientSearch = patientSearchesInProtocol.get(0);
-
-        //if there are no patient search records (i.e. patient is deleted everywhere), just return false since there doesn't need to be a person record
-        if (bestPatientSearch == null) {
-            return false;
-        }
-
-        return bestPatientSearch.getPatientId().equals(patientId);
-    }
 
     private static int getPatientSearchOrgScore(PatientSearch patientSearch) {
         String typeCode = patientSearch.getOrganisationTypeCode();
