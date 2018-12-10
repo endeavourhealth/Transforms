@@ -32,11 +32,12 @@ public class PPATITransformer {
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
 
-                //no try/catch as records in this file aren't independent and can't be re-processed on their own
+
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
 
+                //no try/catch as records in this file aren't independent and can't be re-processed on their own
                 createPatient((PPATI) parser, fhirResourceFiler, csvHelper);
             }
         }

@@ -36,8 +36,8 @@ public class PPNAMPreTransformer {
 
     public static void processRecord(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
-        //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
+        //all this pre-transformer does is quickly save the name ID -> person ID mappings, so we can use that mapping
+        //if the PPNAM record is ever deleted (in which case we get the name ID but not the person ID)
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
             return;
