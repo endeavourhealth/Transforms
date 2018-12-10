@@ -234,6 +234,8 @@ public class PatientTransformer extends AbstractTransformer {
                     }
                 }
             }
+            //TODO - the whole address codce here needs rewriting to ensure address
+            // history and unique ids for addresses.
             //If no home address try a temporary address
             if (fhirAddress == null) {
                 for (Address address : fhirPatient.getAddress()) {
