@@ -13,7 +13,6 @@ import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
-import org.endeavourhealth.core.database.rdbms.subscriberTransform.models.RdbmsPcrIdMap;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
@@ -99,7 +98,7 @@ public class PatientTransformer extends AbstractTransformer {
                     }
                     if (nom.getGiven().size() > 1) {
                         StringBuilder midnames = new StringBuilder();
-                        for (int i=1; i<nom.getGiven().size(); i++) {
+                        for (int i = 1; i < nom.getGiven().size(); i++) {
                             midnames.append(nom.getGiven().get(i).toString());
                             midnames.append(" ");
                         }
@@ -154,7 +153,9 @@ public class PatientTransformer extends AbstractTransformer {
             Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
-        if (enteredByPractitionerId == null) { enteredByPractitionerId = -1L;}
+        if (enteredByPractitionerId == null) {
+            enteredByPractitionerId = -1L;
+        }
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
@@ -220,11 +221,16 @@ public class PatientTransformer extends AbstractTransformer {
         OutputContainer data = params.getOutputContainer();
         PatientIdentifier patientIdentifierModel = data.getPatientIdentifiers();
         writePatientIdentifier(id, fhirPatient, enteredByPractitionerId, patientIdentifierModel);
-
+        Long addressId = null;
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
-        if (fhirAddress != null) {
+        if (fhirAddress != null ) {
+            if (fhirAddress.getId() != null && !fhirAddress.getId().isEmpty()) {
+                String fhirAdId = fhirAddress.getId();
+                Reference adRef = ReferenceHelper.createReference(ResourceType.Location, fhirAdId);
+                addressId = findOrCreatePcrId(params, ResourceType.Location.name(), fhirAdId);
+            }
             PatientAddress patientAddressWriter = data.getPatientAddresses();
-            writeAddress(fhirAddress, id, enteredByPractitionerId, params, patientAddressWriter);
+            writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
         } else {
             LOG.debug("Address is null for " + id);
         }
@@ -254,7 +260,7 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-    private void writeAddress(Address fhirAddress, Long patientId, Long enteredByPractitionerId, PcrTransformParams params,AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writeAddress(Address fhirAddress, Long patientId, Long addressId, Long enteredByPractitionerId, PcrTransformParams params, AbstractPcrCsvWriter csvWriter) throws Exception {
         OutputContainer outputContainer = params.getOutputContainer();
         PatientAddress patientAddressWriter = outputContainer.getPatientAddresses();
         Period period = fhirAddress.getPeriod();
@@ -266,19 +272,7 @@ public class PatientTransformer extends AbstractTransformer {
         } else {
             addressType = -1L;
         }
-
-        RdbmsPcrIdMap idMap = new RdbmsPcrIdMap();
-
-        Long longId = idMap.getPcrId();  // link patient address to address table
-
-        patientAddressWriter.writeUpsert(null,
-                patientId,
-                addressType,
-                longId,
-                startDate,
-                endDate,
-                enteredByPractitionerId
-        );
+        // For referential integrity we need to write the address first so the patientAddress can refer to it
         org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = outputContainer.getAddresses();
         List<StringType> addressList = fhirAddress.getLine();
         String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
@@ -289,8 +283,17 @@ public class PatientTransformer extends AbstractTransformer {
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
         Long propertyTypeId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         //TODO IMClient.getOrCreateConceptId("Address.AddressUse." + fhirAddress.getUse().toCode());
-        addressWriter.writeUpsert(longId, al1, al2, al3, al4, postcode,
+        addressWriter.writeUpsert(addressId, al1, al2, al3, al4, postcode,
                 null, null, propertyTypeId);
+        patientAddressWriter.writeUpsert(null,
+                patientId,
+                addressType,
+                addressId,
+                startDate,
+                endDate,
+                enteredByPractitionerId
+        );
+
 
     }
 
@@ -345,7 +348,6 @@ public class PatientTransformer extends AbstractTransformer {
 
         return null;
     }
-
 
 
     private static int getPatientSearchOrgScore(PatientSearch patientSearch) {
@@ -435,11 +437,11 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-private static String removeParen(String in) {
-    String ret = in.replace("[", "");
-    ret = in.replace("]", "");
-    return ret;
-}
+    private static String removeParen(String in) {
+        String ret = in.replace("[", "");
+        ret = in.replace("]", "");
+        return ret;
+    }
 
     /*private static byte[] getEncryptedSalt() throws Exception {
         if (saltBytes == null) {
