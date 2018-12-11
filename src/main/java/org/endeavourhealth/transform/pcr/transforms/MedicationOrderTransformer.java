@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
@@ -34,7 +35,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         MedicationOrder fhir = (MedicationOrder) resource;
 
         long id;
-        long owningOrganisationId;
+        Long owningOrganisationId;
         Long patientId;
         Long encounterId = null;
         Long effectivePractitionerId = null;
@@ -69,7 +70,12 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Integer originalSystem = null;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        //owningOrganisationId = params.getPcrOrganisationId().longValue();
+        Reference reference = ReferenceHelper.createReference(ResourceType.MedicationOrder, fhir.getId());
+        owningOrganisationId = transformOnDemandAndMapId(reference, params);
+        if (owningOrganisationId == null) {
+            owningOrganisationId = params.getPcrOrganisationId().longValue();
+        }
         patientId = params.getPcrPatientId();
 
         if (fhir.hasPrescriber()) {

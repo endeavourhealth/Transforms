@@ -61,7 +61,7 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         long id;
-        long organizationId;
+        Long organizationId;
         String nhsNumber = null;
         Long nhsNumberVerificationTermId = null;
         Date dateOfBirth = null;
@@ -81,7 +81,7 @@ public class PatientTransformer extends AbstractTransformer {
 
 
         id = pcrId.longValue();
-        organizationId = params.getPcrOrganisationId().longValue();
+       // organizationId = params.getPcrOrganisationId().longValue();
 
 
         dateOfBirth = fhirPatient.getBirthDate();
@@ -115,6 +115,11 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        Reference organisationReference = fhirPatient.getManagingOrganization();
+        organizationId = transformOnDemandAndMapId(organisationReference, params);
+        if (organizationId == null) {
+            organizationId = params.getPcrOrganisationId().longValue();
+        }
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();
@@ -227,7 +232,7 @@ public class PatientTransformer extends AbstractTransformer {
 
         if (fhirPatient.hasAddress() && fhirPatient.getAddress() != null) {
             for (Address address : fhirPatient.getAddress()) {
-                if (address.hasUse() && address.getUse()!=null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
+                if (address.hasUse() && address.getUse() != null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
                     if (address.getUse().equals(Address.AddressUse.HOME)) {
                         LOG.debug("Patient has a HOME address");
                         fhirAddress = address;
@@ -239,7 +244,7 @@ public class PatientTransformer extends AbstractTransformer {
             //If no home address try a temporary address
             if (fhirAddress == null) {
                 for (Address address : fhirPatient.getAddress()) {
-                    if (address.hasUse() && address.getUse()!=null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
+                    if (address.hasUse() && address.getUse() != null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
                         if (address.getUse().equals(Address.AddressUse.TEMP)) {
                             LOG.debug("Patient has a TEMP address");
                             fhirAddress = address;
@@ -253,14 +258,13 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
 
+        if (fhirAddress != null) {
+            String fhirAdId = fhirAddress.getId();
+            addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirPatient.getId());
+            LOG.debug("Address id for patient is " + addressId);
 
-        if (fhirAddress != null ) {
-                String fhirAdId = fhirAddress.getId();
-                addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirPatient.getId());
-                LOG.debug("Address id for patient is " + addressId);
-
-                PatientAddress patientAddressWriter = data.getPatientAddresses();
-                writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
+            PatientAddress patientAddressWriter = data.getPatientAddresses();
+            writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
 
         } else {
             LOG.debug("Address is null for " + id);
@@ -473,12 +477,5 @@ public class PatientTransformer extends AbstractTransformer {
         ret = ret.replace("]", "");
         return ret;
     }
-
-    /*private static byte[] getEncryptedSalt() throws Exception {
-        if (saltBytes == null) {
-            saltBytes = Resources.getResourceAsBytes(PSEUDO_SALT_RESOURCE);
-        }
-        return saltBytes;
-    }*/
 
 }

@@ -74,9 +74,13 @@ public class ObservationTransformer extends AbstractTransformer {
         Long referenceRangeId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        //owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
-
+        Reference obsreference = ReferenceHelper.createReference(ResourceType.Observation, fhir.getId());
+        owningOrganisationId = transformOnDemandAndMapId(obsreference, params);
+        if (owningOrganisationId == null) {
+            owningOrganisationId = params.getPcrOrganisationId().longValue();
+        }
         if (fhir.hasEncounter()) {
 
             Reference encounterReference = fhir.getEncounter();

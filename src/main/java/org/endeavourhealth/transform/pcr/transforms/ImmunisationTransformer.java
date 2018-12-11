@@ -39,8 +39,16 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
+        Reference reference = fhir.getEncounter();
+        owningOrganisationId = transformOnDemandAndMapId(reference, params);
+        if (owningOrganisationId == null) {
+            owningOrganisationId = params.getPcrOrganisationId().longValue();
+        }
+
+
+
         id = pcrId.longValue();
-        owningOrganisationId = params.getPcrOrganisationId();
+       // owningOrganisationId = params.getPcrOrganisationId();
         patientId = params.getPcrPatientId();
 
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;

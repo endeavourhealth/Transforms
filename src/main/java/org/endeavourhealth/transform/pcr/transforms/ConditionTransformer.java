@@ -3,12 +3,15 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
+import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.Observation;
-import org.endeavourhealth.transform.pcr.outputModels.*;
+import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
+import org.endeavourhealth.transform.pcr.outputModels.Problem;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +72,13 @@ public class ConditionTransformer extends AbstractTransformer {
         Long typeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
-        owningOrganisationId = params.getPcrOrganisationId().longValue();
+        //owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
-
+        Reference reference = ReferenceHelper.createReference(ResourceType.Condition, fhir.getId());
+        owningOrganisationId = transformOnDemandAndMapId(reference, params);
+        if (owningOrganisationId == null) {
+            owningOrganisationId = params.getPcrOrganisationId().longValue();
+        }
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
             encounterId = findPcrId(params, encounterReference);
