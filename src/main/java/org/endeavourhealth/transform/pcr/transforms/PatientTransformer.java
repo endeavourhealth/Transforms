@@ -470,7 +470,7 @@ public class PatientTransformer extends AbstractTransformer {
 
     private static String removeParen(String in) {
         String ret = in.replace("[", "");
-        ret = in.replace("]", "");
+        ret = ret.replace("]", "");
         return ret;
     }
 
