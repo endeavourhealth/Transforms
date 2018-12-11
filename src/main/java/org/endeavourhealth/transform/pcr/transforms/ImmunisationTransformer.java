@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
@@ -39,7 +40,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Integer effectiveDatePrecisionId = null;
         Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
-        Reference reference = fhir.getEncounter();
+
+        Reference reference = ReferenceHelper.createReference(ResourceType.Immunization,fhir.getId());
         owningOrganisationId = transformOnDemandAndMapId(reference, params);
         if (owningOrganisationId == null) {
             owningOrganisationId = params.getPcrOrganisationId().longValue();
