@@ -44,12 +44,14 @@ public class FhirHl7v2Filer {
         saveAdminResources(fhirResourceFiler, bundle);
         savePatientResources(fhirResourceFiler, bundle);
 
+
+        //ensure everything is saved before we try and do any of the merging stuff
+        fhirResourceFiler.waitUntilEverythingIsSaved();
+
+
         //need to handle the parameters object being null since we're not receiving it yet in AIMES
         try {
             Parameters parameters = findParameters(bundle);
-
-            //ensure everything is saved before we try and do any of the merging stuff
-            fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //see if there's any special work we need to do for merging/moving
             String adtMessageType = findAdtMessageType(bundle);
