@@ -81,7 +81,7 @@ public class PatientTransformer extends AbstractTransformer {
 
 
         id = pcrId.longValue();
-       // organizationId = params.getPcrOrganisationId().longValue();
+        organizationId = params.getPcrOrganisationId().longValue();
 
 
         dateOfBirth = fhirPatient.getBirthDate();
@@ -115,11 +115,7 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-        Reference organisationReference = fhirPatient.getManagingOrganization();
-        organizationId = transformOnDemandAndMapId(organisationReference, params);
-        if (organizationId == null) {
-            organizationId = params.getPcrOrganisationId().longValue();
-        }
+
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();

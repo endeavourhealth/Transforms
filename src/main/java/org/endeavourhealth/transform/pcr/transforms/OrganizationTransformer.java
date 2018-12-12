@@ -38,7 +38,7 @@ public class OrganizationTransformer extends AbstractTransformer {
 
         id = pcrId.longValue();
 
-        //LOG.trace("Transforming Organisation " + fhir.getId() + " as enterprise ID " + id);
+        LOG.trace("Transforming Organisation " + fhir.getId() + " as PCR ID " + id);
 
         if (fhir.hasIdentifier()) {
             odsCode = IdentifierHelper.findIdentifierValue(fhir.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
@@ -65,7 +65,7 @@ public class OrganizationTransformer extends AbstractTransformer {
         } else {
             parentOrganisationId = id;
         }
-//TODO restore
+//TODO restore. Not sure any transforms set type?
 //        if (fhir.hasType()) {
 //            CodeableConcept cc = fhir.getType();
 //            for (Coding coding: cc.getCoding()) {

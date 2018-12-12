@@ -296,31 +296,18 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
             threadPool = new ThreadPool(threads, 1000);
         }
 
-        //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
+        //having done any patient resource in our batch, we should have created an PCR patient ID and person ID that we can use for all remaining resources
         String discoveryPatientId = findPatientId(resources);
         if (!Strings.isNullOrEmpty(discoveryPatientId)) {
             Long pcrPatientId = AbstractTransformer.findPcrId(params, ResourceType.Patient.toString(), discoveryPatientId);
             if (pcrPatientId == null) {
                 //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
                 //care where we don't have patients. If we're in this situation, then don't send over the data.
-                LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
+                LOG.warn("No PCR patient ID for patient " + discoveryPatientId + " so not doing patient resources");
                 return;
-                //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
-            }
+                }
             params.setPcrPatientId(pcrPatientId);
 
-//            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
-//
-//            //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
-//            //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
-//            //return out without processing any of the remaining resources, since they're for a deleted patient.
-//            if (Strings.isNullOrEmpty(discoveryPersonId)) {
-//                return;
-//            }
-//
-//            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getconfigName());
-//            Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-//            params.setEnterprisePersonId(enterprisePersonId);
         }
 
         tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
@@ -357,7 +344,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
                 resourceTypesMissed.add(resourceType);
             }
             String s = String.join(", ", resourceTypesMissed);
-            throw new TransformException("Transform to enterprise doesn't handle " + s + " resource type(s)");
+            throw new TransformException("Transform to PCR doesn't handle " + s + " resource type(s)");
         }
     }
 
@@ -572,45 +559,6 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
 
 
 
-    /*private static void tranformResources(ResourceType resourceType,
-                                          AbstractTransformer transformer,
-                                          OutputContainer data,
-                                          List<ResourceByExchangeBatch> resources,
-                                          Map<String, ResourceByExchangeBatch> resourcesMap,
-                                          Long enterpriseOrganisationId,
-                                          Long enterprisePatientId,
-                                          Long enterprisePersonId,
-                                          String configName) throws Exception {
-
-        HashSet<ResourceByExchangeBatch> resourcesProcessed = new HashSet<>();
-
-        *//*for (int i=resources.size()-1; i>=0; i--) {
-            ResourceByExchangeBatch resource = resources.get(i);*//*
-        for (ResourceByExchangeBatch resource: resources) {
-            if (resource.getResourceType().equals(resourceType.toString())) {
-
-                //we use this function with a null transformer for resources we want to ignore
-                if (transformer != null) {
-                    try {
-                        transformer.transform(resource, data, resourcesMap, enterpriseOrganisationId, enterprisePatientId, enterprisePersonId, configName);
-                    } catch (Exception ex) {
-                        throw new TransformException("Exception transforming " + resourceType + " " + resource.getResourceId(), ex);
-                    }
-
-                }
-
-                resourcesProcessed.add(resource);
-                //resources.remove(i);
-            }
-        }
-
-        //remove all the resources we processed, so we can check for ones we missed at the end
-        resources.removeAll(resourcesProcessed);
-    }*/
-
-    /**
-     * hashes the resources by a reference to them, so the transforms can quickly look up dependant resources
-     */
     private static Map<String, ResourceWrapper> hashResourcesByReference(List<ResourceWrapper> allResources) throws Exception {
 
         Map<String, ResourceWrapper> ret = new HashMap<>();

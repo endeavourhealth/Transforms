@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
@@ -70,12 +70,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
         Integer originalSystem = null;
 
         id = pcrId.longValue();
-        //owningOrganisationId = params.getPcrOrganisationId().longValue();
-        Reference reference = ReferenceHelper.createReference(ResourceType.MedicationOrder, fhir.getId());
-        owningOrganisationId = transformOnDemandAndMapId(reference, params);
-        if (owningOrganisationId == null) {
-            owningOrganisationId = params.getPcrOrganisationId().longValue();
-        }
+        owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
 
         if (fhir.hasPrescriber()) {
@@ -130,6 +125,8 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 }
                 if (codes.getSystem() != null) {
                     originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+                } else {
+                    originalCodeScheme = FhirToPcrHelper.getCodingScheme(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
                 }
             }
         } else return;

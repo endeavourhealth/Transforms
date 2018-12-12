@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.pcr.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
@@ -41,16 +40,12 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
 
-        Reference reference = ReferenceHelper.createReference(ResourceType.Immunization,fhir.getId());
-        owningOrganisationId = transformOnDemandAndMapId(reference, params);
-        if (owningOrganisationId == null) {
-            owningOrganisationId = params.getPcrOrganisationId().longValue();
-        }
+
 
 
 
         id = pcrId.longValue();
-       // owningOrganisationId = params.getPcrOrganisationId();
+        owningOrganisationId = params.getPcrOrganisationId();
         patientId = params.getPcrPatientId();
 
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;

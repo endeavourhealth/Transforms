@@ -87,20 +87,20 @@ public class PractitionerTransformer extends AbstractTransformer {
 //                    }
 //                }
 //            }
-
-            if (role.hasManagingOrganization()) {
-                Reference organisationReference = role.getManagingOrganization();
-                practitionerPcrOrgId = transformOnDemandAndMapId(organisationReference, params);
-            }
+//TODO do we need this or something like?
+//            if (role.hasManagingOrganization()) {
+//                Reference organisationReference = role.getManagingOrganization();
+//                practitionerPcrOrgId = transformOnDemandAndMapId(organisationReference, params);
+//            }
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
 
         //if we failed to find a proper organisation ID for the practitioner, assign it to the
         //organisation we're doing the transform for
-        if (practitionerPcrOrgId == null) {
+//        if (practitionerPcrOrgId == null) {
             //LOG.trace("No role, so setting to the enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
             practitionerPcrOrgId = params.getPcrOrganisationId();
-        }
+//        }
 
         organisationId = practitionerPcrOrgId.longValue();
 

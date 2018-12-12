@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.pcr.transforms;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PcrIdDalI;
 import org.endeavourhealth.im.client.IMClient;
@@ -46,7 +45,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Long snomedConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = pcrId.longValue();
-        //owningOrganisationId = params.getPcrOrganisationId().longValue();
+       owningOrganisationId = params.getPcrOrganisationId().longValue();
         patientId = params.getPcrPatientId();
       //  String codeSystem = null;
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
@@ -62,11 +61,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Integer originalCodeScheme=null;
         Integer originalSystem=null;
 
-        Reference reference = ReferenceHelper.createReference(ResourceType.AllergyIntolerance, fhir.getId());
-        owningOrganisationId = transformOnDemandAndMapId(reference, params);
-        if (owningOrganisationId == null) {
-            owningOrganisationId = params.getPcrOrganisationId().longValue();
-        }
+
 
         //TODO: - manifestation not currently supported in existing FHIR transforms
         Long manifestationConceptId = null;
