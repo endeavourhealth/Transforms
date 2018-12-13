@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
 import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
@@ -101,6 +102,9 @@ public class ConditionTransformer extends AbstractTransformer {
 
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
+            if (codes.getSystem()!=null) {
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            }
 
         } else return;
 
