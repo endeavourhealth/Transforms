@@ -116,7 +116,6 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();
             /*cal.setTime(dod);
@@ -150,7 +149,6 @@ public class PatientTransformer extends AbstractTransformer {
         //recorded/entered by
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.RECORDED_BY);
         if (enteredByPractitionerExtension != null) {
-
             Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
             enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
         }
@@ -183,7 +181,6 @@ public class PatientTransformer extends AbstractTransformer {
                 nhsNumberVerificationTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                 //TODO IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
             }
-
         } else {
             isSpineSensitive = false;
         }
@@ -200,38 +197,13 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-
         org.endeavourhealth.transform.pcr.outputModels.Patient patientWriter = (org.endeavourhealth.transform.pcr.outputModels.Patient) csvWriter;
-
         nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-
-        //   LOG.trace("Call patientWrite for id:" + id + ",discId:" + discoveryPersonId + ",NHS:" + nhsNumber);
-        patientWriter.writeUpsert(id,
-                organizationId,
-                nhsNumber,
-                nhsNumberVerificationTermId,
-                dateOfBirth,
-                dateOfDeath,
-                patientGenderId,
-                usualPractitionerId,
-                careProviderId,
-                enteredByPractitionerId,
-                title,
-                firstName,
-                middleNames,
-                lastName,
-                previousLastName,
-                homeAddressId,
-                isSpineSensitive,
-                ethnicCode);
-
         OutputContainer data = params.getOutputContainer();
         PatientIdentifier patientIdentifierModel = data.getPatientIdentifiers();
         writePatientIdentifier(id, fhirPatient, enteredByPractitionerId, patientIdentifierModel);
         Long addressId = null;
         Address fhirAddress = null;
-        // AddressHelper.findHomeAddress(fhirPatient);
-
         if (fhirPatient.hasAddress() && fhirPatient.getAddress() != null) {
             for (Address address : fhirPatient.getAddress()) {
                 if (address.hasUse() && address.getUse() != null && address.hasPeriod() && !address.getPeriod().hasEnd()) {
@@ -241,7 +213,7 @@ public class PatientTransformer extends AbstractTransformer {
                     }
                 }
             }
-            //TODO - the whole address codce here needs rewriting to ensure address
+            //TODO - the whole address code here needs rewriting to ensure address
             // history and unique ids for addresses.
             //If no home address try a temporary address
             if (fhirAddress == null) {
@@ -259,18 +231,34 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-
         if (fhirAddress != null) {
             String fhirAdId = fhirAddress.getId();
             addressId = findOrCreatePcrId(params, ResourceType.Location.toString(), fhirPatient.getId());
             LOG.debug("Address id for patient is " + addressId);
-
             PatientAddress patientAddressWriter = data.getPatientAddresses();
             writeAddress(fhirAddress, id, addressId, enteredByPractitionerId, params, patientAddressWriter);
-
         } else {
             LOG.debug("Address is null for " + id);
         }
+        patientWriter.writeUpsert(id,
+                organizationId,
+                nhsNumber,
+                nhsNumberVerificationTermId,
+                dateOfBirth,
+                dateOfDeath,
+                patientGenderId,
+                usualPractitionerId,
+                careProviderId,
+                enteredByPractitionerId,
+                title,
+                firstName,
+                middleNames,
+                lastName,
+                previousLastName,
+                addressId,
+                isSpineSensitive,
+                ethnicCode);
+
 
 //        if (fhirPatient.hasContact()) {
 //            List<Patient.ContactComponent> contactList = fhirPatient.getContact();
