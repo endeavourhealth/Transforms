@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
@@ -116,7 +117,6 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
 
-
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();
             /*cal.setTime(dod);
@@ -163,9 +163,15 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             List<Coding> codes = codeableConcept.getCoding();
             if (codes != null && !codes.isEmpty()) {
-                ethnicCode = codes.get(0).getCode().charAt(0);
+                EthnicCategory ethnicCategory = EthnicCategory.NOT_STATED;
+                try {
+                    ethnicCategory = EthnicCategory.fromCode(codes.get(0).getCode());
+                } catch (IllegalArgumentException exception) {
+                    LOG.warn("Unknown ethnic code : " + codes.get(0).getCode());
+                    ethnicCategory = EthnicCategory.NOT_STATED;
+                }
+                ethnicCode = ethnicCategory.getCode().charAt(0);
             }
-            //TODO how do we map ethnic code?
         }
 
         Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
