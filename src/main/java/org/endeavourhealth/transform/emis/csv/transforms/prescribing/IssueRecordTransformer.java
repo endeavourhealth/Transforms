@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -13,11 +14,14 @@ import org.endeavourhealth.transform.emis.csv.helpers.IssueRecordIssueDate;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class IssueRecordTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(IssueRecordTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -68,7 +72,9 @@ public class IssueRecordTransformer {
 
         //cache the date against the drug record GUID, so we can pick it up when processing the DrugRecord CSV
         CsvCell drugRecordGuid = parser.getDrugRecordGuid();
-        csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, effectiveDate, effectiveDatePrecision));
+        if (!drugRecordGuid.isEmpty()) {
+            csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, effectiveDate, effectiveDatePrecision));
+        }
 
         //need to handle mis-spelt column name in EMIS test pack
         //String clinicianGuid = parser.getClinicianUserInRoleGuid();
@@ -110,8 +116,14 @@ public class IssueRecordTransformer {
             medicationOrderBuilder.setReason(conditionReference, problemObservationGuid);
         }
 
-        Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordGuid, patientGuid);
-        medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, drugRecordGuid);
+        //specification states that there will always be a drug record GUID, but we've had a small number of cases
+        //where this isn't the case. Emis haven't fixed this in eight months, so I'm changing the transform to handle this
+        if (!drugRecordGuid.isEmpty()) {
+            Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordGuid, patientGuid);
+            medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, drugRecordGuid);
+        } else {
+            TransformWarnings.log(LOG, fhirResourceFiler, "Emis IssueRecord {} has missing drugRecordGuid", issueRecordGuid);
+        }
 
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
         if (!enteredByGuid.isEmpty()) {

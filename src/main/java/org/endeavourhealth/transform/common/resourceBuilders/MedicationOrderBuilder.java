@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class MedicationOrderBuilder extends ResourceBuilderBase
-        implements HasCodeableConceptI {
+                                    implements HasCodeableConceptI {
 
     private MedicationOrder medicationOrder = null;
 
