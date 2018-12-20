@@ -185,14 +185,16 @@ public class PatientTransformer extends AbstractTransformer {
             isSpineSensitive = false;
         }
         if (fhirPatient.hasCareProvider()) {
-            Reference orgReference = findOrgReference(fhirPatient, params);
-            if (orgReference != null) {
-                //added try/catch to track down a bug in Cerner->FHIR->enterprise
-                try {
-                    careProviderId = super.findPcrId(params, orgReference);
-                } catch (Throwable t) {
-                    LOG.error("Error finding ID for reference " + orgReference.getReference());
-                    throw t;
+            if (fhirPatient.getCareProvider() != null) {
+                List<Reference> refs = fhirPatient.getCareProvider();
+                List<Resource> resources = fhirPatient.getCareProviderTarget();
+                for (int m = 0; m < resources.size(); m++) {
+                    if (resources.get(m).getResourceType().equals(ResourceType.Practitioner)) {
+                        usualPractitionerId = transformOnDemandAndMapId(refs.get(m), params);
+                    } else if (resources.get(m).getResourceType().equals(ResourceType.Organization)) {
+                        careProviderId = transformOnDemandAndMapId(refs.get(m), params);
+
+                    }
                 }
             }
         }
@@ -272,7 +274,8 @@ public class PatientTransformer extends AbstractTransformer {
 
     }
 
-    private void writePatientIdentifier(long id, Patient patient, Long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writePatientIdentifier(long id, Patient patient, Long
+            enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
         PatientIdentifier patientIdWriter = (PatientIdentifier) csvWriter;
         List<Identifier> idList = patient.getIdentifier();
         for (Identifier thisId : idList) {
@@ -285,7 +288,8 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-    private void writeAddress(Address fhirAddress, Long patientId, Long addressId, Long enteredByPractitionerId, PcrTransformParams params, AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writeAddress(Address fhirAddress, Long patientId, Long addressId, Long
+            enteredByPractitionerId, PcrTransformParams params, AbstractPcrCsvWriter csvWriter) throws Exception {
         OutputContainer outputContainer = params.getOutputContainer();
         PatientAddress patientAddressWriter = outputContainer.getPatientAddresses();
         Period period = fhirAddress.getPeriod();
@@ -322,7 +326,8 @@ public class PatientTransformer extends AbstractTransformer {
 
     }
 
-    private void writeContact(Patient.ContactComponent cc, long patientId, long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
+    private void writeContact(Patient.ContactComponent cc, long patientId,
+                              long enteredByPractitionerId, AbstractPcrCsvWriter csvWriter) throws Exception {
         PatientContact contactWriter = (PatientContact) csvWriter;
         List<ContactPoint> cpList = cc.getTelecom();
         for (ContactPoint cp : cpList) {
