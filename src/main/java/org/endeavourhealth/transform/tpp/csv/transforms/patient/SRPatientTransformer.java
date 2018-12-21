@@ -21,6 +21,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Map;
 
 public class SRPatientTransformer {
@@ -91,7 +92,9 @@ public class SRPatientTransformer {
 
         //We don't want a new *OFFICIAL* HumanName added for every local id.
         // Delete existing Official name and replace
-        for (HumanName nom : patientBuilder.getNames()) {
+        for (Iterator<HumanName> iterator = patientBuilder.getNames().iterator(); iterator.hasNext(); ) {
+        // for (HumanName nom : patientBuilder.getNames()) {
+            HumanName nom = iterator.next();
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
                 patientBuilder.getNames().remove(nom);
             }
