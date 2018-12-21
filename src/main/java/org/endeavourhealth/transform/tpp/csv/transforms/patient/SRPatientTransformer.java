@@ -97,6 +97,7 @@ public class SRPatientTransformer {
             HumanName nom = iterator.next();
             if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
                 patientBuilder.getNames().remove(nom);
+                break;
             }
         }
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
