@@ -1,9 +1,8 @@
 package org.endeavourhealth.transform.pcr.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
- 
+
 import java.util.Date;
-import java.math.BigDecimal;
  
 public class Procedure extends AbstractPcrCsvWriter {
  
@@ -27,7 +26,7 @@ public class Procedure extends AbstractPcrCsvWriter {
                     Long effectivePractitionerId,
                     Long enteredByPractitionerId,
                     Date endDate,
-                    Long usualPractitionerId,
+     //               Long usualPractitionerId,
                     Long careActivityId,
                     Long careActivityHeadingConceptId,
                     Long owningOrganisationId,
@@ -49,7 +48,7 @@ Boolean isConsent
                     convertLong(effectivePractitionerId),
                     convertLong(enteredByPractitionerId),
                     convertDate(endDate),
-                    convertLong(usualPractitionerId),
+     //               convertLong(usualPractitionerId),
                     convertLong(careActivityId),
                     convertLong(careActivityHeadingConceptId),
                     convertLong(owningOrganisationId),
@@ -75,7 +74,7 @@ public String[] getCsvHeaders() {
                        "effective_practitioner_id",
                        "entered_by_practitioner_id",
                        "end_date",
-                       "usual_practitioner_id",
+   //                    "usual_practitioner_id",
                        "care_activity_id",
                        "care_activity_heading_concept_id",
                        "owning_organisation_id",
@@ -101,7 +100,7 @@ public Class[] getColumnTypes() {
                     Long.class,
                     Long.class,
                     Date.class,
-                    Long.class,
+     //               Long.class,
                     Long.class,
                     Long.class,
                     Long.class,

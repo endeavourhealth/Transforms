@@ -1,118 +1,144 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.pcr.FhirToPcrHelper;
+import org.endeavourhealth.transform.pcr.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.hl7.fhir.instance.model.Procedure;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.List;
 
 public class ProcedureTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
+    private final static String PATIENT = "Patient";
 
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     protected void transformResource(Long pcrId,
-                          Resource resource,
-                          AbstractPcrCsvWriter csvWriter,
-                          PcrTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractPcrCsvWriter csvWriter,
+                                     PcrTransformParams params) throws Exception {
 
-        Procedure fhir = (Procedure)resource;
+        Long id = pcrId;
+        Long patientId;
+        Long conceptId = null;
+        Date effectiveDate = null;
+        Integer effectiveDatePrecision = null;
+        Long effectivePractitionerId = null;
+        Long enteredByPractitionerId = null;
+        Date endDate = null;
+        //TODO usualPractitionerId is already stored on the patient. Why here? Remove?
+        Long usualPractitionerId = null;
+        Long careActivityId = null;
+        Long careActivityHeadingConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
-        //TODO - needs Procedure output model (not for v1)
+        Long owningOrganisationId = null;
+        Long statusConceptId = null;
+        Boolean isConfidential = null;
+        String originalCode = null;
+        String originalTerm = null;
+        Integer originalCodeScheme = null;
+        Integer originalSystem = null;
+        Long outcomeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        ;
+        Boolean isConsent = null;
 
-//        long id;
-//        long organisationId;
-//        long patientId;
-//        long personId;
-//        Long encounterId = null;
-//        Long practitionerId = null;
-//        Date clinicalEffectiveDate = null;
-//        Integer datePrecisionId = null;
-//        Long snomedConceptId = null;
-//        BigDecimal resultValue = null;
-//        String resultValueUnits = null;
-//        Date resultDate = null;
-//        String resultString = null;
-//        Long resultConcptId = null;
-//        String originalCode = null;
-//        boolean isProblem = false;
-//        String originalTerm = null;
-//        boolean isReview = false;
-//        Date problemEndDate = null;
-//        Long parentObservationId = null;
-//
-//        id = enterpriseId.longValue();
-//        organisationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
-//
-//        if (fhir.hasEncounter()) {
-//            Reference encounterReference = fhir.getEncounter();
-//            encounterId = findEnterpriseId(params, encounterReference);
-//        }
-//
-//        if (fhir.hasPerformer()) {
-//            if (fhir.getPerformer().size() > 1) {
-//                throw new TransformException("Procedures with more than one performer not supported " + fhir.getId());
-//            }
-//            Procedure.ProcedurePerformerComponent performerComponent = fhir.getPerformer().get(0);
-//            Reference practitionerReference = performerComponent.getActor();
-//            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
-//        }
-//
-//        if (fhir.hasPerformedDateTimeType()) {
-//            DateTimeType dt = fhir.getPerformedDateTimeType();
-//            clinicalEffectiveDate = dt.getValue();
-//            datePrecisionId = convertDatePrecision(dt.getPrecision());
-//        }
-//
-//        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-//        if (codes == null) {
-//            return;
-//        }
-//        snomedConceptId = codes.getSnomedConceptId();
-//        originalCode = codes.getOriginalCode();
-//        originalTerm = codes.getOriginalTerm();
-//
-//        Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
-//        if (reviewExtension != null) {
-//            BooleanType b = (BooleanType)reviewExtension.getValue();
-//            if (b.getValue() != null) {
-//                isReview = b.getValue();
-//            }
-//        }
-//
-//        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-//        if (parentExtension != null) {
-//            Reference parentReference = (Reference)parentExtension.getValue();
-//            parentObservationId = findEnterpriseId(params, parentReference);
-//        }
-//
-//        Observation model = (Observation)csvWriter;
-//        model.writeUpsert(id,
-//                organisationId,
-//                patientId,
-//                personId,
-//                encounterId,
-//                practitionerId,
-//                clinicalEffectiveDate,
-//                datePrecisionId,
-//                snomedConceptId,
-//                resultValue,
-//                resultValueUnits,
-//                resultDate,
-//                resultString,
-//                resultConcptId,
-//                originalCode,
-//                isProblem,
-//                originalTerm,
-//                isReview,
-//                problemEndDate,
-//                parentObservationId);
+        Procedure fhir = (Procedure) resource;
+
+        patientId = params.getPcrPatientId();
+        if (fhir.hasPerformedDateTimeType()) {
+            DateTimeType dt = fhir.getPerformedDateTimeType();
+            effectiveDate = dt.getValue();
+            effectiveDatePrecision = convertDatePrecision(dt.getPrecision());
+        }
+
+        if (fhir.hasPerformer()) {
+            List<Procedure.ProcedurePerformerComponent> performers = fhir.getPerformer();
+            for (Procedure.ProcedurePerformerComponent perf : performers) {
+                if (perf.hasActor()) {
+                    Reference reference = perf.getActor();
+                    ResourceType resourceType = ReferenceHelper.getResourceType(reference);
+                    if (resourceType.equals(ResourceType.Practitioner)) {
+                        effectivePractitionerId = transformOnDemandAndMapId(perf.getActor(), params);
+                        //break;
+                    } else if (resourceType.equals(ResourceType.Organization)) {
+                        owningOrganisationId = transformOnDemandAndMapId(perf.getActor(), params);
+                    }
+                    //TODO Means we only record one performer. Need to think about 1-many. Maybe procedure to practitioner map?
+                    //This limit is already enforced in at least one incoming transformer.
+                }
+            }
+        }
+
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (codes != null) {
+
+            //snomedConceptId = codes.getSnomedConceptId();
+            outcomeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            if (codes.getOriginalTerm()!=null) {
+                originalTerm= codes.getOriginalTerm();
+            }
+            originalCode = codes.getOriginalCode();
+            // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
+            if (codes.getSystem()!=null) {
+                originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
+            }
+            //originalSystem =
+            conceptId = outcomeConceptId;
+        } else return;
+
+        //recorded/entered by
+        Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
+        if (enteredByPractitionerExtension != null) {
+
+            Reference enteredByPractitionerReference = (Reference) enteredByPractitionerExtension.getValue();
+            enteredByPractitionerId = transformOnDemandAndMapId(enteredByPractitionerReference, params);
+        }
+
+        if (fhir.hasPerformedPeriod() && fhir.getPerformedPeriod() != null && fhir.getPerformedPeriod().hasEnd()) {
+            endDate = fhir.getPerformedPeriod().getEnd();
+        }
+        //confidential
+        Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (confidentialExtension != null) {
+            BooleanType b = (BooleanType) confidentialExtension.getValue();
+            isConfidential = b.getValue();
+        }
+        org.endeavourhealth.transform.pcr.outputModels.Procedure model =
+                (org.endeavourhealth.transform.pcr.outputModels.Procedure) csvWriter;
+        model.writeUpsert(id,
+                patientId,
+                conceptId,
+                effectiveDate,
+                effectiveDatePrecision,
+                effectivePractitionerId,
+                enteredByPractitionerId,
+                endDate,
+//                usualPractitionerId,
+                careActivityId,
+                careActivityHeadingConceptId,
+                owningOrganisationId,
+                statusConceptId,
+                isConfidential,
+                originalCode,
+                originalTerm,
+                originalCodeScheme,
+                originalSystem,
+                outcomeConceptId,
+                isConsent);
+
+
+
     }
 }
 
