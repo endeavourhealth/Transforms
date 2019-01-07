@@ -19,10 +19,7 @@ import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
+import org.endeavourhealth.transform.barts.cache.*;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
 import org.endeavourhealth.transform.common.*;
@@ -78,10 +75,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     //private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
     private Date extractDateTime = null;
-    private EncounterResourceCache encounterCache = new EncounterResourceCache();
-    private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
-    private LocationResourceCache locationCache = new LocationResourceCache();
-    private PatientResourceCache patientCache = new PatientResourceCache();
+    private EncounterResourceCache encounterCache = new EncounterResourceCache(this);
+    private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache(this);
+    private LocationResourceCache locationCache = new LocationResourceCache(this);
+    private PatientResourceCache patientCache = new PatientResourceCache(this);
+    private ProcedureResourceCache procedureCache = new ProcedureResourceCache(this);
     private ThreadPool utilityThreadPool = null;
 
     private UUID serviceId = null;
@@ -90,8 +88,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private String primaryOrgHL7OrgOID = null;
     private String version = null;
 
-    private static Set<String> personIdsToFilterOn = null;
-
+    private Set<String> personIdsToFilterOn = null;
 
     public BartsCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String primaryOrgHL7OrgOID, String version) {
         this.serviceId = serviceId;
@@ -777,6 +774,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return encounterCache;
     }
 
+    public ProcedureResourceCache getProcedureCache() {
+        return procedureCache;
+    }
 
     public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
                                                       CsvCell childIdCell,
@@ -860,14 +860,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return cleveSnomedConceptMappings.remove(id);
     }
 
-    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) {
+    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) throws TransformException {
         CsvCell personIdCell = parser.getCell("PERSON_ID");
         if (personIdCell == null) {
             personIdCell = parser.getCell("#PERSON_ID");
 
             //if nothing that looks like a person ID, process the record
             if (personIdCell == null) {
-                return true;
+                throw new TransformException("No PERSON_ID column on parser " + parser.getFilePath());
             }
         }
 

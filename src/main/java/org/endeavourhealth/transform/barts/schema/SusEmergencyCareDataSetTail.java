@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +13,35 @@ import java.util.UUID;
 
 public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetTail.class);
+    private CsvCell responsiblePersonnelId;
 
     public SusEmergencyCareDataSetTail(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
+    }
+
+
+    public CsvCell getCdsUniqueId() {
+        return super.getCell("CDS_Unique_Identifier");
+    }
+
+    public CsvCell getFinNumber() {
+        return super.getCell("Fin_Nbr");
+    }
+
+    public CsvCell getEncounterId() {
+        return super.getCell("Encounter_ID");
+    }
+
+    public CsvCell getEpisodeId() {
+        return super.getCell("Episode_ID");
+    }
+
+    public CsvCell getPersonId() {
+        return super.getCell("Person_ID");
+    }
+
+    public CsvCell getResponsiblePersonnelId() {
+        return super.getCell("Responsible_HCP_Personal_ID");
     }
 
     @Override
@@ -64,4 +91,6 @@ public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
 
         return ret;
     }
+
+
 }

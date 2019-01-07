@@ -51,7 +51,7 @@ public class PPADDTransformer {
             String personIdStr = csvHelper.getInternalId(PPADDPreTransformer.PPADD_ID_TO_PERSON_ID, addressIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
                     AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
 
@@ -62,7 +62,7 @@ public class PPADDTransformer {
         }
 
         CsvCell personIdCell = parser.getPersonId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
         }

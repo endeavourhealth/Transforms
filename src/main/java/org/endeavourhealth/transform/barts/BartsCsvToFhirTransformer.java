@@ -126,34 +126,39 @@ public abstract class BartsCsvToFhirTransformer {
             OPATTTransformer.transform(createParsers(fileMap, parserMap, "OPATT", csvHelper, true), fhirResourceFiler, csvHelper);
             //ENCINFTransformer.transform(createParsers(fileMap, parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
 
-            csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler, csvHelper);
-            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler, csvHelper);
+            csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler);
+            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);
 
             //subsequent transforms may refer to Encounter resources, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            //clinical transformers
-            DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper, true), fhirResourceFiler, csvHelper);
+            //PROCEDURES - the order is significant, going from less to more rich files
+            SusInpatientTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusOutpatientTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusEmergencyTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusEmergency", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusEmergencyCareDataSetTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusEmergencyCareDataSet", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            ProcedureTransformer.transform(createParsers(fileMap, parserMap, "Procedure", csvHelper, true), fhirResourceFiler, csvHelper);
             PROCETransformer.transform(createParsers(fileMap, parserMap, "PROCE", csvHelper, true), fhirResourceFiler, csvHelper);
+
+            csvHelper.getProcedureCache().fileProcedureResources(fhirResourceFiler);
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
+            //DIAGNOSES
+            /*
+            DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+            SusInpatientTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusOutpatientTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusEmergencyTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusEmergency", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            SusEmergencyCareDataSetTransformer.transformProcedures(createParsers(fileMap, parserMap, "SusEmergencyCareDataSet", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            DIAGNTransformer.transform(createParsers(fileMap, parserMap, "DIAGN", csvHelper, true), fhirResourceFiler, csvHelper);
+            save all diagnoses to the DB
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+            */
+
+            //other clinical transformers
             CLEVETransformer.transform(createParsers(fileMap, parserMap, "CLEVE", csvHelper, true), fhirResourceFiler, csvHelper);
             ProblemTransformer.transform(createParsers(fileMap, parserMap, "Problem", csvHelper, true), fhirResourceFiler, csvHelper);
             FamilyHistoryTransformer.transform(createParsers(fileMap, parserMap, "FamilyHistory", csvHelper, true), fhirResourceFiler, csvHelper);
-
-            if (TransformConfig.instance().isTransformCerner21Files()) {
-                //in fixing all the 2.2 transforms to use the standard ID mapping tables, the 2.1 transforms
-                //have fallen behind and need updating to do the same, then testing
-                if (true) {
-                    throw new RuntimeException("Cerner 2.1 transforms need fixing to use proper ID mapping");
-                }
-                /*BulkDiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "BulkProblem", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                BulkProblemTransformer.transform(version, createParsers(fileMap, parserMap, "BulkDiagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                BulkProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "BulkProcedure", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                DiagnosisTransformer.transform(version, createParsers(fileMap, parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                ProcedureTransformer.transform(version, createParsers(fileMap, parserMap, "Procedure", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-                SusEmergencyTransformer.transform(version, createParsers(fileMap, parserMap, "SusEmergency", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-                SusInpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SusInpatient", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);
-                SusOutpatientTransformer.transform(version, createParsers(fileMap, parserMap, "SusOutpatient", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID, files);*/
-            }
 
             //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
             csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
@@ -229,10 +234,6 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitToFinish();
 
         } finally {
-            //if we had any exception that caused us to bomb out of the transform, we'll have
-            //potentially cached resources in the DB, so tidy them up now
-            csvHelper.getEncounterCache().cleanUpResourceCache();
-            csvHelper.getPatientCache().cleanUpResourceCache();
 
             //and stop the thread pool
             csvHelper.stopThreadPool();
@@ -584,15 +585,43 @@ public abstract class BartsCsvToFhirTransformer {
         throw new TransformException("Failed to find tail file for expected name " + expectedName);
     }*/
 
-    public static String findTailFile(String[] files, String expectedName) throws TransformException {
-        for (String filePath: files) {
-            String name = FilenameUtils.getName(filePath);
-            if (name.equalsIgnoreCase(expectedName)) {
+    /**
+     * finds the tails file for the given name
+     */
+    public static String findTailFile(Map<String, List<String>> fileMap, String fileType, String mainFilePath) throws TransformException {
+
+        List<String> filesForType = fileMap.get(fileType);
+        if (filesForType == null) {
+            throw new TransformException("Failed to find any files of type " + fileType + " in file map");
+        }
+
+        //the tails file and mail file have different naming conventions but both contain the same numeric element
+        String mainFileName = FilenameUtils.getName(mainFilePath);
+        int numericElement = findNumericElement(mainFileName);
+
+        for (String filePath: filesForType) {
+            String tailName = FilenameUtils.getName(filePath);
+            int tailNumericElement = findNumericElement(tailName);
+            if (tailNumericElement == numericElement) {
                 return filePath;
             }
         }
 
-        throw new TransformException("Failed to find tail file for expected name " + expectedName);
+        throw new TransformException("Failed to find " + fileType + " file for " + mainFileName);
+    }
+
+    private static int findNumericElement(String str) {
+        StringBuffer sb = new StringBuffer();
+
+        for (int i=0; i<str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isDigit(c)) {
+                sb.append(c);
+            }
+        }
+
+        String s = sb.toString();
+        return Integer.parseInt(s);
     }
 
     /*public static String identifyFileType(String filename) throws TransformException {

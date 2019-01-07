@@ -32,7 +32,6 @@ public class PPATITransformer {
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
 
-
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
@@ -47,7 +46,7 @@ public class PPATITransformer {
 
         //this transform always UPDATES resources when possible, so we use the patient cache to retrieve from the DB
         CsvCell millenniumPersonIdCell = parser.getMillenniumPersonId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(millenniumPersonIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(millenniumPersonIdCell);
         if (patientBuilder == null) {
             return;
         }

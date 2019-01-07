@@ -23,19 +23,22 @@ import java.util.Set;
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
+    private final BartsCsvHelper csvHelper;
     private ResourceCache<Long, PatientBuilder> patientBuildersByPersonId = new ResourceCache<>();
     //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
     private Set<Long> personIdsJustDeleted = new HashSet<>();
 
-
-
-    public PatientBuilder borrowPatientBuilder(Long personId, BartsCsvHelper csvHelper) throws Exception {
-        //if we've only got a number and not a CsvCell, then wrap in a dummy cell
-        CsvCell cell = CsvCell.factoryDummyWrapper("" + personId);
-        return borrowPatientBuilder(cell, csvHelper);
+    public PatientResourceCache(BartsCsvHelper csvHelper) {
+        this.csvHelper = csvHelper;
     }
 
-    public PatientBuilder borrowPatientBuilder(CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public PatientBuilder borrowPatientBuilder(Long personId) throws Exception {
+        //if we've only got a number and not a CsvCell, then wrap in a dummy cell
+        CsvCell cell = CsvCell.factoryDummyWrapper("" + personId);
+        return borrowPatientBuilder(cell);
+    }
+
+    public PatientBuilder borrowPatientBuilder(CsvCell personIdCell) throws Exception {
 
         Long personId = personIdCell.getLong();
 

@@ -54,7 +54,7 @@ public class PPRELTransformer {
             String personIdStr = csvHelper.getInternalId(PPRELPreTransformer.PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
                     PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
@@ -105,7 +105,7 @@ public class PPRELTransformer {
             return;
         }
 
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
         }

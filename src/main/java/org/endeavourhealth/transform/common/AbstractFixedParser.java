@@ -122,6 +122,11 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         return dateTimeFormat;
     }
 
+    @Override
+    public String getVersion() {
+        return version;
+    }
+
     /*@Override
     public void setAuditorCallback(CsvAuditorCallbackI auditorCallback) {
         this.auditorCallback = auditorCallback;

@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.AnnotationHelper;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -67,6 +65,10 @@ public class ProcedureBuilder extends ResourceBuilderBase
         auditValue("performer[" + index + "].actor.reference", sourceCells);
     }
 
+    public boolean hasPerformer() {
+        return this.procedure.hasPerformer();
+    }
+
     public void addNotes(String notes, CsvCell... sourceCells) {
         Annotation annotation = AnnotationHelper.createAnnotation(notes);
         this.procedure.addNotes(annotation);
@@ -99,6 +101,18 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
     public void setIsConfidential(boolean isConfidential, CsvCell... sourceCells) {
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
+    }
+
+    public void setIsPrimary(boolean isPrimary, CsvCell... sourceCells) {
+
+        //only use the extension to record the positive, remove for the negative
+        if (isPrimary) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.PROCEDURE_IS_PRIMARY, true);
+            auditBooleanExtension(extension, sourceCells);
+
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.PROCEDURE_IS_PRIMARY);
+        }
     }
 
     public void setParentResource(Reference reference, CsvCell... sourceCells) {

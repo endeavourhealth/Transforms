@@ -24,17 +24,21 @@ public class EncounterResourceCache {
 
     public static final String DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX = ":EmergencyDuplicate";
 
+    private final BartsCsvHelper csvHelper;
     private ResourceCache<String, EncounterBuilder> encounterBuildersByEncounterId = new ResourceCache<>();
     private Set<String> encounterIdsJustDeleted = new HashSet<>();
     private Map<String, UUID> encountersWithChangedPatientUuids = new HashMap<>();
 
-    public EncounterResourceCache() {}
+    public EncounterResourceCache(BartsCsvHelper csvHelper) {
+        this.csvHelper = csvHelper;
+    }
+
 
     /**
      * the ENCNT transformer deletes Encounters, and records that this has been done here,
      * so that the later transforms can check, since the deleted Encounter may not have reached the DB yet
      */
-    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, CsvCell triggeringCell) throws Exception {
+    public void deleteEncounter(EncounterBuilder encounterBuilder, CsvCell encounterIdCell, CsvCell personIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, CsvCell triggeringCell) throws Exception {
 
         //null may end up passed in, so just ignore
         if (encounterBuilder == null) {
@@ -55,7 +59,7 @@ public class EncounterResourceCache {
 
         //we create two FHIR Encounters for Cerner ENCNT records where an A&E attendance turns into
         //an admission, so we need to make sure that we delete BOTH
-        EncounterBuilder duplicateEmergencyEncounterBuilder = borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell, csvHelper);
+        EncounterBuilder duplicateEmergencyEncounterBuilder = borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell);
         if (duplicateEmergencyEncounterBuilder != null) {
             String duplicateEncounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
             encounterIdsJustDeleted.add(duplicateEncounterId);
@@ -80,7 +84,7 @@ public class EncounterResourceCache {
      * note that the caching used by this function means that any encounter GOT must also be RETURNED when it's finished with,
      * otherwise it won't be saved
      */
-    public EncounterBuilder borrowEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell, BartsCsvHelper csvHelper) throws Exception {
+    public EncounterBuilder borrowEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
         String encounterId = encounterIdCell.getString();
 
         //if we know we've deleted it, return null
@@ -170,7 +174,7 @@ public class EncounterResourceCache {
      * when we duplicate an encounter to keep a record of A&E attendances. Unlike the other "borrow..." fn,
      * this one DOES NOT create new encounters
      */
-    public EncounterBuilder borrowDuplicateEmergencyEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public EncounterBuilder borrowDuplicateEmergencyEncounterBuilder(CsvCell encounterIdCell, CsvCell personIdCell) throws Exception {
         String encounterId = encounterIdCell.getString() + DUPLICATE_EMERGENCCY_ENCOUNTER_SUFFIX;
 
         //if we know we've deleted it, return null
@@ -213,7 +217,7 @@ public class EncounterResourceCache {
     }
 
 
-    public void fileEncounterResources(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public void fileEncounterResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //before saving the new ones work out any patients that we've changed
         Set<String> hsPatientUuidsChanged = new HashSet<>();
@@ -246,11 +250,11 @@ public class EncounterResourceCache {
         fhirResourceFiler.waitUntilEverythingIsSaved();
 
         for (String patientUuid: hsPatientUuidsChanged) {
-            deleteHl7ReceiverEncounters(UUID.fromString(patientUuid), fhirResourceFiler, csvHelper);
+            deleteHl7ReceiverEncounters(UUID.fromString(patientUuid), fhirResourceFiler);
         }
     }
 
-    private void deleteHl7ReceiverEncounters(UUID patientUuid, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private void deleteHl7ReceiverEncounters(UUID patientUuid, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();

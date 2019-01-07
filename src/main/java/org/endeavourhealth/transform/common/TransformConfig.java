@@ -23,7 +23,6 @@ public class TransformConfig {
     private boolean emisAllowMissingCodes;
     private boolean emisAllowUnmappedRegistrationTypes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
-    private boolean transformCerner21Files;
     private String cernerPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn = new ArrayList<>();
@@ -59,7 +58,6 @@ public class TransformConfig {
         this.emisAllowMissingCodes = false;
         this.emisAllowUnmappedRegistrationTypes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
-        this.transformCerner21Files = false;
         this.cernerPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
@@ -153,12 +151,12 @@ public class TransformConfig {
 
             node = json.get("cerner");
             if (node != null) {
-                JsonNode subNode = node.get("transform_2_1_files");
+                /*JsonNode subNode = node.get("transform_2_1_files");
                 if (subNode != null) {
                     this.transformCerner21Files = subNode.asBoolean();
-                }
+                }*/
 
-                subNode = node.get("patient_id_file");
+                JsonNode subNode = node.get("patient_id_file");
                 if (subNode != null) {
                     this.cernerPatientIdFile = subNode.asText();
                 }
@@ -221,10 +219,6 @@ public class TransformConfig {
 
     public Set<String> getSoftwareFormatsToDrainQueueOnFailure() {
         return softwareFormatsToDrainQueueOnFailure;
-    }
-
-    public boolean isTransformCerner21Files() {
-        return transformCerner21Files;
     }
 
     public int getResourceCacheMaxSizeInMemory() {

@@ -1,37 +1,218 @@
-package org.endeavourhealth.transform.barts.transformsOld;
+package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.SusResourceMapDalI;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.BartsSusHelper;
+import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
-import org.endeavourhealth.transform.barts.schema.Tails;
-import org.endeavourhealth.transform.barts.schema.TailsRecord;
+import org.endeavourhealth.transform.barts.schema.SusInpatientTail;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
-import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class SusInpatientTransformer extends BartsBasisTransformer {
+public class SusInpatientTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTransformer.class);
-    private static int entryCount = 0;
-    //private static Mapper mapper = null;
 
-    /*
-     *
-     */
+
+    public static void transformProcedures(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper,
+                                 Map<String, List<String>> fileMap) throws Exception {
+
+        for (ParserI parser: parsers) {
+
+            //parse corresponding tails file first
+            Map<String, SusTailCacheEntry> tailsCache = processTails(parser, fileMap);
+
+            while (parser.nextRecord()) {
+                try {
+                    processRecordProcedures(csvHelper, (SusInpatient)parser, tailsCache);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    private static Map<String, SusTailCacheEntry> processTails(ParserI parser, Map<String, List<String>> fileMap) throws Exception {
+        String tailFilePath = BartsCsvToFhirTransformer.findTailFile(fileMap, "SusInpatientTail", parser.getFilePath());
+        SusInpatientTail tailParser = new SusInpatientTail(parser.getServiceId(), parser.getSystemId(), parser.getExchangeId(), parser.getVersion(), tailFilePath);
+        Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
+        SusInpatientTailPreTransformer.transform(tailParser, tailsCache);
+        return tailsCache;
+    }
+
+    private static void processRecordProcedures(BartsCsvHelper csvHelper, SusInpatient parser, Map<String, SusTailCacheEntry> tailsCache) throws Exception {
+        
+        //the old version of this parser only transformed specific record types, but I can't find
+        //the rationale for that. But it looks like we only have record of the matching
+        //types so just validate that this is true.
+        validateRecordType(parser);
+
+        //validate the procedure scheme is what we expect (i.e. OPCS-4)
+        CsvCell procedureSchemCell = parser.getProcedureSchemeInUse();
+        String procedureScheme = procedureSchemCell.getString();
+        if (!procedureScheme.equals("02")) {
+            throw new TransformException("Unexpected procedure scheme " + procedureScheme);
+        }
+
+        CsvCell cdsUniqueId = parser.getCdsUniqueId();
+        String cdsUniqueIdStr = cdsUniqueId.getString();
+        SusTailCacheEntry tailRecord = tailsCache.get(cdsUniqueIdStr);
+        if (tailRecord == null) {
+            throw new TransformException("Failed to find tail record for CSV unique ID " + cdsUniqueId);
+        }
+
+        CsvCell personIdCell = tailRecord.getPersonId();
+        if (!csvHelper.processRecordFilteringOnPatientId(personIdCell.getString())) {
+            return;
+        }
+
+        //TODO - find out previous procedures created for this record and delete any we don't find again
+
+        CsvCell primaryCodeCell = parser.getPrimaryProcedureOPCS();
+        if (!primaryCodeCell.isEmpty()) {
+            CsvCell dateCell = parser.getPrimaryProcedureDate();
+            CsvCell isPrimaryCell = primaryCodeCell; //to audit why we set the "is primary" property, use the fact that it's the primary cell itself
+
+            //the SUS specification has fields for the main clinician and anaethetist but these seem to be always
+            //empty for Barts data so we don't use them. The below code ensures this assertion remains valid.
+            CsvCell primaryPerformer = parser.getPrimaryMainOperatingHCPRegistrationEntryIdentifier();
+            CsvCell anaesthetist = parser.getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier();
+            if (!primaryPerformer.isEmpty()
+                    || !anaesthetist.isEmpty()) {
+                throw new TransformException("Primary performer (" + primaryPerformer + ") or anaesthetist (" + anaesthetist + ") is non-empty");
+            }
+
+            processProcedure(csvHelper, parser, tailRecord, primaryCodeCell, dateCell, isPrimaryCell);
+        }
+
+        CsvCell secondaryCodeCell = parser.getSecondaryProcedureOPCS();
+        if (!secondaryCodeCell.isEmpty()) {
+            CsvCell dateCell = parser.getSecondaryProcedureDate();
+
+            processProcedure(csvHelper, parser, tailRecord, secondaryCodeCell, dateCell, null);
+        }
+
+        CsvCell otherCodesCell = parser.getAdditionalecondaryProceduresOPCS();
+        if (!otherCodesCell.isEmpty()) {
+
+            // Each code-set is 40 characters and consists of 6 fields (4 for code + 8 for date + 4 further sub-fields) - only code and date are used
+            String otherCodes = otherCodesCell.getString();
+            int startPos = 0;
+            while (startPos + 12 <= otherCodes.length()) {
+                String code = otherCodes.substring(startPos, startPos + 4);
+                String dateStr = otherCodes.substring(startPos + 4, startPos + 12);
+
+                //create dummy cells for auditing purposes, that link back to the same cell
+                CsvCell codeCell = new CsvCell(otherCodesCell.getPublishedFileId(), otherCodesCell.getRecordNumber(), otherCodesCell.getColIndex(), code, parser);
+                CsvCell dateCell = new CsvCell(otherCodesCell.getPublishedFileId(), otherCodesCell.getRecordNumber(), otherCodesCell.getColIndex(), dateStr, parser);
+
+                processProcedure(csvHelper, parser, tailRecord, codeCell, dateCell, null);
+
+                startPos = startPos + 40;
+            }
+        }
+    }
+
+    private static void processProcedure(BartsCsvHelper csvHelper, SusInpatient parser, SusTailCacheEntry tailRecord, CsvCell codeCell, CsvCell performedDateCell, CsvCell isPrimaryCell) throws Exception {
+
+        //TODO - work out unique ID
+
+        /*ProcedureBuilder procedureBuilder = csvHelper.getProcedureCache().borrowProcedureBuilder(uniqueId, );
+
+        CsvCell personIdCell = tailRecord.getPersonId();
+        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
+        if (procedureBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+        }
+        procedureBuilder.setPatient(patientReference);
+
+        CsvCell encounterIdCell = tailRecord.getEncounterId();
+        Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+        if (procedureBuilder.isIdMapped()) {
+            encounterReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(encounterReference, csvHelper);
+        }
+        procedureBuilder.setEncounter(encounterReference);
+
+        //only set the practitioner if not already set, since we only really know the responsible consultant
+        //in this file, and not actually the person who performed the procedure. The SUS spec does have fields
+        //for performer and anaesthetist, but these are always empty for Barts (and we validate that above)
+        if (!procedureBuilder.hasPerformer()) {
+            CsvCell responsibleHcpPersonnelId = tailRecord.getResponsibleHcpPersonnelId();
+            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, responsibleHcpPersonnelId.getString());
+            if (procedureBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            procedureBuilder.addPerformer(practitionerReference, responsibleHcpPersonnelId);
+        }
+
+        //implicitly completed if it's in this file
+        procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
+
+        //if we've got a cell telling us it's the primary procedure, set that to true
+        if (isPrimaryCell != null) {
+            procedureBuilder.setIsPrimary(true, isPrimaryCell);
+        }
+
+        Date performedDate = performedDateCell.getDateTime();
+        procedureBuilder.setPerformed(new DateTimeType(performedDate), performedDateCell);
+
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4); //always OPCS-4 in this file
+
+        String code = codeCell.getString();
+        code = TerminologyService.standardiseOpcs4Code(code); //ensure the dot is added to the code
+        codeableConceptBuilder.setCodingCode(code, codeCell);
+
+        String term = TerminologyService.lookupOpcs4ProcedureName(code);
+        codeableConceptBuilder.setCodingDisplay(term);
+        codeableConceptBuilder.setText(term);
+
+        csvHelper.getProcedureCache().returnProcedureBuilder(uniqueId, procedureBuilder);*/
+    }
+
+    private static void validateRecordType(SusInpatient parser) throws Exception {
+        // CDS V6-2 Type 010 - Accident and Emergency CDS
+        // CDS V6-2 Type 020 - Outpatient CDS
+        // CDS V6-2 Type 120 - Admitted Patient Care - Finished Birth Episode CDS
+        // CDS V6-2 Type 130 - Admitted Patient Care - Finished General Episode CDS
+        // CDS V6-2 Type 140 - Admitted Patient Care - Finished Delivery Episode CDS
+        // CDS V6-2 Type 160 - Admitted Patient Care - Other Delivery Event CDS
+        // CDS V6-2 Type 180 - Admitted Patient Care - Unfinished Birth Episode CDS
+        // CDS V6-2 Type 190 - Admitted Patient Care - Unfinished General Episode CDS
+        // CDS V6-2 Type 200 - Admitted Patient Care - Unfinished Delivery Episode CDS
+        CsvCell recordTypeCell = parser.getCDSRecordType();
+        int recordType = recordTypeCell.getInt();
+        if (recordType != 10 &&
+                recordType != 20 &&
+                recordType != 120 &&
+                recordType != 130 &&
+                recordType != 140 &&
+                recordType != 160 &&
+                recordType != 180 &&
+                recordType != 190 &&
+                recordType != 200) {
+
+            throw new TransformException("Unexpected CDS record type " + recordType);
+        }
+    }
+
+
+    ///////////BELOW IS THE SUS INPATIENT TRANSFORM FROM WHEN IT WAS ORIGINALLY WRITTEN FOR 2.1//////////
+    
+    /*private static int entryCount = 0;
+
     public static void transform(String version,
                                  List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -72,6 +253,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
                             susInpatient.getCDSRecordType() == 180 ||
                             susInpatient.getCDSRecordType() == 190 ||
                             susInpatient.getCDSRecordType() == 200) {
+
                         mapFileEntry(susInpatient, fhirResourceFiler, csvHelper, version, primaryOrgOdsCode, primaryOrgHL7OrgOID);
                     }
                 } catch (Exception ex) {
@@ -84,9 +266,6 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    /*
-     *
-     */
     public static void mapFileEntry(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     BartsCsvHelper csvHelper,
@@ -196,9 +375,6 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
     }
 
 
-    /*
-     * Data line is of type Inpatient
-    */
     public static void mapDiagnosis(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     BartsCsvHelper csvHelper,
@@ -252,8 +428,6 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
         }
 
         // secondary piagnoses ?
-        /*LOG.debug("Secondary diagnosis list=" + parser.getICDSecondaryDiagnosisList());
-        LOG.debug("Secondary diagnosis count=" + parser.getICDSecondaryDiagnosisCount());*/
         for (int i = 0; i < parser.getICDSecondaryDiagnosisCount(); i++) {
             if (codeDuplicateCountList.containsKey(parser.getICDSecondaryDiagnosis(i))) {
                 currCodeDuplicateCount = codeDuplicateCountList.get(parser.getICDSecondaryDiagnosis(i));
@@ -309,9 +483,7 @@ public class SusInpatientTransformer extends BartsBasisTransformer {
 
     }
 
-    /*
-Data line is of type Inpatient
-*/
+    
     public static void mapProcedure(SusInpatient parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     BartsCsvHelper csvHelper,
@@ -370,8 +542,6 @@ Data line is of type Inpatient
         }
 
         // secondary procedures
-        /*LOG.debug("Secondary procedure list=" + parser.getOPCSecondaryProcedureList());
-        LOG.debug("Secondary procedure count=" + parser.getOPCSecondaryProcedureCodeCount());*/
         for (int i = 0; i < parser.getOPCSecondaryProcedureCodeCount(); i++) {
             if (codeDuplicateCountList.containsKey(parser.getOPCSecondaryProcedureCode(i))) {
                 currCodeDuplicateCount = codeDuplicateCountList.get(parser.getOPCSecondaryProcedureCode(i));
@@ -425,7 +595,7 @@ Data line is of type Inpatient
             database.saveSusResourceMappings(fhirResourceFiler.getServiceId(), "CDSIdValue="+parser.getCDSUniqueID(), Enumerations.ResourceType.PROCEDURE, mappingsToAdd);
         }
 
-    }
+    }*/
 
 
 }

@@ -51,11 +51,11 @@ public class AEATTTransformer {
         //first we need to check if our encounter has been duplicated, so as to preserve separate FHIR
         //encounters for A&E and Inpatient admission
         boolean isDuplicateEmergencyEncounter;
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowDuplicateEmergencyEncounterBuilder(encounterIdCell, personIdCell);
         if (encounterBuilder != null) {
             isDuplicateEmergencyEncounter = true;
         } else {
-            encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+            encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
             isDuplicateEmergencyEncounter = false;
         }
 
@@ -195,7 +195,7 @@ public class AEATTTransformer {
         //TODO - process parser.getAttendanceDisposalCode()
 
         // Retrieve or create EpisodeOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser);
         if (episodeOfCareBuilder != null) {
 
             csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, encounterBuilder, fhirResourceFiler);

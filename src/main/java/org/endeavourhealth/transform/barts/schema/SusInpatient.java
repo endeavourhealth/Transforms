@@ -1,24 +1,70 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class SusInpatient extends SusBaseParser {
+public class SusInpatient extends AbstractFixedParser {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatient.class);
 
     public SusInpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
 
-    public Date getAdmissionDate() throws TransformException {
+    public CsvCell getProcedureSchemeInUse() {
+        return super.getCell("ProcedureSchemeInUse");
+    }
+
+
+    public CsvCell getPrimaryProcedureOPCS() {
+        return super.getCell("PrimaryProcedureOPCS");
+    }
+
+    public CsvCell getPrimaryProcedureDate() {
+        return super.getCell("PrimaryProcedureDate");
+    }
+
+
+    public CsvCell getSecondaryProcedureOPCS() {
+        return super.getCell("SecondaryProcedureOPCS");
+    }
+
+    public CsvCell getSecondaryProcedureDate() {
+        return super.getCell("SecondaryProcedureDate");
+    }
+
+    public CsvCell getAdditionalecondaryProceduresOPCS() {
+        return super.getCell("2nd50thSecondaryProceduresOPCS");
+    }
+
+    public CsvCell getCDSRecordType() {
+        return super.getCell("CDSRecordType");
+    }
+
+    public CsvCell getCdsUniqueId() {
+        return super.getCell("CDSUniqueIdentifier");
+    }
+
+    public CsvCell getPrimaryMainOperatingHCPRegistrationEntryIdentifier() {
+        return super.getCell("PrimaryMainOperatingHCPRegistrationEntryIdentifier");
+    }
+
+    public CsvCell getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier() {
+        return super.getCell("PrimaryResponsibleAnaesthetistRegistrationEntryIdentifier");
+    }
+
+
+
+
+
+    /*public Date getAdmissionDate() throws TransformException {
         return super.getDate("StartDateHospitalProviderSpell");
     }
 
@@ -45,6 +91,96 @@ public class SusInpatient extends SusBaseParser {
     public String getConsultantCode() {
         return super.getString("ConsultantCode");
     }
+
+
+
+
+    public String getCDSUniqueID() {
+        return super.getString("CDSUniqueIdentifier");
+    }
+
+    // 1 = Delete, 9 = New/Replace
+    public int getCDSUpdateType() {
+        return super.getInt("CDSUpdateType");
+    }
+
+    public String getLocalPatientId() {
+        return super.getString("LocalPatientID");
+    }
+
+    public String getNHSNo() {
+        return super.getString("NHSNumber");
+    }
+
+    public Date getDOB() throws TransformException {
+        return super.getDate("PersonBirthDate");
+    }
+
+    public String getPatientTitle() {
+        return super.getString("PatientTitle");
+    }
+
+    public String getPatientForename() {
+        return super.getString("PatientForename");
+    }
+
+    public String getPatientSurname() {
+        return super.getString("PatientSurname");
+    }
+
+    public String getAddressType() {
+        return super.getString("PatientAddressType");
+    }
+
+    public String getUnstructuredAddress() {
+        return super.getString("PatientUnstructuredAddress");
+    }
+
+    public String getAddress1() {
+        return super.getString("PatientAddressStructured1");
+    }
+
+    public String getAddress2() {
+        return super.getString("PatientAddressStructured2");
+    }
+
+    public String getAddress3() {
+        return super.getString("PatientAddressStructured3");
+    }
+
+    public String getAddress4() {
+        return super.getString("PatientAddressStructured4");
+    }
+
+    public String getAddress5() {
+        return super.getString("PatientAddressStructured5");
+    }
+
+    public String getPostCode() {
+        return super.getString("Postcode");
+    }
+
+    public int getGender() {
+        return Integer.parseInt(super.getString("PersonCurrentGender"));
+    }
+
+    public String getEthnicCategory() {
+        return super.getString("EthnicCategory");
+    }
+
+    public String getGP() {
+        return super.getString("GeneralMedicalPractitionerRegistered");
+    }
+
+    public String getGPPractice() {
+        return super.getString("GPPracticeRegistered");
+    }
+
+    public String getICDPrimaryDiagnosis() {
+        return super.getString("PrimaryDiagnosisICD");
+    }
+
+    */
 
     @Override
     protected boolean isFileAudited() {
@@ -203,7 +339,7 @@ public class SusInpatient extends SusBaseParser {
         ret.add(new FixedParserField("PrimaryDiagnosisRead", 1715, 5));
         ret.add(new FixedParserField("SecondaryDiagnosisRead150", 1720, 250));*/
 //CLINICAL TREATMENT (OPCS) DETAILS
-        ret.add(new FixedParserField("ProcedureSchemeinUse", 1970, 2));
+        ret.add(new FixedParserField("ProcedureSchemeInUse", 1970, 2));
         ret.add(new FixedParserField("PrimaryProcedureOPCS", 1972, 4));
         ret.add(new FixedParserField("PrimaryProcedureDate", 1976, 8));
         ret.add(new FixedParserField("PrimaryMainOperatingHCPRegistrationIssuerCode", 1984, 2));
@@ -218,7 +354,7 @@ public class SusInpatient extends SusBaseParser {
         ret.add(new FixedParserField("SecondaryResponsibleAnaesthetistRegistrationEntryIdentifier", 2040, 12));
         ret.add(new FixedParserField("2nd50thSecondaryProceduresOPCS", 2052, 1960));
 //CLINICAL TREATMENT (READ) DETAILS
-        /*ret.add(new FixedParserField("ProcedureSchemeinUse", 4012, 2));
+        /*ret.add(new FixedParserField("ProcedureSchemeInUse", 4012, 2));
         ret.add(new FixedParserField("PrimaryProcedureGroupREAD", 4014, 13));
         ret.add(new FixedParserField("PrimaryProcedureREAD", 4014, 5));
         ret.add(new FixedParserField("PrimaryProcedureDate", 4019, 8));

@@ -46,7 +46,7 @@ public class IPWDSTransformer {
         CsvCell personIdCell = parser.getPatientId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
 
         CsvCell wardLocationIdCell = parser.getWardStayLocationCode();
         CsvCell roomLocationIdCell = parser.getWardRoomCode();

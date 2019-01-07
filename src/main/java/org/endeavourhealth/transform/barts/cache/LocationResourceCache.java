@@ -14,9 +14,14 @@ import java.util.Map;
 public class LocationResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(LocationResourceCache.class);
 
+    private final BartsCsvHelper csvHelper;
     private Map<String, LocationBuilder> locationBuildersById = new HashMap<>();
     private Map<String, LocationBuilder> placeholderLocationBuildersById = new HashMap<>();
     private Map<String, Boolean> locationsCheckedOnDb = new HashMap<>();
+
+    public LocationResourceCache(BartsCsvHelper csvHelper) {
+        this.csvHelper = csvHelper;
+    }
 
     public void cacheLocationBuilder(LocationBuilder locationBuilder) {
 
@@ -27,7 +32,7 @@ public class LocationResourceCache {
         placeholderLocationBuildersById.remove(id);
     }
 
-    public void cachePlaceholderLocationBuilder(LocationBuilder locationBuilder, BartsCsvHelper csvHelper) throws Exception {
+    public void cachePlaceholderLocationBuilder(LocationBuilder locationBuilder) throws Exception {
 
         String id = locationBuilder.getResourceId();
 
