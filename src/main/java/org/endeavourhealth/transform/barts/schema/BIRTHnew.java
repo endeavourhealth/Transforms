@@ -7,10 +7,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-public class BIRTH extends AbstractCsvParser {
-    private static final Logger LOG = LoggerFactory.getLogger(BIRTH.class);
+public class BIRTHnew extends AbstractCsvParser {
+    private static final Logger LOG = LoggerFactory.getLogger(BIRTHnew.class);
 
-    public BIRTH(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public BIRTHnew(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
                 BartsCsvToFhirTransformer.DATE_FORMAT,
