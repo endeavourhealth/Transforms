@@ -45,7 +45,7 @@ public class ENCINFTransformer {
         CsvCell beginEffectiveCell = parser.getBeginEffectiveDateTime();
         if (!BartsCsvHelper.isEmptyOrIsStartOfTime(beginEffectiveCell)) {
 
-            EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, null, activeCell, csvHelper);
+            EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, null, activeCell);
             if (encounterBuilder == null) {
                 return;
             }

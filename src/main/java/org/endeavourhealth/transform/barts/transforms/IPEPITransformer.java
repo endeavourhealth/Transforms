@@ -50,7 +50,7 @@ public class IPEPITransformer {
         CsvCell personIdCell = parser.getPersonId();
 
         // get the associated encounter
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
 
         //in Cerner a when a patient visits A&E and is admitted, that's the SAME encounter record that gets updated.
         //To allow us to keep separate Emergency and Inpatient FHIR Encounters, we need to detect and Emergency Encounter
@@ -96,7 +96,7 @@ public class IPEPITransformer {
         }
 
         //EpisodOfCare
-        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser, csvHelper);
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(parser);
 
         if (episodeOfCareBuilder != null) {
 

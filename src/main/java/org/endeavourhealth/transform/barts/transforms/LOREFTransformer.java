@@ -78,7 +78,7 @@ public class LOREFTransformer {
 
             } else {
                 //if not the first location in the hierarchy, this is really just a placehold for the proper record, if we find it
-                csvHelper.getLocationCache().cachePlaceholderLocationBuilder(locationBuilder, csvHelper);
+                csvHelper.getLocationCache().cachePlaceholderLocationBuilder(locationBuilder);
             }
         }
     }

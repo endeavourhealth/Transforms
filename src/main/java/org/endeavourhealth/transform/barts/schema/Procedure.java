@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,29 +22,60 @@ public class Procedure extends AbstractFixedParser {
         super(serviceId, systemId, exchangeId, version, filePath, DATE_FORMAT, TIME_FORMAT);
     }
 
-    public Date getDOB() throws TransformException {
-        return super.getDate("DOB");
+    public CsvCell getProcedureCodeType() {
+        return super.getCell("PROC_CD_TYPE");
     }
 
-    public String getLocalPatientId() {
-        return super.getString("MRN");
+    public CsvCell getProcedureCode() {
+        return super.getCell("Proc_Cd");
+    }
+
+    public CsvCell getMrn() {
+        return super.getCell("MRN");
+    }
+
+    public CsvCell getConsultant() {
+        return super.getCell("Consultant");
+    }
+
+    public CsvCell getEncounterId() {
+        return super.getCell("Encntr_Id");
+    }
+
+    public CsvCell getProcedureText() {
+        return super.getCell("Proc_Txt");
+    }
+
+    public CsvCell getComment() {
+        return super.getCell("Comment");
+    }
+
+    public CsvCell getProcedureDateTime() {
+        return super.getCell("Proc_Dt_Tm");
+    }
+
+    public CsvCell getCreateDateTime() {
+        return super.getCell("Create_Dt_Tm");
+    }
+
+    public CsvCell getUpdatedBy() {
+        return super.getCell("Updt_By");
+    }
+
+
+
+
+    public Date getDOB() throws TransformException {
+        return super.getDate("DOB");
     }
 
     public String getNHSNo() {
         return super.getString("NHS_No").replaceAll("\\-", "");
     }
 
-    public String getConsultant() {
-        return super.getString("Consultant");
-    }
 
-    public Date getProcedureDateTime() throws TransformException {
-        return super.getDate("Proc_Dt_Tm");
-    }
 
-    public String getProcedureDateTimeAsString() throws TransformException {
-        return super.getString("Proc_Dt_Tm");
-    }
+
 
     public Date getAdmissionDateTime() throws TransformException {
         return super.getDateTime("Admit_Dt_Tm");
@@ -61,33 +93,15 @@ public class Procedure extends AbstractFixedParser {
         return super.getString("Disch_Dt_Tm");
     }
 
-    public String getProcedureText() {
-        return super.getString("Proc_Txt");
-    }
 
-    public String getComment() {
-        return super.getString("Comment");
-    }
 
-    public String getProcedureCode() {
-        return super.getString("Proc_Cd");
-    }
 
-    public Date getCreateDateTime() throws TransformException {
-        return super.getDate("Create_Dt_Tm");
-    }
 
     public Date getUpdateDateTime() throws TransformException {
         return super.getDateTime("Updt_Dt_Tm");
     }
 
-    public String getUpdatedBy() {
-        return super.getString("Updt_By");
-    }
 
-    public Long getEncounterId() {
-        return Long.parseLong(super.getString("Encntr_Id").split("\\.")[0]);
-    }
 
     public String getFINNo() {
         return super.getString("FIN_No");

@@ -104,7 +104,7 @@ public class ENCNTPreTransformer {
                 //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT. Just
                 //call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
                 //we do process the OPATT, AEATT and IPEPI files
-                csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+                csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell);
 
 
             } catch (Throwable t) {

@@ -182,7 +182,7 @@ public class PPALIPreTransformer {
                     String currentMrn = activeMrnCell.getString();
                     String personId = personIdCell.getString();
 
-                    String originalPersonIdForMrn = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, personId);
+                    String originalPersonIdForMrn = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, currentMrn);
                     if (Strings.isNullOrEmpty(originalPersonIdForMrn)
                             || !originalPersonIdForMrn.equals(personId)) {
 

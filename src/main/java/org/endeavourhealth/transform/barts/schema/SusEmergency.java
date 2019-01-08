@@ -1,24 +1,54 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
+import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class SusEmergency extends SusBaseParser {
+public class SusEmergency extends AbstractFixedParser {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergency.class);
 
     public SusEmergency(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
 
-    public Date getArrivalDate() throws TransformException {
+    public CsvCell getProcedureSchemeInUse() {
+        return super.getCell("ProcedureSchemeInUse");
+    }
+
+
+    public CsvCell getPrimaryProcedureOPCS() {
+        return super.getCell("PrimaryProcedureOPCS");
+    }
+
+    public CsvCell getPrimaryProcedureDate() {
+        return super.getCell("PrimaryProcedureDate");
+    }
+
+
+    public CsvCell getSecondaryProcedureOPCS() {
+        return super.getCell("SecondaryProcedureOPCS");
+    }
+
+    public CsvCell getSecondaryProcedureDate() {
+        return super.getCell("SecondaryProcedureDate");
+    }
+
+    public CsvCell getAdditionalecondaryProceduresOPCS() {
+        return super.getCell("2nd50thSecondaryProceduresOPCS");
+    }
+
+    public CsvCell getCDSRecordType() {
+        return super.getCell("CDSRecordType");
+    }
+
+    /*public Date getArrivalDate() throws TransformException {
         return super.getDate("ArrivalDate");
     }
 
@@ -40,7 +70,7 @@ public class SusEmergency extends SusBaseParser {
 
     public Date getDepartureDateTime() throws TransformException {
         return super.getDateTime("DepartureDate", "DepartureTime");
-    }
+    }*/
 
     @Override
     protected boolean isFileAudited() {
@@ -184,7 +214,7 @@ public class SusEmergency extends SusBaseParser {
         ret.add(new FixedParserField("PrimaryInvestigation", 2188, 6));
         ret.add(new FixedParserField("1st50thSecondaryInvestigationGroups", 2194, 300));
 //CLINICAL TREATMENT (OPCS) DETAILS
-        ret.add(new FixedParserField("ProcedureSchemeinUse", 2494, 2));
+        ret.add(new FixedParserField("ProcedureSchemeInUse", 2494, 2));
         ret.add(new FixedParserField("PrimaryProcedureOPCS", 2496, 4));
         ret.add(new FixedParserField("PrimaryProcedureDate", 2500, 8));
         ret.add(new FixedParserField("PrimaryMainOperatingHCPRegistrationIssuerCode", 2508, 2));
@@ -199,7 +229,7 @@ public class SusEmergency extends SusBaseParser {
         ret.add(new FixedParserField("SecondaryResponsibleAnaesthetistRegistrationEntryIdentifier", 2564, 12));
         ret.add(new FixedParserField("2nd50thSecondaryProceduresOPCS", 2576, 1960));
 //CLINICAL TREATMENT (READ) DETAILS
-        /*ret.add(new FixedParserField("ProcedureSchemeinUse", 4536, 2));
+        /*ret.add(new FixedParserField("ProcedureSchemeInUse", 4536, 2));
         ret.add(new FixedParserField("PrimaryProcedureGroupREAD", 4538, 13));
         ret.add(new FixedParserField("PrimaryProcedureREAD", 4538, 5));
         ret.add(new FixedParserField("PrimaryProcedureDate", 4543, 8));

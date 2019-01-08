@@ -52,7 +52,7 @@ public class PPPHOTransformer {
             String personIdStr = csvHelper.getInternalId(PPPHOPreTransformer.PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
                     ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
@@ -69,7 +69,7 @@ public class PPPHOTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
         }

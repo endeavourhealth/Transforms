@@ -58,11 +58,11 @@ public class ENCNTTransformer {
         CsvCell extractDateTimeCell = parser.getExtractDateTime();
         csvHelper.cacheExtractDateTime(extractDateTimeCell);
 
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell, csvHelper);
+        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
 
         //if inactive, we want to delete it
         if (!activeCell.getIntAsBoolean()) {
-            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, personIdCell, csvHelper, fhirResourceFiler, parser.getCurrentState(), activeCell);
+            csvHelper.getEncounterCache().deleteEncounter(encounterBuilder, encounterIdCell, personIdCell, fhirResourceFiler, parser.getCurrentState(), activeCell);
             return;
         }
 

@@ -19,6 +19,8 @@ import java.util.List;
 public class PRSNLREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PRSNLREFTransformer.class);
 
+    public static final String MAPPING_ID_PERSONNEL_NAME_TO_ID = "PersonnelNameToId";
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -125,6 +127,21 @@ public class PRSNLREFTransformer {
 
         //LOG.debug("Save Practitioner (PersonnelId=" + personnelIdCell.getString() + "):" + FhirSerializationHelper.serializeResource(practitionerBuilder.getResource()));
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
+
+        //we also need to save a lookup of free-text name to practitioner ID, because the fixed-width Procedure file
+        //only gives us the name and not the ID. Note the way that this free-text name is built up is specifically
+        //to mirror what Millennium does, so the weird extra spacing is intentional
+        StringBuffer sb = new StringBuffer();
+        sb.append(surname.getString());
+        sb.append(" , ");
+        sb.append(givenName.getString());
+        if (!middleName.isEmpty()) {
+            sb.append(" ");
+            sb.append(middleName.getString());
+        }
+
+        String freeTextName = sb.toString();
+        csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
     }
 
     /*private static void createPractitioner(PRSNLREF parser,

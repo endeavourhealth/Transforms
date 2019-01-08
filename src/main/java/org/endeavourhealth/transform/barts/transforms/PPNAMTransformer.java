@@ -53,7 +53,7 @@ public class PPNAMTransformer {
             String personIdStr = csvHelper.getInternalId(PPNAMPreTransformer.PPNAM_ID_TO_PERSON_ID, nameIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
                     NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
 
@@ -64,7 +64,7 @@ public class PPNAMTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
         }

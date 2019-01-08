@@ -49,7 +49,7 @@ public class PPALITransformer {
             String personIdStr = csvHelper.getInternalId(PPALIPreTransformer.PPALI_ID_TO_PERSON_ID, aliasIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr), csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
                     IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
@@ -66,7 +66,7 @@ public class PPALITransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
         }

@@ -8,6 +8,7 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     boolean nextRecord() throws Exception;
     CsvCurrentState getCurrentState();
     String getFilePath();
+    String getVersion();
     //long getSourceFileRecordIdForCurrentRow();
     DateFormat getDateFormat();
     DateFormat getTimeFormat();

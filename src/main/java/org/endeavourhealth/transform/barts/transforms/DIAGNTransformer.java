@@ -30,9 +30,6 @@ public class DIAGNTransformer {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                        continue;
-                    }
                     createCondition((DIAGN)parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -70,6 +67,10 @@ public class DIAGNTransformer {
 
         if (personId == null) {
             //TransformWarnings.log(LOG, parser, "Skipping Diagnosis {} due to missing encounter", diagnosisIdCell.getString());
+            return;
+        }
+
+        if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
             return;
         }
 

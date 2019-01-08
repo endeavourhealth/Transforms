@@ -31,8 +31,12 @@ public class EpisodeOfCareResourceCache {
     private static final String MAP_ENCOUNTER_TO_EPISODE_ID = "Encounter_to_Episode";
     private static final String MAP_ENCOUNTER_TO_FIN = "Encounter_to_FIN";
 
+    private final BartsCsvHelper csvHelper;
     private Map<UUID, EpisodeOfCareBuilder> episodeBuildersByUuid = new HashMap<>();
 
+    public EpisodeOfCareResourceCache(BartsCsvHelper csvHelper) {
+        this.csvHelper = csvHelper;
+    }
 
     /*public void setUpEpisodeOfCareBuilderMappings(ENCNT parser, BartsCsvHelper csvHelper) throws Exception {
 
@@ -56,11 +60,11 @@ public class EpisodeOfCareResourceCache {
      * but don't actually create the Episode itself.
      * Let the transforms for IPEPI, OPATT and AEATT pick up the mappings and create the EpisodeOfCare resource
      */
-    public void setUpEpisodeOfCareBuilderMappings(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
+    public void setUpEpisodeOfCareBuilderMappings(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell) throws Exception {
 
         //first, just store the mappings of Encounter ID -> Episode ID and FIN -> Episode ID, so
         //we can always find them later from an Encounter ID (needed because some files only have Encounter ID)
-        saveEncounterIdToEpisodeAndFinMappings(encounterIdCell, episodeIdCell, finCell, csvHelper);
+        saveEncounterIdToEpisodeAndFinMappings(encounterIdCell, episodeIdCell, finCell);
 
         //always prefer to use an Episode ID over a FIN, so check that first
         if (!episodeIdCell.isEmpty()) {
@@ -85,12 +89,12 @@ public class EpisodeOfCareResourceCache {
             }
 
             //if we've never previously created an Episode UUID for our Episode, generate it now
-            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell);
 
         } else if (!finCell.isEmpty()) {
 
             //if we've never previously created an Episode UUID for our Episode, generate it now
-            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+            ensureUuidExistsForEpisode(personIdCell, episodeIdCell, finCell, visitIdCell);
 
         } else {
 
@@ -160,39 +164,39 @@ public class EpisodeOfCareResourceCache {
         }
     }*/
 
-    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(AEATT parser, BartsCsvHelper csvHelper) throws Exception {
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(AEATT parser) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
         CsvCell activeIndicatorCell = parser.getActiveIndicator();
-        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell, csvHelper);
+        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
     }
 
-    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(OPATT parser, BartsCsvHelper csvHelper) throws Exception {
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(OPATT parser) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
         CsvCell activeIndicatorCell = parser.getActiveIndicator();
-        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell, csvHelper);
+        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
     }
 
-    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(IPEPI parser, BartsCsvHelper csvHelper) throws Exception {
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(IPEPI parser) throws Exception {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell personIdCell = parser.getPersonId();
         CsvCell activeIndicatorCell = parser.getActiveIndicator();
-        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell, csvHelper);
+        return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
     }
 
     /**
      * for three of the encounter-related files, there's just an Encounter ID, so we must try to
      * find the EpisodeOfCare by looking up either an Episode ID or FIN using the interal ID map table
      */
-    private EpisodeOfCareBuilder getEpisodeOfCareBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell, BartsCsvHelper csvHelper) throws Exception {
+    private EpisodeOfCareBuilder getEpisodeOfCareBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
         String encounterId = encounterIdCell.getString();
         String episodeId = csvHelper.getInternalId(MAP_ENCOUNTER_TO_EPISODE_ID, encounterId);
         if (!Strings.isNullOrEmpty(episodeId)) {
 
             String episodeLocalRef = createEpisodeReferenceFromEpisodeId(episodeId);
-            return retrieveAndCacheBuilder(episodeLocalRef, personIdCell, csvHelper, activeIndicatorCell);
+            return retrieveAndCacheBuilder(episodeLocalRef, personIdCell, activeIndicatorCell);
         }
 
         //if we couldn't find an Episode ID for our Encounter ID, see if we can match to a FIN
@@ -200,7 +204,7 @@ public class EpisodeOfCareResourceCache {
         if (!Strings.isNullOrEmpty(fin)) {
 
             String finLocalRef = createEpisodeReferenceFromFin(fin);
-            return retrieveAndCacheBuilder(finLocalRef, personIdCell, csvHelper, activeIndicatorCell);
+            return retrieveAndCacheBuilder(finLocalRef, personIdCell, activeIndicatorCell);
         }
 
         return null;
@@ -220,7 +224,7 @@ public class EpisodeOfCareResourceCache {
         return "FIN:" + fin;
     }
 
-    private void saveEncounterIdToEpisodeAndFinMappings(CsvCell encounterIdCell, CsvCell episodeIdcell, CsvCell finCell, BartsCsvHelper csvHelper) throws Exception {
+    private void saveEncounterIdToEpisodeAndFinMappings(CsvCell encounterIdCell, CsvCell episodeIdcell, CsvCell finCell) throws Exception {
 
         String encounterId = encounterIdCell.getString();
 
@@ -243,7 +247,7 @@ public class EpisodeOfCareResourceCache {
         }
     }
 
-    private void ensureUuidExistsForEpisode(CsvCell personIdCell, CsvCell episodeIdcell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) throws Exception {
+    private void ensureUuidExistsForEpisode(CsvCell personIdCell, CsvCell episodeIdcell, CsvCell finCell, CsvCell visitIdCell) throws Exception {
 
         String localEpisodeRef = null;
         if (!episodeIdcell.isEmpty()) {
@@ -296,7 +300,7 @@ public class EpisodeOfCareResourceCache {
         }
     }
 
-    private EpisodeOfCareBuilder retrieveAndCacheBuilder(String localRef, CsvCell personIdCell, BartsCsvHelper csvHelper, CsvCell activeIndicatorCell) throws Exception {
+    private EpisodeOfCareBuilder retrieveAndCacheBuilder(String localRef, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
         //the local ref may be an Episode ID or FIN, but both mappings should be created in the source ID -> UUID map table
         UUID episodeUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, localRef);
@@ -585,7 +589,7 @@ public class EpisodeOfCareResourceCache {
     }*/
 
 
-    public void fileResources(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public void fileResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //before saving the new ones work out any patients that we've changed
         Set<String> hsPatientUuidsChanged = new HashSet<>();
@@ -616,7 +620,7 @@ public class EpisodeOfCareResourceCache {
         fhirResourceFiler.waitUntilEverythingIsSaved();
 
         for (String patientUuid: hsPatientUuidsChanged) {
-            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler, csvHelper);
+            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler);
         }
     }
 
@@ -625,7 +629,7 @@ public class EpisodeOfCareResourceCache {
      * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
      * episodes because it doesn't have the data to avoid doing so
      */
-    private void deleteHl7ReceiverEpisodes(UUID patientUuid, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private void deleteHl7ReceiverEpisodes(UUID patientUuid, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
