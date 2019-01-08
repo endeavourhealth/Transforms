@@ -39,7 +39,7 @@ public class ProcedureTransformer extends AbstractTransformer {
         Date endDate = null;
         //TODO usualPractitionerId is already stored on the patient. Why here? Remove?
         Long usualPractitionerId = null;
-        Long careActivityId = null;
+        Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         Long owningOrganisationId = null;
@@ -61,6 +61,11 @@ public class ProcedureTransformer extends AbstractTransformer {
             effectiveDate = dt.getValue();
             effectiveDatePrecision = convertDatePrecision(dt.getPrecision());
         }
+        if (fhir.hasEncounter() && fhir.getEncounter() != null && !fhir.getEncounter().isEmpty()) {
+            Reference reference = fhir.getEncounter();
+            careActivityId = transformOnDemandAndMapId(reference, params);
+
+        }
 
         if (fhir.hasPerformer()) {
             List<Procedure.ProcedurePerformerComponent> performers = fhir.getPerformer();
@@ -69,13 +74,23 @@ public class ProcedureTransformer extends AbstractTransformer {
                     Reference reference = perf.getActor();
                     ResourceType resourceType = ReferenceHelper.getResourceType(reference);
                     if (resourceType.equals(ResourceType.Practitioner)) {
-                        effectivePractitionerId = transformOnDemandAndMapId(perf.getActor(), params);
+                        if (effectivePractitionerId == null) {
+                            effectivePractitionerId = transformOnDemandAndMapId(perf.getActor(), params);
+                        } else {
+
+                        }
                         //break;
                     } else if (resourceType.equals(ResourceType.Organization)) {
                         owningOrganisationId = transformOnDemandAndMapId(perf.getActor(), params);
                     }
                     //TODO Means we only record one performer. Need to think about 1-many. Maybe procedure to practitioner map?
                     //This limit is already enforced in at least one incoming transformer.
+                    //We can do this once we know how careActivity and careEpisodes map
+//                    writeExtraPractitioner(careEpisodeId,
+//                            effectivePractitionerId,
+//                            patientId,
+//                            enteredByPractitionerId,
+//                            csvWriter);
                 }
             }
         }
@@ -85,12 +100,12 @@ public class ProcedureTransformer extends AbstractTransformer {
 
             //snomedConceptId = codes.getSnomedConceptId();
             outcomeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            if (codes.getOriginalTerm()!=null) {
-                originalTerm= codes.getOriginalTerm();
+            if (codes.getOriginalTerm() != null) {
+                originalTerm = codes.getOriginalTerm();
             }
             originalCode = codes.getOriginalCode();
             // originalCodeScheme =  toIntExact(CodeScheme.SNOMED.getValue());
-            if (codes.getSystem()!=null) {
+            if (codes.getSystem() != null) {
                 originalCodeScheme = FhirToPcrHelper.getCodingScheme(codes.getSystem());
             }
             //originalSystem =
@@ -108,6 +123,8 @@ public class ProcedureTransformer extends AbstractTransformer {
         if (fhir.hasPerformedPeriod() && fhir.getPerformedPeriod() != null && fhir.getPerformedPeriod().hasEnd()) {
             endDate = fhir.getPerformedPeriod().getEnd();
         }
+
+
         //confidential
         Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
         if (confidentialExtension != null) {
@@ -125,6 +142,7 @@ public class ProcedureTransformer extends AbstractTransformer {
                 enteredByPractitionerId,
                 endDate,
 //                usualPractitionerId,
+                //TODO Sort care activity
                 careActivityId,
                 careActivityHeadingConceptId,
                 owningOrganisationId,
@@ -138,7 +156,16 @@ public class ProcedureTransformer extends AbstractTransformer {
                 isConsent);
 
 
+    }
 
+    private void writeExtraPractitioner(Long careEpisodeId,
+                                        Long effectivePractitionerId,
+                                        Long patientId,
+                                        Long enteredByPractitionerId,
+                                        AbstractPcrCsvWriter csvWriter) throws  Exception{
+        org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner model =
+                (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner) csvWriter;
+        model.writeUpsert(patientId, careEpisodeId, effectivePractitionerId, enteredByPractitionerId);
     }
 }
 

@@ -38,6 +38,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
     //TODO Placeholders for IM values and data_entry
     public static final long IM_PLACE_HOLDER = -1;
     public static final long DATA_ENTRY_PLACE_HOLDER = -1;
+    public static final long CARE_ACTIVITY_PLACE_HOLDER = -1;
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
     public static final String DATE_FORMAT = "dd MMM yyyy";
     public static final String TIME_FORMAT = "HH:mm:ss";

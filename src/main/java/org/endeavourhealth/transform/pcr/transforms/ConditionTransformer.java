@@ -56,7 +56,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Date insertDate = new Date();
         Date enteredDate = null;
         Long effectivePractitionerId = null;
-        Long careActivityId = null;
+        Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;  //not available in FHIR
         boolean confidential = false;

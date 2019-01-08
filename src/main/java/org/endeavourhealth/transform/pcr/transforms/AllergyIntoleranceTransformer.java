@@ -51,7 +51,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Long substanceConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
              Long enteredByPractitionerId = null;
-        Long careActivityId = null;
+        Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean isConfidential = false;

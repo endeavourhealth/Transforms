@@ -52,7 +52,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Date insertDate = new Date();
         Date enteredDate = null;
         Long enteredByPractitionerId = null;
-        Long careActivityId = null;
+        Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = -1L;
         Long statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         boolean confidential = false;
