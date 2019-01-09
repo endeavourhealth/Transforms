@@ -187,6 +187,12 @@ public class ConditionTransformer extends AbstractTransformer {
             //TODO do we know how these URIs are mapped yet in IM?
         }
 
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
         Extension significanceExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
         if (significanceExtension != null) {
 

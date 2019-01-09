@@ -15,7 +15,7 @@
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
         <eds-core.version>1.318-SNAPSHOT</eds-core.version>
-        <eds-fhir.version>1.81-SNAPSHOT</eds-fhir.version>
+        <eds-fhir.version>1.82-SNAPSHOT</eds-fhir.version>
         <eds-utility.version>1.38-SNAPSHOT</eds-utility.version>
         <eds-cache.version>1.2-SNAPSHOT</eds-cache.version>
         <eds-im.version>1.4-SNAPSHOT</eds-im.version>

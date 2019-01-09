@@ -23,12 +23,39 @@ public class AppointmentTransformer extends AbstractTransformer {
                                      PcrTransformParams params) throws Exception {
 
         Appointment fhir = (Appointment) resource;
+        Long id = pcrId;
+        Long appointmentScheduleId = null;
+        Date slotStart = null;
+        Date slotEnd = null;
+        Long plannedDurationMinutes = null;
+        Long typeConceptId = null;
+        Long interactionConceptId = null;
+        Long appointmentSlotId = null;
+        Long patientId = null;
+        Long enteredByPractitionerId = null;
+        Date actualStartTime = null;
+        Date actualEndTime = null;
+        Long statusConceptId = null;
+        Date eventTime = null;
+        Long eventConceptId = null;
+        Long organisationId = null;
+        Long locationId = null;
+        String description;
+        Long specialityConceptId = null;
+        Date scheduleStart = null;
+        Date scheduleEnd = null;
+        Long practitionerId = null;
+        Boolean isMainPractitioner=false;
 
+        if (fhir.hasSlot() && !fhir.getSlot().isEmpty()) {
+           writeAppointmentSlot(id, appointmentScheduleId,slotStart,slotEnd,plannedDurationMinutes,typeConceptId,interactionConceptId,csvWriter);
+        }
+
+        Appointment.AppointmentStatus status = fhir.getStatus();
 
 //        long id;
 //        long organisationId;
 //        long patientId;
-//        long personId;
 //        Long practitionerId = null;
 //        Long scheduleId = null;
 //        Date startDate = null;

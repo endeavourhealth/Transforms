@@ -115,7 +115,12 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             careActivityId = encounterId;            //TODO: check this is correct
         }
 
-
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
         CodeableConcept medicationCode = fhir.getMedicationCodeableConcept();
         if (medicationCode != null) {
 

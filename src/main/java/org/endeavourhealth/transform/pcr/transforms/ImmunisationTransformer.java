@@ -138,6 +138,12 @@ public class ImmunisationTransformer extends AbstractTransformer {
             BooleanType b = (BooleanType) confidentialExtension.getValue();
             confidential = b.getValue();
         }
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
 
         if (fhir.hasDoseQuantity()) {
 

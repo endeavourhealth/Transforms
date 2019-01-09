@@ -84,7 +84,12 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             isCurrent=true;
         }
 
-
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
         OutputContainer data = params.getOutputContainer();
         org.endeavourhealth.transform.pcr.outputModels.GpRegistrationStatus model = data.getGpRegistration();
         model.writeUpsert(id,

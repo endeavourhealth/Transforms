@@ -130,9 +130,14 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         //confidential
         Extension confidentialExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONFIDENTIAL);
         if (confidentialExtension != null) {
-
             BooleanType b = (BooleanType) confidentialExtension.getValue();
             isConfidential = b.getValue();
+        }
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
         }
         OutputContainer data = params.getOutputContainer();
         StringBuilder manifestText  = new StringBuilder();

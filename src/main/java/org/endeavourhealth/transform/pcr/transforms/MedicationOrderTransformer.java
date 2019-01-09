@@ -168,6 +168,12 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 }
             }
         }
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
 
         if (fhir.hasStatus()) {
 

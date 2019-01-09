@@ -186,7 +186,12 @@ public class ObservationTransformer extends AbstractTransformer {
             BooleanType b = (BooleanType) confidentialExtension.getValue();
             confidential = b.getValue();
         }
-
+        //consent
+        Extension consentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_CONSENT);
+        if (consentExtension != null) {
+            BooleanType b = (BooleanType) consentExtension.getValue();
+            isConsent = b.getValue();
+        }
         Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
         if (episodicityExtension != null) {
 
