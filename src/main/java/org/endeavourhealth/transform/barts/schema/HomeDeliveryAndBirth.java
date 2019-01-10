@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
-import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,176 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusInpatient extends AbstractFixedParser {
-    private static final Logger LOG = LoggerFactory.getLogger(SusInpatient.class);
+public class HomeDeliveryAndBirth extends AbstractFixedParser {
+    private static final Logger LOG = LoggerFactory.getLogger(HomeDeliveryAndBirth.class);
 
-    public SusInpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public HomeDeliveryAndBirth(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
-
-    public CsvCell getCdsUniqueId() {
-        return super.getCell("CDSUniqueIdentifier");
-    }
-
-    public CsvCell getProcedureSchemeInUse() {
-        return super.getCell("ProcedureSchemeInUse");
-    }
-
-    public CsvCell getPrimaryProcedureOPCS() {
-        return super.getCell("PrimaryProcedureOPCS");
-    }
-
-    public CsvCell getPrimaryProcedureDate() {
-        return super.getCell("PrimaryProcedureDate");
-    }
-
-
-    public CsvCell getSecondaryProcedureOPCS() {
-        return super.getCell("SecondaryProcedureOPCS");
-    }
-
-    public CsvCell getSecondaryProcedureDate() {
-        return super.getCell("SecondaryProcedureDate");
-    }
-
-    public CsvCell getAdditionalecondaryProceduresOPCS() {
-        return super.getCell("2nd50thSecondaryProceduresOPCS");
-    }
-
-    public CsvCell getCDSRecordType() {
-        return super.getCell("CDSRecordType");
-    }
-
-
-    public CsvCell getPrimaryMainOperatingHCPRegistrationEntryIdentifier() {
-        return super.getCell("PrimaryMainOperatingHCPRegistrationEntryIdentifier");
-    }
-
-    public CsvCell getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier() {
-        return super.getCell("PrimaryResponsibleAnaesthetistRegistrationEntryIdentifier");
-    }
-
-
-
-
-
-    /*public Date getAdmissionDate() throws TransformException {
-        return super.getDate("StartDateHospitalProviderSpell");
-    }
-
-    public Date getAdmissionTime() throws TransformException {
-        return super.getTime("StartTimeHospitalProviderSpell");
-    }
-
-    public Date getAdmissionDateTime() throws TransformException {
-        return super.getDateTime("StartDateHospitalProviderSpell", "StartTimeHospitalProviderSpell");
-    }
-
-    public Date getDischargeDate() throws TransformException {
-        return super.getDate("DischargeDateHospitalProviderSpell");
-    }
-
-    public Date getDischargeTime() throws TransformException {
-        return super.getTime("DischargeTimeHospitalProviderSpell");
-    }
-
-    public Date getDischargeDateTime() throws TransformException {
-        return super.getDateTime("DischargeDateHospitalProviderSpell", "DischargeTimeHospitalProviderSpell");
-    }
-
-    public String getConsultantCode() {
-        return super.getString("ConsultantCode");
-    }
-
-
-
-
-    public String getCDSUniqueID() {
-        return super.getString("CDSUniqueIdentifier");
-    }
-
-    // 1 = Delete, 9 = New/Replace
-    public int getCDSUpdateType() {
-        return super.getInt("CDSUpdateType");
-    }
-
-    public String getLocalPatientId() {
-        return super.getString("LocalPatientID");
-    }
-
-    public String getNHSNo() {
-        return super.getString("NHSNumber");
-    }
-
-    public Date getDOB() throws TransformException {
-        return super.getDate("PersonBirthDate");
-    }
-
-    public String getPatientTitle() {
-        return super.getString("PatientTitle");
-    }
-
-    public String getPatientForename() {
-        return super.getString("PatientForename");
-    }
-
-    public String getPatientSurname() {
-        return super.getString("PatientSurname");
-    }
-
-    public String getAddressType() {
-        return super.getString("PatientAddressType");
-    }
-
-    public String getUnstructuredAddress() {
-        return super.getString("PatientUnstructuredAddress");
-    }
-
-    public String getAddress1() {
-        return super.getString("PatientAddressStructured1");
-    }
-
-    public String getAddress2() {
-        return super.getString("PatientAddressStructured2");
-    }
-
-    public String getAddress3() {
-        return super.getString("PatientAddressStructured3");
-    }
-
-    public String getAddress4() {
-        return super.getString("PatientAddressStructured4");
-    }
-
-    public String getAddress5() {
-        return super.getString("PatientAddressStructured5");
-    }
-
-    public String getPostCode() {
-        return super.getString("Postcode");
-    }
-
-    public int getGender() {
-        return Integer.parseInt(super.getString("PersonCurrentGender"));
-    }
-
-    public String getEthnicCategory() {
-        return super.getString("EthnicCategory");
-    }
-
-    public String getGP() {
-        return super.getString("GeneralMedicalPractitionerRegistered");
-    }
-
-    public String getGPPractice() {
-        return super.getString("GPPracticeRegistered");
-    }
-
-    public String getICDPrimaryDiagnosis() {
-        return super.getString("PrimaryDiagnosisICD");
-    }
-
-    */
 
     @Override
     protected boolean isFileAudited() {
@@ -196,6 +31,9 @@ public class SusInpatient extends AbstractFixedParser {
     protected List<FixedParserField> getFieldList(String version) {
 
         List<FixedParserField> ret = new ArrayList<>();
+
+        //note, Barts have confirmed that the Home Delivery and Birth file uses the same specification
+        //as the SUS Inpatient file, so the below is copied from there
 
         //file definition in Indigo 4 Standard BT Translation Service v6-2 Specification - v1.0.1.xls
 
@@ -802,7 +640,7 @@ public class SusInpatient extends AbstractFixedParser {
 
         ret.add(new FixedParserField("GP",    5325, 8));
         ret.add(new FixedParserField("GPPractice",    5333, 12));
-        
+
         return ret;
     }*/
 }

@@ -1,28 +1,44 @@
-package org.endeavourhealth.transform.barts.transformsOld;
+package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.Diagnosis;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
-import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class DiagnosisTransformer extends BartsBasisTransformer {
+public class DiagnosisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisTransformer.class);
 
-    /*
-     *
-     */
-    public static void transform(String version,
+    public static void transform(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser: parsers) {
+
+            while (parser.nextRecord()) {
+                try {
+                    createDiagnosis((Diagnosis)parser, fhirResourceFiler, csvHelper);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    private static void createDiagnosis(Diagnosis parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) {
+        //TODO
+    }
+
+    //OLD 2.1 transform code is below//////////////////////////////////////////////////////////
+
+    /*public static void transform(String version,
                                  List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper,
@@ -46,9 +62,6 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
     }
 
 
-    /*
-     *
-     */
     public static void createDiagnosis(Diagnosis parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,
@@ -108,6 +121,6 @@ public class DiagnosisTransformer extends BartsBasisTransformer {
             deletePatientResource(fhirResourceFiler, parser.getCurrentState(), new ConditionBuilder(fhirCondition));
         }
 
-    }
+    }*/
 
 }
