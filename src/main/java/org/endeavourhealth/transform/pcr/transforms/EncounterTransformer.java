@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.List;
 
 public class EncounterTransformer extends AbstractTransformer {
 
@@ -50,6 +49,7 @@ public class EncounterTransformer extends AbstractTransformer {
         Long referralRequestId = null;
         Boolean isConsent = false;
         Long latestCareEpisodeStatusId = null;
+        Long episodeOfCareId = -1L;
 
 
         //recorded/entered by
@@ -65,50 +65,54 @@ public class EncounterTransformer extends AbstractTransformer {
             isConsent = b.getValue();
         }
         //CareEpisodes
-        if (fhir.hasEpisodeOfCare() && !fhir.getEpisodeOfCare().isEmpty()) {
-            encounterLinkId = resource.getId();
-            List<Reference> references = fhir.getEpisodeOfCare();
-            for (Reference reference : references) {
-                EpisodeOfCare episode = (EpisodeOfCare) findResource(reference, params);
-                if (episode.hasCareManager() && !episode.getCareManager().isEmpty()) {
-                    effectivePractitionerId = transformOnDemandAndMapId(episode.getCareManager(), params);
-                }
-                Long ceId = findOrCreatePcrId(params, ResourceType.EpisodeOfCare.toString(), fhir.getId());
-                org.endeavourhealth.transform.pcr.outputModels.CareEpisode model =
-                        (org.endeavourhealth.transform.pcr.outputModels.CareEpisode) csvWriter;
-                model.writeUpsert(ceId, patientId, owningOrganisationId, effectiveDate, effectiveDatePrecision, effectivePractitionerId, enteredByPractitionerId, endDate,
-                        encounterLinkId, statusConceptId, specialityConceptId, adminConceptId, reasonConceptId, typeConceptId, locationId, referralRequestId, isConsent, latestCareEpisodeStatusId);
-                if (episode.hasCareTeam() && !episode.getCareTeam().isEmpty()) {
-                    for (EpisodeOfCare.EpisodeOfCareCareTeamComponent c : episode.getCareTeam()) {
-                        Resource res = c.getMemberTarget();
-                        if (res.getResourceType().equals(ResourceType.Practitioner)) {
-                            Long practitionerId = findOrCreatePcrId(params, ResourceType.Practitioner.toString(), res.getId());
-                            org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner additionalPractionerModel =
-                                    (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner) csvWriter;
-                            additionalPractionerModel.writeUpsert(patientId, ceId, practitionerId, enteredByPractitionerId);
-                        }
-                    }
-                }
-                if (episode.hasStatus() && !(episode.getStatus() == null)) ;
-                EpisodeOfCare.EpisodeOfCareStatus episodeOfCareStatus = episode.getStatus();
-                Date startTime = null;
-                Date endTime = null;
-                if (episode.hasPeriod()) {
-                    startTime = episode.getPeriod().getStart();
-                    endTime = episode.getPeriod().getEnd();
-                }
-                String careEpisodeStatus = episodeOfCareStatus.toCode();
-                //TODO how to get statId from status
-                Long careEpisodeStatusId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus episodeStatus =
-                        (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus) csvWriter;
-                episodeStatus.writeUpsert(patientId, owningOrganisationId, enteredByPractitionerId, ceId, startTime, endTime, careEpisodeStatusId);
-            }
-
-
+        if (fhir.hasEpisodeOfCare()) {
+            Reference episodeReference = fhir.getEpisodeOfCare().get(0);
+            episodeOfCareId = findPcrId(params, episodeReference);
         }
+//        if (fhir.hasEpisodeOfCare() && !fhir.getEpisodeOfCare().isEmpty()) {
+//            encounterLinkId = resource.getId();
+//            List<Reference> references = fhir.getEpisodeOfCare();
+//            for (Reference reference : references) {
+//                EpisodeOfCare episode = (EpisodeOfCare) findResource(reference, params);
+//                if (episode.hasCareManager() && !episode.getCareManager().isEmpty()) {
+//                    effectivePractitionerId = transformOnDemandAndMapId(episode.getCareManager(), params);
+//                }
+//                Long ceId = findOrCreatePcrId(params, ResourceType.EpisodeOfCare.toString(), fhir.getId());
+//                org.endeavourhealth.transform.pcr.outputModels.CareEpisode model =
+//                        (org.endeavourhealth.transform.pcr.outputModels.CareEpisode) csvWriter;
+//                model.writeUpsert(ceId, patientId, owningOrganisationId, effectiveDate, effectiveDatePrecision, effectivePractitionerId, enteredByPractitionerId, endDate,
+//                        encounterLinkId, statusConceptId, specialityConceptId, adminConceptId, reasonConceptId, typeConceptId, locationId, referralRequestId, isConsent, latestCareEpisodeStatusId);
+//                if (episode.hasCareTeam() && !episode.getCareTeam().isEmpty()) {
+//                    for (EpisodeOfCare.EpisodeOfCareCareTeamComponent c : episode.getCareTeam()) {
+//                        Resource res = c.getMemberTarget();
+//                        if (res.getResourceType().equals(ResourceType.Practitioner)) {
+//                            Long practitionerId = findOrCreatePcrId(params, ResourceType.Practitioner.toString(), res.getId());
+//                            org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner additionalPractionerModel =
+//                                    (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeAdditionalPractitioner) csvWriter;
+//                            additionalPractionerModel.writeUpsert(patientId, ceId, practitionerId, enteredByPractitionerId);
+//                        }
+//                    }
+//                }
+//                if (episode.hasStatus() && !(episode.getStatus() == null)) ;
+//                EpisodeOfCare.EpisodeOfCareStatus episodeOfCareStatus = episode.getStatus();
+//                Date startTime = null;
+//                Date endTime = null;
+//                if (episode.hasPeriod()) {
+//                    startTime = episode.getPeriod().getStart();
+//                    endTime = episode.getPeriod().getEnd();
+//                }
+//                String careEpisodeStatus = episodeOfCareStatus.toCode();
+//                //TODO how to get statId from status
+//                Long careEpisodeStatusId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+//                org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus episodeStatus =
+//                        (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus) csvWriter;
+//                episodeStatus.writeUpsert(patientId, owningOrganisationId, enteredByPractitionerId, ceId, startTime, endTime, careEpisodeStatusId);
+//            }
+//
+//
+//        }
 
-
+//TODO now not sure what Encounter maps to
         org.endeavourhealth.transform.pcr.outputModels.Consultation model =
                 (org.endeavourhealth.transform.pcr.outputModels.Consultation) csvWriter;
         // model.writeUpsert(id, appointmentScheduleId, slotStart, slotEnd, plannedDurationMinutes, typeConceptId, interactionConceptId);
