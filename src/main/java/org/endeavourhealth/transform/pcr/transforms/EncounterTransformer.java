@@ -89,20 +89,20 @@ public class EncounterTransformer extends AbstractTransformer {
                         }
                     }
                 }
- if (episode.hasStatus() &&  !(episode.getStatus() == null));
+                if (episode.hasStatus() && !(episode.getStatus() == null)) ;
                 EpisodeOfCare.EpisodeOfCareStatus episodeOfCareStatus = episode.getStatus();
                 Date startTime = null;
                 Date endTime = null;
-                if (episode.hasPeriod()  ) {
+                if (episode.hasPeriod()) {
                     startTime = episode.getPeriod().getStart();
                     endTime = episode.getPeriod().getEnd();
                 }
-                String careEpisodeStatus =episodeOfCareStatus.toCode();
+                String careEpisodeStatus = episodeOfCareStatus.toCode();
                 //TODO how to get statId from status
                 Long careEpisodeStatusId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
                 org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus episodeStatus =
                         (org.endeavourhealth.transform.pcr.outputModels.CareEpisodeStatus) csvWriter;
-                episodeStatus.writeUpsert(patientId,owningOrganisationId,enteredByPractitionerId,ceId,startTime,endTime,careEpisodeStatusId);
+                episodeStatus.writeUpsert(patientId, owningOrganisationId, enteredByPractitionerId, ceId, startTime, endTime, careEpisodeStatusId);
             }
 
 
