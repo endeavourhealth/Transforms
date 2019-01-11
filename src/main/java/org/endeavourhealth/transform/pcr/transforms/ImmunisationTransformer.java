@@ -49,8 +49,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         patientId = params.getPcrPatientId();
 
         Long conceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-        Date insertDate = new Date();
-        Date enteredDate = null;
+      //  Date enteredDate = null;
         Long enteredByPractitionerId = null;
         Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = -1L;
@@ -89,13 +88,13 @@ public class ImmunisationTransformer extends AbstractTransformer {
             effectiveDatePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        //recorded/entered date
-        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-        if (enteredDateExtension != null) {
-
-            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
-            enteredDate = enteredDateTimeType.getValue();
-        }
+//        //recorded/entered date
+//        Extension enteredDateExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+//        if (enteredDateExtension != null) {
+//
+//            DateTimeType enteredDateTimeType = (DateTimeType)enteredDateExtension.getValue();
+//            enteredDate = enteredDateTimeType.getValue();
+//        }
 
         //recorded/entered by
         Extension enteredByPractitionerExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
