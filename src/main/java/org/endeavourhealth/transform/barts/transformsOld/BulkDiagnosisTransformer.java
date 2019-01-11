@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class BulkDiagnosisTransformer extends BartsBasisTransformer {
+public class BulkDiagnosisTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BulkDiagnosisTransformer.class);
 
     /*

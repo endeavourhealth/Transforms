@@ -73,6 +73,8 @@ public class PROCETransformer {
             return;
         }
 
+        //TODO - use PROCEDURE_SEQ_NBR to work out if primary or not
+
         // create the FHIR Procedure
         /*ProcedureBuilder procedureBuilder = csvHelper.getProcedureCache().borrowProcedureBuilder(uniqueId, )
 

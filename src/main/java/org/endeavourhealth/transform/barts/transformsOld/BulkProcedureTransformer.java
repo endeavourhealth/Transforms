@@ -23,7 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class BulkProcedureTransformer extends BartsBasisTransformer {
+public class BulkProcedureTransformer extends BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BulkProcedureTransformer.class);
     public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 

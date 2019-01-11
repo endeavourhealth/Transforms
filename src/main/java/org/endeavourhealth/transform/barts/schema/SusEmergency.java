@@ -87,6 +87,8 @@ public class SusEmergency extends AbstractFixedParser {
 
         List<FixedParserField> ret = new ArrayList<>();
 
+        //file definition in Indigo 4 Standard BT Translation Service v6-2 Specification - v1.0.1.xls
+
         //NOTE the below list was generated from the inpatient CDS specification spreadsheet, and includes all columns
         //although columns we know aren't needed have been commented out
 
