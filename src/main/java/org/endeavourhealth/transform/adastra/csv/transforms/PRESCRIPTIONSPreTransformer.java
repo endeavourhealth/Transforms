@@ -54,6 +54,7 @@ public class PRESCRIPTIONSPreTransformer {
         }
 
         String drugNameFirstPart = drugName.getString().substring(0, drugName.getString().indexOf(" "));
+        drugNameFirstPart = drugNameFirstPart.replace("/","").trim();   //strip out slashes as used as a reference
         String drugQty = quantity.getString();
 
         //create a unique Id for the drug based on case : consultation : drugName + qty
