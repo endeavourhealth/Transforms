@@ -53,6 +53,7 @@ public class PRESCRIPTIONSTransformer {
 
         CsvCell drugName = parser.getDrugName();
         String drugNameFirstPart = drugName.getString().substring(0, drugName.getString().indexOf(" "));
+        drugNameFirstPart = drugNameFirstPart.replace("/","").trim();   //strip out slashes as used as a reference
 
         CsvCell quantity = parser.getQuanity();
         String drugQty = quantity.getString();
