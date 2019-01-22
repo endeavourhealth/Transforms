@@ -242,15 +242,23 @@ public abstract class BartsCsvToFhirTransformer {
      * finds parsers for the given file type on any matching files
      */
     private static List<ParserI> getParsers(Map<String, List<ParserI>> parserMap, String type, boolean removeFromMap) throws Exception {
-        
+
+        List<ParserI> ret = null;
+
         if (removeFromMap) {
             //if removeFromMap is true, it means that this is the last time
             //we'll need the parsers, to remove from the map and allow them to be garbage collected when we're done
-            return parserMap.remove(type);
+            ret = parserMap.remove(type);
             
         } else {
-            return parserMap.get(type);
+            ret = parserMap.get(type);
         }
+
+        if (ret == null) {
+            ret = new ArrayList<>();
+        }
+
+        return ret;
     }
 
     private static ParserI createParser(String filePath, String type, BartsCsvHelper csvHelper) throws Exception {
