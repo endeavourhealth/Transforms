@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
@@ -443,7 +444,9 @@ public abstract class EmisCsvToFhirTransformer {
 
         //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        if (!resourceDal.dataExists(fhirResourceFiler.getServiceId())) {
+        ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+        if (!resourceDal.dataExists(fhirResourceFiler.getServiceId())
+                || !exchangeDal.hasProcessedExchangeOk(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
 
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
