@@ -470,6 +470,8 @@ public abstract class EmisCsvToFhirTransformer {
         SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         if (processPatientData) {
+            //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
+            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             SlotTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         }
         //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
@@ -483,7 +485,6 @@ public abstract class EmisCsvToFhirTransformer {
         if (processPatientData) {
 
             LOG.trace("Starting patient pre-transforms");
-            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
