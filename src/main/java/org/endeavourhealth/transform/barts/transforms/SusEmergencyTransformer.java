@@ -22,12 +22,12 @@ public class SusEmergencyTransformer {
     public static void transformProcedures(List<ParserI> parsers,
                                            FhirResourceFiler fhirResourceFiler,
                                            BartsCsvHelper csvHelper,
-                                           Map<String, List<String>> fileMap) throws Exception {
+                                           Map<String, List<ParserI>> parserMap) throws Exception {
 
         for (ParserI parser: parsers) {
 
             //parse corresponding tails file first
-            Map<String, SusTailCacheEntry> tailsCache = processTailsFile(parser, fileMap);
+            Map<String, SusTailCacheEntry> tailsCache = processTailsFile(parser, parserMap);
 
             while (parser.nextRecord()) {
                 try {
@@ -43,9 +43,8 @@ public class SusEmergencyTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static Map<String, SusTailCacheEntry> processTailsFile(ParserI parser, Map<String, List<String>> fileMap) throws Exception {
-        String tailFilePath = BartsCsvToFhirTransformer.findTailFile(fileMap, "SusEmergencyTail", parser.getFilePath());
-        SusEmergencyTail tailParser = new SusEmergencyTail(parser.getServiceId(), parser.getSystemId(), parser.getExchangeId(), parser.getVersion(), tailFilePath);
+    private static Map<String, SusTailCacheEntry> processTailsFile(ParserI parser, Map<String, List<ParserI>> parserMap) throws Exception {
+        SusEmergencyTail tailParser = (SusEmergencyTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyTail", parser.getFilePath());
         Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
         SusEmergencyTailPreTransformer.transform(tailParser, tailsCache);
         return tailsCache;

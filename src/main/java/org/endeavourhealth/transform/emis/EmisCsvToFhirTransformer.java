@@ -441,9 +441,10 @@ public abstract class EmisCsvToFhirTransformer {
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
 
-        //if this is the first extract for this organisation, we need to apply all the content of the admin resource cache
+        //if this is the first exchange for this organisation, we need to apply all the content of the admin resource cache
         ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
-        if (!exchangeDal.isServiceStarted(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId())) {
+        UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
+        if (firstExchangeId.equals(fhirResourceFiler.getExchangeId())) {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
 
             csvHelper.applyAdminResourceCache(fhirResourceFiler);
@@ -469,6 +470,8 @@ public abstract class EmisCsvToFhirTransformer {
         SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         if (processPatientData) {
+            //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
+            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             SlotTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         }
         //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
@@ -482,7 +485,6 @@ public abstract class EmisCsvToFhirTransformer {
         if (processPatientData) {
 
             LOG.trace("Starting patient pre-transforms");
-            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

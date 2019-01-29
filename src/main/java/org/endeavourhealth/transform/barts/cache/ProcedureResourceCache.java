@@ -67,7 +67,15 @@ public class ProcedureResourceCache {
         for (String uniqueId: procedureBuildersById.keySet()) {
             ProcedureBuilder builder = procedureBuildersById.getAndRemoveFromCache(uniqueId);
 
-//TODO - validate if we want to save this resource???
+            Procedure procedure = (Procedure)builder.getResource();
+
+            //don't save procedures where we've not got a date
+            if (!procedure.hasPerformedDateTimeType()) {
+                LOG.debug("Not saving procedure " + procedure.getId() + " as it has no date");
+                continue;
+            }
+
+            //TODO - validate if we want to save this resource???
 
             boolean performIdMapping = !builder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, performIdMapping, builder);
