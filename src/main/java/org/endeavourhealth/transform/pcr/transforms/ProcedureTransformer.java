@@ -37,8 +37,6 @@ public class ProcedureTransformer extends AbstractTransformer {
         Long effectivePractitionerId = null;
         Long enteredByPractitionerId = null;
         Date endDate = null;
-        //TODO usualPractitionerId is already stored on the patient. Why here? Remove?
-        Long usualPractitionerId = null;
         Long careActivityId = FhirToPcrCsvTransformer.CARE_ACTIVITY_PLACE_HOLDER;
         Long careActivityHeadingConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
@@ -50,7 +48,7 @@ public class ProcedureTransformer extends AbstractTransformer {
         Integer originalCodeScheme = null;
         Integer originalSystem = null;
         Long outcomeConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-        ;
+
         Boolean isConsent = null;
 
         Procedure fhir = (Procedure) resource;
