@@ -79,6 +79,7 @@ public abstract class AbstractTransformer {
                 if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
 
                     if (resource.isDeleted()) {
+                        csvWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(resourceType, params);
                         transformResourceDelete(pcrId, csvWriter, params);
 
                     } else {
@@ -105,7 +106,6 @@ public abstract class AbstractTransformer {
     protected void transformResourceDelete(Long pcrId,
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
-
         csvWriter.writeDelete(pcrId.longValue());
     }
 
