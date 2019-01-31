@@ -80,6 +80,9 @@ public abstract class AbstractTransformer {
 
                     if (resource.isDeleted()) {
                         csvWriter = FhirToPcrCsvTransformer.findCsvWriterForResourceType(resourceType, params);
+                        if (csvWriter == null) {
+                            continue;
+                        }
                         transformResourceDelete(pcrId, csvWriter, params);
 
                     } else {
@@ -106,7 +109,8 @@ public abstract class AbstractTransformer {
     protected void transformResourceDelete(Long pcrId,
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
-        LOG.info("Writing delete to" + csvWriter.getFileName() +" for id:" + pcrId);
+//        LOG.info("Writing delete to" + csvWriter.getFileName());
+//        LOG.info(" for id:" + pcrId);
         csvWriter.writeDelete(pcrId.longValue());
     }
 

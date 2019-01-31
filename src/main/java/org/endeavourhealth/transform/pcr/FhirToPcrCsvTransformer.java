@@ -365,7 +365,8 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         } else if (resourceType == ResourceType.Patient) {
             return data.getPatients();
         } else if (resourceType == ResourceType.EpisodeOfCare) {
-            return data.getEpisodesOfCare();
+            return null;
+            //return data.getEpisodesOfCare();
         } else if (resourceType == ResourceType.Appointment) {
             return null;
 //            return data.getAppointments();
