@@ -76,7 +76,7 @@ public class PatientTransformer extends AbstractTransformer {
         String lastName = null;
         String previousLastName = null;
         Long homeAddressId = null;
-        Character ethnicCode = null;
+        Character ethnicCode = EthnicCategory.NOT_STATED.getCode().charAt(0);;
         Long careProviderId = null;
         boolean isSpineSensitive;
 
