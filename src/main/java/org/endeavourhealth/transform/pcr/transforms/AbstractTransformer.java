@@ -106,6 +106,7 @@ public abstract class AbstractTransformer {
     protected void transformResourceDelete(Long pcrId,
                                            AbstractPcrCsvWriter csvWriter,
                                            PcrTransformParams params) throws Exception {
+        LOG.info("Writing delete to" + csvWriter.getFileName() +" for id:" + pcrId);
         csvWriter.writeDelete(pcrId.longValue());
     }
 
