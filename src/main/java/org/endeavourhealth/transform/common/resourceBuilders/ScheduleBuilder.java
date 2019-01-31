@@ -39,9 +39,23 @@ public class ScheduleBuilder extends ResourceBuilderBase {
     }
 
     public void setLocation(Reference locationReference, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.schedule, FhirExtensionUri.SCHEDULE_LOCATION, locationReference);
+        if (locationReference == null) {
+            ExtensionConverter.removeExtension(this.schedule, FhirExtensionUri.SCHEDULE_LOCATION);
 
-        auditReferenceExtension(extension, sourceCells);
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.schedule, FhirExtensionUri.SCHEDULE_LOCATION, locationReference);
+            auditReferenceExtension(extension, sourceCells);
+       }
+    }
+
+    public void setLocationType(String locationType, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(locationType)) {
+            ExtensionConverter.removeExtension(this.schedule, FhirExtensionUri.SCHEDULE_LOCATION_TYPE);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.schedule, FhirExtensionUri.SCHEDULE_LOCATION_TYPE, locationType);
+            auditReferenceExtension(extension, sourceCells);
+        }
     }
 
     public void addComment(String comment, CsvCell... sourceCells) {
@@ -118,4 +132,13 @@ public class ScheduleBuilder extends ResourceBuilderBase {
             auditReferenceExtension(extension, sourceCells);
         }
     }
+
+    public void setRecordedBy(Reference practitionerReference, CsvCell... sourceCells) {
+        createOrUpdateRecordedByExtension(practitionerReference, sourceCells);
+    }
+
+    public void setRecordedDate(Date recordedDate, CsvCell... sourceCells) {
+        createOrUpdateRecordedDateExtension(recordedDate, sourceCells);
+    }
+
 }

@@ -19,7 +19,10 @@ import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.barts.cache.*;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
 import org.endeavourhealth.transform.common.*;
@@ -79,7 +82,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache(this);
     private LocationResourceCache locationCache = new LocationResourceCache(this);
     private PatientResourceCache patientCache = new PatientResourceCache(this);
-    private ProcedureResourceCache procedureCache = new ProcedureResourceCache(this);
     private ThreadPool utilityThreadPool = null;
 
     private UUID serviceId = null;
@@ -774,9 +776,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return encounterCache;
     }
 
-    public ProcedureResourceCache getProcedureCache() {
-        return procedureCache;
-    }
 
     public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
                                                       CsvCell childIdCell,

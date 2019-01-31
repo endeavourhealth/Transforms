@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -8,6 +9,7 @@ import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
 import org.hl7.fhir.instance.model.Reference;
 
+import java.util.Date;
 import java.util.Map;
 
 public class SRRotaTransformer {
@@ -70,6 +72,29 @@ public class SRRotaTransformer {
         if (!profileIdOwner.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwner);
             scheduleBuilder.addActor(practitionerReference, profileIdOwner);
+        }
+
+        //added missing transforms
+        CsvCell locationTypeIdCell = parser.getLocation();
+        if (!locationTypeIdCell.isEmpty()
+                && locationTypeIdCell.getLong() > 0) {
+
+            //the location type links to a configured list item
+            TppConfigListOption configuredListItem = csvHelper.lookUpTppConfigListOption(locationTypeIdCell, parser);
+            String locationTypeDesc = configuredListItem.getListOptionName();
+            scheduleBuilder.setLocationType(locationTypeDesc, locationTypeIdCell);
+        }
+
+        CsvCell createdDateCell = parser.getDateCreation();
+        if (!createdDateCell.isEmpty()) {
+            Date d = createdDateCell.getDateTime();
+            scheduleBuilder.setRecordedDate(d, createdDateCell);
+        }
+
+        CsvCell createdByCell = parser.getIDProfileCreatedBy();
+        if (!createdByCell.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwner);
+            scheduleBuilder.setRecordedBy(practitionerReference, profileIdOwner);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);

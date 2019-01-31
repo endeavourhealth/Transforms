@@ -48,23 +48,23 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
-    private ResourceCache<ByteArrayWrapper, ConditionBuilder> problemMap = new ResourceCache<>();
-    private ResourceCache<ByteArrayWrapper, ReferralRequestBuilder> referralMap = new ResourceCache<>();
-    private Map<ByteArrayWrapper, ReferenceList> observationChildMap = new HashMap<>();
-    private Map<ByteArrayWrapper, ReferenceList> newProblemChildren = new HashMap<>();
-    private Map<ByteArrayWrapper, ReferenceList> consultationNewChildMap = new HashMap<>();
-    private Map<ByteArrayWrapper, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
-    private Map<ByteArrayWrapper, IssueRecordIssueDate> drugRecordLastIssueDateMap = new HashMap<>();
-    private Map<ByteArrayWrapper, IssueRecordIssueDate> drugRecordFirstIssueDateMap = new HashMap<>();
-    private Map<ByteArrayWrapper, List<BpComponent>> bpComponentMap = new HashMap<>();
-    private Map<ByteArrayWrapper, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
-    private Map<ByteArrayWrapper, List<CsvCell>> locationOrganisationMap = new HashMap<>();
-    private Map<ByteArrayWrapper, CodeAndDate> ethnicityMap = new HashMap<>();
-    private Map<ByteArrayWrapper, CodeAndDate> maritalStatusMap = new HashMap<>();
-    private Map<ByteArrayWrapper, String> problemReadCodes = new HashMap<>();
-    private Map<ByteArrayWrapper, ResourceType> parentObservationResourceTypes = new HashMap<>();
-    private Map<ByteArrayWrapper, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
-    private Map<ByteArrayWrapper, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
+    private ResourceCache<StringMemorySaver, ConditionBuilder> problemMap = new ResourceCache<>();
+    private ResourceCache<StringMemorySaver, ReferralRequestBuilder> referralMap = new ResourceCache<>();
+    private Map<StringMemorySaver, ReferenceList> observationChildMap = new HashMap<>(); //now keyed on just ObservationGUID and w/o PatientGUID
+    private Map<StringMemorySaver, ReferenceList> newProblemChildren = new HashMap<>();
+    private Map<StringMemorySaver, ReferenceList> consultationNewChildMap = new HashMap<>();
+    private Map<StringMemorySaver, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
+    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordLastIssueDateMap = new HashMap<>();
+    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordFirstIssueDateMap = new HashMap<>();
+    private Map<StringMemorySaver, List<BpComponent>> bpComponentMap = new HashMap<>();
+    private Map<StringMemorySaver, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
+    private Map<StringMemorySaver, List<CsvCell>> locationOrganisationMap = new HashMap<>();
+    private Map<StringMemorySaver, CodeAndDate> ethnicityMap = new HashMap<>();
+    private Map<StringMemorySaver, CodeAndDate> maritalStatusMap = new HashMap<>();
+    private Map<StringMemorySaver, String> problemReadCodes = new HashMap<>();
+    private Map<StringMemorySaver, ResourceType> parentObservationResourceTypes = new HashMap<>();
+    private Map<StringMemorySaver, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
+    private Map<StringMemorySaver, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
@@ -288,38 +288,38 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheReferral(CsvCell observationGuid, CsvCell patientGuid, ReferralRequestBuilder referralRequestBuilder) throws Exception {
         String uid = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         referralMap.addToCache(key, referralRequestBuilder);
     }
 
     public ReferralRequestBuilder findReferral(CsvCell observationGuid, CsvCell patientGuid) throws Exception {
         String uid = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         return referralMap.getAndRemoveFromCache(key);
     }
 
     public void cacheProblem(CsvCell observationGuid, CsvCell patientGuid, ConditionBuilder conditionBuilder) throws Exception {
         //cache the resource as a JSON string, as the FHIR conditions take about 4KB memory EACH
         String uid = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         problemMap.addToCache(key, conditionBuilder);
     }
 
     public boolean existsProblem(CsvCell observationGuid, CsvCell patientGuid) {
         String uid = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         return problemMap.contains(key);
     }
 
     public ConditionBuilder findProblem(CsvCell observationGuid, CsvCell patientGuid) throws Exception {
         String uid = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         return problemMap.getAndRemoveFromCache(key);
     }
 
 
     public ReferenceList getAndRemoveObservationParentRelationships(String parentObservationSourceId) {
-        ByteArrayWrapper key = new ByteArrayWrapper(parentObservationSourceId);
+        StringMemorySaver key = new StringMemorySaver(parentObservationSourceId);
         return observationChildMap.remove(key);
     }
 
@@ -331,7 +331,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                    ResourceType resourceType) {
 
         String parentObservationUniqueId = createUniqueId(patientGuid, parentObservationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(parentObservationUniqueId);
+        StringMemorySaver key = new StringMemorySaver(parentObservationUniqueId);
         ReferenceList list = observationChildMap.get(key);
         if (list == null) {
 
@@ -398,8 +398,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      * so we need to retrieve them off the main repository, amend them and save them
      */
     public void processRemainingObservationParentChildLinks(FhirResourceFiler fhirResourceFiler) throws Exception {
-        List<ByteArrayWrapper> keys = new ArrayList<>(observationChildMap.keySet());
-        for (ByteArrayWrapper key: keys) {
+        List<StringMemorySaver> keys = new ArrayList<>(observationChildMap.keySet());
+        for (StringMemorySaver key: keys) {
             String uid = key.toString();
             ReferenceList referenceList = observationChildMap.get(key);
             updateExistingObservationWithNewChildLinks(uid, referenceList, fhirResourceFiler);
@@ -458,7 +458,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public ReferenceList getAndRemoveNewProblemChildren(CsvCell problemGuid, CsvCell patientGuid) {
         String uid = createUniqueId(patientGuid, problemGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         return newProblemChildren.remove(key);
     }
 
@@ -472,7 +472,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         String problemLocalUniqueId = createUniqueId(patientGuid, problemObservationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(problemLocalUniqueId);
+        StringMemorySaver key = new StringMemorySaver(problemLocalUniqueId);
         ReferenceList referenceList = newProblemChildren.get(key);
         if (referenceList == null) {
             //we know there will only be a single cell, so use this reference list class to save memory
@@ -491,7 +491,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      * clinical resources that are in those problems
      */
     public void processRemainingProblemRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (ByteArrayWrapper key: newProblemChildren.keySet()) {
+        for (StringMemorySaver key: newProblemChildren.keySet()) {
             ReferenceList newLinkedItems = newProblemChildren.get(key);
 
             String locallyUniqueResourceProblemId = key.toString();
@@ -551,7 +551,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheDrugRecordDate(CsvCell drugRecordGuid, CsvCell patientGuid, IssueRecordIssueDate newIssueDate) {
         String uniqueId = createUniqueId(patientGuid, drugRecordGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
 
         IssueRecordIssueDate previous = drugRecordFirstIssueDateMap.get(key);
         if (newIssueDate.beforeOrOtherIsNull(previous)) {
@@ -566,13 +566,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public IssueRecordIssueDate getDrugRecordFirstIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         String uniqueId = createUniqueId(patientGuid, drugRecordId);
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
         return drugRecordFirstIssueDateMap.remove(key);
     }
 
     public IssueRecordIssueDate getDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         String uniqueId = createUniqueId(patientGuid, drugRecordId);
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
         return drugRecordLastIssueDateMap.remove(key);
     }
 
@@ -580,7 +580,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheBpComponent(CsvCell parentObservationGuid, CsvCell patientGuid, BpComponent bpComponent) {
         String uniqueId = createUniqueId(patientGuid, parentObservationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
 
         List<BpComponent> list = bpComponentMap.get(key);
         if (list == null) {
@@ -592,14 +592,14 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public List<BpComponent> findBpComponents(CsvCell observationGuid, CsvCell patientGuid) {
         String uniqueId = createUniqueId(patientGuid, observationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
         return bpComponentMap.remove(key);
     }
 
     public void cacheSessionPractitionerMap(CsvCell sessionCell, CsvCell emisUserGuid, boolean isDeleted) {
 
         String sessionGuid = sessionCell.getString();
-        ByteArrayWrapper key = new ByteArrayWrapper(sessionGuid);
+        StringMemorySaver key = new StringMemorySaver(sessionGuid);
 
         SessionPractitioners obj = sessionPractitionerMap.get(key);
         if (obj == null) {
@@ -620,7 +620,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //unlike the other maps, we don't remove from this map, since we need to be able to look up
         //the staff for a session when creating Schedule resources and Appointment ones
-        ByteArrayWrapper key = new ByteArrayWrapper(sessionGuid);
+        StringMemorySaver key = new StringMemorySaver(sessionGuid);
         SessionPractitioners obj = sessionPractitionerMap.get(key);
         if (obj == null) {
             return new ArrayList<>();
@@ -636,7 +636,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //unlike the other maps, we don't remove from this map, since we need to be able to look up
         //the staff for a session when creating Schedule resources and Appointment ones
-        ByteArrayWrapper key = new ByteArrayWrapper(sessionGuid);
+        StringMemorySaver key = new StringMemorySaver(sessionGuid);
         SessionPractitioners obj = sessionPractitionerMap.get(key);
         if (obj == null) {
             return new ArrayList<>();
@@ -654,7 +654,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void cacheOrganisationLocationMap(CsvCell locationCell, CsvCell orgCell, boolean mainLocation) {
 
         String locationGuid = locationCell.getString();
-        ByteArrayWrapper key = new ByteArrayWrapper(locationGuid);
+        StringMemorySaver key = new StringMemorySaver(locationGuid);
 
         List<CsvCell> orgGuids = locationOrganisationMap.get(key);
         if (orgGuids == null) {
@@ -673,7 +673,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public List<CsvCell> findOrganisationLocationMapping(CsvCell locationCell) {
         String locationGuid = locationCell.getString();
-        ByteArrayWrapper key = new ByteArrayWrapper(locationGuid);
+        StringMemorySaver key = new StringMemorySaver(locationGuid);
         return locationOrganisationMap.remove(key);
     }
 
@@ -684,7 +684,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void processRemainingOrganisationLocationMappings(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        for (ByteArrayWrapper key: locationOrganisationMap.keySet()) {
+        for (StringMemorySaver key: locationOrganisationMap.keySet()) {
 
             String locationGuid = key.toString();
             List<CsvCell> cells = locationOrganisationMap.get(key);
@@ -715,7 +715,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheEthnicity(CsvCell patientGuid, CodeAndDate codeAndDate) {
         String localUniquePatientId = createUniqueId(patientGuid, null);
-        ByteArrayWrapper key = new ByteArrayWrapper(localUniquePatientId);
+        StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
         CodeAndDate existing = ethnicityMap.get(key);
         if (codeAndDate.isAfterOrOtherIsNull(existing)) {
             ethnicityMap.put(key, codeAndDate);
@@ -724,13 +724,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public CodeAndDate findEthnicity(CsvCell patientGuid) {
         String localUniquePatientId = createUniqueId(patientGuid, null);
-        ByteArrayWrapper key = new ByteArrayWrapper(localUniquePatientId);
+        StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
         return ethnicityMap.remove(key);
     }
 
     public void cacheMaritalStatus(CsvCell patientGuid, CodeAndDate codeAndDate) {
         String localUniquePatientId = createUniqueId(patientGuid, null);
-        ByteArrayWrapper key = new ByteArrayWrapper(localUniquePatientId);
+        StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
         CodeAndDate existing = maritalStatusMap.get(key);
         if (codeAndDate.isAfterOrOtherIsNull(existing)) {
             maritalStatusMap.put(key, codeAndDate);
@@ -739,7 +739,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public CodeAndDate findMaritalStatus(CsvCell patientGuid) {
         String localUniquePatientId = createUniqueId(patientGuid, null);
-        ByteArrayWrapper key = new ByteArrayWrapper(localUniquePatientId);
+        StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
         return maritalStatusMap.remove(key);
     }
 
@@ -750,10 +750,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void processRemainingEthnicitiesAndMartialStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //get a combined list of the keys (patientGuids) from both maps
-        HashSet<ByteArrayWrapper> patientGuids = new HashSet<>(ethnicityMap.keySet());
+        HashSet<StringMemorySaver> patientGuids = new HashSet<>(ethnicityMap.keySet());
         patientGuids.addAll(new HashSet<>(maritalStatusMap.keySet()));
 
-        for (ByteArrayWrapper key: patientGuids) {
+        for (StringMemorySaver key: patientGuids) {
 
             CodeAndDate newEthnicity = ethnicityMap.get(key);
             CodeAndDate newMaritalStatus = maritalStatusMap.get(key);
@@ -833,8 +833,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //the findProblem removes from the map, so we can't iterate directly over the keySet and need to copy that into a separate collection
         //for (String uid: problemMap.keySet()) {
-        List<ByteArrayWrapper> keys = new ArrayList<>(problemMap.keySet());
-        for (ByteArrayWrapper key: keys) {
+        List<StringMemorySaver> keys = new ArrayList<>(problemMap.keySet());
+        for (StringMemorySaver key: keys) {
             ConditionBuilder conditionBuilder = problemMap.getAndRemoveFromCache(key);
 
             if (conditionBuilder == null) {
@@ -1019,7 +1019,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(consultationLocalUniqueId);
+        StringMemorySaver key = new StringMemorySaver(consultationLocalUniqueId);
         ReferenceList list = consultationNewChildMap.get(key);
         if (list == null) {
             list = new ReferenceListSingleCsvCells(); //we know there will only be a single cell, so use this reference list class to save memory
@@ -1032,12 +1032,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
-        ByteArrayWrapper key = new ByteArrayWrapper(encounterSourceId);
+        StringMemorySaver key = new StringMemorySaver(encounterSourceId);
         return consultationNewChildMap.remove(key);
     }
 
     public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (ByteArrayWrapper key: consultationNewChildMap.keySet()) {
+        for (StringMemorySaver key: consultationNewChildMap.keySet()) {
             ReferenceList newLinkedItems = consultationNewChildMap.get(key);
 
             String locallyUniqueResourceEncounterId = key.toString();
@@ -1066,20 +1066,20 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
         String uid = createUniqueId(patientGuid, problemGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         problemReadCodes.put(key, readCode);
     }
 
     public boolean isProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
         String uid = createUniqueId(patientGuid, problemGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(uid);
+        StringMemorySaver key = new StringMemorySaver(uid);
         return problemReadCodes.containsKey(key);
     }
 
     public String findProblemObservationReadCode(CsvCell patientGuid, CsvCell problemGuid) throws Exception {
 
         String locallyUniqueId = createUniqueId(patientGuid, problemGuid);
-        ByteArrayWrapper key = new ByteArrayWrapper(locallyUniqueId);
+        StringMemorySaver key = new StringMemorySaver(locallyUniqueId);
 
         //if we've already cached our problem code, then just return it
         if (problemReadCodes.containsKey(key)) {
@@ -1110,7 +1110,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //both maps (first and last issue dates) will have the same key set
-        for (ByteArrayWrapper key: drugRecordLastIssueDateMap.keySet()) {
+        for (StringMemorySaver key: drugRecordLastIssueDateMap.keySet()) {
 
             String medicationStatementLocalId = key.toString();
             MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
@@ -1159,12 +1159,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //ReferenceList obj = new ReferenceList();
         obj.add(previousReferences);
 
-        ByteArrayWrapper key = new ByteArrayWrapper(encounterSourceId);
+        StringMemorySaver key = new StringMemorySaver(encounterSourceId);
         consultationExistingChildMap.put(key, obj);
     }
 
     public ReferenceList findConsultationPreviousLinkedResources(String encounterSourceId) {
-        ByteArrayWrapper key = new ByteArrayWrapper(encounterSourceId);
+        StringMemorySaver key = new StringMemorySaver(encounterSourceId);
         return consultationExistingChildMap.remove(key);
     }
 
@@ -1175,7 +1175,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             return;
         }
 
-        ByteArrayWrapper key = new ByteArrayWrapper(problemSourceId);
+        StringMemorySaver key = new StringMemorySaver(problemSourceId);
 
         //we know there will be no CsvCells, so use this reference list class to save memory
         ReferenceList obj = new ReferenceListNoCsvCells();
@@ -1186,20 +1186,20 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public ReferenceList findProblemPreviousLinkedResources(String problemSourceId) {
-        ByteArrayWrapper key = new ByteArrayWrapper(problemSourceId);
+        StringMemorySaver key = new StringMemorySaver(problemSourceId);
         return problemPreviousLinkedResources.remove(key);
     }
 
 
     public ResourceType getCachedParentObservationResourceType(CsvCell patientGuidCell, CsvCell parentObservationCell) {
         String locallyUniqueId = createUniqueId(patientGuidCell, parentObservationCell);
-        ByteArrayWrapper key = new ByteArrayWrapper(locallyUniqueId);
-        return parentObservationResourceTypes.get(key);
+        StringMemorySaver key = new StringMemorySaver(locallyUniqueId);
+        return parentObservationResourceTypes.get(key); //note we specifically don't remove from here as multiple obs link to a single parent
     }
 
     public void cacheParentObservationResourceType(CsvCell patientGuidCell, CsvCell observationGuidCell, ResourceType resourceType) {
         String locallyUniqueId = createUniqueId(patientGuidCell, observationGuidCell);
-        ByteArrayWrapper key = new ByteArrayWrapper(locallyUniqueId);
+        StringMemorySaver key = new StringMemorySaver(locallyUniqueId);
         parentObservationResourceTypes.put(key, resourceType);
     }
 
@@ -1209,12 +1209,25 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void pruneUnnecessaryParentObservationResourceTypes() {
 
-        Set<ByteArrayWrapper> idsToRemove = new HashSet<>(parentObservationResourceTypes.keySet());
+        //just removing the unnecessary keys from the map doesn't shrink the map back down,
+        //so it ends up chewing memory up. So rewritten to recreate the map, so keep it leaner
+        Map<StringMemorySaver, ResourceType> tmp = new HashMap<>();
+
+        for (StringMemorySaver key: observationChildMap.keySet()) {
+            ResourceType cachedType = parentObservationResourceTypes.get(key);
+            if (cachedType != null) {
+                tmp.put(key, cachedType);
+            }
+        }
+
+        this.parentObservationResourceTypes = tmp;
+
+        /*Set<StringMemorySaver> idsToRemove = new HashSet<>(parentObservationResourceTypes.keySet());
         idsToRemove.removeAll(observationChildMap.keySet());
 
-        for (ByteArrayWrapper idToRemove: idsToRemove) {
+        for (StringMemorySaver idToRemove: idsToRemove) {
             parentObservationResourceTypes.remove(idToRemove);
-        }
+        }*/
     }
 
     public void submitToThreadPool(Callable callable) throws Exception {
@@ -1243,64 +1256,16 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheExistingRegistrationStatuses(CsvCell patientGuidCell, List<List_.ListEntryComponent> items) {
         String uniqueId = patientGuidCell.getString();
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
         existingRegsitrationStatues.put(key, items);
     }
 
     public List<List_.ListEntryComponent> getExistingRegistrationStatuses(CsvCell patientGuidCell) {
         String uniqueId = patientGuidCell.getString();
-        ByteArrayWrapper key = new ByteArrayWrapper(uniqueId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
         return existingRegsitrationStatues.get(key);
     }
 
-    /**
-     * storage class to use as a map key instead of a string
-     * Strings are arrays of chars, which are two bytes each. By encoding as a UTF-8 byte array,
-     * we can halve that. But byte[] doesn't support the equals(..) function as needed for a map key,
-     * hence this wrapper object.
-     */
-    class ByteArrayWrapper {
-        private byte[] bytes = null;
 
-        public ByteArrayWrapper(String s) {
-            this.bytes = s.getBytes(CsvCell.CHARSET);
-        }
 
-        public String toString() {
-            return new String(bytes, CsvCell.CHARSET);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (!(o instanceof ByteArrayWrapper)) {
-                return false;
-            }
-
-            ByteArrayWrapper other = (ByteArrayWrapper)o;
-            if (this.bytes.length != other.bytes.length) {
-                return false;
-            }
-
-            for (int i=0; i<this.bytes.length; i++) {
-                if (this.bytes[i] != other.bytes[i]) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int h = 1;
-            for (int i=0; i<bytes.length; i++) {
-                h = 31 * h + (int)bytes[i]; //copied from ByteBuffer
-            }
-            return h;
-        }
-    }
 }

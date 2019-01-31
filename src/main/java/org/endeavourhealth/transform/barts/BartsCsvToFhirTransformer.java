@@ -132,14 +132,9 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //PROCEDURES - the order is significant, going from less to more rich files
-            SusInpatientTransformer.transformProcedures(getParsers(parserMap, "SusInpatient", false), fhirResourceFiler, csvHelper, parserMap);
-            SusOutpatientTransformer.transformProcedures(getParsers(parserMap, "SusInpatient", false), fhirResourceFiler, csvHelper, parserMap);
-            SusEmergencyTransformer.transformProcedures(getParsers(parserMap, "SusEmergency", false), fhirResourceFiler, csvHelper, parserMap);
-            SusEmergencyCareDataSetTransformer.transformProcedures(getParsers(parserMap, "SusEmergencyCareDataSet", false), fhirResourceFiler, csvHelper, parserMap);
-            ProcedureTransformer.transform(getParsers(parserMap, "Procedure", true), fhirResourceFiler, csvHelper);
+            ProcedurePreTransformer.transform(getParsers(parserMap, "Procedure", true), fhirResourceFiler, csvHelper);
             PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
 
-            csvHelper.getProcedureCache().fileProcedureResources(fhirResourceFiler);
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES

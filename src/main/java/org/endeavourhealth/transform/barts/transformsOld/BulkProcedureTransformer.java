@@ -67,7 +67,7 @@ public class BulkProcedureTransformer extends BasisTransformer {
         CsvCell localPatientIdCell = parser.getLocalPatientId();
         String localPatientId = localPatientIdCell.getString();
 
-        //TODO - fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
+        //fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
         if (true) {
             throw new RuntimeException("Code needs fixing");
         }

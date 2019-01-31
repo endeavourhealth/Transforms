@@ -60,7 +60,7 @@ public class BulkDiagnosisTransformer extends BasisTransformer {
         String localPatientId = localPatientIdCell.getString();
         Identifier patientIdentifier[] = {new Identifier().setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID).setValue(StringUtils.deleteWhitespace(localPatientId))};
 
-        //TODO - fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
+        //fix this (if this transform is needed). Change to use normal ID mapping, rather than doing all mapping in the HL7 Receiver database
         if (true) {
             throw new RuntimeException("Code needs fixing");
         }

@@ -33,7 +33,7 @@ public class DiagnosisTransformer {
     }
 
     private static void createDiagnosis(Diagnosis parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) {
-        //TODO
+        //not doing anything with this file yet
     }
 
     //OLD 2.1 transform code is below//////////////////////////////////////////////////////////
