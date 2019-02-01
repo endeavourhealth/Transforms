@@ -31,10 +31,10 @@ public class PROCETransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createProcedure((PROCE)parser, fhirResourceFiler, csvHelper);
+                    createProcedure((PROCE) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -56,7 +56,7 @@ public class PROCETransformer {
         CsvCell activeCell = parser.getActiveIndicator();
         if (!activeCell.getIntAsBoolean()) {
 
-            Procedure existingProcedure = (Procedure)csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, procedureIdCell);
+            Procedure existingProcedure = (Procedure) csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, procedureIdCell);
             if (existingProcedure != null) {
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
                 //remember to pass in false since this procedure is already ID mapped
@@ -113,10 +113,6 @@ public class PROCETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
-        } else {
-            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
-            Reference practitionerReference = csvHelper.createPractitionerReference(pojo.getConsultant());
-            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
         }
 
         // Procedure is coded either Snomed or OPCS4
@@ -171,6 +167,26 @@ public class PROCETransformer {
 
         //TODO - match to fixed-width Procedure file, using Person ID (or similar), Code (need to break down the ConceptCodeIdentifier into scheme and code) and Date
         //populate comments, performed date, consultant etc. from that file if possible
+
+
+        ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
+        if (pojo != null) {
+
+            if (pojo.getConsultant() != null) {
+                Reference practitionerReference = csvHelper.createPractitionerReference(pojo.getConsultant());
+                procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+            }
+            if (pojo.getNotes() != null && !pojo.getNotes().isEmpty()) {
+                procedureBuilder.addNotes(pojo.getNotes().getString());
+            }
+            if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                procedureBuilder.setRecordedDate(pojo.getCreate_dt_tm().getDate());
+            }
+            if (pojo.getUpdatedBy() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                Reference recordedReference = csvHelper.createPractitionerReference(pojo.getUpdatedBy());
+                procedureBuilder.setRecordedBy(recordedReference);
+            }
+        }
 
         // save resource
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
