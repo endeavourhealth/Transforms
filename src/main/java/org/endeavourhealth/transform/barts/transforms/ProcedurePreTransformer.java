@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.schema.ProcedurePojo;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
@@ -33,13 +34,20 @@ public class ProcedurePreTransformer {
 
     private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper) throws Exception {
 
+        ProcedurePojo pojo = new ProcedurePojo();
+        pojo.setConsultant(parser.getConsultant());
+        pojo.setCreate_dt_tm(parser.getCreateDateTime());
+        pojo.setUpdatedBy(parser.getUpdatedBy());
+        pojo.setEncounterId(parser.getEncounterId());
+        pojo.setNotes(parser.getComment());
+        csvHelper.getProcedureCache().cachePojo(pojo);
         //TODO - pre-cache all the interesting fields, as CsvCells, that will be needed by the PROCETransformer
 
 
     }
 
 
-    /*public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+   /*public static final DateFormat resourceIdFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     public static void transform(String version,
                                  List<ParserI> parsers,
@@ -64,7 +72,15 @@ public class ProcedurePreTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
+    public static void createProcedure(org.endeavourhealth.transform.barts.schema.Procedure parser,
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BartsCsvHelper csvHelper,
+                                       String version, String primaryOrgOdsCode, String primaryOrgHL7OrgOID) throws Exception {
+        ProcedurePojo pojo = new ProcedurePojo();
+        pojo.setConsultant(parser.getConsultant());
+    }
 
+/*
     public static void createProcedure(org.endeavourhealth.transform.barts.schema.Procedure parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        BartsCsvHelper csvHelper,

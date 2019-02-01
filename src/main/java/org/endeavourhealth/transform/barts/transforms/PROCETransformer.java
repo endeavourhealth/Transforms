@@ -8,6 +8,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
+import org.endeavourhealth.transform.barts.schema.ProcedurePojo;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -84,7 +85,7 @@ public class PROCETransformer {
         procedureBuilder.setPatient(patientReference); //we don't have a source cell to audit with, since this came from the Encounter
 
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
-
+//TODO should we use procedure data time? Mehbs said may be bad.
         CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)) {
             Date d = BartsCsvHelper.parseDate(procedureDateTimeCell);
@@ -108,8 +109,13 @@ public class PROCETransformer {
         }
 
         CsvCell personnelIdCell = parser.getPersonnelId();
+        //TODO should I use the practitioner reference at all?
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
+            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+        } else {
+            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(pojo.getConsultant());
             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
         }
 
