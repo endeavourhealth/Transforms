@@ -167,8 +167,10 @@ public class PROCETransformer {
 
         //TODO - match to fixed-width Procedure file, using Person ID (or similar), Code (need to break down the ConceptCodeIdentifier into scheme and code) and Date
         //populate comments, performed date, consultant etc. from that file if possible
-
-
+        //TODO not sure of this sequence number at all
+       if (parser.getCDSSequence() != null) {
+           procedureBuilder.setIsPrimary(parser.getCDSSequence().getInt() == 0);
+       }
         ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
         if (pojo != null) {
 
