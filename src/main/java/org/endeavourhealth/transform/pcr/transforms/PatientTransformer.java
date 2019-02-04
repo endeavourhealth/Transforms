@@ -170,6 +170,7 @@ public class PatientTransformer extends AbstractTransformer {
                 }
                 ethnicCode = ethnicCategory.getCode().charAt(0);
             }
+            if (ethnicCode==' ') {ethnicCode='Z';}  //Blank char(1) causes problems for
         }
 
         Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
