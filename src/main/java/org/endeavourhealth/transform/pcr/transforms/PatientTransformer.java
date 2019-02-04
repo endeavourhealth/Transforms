@@ -78,7 +78,7 @@ public class PatientTransformer extends AbstractTransformer {
         Long homeAddressId = null;
         Character ethnicCode = EthnicCategory.NOT_STATED.getCode().charAt(0);;
         Long careProviderId = null;
-        boolean isSpineSensitive;
+        boolean isSpineSensitive=false;
 
 
         id = pcrId.longValue();
@@ -173,18 +173,18 @@ public class PatientTransformer extends AbstractTransformer {
             if (ethnicCode==' ') {ethnicCode='Z';}  //Blank char(1) causes problems for
         }
 
-        Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
-        if (spineExtension != null) {
-            isSpineSensitive = true;
-            CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
-            String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
-            if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
-                nhsNumberVerificationTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-                //TODO IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
-            }
-        } else {
-            isSpineSensitive = false;
-        }
+//        Extension spineExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
+//        if (spineExtension != null) {
+//            isSpineSensitive = true;
+//            //CodeableConcept codeableConcept = (CodeableConcept) spineExtension.getValue();
+//            // String nhsNumberVerificationTerm = CodeableConceptHelper.findCodingCode(codeableConcept, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
+//            if (StringUtils.isNumeric(nhsNumberVerificationTerm)) {
+//                nhsNumberVerificationTermId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+//                //TODO IMClient.getOrCreateConceptId("Patient.NHSStatus." + nhsNumberVerificationTerm);
+//            }
+//        } else {
+//            isSpineSensitive = false;
+//        }
         if (fhirPatient.hasCareProvider()) {
             if (fhirPatient.getCareProvider() != null) {
                 List<Reference> refs = fhirPatient.getCareProvider();
