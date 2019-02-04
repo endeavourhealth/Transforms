@@ -168,25 +168,28 @@ public class PROCETransformer {
         //TODO - match to fixed-width Procedure file, using Person ID (or similar), Code (need to break down the ConceptCodeIdentifier into scheme and code) and Date
         //populate comments, performed date, consultant etc. from that file if possible
         //TODO not sure of this sequence number at all
-       if (parser.getCDSSequence() != null) {
-           procedureBuilder.setIsPrimary(parser.getCDSSequence().getInt() == 0);
-       }
-        ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
-        if (pojo != null) {
-
-            if (pojo.getConsultant() != null) {
-                Reference practitionerReference = csvHelper.createPractitionerReference(pojo.getConsultant());
-                procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
-            }
-            if (pojo.getNotes() != null && !pojo.getNotes().isEmpty()) {
-                procedureBuilder.addNotes(pojo.getNotes().getString());
-            }
-            if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
-                procedureBuilder.setRecordedDate(pojo.getCreate_dt_tm().getDate());
-            }
-            if (pojo.getUpdatedBy() != null && pojo.getCreate_dt_tm().getDate() != null) {
-                Reference recordedReference = csvHelper.createPractitionerReference(pojo.getUpdatedBy());
-                procedureBuilder.setRecordedBy(recordedReference);
+        if (parser.getCDSSequence() != null) {
+            procedureBuilder.setIsPrimary(parser.getCDSSequence().getInt() == 0);
+        }
+        if (parser.getEncounterId() != null && parser.getEncounterId().getString() !=null ){
+            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByProcId(parser.getEncounterId().getString());
+            if (pojo != null) {
+                if (pojo.getProcedureCode().getString().equals(parser.getProcedureTypeCode().getString())) {
+                    if (pojo.getConsultant() != null) {
+                        Reference practitionerReference = csvHelper.createPractitionerReference(pojo.getConsultant());
+                        procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+                    }
+                    if (pojo.getNotes() != null && !pojo.getNotes().isEmpty()) {
+                        procedureBuilder.addNotes(pojo.getNotes().getString());
+                    }
+                    if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                        procedureBuilder.setRecordedDate(pojo.getCreate_dt_tm().getDate());
+                    }
+                    if (pojo.getUpdatedBy() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                        Reference recordedReference = csvHelper.createPractitionerReference(pojo.getUpdatedBy());
+                        procedureBuilder.setRecordedBy(recordedReference);
+                    }
+                }
             }
         }
 

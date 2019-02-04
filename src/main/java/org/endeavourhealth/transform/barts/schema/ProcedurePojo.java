@@ -10,6 +10,24 @@ public class ProcedurePojo {
     private CsvCell create_dt_tm;
     private CsvCell updatedBy;
     private CsvCell notes;
+    private CsvCell Mrn;
+    private CsvCell ProcedureCode;
+
+    public CsvCell getMrn() {
+        return Mrn;
+    }
+
+    public void setMrn(CsvCell mrn) {
+        Mrn = mrn;
+    }
+
+    public CsvCell getProcedureCode() {
+        return ProcedureCode;
+    }
+
+    public void setProcedureCode(CsvCell procedureCode) {
+        ProcedureCode = procedureCode;
+    }
 
     public CsvCell getNotes() {
         return notes;

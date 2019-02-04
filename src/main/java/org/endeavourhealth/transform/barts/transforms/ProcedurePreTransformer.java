@@ -40,6 +40,8 @@ public class ProcedurePreTransformer {
         pojo.setUpdatedBy(parser.getUpdatedBy());
         pojo.setEncounterId(parser.getEncounterId());
         pojo.setNotes(parser.getComment());
+        pojo.setMrn(parser.getMrn());
+        pojo.setProcedureCode(parser.getProcedureCode());
         csvHelper.getProcedureCache().cachePojo(pojo);
         //TODO - pre-cache all the interesting fields, as CsvCells, that will be needed by the PROCETransformer
 
