@@ -20,9 +20,9 @@ public class PROCEPreTransformer {
         try {
             for (ParserI parser: parsers) {
                 while (parser.nextRecord()) {
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                        continue;
-                    }
+//                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+//                        continue;
+//                    }
                     //no try/catch here, since any failure here means we don't want to continue
                     processRecord((PROCE)parser, fhirResourceFiler, csvHelper);
                 }
