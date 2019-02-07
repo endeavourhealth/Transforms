@@ -90,25 +90,25 @@ public class ENCNTTransformer {
                     if (resource instanceof Condition) {
                         ConditionBuilder builder = new ConditionBuilder((Condition) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        boolean map = !ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(),map, builder);
 
                     } else if (resource instanceof Procedure) {
                         ProcedureBuilder builder = new ProcedureBuilder((Procedure) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        boolean map = !ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), map, builder);
 
                     } else if (resource instanceof Observation) {
                         ObservationBuilder builder = new ObservationBuilder((Observation) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        boolean map = !ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), map,builder);
 
                     } else if (resource instanceof FamilyMemberHistory) {
                         FamilyMemberHistoryBuilder builder = new FamilyMemberHistoryBuilder((FamilyMemberHistory)resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        boolean map = !ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
                         fhirResourceFiler.savePatientResource(parser.getCurrentState(), map, builder);
 
                     } else if (resource instanceof Encounter) {
