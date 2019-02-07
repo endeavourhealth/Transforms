@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,22 +90,26 @@ public class ENCNTTransformer {
                     if (resource instanceof Condition) {
                         ConditionBuilder builder = new ConditionBuilder((Condition) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(),map, builder);
 
                     } else if (resource instanceof Procedure) {
                         ProcedureBuilder builder = new ProcedureBuilder((Procedure) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), map, builder);
 
                     } else if (resource instanceof Observation) {
                         ObservationBuilder builder = new ObservationBuilder((Observation) resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), map,builder);
 
                     } else if (resource instanceof FamilyMemberHistory) {
                         FamilyMemberHistoryBuilder builder = new FamilyMemberHistoryBuilder((FamilyMemberHistory)resource);
                         builder.setPatient(ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid), personIdCell);
-                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), builder);
+                        boolean map = ResourceValidatorBase.isBuilderIdMapped(builder,parser.getServiceId());
+                        fhirResourceFiler.savePatientResource(parser.getCurrentState(), map, builder);
 
                     } else if (resource instanceof Encounter) {
                         //encounters will be updated with deltas to the ENCNT file
