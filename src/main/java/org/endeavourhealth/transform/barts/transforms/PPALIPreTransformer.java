@@ -62,6 +62,9 @@ public class PPALIPreTransformer {
         //we need to store a mapping of alias ID to person ID
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        if (personIdCell.isEmpty() || aliasIdCell.isEmpty()) {
+            return;
+        }
 
         //if this record represents an active MRN, then we need to save some special mappings too
         CsvCell activeMrnCell = null;
