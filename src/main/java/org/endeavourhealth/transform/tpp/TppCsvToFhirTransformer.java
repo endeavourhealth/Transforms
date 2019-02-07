@@ -130,7 +130,9 @@ public abstract class TppCsvToFhirTransformer {
 
         Map<String, String> map = new HashMap<>();
 
-        map.put("F86638", "30/03/2018"); //Mirofaculty
+        map.put("F86638", "30/03/2018"); //Microfaculty
+        map.put("F86071", "22/01/2019"); //Whitehall
+        map.put("F86022", "22/01/2019"); //Oakwood
 
         String startDateStr = map.get(odsCode);
         if (Strings.isNullOrEmpty(startDateStr)) {
@@ -252,6 +254,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRCarePlanSkillset");
             set.add("SRCaseload");
             set.add("SRCtv3ToVersion2");
+            set.add("SRCtv3ToSnomed");
             set.add("SRGPPracticeHistory");
             set.add("SRLetter");
             set.add("SRMappingGroup");
