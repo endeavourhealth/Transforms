@@ -49,7 +49,8 @@ public class SRReferralOut extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_91)) {
+        } else  if (version.equals(TppCsvToFhirTransformer.VERSION_91) ||
+                version.equals(TppCsvToFhirTransformer.VERSION_92)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

@@ -56,6 +56,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_89 = "89"; //Basically 88 plus RemovedData as needed
     public static final String VERSION_90 = "90"; //Basically 89 plus 1 new column in ReferralOut
     public static final String VERSION_91 = "91"; //Basically 90 but to RemovedData
+    public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
@@ -154,6 +155,7 @@ public abstract class TppCsvToFhirTransformer {
         List<String> possibleVersions = new ArrayList<>();
         Map<String, List<String>> breadcrumbs = new HashMap<String, List<String>>();
 
+        possibleVersions.add(VERSION_92);
         possibleVersions.add(VERSION_91);
         possibleVersions.add(VERSION_90);
         possibleVersions.add(VERSION_TEST_PACK_3);

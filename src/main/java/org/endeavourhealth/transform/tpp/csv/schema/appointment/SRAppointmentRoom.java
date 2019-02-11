@@ -40,7 +40,8 @@ public class SRAppointmentRoom extends AbstractCsvParser {
                     "IDLocation",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+                || version.equals(TppCsvToFhirTransformer.VERSION_92)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
