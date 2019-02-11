@@ -265,6 +265,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRPatientGroups");
             set.add("SRPatientInformation");
             set.add("SRQuestionnaire");
+            set.add("SRAnsweredQuestionnaire");
             set.add("SRReferralContactEvent");
             set.add("SRReferralIn");
             set.add("SRReferralInStatusDetails");
