@@ -44,7 +44,8 @@ public class SRPatientContactDetails extends AbstractCsvParser {
                     "RemovedData"
             };
         } else if (version.endsWith(TppCsvToFhirTransformer.VERSION_88)
-                || version.equals(TppCsvToFhirTransformer.VERSION_91)){
+                || version.equals(TppCsvToFhirTransformer.VERSION_91)
+                || version.equals(TppCsvToFhirTransformer.VERSION_92 )){
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
