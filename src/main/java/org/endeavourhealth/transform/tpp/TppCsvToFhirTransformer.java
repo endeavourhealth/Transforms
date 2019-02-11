@@ -131,8 +131,8 @@ public abstract class TppCsvToFhirTransformer {
         Map<String, String> map = new HashMap<>();
 
         map.put("F86638", "30/03/2018"); //Microfaculty
-        map.put("F86071", "22/01/2019"); //Whitehall
-        map.put("F86022", "22/01/2019"); //Oakwood
+        map.put("B86071", "22/01/2019"); //Whitehall
+        map.put("B86022", "22/01/2019"); //Oakwood
 
         String startDateStr = map.get(odsCode);
         if (Strings.isNullOrEmpty(startDateStr)) {
