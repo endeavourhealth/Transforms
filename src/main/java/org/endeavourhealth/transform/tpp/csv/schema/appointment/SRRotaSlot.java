@@ -41,6 +41,21 @@ public class SRRotaSlot extends AbstractCsvParser {
                     "OldRowIdentifier",
                     "RemovedData"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "IDRota",
+                    "RotaSlotType",
+                    "Duration",
+                    "Quantity",
+                    "EmbargoDuration",
+                    "EmbargoExpiryTime",
+                    "BlockedSlot",
+                    "BookableCAndB",
+                    "Position",
+                    "OldRowIdentifier"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",

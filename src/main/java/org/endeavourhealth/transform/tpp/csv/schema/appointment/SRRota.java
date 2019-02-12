@@ -43,6 +43,23 @@ public class SRRota extends AbstractCsvParser {
                     "IDBranch",
                     "RemovedData"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreation",
+                    "IDProfileCreatedBy",
+                    "Name",
+                    "RotaType",
+                    "Location",
+                    "Code",
+                    "IDProfileOwner",
+                    "DateStart",
+                    "AllowOverBooking",
+                    "BookingContactNumber",
+                    "IDAppointmentRoom",
+                    "IDBranch"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",
@@ -54,10 +71,12 @@ public class SRRota extends AbstractCsvParser {
                     "Location",
                     "Code",
                     "IDProfileOwner",
+                    "DateStart",
                     "AllowOverBooking",
                     "BookingContactNumber",
                     "IDAppointmentRoom",
-                    "IDBranch"
+                    "IDBranch",
+                    "RemovedData"
             };
         }
     }

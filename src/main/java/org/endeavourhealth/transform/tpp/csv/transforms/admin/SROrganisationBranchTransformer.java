@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.admin;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -61,9 +60,12 @@ public class SROrganisationBranchTransformer {
         //locationBuilder.setId(rowIdCell.getString(), rowIdCell);
         //Or:
         //locationBuilder.setId(locationIdCell.getString(), locationIdCell);
-        if (true) {
-            throw new TransformException("Don't know what ID to use for Location resource from SROrganisationBranch");
-        }
+//        if (true) {
+//            throw new TransformException("Don't know what ID to use for Location resource from SROrganisationBranch");
+//        }
+
+        //The Id cell is the RowIdentifier (see above comments)
+        locationBuilder.setId(rowIdCell.getString(), rowIdCell);
 
         CsvCell obsoleteCell = parser.getBranchObsolete();
         CsvCell deleted = parser.getRemovedData();
