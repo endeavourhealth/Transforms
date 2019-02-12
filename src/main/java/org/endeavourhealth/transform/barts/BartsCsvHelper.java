@@ -66,6 +66,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
     private Map<Long, CernerNomenclatureRef> nomenclatureCache = new ConcurrentHashMap<>();
+    private Map<String, CernerNomenclatureRef> nomenclatureCacheByValueTxt = new ConcurrentHashMap<>();
     private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
@@ -295,7 +296,23 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         return ret;
     }
+    public CernerNomenclatureRef lookupNomenclatureRefByValueTxt(String valueText) throws Exception {
 
+        CernerNomenclatureRef ret = nomenclatureCacheByValueTxt.get(valueText);
+        if (ret == null) {
+
+            ret = cernerCodeValueRefDal.getNomenclatureRefForValueText(serviceId,valueText);
+            if (ret == null) {
+                //don't want to allow failures to continue until I understand why
+                throw new TransformException("Failed to find Cerner NOMREF record for ID " + valueText);
+                //TransformWarnings.log(LOG, this, "Failed to find Cerner NOMREF record for ID {}", nomenclatureId);
+            } else {
+                nomenclatureCacheByValueTxt.put(valueText, ret);
+            }
+        }
+
+        return ret;
+    }
 
     public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
         String code = codeCell.getString();
