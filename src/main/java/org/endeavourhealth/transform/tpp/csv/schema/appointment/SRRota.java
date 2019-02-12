@@ -71,10 +71,12 @@ public class SRRota extends AbstractCsvParser {
                     "Location",
                     "Code",
                     "IDProfileOwner",
+                    "DateStart",
                     "AllowOverBooking",
                     "BookingContactNumber",
                     "IDAppointmentRoom",
-                    "IDBranch"
+                    "IDBranch",
+                    "RemovedData"
             };
         }
     }
