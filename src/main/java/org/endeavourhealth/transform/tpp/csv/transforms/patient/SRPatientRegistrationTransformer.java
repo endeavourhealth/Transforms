@@ -70,10 +70,13 @@ public class SRPatientRegistrationTransformer {
 
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
-            boolean mapIds = !episodeBuilder.isIdMapped();
 
-            episodeBuilder.setDeletedAudit(removeDataCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
+            //check that this is an existing resource, i.e. retrieved with a mapped Id
+            if (episodeBuilder.isIdMapped()) {
+
+                episodeBuilder.setDeletedAudit(removeDataCell);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, episodeBuilder);
+            }
             return;
         }
 

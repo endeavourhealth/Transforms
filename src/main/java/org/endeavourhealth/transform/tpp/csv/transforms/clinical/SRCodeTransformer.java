@@ -277,8 +277,8 @@ public class SRCodeTransformer {
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
                 procedureBuilder.setDeletedAudit(deleteData);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
-                return;
             }
+            return;
         }
 
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
