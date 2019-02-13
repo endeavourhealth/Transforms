@@ -174,7 +174,8 @@ public class PROCETransformer {
         //TODO - match to fixed-width Procedure file, using Person ID (or similar), Code (need to break down the ConceptCodeIdentifier into scheme and code) and Date
         //populate comments, performed date, consultant etc. from that file if possible
         CsvCell sequenceNumberCell = parser.getCDSSequence();
-        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
+                && sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
             procedureBuilder.setIsPrimary(true, sequenceNumberCell);
         }
 
