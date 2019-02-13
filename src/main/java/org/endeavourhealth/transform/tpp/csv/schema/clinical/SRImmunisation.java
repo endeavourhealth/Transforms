@@ -50,7 +50,8 @@ public class SRImmunisation extends AbstractCsvParser {
                     "IDOrganisation",
                     "IDOrganisationRegisteredAt"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+                || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",

@@ -57,6 +57,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_90 = "90"; //Basically 89 plus 1 new column in ReferralOut
     public static final String VERSION_91 = "91"; //Basically 90 but to RemovedData
     public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
+    public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
