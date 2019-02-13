@@ -272,6 +272,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRReferralIn");
             set.add("SRReferralInStatusDetails");
             set.add("SRReferralInIntervention");
+            set.add("SRReferralInReferralReason");
             set.add("SRRotaSlot");
             set.add("SRSchoolHistory");
             set.add("SRSmsConsent");
