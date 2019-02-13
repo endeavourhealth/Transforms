@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -28,14 +29,14 @@ public class PPNAMTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
 
                 //no try/catch as records in this file aren't independent and can't be re-processed on their own
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
-                createPatientName((PPNAM)parser, fhirResourceFiler, csvHelper);
+                createPatientName((PPNAM) parser, fhirResourceFiler, csvHelper);
             }
         }
     }
@@ -69,15 +70,6 @@ public class PPNAMTransformer {
             return;
         }
 
-        HumanName.NameUse nameUse = null;
-
-        CsvCell nameTypeCell = parser.getNameTypeCode();
-        CsvCell codeMeaningCell = null;
-        if (!BartsCsvHelper.isEmptyOrIsZero(nameTypeCell)) {
-
-            codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
-            nameUse = convertNameUse(codeMeaningCell.getString());
-        }
 
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
@@ -91,7 +83,7 @@ public class PPNAMTransformer {
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
-        nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
+
         nameBuilder.addPrefix(titleCell.getString(), titleCell);
         nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
         nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
@@ -100,7 +92,7 @@ public class PPNAMTransformer {
         nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
 
         CsvCell startDate = parser.getBeginEffectiveDate();
-        if (!startDate.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //possible to get empty start dates
             Date d = BartsCsvHelper.parseDate(startDate);
             nameBuilder.setStartDate(d, startDate);
         }
@@ -112,6 +104,16 @@ public class PPNAMTransformer {
             nameBuilder.setEndDate(d, endDate);
         }
 
+        boolean isActive = true;
+        if (nameBuilder.getNameCreated().hasPeriod()) {
+            isActive = PeriodHelper.isActive(nameBuilder.getNameCreated().getPeriod());
+        }
+
+        CsvCell nameTypeCell = parser.getNameTypeCode();
+        CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
+        HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
+        nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
+
         //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();
         removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
@@ -121,13 +123,13 @@ public class PPNAMTransformer {
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
-        Patient patient = (Patient)patientBuilder.getResource();
+        Patient patient = (Patient) patientBuilder.getResource();
         if (!patient.hasName()) {
             return;
         }
 
         List<HumanName> names = patient.getName();
-        for (int i=names.size()-1; i>=0; i--) { //iterate backwards so we can remove
+        for (int i = names.size() - 1; i >= 0; i--) { //iterate backwards so we can remove
             HumanName name = names.get(i);
 
             //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
@@ -138,7 +140,7 @@ public class PPNAMTransformer {
             boolean matches = true;
 
             if (name.hasPrefix()) {
-                for (StringType prefix: name.getPrefix()) {
+                for (StringType prefix : name.getPrefix()) {
                     if (!NameConverter.hasPrefix(check, prefix.toString())) {
                         matches = false;
                         break;
@@ -147,7 +149,7 @@ public class PPNAMTransformer {
             }
 
             if (name.hasGiven()) {
-                for (StringType given: name.getGiven()) {
+                for (StringType given : name.getGiven()) {
                     if (!NameConverter.hasGivenName(check, given.toString())) {
                         matches = false;
                         break;
@@ -156,7 +158,7 @@ public class PPNAMTransformer {
             }
 
             if (name.hasFamily()) {
-                for (StringType family: name.getFamily()) {
+                for (StringType family : name.getFamily()) {
                     if (!NameConverter.hasFamilyName(check, family.toString())) {
                         matches = false;
                         break;
@@ -165,7 +167,7 @@ public class PPNAMTransformer {
             }
 
             if (name.hasSuffix()) {
-                for (StringType suffix: name.getSuffix()) {
+                for (StringType suffix : name.getSuffix()) {
                     if (!NameConverter.hasSuffix(check, suffix.toString())) {
                         matches = false;
                         break;
@@ -180,76 +182,49 @@ public class PPNAMTransformer {
         }
     }
 
-    /*private static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, CsvCell titleCell, CsvCell prefixCell, CsvCell firstNameCell, CsvCell middleNameCell, CsvCell lastNameCell, CsvCell suffixCell) {
-        Patient patient = (Patient)patientBuilder.getResource();
-        if (!patient.hasName()) {
-            return;
+
+    private static HumanName.NameUse convertNameUse(String statusCode, boolean isActive) {
+
+        //FHIR spec states that any ended name should be flagged as OLD
+        if (!isActive) {
+            return HumanName.NameUse.OLD;
         }
 
-        List<HumanName> names = patient.getName();
-        for (int i=names.size()-1; i>=0; i--) {
-            HumanName name = names.get(i);
-
-            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
-            if (name.hasId()) {
-                continue;
-            }
-
-            if (!titleCell.isEmpty()
-                    && !NameConverter.hasPrefix(name, titleCell.getString())) {
-                continue;
-            }
-
-            if (!prefixCell.isEmpty()
-                    && !NameConverter.hasPrefix(name, prefixCell.getString())) {
-                continue;
-            }
-
-            if (!firstNameCell.isEmpty()
-                    && !NameConverter.hasGivenName(name, firstNameCell.getString())) {
-                continue;
-            }
-
-            if (!middleNameCell.isEmpty()
-                    && !NameConverter.hasGivenName(name, middleNameCell.getString())) {
-                continue;
-            }
-
-            if (!lastNameCell.isEmpty()
-                    && !NameConverter.hasFamilyName(name, lastNameCell.getString())) {
-                continue;
-            }
-
-            if (!suffixCell.isEmpty()
-                    && !NameConverter.hasSuffix(name, suffixCell.getString())) {
-                continue;
-            }
-
-            //if we make it here, it's a duplicate and should be removed
-            names.remove(i);
-        }
-    }*/
-
-
-    private static HumanName.NameUse convertNameUse(String statusCode) {
         switch (statusCode) {
-            case "ADOPTED": return HumanName.NameUse.OFFICIAL;
-            case "ALTERNATE": return HumanName.NameUse.NICKNAME;
-            case "CURRENT": return HumanName.NameUse.OFFICIAL;
-            case "LEGAL": return HumanName.NameUse.OFFICIAL;
-            case "MAIDEN": return HumanName.NameUse.MAIDEN;
-            case "OTHER": return HumanName.NameUse.TEMP;
-            case "PREFERRED": return HumanName.NameUse.USUAL;
-            case "PREVIOUS": return HumanName.NameUse.OLD;
-            case "PRSNL": return HumanName.NameUse.TEMP;
-            case "NYSIIS": return HumanName.NameUse.TEMP;
-            case "ALT_CHAR_CUR": return HumanName.NameUse.NICKNAME;
-            case "USUAL": return HumanName.NameUse.USUAL;
-            case "HEALTHCARD": return HumanName.NameUse.TEMP;
-            case "BACHELOR": return HumanName.NameUse.OLD;
-            case "BIRTH": return HumanName.NameUse.OLD;
-            case "NONHIST": return HumanName.NameUse.OLD;
-            default: return null;
+            case "ADOPTED":
+                return HumanName.NameUse.OFFICIAL;
+            case "ALTERNATE":
+                return HumanName.NameUse.NICKNAME;
+            case "CURRENT":
+                return HumanName.NameUse.OFFICIAL;
+            case "LEGAL":
+                return HumanName.NameUse.OFFICIAL;
+            case "MAIDEN":
+                return HumanName.NameUse.MAIDEN;
+            case "OTHER":
+                return HumanName.NameUse.TEMP;
+            case "PREFERRED":
+                return HumanName.NameUse.USUAL;
+            case "PREVIOUS":
+                return HumanName.NameUse.OLD;
+            case "PRSNL":
+                return HumanName.NameUse.TEMP;
+            case "NYSIIS":
+                return HumanName.NameUse.TEMP;
+            case "ALT_CHAR_CUR":
+                return HumanName.NameUse.NICKNAME;
+            case "USUAL":
+                return HumanName.NameUse.USUAL;
+            case "HEALTHCARD":
+                return HumanName.NameUse.TEMP;
+            case "BACHELOR":
+                return HumanName.NameUse.OLD;
+            case "BIRTH":
+                return HumanName.NameUse.OLD;
+            case "NONHIST":
+                return HumanName.NameUse.OLD;
+            default:
+                return null;
         }
     }
 }
