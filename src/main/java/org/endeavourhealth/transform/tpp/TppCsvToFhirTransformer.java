@@ -257,6 +257,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRCarePlanReview");
             set.add("SRCarePlanSkillset");
             set.add("SRCaseload");
+            set.add("SRCaseloadHistory");
             set.add("SRCtv3ToVersion2");
             set.add("SRCtv3ToSnomed");
             set.add("SRGPPracticeHistory");
