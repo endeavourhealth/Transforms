@@ -278,6 +278,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRStaff");
             set.add("SRStaffMemberProfileRole");
             set.add("SRSystmOnline");
+            set.add("SRTreatmentCentrePreference");
             set.add("SRTemplate");
             set.add("SRMedia");
             set.add("SRImmunisationConsent");
