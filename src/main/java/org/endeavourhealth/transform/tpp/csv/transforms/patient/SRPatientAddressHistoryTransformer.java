@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
@@ -84,9 +85,11 @@ public class SRPatientAddressHistoryTransformer {
             addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
         }
 
+        Address.AddressUse addressUse = null;
+
         CsvCell addressTypeCell = parser.getAddressType();
         if (!addressTypeCell.isEmpty()) {
-            Address.AddressUse addressUse = null;
+
             TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
             if (mapping != null) {
                 String term = mapping.getMappedTerm();
@@ -102,14 +105,20 @@ public class SRPatientAddressHistoryTransformer {
                     TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
                 }
             }
-
-            //fall back to this in case the above fails
-            if (addressUse == null) {
-                addressUse = Address.AddressUse.HOME;
-            }
-
-            addressBuilder.setUse(addressUse, addressTypeCell);
         }
+
+        //fall back to this in case the above fails
+        if (addressUse == null) {
+            addressUse = Address.AddressUse.HOME;
+        }
+
+        //FHIR states that the "old" use should be used for ended addresses
+        if (addressBuilder.getAddressCreated().hasPeriod()
+                && !PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod())) {
+            addressUse = Address.AddressUse.OLD;
+        }
+
+        addressBuilder.setUse(addressUse, addressTypeCell);
 
         CsvCell nameOfBuildingCell = parser.getNameOfBuilding();
         if (!nameOfBuildingCell.isEmpty()) {

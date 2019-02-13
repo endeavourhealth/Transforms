@@ -28,6 +28,10 @@ public class ContactPointBuilder {
         }
     }
 
+    public ContactPoint getContactPoint() {
+        return contactPoint;
+    }
+
     public static boolean removeExistingContactPointById(HasContactPointI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove patient contact without ID");
