@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -92,26 +93,6 @@ public class PPPHOTransformer {
         contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
         contactPointBuilder.setValue(number, numberCell, extensionCell);
 
-        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        String phoneTypeDesc = null;
-        if (!BartsCsvHelper.isEmptyOrIsZero(phoneTypeCell)) {
-
-            CsvCell phoneTypeDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
-            phoneTypeDesc = phoneTypeDescCell.getString();
-            ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
-            contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
-        }
-
-        CsvCell phoneMethodCell = parser.getContactMethodCode();
-        if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
-
-            CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
-            String phoneMethodDesc = phoneMethodDescCell.getString();
-
-            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
-            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
-        }
-
         CsvCell startDate = parser.getBeginEffectiveDateTime();
         if (!startDate.isEmpty()) {
             Date d = BartsCsvHelper.parseDate(startDate);
@@ -124,6 +105,29 @@ public class PPPHOTransformer {
             Date d = BartsCsvHelper.parseDate(endDate);
             contactPointBuilder.setEndDate(d, endDate);
         }
+
+        boolean isActive = true;
+        if (contactPointBuilder.getContactPoint().hasPeriod()) {
+            isActive = PeriodHelper.isActive(contactPointBuilder.getContactPoint().getPeriod());
+        }
+
+        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
+        CsvCell phoneTypeDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
+        String phoneTypeDesc = phoneTypeDescCell.getString();
+        ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc, isActive);
+        contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
+
+        CsvCell phoneMethodCell = parser.getContactMethodCode();
+        if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
+
+            CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
+            String phoneMethodDesc = phoneMethodDescCell.getString();
+
+            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
+            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
+        }
+
+
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
@@ -155,7 +159,12 @@ public class PPPHOTransformer {
     }
 
 
-    private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) throws Exception {
+    private static ContactPoint.ContactPointUse convertPhoneType(String phoneType, boolean isActive) throws Exception {
+
+        //FHIR states to use "old" for anything no longer active
+        if (!isActive) {
+            return ContactPoint.ContactPointUse.OLD;
+        }
 
         //we're missing codes in the code ref table, so just handle by returning SOMETHING
         if (phoneType == null) {

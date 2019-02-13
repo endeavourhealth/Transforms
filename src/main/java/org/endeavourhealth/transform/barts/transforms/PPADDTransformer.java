@@ -1,7 +1,11 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -33,13 +37,13 @@ public class PPADDTransformer {
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
                     continue;
                 }
-                createPatientAddress((PPADD) parser, fhirResourceFiler, csvHelper);
+                processRecord((PPADD) parser, fhirResourceFiler, csvHelper);
             }
         }
     }
 
 
-    public static void createPatientAddress(PPADD parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public static void processRecord(PPADD parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell addressIdCell = parser.getMillenniumAddressId();
 
@@ -67,6 +71,17 @@ public class PPADDTransformer {
             return;
         }
 
+        CsvCell typeCell = parser.getAddressTypeCode();
+        CsvCell typeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
+        String typeDesc = typeDescCell.getString();
+
+        //a very small number of patients (two, that I've seen) have an address recorded
+        //with type "e-mail", but also have this email duplicated in the PPPHO file (where email is normally recorded)
+        //so ignore any PPADD records for emails
+        if (typeDesc.equalsIgnoreCase("e-mail")) {
+            return;
+        }
+
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
         CsvCell line3 = parser.getAddressLine3();
@@ -90,7 +105,7 @@ public class PPADDTransformer {
         addressBuilder.setPostcode(postcode.getString(), postcode);
 
         CsvCell startDate = parser.getBeginEffectiveDate();
-        if (!startDate.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //there are cases with empty start dates
             Date d = BartsCsvHelper.parseDate(startDate);
             addressBuilder.setStartDate(d, startDate);
         }
@@ -102,12 +117,74 @@ public class PPADDTransformer {
             addressBuilder.setEndDate(d, endDate);
         }
 
+        boolean isActive = true;
+        if (addressBuilder.getAddressCreated().hasPeriod()) {
+            isActive = PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod());
+        }
+
+        Address.AddressUse use = convertAddressUse(typeDesc, isActive);
+        if (use != null) {
+            addressBuilder.setUse(use, typeCell, typeDescCell);
+        }
+
+        Address.AddressType type = convertAddressType(typeDesc);
+        if (type != null) {
+            addressBuilder.setType(type, typeCell, typeDescCell);
+        }
+
         //remove any instance of the address added by the ADT feed
         Address addressCreated = addressBuilder.getAddressCreated();
         removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+    }
+
+    private static Address.AddressType convertAddressType(String typeDesc) throws TransformException {
+
+        //NOTE we only use address type if it's explicitly known to be a mailing address
+        if (typeDesc.equalsIgnoreCase("mailing")) {
+            return Address.AddressType.POSTAL;
+
+        } else if (typeDesc.equalsIgnoreCase("Birth Address")
+                || typeDesc.equalsIgnoreCase("home")
+                || typeDesc.equalsIgnoreCase("business")
+                || typeDesc.equalsIgnoreCase("temporary")
+                || typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
+            return null;
+
+        } else {
+            //NOTE if adding a new type above here make sure to add to convertAddressUse(..) too
+            throw new TransformException("Unhandled type [" + typeDesc + "]");
+        }
+    }
+
+    private static Address.AddressUse convertAddressUse(String typeDesc, boolean isActive) throws TransformException {
+
+        //FHIR states to use "old" for anything no longer active
+        if (!isActive) {
+            return Address.AddressUse.OLD;
+        }
+
+        //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
+        if (typeDesc.equalsIgnoreCase("Birth Address")
+                || typeDesc.equalsIgnoreCase("home")
+                || typeDesc.equalsIgnoreCase("mailing")) {
+            return Address.AddressUse.HOME;
+
+        } else if (typeDesc.equalsIgnoreCase("business")) {
+            return Address.AddressUse.WORK;
+
+        } else if (typeDesc.equalsIgnoreCase("temporary")) {
+            return Address.AddressUse.TEMP;
+
+        } else if (typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
+            return Address.AddressUse.OLD;
+
+        } else {
+            //NOTE if adding a new type above here make sure to add to convertAddressType(..) too
+            throw new TransformException("Unhandled type [" + typeDesc + "]");
+        }
     }
 
     public static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, Address check) {

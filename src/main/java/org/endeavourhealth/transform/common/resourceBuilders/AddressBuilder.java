@@ -76,6 +76,12 @@ public class AddressBuilder {
         auditNameValue("use", sourceCells);
     }
 
+    public void setType(Address.AddressType type, CsvCell... sourceCells) {
+        this.address.setType(type);
+
+        auditNameValue("type", sourceCells);
+    }
+
     /**
      * helper function to add a line from separate house number and road cells
      */
@@ -193,34 +199,6 @@ public class AddressBuilder {
         auditNameValue("text", sourceCells);
     }
 
-    /**
-     * if we want to populate our builder with a full FHIR address and no audit info
-     */
-    /*public void addAddressNoAudit(Address address) {
-
-        Address.AddressUse use = address.getUse();
-        setUse(use);
-
-        if (address.hasLine()) {
-            for (StringType line: address.getLine()) {
-                addLine(line.getValue());
-            }
-        }
-
-        if (address.hasCity()) {
-            setTown(address.getCity());
-        }
-
-        if (address.hasDistrict()) {
-            setDistrict(address.getDistrict());
-        }
-
-        if (address.hasPostalCode()) {
-            setPostcode(address.getPostalCode());
-        }
-
-        updateAddressDisplay();
-    }*/
 
     public Address getAddressCreated() {
         return this.address;

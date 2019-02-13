@@ -29,5 +29,5 @@ public class CodeValueSet {
     public static final Long DECEASED_STATUS = 268L;
     public static final Long CLINICAL_EVENT_STATUS = 8L;
     public static final Long CLINICAL_EVENT_CLASS = 53L;
-
+    public static final Long ADDRESS_TYPE = 212L;
 }
