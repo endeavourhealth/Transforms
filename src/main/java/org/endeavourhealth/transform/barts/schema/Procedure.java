@@ -23,7 +23,7 @@ public class Procedure extends AbstractFixedParser {
     }
 
     public CsvCell getProcedureCodeType() {
-        return super.getCell("PROC_CD_TYPE");
+        return super.getCell("Proc_Cd_Type");
     }
 
     public CsvCell getProcedureCode() {
