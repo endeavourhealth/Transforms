@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -65,29 +66,41 @@ public class SRSpecialNotesTransformer {
 
         CsvCell startDate = parser.getDateStart();
         if (!startDate.isEmpty()) {
+
             flagBuilder.setStartDate(startDate.getDate(), startDate);
         }
 
         CsvCell noteType = parser.getType();
         if (!noteType.isEmpty()) {
-            flagBuilder.setCategory(noteType.getString(), noteType);
+
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(noteType);
+            if (tppMappingRef != null) {
+                String mappedTerm = tppMappingRef.getMappedTerm();
+                if (!mappedTerm.isEmpty()) {
+                    flagBuilder.setCategory(mappedTerm, noteType);
+                }
+            }
         }
 
         CsvCell noteText = parser.getNote();
         if (!noteText.isEmpty()) {
+
             flagBuilder.setCode(noteText.getString(), noteText);
         }
 
         CsvCell expiredDate = parser.getDateExpired();
         if (!expiredDate.isEmpty()) {
+
             flagBuilder.setEndDate(expiredDate.getDate(), expiredDate);
             flagBuilder.setStatus(Flag.FlagStatus.INACTIVE);
         } else {
+
             flagBuilder.setStatus(Flag.FlagStatus.ACTIVE);
         }
 
         CsvCell profieIdRecordedBy = parser.getIDProfileEnteredBy();
         if (!profieIdRecordedBy.isEmpty()) {
+
             Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profieIdRecordedBy);
             flagBuilder.setAuthor(staffReference, profieIdRecordedBy);
         }
