@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class NOMREFTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NOMREFTransformer.class);
 
     public static final String AUDIT_MNEMONIC_TEXT = "mnemonic_text";
     public static final String AUDIT_VALUE_TEXT = "value_text";
