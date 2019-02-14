@@ -36,7 +36,7 @@ public class SRSpecialNotes extends AbstractCsvParser {
                     "DateDeleted",
                     "IDPatient"
             };
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_93)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -49,6 +49,19 @@ public class SRSpecialNotes extends AbstractCsvParser {
                     "DateDeleted",
                     "IDPatient",
                     "RemovedData"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateStart",
+                    "Type",
+                    "Note",
+                    "DateExpired",
+                    "DateDeleted",
+                    "IDPatient"
             };
         }
     }

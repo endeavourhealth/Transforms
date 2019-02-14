@@ -38,7 +38,8 @@ public class SRTemplate extends AbstractCsvParser {
             };
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)
-                || version.equals(TppCsvToFhirTransformer.VERSION_90)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_90)
+                || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
