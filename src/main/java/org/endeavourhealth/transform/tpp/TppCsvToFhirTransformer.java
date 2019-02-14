@@ -55,7 +55,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_88 = "88";
     public static final String VERSION_89 = "89"; //Basically 88 plus RemovedData as needed
     public static final String VERSION_90 = "90"; //Basically 89 plus 1 new column in ReferralOut
-    public static final String VERSION_91 = "91"; //Basically 90 but to RemovedData
+    public static final String VERSION_91 = "91"; //Basically 90 but no RemovedData
     public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
     public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
 
@@ -256,6 +256,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRCarePlanItem");
             set.add("SRCarePlanReview");
             set.add("SRCarePlanSkillset");
+            set.add("SRCarePlanPerformance");
             set.add("SRCaseload");
             set.add("SRCaseloadHistory");
             set.add("SRCtv3ToVersion2");
@@ -277,7 +278,6 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRRotaSlot");
             set.add("SRSchoolHistory");
             set.add("SRSmsConsent");
-            set.add("SRSpecialNotes");
             set.add("SRStaff");
             set.add("SRStaffMemberProfileRole");
             set.add("SRSystmOnline");
@@ -342,6 +342,7 @@ public abstract class TppCsvToFhirTransformer {
                 || fileName.equals("SRRecall")
                 || fileName.equals("SRRecordStatus")
                 || fileName.equals("SRRepeatTemplate")
+                || fileName.equals("SRSpecialNotes")
                 || fileName.equals("SRVisit")) {
             return "clinical";
 
@@ -480,6 +481,8 @@ public abstract class TppCsvToFhirTransformer {
 
             SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            SRSpecialNotesTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //TODO - commented out for now. Review
             //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);

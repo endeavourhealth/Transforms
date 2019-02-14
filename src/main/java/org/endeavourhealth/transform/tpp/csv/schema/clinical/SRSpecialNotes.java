@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.csv.schema.unused;
+package org.endeavourhealth.transform.tpp.csv.schema.clinical;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -23,22 +23,34 @@ public class SRSpecialNotes extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "RowIdentifier",
-                "IDOrganisationVisibleTo",
-                "DateEventRecorded",
-                "IDProfileEnteredBy",
-                "DateStart",
-                "Type",
-                "Note",
-                "DateExpired",
-                "DateDeleted",
-                "IDPatient",
-                "RemovedData"
-
-
-        };
-
+        if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateStart",
+                    "Type",
+                    "Note",
+                    "DateExpired",
+                    "DateDeleted",
+                    "IDPatient"
+            };
+        } else {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateStart",
+                    "Type",
+                    "Note",
+                    "DateExpired",
+                    "DateDeleted",
+                    "IDPatient",
+                    "RemovedData"
+            };
+        }
     }
 
     public CsvCell getRowIdentifier() {
