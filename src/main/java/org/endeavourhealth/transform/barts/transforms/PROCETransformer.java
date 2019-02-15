@@ -202,7 +202,7 @@ public class PROCETransformer {
                         procedureBuilder.addNotes(pojo.getNotes().getString());
                     }
                     if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
-                        procedureBuilder.setRecordedDate(pojo.getCreate_dt_tm().getDate());
+                        procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getCreate_dt_tm()));
                     }
                     if (pojo.getUpdatedBy() != null && pojo.getCreate_dt_tm().getDate() != null) {
                         CsvCell updateByCell = pojo.getUpdatedBy();
