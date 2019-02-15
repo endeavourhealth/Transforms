@@ -11,9 +11,9 @@ public class ProcedurePojo {
     private CsvCell updatedBy;
     private CsvCell notes;
     private CsvCell Mrn;
-    private CsvCell procedureCode;
+  //  private CsvCell procedureCode;
     private String procedureCodeValueText;
-    private CsvCell procedureCodeType;
+  //  private CsvCell procedureCodeType;
 
     public String getProcedureCodeValueText() {
         return procedureCodeValueText;
@@ -23,9 +23,9 @@ public class ProcedurePojo {
         this.procedureCodeValueText = procedureCodeValueText;
     }
 
-    public CsvCell getProcedureCodeType() {return procedureCodeType;}
-
-    public void setProcedureCodeType(CsvCell procedureCodeType) {this.procedureCodeType = procedureCodeType;}
+//    public CsvCell getProcedureCodeType() {return procedureCodeType;}
+//
+//    public void setProcedureCodeType(CsvCell procedureCodeType) {this.procedureCodeType = procedureCodeType;}
 
     public CsvCell getMrn() {
         return Mrn;
@@ -35,13 +35,13 @@ public class ProcedurePojo {
         Mrn = mrn;
     }
 
-    public CsvCell getProcedureCode() {
-        return procedureCode;
-    }
-
-    public void setProcedureCode(CsvCell procedureCode) {
-        this.procedureCode = procedureCode;
-    }
+//    public CsvCell getProcedureCode() {
+//        return procedureCode;
+//    }
+//
+//    public void setProcedureCode(CsvCell procedureCode) {
+//        this.procedureCode = procedureCode;
+//    }
 
     public CsvCell getNotes() {
         return notes;
