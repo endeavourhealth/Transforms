@@ -182,7 +182,7 @@ public class PROCETransformer {
         if (parser.getEncounterId() != null && parser.getEncounterId().getString() != null && parser.getProcedureTypeCode() != null) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
             ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, personId, conceptIdentifierCell.getString(),
-                    procedureDateTimeCell.getDate());
+                    BartsCsvHelper.parseDate(procedureDateTimeCell));
             if (pojo != null) {
                 if (pojo.getProcedureCodeValueText().equals(parser.getProcedureTypeCode().getString())) {
                     if (pojo.getConsultant() != null) {
