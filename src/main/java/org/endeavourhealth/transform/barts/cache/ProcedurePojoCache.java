@@ -36,11 +36,13 @@ public class ProcedurePojoCache {
     // Remember if you're calling this that "Procedure" enc ids end ".00". I assume people are going to forget
     // this and try to use just encounter ids like a rational person so added a little fallback.
     public ProcedurePojo getProcedurePojoByMultipleFields(String encId, String mrn, String procCd, Date date) {
-        for (ProcedurePojo pojo : getProcedurePojoByEncId(encId)) {
-            if (pojo.getProcedureCodeValueText().equalsIgnoreCase(procCd) &&
-                    pojo.getMrn().equals(mrn) &&
-                    pojo.getCreate_dt_tm().equals(date)) {
-                return pojo;
+        if (procIdInCache(encId)) {
+            for (ProcedurePojo pojo : getProcedurePojoByEncId(encId)) {
+                if (pojo.getProcedureCodeValueText().equalsIgnoreCase(procCd) &&
+                        pojo.getMrn().equals(mrn) &&
+                        pojo.getCreate_dt_tm().equals(date)) {
+                    return pojo;
+                }
             }
         }
         return null;
