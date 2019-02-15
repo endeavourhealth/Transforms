@@ -42,12 +42,12 @@ public class ProcedurePreTransformer {
         pojo.setEncounterId(parser.getEncounterId()); // Remember encounter ids from Procedure have a trailing .00
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());
-        pojo.setProcedureCode(parser.getProcedureCode());
+     //   pojo.setProcedureCode(parser.getProcedureCode());
         // Nomenclature ref maps to PROCE procedure
         CernerNomenclatureRef nomenclatureRef = csvHelper.lookupNomenclatureRefByValueTxt(parser.getProcedureCode().getString());
         String valueText = nomenclatureRef.getValueText();
         pojo.setProcedureCodeValueText(valueText);
-        pojo.setProcedureCodeType((parser.getProcedureCodeType()));
+     //   pojo.setProcedureCodeType((parser.getProcedureCodeType()));
         csvHelper.getProcedureCache().cachePojo(pojo);
 
     }
