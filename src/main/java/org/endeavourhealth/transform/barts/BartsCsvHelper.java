@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.barts;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.text.WordUtils;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -42,6 +41,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -661,9 +662,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                 try {
                     return DATE_FORMAT_BULK.parse(dateString);
                 } catch (ParseException ex2) {
-                    String pascalCaseDateString =  WordUtils.capitalize(dateString);
-                    LOG.info("Trying date:" + pascalCaseDateString);
-                    return DATE_FORMAT_CLEVE.parse(pascalCaseDateString);
+                    try {
+                        return DATE_FORMAT_CLEVE.parse(dateString);
+                    } catch (ParseException ex3) {
+                        DateTimeFormatter formatter= DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss");
+                        LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
+                        return DATE_FORMAT_CLEVE.parse(dateTime.toString());
+
+                    }
                 }
 
             }
