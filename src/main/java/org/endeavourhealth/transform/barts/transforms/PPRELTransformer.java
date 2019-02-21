@@ -172,6 +172,7 @@ public class PPRELTransformer {
         if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
             Date d = BartsCsvHelper.parseDate(endDate);
             contactBuilder.setEndDate(d, endDate);
+            addressBuilder.setUse(Address.AddressUse.OLD);
         }
 
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
