@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.text.WordUtils;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -19,7 +20,10 @@ import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.barts.cache.*;
+import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
+import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
+import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
+import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.barts.schema.ProcedurePojoCache;
 import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
@@ -657,7 +661,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                 try {
                     return DATE_FORMAT_BULK.parse(dateString);
                 } catch (ParseException ex2) {
-                    return DATE_FORMAT_CLEVE.parse(dateString);
+                    String pascalCaseDateString =  WordUtils.capitalize(dateString);
+                    return DATE_FORMAT_CLEVE.parse(pascalCaseDateString);
                 }
 
             }
