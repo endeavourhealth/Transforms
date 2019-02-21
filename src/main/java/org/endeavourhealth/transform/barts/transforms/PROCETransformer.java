@@ -81,7 +81,7 @@ public class PROCETransformer {
         // create the FHIR Procedure
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
         procedureBuilder.setId(procedureIdCell.getString(), procedureIdCell);
-        String conceptCode ;
+        String conceptCode;
 
 
         // set the patient reference
@@ -171,7 +171,6 @@ public class PROCETransformer {
             return;
         }
 
-        //TODO - match to fixed-width Procedure file, using Person ID (or similar), Code (need to break down the ConceptCodeIdentifier into scheme and code) and Date
         //populate comments, performed date, consultant etc. from that file if possible
         CsvCell sequenceNumberCell = parser.getCDSSequence();
         if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
@@ -181,43 +180,43 @@ public class PROCETransformer {
 
         if (parser.getEncounterId() != null && parser.getEncounterId().getString() != null && parser.getProcedureTypeCode() != null) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
-            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, personId, conceptIdentifierCell.getString(),
+            String procCode = conceptIdentifierCell.getString().substring(conceptIdentifierCell.getString().indexOf("!") + 1); // before the ! is the code scheme.
+            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
                     BartsCsvHelper.parseDate(procedureDateTimeCell));
             if (pojo != null) {
-                if (pojo.getProcedureCodeValueText().equals(parser.getProcedureTypeCode().getString())) {
-                    if (pojo.getConsultant() != null) {
-                        CsvCell consultantCell = pojo.getConsultant();
-                        if (!consultantCell.isEmpty()) {
-                            String consultantStr = consultantCell.getString();
-                            String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
-                            if (Strings.isNullOrEmpty(personnelIdStr)) {
-                                TransformWarnings.log(LOG, csvHelper, "Failed to find PRSNL ID for {}", consultantStr);
-                            } else {
-                                Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, personnelIdStr);
-                                procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
-                            }
-                        }
-                    }
-                    if (pojo.getNotes() != null && !pojo.getNotes().isEmpty()) {
-                        procedureBuilder.addNotes(pojo.getNotes().getString());
-                    }
-                    if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
-                        procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getCreate_dt_tm()));
-                    }
-                    if (pojo.getUpdatedBy() != null && pojo.getCreate_dt_tm().getDate() != null) {
-                        CsvCell updateByCell = pojo.getUpdatedBy();
-                        if (!updateByCell.isEmpty()) {
-                            String updatedByStr = updateByCell.getString();
-                            String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, updatedByStr);
-                            if (Strings.isNullOrEmpty(personnelIdStr)) {
-                                TransformWarnings.log(LOG, csvHelper, "Failed to find PRSNL ID for {}", updatedByStr);
-                            } else {
-                                Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, personnelIdStr);
-                                procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
-                            }
+                if (pojo.getConsultant() != null) {
+                    CsvCell consultantCell = pojo.getConsultant();
+                    if (!consultantCell.isEmpty()) {
+                        String consultantStr = consultantCell.getString();
+                        String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
+                        if (Strings.isNullOrEmpty(personnelIdStr)) {
+                            TransformWarnings.log(LOG, csvHelper, "Failed to find PRSNL ID for {}", consultantStr);
+                        } else {
+                            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, personnelIdStr);
+                            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
                         }
                     }
                 }
+                if (pojo.getNotes() != null && !pojo.getNotes().isEmpty()) {
+                    procedureBuilder.addNotes(pojo.getNotes().getString());
+                }
+                if (pojo.getProc_dt_tm() != null && pojo.getProc_dt_tm().getDate() != null) {
+                    procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getProc_dt_tm()));
+                }
+                if (pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
+                    CsvCell updateByCell = pojo.getUpdatedBy();
+                    if (!updateByCell.isEmpty()) {
+                        String updatedByStr = updateByCell.getString();
+                        String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, updatedByStr);
+                        if (Strings.isNullOrEmpty(personnelIdStr)) {
+                            TransformWarnings.log(LOG, csvHelper, "Failed to find PRSNL ID for {}", updatedByStr);
+                        } else {
+                            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, personnelIdStr);
+                            procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
+                        }
+                    }
+                }
+
             }
         }
 

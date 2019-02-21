@@ -14,12 +14,10 @@ import java.util.List;
 public class ProcedurePojoCache {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedurePojoCache.class);
 
-    public static final String DUPLICATE_EMERGENCY_PREFIX_SUFFIX = ":EmergencyDuplicate";
     public static final String TWO_DECIMAL_PLACES = ".00";
 
     private final BartsCsvHelper csvHelper;
     private HashMap<String, List<ProcedurePojo>> procedurePojosByEncounterId = new HashMap<>();
-
 
     public ProcedurePojoCache(BartsCsvHelper csvHelper) {
         this.csvHelper = csvHelper;
@@ -34,14 +32,18 @@ public class ProcedurePojoCache {
     }
 
     // Remember if you're calling this that "Procedure" enc ids end ".00". I assume people are going to forget
-    // this and try to use just encounter ids like a rational person so added a little fallback.
-    public ProcedurePojo getProcedurePojoByMultipleFields(String encId, String mrn, String procCd, Date date) {
+    // this and try to use just encounter ids so added a little fallback. I considered removing it
+    // but left in case they sort out the format and remove the trailing .00.
+    public ProcedurePojo getProcedurePojoByMultipleFields(String encId, String procCd, Date date) throws Exception {
         if (procIdInCache(encId)) {
             for (ProcedurePojo pojo : getProcedurePojoByEncId(encId)) {
-                if (pojo.getProcedureCodeValueText().equalsIgnoreCase(procCd) &&
-                        pojo.getMrn().equals(mrn) &&
-                        pojo.getCreate_dt_tm().equals(date)) {
-                    return pojo;
+                try {
+                    if (pojo.getProcedureCode().getString().equalsIgnoreCase(procCd) &&
+                            pojo.getProc_dt_tm().getDate().equals(date)) {
+                        return pojo;
+                    }
+                } catch (Exception exception) {
+                    continue; // CsvCell handles logging so try next result
                 }
             }
         }

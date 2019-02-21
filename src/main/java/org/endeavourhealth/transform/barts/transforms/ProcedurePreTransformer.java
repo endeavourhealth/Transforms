@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.ProcedurePojo;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -37,17 +36,12 @@ public class ProcedurePreTransformer {
 
         ProcedurePojo pojo = new ProcedurePojo();
         pojo.setConsultant(parser.getConsultant());
-        pojo.setCreate_dt_tm(parser.getCreateDateTime());
+        pojo.setProc_dt_tm(parser.getProcedureDateTime());
         pojo.setUpdatedBy(parser.getUpdatedBy());
         pojo.setEncounterId(parser.getEncounterId()); // Remember encounter ids from Procedure have a trailing .00
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());
-     //   pojo.setProcedureCode(parser.getProcedureCode());
-        // Nomenclature ref maps to PROCE procedure
-        CernerNomenclatureRef nomenclatureRef = csvHelper.lookupNomenclatureRefByValueTxt(parser.getProcedureCode().getString());
-        String valueText = nomenclatureRef.getValueText();
-        pojo.setProcedureCodeValueText(valueText);
-     //   pojo.setProcedureCodeType((parser.getProcedureCodeType()));
+        pojo.setProcedureCode(parser.getProcedureCode());
         csvHelper.getProcedureCache().cachePojo(pojo);
 
     }

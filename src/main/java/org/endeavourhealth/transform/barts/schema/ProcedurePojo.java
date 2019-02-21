@@ -7,25 +7,11 @@ public class ProcedurePojo {
 
     private CsvCell encounterId;
     private CsvCell consultant;
-    private CsvCell create_dt_tm;
+    private CsvCell proc_dt_tm;
     private CsvCell updatedBy;
     private CsvCell notes;
     private CsvCell Mrn;
-  //  private CsvCell procedureCode;
-    private String procedureCodeValueText;
-  //  private CsvCell procedureCodeType;
-
-    public String getProcedureCodeValueText() {
-        return procedureCodeValueText;
-    }
-
-    public void setProcedureCodeValueText(String procedureCodeValueText) {
-        this.procedureCodeValueText = procedureCodeValueText;
-    }
-
-//    public CsvCell getProcedureCodeType() {return procedureCodeType;}
-//
-//    public void setProcedureCodeType(CsvCell procedureCodeType) {this.procedureCodeType = procedureCodeType;}
+    private CsvCell procedureCode;
 
     public CsvCell getMrn() {
         return Mrn;
@@ -35,13 +21,9 @@ public class ProcedurePojo {
         Mrn = mrn;
     }
 
-//    public CsvCell getProcedureCode() {
-//        return procedureCode;
-//    }
-//
-//    public void setProcedureCode(CsvCell procedureCode) {
-//        this.procedureCode = procedureCode;
-//    }
+    public CsvCell getProcedureCode() {return procedureCode;}
+
+    public void setProcedureCode(CsvCell procedureCode) {this.procedureCode = procedureCode;}
 
     public CsvCell getNotes() {
         return notes;
@@ -67,12 +49,12 @@ public class ProcedurePojo {
         this.consultant = consultant;
     }
 
-    public CsvCell getCreate_dt_tm() {
-        return create_dt_tm;
+    public CsvCell getProc_dt_tm() {
+        return proc_dt_tm;
     }
 
-    public void setCreate_dt_tm(CsvCell create_dt_tm) {
-        this.create_dt_tm = create_dt_tm;
+    public void setProc_dt_tm(CsvCell proc_dt_tm) {
+        this.proc_dt_tm = proc_dt_tm;
     }
 
     public CsvCell getUpdatedBy() {
