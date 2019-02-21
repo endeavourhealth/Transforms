@@ -588,6 +588,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             bpComponentMap.put(key, list);
         }
         list.add(bpComponent);
+
+        //Emis seem to have started sending BP readings diastolic first, so impose sorting to undo this since systolic is always the higher
+        list.sort((o1, o2) -> {
+            Double d1 = o1.getValue().getDouble();
+            Double d2 = o2.getValue().getDouble();
+            return d2.compareTo(d1);
+        });
     }
 
     public List<BpComponent> findBpComponents(CsvCell observationGuid, CsvCell patientGuid) {
