@@ -662,6 +662,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                     return DATE_FORMAT_BULK.parse(dateString);
                 } catch (ParseException ex2) {
                     String pascalCaseDateString =  WordUtils.capitalize(dateString);
+                    LOG.info("Trying date:" + pascalCaseDateString);
                     return DATE_FORMAT_CLEVE.parse(pascalCaseDateString);
                 }
 
