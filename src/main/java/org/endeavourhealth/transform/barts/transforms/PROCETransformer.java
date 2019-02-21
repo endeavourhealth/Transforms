@@ -178,7 +178,7 @@ public class PROCETransformer {
             procedureBuilder.setIsPrimary(true, sequenceNumberCell);
         }
 
-        if (parser.getEncounterId() != null && parser.getEncounterId().getString() != null && parser.getProcedureTypeCode() != null) {
+        if (parser.getEncounterId().getString() != null ) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
             String procCode = conceptIdentifierCell.getString().substring(conceptIdentifierCell.getString().indexOf("!") + 1); // before the ! is the code scheme.
             ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,

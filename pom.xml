@@ -5,7 +5,7 @@
 
     <groupId>org.endeavourhealth.common</groupId>
     <artifactId>transforms</artifactId>
-    <version>1.1283-SNAPSHOT</version>
+    <version>1.1284-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

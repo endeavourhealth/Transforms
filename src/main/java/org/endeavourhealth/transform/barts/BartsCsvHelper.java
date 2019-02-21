@@ -21,6 +21,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.cache.*;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
+import org.endeavourhealth.transform.barts.schema.ProcedurePojoCache;
 import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
