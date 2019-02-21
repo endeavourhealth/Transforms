@@ -116,6 +116,11 @@ public class PROCETransformer {
         }
 
         CsvCell personnelIdCell = parser.getPersonnelId();
+        //this cell is always empty at Barts, but adding validation to ensure that stays the case. If this changes,
+        //we'll need to start processing this field
+        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
+            throw new TransformException("PROCEDURE_HCP_PRSNL_ID column is not empty in PROCE file");
+        }
 //        //should I use the practitioner reference at all?  Never populated for Barts.
 //        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
 //            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
@@ -124,51 +129,49 @@ public class PROCETransformer {
 
         // Procedure is coded either Snomed or OPCS4
         CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
-        if (!conceptIdentifierCell.isEmpty()) {
-            conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
-            String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(conceptIdentifierCell);
+        if (conceptIdentifierCell.isEmpty()) {
+            throw new TransformException("CONCEPT_CKI_IDENT is empty in PROCE file");
+        }
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+        conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
+        String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(conceptIdentifierCell);
 
-            if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
-                //NOTE: this code IS a SNOMED concept ID, unlike the Problem file which has a description ID
-                String term = TerminologyService.lookupSnomedTerm(conceptCode);
-                if (Strings.isNullOrEmpty(term)) {
-                    TransformWarnings.log(LOG, csvHelper, "Failed to find Snomed term for {}", conceptIdentifierCell);
-                }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
-                codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
-
-            } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
-                String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
-                if (Strings.isNullOrEmpty(term)) {
-                    TransformWarnings.log(LOG, csvHelper, "Failed to find ICD-10 term for {}", conceptIdentifierCell);
-                }
-
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
-                codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
-
-            } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-                String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
-                if (Strings.isNullOrEmpty(term)) {
-                    TransformWarnings.log(LOG, csvHelper, "Failed to find OPCS-4 term for {}", conceptIdentifierCell);
-                }
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
-                codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
-                codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
-            } else {
-                throw new TransformException("Unknown PROCE code type [" + conceptCodeType + "]");
+        if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
+            //NOTE: this code IS a SNOMED concept ID, unlike the Problem file which has a description ID
+            String term = TerminologyService.lookupSnomedTerm(conceptCode);
+            if (Strings.isNullOrEmpty(term)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find Snomed term for {}", conceptIdentifierCell);
             }
 
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+            codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
+
+        } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+            String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+            if (Strings.isNullOrEmpty(term)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find ICD-10 term for {}", conceptIdentifierCell);
+            }
+
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingDisplay(term); //don't pass in a cell as this was derived
+            codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
+
+        } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+            if (Strings.isNullOrEmpty(term)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find OPCS-4 term for {}", conceptIdentifierCell);
+            }
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingCode(conceptCode, conceptIdentifierCell);
+            codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
+            codeableConceptBuilder.setText(term); //don't pass in the cell as this is derived
         } else {
-            //if there's no code, there's nothing to save
-            return;
+            throw new TransformException("Unknown PROCE code type [" + conceptCodeType + "]");
         }
 
         //populate comments, performed date, consultant etc. from that file if possible
