@@ -1007,9 +1007,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return true;
     }
     private static String formatAllcapsMonth(String indate) {
-        String first = indate.substring(0,indate.indexOf("-"));
+        String first = indate.substring(0,indate.indexOf("-")+1);
         String month = indate.substring(indate.indexOf("-")+1,indate.lastIndexOf("-"));
-        String rest = indate.substring(indate.lastIndexOf("-")+1);
+        String rest = indate.substring(indate.lastIndexOf("-"));
         return first + monthToMixedCase(month) + rest;
     }
 }
