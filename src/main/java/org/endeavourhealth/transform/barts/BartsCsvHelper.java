@@ -58,6 +58,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
     private static SimpleDateFormat DATE_FORMAT_CLEVE = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+    private static SimpleDateFormat DATE_FORMAT_CLEVE2 = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
 
     private static Date cachedEndOfTime = null;
     private static Date cachedStartOfTime = null;
@@ -664,7 +665,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                         return DATE_FORMAT_CLEVE.parse(dateString);
                     } catch (ParseException ex3) {
                         String date3 = formatAllcapsMonth(dateString);
-                        return DATE_FORMAT_CLEVE.parse(date3);
+                        return DATE_FORMAT_CLEVE2.parse(date3);
 
                     }
                 }
