@@ -21,9 +21,13 @@ public class ProcedurePojo {
         Mrn = mrn;
     }
 
-    public CsvCell getProcedureCode() {return procedureCode;}
+    public CsvCell getProcedureCode() {
+        return procedureCode;
+    }
 
-    public void setProcedureCode(CsvCell procedureCode) {this.procedureCode = procedureCode;}
+    public void setProcedureCode(CsvCell procedureCode) {
+        this.procedureCode = procedureCode;
+    }
 
     public CsvCell getNotes() {
         return notes;

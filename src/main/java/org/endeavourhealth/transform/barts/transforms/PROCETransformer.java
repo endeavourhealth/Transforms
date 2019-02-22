@@ -130,7 +130,8 @@ public class PROCETransformer {
         // Procedure is coded either Snomed or OPCS4
         CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
         if (conceptIdentifierCell.isEmpty()) {
-            throw new TransformException("CONCEPT_CKI_IDENT is empty in PROCE file");
+
+            throw new TransformException("CONCEPT_CKI_IDENT is empty in PROCE file for Procedure ID " + procedureIdCell);
         }
 
         conceptCode = csvHelper.getProcedureOrDiagnosisConceptCode(conceptIdentifierCell);
