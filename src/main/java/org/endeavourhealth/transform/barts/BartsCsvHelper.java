@@ -41,8 +41,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -665,9 +663,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                     try {
                         return DATE_FORMAT_CLEVE.parse(dateString);
                     } catch (ParseException ex3) {
-                        DateTimeFormatter formatter= DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss");
-                        LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
-                        return DATE_FORMAT_CLEVE.parse(dateTime.toString());
+                        String date3 = formatAllcapsMonth(dateString);
+                        return DATE_FORMAT_CLEVE.parse(date3);
 
                     }
                 }
@@ -677,6 +674,37 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
 
+
+
+    private static String monthToMixedCase(String month) {
+        switch (month) {
+            case "JAN":
+                return "Jan";
+            case "FEB":
+                return "Feb";
+            case "MAR":
+                return "Mar";
+            case "APR":
+                return "Apr";
+            case "MAY":
+                return "May";
+            case "JUN":
+                return "Jun";
+            case "JUL":
+                return "Jul";
+            case "AUG":
+                return "Aug";
+            case "SEP":
+                return "Sep";
+            case "OCT":
+                return "Oct";
+            case "NOV":
+                return "Nov";
+            case "DEC":
+                return "Dec";
+        }
+            return "unknown";
+    }
 
     /**
      * we store the relationship type for each PPREL in the internal ID map table
@@ -977,5 +1005,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         //audit every record of any other files
         return true;
+    }
+    private static String formatAllcapsMonth(String indate) {
+        String first = indate.substring(0,indate.indexOf("-"));
+        String month = indate.substring(indate.indexOf("-")+1,indate.lastIndexOf("-"));
+        String rest = indate.substring(indate.lastIndexOf("-")+1);
+        return first + monthToMixedCase(month) + rest;
     }
 }
