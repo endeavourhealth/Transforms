@@ -223,10 +223,13 @@ public class PROCETransformer {
                     }
                 }
 
+            } else {
+                LOG.info("No fixed width procedure cached for endId:" + compatibleEncId + ". ProcCode:" + procCode + " at:" + BartsCsvHelper.parseDate(procedureDateTimeCell));
             }
         }
 
         // save resource
+        LOG.info("Procedure pojo cache size is :" + csvHelper.getProcedureCache().size());
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }
 

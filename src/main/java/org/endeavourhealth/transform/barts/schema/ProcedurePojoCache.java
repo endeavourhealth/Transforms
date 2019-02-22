@@ -37,7 +37,7 @@ public class ProcedurePojoCache {
         if (procIdInCache(encId)) {
             for (ProcedurePojo pojo : getProcedurePojoByEncId(encId)) {
                 try {
-                    if (pojo.getProcedureCode().getString().equalsIgnoreCase(procCd) &&
+                    if (pojo.getProcedureCode().getString().trim().equalsIgnoreCase(procCd.trim()) &&
                             pojo.getProc_dt_tm().getDate().equals(date)) {
                         return pojo;
                     }
@@ -79,6 +79,10 @@ public class ProcedurePojoCache {
         } catch (Exception ex) {
             LOG.error("Error cleaning up cache", ex);
         }
+    }
+
+    public int size() {
+        return procedurePojosByEncounterId.size();
     }
 
 }
