@@ -131,6 +131,7 @@ public class PROCETransformer {
         CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
         if (conceptIdentifierCell.isEmpty()) {
             //got some bad data from the original bulk, which contain no concept code for a handful of 2012 records - so ignore these records
+            TransformWarnings.log(LOG, csvHelper, "CONCEPT_CKI_IDENT is empty in PROCE file for Procedure ID {}", procedureIdCell);
             return;
             //throw new TransformException("CONCEPT_CKI_IDENT is empty in PROCE file for Procedure ID " + procedureIdCell);
         }
