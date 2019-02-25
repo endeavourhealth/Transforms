@@ -19,12 +19,9 @@ import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.barts.cache.EncounterResourceCache;
-import org.endeavourhealth.transform.barts.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.barts.cache.LocationResourceCache;
-import org.endeavourhealth.transform.barts.cache.PatientResourceCache;
+import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.transform.barts.cache.*;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
-import org.endeavourhealth.transform.barts.schema.ProcedurePojoCache;
 import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
@@ -75,6 +72,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
+
+    private Map<String, String> snomedDescToConceptCache = new ConcurrentHashMap<>();
 
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
     private Map<Long, ReferenceList> clinicalEventChildMap = new ConcurrentHashMap<>();
@@ -212,7 +211,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }*/
 
 
-
     public Reference createPatientReference(CsvCell personIdCell) {
         return ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
     }
@@ -236,7 +234,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         String conceptCodeIdentifier = cell.getString();
         int index = conceptCodeIdentifier.indexOf('!');
         if (index > -1) {
-            String ret = conceptCodeIdentifier.substring(0,index);
+            String ret = conceptCodeIdentifier.substring(0, index);
             if (ret.equals(CODE_TYPE_SNOMED)
                     || ret.equals(CODE_TYPE_ICD_10)
                     || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)) {
@@ -284,6 +282,17 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return null;
     }*/
 
+    public String lookupSnomedConceptIdFromDescId(String descId) throws Exception {
+        String ret = snomedDescToConceptCache.get(descId);
+        if (ret == null) {
+            ret = TerminologyService.lookupSnomedConceptForDescriptionId(descId).getConceptCode();
+            if (ret == null) {
+                TransformWarnings.log(LOG, this,"Failed to find SNOMED concept id for desc ID " + descId);
+            }
+        }
+        return ret;
+    }
+
     public CernerNomenclatureRef lookupNomenclatureRef(Long nomenclatureId) throws Exception {
 
         CernerNomenclatureRef ret = nomenclatureCache.get(nomenclatureId);
@@ -301,12 +310,13 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         return ret;
     }
+
     public CernerNomenclatureRef lookupNomenclatureRefByValueTxt(String valueText) throws Exception {
 
         CernerNomenclatureRef ret = nomenclatureCacheByValueTxt.get(valueText);
         if (ret == null) {
 
-            ret = cernerCodeValueRefDal.getNomenclatureRefForValueText(serviceId,valueText);
+            ret = cernerCodeValueRefDal.getNomenclatureRefForValueText(serviceId, valueText);
             if (ret == null) {
                 //don't want to allow failures to continue until I understand why
                 throw new TransformException("Failed to find Cerner NOMREF record for ID " + valueText);
@@ -352,7 +362,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
         if (cernerCodeFromDB == null) {
             TransformWarnings.log(LOG, this, "Failed to find Cerner CVREF record for code {} and code set {}", code, codeSet);
-           // return new CernerCodeValueRef();
+            // return new CernerCodeValueRef();
             return null;
         }
 
@@ -400,7 +410,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         if (ret == null
                 && !encounterIdToPersonIdMap.containsKey(encounterId)) { //we add null values to the map, so check for the key being present too
 
-            Encounter encounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell);
+            Encounter encounter = (Encounter) retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell);
             if (encounter == null) {
                 //if no encounter, then add null to the map to save us hitting the DB repeatedly for the same encounter
                 encounterIdToPersonIdMap.put(encounterId, null);
@@ -452,7 +462,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
      * so we need to retrieve them off the main repository, amend them and save them
      */
     public void processRemainingClinicalEventParentChildLinks(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (Long parentEventId: clinicalEventChildMap.keySet()) {
+        for (Long parentEventId : clinicalEventChildMap.keySet()) {
             ReferenceList list = clinicalEventChildMap.get(parentEventId);
             updateExistingObservationWithNewChildLinks(parentEventId, list, fhirResourceFiler);
         }
@@ -465,7 +475,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                                                             ReferenceList childResourceRelationships,
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Observation observation = (Observation)retrieveResourceForLocalId(ResourceType.Observation, parentEventId.toString());
+        Observation observation = (Observation) retrieveResourceForLocalId(ResourceType.Observation, parentEventId.toString());
         if (observation == null) {
             return;
         }
@@ -474,7 +484,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         boolean changed = false;
 
-        for (int i=0; i<childResourceRelationships.size(); i++) {
+        for (int i = 0; i < childResourceRelationships.size(); i++) {
             Reference reference = childResourceRelationships.getReference(i);
             CsvCell[] sourceCells = childResourceRelationships.getSourceCells(i);
 
@@ -550,7 +560,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
      * to carry over any existing mapping from the HL7 Receiver DB, so both ADT and Data Warehouse feeds
      * map the same source concept to the same UUID
      */
-    public UUID createResourceIdOrCopyFromHl7Receiver(ResourceType resourceType, String localUniqueId, String hl7ReceiverUniqueId, String hl7ReceiverScope, boolean ignoreFailureToWriteToHl7Db) throws Exception{
+    public UUID createResourceIdOrCopyFromHl7Receiver(ResourceType resourceType, String localUniqueId, String hl7ReceiverUniqueId, String hl7ReceiverScope, boolean ignoreFailureToWriteToHl7Db) throws Exception {
 
         //check our normal ID -> UUID mapping table
         UUID existingResourceId = IdHelper.getEdsResourceId(serviceId, resourceType, localUniqueId);
@@ -605,7 +615,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             throw ex;
         }
     }
-
 
 
     /**
@@ -675,8 +684,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
 
-
-
     private static String monthToMixedCase(String month) {
         switch (month) {
             case "JAN":
@@ -704,7 +711,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             case "DEC":
                 return "Dec";
         }
-            return "unknown";
+        return "unknown";
     }
 
     /**
@@ -833,7 +840,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return encounterCache;
     }
 
-    public ProcedurePojoCache getProcedureCache() { return procedurecache;}
+    public ProcedurePojoCache getProcedureCache() {
+        return procedurecache;
+    }
 
     public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
                                                       CsvCell childIdCell,
@@ -872,10 +881,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
     public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (Long encounterId: consultationNewChildMap.keySet()) {
+        for (Long encounterId : consultationNewChildMap.keySet()) {
             ReferenceList newLinkedItems = consultationNewChildMap.get(encounterId);
 
-            Encounter existingEncounter = (Encounter)retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
+            Encounter existingEncounter = (Encounter) retrieveResourceForLocalId(ResourceType.Encounter, encounterId.toString());
             if (existingEncounter == null) {
                 //if the problem has been deleted, just skip it
                 continue;
@@ -884,7 +893,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-            for (int i=0; i<newLinkedItems.size(); i++) {
+            for (int i = 0; i < newLinkedItems.size(); i++) {
                 Reference reference = newLinkedItems.getReference(i);
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
@@ -931,6 +940,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         String personId = personIdCell.getString();
         return processRecordFilteringOnPatientId(personId);
     }
+
     public boolean processRecordFilteringOnPatientId(String personId) {
 
         if (personIdsToFilterOn == null) {
@@ -1000,16 +1010,17 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     @Override
     public boolean shouldAuditRecord(ParserI parser) throws Exception {
         if (parser instanceof CLEVE) {
-            CLEVE cleveParser = (CLEVE)parser;
+            CLEVE cleveParser = (CLEVE) parser;
             return CLEVEPreTransformer.shouldTransformOrAuditRecord(cleveParser, this);
         }
 
         //audit every record of any other files
         return true;
     }
+
     private static String formatAllcapsMonth(String indate) {
-        String first = indate.substring(0,indate.indexOf("-")+1);
-        String month = indate.substring(indate.indexOf("-")+1,indate.lastIndexOf("-"));
+        String first = indate.substring(0, indate.indexOf("-") + 1);
+        String month = indate.substring(indate.indexOf("-") + 1, indate.lastIndexOf("-"));
         String rest = indate.substring(indate.lastIndexOf("-"));
         return first + monthToMixedCase(month) + rest;
     }

@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts.schema;
+package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.slf4j.Logger;

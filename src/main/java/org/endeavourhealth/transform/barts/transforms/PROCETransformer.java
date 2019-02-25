@@ -7,8 +7,8 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.ProcedurePojo;
 import org.endeavourhealth.transform.barts.schema.PROCE;
-import org.endeavourhealth.transform.barts.schema.ProcedurePojo;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -184,9 +184,15 @@ public class PROCETransformer {
             procedureBuilder.setIsPrimary(true, sequenceNumberCell);
         }
 
-        if (parser.getEncounterId().getString() != null ) {
+        if (parser.getEncounterId().getString() != null) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
             String procCode = conceptIdentifierCell.getString().substring(conceptIdentifierCell.getString().indexOf("!") + 1); // before the ! is the code scheme.
+            if (parser.getProcedureTypeCode().getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED)) {
+                //SNOMED entries use the SNOMED description id rather than concept code
+                codeableConceptBuilder.setText(procCode);
+                procCode=csvHelper.lookupSnomedConceptIdFromDescId(procCode);
+
+            }
             ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
                     BartsCsvHelper.parseDate(procedureDateTimeCell));
             if (pojo != null) {

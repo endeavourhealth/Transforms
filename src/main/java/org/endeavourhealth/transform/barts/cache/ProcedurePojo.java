@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts.schema;
+package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.transform.common.CsvCell;
 
@@ -12,6 +12,15 @@ public class ProcedurePojo {
     private CsvCell notes;
     private CsvCell Mrn;
     private CsvCell procedureCode;
+    private String snomedConceptId; // Handy for lookups
+
+    public String getSnomedConceptId() {
+        return snomedConceptId;
+    }
+
+    public void setSnomedConceptId(String snomedConceptId) {
+        this.snomedConceptId = snomedConceptId;
+    }
 
     public CsvCell getMrn() {
         return Mrn;

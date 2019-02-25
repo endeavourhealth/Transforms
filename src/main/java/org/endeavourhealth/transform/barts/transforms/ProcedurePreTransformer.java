@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.ProcedurePojo;
+import org.endeavourhealth.transform.barts.cache.ProcedurePojo;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
@@ -42,6 +42,9 @@ public class ProcedurePreTransformer {
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());
         pojo.setProcedureCode(parser.getProcedureCode());
+        if (parser.getProcedureCodeType().getString()=="SNOMED") {
+            pojo.setSnomedConceptId(csvHelper.lookupSnomedConceptIdFromDescId(parser.getProcedureCode().getString()));
+        }
         csvHelper.getProcedureCache().cachePojo(pojo);
 
     }
