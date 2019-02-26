@@ -85,6 +85,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private LocationResourceCache locationCache = new LocationResourceCache(this);
     private PatientResourceCache patientCache = new PatientResourceCache(this);
     private ProcedurePojoCache procedurecache = new ProcedurePojoCache(this);
+    private SusPatientCache susPatientCache = new SusPatientCache(this);
+    private SusPatientTailCache susPatientTailCache = new SusPatientTailCache(this);
     private ThreadPool utilityThreadPool = null;
 
     private UUID serviceId = null;
@@ -844,6 +846,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return procedurecache;
     }
 
+    public SusPatientCache getSusPatientCache() {
+        return susPatientCache;
+    }
+    public SusPatientTailCache getSusPatientTailCache() {
+        return susPatientTailCache;
+    }
     public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
                                                       CsvCell childIdCell,
                                                       ResourceType childResourceType) throws Exception {

@@ -8,6 +8,9 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.ProcedurePojo;
+import org.endeavourhealth.transform.barts.cache.SusPatientCache;
+import org.endeavourhealth.transform.barts.cache.SusPatientCacheEntry;
+import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -21,6 +24,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -232,6 +236,21 @@ public class PROCETransformer {
             } else {
                 LOG.info("No fixed width procedure cached for endId:" + compatibleEncId + ". ProcCode:" + procCode + " at:" + BartsCsvHelper.parseDate(procedureDateTimeCell));
             }
+            // Get data from SUS file caches.
+            List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
+            List<String> csdIds = new ArrayList<>();
+            for (SusTailCacheEntry e: tailCacheList) {
+                if (!e.getCDSUniqueIdentifier().isEmpty()) {
+                    csdIds.add(e.getCDSUniqueIdentifier().getString());
+                }
+            }
+            List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
+            SusPatientCache patientCache = csvHelper.getSusPatientCache();
+            for (String id : csdIds) {
+                if (patientCache.csdUIdInCache(id)) {
+                    patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
+                }
+            } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
         }
 
         // save resource
