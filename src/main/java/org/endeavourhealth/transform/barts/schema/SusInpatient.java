@@ -22,6 +22,12 @@ public class SusInpatient extends AbstractFixedParser {
         return super.getCell("CDSUniqueIdentifier");
     }
 
+    public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
+
+    public CsvCell getNhsNumber() { return super.getCell("NHSNumber");}
+
+    public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
+
     public CsvCell getProcedureSchemeInUse() {
         return super.getCell("ProcedureSchemeInUse");
     }
@@ -47,22 +53,18 @@ public class SusInpatient extends AbstractFixedParser {
         return super.getCell("2nd50thSecondaryProceduresOPCS");
     }
 
-    public CsvCell getCDSRecordType() {
-        return super.getCell("CDSRecordType");
-    }
-
-
-    public CsvCell getPrimaryMainOperatingHCPRegistrationEntryIdentifier() {
-        return super.getCell("PrimaryMainOperatingHCPRegistrationEntryIdentifier");
-    }
-
-    public CsvCell getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier() {
-        return super.getCell("PrimaryResponsibleAnaesthetistRegistrationEntryIdentifier");
-    }
-
-
-
-
+//    public CsvCell getCDSRecordType() {
+//        return super.getCell("CDSRecordType");
+//    }
+//
+//
+//    public CsvCell getPrimaryMainOperatingHCPRegistrationEntryIdentifier() {
+//        return super.getCell("PrimaryMainOperatingHCPRegistrationEntryIdentifier");
+//    }
+//
+//    public CsvCell getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier() {
+//        return super.getCell("PrimaryResponsibleAnaesthetistRegistrationEntryIdentifier");
+//    }
 
     /*public Date getAdmissionDate() throws TransformException {
         return super.getDate("StartDateHospitalProviderSpell");

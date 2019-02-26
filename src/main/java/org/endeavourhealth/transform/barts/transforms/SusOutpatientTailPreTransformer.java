@@ -29,7 +29,7 @@ public class SusOutpatientTailPreTransformer {
         CsvCell personnelId = parser.getResponsiblePersonnelId();
 
         SusTailCacheEntry obj = new SusTailCacheEntry();
-        obj.setFinNumber(finNumber);
+        obj.setCDSUniqueIdentifier(finNumber);
         obj.setEncounterId(encounterId);
         obj.setEpisodeId(episodeId);
         obj.setPersonId(personId);

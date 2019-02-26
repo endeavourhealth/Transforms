@@ -22,14 +22,14 @@ public class SusEmergencyCareDataSetTailPreTransformer {
     private static void processRecord(SusEmergencyCareDataSetTail parser, Map<String, SusTailCacheEntry> tailsCache) {
 
         //only cache the fields we know we'll need
-        CsvCell finNumber = parser.getFinNumber();
+        CsvCell cdsUniqueIdentifier = parser.getCdsUniqueId();
         CsvCell encounterId = parser.getEncounterId();
         CsvCell episodeId = parser.getEpisodeId();
         CsvCell personId = parser.getPersonId();
         CsvCell personnelId = parser.getResponsiblePersonnelId();
 
         SusTailCacheEntry obj = new SusTailCacheEntry();
-        obj.setFinNumber(finNumber);
+        obj.setCDSUniqueIdentifier(cdsUniqueIdentifier);
         obj.setEncounterId(encounterId);
         obj.setEpisodeId(episodeId);
         obj.setPersonId(personId);

@@ -7,18 +7,27 @@ import org.endeavourhealth.transform.common.CsvCell;
  * Inpatient, Outpatient and Emergency, they're the same as far as the fields we're interested in go
  */
 public class SusTailCacheEntry {
-    private CsvCell finNumber;
+    private CsvCell CDSUniqueIdentifier;
+    private CsvCell cdsActivityDate;
     private CsvCell encounterId;
     private CsvCell episodeId;
     private CsvCell personId;
     private CsvCell responsibleHcpPersonnelId;
 
-    public CsvCell getFinNumber() {
-        return finNumber;
+    public CsvCell getCdsActivityDate() {
+        return cdsActivityDate;
     }
 
-    public void setFinNumber(CsvCell finNumber) {
-        this.finNumber = finNumber;
+    public void setCdsActivityDate(CsvCell cdsActivityDate) {
+        this.cdsActivityDate = cdsActivityDate;
+    }
+
+    public CsvCell getCDSUniqueIdentifier() {
+        return CDSUniqueIdentifier;
+    }
+
+    public void setCDSUniqueIdentifier(CsvCell CDSUniqueIdentifier) {
+        this.CDSUniqueIdentifier = CDSUniqueIdentifier;
     }
 
     public CsvCell getEncounterId() {

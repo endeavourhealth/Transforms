@@ -23,8 +23,8 @@ public class SusEmergencyTail extends AbstractFixedParser {
         return super.getCell("CDS_Unique_Identifier");
     }
 
-    public CsvCell getFinNumber() {
-        return super.getCell("Fin_Nbr");
+    public CsvCell getCdsActivityDate() {
+        return super.getCell("CDS_Activity_Date");
     }
 
     public CsvCell getEncounterId() {
