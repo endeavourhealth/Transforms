@@ -236,21 +236,23 @@ public class PROCETransformer {
             } else {
                 LOG.info("No fixed width procedure cached for endId:" + compatibleEncId + ". ProcCode:" + procCode + " at:" + BartsCsvHelper.parseDate(procedureDateTimeCell));
             }
-            // Get data from SUS file caches.
-            List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
-            List<String> csdIds = new ArrayList<>();
-            for (SusTailCacheEntry e: tailCacheList) {
-                if (!e.getCDSUniqueIdentifier().isEmpty()) {
-                    csdIds.add(e.getCDSUniqueIdentifier().getString());
+            // Get data from SUS file caches for OPCS4
+            if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+                List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
+                List<String> csdIds = new ArrayList<>();
+                for (SusTailCacheEntry e : tailCacheList) {
+                    if (!e.getCDSUniqueIdentifier().isEmpty()) {
+                        csdIds.add(e.getCDSUniqueIdentifier().getString());
+                    }
                 }
+                List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
+                SusPatientCache patientCache = csvHelper.getSusPatientCache();
+                for (String id : csdIds) {
+                    if (patientCache.csdUIdInCache(id)) {
+                        patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
+                    }
+                } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
             }
-            List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
-            SusPatientCache patientCache = csvHelper.getSusPatientCache();
-            for (String id : csdIds) {
-                if (patientCache.csdUIdInCache(id)) {
-                    patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
-                }
-            } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
         }
 
         // save resource
