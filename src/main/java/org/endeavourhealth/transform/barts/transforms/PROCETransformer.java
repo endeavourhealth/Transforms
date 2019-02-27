@@ -277,6 +277,10 @@ public class PROCETransformer {
                             && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
                         Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
                         procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
+                        if (!tail.getCdsActivityDate().isEmpty()) {
+                            DateTimeType dt =  new DateTimeType(tail.getCdsActivityDate().getDate());
+                                    procedureBuilder.setPerformed(dt,tail.getCdsActivityDate());
+                        }
                     }
                 }
             }
