@@ -27,6 +27,10 @@ public class SusOutpatientTailPreTransformer {
         CsvCell episodeId = parser.getEpisodeId();
         CsvCell personId = parser.getPersonId();
         CsvCell personnelId = parser.getResponsiblePersonnelId();
+        int seqNo=1; // Primary is default
+        if (tailsCache.containsKey(encounterId.getString())) {
+            seqNo = tailsCache.get(encounterId.getString()).getSeqNo()+1;
+        }
 
         SusTailCacheEntry obj = new SusTailCacheEntry();
         obj.setCDSUniqueIdentifier(finNumber);
@@ -34,7 +38,7 @@ public class SusOutpatientTailPreTransformer {
         obj.setEpisodeId(episodeId);
         obj.setPersonId(personId);
         obj.setResponsibleHcpPersonnelId(personnelId);
-
+        obj.setSeqNo(seqNo);
         CsvCell uniqueId = parser.getCdsUniqueId();
         tailsCache.put(uniqueId.getString(), obj);
     }

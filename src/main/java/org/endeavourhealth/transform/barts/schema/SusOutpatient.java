@@ -49,6 +49,14 @@ public class SusOutpatient extends AbstractFixedParser {
         return super.getCell("CDSRecordType");
     }
 
+    public CsvCell getCdsUniqueId() {return super.getCell("CDSUniqueIdentifier");}
+
+    public CsvCell getPatientLocalId() {return super.getCell("LocalPatientID");}
+
+    public CsvCell getNhsNumber() {return super.getCell("NHSNumber");}
+
+    public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
+
     /*public String getConsultantCode() {
         return super.getString("ConsultantCode");
     }
