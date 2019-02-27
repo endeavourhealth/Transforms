@@ -2,6 +2,9 @@ package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.transform.common.CsvCell;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * object used to cache SUS Patient records in memory. Although the files are slightly different between
  * Inpatient, Outpatient and Emergency, they're the same as far as the fields we're interested in go
@@ -16,6 +19,15 @@ public class SusPatientCacheEntry {
     private CsvCell SecondaryProcedureOPCS;
     private CsvCell SecondaryProcedureDate;
     private CsvCell OtherSecondaryProceduresOPCS;
+    private List<String> otherCodes= new ArrayList();
+
+    public List<String> getOtherCodes() {
+        return otherCodes;
+    }
+
+    public void setOtherCodes(List<String> otherCodes) {
+        this.otherCodes = otherCodes;
+    }
 
     public CsvCell getCdsActivityDate() {
         return cdsActivityDate;

@@ -243,8 +243,8 @@ public class PROCETransformer {
                 List<String> csdIds = new ArrayList<>();
                 for (SusTailCacheEntry e : tailCacheList) {
                     if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
-                            && sequenceNumberCell.getInt().equals(e.getSeqNo())
                             && !e.getCDSUniqueIdentifier().isEmpty()) {
+
                         csdIds.add(e.getCDSUniqueIdentifier().getString());
                     }
                 }
@@ -253,7 +253,22 @@ public class PROCETransformer {
                 SusPatientCache patientCache = csvHelper.getSusPatientCache();
                 for (String id : csdIds) {
                     if (patientCache.csdUIdInCache(id)) {
-                        patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
+                        SusPatientCacheEntry susPatientCacheEntry = patientCache.getPatientByCdsUniqueId(id);
+                        int seqNo = sequenceNumberCell.getInt();
+                        switch (seqNo) {
+                            case 1: if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()));
+                                patientCacheList.add(susPatientCacheEntry);
+                                break;
+                            case 2: if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()));
+                                patientCacheList.add(susPatientCacheEntry);
+                                break;
+                            default: if (!susPatientCacheEntry.getOtherCodes().isEmpty()
+                                    && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
+                                patientCacheList.add(susPatientCacheEntry);
+                                break;
+                            }
+                        }
+                        patientCacheList.add(susPatientCacheEntry);
                     }
                 } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
                 List<String> knownPerformers = null; // Track known performers to avoid duplicate entries.

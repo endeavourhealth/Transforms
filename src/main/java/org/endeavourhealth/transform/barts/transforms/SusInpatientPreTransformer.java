@@ -5,6 +5,8 @@ import org.endeavourhealth.transform.barts.cache.SusPatientCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.common.CsvCell;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class SusInpatientPreTransformer {
@@ -35,6 +37,10 @@ public class SusInpatientPreTransformer {
         CsvCell secondaryProcedureOPCS = parser.getSecondaryProcedureOPCS();
         CsvCell secondaryProcedureDate = parser.getSecondaryProcedureDate();
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
+        List<String> otherProcs  = new ArrayList<>();
+        for(String word : otherProcedureOPCS.getString().split(" ")) {
+            otherProcs.add(word);
+        }
 
         SusPatientCacheEntry obj = new SusPatientCacheEntry();
         obj.setCDSUniqueIdentifier(cdsUniqueId);
@@ -46,6 +52,7 @@ public class SusInpatientPreTransformer {
         obj.setSecondaryProcedureOPCS(secondaryProcedureOPCS);
         obj.setSecondaryProcedureDate(secondaryProcedureDate);
         obj.setOtherSecondaryProceduresOPCS(otherProcedureOPCS);
+
 
 
         CsvCell uniqueId = parser.getCdsUniqueId();
