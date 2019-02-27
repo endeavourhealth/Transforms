@@ -257,13 +257,21 @@ public class PROCETransformer {
                         int seqNo = sequenceNumberCell.getInt();
                         switch (seqNo) {
                             case 1: if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()));
+                            //TODO Which is more reliable? Assume CSDActivitydate refers to overall, not specific procedure.
+                                if (!susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()) {
+                                    susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getPrimaryProcedureDate());
+                                }
                                 patientCacheList.add(susPatientCacheEntry);
                                 break;
                             case 2: if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()));
+                                if (!susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()) {
+                                    susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getSecondaryProcedureDate());
+                                }
                                 patientCacheList.add(susPatientCacheEntry);
                                 break;
                             default: if (!susPatientCacheEntry.getOtherCodes().isEmpty()
                                     && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
+                                //TODO - other procedure dates? Stick with CDSActivityDate for now
                                 patientCacheList.add(susPatientCacheEntry);
                                 break;
                             }
