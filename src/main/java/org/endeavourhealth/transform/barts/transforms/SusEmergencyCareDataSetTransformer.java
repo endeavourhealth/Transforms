@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SusEmergencyCareDataSetTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetTransformer.class);
 
 
     public static void transformProcedures(List<ParserI> parsers,

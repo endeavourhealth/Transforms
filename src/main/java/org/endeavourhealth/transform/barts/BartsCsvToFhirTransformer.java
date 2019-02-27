@@ -140,8 +140,6 @@ public abstract class BartsCsvToFhirTransformer {
             //DIAGNOSES
             /*
             DiagnosisTransformer.transform(version, getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            SusInpatientTransformer.transformProcedures(getParsers(parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
-            SusOutpatientTransformer.transformProcedures(getParsers(parserMap, "SusInpatient", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
             SusEmergencyTransformer.transformProcedures(getParsers(parserMap, "SusEmergency", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
             SusEmergencyCareDataSetTransformer.transformProcedures(getParsers(parserMap, "SusEmergencyCareDataSet", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
             DIAGNTransformer.transform(getParsers(parserMap, "DIAGN", csvHelper, true), fhirResourceFiler, csvHelper);

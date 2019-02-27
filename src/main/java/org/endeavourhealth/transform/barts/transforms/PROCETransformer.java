@@ -252,6 +252,14 @@ public class PROCETransformer {
                         patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
                     }
                 } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
+                List<String> knownPerformers=null; // Track known performers to avoid duplicate entries.
+                for (SusTailCacheEntry tail : tailCacheList) {
+                    if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
+                            && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
+                        Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
+                        procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
+                    }
+                }
             }
         }
 
