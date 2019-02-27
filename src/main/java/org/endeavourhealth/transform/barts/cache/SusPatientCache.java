@@ -27,7 +27,11 @@ public class SusPatientCache {
         return patientCacheByCdsUniqueId.containsKey(id);
     }
 
+    public void cacheRecord( SusPatientCacheEntry record) {
+        String id = record.getCDSUniqueIdentifier().getString();
+        patientCacheByCdsUniqueId.put(id, record);
 
+    }
 
     /**
      * if we have had an error that's caused us to drop out of the transform, we can call this to tidy up

@@ -1,35 +1,55 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.SusPatientTailCache;
 import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusOutpatientTail;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 
-import java.util.Map;
+import java.util.List;
 
 public class SusOutpatientTailPreTransformer {
 
     /**
      * simply caches the contents of a tails file into a hashmap
      */
-    public static void transform(SusOutpatientTail parser, Map<String, SusTailCacheEntry> tailsCache) throws Exception {
 
-        //don't catch any record level parsing errors, since any problems here need to stop the transform
-        while (parser.nextRecord()) {
-            processRecord(parser, tailsCache);
+
+    public static void transform(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser : parsers) {
+
+            while (parser.nextRecord()) {
+                try {
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatientTail) parser, csvHelper);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void processRecord(SusOutpatientTail parser, Map<String, SusTailCacheEntry> tailsCache) {
+    private static void processRecord(SusOutpatientTail parser, BartsCsvHelper csvHelper) {
 
+        SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
         //only cache the fields we know we'll need
         CsvCell finNumber = parser.getFinNumber();
         CsvCell encounterId = parser.getEncounterId();
         CsvCell episodeId = parser.getEpisodeId();
         CsvCell personId = parser.getPersonId();
         CsvCell personnelId = parser.getResponsiblePersonnelId();
-        int seqNo=1; // Primary is default
-        if (tailsCache.containsKey(encounterId.getString())) {
-            seqNo = tailsCache.get(encounterId.getString()).getSeqNo()+1;
+        int seqNo = 1; // Primary is default
+        if (tailCache.encIdInCache(encounterId.getString())) {
+            List<SusTailCacheEntry> s = tailCache.getPatientByEncId(encounterId.getString());
+            seqNo = s.size() + 1;
         }
 
         SusTailCacheEntry obj = new SusTailCacheEntry();
@@ -40,6 +60,6 @@ public class SusOutpatientTailPreTransformer {
         obj.setResponsibleHcpPersonnelId(personnelId);
         obj.setSeqNo(seqNo);
         CsvCell uniqueId = parser.getCdsUniqueId();
-        tailsCache.put(uniqueId.getString(), obj);
+        tailCache.cacheRecord(obj);
     }
 }

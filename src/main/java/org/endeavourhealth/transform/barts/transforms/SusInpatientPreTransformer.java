@@ -1,29 +1,37 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.SusPatientCache;
 import org.endeavourhealth.transform.barts.cache.SusPatientCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class SusInpatientPreTransformer {
 
-    /**
-     * simply caches the contents of a tails file into a hashmap
-     */
-    public static void transform(SusInpatient parser, Map<String, SusPatientCacheEntry> patientCache) throws Exception {
+       public static void transform(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper) throws Exception {
 
-        //don't catch any record level parsing errors, since any problems here need to stop the transform
-        while (parser.nextRecord()) {
-            processRecord(parser, patientCache);
+        for (ParserI parser: parsers) {
+
+            while (parser.nextRecord()) {
+                try {
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusInpatient)parser, csvHelper);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
         }
+
     }
-
-    private static void processRecord(SusInpatient parser, Map<String, SusPatientCacheEntry> patientCache) {
-
+    private static void processRecord(SusInpatient parser, BartsCsvHelper csvHelper) {
+        SusPatientCache cache = csvHelper.getSusPatientCache();
         //only cache the fields we know we'll need
         if (!parser.getProcedureSchemeInUse().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
             return;
@@ -53,9 +61,7 @@ public class SusInpatientPreTransformer {
         obj.setSecondaryProcedureDate(secondaryProcedureDate);
         obj.setOtherSecondaryProceduresOPCS(otherProcedureOPCS);
 
-
-
         CsvCell uniqueId = parser.getCdsUniqueId();
-        patientCache.put(uniqueId.getString(), obj);
+        cache.cacheRecord(obj);
     }
 }

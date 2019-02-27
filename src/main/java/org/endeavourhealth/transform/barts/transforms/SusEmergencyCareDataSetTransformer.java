@@ -1,16 +1,13 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusEmergencyCareDataSet;
-import org.endeavourhealth.transform.barts.schema.SusInpatientTail;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,10 +40,14 @@ public class SusEmergencyCareDataSetTransformer {
     }
 
     private static Map<String, SusTailCacheEntry> processTails(ParserI parser, Map<String, List<ParserI>> parserMap) throws Exception {
-        SusInpatientTail tailParser = (SusInpatientTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyCareDataSetTail", parser.getFilePath());
-        Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
-        SusInpatientTailPreTransformer.transform(tailParser, tailsCache);
-        return tailsCache;
+
+        //TODO Emergency care data is not like InPatient. Needs a rewrite
+
+       // SusInpatientTail tailParser = (SusInpatientTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyCareDataSetTail", parser.getFilePath());
+       // Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
+      //  SusInpatientTailPreTransformer.transform(tailParser, tailsCache);
+      //  return tailsCache;
+        return null;
     }
 
     private static void processRecordProcedures(SusEmergencyCareDataSet parser, BartsCsvHelper csvHelper) throws Exception {

@@ -1,26 +1,36 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.cache.SusPatientTailCache;
 import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusInpatientTail;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 
-import java.util.Map;
+import java.util.List;
 
 public class SusInpatientTailPreTransformer {
 
-    /**
-     * simply caches the contents of a tails file into a hashmap
-     */
-    public static void transform(SusInpatientTail parser, Map<String, SusTailCacheEntry> tailsCache) throws Exception {
+      public static void transform(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper) throws Exception {
 
-        //don't catch any record level parsing errors, since any problems here need to stop the transform
-        while (parser.nextRecord()) {
-            processRecord(parser, tailsCache);
+        for (ParserI parser: parsers) {
+
+            while (parser.nextRecord()) {
+                try {
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusInpatientTail)parser, csvHelper);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
         }
+
     }
-
-    private static void processRecord(SusInpatientTail parser, Map<String, SusTailCacheEntry> tailsCache) {
-
+    private static void processRecord(SusInpatientTail parser,BartsCsvHelper csvHelper) {
+        SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
         //only cache the fields we know we'll need
         CsvCell encounterId = parser.getEncounterId();
         CsvCell episodeId = parser.getEpisodeId();
@@ -28,8 +38,9 @@ public class SusInpatientTailPreTransformer {
         CsvCell personnelId = parser.getResponsiblePersonnelId();
         CsvCell cdsUniqueId = parser.getCdsUniqueId();
         int seqNo=1; // Primary is default
-        if (tailsCache.containsKey(encounterId.getString())) {
-            seqNo = tailsCache.get(encounterId.getString()).getSeqNo()+1;
+        if (tailCache.encIdInCache(encounterId.getString())) {
+            List<SusTailCacheEntry> s = tailCache.getPatientByEncId(encounterId.getString());
+            seqNo = s.size() + 1;
         }
 
         SusTailCacheEntry obj = new SusTailCacheEntry();
@@ -40,6 +51,7 @@ public class SusInpatientTailPreTransformer {
         obj.setResponsibleHcpPersonnelId(personnelId);
         obj.setSeqNo(seqNo);
         CsvCell uniqueId = parser.getCdsUniqueId();
-        tailsCache.put(encounterId.getString(), obj);
+
+        tailCache.cacheRecord(obj);
     }
 }

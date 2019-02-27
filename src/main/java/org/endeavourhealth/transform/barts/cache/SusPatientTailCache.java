@@ -4,6 +4,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,6 +26,18 @@ public class SusPatientTailCache {
 
     public boolean encIdInCache(String id) {
         return patientCacheByEncId.containsKey(id);
+    }
+
+    public void cacheRecord( SusTailCacheEntry record) {
+        String id = record.getEncounterId().getString();
+        if (encIdInCache(id)) {
+            List<SusTailCacheEntry> list = getPatientByEncId(id);
+            list.add(record);
+        } else {
+            List<SusTailCacheEntry> list = new ArrayList<>();
+            list.add(record);
+            patientCacheByEncId.put(id, list);
+        }
     }
 
     /**
