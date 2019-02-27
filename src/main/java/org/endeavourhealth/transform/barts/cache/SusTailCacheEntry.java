@@ -13,6 +13,15 @@ public class SusTailCacheEntry {
     private CsvCell episodeId;
     private CsvCell personId;
     private CsvCell responsibleHcpPersonnelId;
+    int seqNo;
+
+    public int getSeqNo() {
+        return seqNo;
+    }
+
+    public void setSeqNo(int seqNo) {
+        this.seqNo = seqNo;
+    }
 
     public CsvCell getCdsActivityDate() {
         return cdsActivityDate;

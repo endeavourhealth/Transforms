@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.SusPatientCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -22,7 +23,9 @@ public class SusInpatientPreTransformer {
     private static void processRecord(SusInpatient parser, Map<String, SusPatientCacheEntry> patientCache) {
 
         //only cache the fields we know we'll need
-
+        if (!parser.getProcedureSchemeInUse().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            return;
+        }
         CsvCell cdsUniqueId = parser.getCdsUniqueId();
         CsvCell localPatientId = parser.getLocalPatientId();
         CsvCell nhsNumber = parser.getNhsNumber();

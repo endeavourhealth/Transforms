@@ -194,7 +194,7 @@ public class PROCETransformer {
             if (parser.getProcedureTypeCode().getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 //SNOMED entries use the SNOMED description id rather than concept code
                 codeableConceptBuilder.setText(procCode);
-                procCode=csvHelper.lookupSnomedConceptIdFromDescId(procCode);
+                procCode = csvHelper.lookupSnomedConceptIdFromDescId(procCode);
 
             }
             ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
@@ -238,13 +238,17 @@ public class PROCETransformer {
             }
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+                // Link to records cached from SUSInpatientTail
                 List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
                 List<String> csdIds = new ArrayList<>();
                 for (SusTailCacheEntry e : tailCacheList) {
-                    if (!e.getCDSUniqueIdentifier().isEmpty()) {
+                    if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
+                            && sequenceNumberCell.getInt().equals(e.getSeqNo())
+                            && !e.getCDSUniqueIdentifier().isEmpty()) {
                         csdIds.add(e.getCDSUniqueIdentifier().getString());
                     }
                 }
+                // Use tail records from above to link to SUSInpatient records
                 List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
                 SusPatientCache patientCache = csvHelper.getSusPatientCache();
                 for (String id : csdIds) {
@@ -252,7 +256,7 @@ public class PROCETransformer {
                         patientCacheList.add(patientCache.getPatientByCdsUniqueId(id));
                     }
                 } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
-                List<String> knownPerformers=null; // Track known performers to avoid duplicate entries.
+                List<String> knownPerformers = null; // Track known performers to avoid duplicate entries.
                 for (SusTailCacheEntry tail : tailCacheList) {
                     if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
                             && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
