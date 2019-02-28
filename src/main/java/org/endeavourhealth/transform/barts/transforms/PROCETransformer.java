@@ -299,6 +299,8 @@ public class PROCETransformer {
                             }
                         }
                     }
+                } else {
+                    TransformWarnings.log(LOG, csvHelper, "No tail records found for {}", personId);
                 }
             }
         }
