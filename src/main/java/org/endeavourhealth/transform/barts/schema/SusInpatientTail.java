@@ -41,7 +41,9 @@ public class SusInpatientTail extends AbstractFixedParser {
     public CsvCell getResponsiblePersonnelId() {
         return super.getCell("Responsible_HCP_Personal_ID");
     }
-
+    public CsvCell getCdsActivityDate() {
+        return super.getCell("CDS_Activity_Date");
+    }
 
     @Override
     protected boolean isFileAudited() {
