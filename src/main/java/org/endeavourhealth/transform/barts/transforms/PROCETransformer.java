@@ -282,6 +282,7 @@ public class PROCETransformer {
                 List<String> knownPerformers = null; // Track known performers to avoid duplicate entries.
                 for (SusTailCacheEntry tail : tailCacheList) {
                     if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
+                            && !tail.getResponsibleHcpPersonnelId().isEmpty()
                             && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
                         Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
                         procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
