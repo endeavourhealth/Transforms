@@ -240,56 +240,63 @@ public class PROCETransformer {
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
                 List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
-                List<String> csdIds = new ArrayList<>();
-                for (SusTailCacheEntry e : tailCacheList) {
-                    if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
-                            && !e.getCDSUniqueIdentifier().isEmpty()) {
+                if (tailCacheList.size()> 0) {  // we need the patient tail records to link
+                    List<String> csdIds = new ArrayList<>();
+                    for (SusTailCacheEntry e : tailCacheList) {
+                        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
+                                && !e.getCDSUniqueIdentifier().isEmpty()) {
 
-                        csdIds.add(e.getCDSUniqueIdentifier().getString());
-                    }
-                }
-                // Use tail records from above to link to SUSInpatient records
-                List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
-                SusPatientCache patientCache = csvHelper.getSusPatientCache();
-                for (String id : csdIds) {
-                    if (patientCache.csdUIdInCache(id)) {
-                        SusPatientCacheEntry susPatientCacheEntry = patientCache.getPatientByCdsUniqueId(id);
-                        int seqNo = sequenceNumberCell.getInt();
-                        switch (seqNo) {
-                            case 1: if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()));
-                            //TODO Which is more reliable? Assume CSDActivitydate refers to overall, not specific procedure.
-                                if (!susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()) {
-                                    susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getPrimaryProcedureDate());
-                                }
-                                patientCacheList.add(susPatientCacheEntry);
-                                break;
-                            case 2: if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()));
-                                if (!susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()) {
-                                    susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getSecondaryProcedureDate());
-                                }
-                                patientCacheList.add(susPatientCacheEntry);
-                                break;
-                            default: if (!susPatientCacheEntry.getOtherCodes().isEmpty()
-                                    && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
-                                //TODO - other procedure dates? Stick with CDSActivityDate for now
-                                patientCacheList.add(susPatientCacheEntry);
-                                break;
-                            }
+                            csdIds.add(e.getCDSUniqueIdentifier().getString());
                         }
-                        patientCacheList.add(susPatientCacheEntry);
                     }
-                } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
-                List<String> knownPerformers = new ArrayList<>(); // Track known performers to avoid duplicate entries.
-                for (SusTailCacheEntry tail : tailCacheList) {
-                    if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
-                            && !tail.getResponsibleHcpPersonnelId().isEmpty()
-                            && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
-                        Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
-                        procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
-                        if (tail.getCdsActivityDate()!=null && !tail.getCdsActivityDate().isEmpty()
-                                && tail.getCdsActivityDate().getDate()!=null) {
-                            DateTimeType dt =  new DateTimeType(tail.getCdsActivityDate().getDate());
-                                    procedureBuilder.setPerformed(dt,tail.getCdsActivityDate());
+                    // Use tail records from above to link to SUSInpatient records
+                    List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
+                    SusPatientCache patientCache = csvHelper.getSusPatientCache();
+                    for (String id : csdIds) {
+                        if (patientCache.csdUIdInCache(id)) {
+                            SusPatientCacheEntry susPatientCacheEntry = patientCache.getPatientByCdsUniqueId(id);
+                            int seqNo = sequenceNumberCell.getInt();
+                            switch (seqNo) {
+                                case 1:
+                                    if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()))
+                                        ;
+                                    //TODO Which is more reliable? Assume CSDActivitydate refers to overall, not specific procedure.
+                                    if (!susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()) {
+                                        susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getPrimaryProcedureDate());
+                                    }
+                                    patientCacheList.add(susPatientCacheEntry);
+                                    break;
+                                case 2:
+                                    if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()))
+                                        ;
+                                    if (!susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()) {
+                                        susPatientCacheEntry.setCdsActivityDate(susPatientCacheEntry.getSecondaryProcedureDate());
+                                    }
+                                    patientCacheList.add(susPatientCacheEntry);
+                                    break;
+                                default:
+                                    if (!susPatientCacheEntry.getOtherCodes().isEmpty()
+                                            && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
+                                        //TODO - other procedure dates? Stick with CDSActivityDate for now
+                                        patientCacheList.add(susPatientCacheEntry);
+                                        break;
+                                    }
+                            }
+                            patientCacheList.add(susPatientCacheEntry);
+                        }
+                    } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
+                    List<String> knownPerformers = new ArrayList<>(); // Track known performers to avoid duplicate entries.
+                    for (SusTailCacheEntry tail : tailCacheList) {
+                        if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
+                                && !tail.getResponsibleHcpPersonnelId().isEmpty()
+                                && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
+                            Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
+                            procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
+                            if (tail.getCdsActivityDate() != null && !tail.getCdsActivityDate().isEmpty()
+                                    && tail.getCdsActivityDate().getDate() != null) {
+                                DateTimeType dt = new DateTimeType(tail.getCdsActivityDate().getDate());
+                                procedureBuilder.setPerformed(dt, tail.getCdsActivityDate());
+                            }
                         }
                     }
                 }
