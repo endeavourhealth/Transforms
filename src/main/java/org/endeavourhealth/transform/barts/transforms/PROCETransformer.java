@@ -241,7 +241,7 @@ public class PROCETransformer {
                 // Link to records cached from SUSInpatientTail
                 List<SusTailCacheEntry> tailCacheList = new ArrayList<>();
                 tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
-                if (tailCacheList.size()> 0) {  // we need the patient tail records to link
+                if (tailCacheList!=null && tailCacheList.size()> 0) {  // we need the patient tail records to link
                     List<String> csdIds = new ArrayList<>();
                     for (SusTailCacheEntry e : tailCacheList) {
                         if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
