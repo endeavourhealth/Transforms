@@ -239,7 +239,8 @@ public class PROCETransformer {
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
-                List<SusTailCacheEntry> tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
+                List<SusTailCacheEntry> tailCacheList = new ArrayList<>();
+                tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
                 if (tailCacheList.size()> 0) {  // we need the patient tail records to link
                     List<String> csdIds = new ArrayList<>();
                     for (SusTailCacheEntry e : tailCacheList) {
