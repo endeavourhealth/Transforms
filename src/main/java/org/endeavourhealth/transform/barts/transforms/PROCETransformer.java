@@ -279,7 +279,7 @@ public class PROCETransformer {
                         patientCacheList.add(susPatientCacheEntry);
                     }
                 } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
-                List<String> knownPerformers = null; // Track known performers to avoid duplicate entries.
+                List<String> knownPerformers = new ArrayList<>(); // Track known performers to avoid duplicate entries.
                 for (SusTailCacheEntry tail : tailCacheList) {
                     if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
                             && !tail.getResponsibleHcpPersonnelId().isEmpty()
