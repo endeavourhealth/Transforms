@@ -21,34 +21,69 @@ public class PATIENT extends AbstractCsvParser {
     }
 
     private static String[] getExpectedCsvHeaders(String version) {
-        return new String[]{
-                "CaseRef",
-                "PatientRef",
-                "Forename",
-                "Surname",
-                "DOB",
-                "NHSNumber",
-                "NHSNoTraceStatus",
-                "Language",
-                "Ethnicity",
-                "Gender",
-                "RegistrationType",
-                "HomeAddressType",
-                "HomeAddressBuilding",
-                "HomeAddressStreet",
-                "HomeAddressTown",
-                "HomeAddressLocality",
-                "HomeAddressPostcode",
-                "CurrentAddressType",
-                "CurrentAddressBuilding",
-                "CurrentAddressStreet",
-                "CurrentAddressTown",
-                "CurrentAddressLocality",
-                "CurrentAddressPostcode",
-                "MobilePhone",
-                "HomePhone",
-                "OtherPhone"
-        };
+
+        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_1)) {
+
+            return new String[]{
+                    "CaseRef",
+                    "PatientRef",
+                    "Forename",
+                    "Surname",
+                    "DOB",
+                    "NHSNumber",
+                    "NHSNoTraceStatus",
+                    "Language",
+                    "Ethnicity",
+                    "Gender",
+                    "RegistrationType",
+                    "HomeAddressType",
+                    "HomeAddressBuilding",
+                    "HomeAddressStreet",
+                    "HomeAddressTown",
+                    "HomeAddressLocality",
+                    "HomeAddressPostcode",
+                    "CurrentAddressType",
+                    "CurrentAddressBuilding",
+                    "CurrentAddressStreet",
+                    "CurrentAddressTown",
+                    "CurrentAddressLocality",
+                    "CurrentAddressPostcode",
+                    "MobilePhone",
+                    "HomePhone",
+                    "OtherPhone"
+            };
+        } else {
+
+            return new String[]{
+                    "CaseRef",
+                    "PatientRef",
+                    "Forename",
+                    "Surname",
+                    "DOB",
+                    "NHSNumber",
+                    "NHSNoTraceStatus",
+                    "Language",
+                    "Ethnicity",
+                    "Gender",
+                    "RegistrationType",
+                    "HomeAddressType",
+                    "HomeAddressBuilding",
+                    "HomeAddressStreet",
+                    "HomeAddressTown",
+                    "HomeAddressLocality",
+                    "HomeAddressPostcode",
+                    "CurrentAddressType",
+                    "CurrentAddressBuilding",
+                    "CurrentAddressStreet",
+                    "CurrentAddressTown",
+                    "CurrentAddressLocality",
+                    "CurrentAddressPostcode",
+                    "MobilePhone",
+                    "HomePhone",
+                    "OtherPhone",
+                    "LastEditByUserRef"
+            };
+        }
     }
 
     @Override
@@ -158,5 +193,11 @@ public class PATIENT extends AbstractCsvParser {
 
     public CsvCell getOtherPhone() {
         return super.getCell("OtherPhone");
+    }
+
+    //version 2 additional
+
+    public CsvCell getLastEditByUserRef() {
+        return super.getCell("LastEditByUserRef");
     }
 }

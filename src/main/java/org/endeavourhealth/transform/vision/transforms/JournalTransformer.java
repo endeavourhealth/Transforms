@@ -808,7 +808,12 @@ public class JournalTransformer {
         else {
             //get the numeric values and units
             if (!parser.getValue1().isEmpty()) {
-                value1 = parser.getValue1().getDouble();
+
+                try {
+                    value1 = parser.getValue1().getDouble();
+                } catch (NumberFormatException ex) {
+                    value1 = null;  //set to null to force the use of text value later
+                }
             }
             units1 = parser.getValue1NumericUnit().getString();
 
@@ -931,6 +936,7 @@ public class JournalTransformer {
             if (value1 != null) {
                 observationBuilder.setValueNumber(value1, parser.getValue1());
             } else if (!value1AsText.isEmpty()){
+                //the value becomes a text value if it fails the double numeric conversion earlier
                 observationBuilder.setValueString(value1AsText.getString(), parser.getValue1());
             }
 

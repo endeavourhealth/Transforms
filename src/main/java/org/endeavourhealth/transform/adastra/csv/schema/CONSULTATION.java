@@ -21,23 +21,47 @@ public class CONSULTATION extends AbstractCsvParser {
     }
 
     private static String[] getExpectedCsvHeaders(String version) {
-        return new String[]{
-                "CaseRef",
-                "ConsultationRef",
-                "StartDateTime",
-                "EndDateTime",
-                "Location",
-                "ConsultationCaseType",
-                "History",
-                "Examination",
-                "Diagnosis",
-                "TreatmentPlan",
-                "PatientName",
-                "PatientForename",
-                "PatientSurname",
-                "ProviderType",
-                "GMC"
-        };
+
+        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_1)) {
+
+            return new String[]{
+                    "CaseRef",
+                    "ConsultationRef",
+                    "StartDateTime",
+                    "EndDateTime",
+                    "Location",
+                    "ConsultationCaseType",
+                    "History",
+                    "Examination",
+                    "Diagnosis",
+                    "TreatmentPlan",
+                    "PatientName",
+                    "PatientForename",
+                    "PatientSurname",
+                    "ProviderType",
+                    "GMC"
+            };
+        } else {
+
+            return new String[]{
+                    "CaseRef",
+                    "ConsultationRef",
+                    "StartDateTime",
+                    "EndDateTime",
+                    "Location",
+                    "ConsultationCaseType",
+                    "History",
+                    "Examination",
+                    "Diagnosis",
+                    "TreatmentPlan",
+                    "PatientName",
+                    "PatientForename",
+                    "PatientSurname",
+                    "ProviderType",
+                    "GMC",
+                    "UserRef"
+            };
+        }
     }
 
     @Override
@@ -103,5 +127,11 @@ public class CONSULTATION extends AbstractCsvParser {
 
     public CsvCell getGMC() {
         return super.getCell("GMC");
+    }
+
+    //version 2 additional
+
+    public CsvCell getUserRef() {
+        return super.getCell("UserRef");
     }
 }

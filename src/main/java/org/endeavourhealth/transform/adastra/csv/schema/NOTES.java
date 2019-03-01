@@ -21,14 +21,29 @@ public class NOTES extends AbstractCsvParser {
     }
 
     private static String[] getExpectedCsvHeaders(String version) {
-        return new String[]{
-                "CaseRef",
-                "PatientRef",
-                "ReviewDateTime",
-                "NoteText",
-                "Obsolete",
-                "Active"
-        };
+
+        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_1)) {
+
+            return new String[]{
+                    "CaseRef",
+                    "PatientRef",
+                    "ReviewDateTime",
+                    "NoteText",
+                    "Obsolete",
+                    "Active"
+            };
+        } else {
+
+            return new String[]{
+                    "CaseRef",
+                    "PatientRef",
+                    "ReviewDateTime",
+                    "NoteText",
+                    "Obsolete",
+                    "Active",
+                    "UserRef"
+            };
+        }
     }
 
     @Override
@@ -58,5 +73,11 @@ public class NOTES extends AbstractCsvParser {
 
     public CsvCell getActive() {
         return super.getCell("Active");
+    }
+
+    //version 2 additional
+
+    public CsvCell getUserRef() {
+        return super.getCell("UserRef");
     }
 }

@@ -21,14 +21,29 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
     }
 
     private static String[] getExpectedCsvHeaders(String version) {
-        return new String[]{
-                "CaseRef",
-                "ConsultationRef",
-                "DrugName",
-                "Preparation",
-                "Dosage",
-                "Quantity"
-        };
+
+        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_1)) {
+
+            return new String[]{
+                    "CaseRef",
+                    "ConsultationRef",
+                    "DrugName",
+                    "Preparation",
+                    "Dosage",
+                    "Quantity"
+            };
+        } else {
+
+            return new String[]{
+                    "CaseRef",
+                    "ConsultationRef",
+                    "DrugName",
+                    "Preparation",
+                    "Dosage",
+                    "Quantity",
+                    "DMDCode"
+            };
+        }
     }
 
     @Override
@@ -58,5 +73,11 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
 
     public CsvCell getQuanity() {
         return super.getCell("Quantity");
+    }
+
+    //version 2 additional
+
+    public CsvCell getDMDCode() {
+        return super.getCell("DMDCode");
     }
 }

@@ -4,6 +4,7 @@ import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.adastra.csv.schema.*;
 import org.endeavourhealth.transform.adastra.csv.transforms.*;
@@ -27,6 +28,10 @@ public abstract class AdastraCsvToFhirTransformer {
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
 
+    public static final String VERSION_1 = "1"; //version pre users added
+    public static final String VERSION_2 = "2"; //version post users added
+
+
     //Adastra files do not contain a header, so set on in each parsers constructor.  Delimiter is |
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
 
@@ -36,6 +41,9 @@ public abstract class AdastraCsvToFhirTransformer {
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking Adastra CSV transformer for " + files.length + " files using service " + serviceId);
+
+        //determine the version from the csv file headers
+        version = determineVersion(files);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
@@ -74,15 +82,25 @@ public abstract class AdastraCsvToFhirTransformer {
 
     private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
-        findFileAndOpenParser(PROVIDER.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(PATIENT.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(CASE.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(CASEQUESTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(NOTES.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(OUTCOMES.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(CONSULTATION.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(CLINICALCODES.class, serviceId, systemId, exchangeId, files, version, parsers);
-        findFileAndOpenParser(PRESCRIPTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
+        if (version.equalsIgnoreCase(VERSION_1) || version.equalsIgnoreCase(VERSION_2)) {
+
+            findFileAndOpenParser(PROVIDER.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(PATIENT.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(CASE.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(CASEQUESTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(NOTES.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(OUTCOMES.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(CONSULTATION.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(CLINICALCODES.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(PRESCRIPTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
+        }
+
+        //open and add additional version 2 files  //TODO:  get new filenames
+        if (version.equalsIgnoreCase(VERSION_2)) {
+
+            //findFileAndOpenParser(USERS.class, serviceId, systemId, exchangeId, files, version, parsers);
+            //findFileAndOpenParser(ETP.class, serviceId, systemId, exchangeId, files, version, parsers);
+        }
 
         Set<String> expectedFiles = parsers
                 .values()
@@ -134,6 +152,40 @@ public abstract class AdastraCsvToFhirTransformer {
         throw new FileNotFoundException("Failed to find CSV file for " + name);
     }
 
+    public static String determineVersion(String[] files) throws Exception {
+
+        List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(VERSION_1);
+        possibleVersions.add(VERSION_2);
+
+        for (String filePath : files) {
+
+            String fileName = FilenameUtils.getName(filePath);
+            String[] toks = fileName.split("_");
+            String className = toks[2];
+            String clsName = "org.endeavourhealth.transform.adastra.csv.schema." + className;
+            Class parserCls = Class.forName(clsName);
+
+            //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
+            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+            AbstractCsvParser parser = constructor.newInstance(null, null, null, null, filePath);
+
+            //calling this will return the possible versions that apply to this parser
+            possibleVersions = parser.testForValidVersions(possibleVersions);
+            if (possibleVersions.isEmpty()) {
+                break;
+            }
+        }
+
+        //if we end up with one or more possible versions that do apply, then
+        //return the first, since that'll be the most recent one
+        if (!possibleVersions.isEmpty()) {
+            return possibleVersions.get(0);
+        }
+
+        throw new TransformException("Unable to determine version for Adastra CSV");
+    }
+
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -147,7 +199,11 @@ public abstract class AdastraCsvToFhirTransformer {
             CLINICALCODESPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             PRESCRIPTIONSPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-            //then the single admin transform
+            //then the admin transforms
+            //TODO:  v2 USERS
+            if (version.equalsIgnoreCase(VERSION_2)) {
+
+            }
             PROVIDERTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
             //then for the patient resources - note the order of these transforms is important

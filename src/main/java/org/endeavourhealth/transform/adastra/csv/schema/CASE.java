@@ -21,15 +21,34 @@ public class CASE extends AbstractCsvParser {
     }
 
     private static String[] getExpectedCsvHeaders(String version) {
-        return new String[]{
-                "PatientRef",
-                "PriorityName",
-                "CaseRef",
-                "CaseNo",
-                "StartDateTime",
-                "EndDateTime",
-                "LocationName"
-        };
+
+        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_1)) {
+
+            return new String[]{
+                    "PatientRef",
+                    "PriorityName",
+                    "CaseRef",
+                    "CaseNo",
+                    "StartDateTime",
+                    "EndDateTime",
+                    "LocationName"
+            };
+        }
+        else {
+
+            return new String[]{
+                    "PatientRef",
+                    "PriorityName",
+                    "CaseRef",
+                    "CaseNo",
+                    "StartDateTime",
+                    "EndDateTime",
+                    "LocationName",
+                    "CaseTagName",
+                    "ArrivedPCC",
+                    "UserRef"
+            };
+        }
     }
 
     @Override
@@ -63,5 +82,19 @@ public class CASE extends AbstractCsvParser {
 
     public CsvCell getLocationName() {
         return super.getCell("LocationName");
+    }
+
+    //version 2 additional
+
+    public CsvCell getCaseTagName() {
+        return super.getCell("CaseTagName");
+    }
+
+    public CsvCell getArrivedPCC() {
+        return super.getCell("ArrivedPCC");
+    }
+
+    public CsvCell getUserRef() {
+        return super.getCell("UserRef");
     }
 }
