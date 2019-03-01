@@ -7,30 +7,32 @@ import org.endeavourhealth.transform.barts.schema.SusInpatientTail;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class SusInpatientTailPreTransformer {
-
+    private static final Logger LOG = LoggerFactory.getLogger(SusPatientTailCache.class);
       public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
-
+          SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
         for (ParserI parser: parsers) {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.SusInpatientTail)parser, csvHelper);
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusInpatientTail)parser, csvHelper,tailCache);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
         }
-
+    LOG.info("SusPatientTail cache size:" + tailCache.size());
     }
-    private static void processRecord(SusInpatientTail parser,BartsCsvHelper csvHelper) {
-        SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
+    private static void processRecord(SusInpatientTail parser,BartsCsvHelper csvHelper,SusPatientTailCache tailCache) {
+
         //only cache the fields we know we'll need
         CsvCell encounterId = parser.getEncounterId();
         CsvCell episodeId = parser.getEpisodeId();

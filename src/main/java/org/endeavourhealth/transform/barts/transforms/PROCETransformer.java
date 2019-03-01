@@ -183,9 +183,12 @@ public class PROCETransformer {
 
         //populate comments, performed date, consultant etc. from that file if possible
         CsvCell sequenceNumberCell = parser.getCDSSequence();
-        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
-                && sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
-            procedureBuilder.setIsPrimary(true, sequenceNumberCell);
+        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
+            procedureBuilder.setSequenceNumber(sequenceNumberCell.getInt());
+            //TODO remove isPrimary later. Just use sequence number
+            if (sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
+                procedureBuilder.setIsPrimary(true, sequenceNumberCell);
+            }
         }
 
         if (parser.getEncounterId().getString() != null) {
@@ -234,22 +237,22 @@ public class PROCETransformer {
                 }
 
             } else {
-                LOG.info("No fixed width procedure cached for endId:" + compatibleEncId + ". ProcCode:" + procCode + " at:" + BartsCsvHelper.parseDate(procedureDateTimeCell));
+                LOG.info("No fixed width procedure cached for encId:" + compatibleEncId + ". ProcCode:" + procCode + " at:" + BartsCsvHelper.parseDate(procedureDateTimeCell));
             }
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
                 List<SusTailCacheEntry> tailCacheList = new ArrayList<>();
                 tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
-                if (tailCacheList!=null && tailCacheList.size()> 0) {  // we need the patient tail records to link
+                if (tailCacheList != null && tailCacheList.size() > 0) {  // we need the patient tail records to link
                     List<String> csdIds = new ArrayList<>();
                     for (SusTailCacheEntry e : tailCacheList) {
                         if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)
                                 && !e.getCDSUniqueIdentifier().isEmpty()) {
-
                             csdIds.add(e.getCDSUniqueIdentifier().getString());
                         }
                     }
+                    LOG.info("Procedure " + procedureIdCell.getString() + " SUS tail record count:" + parser.getEncounterId().getString());
                     // Use tail records from above to link to SUSInpatient records
                     List<SusPatientCacheEntry> patientCacheList = new ArrayList<>();
                     SusPatientCache patientCache = csvHelper.getSusPatientCache();
@@ -286,13 +289,19 @@ public class PROCETransformer {
                             patientCacheList.add(susPatientCacheEntry);
                         }
                     } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
+                    LOG.info("Procedure " + procedureIdCell.getString() + " SUS patient record count:" + patientCacheList.size());
+
                     List<String> knownPerformers = new ArrayList<>(); // Track known performers to avoid duplicate entries.
+                    int performerCount=0;
                     for (SusTailCacheEntry tail : tailCacheList) {
                         if (!tail.getResponsibleHcpPersonnelId().getString().isEmpty()
                                 && !tail.getResponsibleHcpPersonnelId().isEmpty()
                                 && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
                             Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
-                            procedureBuilder.setRecordedBy(practitionerReference, personnelIdCell);
+                            LOG.info("Adding performer " + tail.getResponsibleHcpPersonnelId() + " to procedure " +  procedureIdCell.getString());
+                            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
+                            knownPerformers.add(tail.getResponsibleHcpPersonnelId().getString());
+                            performerCount++;
                             if (tail.getCdsActivityDate() != null && !tail.getCdsActivityDate().isEmpty()
                                     && tail.getCdsActivityDate().getDate() != null) {
                                 DateTimeType dt = new DateTimeType(tail.getCdsActivityDate().getDate());
@@ -300,6 +309,7 @@ public class PROCETransformer {
                             }
                         }
                     }
+                    LOG.info("Procedure " + procedureIdCell.getString() + ". Performers added:" + performerCount);
                 } else {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for {}", personId);
                 }

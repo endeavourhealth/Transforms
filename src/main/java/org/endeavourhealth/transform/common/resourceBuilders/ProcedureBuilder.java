@@ -95,6 +95,11 @@ public class ProcedureBuilder extends ResourceBuilderBase
         createOrUpdateDocumentIdExtension(identifier, sourceCells);
     }
 
+    public void setSequenceNumber(int seqNo, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateIntegerExtension(getResource(),FhirExtensionUri.PROCEDURE_SEQUENCE_NUMBER,seqNo);
+        auditIntegerExtension(extension,sourceCells);
+    }
+
     public void setIsReview(boolean isReview, CsvCell... sourceCells) {
         createOrUpdateIsReviewExtension(isReview, sourceCells);
     }
