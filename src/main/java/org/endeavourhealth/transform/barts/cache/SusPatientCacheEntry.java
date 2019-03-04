@@ -13,7 +13,7 @@ public class SusPatientCacheEntry {
     private CsvCell CDSUniqueIdentifier;
     private CsvCell localPatientId;
     private CsvCell NHSNumber;
-    private CsvCell cdsActivityDate;
+  //  private CsvCell cdsActivityDate;
     private CsvCell PrimaryProcedureOPCS;
     private CsvCell PrimaryProcedureDate;
     private CsvCell SecondaryProcedureOPCS;
@@ -29,13 +29,13 @@ public class SusPatientCacheEntry {
         this.otherCodes = otherCodes;
     }
 
-    public CsvCell getCdsActivityDate() {
-        return cdsActivityDate;
-    }
-
-    public void setCdsActivityDate(CsvCell cdsActivityDate) {
-        this.cdsActivityDate = cdsActivityDate;
-    }
+//    public CsvCell getCdsActivityDate() {
+//        return cdsActivityDate;
+//    }
+//
+//    public void setCdsActivityDate(CsvCell cdsActivityDate) {
+//        this.cdsActivityDate = cdsActivityDate;
+//    }
 
     public CsvCell getCDSUniqueIdentifier() {
         return CDSUniqueIdentifier;

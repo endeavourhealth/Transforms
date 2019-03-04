@@ -41,9 +41,12 @@ public class SusOutpatientPreTransformer {
         }
 
         CsvCell cdsUniqueId = parser.getCdsUniqueId();
+        if (!csvHelper.getSusPatientTailCache().encIdInCache(cdsUniqueId.getString())) {
+            LOG.warn("Outpatient records with CdsUniqueId " + cdsUniqueId.getString() +" has no tail record. ");
+        }
         CsvCell localPatientId = parser.getPatientLocalId();
         CsvCell nhsNumber = parser.getNhsNumber();
-        CsvCell cdsActivityDate = parser.getCdsActivityDate();
+    //    CsvCell cdsActivityDate = parser.getCdsActivityDate();
         CsvCell primaryProcedureOPCS = parser.getPrimaryProcedureOPCS();
         CsvCell primaryProcedureDate = parser.getPrimaryProcedureDate();
         CsvCell secondaryProcedureOPCS = parser.getSecondaryProcedureOPCS();
@@ -58,14 +61,13 @@ public class SusOutpatientPreTransformer {
         obj.setCDSUniqueIdentifier(cdsUniqueId);
         obj.setLocalPatientId(localPatientId);
         obj.setNHSNumber(nhsNumber);
-        obj.setCdsActivityDate(cdsActivityDate);
+ //       obj.setCdsActivityDate(cdsActivityDate);
         obj.setPrimaryProcedureOPCS(primaryProcedureOPCS);
         obj.setPrimaryProcedureDate(primaryProcedureDate);
         obj.setSecondaryProcedureOPCS(secondaryProcedureOPCS);
         obj.setSecondaryProcedureDate(secondaryProcedureDate);
         obj.setOtherSecondaryProceduresOPCS(otherProcedureOPCS);
 
-        CsvCell uniqueId = parser.getCdsUniqueId();
         cache.cacheRecord(obj);
         }
 }

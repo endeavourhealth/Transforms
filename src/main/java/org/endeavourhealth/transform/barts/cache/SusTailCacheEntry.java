@@ -13,6 +13,8 @@ public class SusTailCacheEntry {
     private CsvCell episodeId;
     private CsvCell personId;
     private CsvCell responsibleHcpPersonnelId;
+    private boolean fwmapped = false;
+    private boolean proceMapped =false;
     int seqNo;
 
     public int getSeqNo() {
