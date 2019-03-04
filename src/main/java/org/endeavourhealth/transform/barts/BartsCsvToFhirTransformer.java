@@ -5,7 +5,6 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.transformError.TransformError;
-import org.endeavourhealth.transform.barts.cache.SusPatientTailCache;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -134,7 +133,6 @@ public abstract class BartsCsvToFhirTransformer {
 
             //PROCEDURES - the order is significant, going from less to more rich files
             SusInpatientTailPreTransformer.transform(getParsers(parserMap, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
-            LOG.info("Inpatient tail cache size:" + SusPatientTailCache.size());
             SusOutpatientTailPreTransformer.transform(getParsers(parserMap, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
             SusInpatientPreTransformer.transform(getParsers(parserMap, "SusInpatient", true), fhirResourceFiler,csvHelper);
             SusOutpatientPreTransformer.transform(getParsers(parserMap, "SusOutpatient", true), fhirResourceFiler,csvHelper);
